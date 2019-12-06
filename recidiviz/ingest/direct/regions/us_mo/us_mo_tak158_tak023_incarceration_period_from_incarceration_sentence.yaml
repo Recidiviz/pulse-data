@@ -3,6 +3,7 @@ key_mappings:
   F1$ORC: state_incarceration_period.admission_reason
   F1$WW: state_incarceration_period.release_date
   F1$CTP: state_incarceration_period.release_reason
+  F1$PFI: state_incarceration_period.specialized_purpose_for_incarceration
 
 
 # Primary key overridden in controller, with the format: DOC-CYC-SQN
@@ -27,7 +28,6 @@ keys_to_ignore:
   - F1$CTO  # Case Type (Opening) - Handled manually in the controller
   - F1$CTC  # Case Type (Current) - Handled manually in the controller
   - F1$SY   # Unused - Status code change date
-  - F1$PFI  # Purpose for incarceration - Handled manually in the controller
   - F1$OR0  # Unused - Ordinal Date Field 0
   - F1$MSO  # Most Serious Offense - TODO(2604): Should this be tied to a controlling sentence or controlling charge?
   - F1$DCR  # Unused - Date Created

@@ -240,3 +240,9 @@ state_program_assignment_discharge_reason_moved = 'MOVED'
 state_program_assignment_discharge_reason_opted_out = 'OPTED_OUT'
 state_program_assignment_discharge_reason_program_transfer = 'PROGRAM_TRANSFER'
 state_program_assignment_discharge_reason_reincarcerated = 'REINCARCERATED'
+
+# state_specialized_purpose_for_incarceration
+state_specialized_purpose_for_incarceration_shock_incarceration = \
+    'SHOCK_INCARCERATION'
+state_specialized_purpose_for_incarceration_treatment_in_prison = \
+    'TREATMENT_IN_PRISON'

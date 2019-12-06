@@ -30,7 +30,8 @@ from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, \
+    StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -667,7 +668,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_date='19890901',
             admission_reason='NA',
             release_date='19921006',
-            release_reason='IT'
+            release_reason='IT',
+            specialized_purpose_for_incarceration='S',
         )
         ip_110035_19890901_3 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-19890901-3',
@@ -676,6 +678,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='PAROLE_REVOCATION',
             release_date='19931102',
             release_reason='IT',
+            specialized_purpose_for_incarceration='I',
             source_supervision_violation_response=vr_110035_19890901_3
         )
         ip_110035_19890901_5 = StateIncarcerationPeriod(
@@ -685,6 +688,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='PAROLE_REVOCATION',
             release_date='19950206',
             release_reason='IT',
+            specialized_purpose_for_incarceration='S',
             source_supervision_violation_response=vr_110035_19890901_5
         )
 
@@ -695,6 +699,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='PROBATION_REVOCATION',
             release_date='20121102',
             release_reason='IT',
+            specialized_purpose_for_incarceration='S',
             source_supervision_violation_response=vr_110035_20010414_2
         )
         ip_110035_20010414_4 = StateIncarcerationPeriod(
@@ -703,7 +708,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_date='20130521',
             admission_reason='IB',
             release_date='20131127',
-            release_reason='IT'
+            release_reason='IT',
+            specialized_purpose_for_incarceration='S',
         )
         ip_110035_20010414_7 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-20010414-7',
@@ -711,7 +717,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_date='20160328',
             admission_reason='IB',
             release_date='20161011',
-            release_reason='ID'
+            release_reason='ID',
+            specialized_purpose_for_incarceration='S',
         )
 
         expected = IngestInfo(state_people=[
@@ -768,7 +775,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '310261-19890821-1',
                                                 status='IN_CUSTODY',
                                                 admission_date='19900329',
-                                                admission_reason='NA'
+                                                admission_reason='NA',
+                                                specialized_purpose_for_incarceration='S',
                                             )
                                         ]
                                     )
@@ -796,7 +804,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 admission_date='20010705',
                                                 admission_reason='NA',
                                                 release_date='20020117',
-                                                release_reason='IT'
+                                                release_reason='IT',
+                                                specialized_purpose_for_incarceration='S',
                                             )
                                         ]
                                     ),
@@ -812,6 +821,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 admission_reason='PAROLE_REVOCATION',
                                                 release_date='20040928',
                                                 release_reason='IT',
+                                                specialized_purpose_for_incarceration='S',
                                                 source_supervision_violation_response=vr_710448_20010414_3,
                                             )
                                         ]
@@ -840,7 +850,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 admission_date='19891023',
                                                 admission_reason='NA',
                                                 release_date='20081115',
-                                                release_reason='IE'
+                                                release_reason='IE',
+                                                specialized_purpose_for_incarceration='O',
                                             )
                                         ]
                                     )
@@ -867,6 +878,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 status='IN_CUSTODY',
                                                 admission_date='19890617',
                                                 admission_reason='NA',
+                                                specialized_purpose_for_incarceration='S',
                                             )
                                         ]
                                     )
@@ -895,6 +907,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 admission_reason='NA',
                                                 release_date='20161031',
                                                 release_reason='EXECUTION',
+                                                specialized_purpose_for_incarceration='S',
                                             )
                                         ]
                                     )
@@ -1140,7 +1153,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 admission_date='19891023',
                                                 admission_reason='NA',
                                                 release_date='20081115',
-                                                release_reason='IE'
+                                                release_reason='IE',
+                                                specialized_purpose_for_incarceration='O',
                                             )
                                         ]
                                     )
@@ -2222,6 +2236,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2241,6 +2256,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration=
+                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                specialized_purpose_for_incarceration_raw_text='I',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2279,6 +2297,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2323,6 +2342,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2357,6 +2377,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2375,6 +2396,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 release_reason_raw_text='ID',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2395,6 +2417,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='NA',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_310261,
                 incarceration_sentences=[sis_310261_19890821_3]
             )
@@ -2415,6 +2438,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_1]
             )
@@ -2435,6 +2459,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_3]
             )
@@ -2475,6 +2500,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.ESCAPE,
                 release_reason_raw_text='IE',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                specialized_purpose_for_incarceration_raw_text='O',
                 person=person_910324,
                 incarceration_sentences=[sis_910324_19890825_1]
             )
@@ -2520,6 +2547,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='NA',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_523523,
                 incarceration_sentences=[sis_523523_19890617_1],
             )
@@ -2570,6 +2598,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 release_date=datetime.date(year=2016, month=10, day=31),
                 release_reason=StateIncarcerationPeriodReleaseReason.EXECUTION,
                 release_reason_raw_text='EXECUTION',
+                specialized_purpose_for_incarceration_raw_text='S',
                 person=person_867530,
                 incarceration_sentences=[sis_867530_19970224_1],
             )
@@ -2583,7 +2612,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         ################################################################
         # TAK158_TAK023 SUPERVISION PERIOD FROM INCARCERATION SENTENCE

@@ -56,7 +56,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationFacilitySecurityLevel,
-)
+    StateSpecializedPurposeForIncarceration)
 
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_charge import (
@@ -637,6 +637,10 @@ class StateIncarcerationPeriod(ExternalIdEntity,
     release_reason: Optional[StateIncarcerationPeriodReleaseReason] = \
         attr.ib()
     release_reason_raw_text: Optional[str] = attr.ib()
+
+    specialized_purpose_for_incarceration:\
+        Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
+    specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib()
 
     #   - Who
     # See |person| in entity relationships below.

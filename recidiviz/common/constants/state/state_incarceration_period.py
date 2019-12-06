@@ -121,6 +121,19 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
+class StateSpecializedPurposeForIncarceration(EntityEnum,
+                                              metaclass=EntityEnumMeta):
+    """Specialized purposes for a period of incarceration"""
+    SHOCK_INCARCERATION = state_enum_strings.\
+        state_specialized_purpose_for_incarceration_shock_incarceration
+    TREATMENT_IN_PRISON = state_enum_strings.\
+        state_specialized_purpose_for_incarceration_treatment_in_prison
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
+
+
 _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     'MAXIMUM': StateIncarcerationFacilitySecurityLevel.MAXIMUM,
     'MAX': StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -208,4 +221,11 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'MED': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'MEDICAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRN': StateIncarcerationPeriodReleaseReason.TRANSFER,
+}
+
+_STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
+    'TREATMENT IN PRISON':
+        StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+    'SHOCK INCARCERATION':
+        StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
 }

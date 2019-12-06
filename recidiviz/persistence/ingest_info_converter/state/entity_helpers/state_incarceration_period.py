@@ -23,7 +23,8 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, \
+    StateSpecializedPurposeForIncarceration
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_date, normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationPeriod
@@ -51,7 +52,9 @@ def copy_fields_to_builder(
         'facility_security_level': StateIncarcerationFacilitySecurityLevel,
         'admission_reason': StateIncarcerationPeriodAdmissionReason,
         'projected_release_reason': StateIncarcerationPeriodReleaseReason,
-        'release_reason': StateIncarcerationPeriodReleaseReason
+        'release_reason': StateIncarcerationPeriodReleaseReason,
+        'specialized_purpose_for_incarceration':
+            StateSpecializedPurposeForIncarceration,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -81,6 +84,12 @@ def copy_fields_to_builder(
     new.release_reason = enum_mappings.get(
         StateIncarcerationPeriodReleaseReason, field_name='release_reason')
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
+
+    new.specialized_purpose_for_incarceration = enum_mappings.get(
+        StateSpecializedPurposeForIncarceration,
+        field_name='specialized_purpose_for_incarceration')
+    new.specialized_purpose_for_incarceration_raw_text = \
+        fn(normalize, 'specialized_purpose_for_incarceration', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id,
