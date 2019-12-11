@@ -317,7 +317,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             sub_cycle_partition_statuses.SCD AS STATUS_CODE,
             '' AS STATUS_SUBTYPE,
             sub_cycle_partition_statuses.STATUS_CODE_CHG_DT AS STATUS_CODE_CHG_DT,
-            'PARTITION' AS SUBCYCLE_DATE_TYPE
+            '2-PARTITION' AS SUBCYCLE_DATE_TYPE
     
         FROM
             LBAKRDTA.TAK158 body_status_f1
@@ -339,7 +339,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             F1$ORC AS STATUS_CODE,
             F1$OPT AS STATUS_SUBTYPE,
             F1$CD AS STATUS_CODE_CHG_DT,
-            'OPEN' AS SUBCYCLE_DATE_TYPE
+            '1-OPEN' AS SUBCYCLE_DATE_TYPE
         FROM
             LBAKRDTA.TAK158 body_status_f1
     ),
@@ -352,14 +352,25 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             F1$CTP AS STATUS_CODE,
             F1$ARC AS STATUS_SUBTYPE,
             F1$WW AS STATUS_CODE_CHG_DT,
-            'CLOSE' AS SUBCYCLE_DATE_TYPE
+            '3-CLOSE' AS SUBCYCLE_DATE_TYPE
         FROM
             LBAKRDTA.TAK158 body_status_f1
     ),
     all_sub_sub_cycle_critical_dates AS (
         SELECT
             DOC, CYC, SQN, STATUS_SEQ_NUM, STATUS_CODE, STATUS_SUBTYPE, STATUS_CODE_CHG_DT, SUBCYCLE_DATE_TYPE,
-            ROW_NUMBER() OVER (PARTITION BY DOC, CYC, SQN ORDER BY STATUS_CODE_CHG_DT ASC) AS SUB_SQN_SEQ
+            ROW_NUMBER() OVER (
+                PARTITION BY DOC, CYC, SQN 
+                ORDER BY 
+                    /* Order open edges, then parition edges, then close edges */
+                    SUBCYCLE_DATE_TYPE,
+                    /* Orders edges by date (open edges and close edges will 
+                       already come first and last, respectively */
+                    STATUS_CODE_CHG_DT,
+                    /* Within partition statuses that happen on the same day, 
+                       order by the status SSO number */
+                    STATUS_SEQ_NUM ASC
+            ) AS SUB_SQN_SEQ
         FROM (
              SELECT * FROM subcycle_open_status_change_dates
              UNION
@@ -392,7 +403,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
         /* Filter out rows created by the join which start with a 'CLOSE' 
          * status - periods can only start with 'OPEN' or 'PARTITION' statuses
          */
-        WHERE start_date.SUBCYCLE_DATE_TYPE != 'CLOSE'
+        WHERE start_date.SUBCYCLE_DATE_TYPE != '3-CLOSE'
     )
     """
 
