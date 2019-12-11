@@ -23,18 +23,13 @@ import pytest
 
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseType, \
-    StateSupervisionViolationResponseDecision
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import \
     StateSupervisionViolation, StateSupervisionPeriod, \
-    StateSupervisionSentence, StateSentenceGroup, StatePerson
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    EntityTree
+    StateSupervisionSentence, StateSentenceGroup, StatePerson, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
-    import is_supervision_violation_response_match, \
-    remove_suffix_from_violation_ids
+    import remove_suffix_from_violation_ids
 from recidiviz.persistence.errors import EntityMatchingError
 
 _ID = 1
@@ -49,35 +44,32 @@ class TestUsMoMatchingUtils(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=False)
 
-    def test_isSupervisionViolationResponse_match(self):
-        ssvr = schema.StateSupervisionViolationResponse(
-            response_type=StateSupervisionViolationResponseType.CITATION,
-            response_date=_DATE)
-
-        ssvr_2 = schema.StateSupervisionViolationResponse(
-            response_type=StateSupervisionViolationResponseType.CITATION,
-            response_date=_DATE,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION)
-        tree = EntityTree(entity=ssvr, ancestor_chain=[])
-        tree_2 = EntityTree(entity=ssvr_2, ancestor_chain=[])
-        self.assertTrue(is_supervision_violation_response_match(tree, tree_2))
-        ssvr_2.response_date = _DATE_2
-        self.assertFalse(is_supervision_violation_response_match(tree, tree_2))
-
     def test_removeSeosFromViolationIds(self):
+        svr = schema.StateSupervisionViolationResponse(
+            external_id='DOC-CYC-VSN1-SEO-FSO')
         sv = schema.StateSupervisionViolation(
+            external_id='DOC-CYC-VSN1-SEO-FSO',
+            supervision_violation_responses=[svr])
+        svr_2 = schema.StateSupervisionViolationResponse(
             external_id='DOC-CYC-VSN1-SEO-FSO')
         sv_2 = schema.StateSupervisionViolation(
-            external_id='DOC-CYC-VSN1-SEO-FSO')
+            external_id='DOC-CYC-VSN1-SEO-FSO',
+            supervision_violation_responses=[svr_2])
         sp = schema.StateSupervisionPeriod(
             supervision_violation_entries=[sv, sv_2])
         ss = schema.StateSupervisionSentence(supervision_periods=[sp])
         sg = schema.StateSentenceGroup(supervision_sentences=[ss])
         p = schema.StatePerson(sentence_groups=[sg])
 
-        expected_sv = StateSupervisionViolation.new_with_defaults(
+        expected_svr = StateSupervisionViolationResponse.new_with_defaults(
             external_id='DOC-CYC-VSN1')
-        expected_sv_2 = attr.evolve(expected_sv)
+        expected_sv = StateSupervisionViolation.new_with_defaults(
+            external_id='DOC-CYC-VSN1',
+            supervision_violation_responses=[expected_svr])
+        expected_svr_2 = attr.evolve(expected_svr)
+        expected_sv_2 = attr.evolve(
+            expected_sv,
+            supervision_violation_responses=[expected_svr_2])
         expected_sp = StateSupervisionPeriod.new_with_defaults(
             supervision_violation_entries=[expected_sv, expected_sv_2])
         expected_ss = StateSupervisionSentence.new_with_defaults(
