@@ -68,7 +68,8 @@ TAK040_OFFENDER_CYCLES = \
     SELECT *
     FROM LBAKRDTA.TAK040
     WHERE
-        MAX(DQ$DLU, DQ$DCR) >= {lower_bound_update_date};
+        MAX(DQ$DLU, DQ$DCR) >= {lower_bound_update_date}
+    ORDER BY DQ$DOC;
     """
 
 
@@ -170,7 +171,8 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
         MAX_STATUS_SEQ IS NOT NULL
         AND MAX(BS$DLU, BS$DCR, BT$DLU, 
                 BT$DCR, BV$DLU, BV$DCR, 
-                BW$DLU, BW$DCR) >= {lower_bound_update_date};
+                BW$DLU, BW$DCR) >= {lower_bound_update_date}
+    ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
 
@@ -283,7 +285,8 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
         MAX_STATUS_SEQ IS NOT NULL AND MAX_UPDATED_FSO IS NOT NULL
         AND MAX(BS$DLU, BS$DCR, BU$DLU, 
                 BU$DCR, BV$DLU, BV$DCR, 
-                BW$DLU, BW$DCR) >= {lower_bound_update_date};
+                BW$DLU, BW$DCR) >= {lower_bound_update_date}
+    ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
 # TODO(2649) - Finalize the list of Board holdover related releases below and
@@ -628,7 +631,8 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
         AND violation_reports_by.BY$CYC = valid_sentences_cz.CZ$CYC
         AND violation_reports_by.BY$VSN = valid_sentences_cz.CZ$VSN
     WHERE
-        MAX(conditions_violated_cf.UPDATE_DT, conditions_violated_cf.CREATE_DT, violation_reports_by.BY$DLU, violation_reports_by.BY$DCR, valid_sentences_cz.CZ$DLU, valid_sentences_cz.CZ$DCR) >= {lower_bound_update_date};
+        MAX(conditions_violated_cf.UPDATE_DT, conditions_violated_cf.CREATE_DT, violation_reports_by.BY$DLU, violation_reports_by.BY$DCR, valid_sentences_cz.CZ$DLU, valid_sentences_cz.CZ$DCR) >= {lower_bound_update_date}
+    ORDER BY BY$DOC, BY$CYC, BY$VSN;
     """
 
 
@@ -699,7 +703,8 @@ TAK291_TAK292_TAK024_CITATIONS = \
         AND citations_with_multiple_violations_jt.JT$CYC = valid_sentences_js.JS$CYC
         AND citations_with_multiple_violations_jt.JT$CSQ = valid_sentences_js.JS$CSQ
     WHERE
-        MAX(citations_with_multiple_violations_jt.UPDATE_DT, citations_with_multiple_violations_jt.CREATE_DT, valid_sentences_js.JS$DLU, valid_sentences_js.JS$DCR) >= {lower_bound_update_date};
+        MAX(citations_with_multiple_violations_jt.UPDATE_DT, citations_with_multiple_violations_jt.CREATE_DT, valid_sentences_js.JS$DLU, valid_sentences_js.JS$DCR) >= {lower_bound_update_date}
+    ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
 
 
