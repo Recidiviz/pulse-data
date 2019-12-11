@@ -673,22 +673,20 @@ TAK291_TAK292_TAK024_CITATIONS = \
             citations_jt.JT$DOC, 
             citations_jt.JT$CYC, 
             citations_jt.JT$CSQ, 
-            citations_jt.JT$VG, 
+            MAX(citations_jt.JT$VG) AS max_date,
             LISTAGG(citations_jt.JT$VCV, ',') AS violated_conditions,
-            MAX(citations_jt.JT$DCR) as create_dt,
-            MAX(citations_jt.JT$DLU) as update_dt
+            MAX(citations_jt.JT$DCR) AS create_dt,
+            MAX(citations_jt.JT$DLU) AS update_dt
         FROM 
             LBAKRDTA.TAK292 citations_jt
         GROUP BY 
             citations_jt.JT$DOC, 
             citations_jt.JT$CYC, 
-            citations_jt.JT$CSQ, 
-            citations_jt.JT$VG 
+            citations_jt.JT$CSQ 
         ORDER BY 
             citations_jt.JT$DOC, 
             citations_jt.JT$CYC, 
-            citations_jt.JT$CSQ, 
-            citations_jt.JT$VG
+            citations_jt.JT$CSQ 
     )
     SELECT 
         *
