@@ -319,6 +319,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             -> List[schema.StatePerson]:
         """Performs state specific preprocessing on the provided
         |ingested_persons|.
+
+        After post processing, we guarantee that all backedges are properly
+        set on entities within the |ingested_persons| trees.
         """
         logging.info("[Entity matching] Pre-processing: Merge multi-id "
                      "entities")
@@ -337,6 +340,9 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         self.state_matching_delegate.perform_match_postprocessing(
             matched_persons)
+
+        logging.info("[Entity matching] Populate indirect person backedges")
+        self._populate_person_backedges(matched_persons)
 
     def _perform_database_cleanup(
             self, session: Session,
@@ -605,6 +611,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         object which contains all successfully matched and merged persons as
         well as an error count that is incremented every time an error is raised
         matching an ingested person.
+
+        All returned persons have direct and indirect backedges set.
         """
         db_person_trees = [
             EntityTree(entity=db_person, ancestor_chain=[])

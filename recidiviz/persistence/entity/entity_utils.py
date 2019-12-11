@@ -476,19 +476,12 @@ def get_all_db_objs_from_tree(db_obj: DatabaseEntity,
         return result
 
     result.add(db_obj)
-    fields = get_all_core_entity_field_names(db_obj,
-                                             EntityFieldType.FORWARD_EDGE)
 
-    for field in fields:
-        child = db_obj.get_field(field)
-
-        if child is None:
-            continue
-
-        if isinstance(child, list):
-            get_all_db_objs_from_trees(child, result)
-        else:
-            get_all_db_objs_from_tree(child, result)
+    set_fields = get_set_entity_field_names(
+        db_obj, EntityFieldType.FORWARD_EDGE)
+    for field in set_fields:
+        child = db_obj.get_field_as_list(field)
+        get_all_db_objs_from_trees(child, result)
 
     return result
 
