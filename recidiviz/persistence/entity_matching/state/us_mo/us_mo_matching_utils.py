@@ -15,27 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains util methods for UsMoMatchingDelegate."""
-from typing import cast, List
+from typing import List, Union
 
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     get_all_entities_of_cls
 from recidiviz.persistence.errors import EntityMatchingError
-
-
-def is_supervision_violation_response_match(
-        ingested_entity: EntityTree,
-        db_entity: EntityTree) -> bool:
-    ingested_entity = cast(
-        schema.StateSupervisionViolationResponse,
-        ingested_entity.entity)
-    db_entity = cast(
-        schema.StateSupervisionViolationResponse,
-        db_entity.entity)
-    return ingested_entity.response_type == db_entity.response_type \
-        and ingested_entity.response_date == db_entity.response_date
 
 
 # TODO(1883): Remove this once our proto converter and data extractor can handle
@@ -48,10 +33,22 @@ def remove_suffix_from_violation_ids(
     """
     ssvs = get_all_entities_of_cls(
         ingested_persons, schema.StateSupervisionViolation)
-    for ssv in ssvs:
-        splits = ssv.external_id.rsplit('-', 2)
+    ssvrs = get_all_entities_of_cls(
+        ingested_persons, schema.StateSupervisionViolationResponse)
+    _remove_suffix_from_violation_entity(ssvs)
+    _remove_suffix_from_violation_entity(ssvrs)
+
+
+def _remove_suffix_from_violation_entity(
+        violation_entities:
+        List[Union[schema.StateSupervisionViolation,
+                   schema.StateSupervisionViolationResponse]]):
+    for entity in violation_entities:
+        if not entity.external_id:
+            continue
+        splits = entity.external_id.rsplit('-', 2)
         if len(splits) != 3:
             raise EntityMatchingError(
-                f'Unexpected id format for StateSupervisionViolation '
-                f'{ssv.external_id}', ssv.get_entity_name())
-        ssv.external_id = splits[0]
+                f'Unexpected id format for {entity.get_entity_name()}'
+                f'{entity.external_id}', entity.get_entity_name())
+        entity.external_id = splits[0]

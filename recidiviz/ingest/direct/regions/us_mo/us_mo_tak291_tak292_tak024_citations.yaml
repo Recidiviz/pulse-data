@@ -5,7 +5,7 @@ key_mappings:
   VIOLATED_CONDITIONS: state_supervision_violation.violated_conditions
 
 child_key_mappings:
-  JT$VG: state_supervision_violation_response.response_date
+  MAX_DATE: state_supervision_violation_response.response_date
 
 ancestor_keys:
   JT$DOC: state_person.state_person_id

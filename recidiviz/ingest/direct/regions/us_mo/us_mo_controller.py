@@ -488,12 +488,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violated_conditions_on_violation,
                 self._set_violation_type_on_violation,
                 self._set_recommendations_on_violation_response,
+                self._set_violation_response_id_from_violation,
             ],
             'tak291_tak292_tak024_citations': [
                 self._gen_violation_response_type_posthook(
                     StateSupervisionViolationResponseType.CITATION),
                 self._set_deciding_body_as_supervising_officer,
                 self._set_violated_conditions_on_violation,
+                self._set_violation_response_id_from_violation,
             ],
         }
 
@@ -704,6 +706,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     response.deciding_body_type = \
                         StateSupervisionViolationResponseDecidingBodyType.\
                         SUPERVISION_OFFICER.value
+
+    # TODO(2701): Remove posthook in place of general child-id setting solution.
+    @classmethod
+    def _set_violation_response_id_from_violation(
+            cls,
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                violation_id = obj.state_supervision_violation_id
+                for response in obj.state_supervision_violation_responses:
+                    response.state_supervision_violation_response_id = \
+                        violation_id
 
     @classmethod
     def _set_violated_conditions_on_violation(

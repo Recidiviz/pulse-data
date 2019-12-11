@@ -21,7 +21,8 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.state.entities import \
     StatePersonExternalId, StatePerson, \
     StateSupervisionSentence, StateSupervisionViolation, \
-    StateSupervisionPeriod, StateSentenceGroup
+    StateSupervisionPeriod, StateSentenceGroup, \
+    StateSupervisionViolationResponse
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     import generate_person, generate_external_id, \
@@ -138,9 +139,14 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_removeSeosFromSupervisionViolation(self):
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_US_MO,
+                external_id=_EXTERNAL_ID_WITH_SUFFIX)
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=_US_MO,
-            external_id=_EXTERNAL_ID_WITH_SUFFIX)
+            external_id=_EXTERNAL_ID_WITH_SUFFIX,
+            supervision_violation_responses=[supervision_violation_response])
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=_US_MO,
             external_id=_EXTERNAL_ID,
@@ -166,8 +172,13 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[external_id])
 
         updated_external_id = _EXTERNAL_ID
+        expected_supervision_violation_response = attr.evolve(
+            supervision_violation_response, external_id=updated_external_id)
         expected_supervision_violation = attr.evolve(
-            supervision_violation, external_id=updated_external_id)
+            supervision_violation,
+            external_id=updated_external_id,
+            supervision_violation_responses=[
+                expected_supervision_violation_response])
         expected_supervision_period = attr.evolve(
             supervision_period,
             supervision_violation_entries=[expected_supervision_violation])
