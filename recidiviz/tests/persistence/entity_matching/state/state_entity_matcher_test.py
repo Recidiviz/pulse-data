@@ -46,7 +46,8 @@ from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StatePersonExternalId, StatePersonRace, StatePersonEthnicity, StatePerson, \
     StateCourtCase, StateCharge, StateFine, StateIncarcerationIncident, \
     StateIncarcerationPeriod, StateIncarcerationSentence, StateSentenceGroup, \
-    StateAgent
+    StateAgent, StateSupervisionViolation, StateSupervisionViolationResponse, \
+    StateSupervisionPeriod, StateSupervisionSentence
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
@@ -2946,5 +2947,134 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_mergeMultiParentEntityParentAndChild_multipleSentenceParents(self):
+        """Tests merging multi-parent entities, but the two types of entities
+        that must be merged are directly connected (themselves parent/child).
+        In this tests case they are StateSupervisionViolation and
+        StateSupervisionViolationResponse.
+        """
+        # Arrange
+        db_person = generate_person(person_id=_ID)
+        db_incarceration_sentence = generate_incarceration_sentence(
+            incarceration_sentence_id=_ID,
+            person=db_person,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            county_code='county_code')
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE, county_code='county_code',
+            incarceration_sentences=[db_incarceration_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+
+        self._commit_to_db(db_person)
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                external_id=_EXTERNAL_ID,
+                state_code=_STATE_CODE)
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            supervision_violation_responses=[supervision_violation_response])
+        supervision_period_is = StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE,
+            supervision_violation_entries=[supervision_violation],
+        )
+
+        supervision_violation_response_dup = attr.evolve(
+            supervision_violation_response)
+        supervision_violation_dup = attr.evolve(
+            supervision_violation,
+            supervision_violation_responses=[
+                supervision_violation_response_dup])
+        supervision_period_ss = attr.evolve(
+            supervision_period_is,
+            supervision_violation_entries=[supervision_violation_dup])
+
+        incarceration_sentence = attr.evolve(
+            self.to_entity(db_incarceration_sentence),
+            incarceration_sentence_id=None,
+            supervision_periods=[supervision_period_is]
+        )
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            status=StateSentenceStatus.COMPLETED,
+            state_code=_STATE_CODE,
+            supervision_periods=[supervision_period_ss]
+        )
+        sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group),
+            sentence_group_id=None,
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence],
+        )
+        external_id = attr.evolve(
+            self.to_entity(db_external_id),
+            person_external_id_id=None
+        )
+        person = attr.evolve(
+            self.to_entity(db_person),
+            person_id=None,
+            external_ids=[external_id],
+            sentence_groups=[sentence_group]
+        )
+
+        # Only one expected violation response and violation, as they've been
+        # merged
+        expected_supervision_violation_response = attr.evolve(
+            supervision_violation_response,
+        )
+        expected_supervision_violation = attr.evolve(
+            supervision_violation,
+            supervision_violation_responses=[
+                expected_supervision_violation_response]
+        )
+        expected_supervision_period_is = attr.evolve(
+            supervision_period_is,
+            supervision_violation_entries=[expected_supervision_violation]
+        )
+        expected_supervision_period_ss = attr.evolve(
+            supervision_period_ss,
+            supervision_violation_entries=[expected_supervision_violation]
+        )
+        expected_incarceration_sentence = attr.evolve(
+            incarceration_sentence,
+            incarceration_sentence_id=_ID,
+            supervision_periods=[expected_supervision_period_is]
+        )
+        expected_supervision_sentence = attr.evolve(
+            supervision_sentence,
+            supervision_periods=[expected_supervision_period_ss]
+        )
+        expected_sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group),
+            incarceration_sentences=[expected_incarceration_sentence],
+            supervision_sentences=[expected_supervision_sentence]
+        )
+        expected_person = attr.evolve(
+            self.to_entity(db_person),
+            sentence_groups=[expected_sentence_group]
+        )
+
+        # Act
+        session = self._session()
+        matched_entities = entity_matching.match(
+            self._session(), _STATE_CODE, ingested_people=[person])
+
+        # Assert
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session, debug=True)
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)

@@ -2648,7 +2648,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
 
         # Assert
-        self.assert_expected_db_people(expected_people, debug=True)
+        self.assert_expected_db_people(expected_people)
 
         ################################################################
         # TAK158_TAK023 SUPERVISION PERIOD FROM INCARCERATION SENTENCE

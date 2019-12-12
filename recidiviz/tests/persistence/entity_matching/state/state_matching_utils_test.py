@@ -30,7 +30,6 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
-from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import \
@@ -47,7 +46,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
     get_all_entity_trees_of_cls, default_merge_flat_fields, \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
-    is_standalone_class, read_persons
+    read_persons
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 from recidiviz.persistence.entity_matching.entity_matching_types import \
@@ -644,10 +643,3 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual({entity_tree.entity.sentence_group_id
                           for entity_tree in sentence_group_trees_to_merge},
                          {1, 2})
-
-    def test_isStandaloneClass(self):
-        for cls in schema_utils.get_non_history_state_database_entities():
-            if cls == schema.StateAgent:
-                self.assertTrue(is_standalone_class(cls))
-            else:
-                self.assertFalse(is_standalone_class(cls))
