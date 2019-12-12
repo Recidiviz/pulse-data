@@ -47,11 +47,11 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     convert_to_placeholder, is_multiple_id_entity, \
     get_external_id_keys_from_multiple_id_entity, get_multiple_id_classes, \
     read_db_entity_trees_of_cls_to_merge, get_multiparent_classes, \
-    db_id_or_object_id, is_standalone_class, is_standalone_entity, \
-    log_entity_count
+    db_id_or_object_id
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     get_set_entity_field_names, get_all_core_entity_field_names, \
-    get_all_db_objs_from_tree, get_all_db_objs_from_trees
+    get_all_db_objs_from_tree, get_all_db_objs_from_trees, \
+    is_standalone_class, is_standalone_entity, log_entity_count
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree, IndividualMatchResult, MatchResults, MatchedEntities
 
@@ -113,10 +113,25 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # DB to be logged.
         self.log_entity_counts = True
 
-        self.entities_to_convert_to_placeholder: List[DatabaseEntity] = []
+        self.entities_to_convert_to_placeholder_or_expunge:\
+            List[DatabaseEntity] = []
 
         # Delegate object with all state specific logic
         self.state_matching_delegate = state_matching_delegate
+
+        self.session: Optional[Session] = None
+
+    def set_session(self, session: Session):
+        if self.session:
+            raise ValueError('Attempting to set self.session, '
+                             'but self.session is already set')
+        self.session = session
+
+    def get_session(self) -> Session:
+        if self.session is None:
+            raise ValueError('Attempting to get self.session, '
+                             'but self.session is not set')
+        return self.session
 
     def set_root_entity_cache(
             self, db_persons: List[schema.StatePerson]):
@@ -226,6 +241,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         corresponding persons in our database. Returns a MatchedEntities object
         that contains the results of matching.
         """
+        self.set_session(session)
         logging.info(
             "[Entity matching] Converting ingested entities to DB entities "
             "at time [%s].", datetime.datetime.now().isoformat())
@@ -260,7 +276,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info("[Entity matching] Completed DB read at time [%s].",
                      datetime.datetime.now().isoformat())
         matched_entities_builder = self._run_match(
-            ingested_db_persons, db_persons, session)
+            ingested_db_persons, db_persons)
 
         # In order to maintain the invariant that all objects are properly
         # added to the Session when we return from entity_matching we
@@ -277,8 +293,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # TODO(2578): Database cleanup errors should be surfaced properly in
         # their own error count.
         matched_entities_builder.database_cleanup_error_count = \
-            self._perform_database_cleanup(
-                session, matched_entities_builder.people)
+            self._perform_database_cleanup(matched_entities_builder.people)
 
         # Assert that all entities have been flushed before returning from
         # entity matching
@@ -288,8 +303,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _run_match(self,
                    ingested_persons: List[schema.StatePerson],
-                   db_persons: List[schema.StatePerson],
-                   session: Session) -> MatchedEntities.Builder:
+                   db_persons: List[schema.StatePerson]) \
+            -> MatchedEntities.Builder:
         """Attempts to match |ingested_persons| with persons in |db_persons|.
         Assumes no backedges are present in either |ingested_persons| or
         |db_persons|.
@@ -298,6 +313,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # session until we have explicitly finished matching. This ensures
         # errors aren't thrown due to unexpected flushing of incomplete entity
         # relationships.
+        session = self.get_session()
         with session.no_autoflush:
             logging.info("[Entity matching] Pre-processing")
             ingested_persons = self._perform_match_preprocessing(
@@ -345,8 +361,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self._populate_person_backedges(matched_persons)
 
     def _perform_database_cleanup(
-            self, session: Session,
-            matched_persons: List[schema.StatePerson]) -> int:
+            self, matched_persons: List[schema.StatePerson]) -> int:
         """Home to all cleanup functions that require that database ids exist
         on all entities, including newly created ones. Returns the number of
         errors encountered while performing clean up.
@@ -354,18 +369,16 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         NOTE: This method expects that all updated entities have been flushed
         in the session.
         """
-        check_not_dirty(session)
+        check_not_dirty(self.get_session())
         error_count = 0
 
         logging.info("[Entity matching] Merge new parent-child links")
-        error_count += self._merge_new_parent_child_links(
-            session, matched_persons)
+        error_count += self._merge_new_parent_child_links(matched_persons)
 
         return error_count
 
     def _merge_new_parent_child_links(
-            self, session: Session,
-            matched_persons: List[schema.StatePerson]) -> int:
+            self, matched_persons: List[schema.StatePerson]) -> int:
         """Due to the way in which entity matching limits scope on potential
         matches, we can accidentally create multiple entities with the same
         external_id. This method queries from the DB and attempts to find
@@ -383,6 +396,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         to have use for this extra functionality.
         """
         region_code = self.state_matching_delegate.get_region_code()
+        session = self.get_session()
         error_count = 0
         seen_persons_ids: Set[int] = set()
         for person in matched_persons:
@@ -731,12 +745,25 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             if db_id not in matched_entities_by_db_id.keys():
                 unmatched_db_entities.append(db_entity)
 
-        for entity in self.entities_to_convert_to_placeholder:
-            convert_to_placeholder(entity)
-        self.entities_to_convert_to_placeholder.clear()
+        for entity in self.entities_to_convert_to_placeholder_or_expunge:
+            self._convert_to_placeholder_or_expunge(entity)
+        self.entities_to_convert_to_placeholder_or_expunge.clear()
 
         return MatchResults(
             individual_match_results, unmatched_db_entities, error_count)
+
+    def _convert_to_placeholder_or_expunge(self, entity: DatabaseEntity):
+        """
+        Depending on whether or not the provided |entity| has already been
+        committed to the db, this function either converts the |entity| into a
+        placeholder object or removes it from the session altogether.
+        """
+        if entity.get_id():
+            convert_to_placeholder(entity)
+        else:
+            session = self.get_session()
+            if entity in session:
+                session.expunge(entity)
 
     def _match_entity_tree(
             self,
@@ -1095,12 +1122,12 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             entity=merged_entity,
             ancestor_chain=db_match_tree.ancestor_chain)
 
-        if ingested_entity.get_id():
-            # Clear flat fields off of the ingested entity after entity matching
-            # is complete. This ensures that if this `ingested_entity` has
-            # multiple parents, each time we reach this entity, we'll correctly
-            # match it to the correct `db_entity`.
-            self.entities_to_convert_to_placeholder.append(ingested_entity)
+        # Clear flat fields off of the ingested entity after entity matching
+        # is complete. This ensures that if this `ingested_entity` has
+        # multiple parents, each time we reach this entity, we'll correctly
+        # match it to the correct `db_entity`.
+        self.entities_to_convert_to_placeholder_or_expunge.append(
+            ingested_entity)
 
         return IndividualMatchResult(
             merged_entity_trees=[merged_entity_tree],
@@ -1300,16 +1327,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 db_tree = EntityTree(db_with_parents.entity, [])
                 ing_tree = EntityTree(ing_with_parents.entity, [])
 
-                match_result = self._match_matched_tree(
-                    ingested_entity_tree=ing_tree,
-                    db_match_tree=db_tree,
-                    matched_entities_by_db_ids={},
+                self._match_entity_trees(
+                    ingested_entity_trees=[ing_tree],
+                    db_entity_trees=[db_tree],
                     root_entity_cls=schema.StatePerson)
-                updated_entity = one(
-                    match_result.merged_entity_trees).entity
+                updated_entity = db_tree.entity
 
                 # As entity matching automatically updates the input db entity,
-                #  we only have to replace ing_with_parents.entity.
+                # we only have to replace ing_with_parents.entity.
                 self._replace_entity(
                     entity=updated_entity,
                     to_replace=ing_with_parents.entity,

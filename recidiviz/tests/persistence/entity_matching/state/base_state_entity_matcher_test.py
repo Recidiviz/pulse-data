@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base class for all state entity matcher test classes."""
-
 from unittest import TestCase
 from mock import patch, create_autospec
 
@@ -24,7 +23,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids
+    clear_db_ids, assert_no_unexpected_entities_in_db
 from recidiviz.tests.utils import fakes
 
 from recidiviz.persistence.database.base_schema import StateBase
@@ -69,6 +68,7 @@ class BaseStateEntityMatcherTest(TestCase):
             expected_people.extend(expected_unmatched_db_people)
         self._assert_people_match(
             expected_people, result_db_people)
+        assert_no_unexpected_entities_in_db(result_db_people, session)
 
     def _assert_people_match(
             self, expected_people, matched_people, debug=False):

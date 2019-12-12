@@ -17,9 +17,10 @@
 """Tests for entity_utils.py"""
 from unittest import TestCase
 
+from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import EntityFieldType, \
-    get_set_entity_field_names
+    get_set_entity_field_names, is_standalone_class
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
     StateFine, StatePerson
 
@@ -90,3 +91,10 @@ class TestEntityUtils(TestCase):
         self.assertEqual(
             {'fines', 'person', 'person_id', 'sentence_group_id'},
             get_set_entity_field_names(entity, EntityFieldType.ALL))
+
+    def test_isStandaloneClass(self):
+        for cls in schema_utils.get_non_history_state_database_entities():
+            if cls == schema.StateAgent:
+                self.assertTrue(is_standalone_class(cls))
+            else:
+                self.assertFalse(is_standalone_class(cls))
