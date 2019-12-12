@@ -17,7 +17,8 @@
 """Test utils for generating state CoreEntity/Entity classes."""
 
 import datetime
-from typing import Sequence
+from collections import defaultdict
+from typing import Sequence, List, Dict, Type
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
@@ -58,9 +59,12 @@ from recidiviz.common.constants.state.\
         StateSupervisionViolationResponseDecision,
         StateSupervisionViolationResponseDecidingBodyType,
     )
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import \
-    get_set_entity_field_names, EntityFieldType
+    get_set_entity_field_names, EntityFieldType, get_entities_by_type, \
+    is_standalone_class, print_entity_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StateAgent, \
     StateProgramAssignment
@@ -75,6 +79,45 @@ def clear_db_ids(db_entities: Sequence[CoreEntity]):
         for field_name in get_set_entity_field_names(
                 entity, EntityFieldType.FORWARD_EDGE):
             clear_db_ids(entity.get_field_as_list(field_name))
+
+
+def assert_no_unexpected_entities_in_db(
+        expected_entities: Sequence[DatabaseEntity], session: Session):
+    """Counts all of the entities present in the |expected_entities| graph by
+    type and ensures that the same number of entities exists in the DB for each
+    type.
+    """
+    entity_counter: Dict[Type, List[DatabaseEntity]] = defaultdict(list)
+    get_entities_by_type(expected_entities, entity_counter)
+    for cls, entities_of_cls in entity_counter.items():
+        # Standalone classes do not need to be attached to a person by design,
+        # so it is valid if some standalone entities are not reachable from the
+        # provided |expected_entities|
+        if is_standalone_class(cls):
+            continue
+
+        expected_ids = set()
+        for entity in entities_of_cls:
+            expected_ids.add(entity.get_id())
+        db_entities = session.query(cls).all()
+        db_ids = set()
+        for entity in db_entities:
+            db_ids.add(entity.get_id())
+
+        if expected_ids != db_ids:
+            print('\n********** Entities from |found_persons| **********\n')
+            for entity in sorted(entities_of_cls, key=lambda x: x.get_id()):
+                print_entity_tree(entity)
+            print('\n********** Entities from db **********\n')
+            for entity in sorted(db_entities, key=lambda x: x.get_id()):
+                print_entity_tree(entity)
+            raise ValueError(
+                f'For cls {cls.__name__}, found difference in primary keys from'
+                f'expected entities and those of entities read from db.\n'
+                f'Expected ids not present in db: '
+                f'{str(expected_ids - db_ids)}\n'
+                f'Db ids not present in expected entities: '
+                f'{str(db_ids - expected_ids)}\n')
 
 
 def generate_full_graph_state_person(

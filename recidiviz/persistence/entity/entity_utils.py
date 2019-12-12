@@ -17,6 +17,8 @@
 """Utils for working with Entity classes or various |entities| modules."""
 
 import inspect
+import logging
+from collections import defaultdict
 from enum import Enum, auto
 from types import ModuleType
 from typing import Dict, List, Set, Type, Sequence, Optional
@@ -29,6 +31,7 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.ingest.aggregate.aggregate_ingest_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
@@ -135,6 +138,19 @@ class SchemaEdgeDirectionChecker:
 
         return self._class_hierarchy_map[from_class_name] >= \
             self._class_hierarchy_map[to_class_name]
+
+    def assert_sorted(self, entity_types: List[Type[DatabaseEntity]]):
+        """Throws if the input |entity_types| list is not in descending order
+        based on class hierarchy.
+        """
+        for type_1, type_2 in pairwise(entity_types):
+            type_1_name = type_1.__name__
+            type_2_name = type_2.__name__
+
+            if not self._class_hierarchy_map[type_1_name] \
+                    < self._class_hierarchy_map[type_2_name]:
+                raise ValueError(f'Unexpected ordering, found {type_1_name} '
+                                 f'before {type_2_name}')
 
 
 def _build_class_hierarchy_map(class_hierarchy: List[str],
@@ -521,3 +537,62 @@ def get_all_entities_from_tree(
             get_all_entities_from_tree(child, result, seen_ids)
 
     return result
+
+
+def get_entities_by_type(
+        all_entities: Sequence[DatabaseEntity],
+        entities_of_type: Dict[Type, List[DatabaseEntity]] = None,
+        seen_entities: Optional[Set[int]] = None) -> \
+        Dict[Type, List[DatabaseEntity]]:
+    """Creates a list of entities for each entity type present in the provided
+    |all_entities| graph. Returns the types and the corresponding entity lists
+    as a dictionary.
+    - if |entities_of_type| is provided, this method will update this dictionary
+      rather than creating a new one to return.
+    - if |seen_entities| is provided, this method will skip over any entities
+      found in |all_entities| that are also present in |seen_entities|.
+    """
+    if entities_of_type is None:
+        entities_of_type = defaultdict(list)
+    if seen_entities is None:
+        seen_entities = set()
+
+    for entity in all_entities:
+        if id(entity) in seen_entities:
+            continue
+        seen_entities.add(id(entity))
+        entity_cls = entity.__class__
+        if entity_cls not in entities_of_type:
+            entities_of_type[entity_cls] = []
+        entities_of_type[entity_cls].append(entity)
+        for child_name in get_set_entity_field_names(
+                entity, EntityFieldType.FORWARD_EDGE):
+            child_list = entity.get_field_as_list(child_name)
+            get_entities_by_type(child_list, entities_of_type, seen_entities)
+
+    return entities_of_type
+
+
+def is_standalone_class(cls: Type[DatabaseEntity]) -> bool:
+    """Returns True if the provided cls is a class that can exist separate
+    from a StatePerson tree.
+    """
+    return 'person_id' not in cls.get_column_property_names()
+
+
+def is_standalone_entity(entity: DatabaseEntity) -> bool:
+    """Returns True if the provided entity is an instance of a class that
+    can exist separate from a StatePerson tree.
+    """
+    return is_standalone_class(entity.__class__)
+
+
+def log_entity_count(db_persons: List[schema.StatePerson]):
+    """Counts and logs the total number of entities of each class included in
+    the |db_persons| trees.
+    """
+    entities_by_type = get_entities_by_type(db_persons)
+    debug_msg = 'Entity counter\n'
+    for cls, entities_of_cls in entities_by_type.items():
+        debug_msg += f'{str(cls.__name__)}: {str(len(entities_of_cls))}\n'
+    logging.info(debug_msg)

@@ -18,7 +18,7 @@
 entities."""
 import logging
 from collections import defaultdict
-from typing import List, cast, Optional, Set, Type, Dict, Sequence
+from typing import List, cast, Optional, Set, Type, Dict
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -37,7 +37,7 @@ from recidiviz.persistence.database.schema_utils import \
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import \
     EntityFieldType, is_placeholder, \
-    get_set_entity_field_names
+    get_set_entity_field_names, SchemaEdgeDirectionChecker
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
@@ -397,16 +397,19 @@ def get_external_ids_from_entity(entity: DatabaseEntity):
 
 
 def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
-    return [schema.StateCharge,
-            schema.StateCourtCase,
-            schema.StateAgent,
-            schema.StateIncarcerationPeriod,
-            schema.StateSupervisionPeriod,
-            schema.StateProgramAssignment,
-            schema.StateCharge,
-            schema.StateParoleDecision,
-            schema.StateSupervisionViolationResponse,
-            schema.StateSupervisionViolation]
+    cls_list: List[Type[DatabaseEntity]] = [
+        schema.StateCharge,
+        schema.StateCourtCase,
+        schema.StateIncarcerationPeriod,
+        schema.StateParoleDecision,
+        schema.StateSupervisionPeriod,
+        schema.StateSupervisionViolation,
+        schema.StateSupervisionViolationResponse,
+        schema.StateProgramAssignment,
+        schema.StateAgent]
+    direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+    direction_checker.assert_sorted(cls_list)
+    return cls_list
 
 
 def get_all_entities_of_cls(
@@ -588,43 +591,3 @@ def read_persons_by_root_entity_cls(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
-
-
-def is_standalone_class(cls: Type[DatabaseEntity]) -> bool:
-    """Returns True if the provided cls is a class that can exist separate
-    from a StatePerson tree.
-    """
-    return 'person_id' not in cls.get_column_property_names()
-
-
-def is_standalone_entity(entity: DatabaseEntity) -> bool:
-    """Returns True if the provided entity is an instance of a class that
-    can exist separate from a StatePerson tree.
-    """
-    return is_standalone_class(entity.__class__)
-
-
-def log_entity_count(db_persons: List[schema.StatePerson]):
-    """Counts and logs the total number of entities of each class included in
-    the |db_persons| trees.
-    """
-    entity_counter: Dict[str, int] = {}
-    _count_entities(db_persons, entity_counter)
-    debug_msg = 'Entity counter\n'
-    for k, v in entity_counter.items():
-        debug_msg += f'{str(k)}: {str(v)}\n'
-    logging.info(debug_msg)
-
-
-def _count_entities(
-        all_entities: Sequence[DatabaseEntity],
-        entity_counter: Dict[str, int]) -> Dict:
-    for entity in all_entities:
-        name = entity.get_entity_name()
-        count = entity_counter.get(name, 0)
-        entity_counter[name] = count + 1
-        for child_name in get_set_entity_field_names(
-                entity, EntityFieldType.FORWARD_EDGE):
-            child_list = entity.get_field_as_list(child_name)
-            _count_entities(child_list, entity_counter)
-    return entity_counter
