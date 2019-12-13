@@ -1002,6 +1002,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
         Optional[StateSupervisionViolationResponseRevocationType] = \
         attr.ib()
     revocation_type_raw_text: Optional[str] = attr.ib()
+    is_draft: Optional[bool] = attr.ib()
 
     #   - Who
     # See SupervisionViolationResponders below

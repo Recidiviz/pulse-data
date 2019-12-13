@@ -1972,6 +1972,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     deciding_body_type = \
         Column(state_supervision_violation_response_deciding_body_type)
     deciding_body_type_raw_text = Column(String(255))
+    is_draft = Column(Boolean)
 
     @declared_attr
     def supervision_violation_id(self):

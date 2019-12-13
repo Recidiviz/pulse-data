@@ -51,3 +51,8 @@ keys_to_ignore:
   - CZ$TCR  # Unused - Time Created (CZ$* cols)
   - CZ$DLU  # Unused - Date Last Updated (CZ$* cols)
   - CZ$TLU  # Unused - Time Last Updated (CZ$* cols)
+  - E6$DOC  # Unused - Duplicate of BY$DOC
+  - E6$CYC  # Unused - Duplicate of BY$CYC
+  - E6$DOS  # Unused - Duplicate of BY$VSN
+  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
+  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)

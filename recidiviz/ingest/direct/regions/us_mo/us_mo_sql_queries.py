@@ -559,6 +559,30 @@ TAK158_TAK024_TAK026_SUPERVISION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     ORDER BY BU$DOC, BU$CYC, BU$SEO, F1$SQN;
     """
 
+TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
+    """
+        -- Finally formed documents are ones which are no longer in a draft
+        -- state.
+        SELECT 
+            finally_formed_documents_e6.E6$DOC, 
+            finally_formed_documents_e6.E6$CYC, 
+            finally_formed_documents_e6.E6$DOS, 
+            MAX(finally_formed_documents_e6.E6$DCR) as final_formed_create_date, 
+            MAX(finally_formed_documents_e6.E6$DLU) as final_formed_update_date  
+        FROM 
+            LBAKRDTA.TAK142 finally_formed_documents_e6
+        WHERE 
+            finally_formed_documents_e6.E6$DON = '{document_type_code}'
+        GROUP BY 
+            finally_formed_documents_e6.E6$DOC, 
+            finally_formed_documents_e6.E6$CYC, 
+            finally_formed_documents_e6.E6$DOS"""
+
+FINALLY_FORMED_CITATIONS_E6 = \
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIT')
+FINALLY_FORMED_VIOLATIONS_E6 = \
+    TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIF')
+
 TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     f"""
     -- tak028_tak042_tak076_tak024_violation_reports
@@ -613,7 +637,12 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
                 sentence_xref_with_probation_info_cz_bu.BU$PBT != 'INV' 
                 AND sentence_xref_with_probation_info_cz_bu.BU$PBT != 'SIS'
             )
-    )
+    ),
+    finally_formed_violations_e6 AS(
+        -- Finally formed violation reports. As we've filtered for just 
+        -- violation reports, DOS in this table is equivalent to VSN in other 
+        -- tables.
+        {FINALLY_FORMED_VIOLATIONS_E6})
     SELECT 
         * 
     FROM 
@@ -630,11 +659,23 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
         violation_reports_by.BY$DOC = valid_sentences_cz.CZ$DOC
         AND violation_reports_by.BY$CYC = valid_sentences_cz.CZ$CYC
         AND violation_reports_by.BY$VSN = valid_sentences_cz.CZ$VSN
+    LEFT JOIN
+        finally_formed_violations_e6
+    ON 
+        violation_reports_by.BY$DOC = finally_formed_violations_e6.E6$DOC
+        AND violation_reports_by.BY$CYC = finally_formed_violations_e6.E6$CYC
+        AND violation_reports_by.BY$VSN = finally_formed_violations_e6.E6$DOS
     WHERE
-        MAX(conditions_violated_cf.UPDATE_DT, conditions_violated_cf.CREATE_DT, violation_reports_by.BY$DLU, violation_reports_by.BY$DCR, valid_sentences_cz.CZ$DLU, valid_sentences_cz.CZ$DCR) >= {lower_bound_update_date}
+        MAX(conditions_violated_cf.UPDATE_DT, 
+            conditions_violated_cf.CREATE_DT, 
+            violation_reports_by.BY$DLU, 
+            violation_reports_by.BY$DCR, 
+            valid_sentences_cz.CZ$DLU, 
+            valid_sentences_cz.CZ$DCR,
+            finally_formed_violations_e6.final_formed_create_date,
+            finally_formed_violations_e6.final_formed_update_date) >= {lower_bound_update_date}
     ORDER BY BY$DOC, BY$CYC, BY$VSN;
     """
-
 
 TAK291_TAK292_TAK024_CITATIONS = \
     f"""
@@ -691,7 +732,12 @@ TAK291_TAK292_TAK024_CITATIONS = \
             citations_jt.JT$DOC, 
             citations_jt.JT$CYC, 
             citations_jt.JT$CSQ 
-    )
+    ),
+    finally_formed_citations_e6 AS(
+        -- Finally formed citations. As we've filtered for just citations 
+        -- DOS in this table is equivalent to CSQ in other tables.
+        {FINALLY_FORMED_CITATIONS_E6})
+
     SELECT 
         *
     FROM 
@@ -702,8 +748,19 @@ TAK291_TAK292_TAK024_CITATIONS = \
         citations_with_multiple_violations_jt.JT$DOC = valid_sentences_js.JS$DOC
         AND citations_with_multiple_violations_jt.JT$CYC = valid_sentences_js.JS$CYC
         AND citations_with_multiple_violations_jt.JT$CSQ = valid_sentences_js.JS$CSQ
+    LEFT JOIN
+        finally_formed_citations_e6
+    ON 
+        citations_with_multiple_violations_jt.JT$DOC = finally_formed_citations_e6.E6$DOC
+        AND citations_with_multiple_violations_jt.JT$CYC = finally_formed_citations_e6.E6$CYC
+        AND citations_with_multiple_violations_jt.JT$CSQ = finally_formed_citations_e6.E6$DOS
     WHERE
-        MAX(citations_with_multiple_violations_jt.UPDATE_DT, citations_with_multiple_violations_jt.CREATE_DT, valid_sentences_js.JS$DLU, valid_sentences_js.JS$DCR) >= {lower_bound_update_date}
+        MAX(citations_with_multiple_violations_jt.UPDATE_DT, 
+            citations_with_multiple_violations_jt.CREATE_DT, 
+            valid_sentences_js.JS$DLU, 
+            valid_sentences_js.JS$DCR,
+            finally_formed_citations_e6.final_formed_create_date,
+            finally_formed_citations_e6.final_formed_update_date) >= {lower_bound_update_date}
     ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
 

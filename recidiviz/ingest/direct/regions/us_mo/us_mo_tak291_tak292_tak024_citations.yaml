@@ -23,3 +23,8 @@ keys_to_ignore:
   - JS$FSO  # Field Sentence Sequence Number - Handled manually in controller
   - JS$DCR  # Unused - Date Created (JS$* cols)
   - JS$DLU  # Unused - Date Last Updated (JS$* cols)
+  - E6$DOC  # Unused - Duplicate of JT$DOC
+  - E6$CYC  # Unused - Duplicate of JT$CYC
+  - E6$DOS  # Unused - Duplicate of JT$CSQ
+  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
+  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)
