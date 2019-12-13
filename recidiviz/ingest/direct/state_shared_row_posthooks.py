@@ -257,3 +257,45 @@ def gen_convert_person_ids_to_external_id_objects(
                     id_type=id_type)
 
     return _convert_person_ids_to_external_id_objects
+
+
+def _concatenate_col_values(row: Dict[str, str],
+                            cols: List[str],
+                            separator: str = '-') -> str:
+    values = []
+    for col in cols:
+        col_value = row.get(col, None)
+        if col_value:
+            values.append(col_value)
+    return separator.join(values)
+
+
+def gen_set_field_as_concatenated_values_hook(
+        obj_cls: Type[IngestObject],
+        field_name: str,
+        cols_to_concatenate: List[str]):
+    """
+    Generates a row post-hook that sets a field on all extracted objects of a
+    certain type by concatenating the values of |cols_to_concatenate| with a '-'
+    separator.
+
+    Notes:
+    1) The values will be concatenated in the same order as their respective
+        columns in cols_to_concatenate
+    2) None or empty string values will be omitted from the concatenation.
+
+    """
+
+    def set_field_as_concatenated_values_hook(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache
+    ):
+        field_value = _concatenate_col_values(row, cols_to_concatenate)
+        for obj in extracted_objects:
+            if isinstance(obj, obj_cls):
+                obj.__setattr__(field_name,
+                                field_value)
+
+    return set_field_as_concatenated_values_hook
