@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecision, \
     StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecidingBodyType
-from recidiviz.common.str_field_utils import normalize, parse_date
+from recidiviz.common.str_field_utils import normalize, parse_date, parse_bool
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import \
     StateSupervisionViolationResponse
@@ -72,3 +72,4 @@ def copy_fields_to_builder(
     new.response_date = fn(parse_date, 'response_date', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
+    new.is_draft = fn(parse_bool, 'is_draft', proto)

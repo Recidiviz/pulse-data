@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_MO."""
-import datetime
 from typing import Optional, List, Callable, Dict, Type
+import datetime
+import logging
+import re
 
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -489,6 +491,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violation_type_on_violation,
                 self._set_recommendations_on_violation_response,
                 self._set_violation_response_id_from_violation,
+                self._set_finally_formed_date_on_response,
             ],
             'tak291_tak292_tak024_citations': [
                 self._gen_violation_response_type_posthook(
@@ -496,6 +499,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_deciding_body_as_supervising_officer,
                 self._set_violated_conditions_on_violation,
                 self._set_violation_response_id_from_violation,
+                self._set_finally_formed_date_on_response,
             ],
         }
 
@@ -721,6 +725,32 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 for response in obj.state_supervision_violation_responses:
                     response.state_supervision_violation_response_id = \
                         violation_id
+
+    @classmethod
+    def _set_finally_formed_date_on_response(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Finally formed documents are the ones that are no longer in a draft
+        state.
+
+        Updates the SupervisionViolationResponses in |extracted_objects| based
+        on whether or not a finally formed date is present in the given |row|.
+        """
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                julian_date_str = row.get(
+                    'FINAL_FORMED_CREATE_DATE', None)
+                finally_formed_date = cls.mo_julian_date_to_iso(julian_date_str)
+
+                for response in obj.state_supervision_violation_responses:
+                    is_draft = True
+                    if finally_formed_date:
+                        response.response_date = finally_formed_date
+                        is_draft = False
+                    response.is_draft = str(is_draft)
 
     @classmethod
     def _set_violated_conditions_on_violation(
@@ -1310,3 +1340,33 @@ class UsMoController(CsvGcsfsDirectIngestController):
             return str(int(total_days))
         except ValueError:
             return time_string
+
+    JULIAN_DATE_STR_REGEX = re.compile(r'(\d?\d\d)(\d\d\d)')
+
+    @classmethod
+    def mo_julian_date_to_iso(cls, julian_date_str: Optional[str]) \
+            -> Optional[str]:
+        """
+        Parse julian-formatted date strings used by MO in a number of DB
+        fields that encode a date using the number of years since 1900
+        concatenated with the number of days since Jan 1 of that year
+        (1-indexed). Returns the date in ISO date format.
+
+        E.g.:
+             85001 -> 1985-01-01
+            118365 -> 2018-12-31
+        """
+        if not julian_date_str or int(julian_date_str) == 0:
+            return None
+
+        match = re.match(cls.JULIAN_DATE_STR_REGEX, julian_date_str)
+        if match is None:
+            logging.warning("Could not parse MO date [%s]", julian_date_str)
+            return None
+
+        years_since_1900 = int(match.group(1))
+        days_since_jan_1 = int(match.group(2)) - 1
+
+        date = datetime.date(year=(years_since_1900 + 1900), month=1, day=1) + \
+            datetime.timedelta(days=days_since_jan_1)
+        return date.isoformat()
