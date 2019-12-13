@@ -1,9 +1,7 @@
 key_mappings:
   F1$CTC: state_supervision_period.supervision_type
   SUB_SUBCYCLE_START_DT: state_supervision_period.start_date
-  START_STATUS_CODE: state_supervision_period.admission_reason
   SUB_SUBCYCLE_END_DT: state_supervision_period.termination_date
-  END_STATUS_CODE: state_supervision_period.termination_reason
 
 
 # Primary key overridden in controller, with the format: DOC-CYC-SQN-START_STATUS_SEQ_NUM
@@ -39,7 +37,9 @@ keys_to_ignore:
   - DOC     # Unused - Duplicate of BT$DOC
   - CYC     # Unused - Duplicate of BT$CYC
   - SQN     # Unused - Duplicate of BT$SQN
+  - START_STATUS_CODE     # Copied when relevant from F1$ORC - Handled manually in the controller
   - START_STATUS_SUBTYPE  # Copied when relevant from F1$OPT - Handled manually in the controller
+  - END_STATUS_CODE       # Copied when relevant from F1$CPT - Handled manually in the controller
   - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller
   - START_STATUS_SEQ_NUM  # Populated when valid from BW$SSO - Handled manually in the controller
   - END_STATUS_SEQ_NUM    # Populated when valid from BW$SSO - Handled manually in the controller

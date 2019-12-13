@@ -1,8 +1,6 @@
 key_mappings:
   SUB_SUBCYCLE_START_DT: state_incarceration_period.admission_date
-  START_STATUS_CODE: state_incarceration_period.admission_reason
   SUB_SUBCYCLE_END_DT: state_incarceration_period.release_date
-  END_STATUS_CODE: state_incarceration_period.release_reason
   F1$PFI: state_incarceration_period.specialized_purpose_for_incarceration
 
 # Primary key overridden in controller, with the format: DOC-CYC-SQN-START_STATUS_SEQ_NUM
@@ -24,7 +22,7 @@ keys_to_ignore:
   - F1$SST  # Unused - Subcycle Status (Field, Institution, or Out of State) - Guaranteed to be 'I' by the source query
   - F1$CD   # Unused - Subcycle Start Date - SUB_SUBCYCLE_START_DT used instead
   - F1$ORC  # Unused - Subcycle Reason for Opening - START_STATUS_CODE used instead
-  - F1$OPT  # Open Reason Type - Handled manually in the controller
+  - F1$OPT  # Unused - Open Reason Type - START_STATUS_SUBTYPE used instead
   - F1$ARC  # Action Reason Code - Handled manually in the controller
   - F1$CTO  # Unused - Case Type (Opening)
   - F1$CTC  # Unused - Case Type (Current)
@@ -38,7 +36,9 @@ keys_to_ignore:
   - DOC     # Unused - Duplicate of BT$DOC
   - CYC     # Unused - Duplicate of BT$CYC
   - SQN     # Unused - Duplicate of BT$SQN
+  - START_STATUS_CODE     # Copied when relevant from F1$ORC - Handled manually in the controller
   - START_STATUS_SUBTYPE  # Copied when relevant from F1$OPT - Handled manually in the controller
+  - END_STATUS_CODE       # Copied when relevant from F1$CPT - Handled manually in the controller
   - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller
   - START_STATUS_SEQ_NUM  # Populated when valid from BW$SSO - Handled manually in the controller
   - END_STATUS_SEQ_NUM    # Populated when valid from BW$SSO - Handled manually in the controller
