@@ -83,6 +83,22 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsMoController
 
+    def test_parse_mo_julian_date(self):
+        self.assertEqual(UsMoController.mo_julian_date_to_iso(''),
+                         None)
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('0'),
+                         None)
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('99001'),
+                         '1999-01-01')
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('99365'),
+                         '1999-12-31')
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('100001'),
+                         '2000-01-01')
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('115104'),
+                         '2015-04-14')
+        self.assertEqual(UsMoController.mo_julian_date_to_iso('118365'),
+                         '2018-12-31')
+
     def test_populate_data_tak001_offender_identification(self):
         expected = IngestInfo(
             state_people=[
@@ -1256,7 +1272,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '110035-20040712-R1-1-1',
                                     response_type='VIOLATION_REPORT',
-                                    response_date='20050102',
+                                    response_date='2005-01-11',
+                                    is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
@@ -1296,7 +1313,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '110035-20040712-R2-1-1',
                                     response_type='VIOLATION_REPORT',
-                                    response_date='20060102',
+                                    is_draft='False',
+                                    response_date='2006-01-11',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )
                             ]
@@ -1332,7 +1350,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '110035-20040712-R2-2-1',
                                     response_type='VIOLATION_REPORT',
-                                    response_date='20060102',
+                                    is_draft='False',
+                                    response_date='2006-01-11',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )
                             ]
@@ -1366,6 +1385,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     response_type='VIOLATION_REPORT',
                                     state_supervision_violation_response_id=
                                     '910324-19890825-R1-1-0',
+                                    is_draft='True',
                                     response_date='20090416',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     supervision_violation_response_decisions=[
@@ -1400,6 +1420,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     response_type='VIOLATION_REPORT',
                                     state_supervision_violation_response_id=
                                     '910324-19890825-R1-1-1',
+                                    is_draft='True',
                                     response_date='20090416',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     supervision_violation_response_decisions=[
@@ -1465,6 +1486,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     '110035-20040712-C1-1-1',
                                     response_type='CITATION',
                                     response_date='20130210',
+                                    is_draft='True',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )])])])
         sss_110035_20040712_2 = StateSupervisionSentence(
@@ -1489,6 +1511,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     '110035-20040712-C1-2-2',
                                     response_type='CITATION',
                                     response_date='20130210',
+                                    is_draft='True',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )])])])
         sis_910324_19890825_1 = StateIncarcerationSentence(
@@ -1509,7 +1532,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '910324-19890825-C1-1-0',
                                     response_type='CITATION',
-                                    response_date='20001010',
+                                    response_date='2001-01-01',
+                                    is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )
                             ]
@@ -3053,7 +3077,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R1',
-                response_date=datetime.date(year=2005, month=1, day=2),
+                response_date=datetime.date(year=2005, month=1, day=11),
+                is_draft=False,
                 supervision_violation=ssv_110035_20040712_r1_1,
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -3127,7 +3152,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R2',
-                response_date=datetime.date(year=2006, month=1, day=2),
+                response_date=datetime.date(year=2006, month=1, day=11),
+                is_draft=False,
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_type_raw_text='VIOLATION_REPORT',
@@ -3219,6 +3245,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
                 response_date=datetime.date(year=2009, month=4, day=16),
+                is_draft=True,
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_type_raw_text='VIOLATION_REPORT',
@@ -3310,6 +3337,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-C1',
                 response_date=datetime.date(year=2013, month=2, day=10),
+                is_draft=True,
                 supervision_violation=ssv_110035_20040712_c1,
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 response_type_raw_text='CITATION',
@@ -3368,7 +3396,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-C1',
-                response_date=datetime.date(year=2000, month=10, day=10),
+                response_date=datetime.date(year=2001, month=1, day=1),
+                is_draft=False,
                 supervision_violation=ssv_910324_19890825_c1_1,
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 response_type_raw_text='CITATION',

@@ -465,9 +465,10 @@ message StateSupervisionViolationResponse {
     optional string decision = 5;
     optional string revocation_type = 6;
     optional string deciding_body_type = 7;
+    optional string is_draft = 8;
 
-    repeated string decision_agent_ids = 8;
-    repeated string state_supervision_violation_response_decision_entry_ids = 9;
+    repeated string decision_agent_ids = 9;
+    repeated string state_supervision_violation_response_decision_entry_ids = 10;
 }
 
 message StateAgent {

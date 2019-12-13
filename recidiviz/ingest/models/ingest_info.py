@@ -1591,7 +1591,7 @@ class StateSupervisionViolationResponse(IngestObject):
     def __init__(self, state_supervision_violation_response_id=None,
                  response_type=None, response_date=None, state_code=None,
                  decision=None, revocation_type=None, deciding_body_type=None,
-                 supervision_violation_response_decisions=None,
+                 is_draft=None, supervision_violation_response_decisions=None,
                  decision_agents=None):
         self.state_supervision_violation_response_id: Optional[str] = \
             state_supervision_violation_response_id
@@ -1601,6 +1601,7 @@ class StateSupervisionViolationResponse(IngestObject):
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
+        self.is_draft: Optional[str] = is_draft
         self.state_supervision_violation_response_decisions: \
             List[StateSupervisionViolationResponseDecisionEntry] = \
             supervision_violation_response_decisions or []

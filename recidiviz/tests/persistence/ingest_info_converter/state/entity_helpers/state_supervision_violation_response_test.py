@@ -45,7 +45,8 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             deciding_body_type='PAROLE_BOARD',
             state_supervision_violation_response_id='RESPONSE_ID',
             response_date='1/2/2111',
-            state_code='us_nd'
+            state_code='us_nd',
+            is_draft='True',
         )
 
         # Act
@@ -70,7 +71,8 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             deciding_body_type_raw_text='PAROLE_BOARD',
             external_id='RESPONSE_ID',
             response_date=date(year=2111, month=1, day=2),
-            state_code='US_ND'
+            state_code='US_ND',
+            is_draft=True,
         )
 
         self.assertEqual(result, expected_result)
