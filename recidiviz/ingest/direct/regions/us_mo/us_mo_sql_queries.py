@@ -365,7 +365,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             ROW_NUMBER() OVER (
                 PARTITION BY DOC, CYC, SQN 
                 ORDER BY 
-                    /* Order open edges, then parition edges, then close edges */
+                    /* Order open edges, then partition edges, then close edges */
                     SUBCYCLE_DATE_TYPE,
                     /* Orders edges by date (open edges and close edges will 
                        already come first and last, respectively */
