@@ -682,18 +682,18 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-19890901-1-0',
             status='NOT_IN_CUSTODY',
             admission_date='19890901',
-            admission_reason='NA',
+            admission_reason='NA-CT',
             release_date='19921006',
-            release_reason='IT',
+            release_reason='IT-EM',
             specialized_purpose_for_incarceration='S',
         )
         ip_110035_19890901_3_0 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-19890901-3-0',
             status='NOT_IN_CUSTODY',
             admission_date='19930701',
-            admission_reason='PAROLE_REVOCATION',
+            admission_reason='FT-BP',
             release_date='19931102',
-            release_reason='IT',
+            release_reason='IT-BP',
             specialized_purpose_for_incarceration='I',
             source_supervision_violation_response=vr_110035_19890901_3
         )
@@ -701,9 +701,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-19890901-5-0',
             status='NOT_IN_CUSTODY',
             admission_date='19940609',
-            admission_reason='PAROLE_REVOCATION',
+            admission_reason='FT-BP',
             release_date='19950206',
-            release_reason='IT',
+            release_reason='IT-BD',
             specialized_purpose_for_incarceration='S',
             source_supervision_violation_response=vr_110035_19890901_5
         )
@@ -712,9 +712,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-2-0',
             status='NOT_IN_CUSTODY',
             admission_date='20010420',
-            admission_reason='PROBATION_REVOCATION',
+            admission_reason='FT-PB',
             release_date='20121102',
-            release_reason='IT',
+            release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
             source_supervision_violation_response=vr_110035_20010414_2
         )
@@ -722,18 +722,18 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-4-0',
             status='NOT_IN_CUSTODY',
             admission_date='20130521',
-            admission_reason='IB',
+            admission_reason='IB-BP',
             release_date='20131127',
-            release_reason='IT',
+            release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
         )
         ip_110035_20010414_7_0 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-20010414-7-0',
             status='NOT_IN_CUSTODY',
             admission_date='20160328',
-            admission_reason='IB',
+            admission_reason='IB-BH',
             release_date='20161011',
-            release_reason='ID',
+            release_reason='ID-DR',
             specialized_purpose_for_incarceration='S',
         )
 
@@ -791,7 +791,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '310261-19890821-1-0',
                                                 status='IN_CUSTODY',
                                                 admission_date='19900329',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 specialized_purpose_for_incarceration='S',
                                             )
                                         ]
@@ -818,9 +818,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '710448-20010414-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='20010705',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 release_date='20020117',
-                                                release_reason='IT',
+                                                release_reason='IT-EM',
                                                 specialized_purpose_for_incarceration='S',
                                             )
                                         ]
@@ -834,9 +834,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '710448-20010414-3-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='20020912',
-                                                admission_reason='PAROLE_REVOCATION',
+                                                admission_reason='FT-BP',
                                                 release_date='20040928',
-                                                release_reason='IT',
+                                                release_reason='IT-BP',
                                                 specialized_purpose_for_incarceration='S',
                                                 source_supervision_violation_response=vr_710448_20010414_3,
                                             )
@@ -864,9 +864,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '910324-19890825-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 release_date='20081115',
-                                                release_reason='IE',
+                                                release_reason='IE-IE',
                                                 specialized_purpose_for_incarceration='O',
                                             )
                                         ]
@@ -893,7 +893,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '523523-19890617-1-0',
                                                 status='IN_CUSTODY',
                                                 admission_date='19890617',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 specialized_purpose_for_incarceration='S',
                                             )
                                         ]
@@ -920,9 +920,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '867530-19970224-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19970224',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 release_date='20161031',
-                                                release_reason='EXECUTION',
+                                                release_reason='DE-EX',
                                                 specialized_purpose_for_incarceration='S',
                                             )
                                         ]
@@ -944,9 +944,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_type='BP',
             status='TERMINATED',
             start_date='19921006',
-            admission_reason='IT',
+            admission_reason='IT-EM',
             termination_date='19930701',
-            termination_reason='BP'
+            termination_reason='BP-FT'
         )
         sp_110035_19890901_4_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-4-0',
@@ -955,7 +955,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='19931102',
             admission_reason='IT',
             termination_date='19940609',
-            termination_reason='BP'
+            termination_reason='BP-FT'
         )
         sp_110035_19890901_6_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-6-0',
@@ -964,7 +964,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='19950206',
             admission_reason='IT',
             termination_date='19950323',
-            termination_reason='DC'
+            termination_reason='DC-DC'
         )
 
         sp_110035_20010414_1_0 = StateSupervisionPeriod(
@@ -974,7 +974,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20010414',
             admission_reason='NA',
             termination_date='20010420',
-            termination_reason='RV'
+            termination_reason='RV-FT'
         )
         sp_110035_20010414_3_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-3-0',
@@ -983,7 +983,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20121102',
             admission_reason='IT',
             termination_date='20130521',
-            termination_reason='RT'
+            termination_reason='RT-BH'
         )
         sp_110035_20010414_5_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-5-0',
@@ -992,7 +992,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20131127',
             admission_reason='IT',
             termination_date='20150706',
-            termination_reason='FA'
+            termination_reason='FA-FA'
         )
         sp_110035_20010414_6_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-20010414-6-0',
@@ -1001,7 +1001,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20160328',
             admission_reason='CI',
             termination_date='20160328',
-            termination_reason='RT'
+            termination_reason='RT-BH'
         )
 
         expected = IngestInfo(state_people=[
@@ -1060,9 +1060,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 status='TERMINATED',
                                                 supervision_type='BP',
                                                 start_date='20020117',
-                                                admission_reason='IT',
+                                                admission_reason='IT-EM',
                                                 termination_date='20020912',
-                                                termination_reason='BP'
+                                                termination_reason='BP-FT'
                                             )
                                         ]
                                     ),
@@ -1078,7 +1078,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 start_date='20040928',
                                                 admission_reason='IT',
                                                 termination_date='20060911',
-                                                termination_reason='DC'
+                                                termination_reason='DC-DC'
                                             )
                                         ]
                                     ),
@@ -1167,9 +1167,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '910324-19890825-1-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
-                                                admission_reason='NA',
+                                                admission_reason='NA-CT',
                                                 release_date='20081115',
-                                                release_reason='IE',
+                                                release_reason='IE-IE',
                                                 specialized_purpose_for_incarceration='O',
                                             )
                                         ]
@@ -1229,7 +1229,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 start_date='20050909',
                                                 admission_reason='65N9500',
                                                 termination_date='20080119',
-                                                termination_reason='DC'
+                                                termination_reason='DC-DC'
                                             )
                                         ]
                                     )
@@ -2291,11 +2291,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1989, month=9, day=1),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 release_date=datetime.date(year=1992, month=10, day=6),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-EM',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
@@ -2311,11 +2311,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1993, month=7, day=1),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='PAROLE_REVOCATION',
+                admission_reason_raw_text='FT-BP',
                 release_date=datetime.date(year=1993, month=11, day=2),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-BP',
                 specialized_purpose_for_incarceration=
                 StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
                 specialized_purpose_for_incarceration_raw_text='I',
@@ -2352,11 +2352,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1994, month=6, day=9),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='PAROLE_REVOCATION',
+                admission_reason_raw_text='FT-BP',
                 release_date=datetime.date(year=1995, month=2, day=6),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-BD',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
@@ -2397,11 +2397,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2001, month=4, day=20),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                admission_reason_raw_text='PROBATION_REVOCATION',
+                admission_reason_raw_text='FT-PB',
                 release_date=datetime.date(year=2012, month=11, day=2),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-BP',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
@@ -2432,11 +2432,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2013, month=5, day=21),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='IB',
+                admission_reason_raw_text='IB-BP',
                 release_date=datetime.date(year=2013, month=11, day=27),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-BP',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
@@ -2451,11 +2451,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2016, month=3, day=28),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='IB',
+                admission_reason_raw_text='IB-BH',
                 release_date=datetime.date(year=2016, month=10, day=11),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                release_reason_raw_text='ID',
+                release_reason_raw_text='ID-DR',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
@@ -2476,7 +2476,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1990, month=3, day=29),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_310261,
                 incarceration_sentences=[sis_310261_19890821_3]
@@ -2493,11 +2493,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2001, month=7, day=5),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 release_date=datetime.date(year=2002, month=1, day=17),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-EM',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_1]
@@ -2514,11 +2514,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2002, month=9, day=12),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='PAROLE_REVOCATION',
+                admission_reason_raw_text='FT-BP',
                 release_date=datetime.date(year=2004, month=9, day=28),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT',
+                release_reason_raw_text='IT-BP',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_3]
@@ -2555,11 +2555,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1989, month=10, day=23),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 release_date=datetime.date(year=2008, month=11, day=15),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.ESCAPE,
-                release_reason_raw_text='IE',
+                release_reason_raw_text='IE-IE',
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
                 specialized_purpose_for_incarceration_raw_text='O',
                 person=person_910324,
@@ -2606,7 +2606,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1989, month=6, day=17),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_523523,
                 incarceration_sentences=[sis_523523_19890617_1],
@@ -2654,10 +2654,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1997, month=2, day=24),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='NA',
+                admission_reason_raw_text='NA-CT',
                 release_date=datetime.date(year=2016, month=10, day=31),
                 release_reason=StateIncarcerationPeriodReleaseReason.EXECUTION,
-                release_reason_raw_text='EXECUTION',
+                release_reason_raw_text='DE-EX',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_867530,
                 incarceration_sentences=[sis_867530_19970224_1],
@@ -2689,11 +2689,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 start_date=datetime.date(year=1992, month=10, day=6),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-                admission_reason_raw_text='IT',
+                admission_reason_raw_text='IT-EM',
                 termination_date=datetime.date(year=1993, month=7, day=1),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='BP',
+                termination_reason_raw_text='BP-FT',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2712,7 +2712,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=1994, month=6, day=9),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='BP',
+                termination_reason_raw_text='BP-FT',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2731,7 +2731,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=1995, month=3, day=23),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                termination_reason_raw_text='DC',
+                termination_reason_raw_text='DC-DC',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_19890901_1]
             )
@@ -2756,7 +2756,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2001, month=4, day=20),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='RV',
+                termination_reason_raw_text='RV-FT',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2775,7 +2775,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2013, month=5, day=21),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='RT',
+                termination_reason_raw_text='RT-BH',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2794,7 +2794,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2015, month=7, day=6),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.ABSCONSION,
-                termination_reason_raw_text='FA',
+                termination_reason_raw_text='FA-FA',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2813,7 +2813,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2016, month=3, day=28),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='RT',
+                termination_reason_raw_text='RT-BH',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
@@ -2835,11 +2835,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 start_date=datetime.date(year=2002, month=1, day=17),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-                admission_reason_raw_text='IT',
+                admission_reason_raw_text='IT-EM',
                 termination_date=datetime.date(year=2002, month=9, day=12),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='BP',
+                termination_reason_raw_text='BP-FT',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_1]
             )
@@ -2860,7 +2860,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2006, month=9, day=11),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                termination_reason_raw_text='DC',
+                termination_reason_raw_text='DC-DC',
                 person=person_710448,
                 incarceration_sentences=[sis_710448_20010414_3]
             )
@@ -3008,7 +3008,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 termination_date=datetime.date(year=2008, month=1, day=19),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                termination_reason_raw_text='DC',
+                termination_reason_raw_text='DC-DC',
                 person=person_110035,
                 supervision_sentences=[sss_110035_20040712_1]
             )
