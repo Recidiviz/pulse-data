@@ -1167,6 +1167,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_period_117111 = StateSupervisionPeriod(
             state_supervision_period_id=
             '117111',
+            supervision_type='Parole',
             start_date='7/17/2014',
             termination_date='12/8/2014',
             termination_reason='9',
@@ -1178,6 +1179,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_period_140408 = StateSupervisionPeriod(
             state_supervision_period_id=
             '140408',
+            supervision_type='Suspended',
             start_date='3/24/2017',
             termination_date='2/27/2018',
             termination_reason='9',
@@ -1189,6 +1191,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_period_147777 = StateSupervisionPeriod(
             state_supervision_period_id=
             '147777',
+            supervision_type='Suspended',
             start_date='3/24/2013',
             termination_date='2/27/2016',
             termination_reason='9',
@@ -1217,6 +1220,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                                 state_supervision_period_id=
                                                 '117110',
                                                 start_date='7/17/2014',
+                                                supervision_type='Parole',
                                                 county_code='US_ND_CASS')
                                         ],
                                         state_charges=[
@@ -2850,6 +2854,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 external_id='117110',
                 start_date=datetime.date(year=2014, month=7, day=17),
                 supervising_officer=person_1_supervising_officer,
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 county_code='US_ND_CASS',
@@ -2909,6 +2915,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
                 termination_reason_raw_text='9',
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_type_raw_text='PAROLE',
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 county_code='INVALID',
@@ -2972,6 +2980,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_period_140408 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 external_id='140408',
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='SUSPENDED',
                 start_date=datetime.date(year=2017, month=3, day=24),
                 termination_date=datetime.date(year=2018, month=2, day=27),
                 termination_reason=
@@ -3042,6 +3052,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 external_id='147777',
                 start_date=datetime.date(year=2013, month=3, day=24),
                 termination_date=datetime.date(year=2016, month=2, day=27),
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_type_raw_text='SUSPENDED',
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.REVOCATION,
                 termination_reason_raw_text='9',
