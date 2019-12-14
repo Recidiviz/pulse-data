@@ -464,8 +464,12 @@ def print_entity_tree(entity: CoreEntity, indent: int = 0):
         if child:
             if isinstance(child, list):
                 first_child = next(iter(child))
+                unique = {id(child) for c in child}
+                len_str = f'{len(child)}' \
+                    if len(unique) == len(child) \
+                    else f'{len(child)} - ONLY {len(unique)} UNIQUE!'
                 _print_indented(
-                    f'{child_field}: '
+                    f'{child_field} ({len_str}): '
                     f'[{_obj_id_str(first_child)}, ...] - backedge', indent)
             else:
                 _print_indented(

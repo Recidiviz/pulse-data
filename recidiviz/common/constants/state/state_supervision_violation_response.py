@@ -52,6 +52,9 @@ class StateSupervisionViolationResponseDecision(EntityEnum,
     REVOCATION = \
         state_enum_strings.\
         state_supervision_violation_response_decision_revocation
+    PRIVILEGES_REVOKED = \
+        state_enum_strings.\
+        state_supervision_violation_response_decision_privileges_revoked
     SERVICE_TERMINATION = \
         state_enum_strings.\
         state_supervision_violation_response_decision_service_termination
