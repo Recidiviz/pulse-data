@@ -1023,6 +1023,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self,
             recommendation: str
     ) -> Optional[str]:
+        """Returns a str value of a
+        StateSupervisionViolationResponseRevocationType corresponding to the
+        given recommendation, or None if one does not apply.
+        """
 
         revocation_type = None
         if recommendation in ('A', 'I', 'R'):
@@ -1040,10 +1044,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 StateSupervisionViolationResponseDecision) \
             == StateSupervisionViolationResponseDecision.REVOCATION
 
-        if revocation_type is None and recommendation_is_revocation:
+        if recommendation_is_revocation and not revocation_type:
             raise ValueError(
                 f'Unclassified revocation type for REVOCATION '
                 f'recommendation [{recommendation}]')
+
+        if not recommendation_is_revocation and revocation_type:
+            raise ValueError(
+                f'Non-revocation recommendation [{recommendation}] should not '
+                f'have revocation type [{revocation_type}]')
 
         return revocation_type
 
