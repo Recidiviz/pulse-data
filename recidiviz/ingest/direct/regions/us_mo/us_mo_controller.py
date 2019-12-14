@@ -504,6 +504,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision.DELAYED_ACTION: ['D'],
         StateSupervisionViolationResponseDecision.EXTENSION: ['E'],
         StateSupervisionViolationResponseDecision.SUSPENSION: ['S'],
+        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED: [
+            'RN'  # SIS revoke to SES
+        ],
         StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: ['T'],
     }
 
@@ -528,7 +531,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'IT-FB',  # Institutional Release to Supervision: seems erroneous
         ],
         StateSupervisionViolationResponseDecision: [
-            'RN',     # SIS revoke to SES
             'NOREC',  # No Recommendation
         ],
     }
@@ -976,9 +978,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     create_if_not_exists(
                         vt, obj, 'state_supervision_violation_types')
 
-    @classmethod
     def _set_recommendations_on_violation_response(
-            cls,
+            self,
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
@@ -988,13 +989,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
         """
         recommendation_txt = row.get(SUPERVISION_VIOLATION_RECOMMENDATIONS, '')
         # Return if there is no recommendation, or if the text explicitly refers
-        # to either "No Recommendation" or "SIS revoke to SES".
-        if recommendation_txt == '' or recommendation_txt in ('RN', 'NOREC'):
+        # to either "No Recommendation".
+        if recommendation_txt in ('', 'NOREC'):
             return
 
-        if recommendation_txt == 'CO':
-            # CO is the only recommendation we process that is more than one
-            # letter, and it does not occur with any other recommendations.
+        if recommendation_txt in ('CO', 'RN'):
+            # CO and RN are the only recommendations we process that are more
+            # than one letter, and they do not occur with any other
+            # recommendations.
             recommendations = [recommendation_txt]
         else:
             # If not one of the above recommendations, any number of single
@@ -1005,15 +1007,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionViolation):
                 for response in obj.state_supervision_violation_responses:
                     for recommendation in recommendations:
-                        revocation_type = None
-                        if recommendation in ('A', 'I', 'R'):
-                            revocation_type = \
-                                StateSupervisionViolationResponseRevocationType\
-                                .REINCARCERATION.value
-                        if recommendation == 'CO':
-                            revocation_type = \
-                                StateSupervisionViolationResponseRevocationType\
-                                .TREATMENT_IN_PRISON.value
+                        revocation_type = \
+                            self._revocation_type_str_from_recommendation(
+                                recommendation)
                         rec = \
                             StateSupervisionViolationResponseDecisionEntry(
                                 decision=recommendation,
@@ -1022,6 +1018,34 @@ class UsMoController(CsvGcsfsDirectIngestController):
                             rec,
                             response,
                             'state_supervision_violation_response_decisions')
+
+    def _revocation_type_str_from_recommendation(
+            self,
+            recommendation: str
+    ) -> Optional[str]:
+
+        revocation_type = None
+        if recommendation in ('A', 'I', 'R'):
+            revocation_type = \
+                StateSupervisionViolationResponseRevocationType \
+                .REINCARCERATION.value
+        elif recommendation == 'CO':
+            revocation_type = \
+                StateSupervisionViolationResponseRevocationType \
+                .TREATMENT_IN_PRISON.value
+
+        recommendation_is_revocation = \
+            self.enum_overrides.parse(
+                recommendation,
+                StateSupervisionViolationResponseDecision) \
+            == StateSupervisionViolationResponseDecision.REVOCATION
+
+        if revocation_type is None and recommendation_is_revocation:
+            raise ValueError(
+                f'Unclassified revocation type for REVOCATION '
+                f'recommendation [{recommendation}]')
+
+        return revocation_type
 
     @classmethod
     def set_sentence_status(cls,

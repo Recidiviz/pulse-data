@@ -309,6 +309,7 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_delayed_action,
     state_enum_strings.state_supervision_violation_response_decision_extension,
     state_enum_strings.state_supervision_violation_response_decision_revocation,
+    state_enum_strings.state_supervision_violation_response_decision_privileges_revoked,
     state_enum_strings.state_supervision_violation_response_decision_service_termination,
     state_enum_strings.state_supervision_violation_response_decision_suspension,
     name='state_supervision_violation_response_decision')

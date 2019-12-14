@@ -17,7 +17,6 @@
 
 """The queries below can be used to generate the tables of Missouri Department
 of Corrections data that we export as CSV files for ingest.
-
 Most of the queries below will include WHERE clauses that filter against columns
 usually, but not always, named `XX$DLU` and `XX$DCR`--these stand for "date last
 updated" and "date created," respectively. By updating the
@@ -32,23 +31,20 @@ offline.
 
 lower_bound_update_date = 0
 
-
-COMPLIANT_NON_INVESTIGATION_PROBATION_SENTENCES_FRAGMENT = \
+NON_INVESTIGATION_PROBATION_SENTENCES = \
     """
-    compliant_non_investigation_probation_sentences AS (
-        -- Chooses only probation sentences that are non-investigation (not INV) and permitted for ingesting (not SIS)
+    non_investigation_prob_sentences_bu AS (
+        -- Chooses only probation sentences that are non-investigation (not INV)
         SELECT *
         FROM LBAKRDTA.TAK024 sentence_prob_bu
         WHERE BU$PBT != 'INV'
-        AND BU$PBT != 'SIS'
     )
     """
-
 
 TAK001_OFFENDER_IDENTIFICATION_QUERY = \
     f"""
     -- tak001_offender_identification
-    
+
     SELECT * 
     FROM 
         LBAKRDTA.TAK001 offender_identification_ek
@@ -60,11 +56,10 @@ TAK001_OFFENDER_IDENTIFICATION_QUERY = \
     ORDER BY EK$DOC DESC;
     """
 
-
 TAK040_OFFENDER_CYCLES = \
     f"""
     -- tak040_offender_cycles
-    
+
     SELECT *
     FROM LBAKRDTA.TAK040
     WHERE
@@ -72,11 +67,10 @@ TAK040_OFFENDER_CYCLES = \
     ORDER BY DQ$DOC;
     """
 
-
 TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
     f"""
     -- tak022_tak023_tak025_tak026_offender_sentence_institution
-    
+
     WITH incarceration_status_xref_bv AS (
         /* Chooses only status codes that are associated with incarceration 
         sentences */
@@ -175,11 +169,10 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
     ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
-
 TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
     f"""
     -- tak022_tak024_tak025_tak026_offender_sentence_probation
-    
+
     WITH probation_status_xref_bv AS (
         /* Chooses only status codes that are associated with 
         supervision sentences */
@@ -227,25 +220,25 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
             probation_status_xref_with_dates.BV$SEO, 
             MAX_UPDATE_DATE
     ),
-    {COMPLIANT_NON_INVESTIGATION_PROBATION_SENTENCES_FRAGMENT},
+    {NON_INVESTIGATION_PROBATION_SENTENCES},
     probation_sentence_status_explosion AS (
             SELECT *
             FROM 
                 LBAKRDTA.TAK022 sentence_bs
             LEFT OUTER JOIN
-                compliant_non_investigation_probation_sentences
+                non_investigation_prob_sentences_bu
             ON 
-                sentence_bs.BS$DOC = compliant_non_investigation_probation_sentences.BU$DOC AND
-                sentence_bs.BS$CYC = compliant_non_investigation_probation_sentences.BU$CYC AND
-                sentence_bs.BS$SEO = compliant_non_investigation_probation_sentences.BU$SEO
+                sentence_bs.BS$DOC = non_investigation_prob_sentences_bu.BU$DOC AND
+                sentence_bs.BS$CYC = non_investigation_prob_sentences_bu.BU$CYC AND
+                sentence_bs.BS$SEO = non_investigation_prob_sentences_bu.BU$SEO
             LEFT OUTER JOIN 
                 probation_status_xref_with_dates
             ON
                 sentence_bs.BS$DOC = probation_status_xref_with_dates.BV$DOC AND
                 sentence_bs.BS$CYC = probation_status_xref_with_dates.BV$CYC AND 
                 sentence_bs.BS$SEO = probation_status_xref_with_dates.BV$SEO AND
-                compliant_non_investigation_probation_sentences.BU$FSO = probation_status_xref_with_dates.BV$FSO
-            WHERE compliant_non_investigation_probation_sentences.BU$DOC IS NOT NULL
+                non_investigation_prob_sentences_bu.BU$FSO = probation_status_xref_with_dates.BV$FSO
+            WHERE non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
     ),
     last_updated_field_seq AS (
         SELECT 
@@ -293,13 +286,14 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
 #  create enum mappings.
 SUB_SUBCYCLE_SPANS_FRAGMENT = \
     """
-    sub_cycle_partition_statuses AS (
+    field_subcycle_partition_statuses AS (
         SELECT
             BW$DOC AS DOC,
             BW$CYC AS CYC,
             BW$SSO AS SSO,
             BW$SCD AS SCD,
-            BW$SY AS STATUS_CODE_CHG_DT
+            BW$SY AS STATUS_CODE_CHG_DT,
+            'F' AS SUBCYCLE_TYPE_STATUS_CAN_PARTITION
         FROM
             LBAKRDTA.TAK026
          WHERE (
@@ -311,6 +305,20 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             )
         )
     ),
+    sub_cycle_partition_statuses AS (
+        SELECT
+            DOC,
+            CYC,
+            SSO,
+            SCD,
+            STATUS_CODE_CHG_DT,
+            SUBCYCLE_TYPE_STATUS_CAN_PARTITION
+        FROM
+            field_subcycle_partition_statuses
+            
+        -- NOTE: Add a union with any institutional subcycle partition statuses
+        -- when we need to
+    ),
     subcycle_partition_status_change_dates AS (
         SELECT
             sub_cycle_partition_statuses.DOC AS DOC,
@@ -321,7 +329,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             '' AS STATUS_SUBTYPE,
             sub_cycle_partition_statuses.STATUS_CODE_CHG_DT AS STATUS_CODE_CHG_DT,
             '2-PARTITION' AS SUBCYCLE_DATE_TYPE
-    
+
         FROM
             LBAKRDTA.TAK158 body_status_f1
         LEFT OUTER JOIN
@@ -329,6 +337,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
         ON
             body_status_f1.F1$DOC = sub_cycle_partition_statuses.DOC AND
             body_status_f1.F1$CYC = sub_cycle_partition_statuses.CYC AND
+            body_status_f1.F1$SST = sub_cycle_partition_statuses.SUBCYCLE_TYPE_STATUS_CAN_PARTITION AND
             body_status_f1.F1$CD < sub_cycle_partition_statuses.STATUS_CODE_CHG_DT AND
             sub_cycle_partition_statuses.STATUS_CODE_CHG_DT < body_status_f1.F1$WW
         WHERE sub_cycle_partition_statuses.DOC IS NOT NULL
@@ -402,14 +411,13 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             start_date.CYC = end_date.CYC AND
             start_date.SQN = end_date.SQN AND
             start_date.SUB_SQN_SEQ = end_date.SUB_SQN_SEQ - 1
-            
+
         /* Filter out rows created by the join which start with a 'CLOSE' 
          * status - periods can only start with 'OPEN' or 'PARTITION' statuses
          */
         WHERE start_date.SUBCYCLE_DATE_TYPE != '3-CLOSE'
     )
     """
-
 
 TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     f"""
@@ -446,11 +454,10 @@ TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     ORDER BY BT$DOC, BT$CYC, BT$SEO, F1$SQN;
     """
 
-
 TAK158_TAK023_TAK026_SUPERVISION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     f"""
     -- tak158_tak023_tak026_supervision_period_from_incarceration_sentence
-    
+
     WITH {SUB_SUBCYCLE_SPANS_FRAGMENT},
     supervision_subcycle_from_incarceration_sentence AS (
         SELECT 
@@ -483,13 +490,12 @@ TAK158_TAK023_TAK026_SUPERVISION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     ORDER BY BT$DOC, BT$CYC, BT$SEO, F1$SQN;
     """
 
-
 TAK158_TAK024_TAK026_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     f"""
     -- tak158_tak024_tak026_incarceration_period_from_supervision_sentence
-    
+
     WITH {SUB_SUBCYCLE_SPANS_FRAGMENT},
-    {COMPLIANT_NON_INVESTIGATION_PROBATION_SENTENCES_FRAGMENT},
+    {NON_INVESTIGATION_PROBATION_SENTENCES},
     incarceration_subcycle_from_supervision_sentence AS (
         SELECT 
             non_investigation_probation_sentence_ids.BU$DOC, 
@@ -498,7 +504,7 @@ TAK158_TAK024_TAK026_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
             body_status_f1.*
         FROM (
             SELECT BU$DOC, BU$CYC, BU$SEO
-            FROM compliant_non_investigation_probation_sentences
+            FROM non_investigation_prob_sentences_bu
             GROUP BY BU$DOC, BU$CYC, BU$SEO
         ) non_investigation_probation_sentence_ids
         LEFT OUTER JOIN
@@ -521,13 +527,12 @@ TAK158_TAK024_TAK026_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     ORDER BY BU$DOC, BU$CYC, BU$SEO, F1$SQN;
     """
 
-
 TAK158_TAK024_TAK026_SUPERVISION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     f"""
     -- tak158_tak024_tak026_supervision_period_from_supervision_sentence
-    
+
     WITH {SUB_SUBCYCLE_SPANS_FRAGMENT},
-    {COMPLIANT_NON_INVESTIGATION_PROBATION_SENTENCES_FRAGMENT},
+    {NON_INVESTIGATION_PROBATION_SENTENCES},
     supervision_subcycle_from_supervision_sentence AS (
         SELECT 
             non_investigation_probation_sentence_ids.BU$DOC, 
@@ -536,7 +541,7 @@ TAK158_TAK024_TAK026_SUPERVISION_PERIOD_FROM_SUPERVISION_SENTENCE = \
             body_status_f1.*
         FROM (
             SELECT BU$DOC, BU$CYC, BU$SEO
-            FROM compliant_non_investigation_probation_sentences
+            FROM non_investigation_prob_sentences_bu
             GROUP BY BU$DOC, BU$CYC, BU$SEO
         ) non_investigation_probation_sentence_ids
         LEFT OUTER JOIN
@@ -586,8 +591,10 @@ FINALLY_FORMED_VIOLATIONS_E6 = \
 TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     f"""
     -- tak028_tak042_tak076_tak024_violation_reports
-    
-    WITH conditions_violated_cf AS (
+
+    WITH 
+    {NON_INVESTIGATION_PROBATION_SENTENCES},
+    conditions_violated_cf AS (
     -- An updated version of TAK042 that only has one row per citation.
         SELECT 
             conditions_cf.CF$DOC, 
@@ -609,7 +616,7 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     ),
     valid_sentences_cz AS (
     -- Only keeps rows in TAK076 which refer to either 
-    -- IncarcerationSentences or non-INV/SIS SupervisionSentences
+    -- IncarcerationSentences or non-INV SupervisionSentences
         SELECT 
             sentence_xref_with_probation_info_cz_bu.CZ$DOC, 
             sentence_xref_with_probation_info_cz_bu.CZ$CYC, 
@@ -624,19 +631,15 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
             FROM 
                 LBAKRDTA.TAK076 sentence_xref_cz
             LEFT JOIN 
-                LBAKRDTA.TAK024 prob_sentence_bu
+                non_investigation_prob_sentences_bu
             ON 
-                sentence_xref_cz.CZ$DOC = prob_sentence_bu.BU$DOC
-                AND sentence_xref_cz.CZ$CYC = prob_sentence_bu.BU$CYC
-                AND sentence_xref_cz.CZ$SEO = prob_sentence_bu.BU$SEO
-                AND sentence_xref_cz.CZ$FSO = prob_sentence_bu.BU$FSO
-            ) sentence_xref_with_probation_info_cz_bu
-        WHERE 
-            sentence_xref_with_probation_info_cz_bu.CZ$FSO = 0 
-            OR (
-                sentence_xref_with_probation_info_cz_bu.BU$PBT != 'INV' 
-                AND sentence_xref_with_probation_info_cz_bu.BU$PBT != 'SIS'
-            )
+                sentence_xref_cz.CZ$DOC = non_investigation_prob_sentences_bu.BU$DOC
+                AND sentence_xref_cz.CZ$CYC = non_investigation_prob_sentences_bu.BU$CYC
+                AND sentence_xref_cz.CZ$SEO = non_investigation_prob_sentences_bu.BU$SEO
+                AND sentence_xref_cz.CZ$FSO = non_investigation_prob_sentences_bu.BU$FSO
+            WHERE sentence_xref_cz.CZ$FSO = 0 OR 
+                non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
+        ) sentence_xref_with_probation_info_cz_bu
     ),
     finally_formed_violations_e6 AS(
         -- Finally formed violation reports. As we've filtered for just 
@@ -680,10 +683,12 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
 TAK291_TAK292_TAK024_CITATIONS = \
     f"""
     -- tak291_tak292_tak024_citations
-    
-    WITH valid_sentences_js AS (
+
+    WITH 
+    {NON_INVESTIGATION_PROBATION_SENTENCES},
+    valid_sentences_js AS (
     -- Only keeps rows in TAK291 which refer to either 
-    -- IncarcerationSentences or non-INV/SIS SupervisionSentences
+    -- IncarcerationSentences or non-INV SupervisionSentences
         SELECT 
             sentence_xref_with_probation_info_js_bu.JS$DOC, 
             sentence_xref_with_probation_info_js_bu.JS$CYC, 
@@ -698,19 +703,15 @@ TAK291_TAK292_TAK024_CITATIONS = \
             FROM 
                 LBAKRDTA.TAK291 sentence_xref_js
             LEFT JOIN 
-                LBAKRDTA.TAK024 prob_sentence_bu
+                non_investigation_prob_sentences_bu
             ON 
-                sentence_xref_js.JS$DOC = prob_sentence_bu.BU$DOC
-                AND sentence_xref_js.JS$CYC = prob_sentence_bu.BU$CYC
-                AND sentence_xref_js.JS$SEO = prob_sentence_bu.BU$SEO
-                AND sentence_xref_js.JS$FSO = prob_sentence_bu.BU$FSO
-            ) sentence_xref_with_probation_info_js_bu
-        WHERE 
-            sentence_xref_with_probation_info_js_bu.JS$FSO = 0 
-            OR (
-                sentence_xref_with_probation_info_js_bu.BU$PBT != 'INV' 
-                AND sentence_xref_with_probation_info_js_bu.BU$PBT != 'SIS'
-            )
+                sentence_xref_js.JS$DOC = non_investigation_prob_sentences_bu.BU$DOC
+                AND sentence_xref_js.JS$CYC = non_investigation_prob_sentences_bu.BU$CYC
+                AND sentence_xref_js.JS$SEO = non_investigation_prob_sentences_bu.BU$SEO
+                AND sentence_xref_js.JS$FSO = non_investigation_prob_sentences_bu.BU$FSO
+            WHERE sentence_xref_js.JS$FSO = 0 OR 
+                non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
+        ) sentence_xref_with_probation_info_js_bu
     ),
     citations_with_multiple_violations_jt AS (
     -- An updated version of TAK292 that only has one row per citation.
@@ -737,7 +738,6 @@ TAK291_TAK292_TAK024_CITATIONS = \
         -- Finally formed citations. As we've filtered for just citations 
         -- DOS in this table is equivalent to CSQ in other tables.
         {FINALLY_FORMED_CITATIONS_E6})
-
     SELECT 
         *
     FROM 
@@ -763,7 +763,6 @@ TAK291_TAK292_TAK024_CITATIONS = \
             finally_formed_citations_e6.final_formed_update_date) >= {lower_bound_update_date}
     ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
-
 
 if __name__ == '__main__':
     print('\n\n/* TAK001_OFFENDER_IDENTIFICATION_QUERY */\n')
