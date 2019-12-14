@@ -1429,7 +1429,36 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                             revocation_type='TREATMENT_IN_PRISON',
                                         ),
                                     ]
-                                )])])])
+                                )]),
+                        StateSupervisionViolation(
+                            state_supervision_violation_id=
+                            '910324-19890825-R2-1-1',
+                            violation_date='20090604',
+                            state_supervision_violation_types=[
+                                StateSupervisionViolationTypeEntry(
+                                    violation_type='T'
+                                ),
+                            ],
+                            state_supervision_violated_conditions=[
+                                StateSupervisionViolatedConditionEntry(
+                                    condition='SPC'
+                                ),
+                            ],
+                            state_supervision_violation_responses=[
+                                StateSupervisionViolationResponse(
+                                    response_type='VIOLATION_REPORT',
+                                    state_supervision_violation_response_id=
+                                    '910324-19890825-R2-1-1',
+                                    response_date='2009-07-03',
+                                    is_draft='False',
+                                    deciding_body_type='SUPERVISION_OFFICER',
+                                    supervision_violation_response_decisions=[
+                                        StateSupervisionViolationResponseDecisionEntry(
+                                            decision='RN',
+                                        ),
+                                    ]
+                                )]),
+                    ])])
 
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
@@ -3210,7 +3239,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             placeholder_ssp_110035_20040712_2)
         sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_2)
 
-        placeholder_ssp_910324_19890825 = \
+        placeholder_ssp_910324_19890825_from_is = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -3222,7 +3251,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
                 violation_date=datetime.date(year=2009, month=4, day=17),
-                supervision_periods=[placeholder_ssp_910324_19890825],
+                supervision_periods=[placeholder_ssp_910324_19890825_from_is],
                 person=person_910324,
             )
         ssvc_910324_19890825_r1_1_emp = \
@@ -3274,24 +3303,87 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvt_910324_19890825_r1_1_m)
         ssvr_910324_19890825_r1_1.supervision_violation_response_decisions\
             .append(ssvrd_910324_19890825_r1_1_co)
-        placeholder_ssp_910324_19890825.supervision_violation_entries.append(
+        placeholder_ssp_910324_19890825_from_is.supervision_violation_entries.append(
             ssv_910324_19890825_r1)
         sis_910324_19890825_1.supervision_periods.append(
-            placeholder_ssp_910324_19890825)
+            placeholder_ssp_910324_19890825_from_is)
 
-        placeholder_ssp_910324_19890825_2 = \
+        placeholder_ssp_910324_19890825_from_ss = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[sss_910324_19890825_1],
                 person=person_910324,
             )
+
+        ssv_910324_19890825_r2 = \
+            entities.StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-R2',
+                violation_date=datetime.date(year=2009, month=6, day=4),
+                supervision_periods=[placeholder_ssp_910324_19890825_from_ss],
+                person=person_910324,
+            )
+        ssvc_910324_19890825_r2_1_spc = \
+            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                condition='SPC',
+                supervision_violation=ssv_910324_19890825_r2,
+                person=person_910324,
+            )
+        ssvt_910324_19890825_r2_1_t = \
+            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text='T',
+                supervision_violation=ssv_910324_19890825_r2,
+                person=person_910324,
+            )
+        ssvr_910324_19890825_r2_1 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                external_id='910324-19890825-R2',
+                response_date=datetime.date(year=2009, month=7, day=3),
+                is_draft=False,
+                response_type=
+                StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_type_raw_text='VIOLATION_REPORT',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.
+                SUPERVISION_OFFICER,
+                deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                supervision_violation=ssv_910324_19890825_r2,
+                person=person_910324,
+            )
+        ssvrd_910324_19890825_r2_1_rn = \
+            entities.StateSupervisionViolationResponseDecisionEntry.\
+            new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                decision=StateSupervisionViolationResponseDecision.
+                PRIVILEGES_REVOKED,
+                decision_raw_text='RN',
+                supervision_violation_response=ssvr_910324_19890825_r2_1,
+                person=person_910324,
+            )
+
+        ssv_910324_19890825_r2.supervision_violation_responses.append(
+            ssvr_910324_19890825_r2_1)
+        ssv_910324_19890825_r2.supervision_violated_conditions.append(
+            ssvc_910324_19890825_r2_1_spc)
+        ssv_910324_19890825_r2.supervision_violation_types.append(
+            ssvt_910324_19890825_r2_1_t)
+        ssvr_910324_19890825_r2_1.supervision_violation_response_decisions\
+            .append(ssvrd_910324_19890825_r2_1_rn)
+
         ssv_910324_19890825_r1.supervision_periods.append(
-            placeholder_ssp_910324_19890825_2)
-        placeholder_ssp_910324_19890825_2.supervision_violation_entries.append(
+            placeholder_ssp_910324_19890825_from_ss)
+
+        placeholder_ssp_910324_19890825_from_ss.supervision_violation_entries.append(
+            ssv_910324_19890825_r2)
+        placeholder_ssp_910324_19890825_from_ss.supervision_violation_entries.append(
             ssv_910324_19890825_r1)
         sss_910324_19890825_1.supervision_periods.append(
-            placeholder_ssp_910324_19890825_2)
+            placeholder_ssp_910324_19890825_from_ss)
 
         # Act
         self._run_ingest_job_for_filename(

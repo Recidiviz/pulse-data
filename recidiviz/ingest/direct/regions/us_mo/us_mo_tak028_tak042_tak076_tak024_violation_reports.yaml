@@ -12,8 +12,8 @@ keys_to_ignore:
   - VIOLATED_CONDITIONS  #  List of conditions violated - Handled manually in controller
   - BY$CYC  # Offender Cycle Number - Handled manually in the controller
   - BY$VSN  # Violation Sequence Number - Handled manually in the controller
-  - BY$VTY  # TODO(1763): Support multiple StateSupervisionViolation.violation_type values
-  - BY$VOR  # TODO(2653): Support multiple StateSupervisionViolationResponse.decision values
+  - BY$VTY  # Violation Types - Handled manually in the controller
+  - BY$VOR  # Violation Report Recommendations - Handled manually in the controller
   - BY$VWI  # Unused - Violation warrant flag
   - BY$VRT  # Unused - Violation Report Type
   - BY$VSI  # Unused - Advised of Statements
