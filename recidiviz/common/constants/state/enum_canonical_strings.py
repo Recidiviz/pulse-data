@@ -211,6 +211,8 @@ state_supervision_violation_response_decision_continuance = 'CONTINUANCE'
 state_supervision_violation_response_decision_delayed_action = 'DELAYED_ACTION'
 state_supervision_violation_response_decision_extension = 'EXTENSION'
 state_supervision_violation_response_decision_revocation = 'REVOCATION'
+state_supervision_violation_response_decision_privileges_revoked = \
+    'PRIVILEGES_REVOKED'
 state_supervision_violation_response_decision_service_termination = \
     'SERVICE_TERMINATION'
 state_supervision_violation_response_decision_suspension = 'SUSPENSION'
