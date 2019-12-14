@@ -18,14 +18,17 @@
 
 import logging
 
-from typing import Type, List
+from typing import Type, List, Optional
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity_matching import entity_matching_utils
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    EntityTree
 from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    read_persons_by_root_entity_cls
+    read_persons_by_root_entity_cls, base_entity_match
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids
 
@@ -43,8 +46,8 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
         """Reads and returns all persons from the DB that are needed for
         entity matching in this state, given the |ingested_persons|.
         """
-        allowed_root_entity_classes: List[Type[DatabaseEntity]] = [
-            schema.StatePerson]
+        allowed_root_entity_classes: List[Type[DatabaseEntity]] = \
+            [schema.StatePerson]
         db_persons = read_persons_by_root_entity_cls(
             session, self.region_code, ingested_persons,
             allowed_root_entity_classes)
@@ -60,3 +63,17 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
             self, matched_persons: List[schema.StatePerson]):
         # TODO(2657): Associate violations with supervision periods
         pass
+
+    def get_non_external_id_match(
+            self, ingested_entity_tree: EntityTree,
+            db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
+        """MO specific logic to match the |ingested_entity_tree| to one of the
+        |db_entity_trees| that does not rely solely on matching by external_id.
+        If such a match is found, it is returned.
+        """
+        if isinstance(ingested_entity_tree.entity,
+                      schema.StateSupervisionViolationResponse):
+            return entity_matching_utils.get_only_match(
+                ingested_entity_tree, db_entity_trees,
+                base_entity_match)
+        return None
