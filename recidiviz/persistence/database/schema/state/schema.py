@@ -379,11 +379,13 @@ state_supervision_sentence_incarceration_period_association_table = \
           Column('supervision_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id')),
+                     'state_supervision_sentence.supervision_sentence_id'),
+                 index=True),
           Column('incarceration_period_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_period.incarceration_period_id')))
+                     'state_incarceration_period.incarceration_period_id'),
+                 index=True))
 
 state_supervision_sentence_supervision_period_association_table = \
     Table('state_supervision_sentence_supervision_period_association',
@@ -391,11 +393,13 @@ state_supervision_sentence_supervision_period_association_table = \
           Column('supervision_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id')),
+                     'state_supervision_sentence.supervision_sentence_id'),
+                 index=True),
           Column('supervision_period_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_period.supervision_period_id')))
+                     'state_supervision_period.supervision_period_id'),
+                 index=True))
 
 state_incarceration_sentence_incarceration_period_association_table = \
     Table('state_incarceration_sentence_incarceration_period_association',
@@ -403,11 +407,13 @@ state_incarceration_sentence_incarceration_period_association_table = \
           Column('incarceration_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id')),
+                     'state_incarceration_sentence.incarceration_sentence_id'),
+                 index=True),
           Column('incarceration_period_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_period.incarceration_period_id')))
+                     'state_incarceration_period.incarceration_period_id'),
+                 index=True))
 
 state_incarceration_sentence_supervision_period_association_table = \
     Table('state_incarceration_sentence_supervision_period_association',
@@ -415,11 +421,13 @@ state_incarceration_sentence_supervision_period_association_table = \
           Column('incarceration_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id')),
+                     'state_incarceration_sentence.incarceration_sentence_id'),
+                 index=True),
           Column('supervision_period_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_period.supervision_period_id')))
+                     'state_supervision_period.supervision_period_id'),
+                 index=True))
 
 state_supervision_period_supervision_violation_association_table = \
     Table('state_supervision_period_supervision_violation_association',
@@ -427,11 +435,13 @@ state_supervision_period_supervision_violation_association_table = \
           Column('supervision_period_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_period.supervision_period_id')),
+                     'state_supervision_period.supervision_period_id'),
+                 index=True),
           Column('supervision_violation_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_violation.supervision_violation_id')))
+                     'state_supervision_violation.supervision_violation_id'),
+                 index=True))
 
 state_supervision_period_program_assignment_association_table = \
     Table('state_supervision_period_program_assignment_association',
@@ -439,11 +449,13 @@ state_supervision_period_program_assignment_association_table = \
           Column('supervision_period_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_period.supervision_period_id')),
+                     'state_supervision_period.supervision_period_id'),
+                 index=True),
           Column('program_assignment_id',
                  Integer,
                  ForeignKey(
-                     'state_program_assignment.program_assignment_id')))
+                     'state_program_assignment.program_assignment_id'),
+                 index=True))
 
 state_incarceration_period_program_assignment_association_table = \
     Table('state_incarceration_period_program_assignment_association',
@@ -451,44 +463,52 @@ state_incarceration_period_program_assignment_association_table = \
           Column('incarceration_period_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_period.incarceration_period_id')),
+                     'state_incarceration_period.incarceration_period_id'),
+                 index=True),
           Column('program_assignment_id',
                  Integer,
                  ForeignKey(
-                     'state_program_assignment.program_assignment_id')))
+                     'state_program_assignment.program_assignment_id'),
+                 index=True))
 
 state_charge_incarceration_sentence_association_table = \
     Table('state_charge_incarceration_sentence_association',
           StateBase.metadata,
           Column('charge_id',
                  Integer,
-                 ForeignKey('state_charge.charge_id')),
+                 ForeignKey('state_charge.charge_id'),
+                 index=True),
           Column('incarceration_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_incarceration_sentence.incarceration_sentence_id')))
+                     'state_incarceration_sentence.incarceration_sentence_id'),
+                 index=True))
 
 state_charge_supervision_sentence_association_table = \
     Table('state_charge_supervision_sentence_association',
           StateBase.metadata,
           Column('charge_id',
                  Integer,
-                 ForeignKey('state_charge.charge_id')),
+                 ForeignKey('state_charge.charge_id'),
+                 index=True),
           Column('supervision_sentence_id',
                  Integer,
                  ForeignKey(
-                     'state_supervision_sentence.supervision_sentence_id')))
+                     'state_supervision_sentence.supervision_sentence_id'),
+                 index=True))
 
 state_charge_fine_association_table = \
     Table('state_charge_fine_association',
           StateBase.metadata,
           Column('charge_id',
                  Integer,
-                 ForeignKey('state_charge.charge_id')),
+                 ForeignKey('state_charge.charge_id'),
+                 index=True),
           Column('fine_id',
                  Integer,
                  ForeignKey(
-                     'state_fine.fine_id')))
+                     'state_fine.fine_id'),
+                 index=True))
 
 state_parole_decision_decision_agent_association_table = \
     Table('state_parole_decision_decision_agent_association',
@@ -496,10 +516,12 @@ state_parole_decision_decision_agent_association_table = \
           Column('parole_decision_id',
                  Integer,
                  ForeignKey(
-                     'state_parole_decision.parole_decision_id')),
+                     'state_parole_decision.parole_decision_id'),
+                 index=True),
           Column('agent_id',
                  Integer,
-                 ForeignKey('state_agent.agent_id')),
+                 ForeignKey('state_agent.agent_id'),
+                 index=True),
           )
 
 state_supervision_violation_response_decision_agent_association_table = \
@@ -509,10 +531,12 @@ state_supervision_violation_response_decision_agent_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_violation_response.'
-                     'supervision_violation_response_id')),
+                     'supervision_violation_response_id'),
+                 index=True),
           Column('agent_id',
                  Integer,
-                 ForeignKey('state_agent.agent_id')),
+                 ForeignKey('state_agent.agent_id'),
+                 index=True),
           )
 
 
@@ -533,6 +557,7 @@ class _ReferencesStatePersonSharedColumns:
                       ForeignKey('state_person.person_id',
                                  deferrable=True,
                                  initially='DEFERRED'),
+                      index=True,
                       nullable=False)
 
 
@@ -553,6 +578,7 @@ class _ReferencesStateSentenceGroupSharedColumns:
             ForeignKey('state_sentence_group.sentence_group_id',
                        deferrable=True,
                        initially='DEFERRED'),
+            index=True,
             nullable=False)
 
 
@@ -751,6 +777,7 @@ class _StatePersonSharedColumns:
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
@@ -872,6 +899,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
@@ -934,11 +962,15 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
 
     @declared_attr
     def court_case_id(self):
-        return Column(Integer, ForeignKey('state_court_case.court_case_id'))
+        return Column(Integer,
+                      ForeignKey('state_court_case.court_case_id'),
+                      index=True)
 
     @declared_attr
     def bond_id(self):
-        return Column(Integer, ForeignKey('state_bond.bond_id'))
+        return Column(Integer,
+                      ForeignKey('state_bond.bond_id'),
+                      index=True)
 
 
 class StateCharge(StateBase,
@@ -1001,6 +1033,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_incarceration_period.incarceration_period_id'),
+            index=True,
             nullable=True)
 
     @declared_attr
@@ -1008,6 +1041,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_supervision_period.supervision_period_id'),
+            index=True,
             nullable=True)
 
     @declared_attr
@@ -1015,6 +1049,7 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
@@ -1351,6 +1386,7 @@ class _StateIncarcerationPeriodSharedColumns(
             Integer,
             ForeignKey('state_supervision_violation_response.'
                        'supervision_violation_response_id'),
+            index=True,
             nullable=True)
 
 
@@ -1435,6 +1471,7 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
@@ -1515,6 +1552,7 @@ class _StateIncarcerationIncidentSharedColumns(
         return Column(
             Integer,
             ForeignKey('state_incarceration_period.incarceration_period_id'),
+            index=True,
             nullable=True)
 
     @declared_attr
@@ -1522,6 +1560,7 @@ class _StateIncarcerationIncidentSharedColumns(
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
@@ -1588,6 +1627,7 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
             Integer,
             ForeignKey(
                 'state_incarceration_incident.incarceration_incident_id'),
+            index=True,
             nullable=True)
 
 
@@ -1651,6 +1691,7 @@ class _StateParoleDecisionSharedColumns(
         return Column(
             Integer,
             ForeignKey('state_incarceration_period.incarceration_period_id'),
+            index=True,
             nullable=True)
 
 
@@ -1709,6 +1750,7 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
             Integer,
             ForeignKey('state_supervision_violation.'
                        'supervision_violation_id'),
+            index=True,
             nullable=True)
 
 
@@ -1770,6 +1812,7 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             Integer,
             ForeignKey('state_supervision_violation.'
                        'supervision_violation_id'),
+            index=True,
             nullable=True)
 
 
@@ -1835,6 +1878,7 @@ class _StateSupervisionViolationSharedColumns(
         return Column(
             Integer,
             ForeignKey('state_supervision_period.supervision_period_id'),
+            index=True,
             nullable=True)
 
 
@@ -1906,6 +1950,7 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             Integer,
             ForeignKey('state_supervision_violation_response.'
                        'supervision_violation_response_id'),
+            index=True,
             nullable=True)
 
 
@@ -1980,6 +2025,7 @@ class _StateSupervisionViolationResponseSharedColumns(
         return Column(
             Integer,
             ForeignKey('state_supervision_violation.supervision_violation_id'),
+            index=True,
             nullable=True)
 
 
@@ -2100,6 +2146,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
         return Column(
             Integer,
             ForeignKey('state_agent.agent_id'),
+            index=True,
             nullable=True)
 
 
