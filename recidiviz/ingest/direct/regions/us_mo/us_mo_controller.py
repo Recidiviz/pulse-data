@@ -339,16 +339,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
             'DC-DC',  # Discharge
-            'DC-DO',
-            'DC-XX',
-            'ID',
-            'ID-DC',  # Institutional Discharge
-            'ID-DO',
-            'ID-DR',
-            'ID-ID',
-            'ID-PD',
-            'ID-RR',
-            'ID-XX',
+            'DC-DO',  # Inst. Converted-Inactive
+            'DC-XX',  # Discharge - Unknown
+            'ID-DC',  # Institutional Discharge - Discharge
+            'ID-DO',  # Institutional Discharge - Other
+            'ID-DR',  # Institutional Discharge - Director's Release
+            'ID-ID',  # Institutional Discharge - Institutional Discharge
+            'ID-PD',  # Institutional Discharge - Pardoned
+            'ID-RR',  # Institutional Discharge - Reversed and Remanded
+            'ID-XX',  # Institutional Discharge - Unknown
         ],
 
         StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: [
@@ -373,10 +372,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
             'NA',  # New Admission
             'NA-NA',
-            'RT',  # Reinstatement
-            'RT-EM',
             'TR',  # Other State
             'TR-EM',
+        ],
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: [
+            'RT',  # Reinstatement
+            'RT-EM',
         ],
         StateSupervisionPeriodAdmissionReason.ABSCONSION: [
             '65O1010',  # Offender declared absconder - from TAK026 BW$SCD
@@ -409,22 +410,23 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'DE-DE',  # Death
         ],
         StateSupervisionPeriodTerminationReason.DISCHARGE: [
-            'CR',  # Conditional Release
-            'DC-DC',  # Discharge
+            # Discharge - encompasses a collection of statuses including those
+            # that reference 'commutation', 'discharge', and 'expiration'
+            # TODO(2738): Derive the periods tables from TAK026 so we can
+            #  capture this nuance.
+            'DC-DC',
+
+            # 'Director's Discharge'
             'DC-DR',
+
+            # 'Resentenced-Field Completion'
             'DC-OR',
+
+            # 'Field Pardon'
             'DC-PD',
-            'DC-RR',
-            'EM-FB',  # Inmate Release to EMP
-            'EM-FF',
-            'EM-FM',
-            'EM-FT',
-            'ID-DC',  # Institutional Discharge
+
+            # Parole/Conditional Release Completion-Retroactive
             'ID-ID',
-            'RF-FB',  # Inmate Release to RF
-            'RF-FF',
-            'RF-FM',
-            'RF-FT',
         ],
         StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
             'XX-XX',  # Unknown (Not Associated)
@@ -450,11 +452,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FB-EI',
             'FB-TR',
             'FB-UK',
+
+            # Parole/Conditional Release Completion-Lifetime Supervision
+            # Note: This seems to be immediately followed by a new admission to
+            # a lifetime (un-terminated) supervision period
+            'ID-DC',
+
             'RT-BH',  # Board Return
             'RT-ER',
             'RT-FF',
             'RT-FM',
             'RT-FT',
+            'RF-FB',  # Return to RF (Residential facility)
+            'RF-FF',
+            'RF-FM',
+            'RF-FT',
             'RV-FF',  # Revocation
             'RV-FM',
             'RV-FN',
@@ -466,6 +478,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'OR-FA',  # Off Records; Suspension
             'OR-IW',
             'OR-OR',
+
+            # Reverse/Remand Completion or Discharge (case sent back to courts)
+            'DC-RR',
         ],
         StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
             'S',  # Serve a Sentence
@@ -522,6 +537,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'RV-FF',  # Revoked: seems erroneous
             'RV-FM',
             'RV-FT',
+
+            # Inmate Release to EMP (electronic monitoring program). Doesn't
+            # make sense as a Supervision termination reason and only 1
+            # occurrence of any of these in the last 10 years.
+            'EM-FB',
+            'EM-FF',
+            'EM-FM',
+            'EM-FT',
         ],
         StateSpecializedPurposeForIncarceration: [
             'S',  # Serving Sentence
