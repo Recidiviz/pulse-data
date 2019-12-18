@@ -70,7 +70,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_CODE_SUBTYPE, \
     PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
-    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE
+    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, PERIOD_CASE_TYPE_CURRENT
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -192,7 +192,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'XX-XX',
         ],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-            'IB-BH',  # Institutional Administrative
             'IB-BP',
             'IB-CR',
             'IB-CT',
@@ -220,8 +219,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'NA-IW',
             'NA-MC',
             'NA-NA',
-            'NA-PB',
-            'NA-PR',
             'NA-RF',
             'NA-UC',
             'NA-XX',
@@ -245,6 +242,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FN-CR',
             'FT-BP',
             'FT-CR',
+            'IB-BH',  # Institutional Administrative
         ],
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
             # TODO(2663): Set this accurately and don't assume PROBATION
@@ -289,6 +287,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FT-PR',
             # TODO(2663): Set this accurately and don't assume PROBATION
             'FT-RF',
+            'NA-PB',   # New Admission - Probation Revocation
+            'NA-PR',   # New Admission - Probation Revocation Return
         ],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             'BP-FF',  # Board Parole
@@ -562,6 +562,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             gen_set_field_as_concatenated_values_hook(
                 StateIncarcerationPeriod, 'release_reason',
                 [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
+            self._adjust_incarceration_period_admission_and_release_reasons,
             self._create_source_violation_response,
         ]
         supervision_period_row_posthooks = [
@@ -1122,6 +1123,49 @@ class UsMoController(CsvGcsfsDirectIngestController):
                             obj.__setattr__(field_name, None)
 
         return _clear_magical_date_values
+
+    def _adjust_incarceration_period_admission_and_release_reasons(
+            self,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """
+        Incarceration periods may have an 'IB-BH' (Institutional Administrative
+        - Board Hold) open status in one of three cases:
+            1) if the person is currently being held temporarily, pending a
+                parole board decision, or
+            2) if the person was held, pending a decision, then not revoked and
+                returned to supervision, or
+            3) if their parole has been revoked.
+
+        When the person is revoked, the body status table (TAK158) that we
+        currently use for period information will not update to have a different
+        open reason, but the current case type (F1$CTC) will update to indicate
+        that they are no longer being held temporarily pending review. This hook
+        makes sure we mark periods that are still board holds as temporary
+        holds. If the person has been released and the case type never changed
+        away from 'BP', then we just mark them as released from a temporary
+        hold.
+
+        For more context, see #2665.
+        """
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                if self._is_temporary_board_hold_period(row, obj):
+                    obj.admission_reason = \
+                        StateIncarcerationPeriodAdmissionReason.\
+                        TEMPORARY_CUSTODY.value
+                    if obj.release_reason:
+                        obj.release_reason = \
+                            StateIncarcerationPeriodReleaseReason.\
+                            RELEASED_FROM_TEMPORARY_CUSTODY.value
+
+    @staticmethod
+    def _is_temporary_board_hold_period(row: Dict[str, str],
+                                        ip: StateIncarcerationPeriod):
+        return ip.admission_reason == 'IB-BH' and \
+               row[PERIOD_CASE_TYPE_CURRENT] == 'BP'
 
     def _create_source_violation_response(self,
                                           _file_tag: str,
