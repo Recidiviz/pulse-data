@@ -36,6 +36,7 @@ class SupervisionMetricType(Enum):
 
     POPULATION = 'POPULATION'
     REVOCATION = 'REVOCATION'
+    SUCCESS = 'SUCCESS'
 
 
 @attr.s
@@ -155,6 +156,49 @@ class SupervisionRevocationMetric(SupervisionMetric):
 
         supervision_metric = cast(SupervisionRevocationMetric,
                                   SupervisionRevocationMetric.
+                                  build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SupervisionSuccessMetric(SupervisionMetric):
+    """Subclass of SupervisionMetric that contains supervision success and
+    failure counts."""
+    # Required characteristics
+
+    # Number of successful completions
+    successful_completion_count: int = attr.ib(default=None)
+
+    # Total number of projected completions
+    projected_completion_count: int = attr.ib(default=None)
+
+    # Optional characteristics
+
+    # External ID of the officer who was supervising the people described by
+    # this metric
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the district of the officer that was supervising the
+    # people described by this metric
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    job_id: str) -> \
+            Optional['SupervisionSuccessMetric']:
+        """Builds a SupervisionSuccessMetric object from the given
+         arguments.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionSuccessMetric,
+                                  SupervisionSuccessMetric.
                                   build_from_dictionary(metric_key))
 
         return supervision_metric

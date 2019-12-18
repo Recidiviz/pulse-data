@@ -109,6 +109,38 @@ class RecidivismLibertyFn(beam.CombineFn):
         return output
 
 
+class SupervisionSuccessFn(beam.CombineFn):
+    """Combine function that calculates the values of a supervision success
+    metric.
+
+    All inputs are either 0, representing an unsuccessful completion, or 1,
+    representing a successful completion.
+
+    This function incrementally keeps track of the number of elements
+    corresponding to the key and the sum of those elements. At the end, it
+    produces a dictionary containing values for the following fields:
+        - successful_completion_count: the sum of all inputs
+        - projected_completion_count: the count of inputs
+    """
+    def create_accumulator(self):
+        return (0, 0)
+
+    def add_input(self, accumulator, input):
+        return _add_input_for_average_metric(accumulator, input)
+
+    def merge_accumulators(self, accumulators):
+        return _merge_accumulators_for_average_metric(accumulators)
+
+    def extract_output(self, sum_count):
+        (sum_successful, total_count) = sum_count
+
+        output = {
+            'successful_completion_count': sum_successful,
+            'projected_completion_count': total_count
+        }
+
+        return output
+
 class SumFn(beam.CombineFn):
     """Combine function that calculates the sum of values."""
     def create_accumulator(self):

@@ -25,10 +25,11 @@ the person should contribute to that metric.
 import json
 from copy import deepcopy
 from datetime import date
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
-    SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
+    SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
+    ProjectedSupervisionCompletionBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics
 from recidiviz.calculator.pipeline.supervision.metrics import \
@@ -78,29 +79,42 @@ def map_supervision_combinations(person: StatePerson,
 
     event_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
 
+    organized_projected_completion_buckets = \
+        _organize_projected_completion_buckets_by_month(
+            supervision_time_buckets)
+
     for supervision_time_bucket in supervision_time_buckets:
         characteristic_combos_population = \
             characteristic_combinations(
                 person, supervision_time_bucket, inclusions)
 
-        characteristic_combos_revocation = \
-            characteristic_combinations(
-                person, supervision_time_bucket, inclusions,
-                with_revocation_dimensions=True)
-
-        population_metrics_event_based = map_metric_combinations(
-            characteristic_combos_population, supervision_time_bucket,
-            SupervisionMetricType.POPULATION)
-
-        event_based_metrics.extend(population_metrics_event_based)
-
         if isinstance(supervision_time_bucket,
-                      RevocationReturnSupervisionTimeBucket):
-            revocation_metrics_event_based = map_metric_combinations(
-                characteristic_combos_revocation, supervision_time_bucket,
-                SupervisionMetricType.REVOCATION)
+                      ProjectedSupervisionCompletionBucket):
+            supervision_success_metrics_event_based = map_metric_combinations(
+                characteristic_combos_population, supervision_time_bucket,
+                SupervisionMetricType.SUCCESS,
+                organized_projected_completion_buckets)
 
-            event_based_metrics.extend(revocation_metrics_event_based)
+            event_based_metrics.extend(supervision_success_metrics_event_based)
+        else:
+            characteristic_combos_revocation = \
+                characteristic_combinations(
+                    person, supervision_time_bucket, inclusions,
+                    with_revocation_dimensions=True)
+
+            population_metrics_event_based = map_metric_combinations(
+                characteristic_combos_population, supervision_time_bucket,
+                SupervisionMetricType.POPULATION)
+
+            event_based_metrics.extend(population_metrics_event_based)
+
+            if isinstance(supervision_time_bucket,
+                          RevocationReturnSupervisionTimeBucket):
+                revocation_metrics_event_based = map_metric_combinations(
+                    characteristic_combos_revocation, supervision_time_bucket,
+                    SupervisionMetricType.REVOCATION)
+
+                event_based_metrics.extend(revocation_metrics_event_based)
 
     metrics.extend(event_based_metrics)
 
@@ -168,6 +182,11 @@ def characteristic_combinations(person: StatePerson,
             characteristics['source_violation_type'] = \
                 supervision_time_bucket.source_violation_type
 
+    if isinstance(supervision_time_bucket,
+                  ProjectedSupervisionCompletionBucket) or \
+            with_revocation_dimensions and \
+            isinstance(supervision_time_bucket,
+                       RevocationReturnSupervisionTimeBucket):
         if supervision_time_bucket.supervising_officer_external_id:
             characteristics['supervising_officer_external_id'] = \
                 supervision_time_bucket.supervising_officer_external_id
@@ -214,7 +233,10 @@ def characteristic_combinations(person: StatePerson,
 def map_metric_combinations(
         characteristic_combos: List[Dict[str, Any]],
         supervision_time_bucket: SupervisionTimeBucket,
-        metric_type: SupervisionMetricType) -> \
+        metric_type: SupervisionMetricType,
+        organized_projected_completion_buckets:
+        Optional[Dict[Tuple[int, int],
+                      List[ProjectedSupervisionCompletionBucket]]] = None) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given time bucket and characteristic combinations to a variety
     of metrics that track supervision population and revocation counts.
@@ -225,12 +247,20 @@ def map_metric_combinations(
     possibly that the person was counted towards the revoked population for
     that same time bucket.
 
+    The value for the SUCCESS metrics is 1 for a successful completion, and 0
+    for an unsuccessful completion. For any combos that do not specify
+    supervision type, the success value on this combo should only be 1 if all
+    supervisions ending that month were successful.
+
     Args:
         characteristic_combos: A list of dictionaries containing all unique
             combinations of characteristics.
         supervision_time_bucket: The time bucket on supervision from which
             the combination was derived.
         metric_type: The metric type to set on each combination
+        organized_projected_completion_buckets: A dictionary that organizes the
+            projected supervision completion buckets by year and month of
+            projected completion
 
     Returns:
         A list of key-value tuples representing specific metric combinations and
@@ -249,7 +279,31 @@ def map_metric_combinations(
         combo['month'] = month
         combo['methodology'] = MetricMethodologyType.EVENT
 
-        metrics.append((combo, 1))
+        if isinstance(supervision_time_bucket,
+                      ProjectedSupervisionCompletionBucket) and \
+                organized_projected_completion_buckets:
+            # Note: Month should never be None for this kind of bucket
+            if combo.get('supervision_type') is None and month is not None:
+                # If this metric doesn't specify the supervision type, then
+                # the success value on this combo should only be 1 if all
+                # supervisions ending this month were successful
+                completion_buckets_this_month = \
+                    organized_projected_completion_buckets[(year, month)]
+
+                success_value = 1
+                for completion_bucket in completion_buckets_this_month:
+                    if not completion_bucket.successful_completion:
+                        success_value = 0
+
+                metrics.append((combo, success_value))
+            else:
+                # Set 1 for successful completion, 0 for unsuccessful completion
+                if supervision_time_bucket.successful_completion:
+                    metrics.append((combo, 1))
+                else:
+                    metrics.append((combo, 0))
+        else:
+            metrics.append((combo, 1))
 
     return metrics
 
@@ -281,6 +335,34 @@ def convert_event_based_to_person_based_metrics(
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(json_metric)
 
-        person_based_metrics.append((dict_metric_key, 1))
+        person_based_metrics.append((dict_metric_key, value))
 
     return person_based_metrics
+
+
+def _organize_projected_completion_buckets_by_month(
+        supervision_time_buckets: List[SupervisionTimeBucket]) -> \
+        Dict[Tuple[int, int], List[ProjectedSupervisionCompletionBucket]]:
+    """Returns a dictionary of ProjectedSupervisionCompletionBuckets ordered
+    by year and month of projected completion."""
+
+    organized_buckets: \
+        Dict[Tuple[int, int], List[ProjectedSupervisionCompletionBucket]] = {}
+
+    projected_completion_buckets = [
+        bucket for bucket in supervision_time_buckets if
+        isinstance(bucket, ProjectedSupervisionCompletionBucket)
+    ]
+
+    for projected_completion_bucket in projected_completion_buckets:
+        year = projected_completion_bucket.year
+        month = projected_completion_bucket.month
+        # Month should never be None for this kind of bucket
+        if month is not None:
+            if (year, month) in organized_buckets.keys():
+                organized_buckets[(year, month)].append(
+                    projected_completion_bucket)
+            else:
+                organized_buckets[(year, month)] = [projected_completion_bucket]
+
+    return organized_buckets

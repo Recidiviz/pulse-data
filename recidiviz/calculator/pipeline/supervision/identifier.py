@@ -26,13 +26,16 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
-    NonRevocationReturnSupervisionTimeBucket
+    NonRevocationReturnSupervisionTimeBucket, \
+    ProjectedSupervisionCompletionBucket
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -41,13 +44,14 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence
 
 
 def find_supervision_time_buckets(
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_sentences: List[StateSupervisionSentence],
         incarceration_periods: List[StateIncarcerationPeriod],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]]) \
+        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
         -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines
     if they resulted in revocation return.
@@ -76,7 +80,7 @@ def find_supervision_time_buckets(
     SupervisionTimeBuckets.
 
     Args:
-        - supervision_periods: list of StateSupervisionPeriods for a person
+        - supervision_sentences: list of StateSupervisionSentences for a person
         - incarceration_periods: list of StateIncarcerationPeriods for a person
         - ssvr_agent_associations: dictionary associating
             StateSupervisionViolationResponse ids to information about the
@@ -97,6 +101,26 @@ def find_supervision_time_buckets(
 
     months_of_incarceration = identify_months_of_incarceration(
         incarceration_periods)
+
+    supervision_period_ids: Set[int] = set()
+    supervision_periods: List[StateSupervisionPeriod] = []
+
+    projected_supervision_completion_buckets = \
+        classify_supervision_success(supervision_sentences,
+                                     supervision_period_to_agent_associations)
+
+    supervision_time_buckets.extend(projected_supervision_completion_buckets)
+
+    for supervision_sentence in supervision_sentences:
+        for supervision_period in supervision_sentence.supervision_periods:
+            if supervision_period.supervision_period_id not in \
+                    supervision_period_ids:
+                # Do not add duplicate supervision periods that are attached
+                # to multiple sentences
+                supervision_periods.append(supervision_period)
+            if supervision_period.supervision_period_id:
+                supervision_period_ids.add(
+                    supervision_period.supervision_period_id)
 
     for supervision_period in supervision_periods:
         # Don't process placeholder supervision periods
@@ -656,3 +680,120 @@ def add_missing_revocation_returns(
                             non_revocation_supervision_year_bucket)
 
     return supervision_time_buckets
+
+
+def classify_supervision_success(
+        supervision_sentences: List[StateSupervisionSentence],
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
+        -> List[ProjectedSupervisionCompletionBucket]:
+    """
+    This classifies whether supervision projected to end in a given month was
+    completed successfully.
+
+    For supervision sentences with a projected_completion_date, where that date
+    is before or on today's date, looks at all supervision periods that have
+    terminated and finds the one with the latest termination date. From that
+    supervision period, classifies the termination as either successful or not
+    successful.
+
+    If there are multiple supervision sentences with projected completions
+    in the same month, but of varying supervision types, then one completion
+    bucket is recorded per supervision type per month.  If there are multiple
+    supervision sentences of the same supervision type with projected
+    completions in the same month, this only classifies that month as a
+    successful completion for that supervision type if all of the terminations
+    of that supervision type for that month were successful.
+    """
+
+    supervision_success_by_month: \
+        Dict[Tuple[int, int], Dict[StateSupervisionType,
+                                   ProjectedSupervisionCompletionBucket]] = {}
+
+    for supervision_sentence in supervision_sentences:
+        projected_completion_date = \
+            supervision_sentence.projected_completion_date
+
+        if projected_completion_date and \
+                projected_completion_date <= date.today():
+            year = projected_completion_date.year
+            month = projected_completion_date.month
+            latest_termination_date = None
+            latest_supervision_period = None
+
+            for supervision_period in supervision_sentence.supervision_periods:
+                termination_date = supervision_period.termination_date
+                if termination_date:
+                    if latest_termination_date is None or \
+                            latest_termination_date < termination_date:
+                        latest_termination_date = termination_date
+                        latest_supervision_period = \
+                            supervision_period
+
+            if latest_supervision_period:
+                completion_bucket = \
+                    _get_projected_completion_bucket_from_supervision_period(
+                        year, month,
+                        latest_supervision_period,
+                        supervision_period_to_agent_associations
+                    )
+                if completion_bucket.supervision_type is not None:
+                    if (year, month) not in \
+                            supervision_success_by_month.keys():
+                        supervision_success_by_month[(year, month)] = {
+                            completion_bucket.supervision_type:
+                                completion_bucket
+                        }
+                    elif completion_bucket.supervision_type not in \
+                            supervision_success_by_month[
+                                    (year, month)].keys() \
+                            or not completion_bucket.successful_completion:
+                        # If this supervision type is already represented
+                        # for this month, only replace the current value if
+                        # this supervision completion bucket represents an
+                        # unsuccessful completion.
+                        supervision_success_by_month[(year, month)][
+                            completion_bucket.supervision_type] = \
+                            completion_bucket
+
+    projected_completion_buckets = [
+        bucket
+        for month_groups in supervision_success_by_month.values()
+        for bucket in month_groups.values()
+    ]
+
+    return projected_completion_buckets
+
+
+def _get_projected_completion_bucket_from_supervision_period(
+        year: int, month: int,
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+) -> ProjectedSupervisionCompletionBucket:
+
+    supervision_success = supervision_period.termination_reason in \
+                          [StateSupervisionPeriodTerminationReason.DISCHARGE,
+                           StateSupervisionPeriodTerminationReason.EXPIRATION]
+
+    supervising_officer_external_id = None
+    supervising_district_external_id = None
+
+    if supervision_period.supervision_period_id:
+        agent_info = \
+            supervision_period_to_agent_associations.get(
+                supervision_period.supervision_period_id)
+
+        if agent_info is not None:
+            supervising_officer_external_id = agent_info.get(
+                'agent_external_id')
+            supervising_district_external_id = agent_info.get(
+                'district_external_id')
+
+    return ProjectedSupervisionCompletionBucket.for_month(
+        state_code=supervision_period.state_code,
+        year=year,
+        month=month,
+        supervision_type=supervision_period.supervision_type,
+        successful_completion=supervision_success,
+        supervising_officer_external_id=supervising_officer_external_id,
+        supervising_district_external_id=supervising_district_external_id
+    )
