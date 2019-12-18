@@ -64,13 +64,24 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
 
+    # External ID of the officer who was supervising the people described by
+    # this metric
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the district of the officer that was supervising the
+    # people described by this metric
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def for_year(state_code: str, year: int,
                  supervision_type: Optional[StateSupervisionType],
                  revocation_type:
-                 Optional[StateSupervisionViolationResponseRevocationType],
+                 Optional[StateSupervisionViolationResponseRevocationType] =
+                 None,
                  source_violation_type:
-                 Optional[StateSupervisionViolationType]) -> \
+                 Optional[StateSupervisionViolationType] = None,
+                 supervising_officer_external_id: Optional[str] = None,
+                 supervising_district_external_id: Optional[str] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
         return RevocationReturnSupervisionTimeBucket(
             state_code=state_code,
@@ -78,7 +89,10 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=None,
             supervision_type=supervision_type,
             revocation_type=revocation_type,
-            source_violation_type=source_violation_type
+            source_violation_type=source_violation_type,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id
+
         )
 
     @staticmethod
@@ -91,16 +105,23 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=None,
             supervision_type=month_bucket.supervision_type,
             revocation_type=month_bucket.revocation_type,
-            source_violation_type=month_bucket.source_violation_type
+            source_violation_type=month_bucket.source_violation_type,
+            supervising_officer_external_id=
+            month_bucket.supervising_officer_external_id,
+            supervising_district_external_id=
+            month_bucket.supervising_district_external_id
         )
 
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
                   supervision_type: Optional[StateSupervisionType],
                   revocation_type:
-                  Optional[StateSupervisionViolationResponseRevocationType],
+                  Optional[StateSupervisionViolationResponseRevocationType] =
+                  None,
                   source_violation_type:
-                  Optional[StateSupervisionViolationType]) -> \
+                  Optional[StateSupervisionViolationType] = None,
+                  supervising_officer_external_id: Optional[str] = None,
+                  supervising_district_external_id: Optional[str] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
         return RevocationReturnSupervisionTimeBucket(
             state_code=state_code,
@@ -108,7 +129,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=month,
             supervision_type=supervision_type,
             revocation_type=revocation_type,
-            source_violation_type=source_violation_type
+            source_violation_type=source_violation_type,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id
         )
 
 

@@ -21,6 +21,7 @@ import json
 import unittest
 
 import apache_beam as beam
+from apache_beam.pvalue import AsList, AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -280,12 +281,33 @@ class TestSupervisionPipeline(unittest.TestCase):
                               beam.CoGroupByKey()
                               )
 
-        # Identify SupervisionTimeBuckets from the StatePerson's
+        ssvr_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id':
+                supervision_violation_response.supervision_violation_response_id
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
+        # Identify SupervisionMonths from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
-        person_months = (
+        person_time_buckets = (
             person_and_periods |
-            'Get Supervision Time Buckets' >>
-            pipeline.GetSupervisionTimeBuckets())
+            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                       AsDict(ssvr_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -295,7 +317,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_months
+        supervision_metrics = (person_time_buckets
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
@@ -393,6 +415,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=fake_violation_id
         )
+
+        state_agent = database_test_utils.generate_test_assessment_agent()
+
+        ssvr.decision_agents = [state_agent]
 
         violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
@@ -539,12 +565,32 @@ class TestSupervisionPipeline(unittest.TestCase):
                               beam.CoGroupByKey()
                               )
 
+        ssvr_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'ASSAGENT1234',
+            'district_external_id': '4',
+            'supervision_violation_response_id': fake_svr_id
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         # Identify SupervisionMonths from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
-        person_months = (
+        person_time_buckets = (
             person_and_periods |
-            'Get Supervision Time Buckets' >>
-            pipeline.GetSupervisionTimeBuckets())
+            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                       AsDict(ssvr_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -554,7 +600,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_months
+        supervision_metrics = (person_time_buckets
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
@@ -668,6 +714,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_violation_response = \
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id_2)
+
+        state_agent = database_test_utils.generate_test_assessment_agent()
+
+        supervision_violation_response.decision_agents = [state_agent]
 
         supervision_violation = \
             database_test_utils.generate_test_supervision_violation(
@@ -833,12 +883,33 @@ class TestSupervisionPipeline(unittest.TestCase):
                               beam.CoGroupByKey()
                               )
 
-        # Identify SupervisionTimeBuckets from the StatePerson's
+        ssvr_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'ASSAGENT1234',
+            'district_external_id': '4',
+            'supervision_violation_response_id':
+            supervision_violation_response.supervision_violation_response_id
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
+        # Identify SupervisionMonths from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
-        person_months = (
+        person_time_buckets = (
             person_and_periods |
-            'Get Supervision Time Buckets' >>
-            pipeline.GetSupervisionTimeBuckets())
+            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                       AsDict(ssvr_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -848,7 +919,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_months
+        supervision_metrics = (person_time_buckets
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
@@ -925,11 +996,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
-                  | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+                  | 'Identify Supervision Time Buckets' >>
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                             AsDict(ssvr_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -999,11 +1091,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
-                  | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+                  | 'Identify Supervision Time Buckets' >>
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                             AsDict(ssvr_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -1060,11 +1173,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
-                  | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+                  | 'Identify Supervision Time Buckets' >>
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                             AsDict(ssvr_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -1102,11 +1236,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
-                  | 'Identify Supervision Months' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+                  | 'Identify Supervision Time Buckets' >>
+                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
+                             AsDict(ssvr_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))

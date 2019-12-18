@@ -25,7 +25,7 @@ the person should contribute to that metric.
 import json
 from copy import deepcopy
 from datetime import date
-from typing import Dict, List, Tuple, Any, cast
+from typing import Dict, List, Tuple, Any
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
@@ -160,15 +160,21 @@ def characteristic_combinations(person: StatePerson,
     if with_revocation_dimensions and \
             isinstance(supervision_time_bucket,
                        RevocationReturnSupervisionTimeBucket):
-        revocation_time_bucket = cast(RevocationReturnSupervisionTimeBucket,
-                                      supervision_time_bucket)
-        if revocation_time_bucket.revocation_type:
+        if supervision_time_bucket.revocation_type:
             characteristics['revocation_type'] = \
                 supervision_time_bucket.revocation_type
 
-        if revocation_time_bucket.source_violation_type:
+        if supervision_time_bucket.source_violation_type:
             characteristics['source_violation_type'] = \
                 supervision_time_bucket.source_violation_type
+
+        if supervision_time_bucket.supervising_officer_external_id:
+            characteristics['supervising_officer_external_id'] = \
+                supervision_time_bucket.supervising_officer_external_id
+
+        if supervision_time_bucket.supervising_district_external_id:
+            characteristics['supervising_district_external_id'] = \
+                supervision_time_bucket.supervising_district_external_id
 
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = \
