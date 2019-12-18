@@ -35,10 +35,28 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.entity.state.entities import \
-    StateSupervisionPeriod, StateIncarcerationPeriod
+    StateSupervisionPeriod, StateIncarcerationPeriod, \
+    StateSupervisionViolationResponse, StateSupervisionViolation, \
+    StateSupervisionViolationTypeEntry, \
+    StateSupervisionViolationResponseDecisionEntry
+
+DEFAULT_SSVR_AGENT_ASSOCIATIONS = {
+    999: {
+        'agent_id': 000,
+        'agent_external_id': 'XXX',
+        'district_external_id': 'X',
+        'supervision_violation_response_id': 999
+    }
+}
 
 
+# TODO(2732): Implement more full test coverage of the officer and district
+#  functionality
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests for the find_supervision_time_buckets function."""
 
@@ -60,7 +78,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -102,7 +121,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 13)
@@ -191,7 +211,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 10)
@@ -262,7 +283,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 9)
@@ -328,7 +350,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 9)
@@ -415,7 +438,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 10)
@@ -500,7 +524,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -564,7 +589,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 9)
@@ -629,7 +655,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -646,10 +673,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2018, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2018, 6, StateSupervisionType.PROBATION, None, None),
+                2018, 6, StateSupervisionType.PROBATION),
             RevocationReturnSupervisionTimeBucket.for_year(
                 incarceration_period.state_code,
-                2018, StateSupervisionType.PROBATION, None, None)
+                2018, StateSupervisionType.PROBATION)
         ])
 
     def test_find_supervision_time_buckets_return_next_year(self):
@@ -681,10 +708,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
-        # self.assertEqual(len(supervision_time_buckets), 6)
+        self.assertEqual(len(supervision_time_buckets), 6)
 
         self.assertEqual(supervision_time_buckets, [
             NonRevocationReturnSupervisionTimeBucket.for_month(
@@ -701,10 +729,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2018, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2019, 1, StateSupervisionType.PROBATION, None, None),
+                2019, 1, StateSupervisionType.PROBATION),
             RevocationReturnSupervisionTimeBucket.for_year(
                 incarceration_period.state_code,
-                2019, StateSupervisionType.PROBATION, None, None),
+                2019, StateSupervisionType.PROBATION),
         ])
 
     def test_find_supervision_time_buckets_return_months_later(self):
@@ -735,7 +763,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -752,10 +781,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2018, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2018, 10, StateSupervisionType.PROBATION, None, None),
+                2018, 10, StateSupervisionType.PROBATION),
             RevocationReturnSupervisionTimeBucket.for_year(
                 incarceration_period.state_code,
-                2018, StateSupervisionType.PROBATION, None, None)
+                2018, StateSupervisionType.PROBATION)
         ])
 
     def test_find_supervision_time_buckets_return_years_later(self):
@@ -786,7 +815,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 6)
@@ -806,10 +836,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2015, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 incarceration_period.state_code,
-                2017, 10, StateSupervisionType.PROBATION, None, None),
+                2017, 10, StateSupervisionType.PROBATION),
             RevocationReturnSupervisionTimeBucket.for_year(
                 incarceration_period.state_code,
-                2017, StateSupervisionType.PROBATION, None, None),
+                2017, StateSupervisionType.PROBATION),
         ])
 
     def test_find_supervision_time_buckets_multiple_periods_revocations(self):
@@ -854,7 +884,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 9)
@@ -868,22 +899,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2018, 2, first_supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code,
-                2018, 3, first_supervision_period.supervision_type, None, None),
+                2018, 3, first_supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code,
                 2018, 8, first_supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code,
-                2018, 9, first_supervision_period.supervision_type, None, None),
+                2018, 9, first_supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 first_supervision_period.state_code,
                 2018, 12, first_supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 first_supervision_period.state_code,
-                2018, first_supervision_period.supervision_type, None, None),
+                2018, first_supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 first_supervision_period.state_code,
-                2018, first_supervision_period.supervision_type, None, None),
+                2018, first_supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_year(
                 first_incarceration_period.state_code,
                 2018, first_supervision_period.supervision_type),
@@ -925,7 +956,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_periods, incarceration_periods
+            supervision_periods, incarceration_periods,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -939,10 +971,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2018, 4, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 5, supervision_period.supervision_type, None, None),
+                2018, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 incarceration_period.state_code,
-                2018, StateSupervisionType.PROBATION, None, None),
+                2018, StateSupervisionType.PROBATION),
         ])
 
 
@@ -952,7 +984,10 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
     def test_find_time_buckets_for_supervision_period_revocation(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
-        in the same month as the supervision period's termination_date."""
+        in the same month as the supervision period's termination_date.
+        Also ensures that the correct revocation_type, violation_type,
+        supervising_officer_external_id, and supervising_district_external_id
+        are set on the RevocationReturnSupervisionTimeBucket."""
 
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
@@ -964,13 +999,48 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=StateSupervisionType.PROBATION
             )
 
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    ),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.FELONY
+                    )
+                ]
+            )
+
+        source_supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=999,
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        REINCARCERATION
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        SHOCK_INCARCERATION,
+                        )
+                ],
+                supervision_violation=supervision_violation
+            )
+
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='UT',
                 admission_date=date(2018, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                source_supervision_violation_response=
+                source_supervision_violation_response
             )
 
         indexed_incarceration_periods = \
@@ -983,7 +1053,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -998,11 +1068,17 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 5, supervision_period.supervision_type,
-                None, None),
+                StateSupervisionViolationResponseRevocationType.
+                SHOCK_INCARCERATION,
+                StateSupervisionViolationType.FELONY,
+                'XXX', 'X'),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
                 2018, supervision_period.supervision_type,
-                None, None)
+                StateSupervisionViolationResponseRevocationType.
+                SHOCK_INCARCERATION,
+                StateSupervisionViolationType.FELONY,
+                'XXX', 'X')
         ])
 
     def test_find_time_buckets_for_supervision_period_nested_revocation(self):
@@ -1039,7 +1115,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 8)
@@ -1115,7 +1191,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -1133,7 +1209,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 None, None),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2018, supervision_period.supervision_type, None, None)
+                2018, supervision_period.supervision_type)
         ])
 
     # pylint: disable=line-too-long
@@ -1170,7 +1246,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration,
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -1188,7 +1265,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 None, None),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2018, supervision_period.supervision_type, None, None)
+                2018, supervision_period.supervision_type)
         ])
 
     # pylint: disable=line-too-long
@@ -1224,7 +1301,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration,
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1245,7 +1323,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 None, None),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2003, supervision_period.supervision_type, None, None)
+                2003, supervision_period.supervision_type)
         ])
 
     # pylint: disable=line-too-long
@@ -1283,7 +1361,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration,
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 7)
@@ -1307,7 +1386,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2019, 11, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2019, supervision_period.supervision_type, None, None),
+                2019, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
                 2019, supervision_period.supervision_type),
@@ -1346,7 +1425,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
         self.assertEqual(len(supervision_time_buckets), 5)
 
@@ -1366,7 +1445,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 None, None),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2019, supervision_period.supervision_type, None, None)
+                2019, supervision_period.supervision_type)
         ])
 
     # pylint: disable=line-too-long
@@ -1402,7 +1481,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1462,7 +1541,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1529,7 +1608,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1546,10 +1625,10 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 6, supervision_period.supervision_type, None, None),
+                2018, 6, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2018, supervision_period.supervision_type, None, None)
+                2018, supervision_period.supervision_type)
         ])
 
     # pylint: disable=line-too-long
@@ -1599,7 +1678,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 11)
@@ -1616,7 +1695,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 6, supervision_period.supervision_type, None, None),
+                2018, 6, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 9, supervision_period.supervision_type),
@@ -1625,16 +1704,16 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, 10, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2018, 11, supervision_period.supervision_type, None, None),
+                2018, 11, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2018, 12, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2018, supervision_period.supervision_type, None, None),
+                2018, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2018, supervision_period.supervision_type, None, None),
+                2018, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
                 2018, supervision_period.supervision_type)
@@ -1678,7 +1757,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 11)
@@ -1695,7 +1774,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2008, 5, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
-                2008, 6, supervision_period.supervision_type, None, None),
+                2008, 6, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 supervision_period.state_code,
                 2009, 12, supervision_period.supervision_type),
@@ -1710,7 +1789,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2010, 3, supervision_period.supervision_type),
             RevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
-                2008, supervision_period.supervision_type, None, None),
+                2008, supervision_period.supervision_type),
             NonRevocationReturnSupervisionTimeBucket.for_year(
                 supervision_period.state_code,
                 2009, supervision_period.supervision_type),
@@ -1743,7 +1822,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration
+                months_of_incarceration, DEFAULT_SSVR_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 8)

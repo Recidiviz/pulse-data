@@ -51,6 +51,7 @@ from typing import Dict, Any, List, Tuple
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
+from apache_beam.pvalue import AsDict
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
@@ -89,19 +90,21 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[SupervisionTimeBucket]])
-class GetSupervisionTimeBuckets(beam.PTransform):
-    """Transforms a StatePerson and their periods of supervision and
-     incarceration into SupervisionTimeBuckets."""
+@with_input_types(beam.typehints.Dict[str, Any], str)
+@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
+class ConvertDictToKVTuple(beam.DoFn):
+    """Converts a dictionary into a key value tuple by extracting a value from
+     the dictionary and setting it as the key."""
 
-    def __init__(self):
-        super(GetSupervisionTimeBuckets, self).__init__()
+    #pylint: disable=arguments-differ
+    def process(self, element, key):
+        key_value = element.get(key)
 
-    def expand(self, input_or_inputs):
-        return (input_or_inputs
-                | beam.ParDo(ClassifySupervisionTimeBuckets()))
+        if key_value:
+            yield (key_value, element)
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
@@ -161,14 +164,17 @@ class GetSupervisionMetrics(beam.PTransform):
         return merged_metrics
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
+                  beam.typehints.Optional[Dict[Any,
+                                               Tuple[Any, Dict[str, Any]]]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         List[SupervisionTimeBucket]])
 class ClassifySupervisionTimeBuckets(beam.DoFn):
     """Classifies time on supervision as years and months with or without
     revocation."""
 
-    def process(self, element, *args, **kwargs):
+    #pylint: disable=arguments-differ
+    def process(self, element, ssvr_agent_associations):
         """Identifies instances of revocation and non-revocation time buckets on
         supervision.
         """
@@ -190,7 +196,8 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         supervision_time_buckets = \
             identifier.find_supervision_time_buckets(
                 supervision_periods,
-                incarceration_periods)
+                incarceration_periods,
+                ssvr_agent_associations)
 
         if not supervision_time_buckets:
             logging.info("No valid supervision time buckets for person with"
@@ -496,6 +503,27 @@ def run(argv=None):
                                    unifying_id_field='person_id',
                                    build_related_entities=False))
 
+        # Bring in the table that associates StateSupervisionViolationResponses
+        # to information about StateAgents
+        ssvr_to_agent_association_query = \
+            f"SELECT * FROM `{query_dataset}.ssvr_to_agent_association`"
+
+        ssvr_to_agent_associations = (
+            p
+            | "Read SSVR to Agent table from BigQuery" >>
+            beam.io.Read(beam.io.BigQuerySource
+                         (query=ssvr_to_agent_association_query,
+                          use_standard_sql=True)))
+
+        # Convert the association table rows into key-value tuples with the
+        # value for the supervision_violation_response_id column as the key
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
@@ -530,10 +558,10 @@ def run(argv=None):
 
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionPeriods and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_and_periods |
-            'Get Supervision Time Buckets' >>
-            GetSupervisionTimeBuckets())
+        person_time_buckets = (person_and_periods
+                               | beam.ParDo(ClassifySupervisionTimeBuckets(),
+                                            AsDict(
+                                                ssvr_agent_associations_as_kv)))
 
         # Get dimensions to include and methodologies to use
         inclusions, _ = dimensions_and_methodologies(known_args)
