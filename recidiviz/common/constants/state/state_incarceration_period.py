@@ -176,6 +176,8 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'MED': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'RETURN FROM MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'TEMPORARY CUSTODY':
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
     'TRANSFER': StateIncarcerationPeriodAdmissionReason.TRANSFER
 }
 
@@ -206,6 +208,8 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RELEASE TO PAROLE':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASED FROM TEMPORARY CUSTODY':
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
     'RELEASE TO PROBATION':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,

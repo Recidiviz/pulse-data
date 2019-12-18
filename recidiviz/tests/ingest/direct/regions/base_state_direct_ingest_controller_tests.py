@@ -40,6 +40,7 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     clear_db_ids, assert_no_unexpected_entities_in_db
+from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.utils.regions import Region
 
 
@@ -110,10 +111,10 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         found_people = self.convert_and_clear_db_ids(found_people_from_db)
 
         if debug:
-            print("\n\nFINAL")
+            print_visible_header_label('FINAL')
             for p in found_people:
                 print_entity_tree(p)
-            print("\n\nEXPECTED")
+            print_visible_header_label('EXPECTED')
             for p in expected_db_people:
                 print_entity_tree(p)
 

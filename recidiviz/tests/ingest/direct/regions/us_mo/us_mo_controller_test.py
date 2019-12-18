@@ -678,6 +678,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             deciding_body_type='PAROLE_BOARD'
         )
 
+        vr_110035_20010414_7 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            response_date='20160328',
+            decision='REVOCATION',
+            revocation_type='S',
+            deciding_body_type='PAROLE_BOARD'
+        )
+
         ip_110035_19890901_1_0 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-19890901-1-0',
             status='NOT_IN_CUSTODY',
@@ -722,9 +730,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-4-0',
             status='NOT_IN_CUSTODY',
             admission_date='20130521',
-            admission_reason='IB-BP',
+            admission_reason='TEMPORARY_CUSTODY',
             release_date='20131127',
-            release_reason='IT-BP',
+            release_reason='RELEASED_FROM_TEMPORARY_CUSTODY',
             specialized_purpose_for_incarceration='S',
         )
         ip_110035_20010414_7_0 = StateIncarcerationPeriod(
@@ -735,6 +743,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             release_date='20161011',
             release_reason='ID-DR',
             specialized_purpose_for_incarceration='S',
+            source_supervision_violation_response=vr_110035_20010414_7
         )
 
         expected = IngestInfo(state_people=[
@@ -2460,12 +2469,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 admission_date=datetime.date(year=2013, month=5, day=21),
                 admission_reason=
-                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='IB-BP',
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                admission_reason_raw_text='TEMPORARY_CUSTODY',
                 release_date=datetime.date(year=2013, month=11, day=27),
                 release_reason=
-                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-                release_reason_raw_text='IT-BP',
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                release_reason_raw_text='RELEASED_FROM_TEMPORARY_CUSTODY',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
@@ -2479,7 +2488,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 admission_date=datetime.date(year=2016, month=3, day=28),
                 admission_reason=
-                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='IB-BH',
                 release_date=datetime.date(year=2016, month=10, day=11),
                 release_reason=
@@ -2489,6 +2498,27 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 incarceration_sentences=[sis_110035_20010414_1]
             )
+
+        vr_110035_20010414_7 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=2016, month=3, day=28),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='S',
+                deciding_body_type=
+                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text='PAROLE_BOARD',
+                person=person_110035,
+            )
+        ip_110035_20010414_7_0.source_supervision_violation_response = \
+            vr_110035_20010414_7
+
         sis_110035_20010414_1.incarceration_periods = [
             ip_110035_20010414_2_0,
             ip_110035_20010414_4_0,
