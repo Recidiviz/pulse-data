@@ -172,3 +172,40 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=month,
             supervision_type=supervision_type
         )
+
+
+@attr.s(frozen=True)
+class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
+    """Models a month and year in which supervision was projected to complete.
+
+    Describes whether or not the supervision was successfully completed or not,
+    as well as other details about the time on supervision.
+    """
+    # Whether or not the supervision was completed successfully
+    successful_completion: bool = attr.ib(default=True)
+
+    # External ID of the officer who was supervising the people described by
+    # this metric
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the district of the officer that was supervising the
+    # people described by this metric
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    @staticmethod
+    def for_month(state_code: str, year: int, month: int,
+                  supervision_type: Optional[StateSupervisionType],
+                  successful_completion: bool,
+                  supervising_officer_external_id: Optional[str] = None,
+                  supervising_district_external_id: Optional[str] = None) -> \
+            'ProjectedSupervisionCompletionBucket':
+        return ProjectedSupervisionCompletionBucket(
+            state_code=state_code,
+            year=year,
+            month=month,
+            supervision_type=supervision_type,
+            successful_completion=successful_completion,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id
+
+        )
