@@ -34,6 +34,8 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
     FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils import fakes
+from recidiviz.tests.utils.test_utils import print_visible_header_label
+
 
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
@@ -102,10 +104,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         final_info = self.controller._parse(args, fixture_contents_handle)
 
-        print("FINAL")
+        print_visible_header_label('FINAL')
         print(final_info)
-        print("\n\n\n")
-        print("EXPECTED")
+
+        print_visible_header_label('EXPECTED')
         print(expected)
 
         self.assertEqual(final_info, expected)
