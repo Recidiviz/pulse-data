@@ -131,6 +131,14 @@ class SupervisionRevocationMetric(SupervisionMetric):
     source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
 
+    # External ID of the officer who was supervising the people described by
+    # this metric
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the district of the officer that was supervising the
+    # people described by this metric
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
                                     job_id: str) -> \
