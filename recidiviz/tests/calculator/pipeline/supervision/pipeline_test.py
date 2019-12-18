@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
-    RevocationReturnSupervisionTimeBucket
+    RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -44,6 +44,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationFacilitySecurityLevel
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -57,7 +58,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
-    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity
+    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
+    StateSupervisionSentence
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
@@ -163,6 +165,28 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id
         )
 
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=1122,
+            state_code='CA',
+            supervision_periods=[supervision_period],
+            projected_completion_date=date(2016, 12, 31),
+            person_id=fake_person_id
+        )
+
+        supervision_sentence_supervision_period_association = [
+            {
+                'supervision_period_id': 1111,
+                'supervision_sentence_id': 1122,
+            }
+        ]
+
+        charge = database_test_utils.generate_test_charge(
+            person_id=fake_person_id,
+            charge_id=1234523,
+            court_case=None,
+            bond=None
+        )
+
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration),
             normalized_database_base_dict(first_reincarceration),
@@ -171,6 +195,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period)
+        ]
+
+        supervision_sentences_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
+        charge_data = [
+            normalized_database_base_dict(charge)
         ]
 
         supervision_violation_response = \
@@ -188,15 +220,28 @@ class TestSupervisionPipeline(unittest.TestCase):
             'ethnicity': True,
         }
 
-        data_dict = {schema.StatePerson.__tablename__: persons_data,
-                     schema.StatePersonRace.__tablename__: races_data,
-                     schema.StatePersonEthnicity.__tablename__: ethnicity_data,
-                     schema.StateIncarcerationPeriod.__tablename__:
-                         incarceration_periods_data,
-                     schema.StateSupervisionViolationResponse.__tablename__:
-                         supervision_violation_response_data,
-                     schema.StateSupervisionPeriod.__tablename__:
-                         supervision_periods_data}
+        data_dict = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StatePersonRace.__tablename__: races_data,
+            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
+            schema.StateIncarcerationPeriod.__tablename__:
+                incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__:
+                supervision_violation_response_data,
+            schema.StateSupervisionPeriod.__tablename__:
+                supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__:
+                supervision_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name:
+                [{}],
+            schema.
+            state_supervision_sentence_incarceration_period_association_table.
+            name: [{}],
+            schema.
+            state_supervision_sentence_supervision_period_association_table.
+            name: supervision_sentence_supervision_period_association
+        }
 
         test_pipeline = TestPipeline()
 
@@ -237,18 +282,18 @@ class TestSupervisionPipeline(unittest.TestCase):
                  build_related_entities=True
              ))
 
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=False))
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline
+                                 | 'Load SupervisionSentences' >>
+                                 extractor_utils.BuildRootEntity(
+                                     dataset=None,
+                                     data_dict=data_dict,
+                                     root_schema_class=
+                                     schema.StateSupervisionSentence,
+                                     root_entity_class=
+                                     entities.StateSupervisionSentence,
+                                     unifying_id_field='person_id',
+                                     build_related_entities=True))
 
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
@@ -269,17 +314,18 @@ class TestSupervisionPipeline(unittest.TestCase):
             beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
         # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionPeriods
-        person_and_periods = ({'person': persons,
-                               'incarceration_periods':
-                                   incarceration_periods_with_source_violations,
-                               'supervision_periods':
-                                   supervision_periods
-                               }
-                              | 'Group StatePerson to StateIncarcerationPeriods'
-                                ' and StateSupervisionPeriods' >>
-                              beam.CoGroupByKey()
-                              )
+        # StateSupervisionSentences
+        person_periods_and_sentences = (
+            {'person': persons,
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations,
+             'supervision_sentences':
+                 supervision_sentences
+             }
+            | 'Group StatePerson to StateIncarcerationPeriods and'
+              ' StateSupervisionPeriods' >>
+            beam.CoGroupByKey()
+        )
 
         ssvr_to_agent_map = {
             'agent_id': 1010,
@@ -302,12 +348,37 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
-        # Identify SupervisionMonths from the StatePerson's
-        # StateSupervisionPeriods and StateIncarcerationPeriods
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
+        # Identify SupervisionTimeBuckets from the StatePerson's
+        # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
-            person_and_periods |
-            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                       AsDict(ssvr_agent_associations_as_kv)))
+            person_periods_and_sentences
+            | beam.ParDo(
+                pipeline.ClassifySupervisionTimeBuckets(),
+                AsDict(
+                    ssvr_agent_associations_as_kv),
+                AsDict(
+                    supervision_periods_to_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -407,6 +478,28 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id
         )
 
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=1122,
+            state_code='CA',
+            supervision_periods=[supervision_period],
+            projected_completion_date=date(2017, 12, 31),
+            person_id=fake_person_id
+        )
+
+        supervision_sentence_supervision_period_association = [
+            {
+                'supervision_period_id': 1111,
+                'supervision_sentence_id': 1122,
+            }
+        ]
+
+        charge = database_test_utils.generate_test_charge(
+            person_id=fake_person_id,
+            charge_id=1234523,
+            court_case=None,
+            bond=None
+        )
+
         ssvr = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=fake_svr_id,
             state_code='us_ca',
@@ -420,7 +513,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ssvr.decision_agents = [state_agent]
 
-        violation = schema.StateSupervisionViolation(
+        supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
             violation_type=StateSupervisionViolationType.TECHNICAL,
             state_code='us_ca',
@@ -460,7 +553,15 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         supervision_violation_data = [
-            normalized_database_base_dict(violation)
+            normalized_database_base_dict(supervision_violation)
+        ]
+
+        supervision_sentences_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
+        charge_data = [
+            normalized_database_base_dict(charge)
         ]
 
         inclusions = {
@@ -470,17 +571,30 @@ class TestSupervisionPipeline(unittest.TestCase):
             'ethnicity': False,
         }
 
-        data_dict = {schema.StatePerson.__tablename__: persons_data,
-                     schema.StatePersonRace.__tablename__: races_data,
-                     schema.StatePersonEthnicity.__tablename__: ethnicity_data,
-                     schema.StateIncarcerationPeriod.__tablename__:
-                         incarceration_periods_data,
-                     schema.StateSupervisionViolation.__tablename__:
-                         supervision_violation_data,
-                     schema.StateSupervisionViolationResponse.__tablename__:
-                         supervision_violation_response_data,
-                     schema.StateSupervisionPeriod.__tablename__:
-                         supervision_periods_data}
+        data_dict = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StatePersonRace.__tablename__: races_data,
+            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
+            schema.StateIncarcerationPeriod.__tablename__:
+                incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__:
+                supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__:
+                supervision_violation_data,
+            schema.StateSupervisionPeriod.__tablename__:
+                supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__:
+                supervision_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name:
+                [{}],
+            schema.
+            state_supervision_sentence_incarceration_period_association_table.
+            name: [{}],
+            schema.
+            state_supervision_sentence_supervision_period_association_table.
+            name: supervision_sentence_supervision_period_association
+        }
 
         test_pipeline = TestPipeline()
 
@@ -521,18 +635,18 @@ class TestSupervisionPipeline(unittest.TestCase):
                  build_related_entities=True
              ))
 
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=False))
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline
+                                 | 'Load SupervisionSentences' >>
+                                 extractor_utils.BuildRootEntity(
+                                     dataset=None,
+                                     data_dict=data_dict,
+                                     root_schema_class=
+                                     schema.StateSupervisionSentence,
+                                     root_entity_class=
+                                     entities.StateSupervisionSentence,
+                                     unifying_id_field='person_id',
+                                     build_related_entities=True))
 
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
@@ -553,17 +667,17 @@ class TestSupervisionPipeline(unittest.TestCase):
             beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
         # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionPeriods
-        person_and_periods = ({'person': persons,
-                               'incarceration_periods':
-                                   incarceration_periods_with_source_violations,
-                               'supervision_periods':
-                                   supervision_periods
-                               }
-                              | 'Group StatePerson to StateIncarcerationPeriods'
-                                ' and StateSupervisionPeriods' >>
-                              beam.CoGroupByKey()
-                              )
+        # StateSupervisionSentences
+        person_periods_and_sentences = (
+            {'person': persons,
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations,
+             'supervision_sentences': supervision_sentences
+             }
+            | 'Group StatePerson to StateIncarcerationPeriods'
+              ' and StateSupervisionPeriods' >>
+            beam.CoGroupByKey()
+        )
 
         ssvr_to_agent_map = {
             'agent_id': 1010,
@@ -585,12 +699,37 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
-        # Identify SupervisionMonths from the StatePerson's
-        # StateSupervisionPeriods and StateIncarcerationPeriods
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
+        # Identify SupervisionTimeBuckets from the StatePerson's
+        # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
-            person_and_periods |
-            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                       AsDict(ssvr_agent_associations_as_kv)))
+            person_periods_and_sentences
+            | beam.ParDo(
+                pipeline.ClassifySupervisionTimeBuckets(),
+                AsDict(
+                    ssvr_agent_associations_as_kv),
+                AsDict(
+                    supervision_periods_to_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -711,6 +850,28 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id_1
         )
 
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=1122,
+            state_code='CA',
+            supervision_periods=[supervision_period__1],
+            projected_completion_date=date(2017, 12, 31),
+            person_id=fake_person_id_1
+        )
+
+        supervision_sentence_supervision_period_association = [
+            {
+                'supervision_period_id': 1111,
+                'supervision_sentence_id': 1122,
+            }
+        ]
+
+        charge = database_test_utils.generate_test_charge(
+            person_id=fake_person_id_1,
+            charge_id=1234523,
+            court_case=None,
+            bond=None
+        )
+
         supervision_violation_response = \
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id_2)
@@ -732,6 +893,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_violation_data = [
             normalized_database_base_dict(supervision_violation)
+        ]
+
+        supervision_sentences_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
+        charge_data = [
+            normalized_database_base_dict(charge)
         ]
 
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
@@ -790,15 +959,28 @@ class TestSupervisionPipeline(unittest.TestCase):
             'ethnicity': False,
         }
 
-        data_dict = {schema.StatePerson.__tablename__: persons_data,
-                     schema.StateIncarcerationPeriod.__tablename__:
-                         incarceration_periods_data,
-                     schema.StateSupervisionViolationResponse.__tablename__:
-                         supervision_violation_response_data,
-                     schema.StateSupervisionViolation.__tablename__:
-                         supervision_violation_data,
-                     schema.StateSupervisionPeriod.__tablename__:
-                         supervision_periods_data}
+        data_dict = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StateIncarcerationPeriod.__tablename__:
+                incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__:
+                supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__:
+                supervision_violation_data,
+            schema.StateSupervisionPeriod.__tablename__:
+                supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__:
+                supervision_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name:
+                [{}],
+            schema.
+            state_supervision_sentence_incarceration_period_association_table.
+            name: [{}],
+            schema.
+            state_supervision_sentence_supervision_period_association_table.
+            name: supervision_sentence_supervision_period_association
+        }
 
         test_pipeline = TestPipeline()
 
@@ -839,18 +1021,18 @@ class TestSupervisionPipeline(unittest.TestCase):
                  build_related_entities=True
              ))
 
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=False))
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline
+                                 | 'Load SupervisionSentences' >>
+                                 extractor_utils.BuildRootEntity(
+                                     dataset=None,
+                                     data_dict=data_dict,
+                                     root_schema_class=
+                                     schema.StateSupervisionSentence,
+                                     root_entity_class=
+                                     entities.StateSupervisionSentence,
+                                     unifying_id_field='person_id',
+                                     build_related_entities=True))
 
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
@@ -871,17 +1053,17 @@ class TestSupervisionPipeline(unittest.TestCase):
             beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
         # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionPeriods
-        person_and_periods = ({'person': persons,
-                               'incarceration_periods':
-                                   incarceration_periods_with_source_violations,
-                               'supervision_periods':
-                                   supervision_periods
-                               }
-                              | 'Group StatePerson to StateIncarcerationPeriods'
-                                ' and StateSupervisionPeriods' >>
-                              beam.CoGroupByKey()
-                              )
+        # StateSupervisionSentences
+        person_periods_and_sentences = (
+            {'person': persons,
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations,
+             'supervision_sentences': supervision_sentences
+             }
+            | 'Group StatePerson to StateIncarcerationPeriods'
+              ' and StateSupervisionPeriods' >>
+            beam.CoGroupByKey()
+        )
 
         ssvr_to_agent_map = {
             'agent_id': 1010,
@@ -904,12 +1086,36 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
-        # Identify SupervisionMonths from the StatePerson's
-        # StateSupervisionPeriods and StateIncarcerationPeriods
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': 9999999
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
+        # Identify SupervisionTimeBuckets from the StatePerson's
+        # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
-            person_and_periods |
-            beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                       AsDict(ssvr_agent_associations_as_kv)))
+            person_periods_and_sentences
+            | beam.ParDo(
+                pipeline.ClassifySupervisionTimeBuckets(),
+                AsDict(
+                    ssvr_agent_associations_as_kv),
+                AsDict(
+                    supervision_periods_to_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -960,19 +1166,34 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionType.PROBATION,
             person_id=fake_person_id
         )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                projected_completion_date=date(2015, 5, 30),
+                supervision_periods=[supervision_period]
+            )
 
         person_periods = {'person': [fake_person],
                           'incarceration_periods': [
                               incarceration_period
                           ],
-                          'supervision_periods': [
-                              supervision_period
+                          'supervision_sentences': [
+                              supervision_sentence
                           ]}
 
         supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket(
+                supervision_period.state_code,
+                2015, 5, supervision_period.supervision_type,
+                True, 'OFFICER0009', '10'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
@@ -1016,12 +1237,35 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Time Buckets' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                             AsDict(ssvr_agent_associations_as_kv))
+                  beam.ParDo(
+                      pipeline.ClassifySupervisionTimeBuckets(),
+                      AsDict(ssvr_agent_associations_as_kv),
+                      AsDict(supervision_periods_to_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -1059,12 +1303,19 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
         person_periods = {'person': [fake_person],
                           'incarceration_periods': [
                               incarceration_period
                           ],
-                          'supervision_periods': [
-                              supervision_period
+                          'supervision_sentences': [
+                              supervision_sentence
                           ]}
 
         supervision_time_buckets = [
@@ -1111,12 +1362,35 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Time Buckets' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                             AsDict(ssvr_agent_associations_as_kv))
+                  beam.ParDo(
+                      pipeline.ClassifySupervisionTimeBuckets(),
+                      AsDict(ssvr_agent_associations_as_kv),
+                      AsDict(supervision_periods_to_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -1143,10 +1417,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             person_id=fake_person_id
         )
 
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
         person_periods = {'person': [fake_person],
                           'incarceration_periods': [],
-                          'supervision_periods': [
-                              supervision_period
+                          'supervision_sentences': [
+                              supervision_sentence
                           ]}
 
         supervision_time_buckets = [
@@ -1193,12 +1474,35 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Time Buckets' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                             AsDict(ssvr_agent_associations_as_kv))
+                  beam.ParDo(
+                      pipeline.ClassifySupervisionTimeBuckets(),
+                      AsDict(ssvr_agent_associations_as_kv),
+                      AsDict(supervision_periods_to_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -1230,7 +1534,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                           'incarceration_periods': [
                               incarceration_period
                           ],
-                          'supervision_periods': []}
+                          'supervision_sentences': []}
 
         correct_output = []
 
@@ -1256,12 +1560,34 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                        'supervision_violation_response_id')
         )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': 9999
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Supervision Time Buckets' >>
-                  beam.ParDo(pipeline.ClassifySupervisionTimeBuckets(),
-                             AsDict(ssvr_agent_associations_as_kv))
+                  beam.ParDo(
+                      pipeline.ClassifySupervisionTimeBuckets(),
+                      AsDict(ssvr_agent_associations_as_kv),
+                      AsDict(supervision_periods_to_agent_associations_as_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
