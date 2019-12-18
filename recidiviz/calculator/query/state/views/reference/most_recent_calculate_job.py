@@ -37,9 +37,9 @@ MOST_RECENT_CALCULATE_JOB_QUERY = \
     """
     /*{description}*/
 
-    SELECT state_code, job_id FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
-    GROUP BY state_code, job_id
-    ORDER BY state_code, job_id DESC
+    SELECT job_id FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
+    GROUP BY job_id
+    ORDER BY job_id DESC
     LIMIT 1
     """.format(
         description=MOST_RECENT_CALCULATE_JOB_DESCRIPTION,
