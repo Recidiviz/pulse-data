@@ -28,10 +28,10 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.state. \
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    base_entity_match, read_persons_by_root_entity_cls
+    base_entity_match, read_persons_by_root_entity_cls, \
+    add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity_matching.state.us_nd. \
     us_nd_matching_utils import \
-    add_supervising_officer_to_open_supervision_periods, \
     associate_revocation_svrs_with_ips, move_incidents_onto_periods, \
     update_temporary_holds, merge_incarceration_periods, \
     merge_incomplete_periods, is_incarceration_period_match

@@ -1,0 +1,26 @@
+child_key_mappings:
+  CE$DOC: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  CE$DOC: state_person.state_person_id
+
+keys_to_ignore:
+  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  - CE$CYC  # Unused - Offender Cycle Id
+  - CE$PON  # Unused - Duplicate of BDGNO
+  - CE$HF   # Unused - Field assignment begin date
+  - CE$OR0  # Unused - Bool whether or not the assignment is current
+  - CE$EH   # Unused - Field assignment end date
+  - CE$PIN  # Unused - District number
+  - CE$PLN  # Unused - Location acronym
+  - CE$DCR  # Unused - Date Created (CE$* cols)
+  - CE$TCR  # Unused - Time Created (CE$* cols)
+  - CE$DLU  # Unused - Date Last Updated (CE$* cols)
+  - CE$TLU  # Unused - Time Last Updated (CE$* cols)
+  - BDGNO   # Employee Id - Handled manually in the controller
+  - LNAME   # Employee Last Name - Handled manually in the controller
+  - FNAME   # Employee First Name - Handled manually in the controller
+  - MINTL   # Employee Middle Initial - Handled manually in the controller
+  - CLSTTL  # Job role - Handled manually in controller
+  - CRTDTE  # Unused - Date Created
+

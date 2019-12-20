@@ -28,6 +28,8 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
@@ -46,12 +48,16 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
     get_all_entity_trees_of_cls, default_merge_flat_fields, \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
-    read_persons
+    read_persons, add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
+    import generate_agent, generate_person, generate_external_id, \
+    generate_supervision_period, generate_supervision_sentence, \
+    generate_sentence_group
 from recidiviz.tests.utils import fakes
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -643,3 +649,61 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual({entity_tree.entity.sentence_group_id
                           for entity_tree in sentence_group_trees_to_merge},
                          {1, 2})
+
+    def test_addSupervisingOfficerToOpenSupervisionPeriods(self):
+        # Arrange
+        supervising_officer = generate_agent(
+            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_STATE_CODE)
+        person = generate_person(
+            person_id=_ID, supervising_officer=supervising_officer)
+        external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE)
+        open_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE_1,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE)
+        placeholder_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID_2,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE)
+        closed_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID_3,
+            external_id=_EXTERNAL_ID_3,
+            start_date=_DATE_3,
+            termination_date=_DATE_4,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE)
+        supervision_sentence = generate_supervision_sentence(
+            person=person,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            supervision_sentence_id=_ID,
+            supervision_periods=[open_supervision_period,
+                                 placeholder_supervision_period,
+                                 closed_supervision_period])
+        sentence_group = generate_sentence_group(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            supervision_sentences=[supervision_sentence])
+        person.external_ids = [external_id]
+        person.sentence_groups = [sentence_group]
+
+        # Act
+        add_supervising_officer_to_open_supervision_periods([person])
+
+        # Assert
+        self.assertEqual(
+            open_supervision_period.supervising_officer, supervising_officer)
+        self.assertIsNone(
+            placeholder_supervision_period.supervising_officer,
+            supervising_officer)
+        self.assertIsNone(
+            closed_supervision_period.supervising_officer, supervising_officer)
