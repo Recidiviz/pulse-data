@@ -161,16 +161,16 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             external_id=_EXTERNAL_ID_WITH_SUFFIX,
             supervision_violation_responses=[supervision_violation_response])
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_US_MO,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_violation_entries=[supervision_violation])
+        placeholder_supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                state_code=_US_MO,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                supervision_violation_entries=[supervision_violation])
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_MO,
             external_id=_EXTERNAL_ID,
-            supervision_periods=[supervision_period])
+            supervision_periods=[placeholder_supervision_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_MO,
             external_id=_EXTERNAL_ID_WITH_SUFFIX,
@@ -193,12 +193,12 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=updated_external_id,
             supervision_violation_responses=[
                 expected_supervision_violation_response])
-        expected_supervision_period = attr.evolve(
-            supervision_period,
+        expected_placeholder_supervision_period = attr.evolve(
+            placeholder_supervision_period,
             supervision_violation_entries=[expected_supervision_violation])
         expected_supervision_sentence = attr.evolve(
             supervision_sentence,
-            supervision_periods=[expected_supervision_period])
+            supervision_periods=[expected_placeholder_supervision_period])
         expected_sentence_group = attr.evolve(
             sentence_group,
             supervision_sentences=[expected_supervision_sentence])
