@@ -3177,7 +3177,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R1',
-                supervision_periods=[placeholder_ssp_110035_20040712_1],
+                supervision_periods=[sp_110035_20040712_1_0],
                 person=person_110035,
             )
         ssvt_110035_20040712_r1_1_t = \
@@ -3258,7 +3258,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-R2',
                 violation_date=datetime.date(year=2006, month=1, day=1),
-                supervision_periods=[placeholder_ssp_110035_20040712_1],
+                supervision_periods=[sp_110035_20040712_1_9],
                 person=person_110035,
             )
         ssvt_110035_20040712_r2_1_a = \
@@ -3320,8 +3320,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvc_110035_20040712_r2_1_res)
         ssv_110035_20040712_r2.supervision_violation_types.extend([
             ssvt_110035_20040712_r2_1_e, ssvt_110035_20040712_r2_1_a])
-        placeholder_ssp_110035_20040712_1.supervision_violation_entries.extend(
-            [ssv_110035_20040712_r1_1, ssv_110035_20040712_r2])
+
+        # Violations matched by date
+        sp_110035_20040712_1_0.supervision_violation_entries.append(
+            ssv_110035_20040712_r1_1)
+        sp_110035_20040712_1_9.supervision_violation_entries.append(
+            ssv_110035_20040712_r2)
 
         sss_110035_20040712_2 = \
             entities.StateSupervisionSentence.new_with_defaults(
@@ -3358,7 +3362,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
                 violation_date=datetime.date(year=2009, month=4, day=17),
-                supervision_periods=[placeholder_ssp_910324_19890825_from_is],
+                supervision_periods=[sp_910324_19890825_2_0],
                 person=person_910324,
             )
         ssvc_910324_19890825_r1_1_emp = \
@@ -3410,10 +3414,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvt_910324_19890825_r1_1_m)
         ssvr_910324_19890825_r1_1.supervision_violation_response_decisions\
             .append(ssvrd_910324_19890825_r1_1_co)
-        placeholder_ssp_910324_19890825_from_is.supervision_violation_entries.append(
-            ssv_910324_19890825_r1)
         sis_910324_19890825_1.supervision_periods.append(
             placeholder_ssp_910324_19890825_from_is)
+
+        # Violation matched by date
+        sp_910324_19890825_2_0.supervision_violation_entries.append(
+            ssv_910324_19890825_r1)
 
         placeholder_ssp_910324_19890825_from_ss = \
             entities.StateSupervisionPeriod.new_with_defaults(
@@ -3562,12 +3568,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_sentences=[sss_110035_20040712_2],
                 person=person_110035,
             )
-        ssv_110035_20040712_c1.supervision_periods.append(
-            placeholder_ssp2_110035_20040712_2)
-        placeholder_ssp2_110035_20040712_2.supervision_violation_entries.append(
-            ssv_110035_20040712_c1)
         sss_110035_20040712_2.supervision_periods.append(
             placeholder_ssp2_110035_20040712_2)
+
+        # Unmatched violations are added to the first placeholder supervision
+        # period on that sentence.
+        ssv_110035_20040712_c1.supervision_periods.append(
+            placeholder_ssp_110035_20040712_2)
+        placeholder_ssp_110035_20040712_2.supervision_violation_entries.append(
+            ssv_110035_20040712_c1)
 
         placeholder_ssp2_910324_19890825_1 = \
             entities.StateSupervisionPeriod.new_with_defaults(
