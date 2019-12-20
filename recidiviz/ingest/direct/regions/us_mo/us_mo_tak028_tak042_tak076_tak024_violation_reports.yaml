@@ -29,7 +29,7 @@ keys_to_ignore:
   - BY$VIL  # Unused - Interview location
   - BY$PIN  # Unused - Designated DOC location
   - BY$PLN  # Unused - DOC location acronym
-  - BY$PON  # TODO(2656): Should we try to derive probation officer from this Employee ID
+  - BY$PON  # Unused - Duplicate of BDGNO
   - BY$RCA  # Unused - Requires court action
   - BY$DCR  # Unused - Date Created (BY$* cols)
   - BY$TCR  # Unused - Time Created (BY$* cols)
@@ -56,3 +56,10 @@ keys_to_ignore:
   - E6$DOS  # Unused - Duplicate of BY$VSN
   - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
   - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)
+  # TODO(1883): Update to child mappings once data extractor is flexible
+  - BDGNO   # Employee Id - Handled manually in the controller
+  - LNAME   # Employee Last Name - Handled manually in the controller
+  - FNAME   # Employee First Name - Handled manually in the controller
+  - MINTL   # Employee Middle Initial - Handled manually in the controller
+  - CLSTTL  # Job role - Handled manually in controller
+  - CRTDTE  # Unused - Date Created
