@@ -82,7 +82,8 @@ def clear_db_ids(db_entities: Sequence[CoreEntity]):
 
 
 def assert_no_unexpected_entities_in_db(
-        expected_entities: Sequence[DatabaseEntity], session: Session):
+        expected_entities: Sequence[DatabaseEntity],
+        session: Session):
     """Counts all of the entities present in the |expected_entities| graph by
     type and ensures that the same number of entities exists in the DB for each
     type.
