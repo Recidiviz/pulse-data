@@ -17,6 +17,7 @@
 """Test utils for generating state CoreEntity/Entity classes."""
 
 import datetime
+import json
 from collections import defaultdict
 from typing import Sequence, List, Dict, Type
 
@@ -68,6 +69,25 @@ from recidiviz.persistence.entity.entity_utils import \
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StateAgent, \
     StateProgramAssignment
+
+
+def sort_based_on_flat_fields(db_entities: Sequence[CoreEntity]):
+    """Helper function that sorts all entities in |db_entities| as well as
+    all children of |db_entities|. Sorting is done by present flat fields.
+    """
+    for entity in sorted(db_entities, key=_get_flat_fields_json_str):
+        for field_name in get_set_entity_field_names(
+                entity, EntityFieldType.FORWARD_EDGE):
+            field = entity.get_field_as_list(field_name)
+            sort_based_on_flat_fields(field)
+
+
+def _get_flat_fields_json_str(entity: CoreEntity):
+    flat_fields_dict: Dict[str, str] = {}
+    for field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FLAT_FIELD):
+        flat_fields_dict[field_name] = str(entity.get_field(field_name))
+    return json.dumps(flat_fields_dict, sort_keys=True)
 
 
 def clear_db_ids(db_entities: Sequence[CoreEntity]):
