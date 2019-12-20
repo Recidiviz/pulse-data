@@ -65,7 +65,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
         """
         with open(key_mapping_file, 'r') as ymlfile:
             self.manifest = yaml.full_load(ymlfile)
-        self.keys = self.manifest['key_mappings']
+        self.keys = self.manifest.get('key_mappings', {})
         self.multi_keys = self.manifest.get('multi_key_mapping', {})
 
         if not self.keys:

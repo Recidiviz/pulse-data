@@ -764,9 +764,93 @@ TAK291_TAK292_TAK024_CITATIONS = \
     ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
 
+APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS = \
+    f"""
+    -- APFX90_APFX91_TAK034_current_po_assignments
+    WITH all_officers AS (
+        -- Combination of 2 officer tables into one source of truth. Both tables
+        -- contain information about different groups of officers. From 
+        -- conversations with MO contacts, we should use a combination of both 
+        -- tables to get a full understanding of all officers.
+        SELECT 
+            officers_1.*	
+        FROM 
+            LBCMDATA.APFX90 officers_1
+        UNION 
+        SELECT 
+            officers_2.*,
+            -- These three columns are present in officers_1 and not in 
+            -- officers_2, so we add dummy values just so the tables can 
+            -- be combined. 
+            0 AS ENDDTE,
+            0 AS UPDDTE,
+            0 AS UPDTME
+        FROM 
+            LBCMDATA.APFX91 officers_2
+        WHERE BDGNO != ''
+    ),
+    officers_with_role_recency_ranks AS(
+        -- Officers with their roles ranked from most recent to least recent.
+        SELECT 
+            BDGNO, 
+            CLSTTL,
+            LNAME,
+            FNAME,
+            MINTL,
+            CRTDTE, 
+            ROW_NUMBER() OVER (PARTITION BY BDGNO ORDER BY STRDTE DESC) AS recency_rank 
+        FROM 
+            all_officers),
+    officers_with_recent_role AS (
+        -- Officers with their most recent role only
+        SELECT 
+            BDGNO, 
+            CLSTTL,
+            LNAME,
+            FNAME,
+            MINTL,
+            CRTDTE  
+        FROM 
+            officers_with_role_recency_ranks 
+        WHERE 
+            officers_with_role_recency_ranks.recency_rank = 1),
+    pnp_officers AS (
+        -- Just P&P officer information
+        SELECT 
+            *
+        FROM 
+            officers_with_recent_role
+        WHERE
+            officers_with_recent_role.CLSTTL LIKE '%P&P%'
+            OR officers_with_recent_role.CLSTTL LIKE '%P & P%'
+            OR (
+                officers_with_recent_role.CLSTTL LIKE '%PROBATION%' 
+                AND officers_with_recent_role.CLSTTL LIKE '%PAROLE%'
+            )
+        )
+    SELECT 
+        *
+    FROM 
+        LBAKRDTA.TAK034 field_assignments_ce
+    JOIN 
+        pnp_officers
+    ON 
+        field_assignments_ce.CE$PON = pnp_officers.BDGNO
+    WHERE 
+        -- ORD = 1 means the assignment is active
+        field_assignments_ce.CE$OR0 = 1
+        AND MAX(field_assignments_ce.CE$DCR, field_assignments_ce.CE$DLU, CRTDTE) >= {lower_bound_update_date}
+    ORDER BY 
+        field_assignments_ce.CE$DOC, 
+        field_assignments_ce.CE$HF
+"""
+
+
 if __name__ == '__main__':
     print('\n\n/* TAK001_OFFENDER_IDENTIFICATION_QUERY */\n')
     print(TAK001_OFFENDER_IDENTIFICATION_QUERY)
+    print('\n\n/* APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS */\n')
+    print(APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS)
     print('\n\n/* TAK040_OFFENDER_CYCLES */\n')
     print(TAK040_OFFENDER_CYCLES)
     print('\n\n/* TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION */\n')

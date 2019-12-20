@@ -24,6 +24,7 @@ from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
     US_MO_SID, US_MO_FBI, US_MO_OLN
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -86,7 +87,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StateSupervisionViolation, \
     StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry
+    StateSupervisionViolationResponseDecisionEntry, StateAgent
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -97,6 +98,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     FILE_TAGS = [
         'tak001_offender_identification',
+        'apfx90_apfx91_tak034_current_po_assignments',
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
@@ -110,6 +112,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
         'tak001_offender_identification': 'EK',
+        'apfx90_apfx91_tak034_current_po_assignments': 'CE',
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
         'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
@@ -523,6 +526,32 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'RN'  # SIS revoke to SES
         ],
         StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: ['T'],
+        StateAgentType.SUPERVISION_OFFICER: [
+            'P&P OF I',
+            'PROBATION/PAROLE OFCR II',
+            'PROBATION & PAROLE OFCR I',
+            'P&P UNIT SPV',
+            'PROBATION/PAROLE UNIT SPV',
+            'PROBATION/PAROLE OFCR I',
+            'DIST ADMIN II (P & P)',
+            'PROBATION & PAROLE UNIT S',
+            'DIST ADMIN I (P & P)',
+            'P&P OF II',
+            'P&P ASST I',
+            'PROBATION/PAROLE ASST I',
+            'PROBATION/PAROLE OFCR III',
+            'PROBATION/PAROLE ASST II',
+            'PROBATION & PAROLE ASST I',
+            'P&P ASST II',
+            'P&P ADMIN',
+            'PROBATION & PAROLE OFCR 1',
+            'PROBATION/PAROLE OFCER II',
+            'PROBATION?PAROLE OFCR I',
+            'P&P OFF I',
+            'P&P UNIT SUPV',
+            'PROBATION 7 PAROLE OFCR I',
+            'PROBATION & PAROLE OFCR I',
+        ],
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -701,6 +730,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violation_response_id_from_violation,
                 self._set_finally_formed_date_on_response,
             ],
+            'apfx90_apfx91_tak034_current_po_assignments': [
+                gen_label_single_external_id_hook(US_MO_DOC),
+                self._set_supervising_officer
+            ]
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -1079,6 +1112,38 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 f'have revocation type [{revocation_type}]')
 
         return revocation_type
+
+    @classmethod
+    def _set_supervising_officer(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            _extracted_objects: List[IngestObject],
+            cache: IngestObjectCache):
+
+        person_id = row.get('CE$DOC', '')
+        agent_id = row.get('BDGNO', '')
+        agent_type = row.get('CLSTTL', '')
+        given_names = row.get('FNAME', '')
+        surname = row.get('LNAME', '')
+        middle_names = row.get('MINTL', '')
+
+        agent_to_create = StateAgent(
+            state_agent_id=agent_id,
+            agent_type=agent_type,
+            given_names=given_names,
+            middle_names=middle_names,
+            surname=surname)
+
+        if cache is None:
+            raise ValueError("Ingest object cache is unexpectedly None")
+        cached_person = cache.get_object_by_id('state_person', person_id)
+        if not cached_person:
+            raise ValueError(f"Expected person with id {person_id} to be "
+                             f"present in ingest object cache, but it was not "
+                             f"present")
+        create_if_not_exists(
+            agent_to_create, cached_person, 'supervising_officer')
 
     @classmethod
     def set_sentence_status(cls,

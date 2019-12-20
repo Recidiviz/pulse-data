@@ -24,6 +24,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
     US_MO_OLN, US_MO_FBI, US_MO_SID
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import \
@@ -58,7 +59,7 @@ from recidiviz.ingest.models.ingest_info import StatePerson, \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponse, StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry
+    StateSupervisionViolationResponseDecisionEntry, StateAgent
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -247,6 +248,51 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ])
 
         self.run_parse_file_test(expected, 'tak001_offender_identification')
+
+    def test_populate_data_apfx90_apfx91_tak034_current_po_assignments(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='110035',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='110035',
+                                    id_type=US_MO_DOC),
+                            ],
+                            supervising_officer=StateAgent(
+                                agent_type='PROBATION/PAROLE UNIT SPV',
+                                state_agent_id='E123',
+                                given_names='FIRST',
+                                surname='LAST',
+                                middle_names='MIDDLE')
+                            ),
+                StatePerson(state_person_id='310261',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='310261',
+                                    id_type=US_MO_DOC),
+                            ],
+                            supervising_officer=StateAgent(
+                                agent_type='PROBATION & PAROLE OFCR I',
+                                state_agent_id='E234',
+                                given_names='F',
+                                surname='L')
+                            ),
+                StatePerson(state_person_id='910324',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='910324',
+                                    id_type=US_MO_DOC),
+                            ],
+                            supervising_officer=StateAgent(
+                                agent_type='PROBATION & PAROLE OFCR I',
+                                state_agent_id='E234',
+                                given_names='F',
+                                surname='L')
+                            ),
+            ])
+
+        self.run_parse_file_test(
+            expected, 'apfx90_apfx91_tak034_current_po_assignments')
 
     def test_populate_data_tak040_offender_identification(self):
         expected = IngestInfo(state_people=[
@@ -1858,6 +1904,36 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        ##############################################
+        # APFX90 APFX91 TAK034 CURRENT PO ASSIGNMENTS
+        ##############################################
+        # Arrange
+        agent_123_name = '{"given_names": "FIRST", "middle_names": "MIDDLE", ' \
+                         '"surname": "LAST"}'
+        agent_234_name = '{"given_names": "F", "surname": "L"}'
+        agent_123 = entities.StateAgent.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='E123',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='PROBATION/PAROLE UNIT SPV',
+            full_name=agent_123_name)
+        agent_234 = entities.StateAgent.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='E234',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='PROBATION & PAROLE OFCR I',
+            full_name=agent_234_name)
+        person_110035.supervising_officer = agent_123
+        person_310261.supervising_officer = agent_234
+        person_910324.supervising_officer = agent_234
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'apfx90_apfx91_tak034_current_po_assignments.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
         ######################################
         # TAK040 OFFENDER CYCLES
         ######################################
@@ -2937,6 +3013,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
                 admission_reason_raw_text='IT',
+                supervising_officer=agent_234,
                 person=person_910324,
                 incarceration_sentences=[sis_910324_19890825_1]
             )

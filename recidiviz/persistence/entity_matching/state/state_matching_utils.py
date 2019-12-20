@@ -591,3 +591,24 @@ def read_persons_by_root_entity_cls(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
+
+
+def add_supervising_officer_to_open_supervision_periods(
+        persons: List[schema.StatePerson]):
+    """For each person in the provided |persons|, adds the supervising_officer
+    from the person entity onto all open StateSupervisionPeriods.
+    """
+    for person in persons:
+        if not person.supervising_officer:
+            continue
+
+        supervision_periods = get_all_entities_of_cls(
+            [person], schema.StateSupervisionPeriod)
+        for supervision_period in supervision_periods:
+            # Skip placeholders
+            if is_placeholder(supervision_period):
+                continue
+
+            if not supervision_period.termination_date:
+                supervision_period.supervising_officer = \
+                    person.supervising_officer
