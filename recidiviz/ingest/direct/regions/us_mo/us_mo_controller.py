@@ -585,6 +585,72 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision: [
             'NOREC',  # No Recommendation
         ],
+        # All non-PO roles
+        StateAgentType: [
+            'CORRECTIONS MGR B1',
+            'CORRECTIONS CASE MANAGER',
+            'CORRTNL SERVICES TRNE',
+            'CORRECTIONS TRAINING OFCR',
+            'SPECIAL ASST OFFICIAL & A',
+            'SPECIAL ASST TECHNICIAN',
+            'CORRS MANAGER-B1',
+            'OFFICE SUPPORT ASST (KEYB',
+            'FUNCTIONAL UNIT MGR CORR',
+            'TRAINING TECH III',
+            'PAROLE HEARING ANALYST',
+            'BOILER OPERATOR',
+            'INVESTIGATOR II',
+            'SUBSTANCE ABUSE CNSLR II',
+            'HUMAN RELATIONS OFCR II',
+            'ACADEMIC TEACHER III',
+            'CORRECTIONS MGR B2',
+            'CHAPLAIN',
+            'HUMAN RELATIONS OFCR I',
+            'BOARD MEMBER',
+            'CORR CASEWORKER I',
+            'INVESTIGATOR I',
+            'SPECIAL ASST PROFESSIONAL',
+            'AREA SUB ABUSE TRTMNT COO',
+            'DESIGNATED PRINCIPAL ASST',
+            'FUNC UNIT MGR-CORR',
+            'CORR TRNG OF',
+            'CORRTNL SERVICES TRNG',
+            'RECREATION OFCR III',
+            'CORRECTIONS CASEWORKER I',
+            'CORRECTIONS OFCR I',
+            'MAINTENANCE SPV II',
+            'CORR OF I',
+            'RECREATION OFCR I',
+            'CORRS MANAGER-B2',
+            'INVESTIGATOR III',
+            'STUDENT INTERN',
+            'CORR CASEWORKER II',
+            'PAROLE HEAR ANAL',
+            'TRAINING TECH II',
+            'SPECIAL EDUC TEACHER III',
+            'OFFICE SUPPORT ASST (STEN',
+            'BOARD CHAIRMAN',
+            'CLERK TYPIST II',
+            'LIBRARIAN I',
+            'CORRECTIONS MGR B3',
+            'OFFICE WORKER MISCELLANEO',
+            'TYPIST',
+            'CLERK TYPIST III',
+            'CORRTNL SERVICES TRN',
+            'DEPUTY DIVISION DIRECTOR',
+            'ADMIN OFFICE SUPPORT ASSI',
+            'MISCELLANEOUS PROFESSIONA',
+            'HLTH PRG SPEC',
+            'SR OFC SUPPORT ASST (KEYB',
+            'CORRECTIONS SPV I',
+            'STATIONARY ENGR',
+            'CORRECTIONS CLASSIF ASST',
+            'INVESTG II',
+            'INST ACTIVITY COOR',
+            'CORR OF II',
+            'ACCOUNT CLERK II',
+            'LABORATORY AIDE',
+        ]
     }
 
     def __init__(self,
@@ -721,6 +787,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_recommendations_on_violation_response,
                 self._set_violation_response_id_from_violation,
                 self._set_finally_formed_date_on_response,
+                self._set_decision_agent,
             ],
             'tak291_tak292_tak024_citations': [
                 self._gen_violation_response_type_posthook(
@@ -1114,29 +1181,35 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return revocation_type
 
     @classmethod
+    def _set_decision_agent(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Adds the responding agent to any SupervisionViolationResposnes."""
+        agent_to_create = cls._get_agent_from_row(row)
+        if not agent_to_create:
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                for response in obj.state_supervision_violation_responses:
+                    create_if_not_exists(
+                        agent_to_create, response, 'decision_agents')
+
+    @classmethod
     def _set_supervising_officer(
             cls,
             _file_tag: str,
             row: Dict[str, str],
             _extracted_objects: List[IngestObject],
             cache: IngestObjectCache):
-
         person_id = row.get('CE$DOC', '')
-        agent_id = row.get('BDGNO', '')
-        agent_type = row.get('CLSTTL', '')
-        given_names = row.get('FNAME', '')
-        surname = row.get('LNAME', '')
-        middle_names = row.get('MINTL', '')
+        agent_to_create = cls._get_agent_from_row(row)
+        if not agent_to_create:
+            return
 
-        agent_to_create = StateAgent(
-            state_agent_id=agent_id,
-            agent_type=agent_type,
-            given_names=given_names,
-            middle_names=middle_names,
-            surname=surname)
-
-        if cache is None:
-            raise ValueError("Ingest object cache is unexpectedly None")
         cached_person = cache.get_object_by_id('state_person', person_id)
         if not cached_person:
             raise ValueError(f"Expected person with id {person_id} to be "
@@ -1144,6 +1217,24 @@ class UsMoController(CsvGcsfsDirectIngestController):
                              f"present")
         create_if_not_exists(
             agent_to_create, cached_person, 'supervising_officer')
+
+    @classmethod
+    def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:
+        agent_id = row.get('BDGNO', '')
+        agent_type = row.get('CLSTTL', '')
+        given_names = row.get('FNAME', '')
+        surname = row.get('LNAME', '')
+        middle_names = row.get('MINTL', '')
+
+        if not agent_id:
+            return None
+
+        return StateAgent(
+            state_agent_id=agent_id,
+            agent_type=agent_type,
+            given_names=given_names,
+            middle_names=middle_names,
+            surname=surname)
 
     @classmethod
     def set_sentence_status(cls,
