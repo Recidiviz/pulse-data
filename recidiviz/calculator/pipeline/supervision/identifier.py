@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies time buckets of supervision and classifies them as either
-instances of revocation or not."""
+instances of revocation or not. Also classifies supervision sentences as
+successfully completed or not."""
 
 import logging
 from collections import defaultdict
@@ -85,6 +86,9 @@ def find_supervision_time_buckets(
         - ssvr_agent_associations: dictionary associating
             StateSupervisionViolationResponse ids to information about the
             corresponding StateAgent on the response
+        - supervision_period_to_agent_associations: dictionary associating
+            StateSupervisionPeriod ids to information about the corresponding
+            StateAgent
 
     Returns:
         A list of SupervisionTimeBuckets for the person.
