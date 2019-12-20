@@ -1330,6 +1330,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     response_date='2005-01-11',
                                     is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION/PAROLE UNIT SPV',
+                                        state_agent_id='E123',
+                                        given_names='FIRST',
+                                        surname='LAST',
+                                        middle_names='MIDDLE')],
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='A',
@@ -1371,6 +1377,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     is_draft='False',
                                     response_date='2006-01-11',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION/PAROLE UNIT SPV',
+                                        state_agent_id='E123',
+                                        given_names='FIRST',
+                                        surname='LAST',
+                                        middle_names='MIDDLE')],
                                 )
                             ]
                         ),
@@ -1408,6 +1420,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     is_draft='False',
                                     response_date='2006-01-11',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION/PAROLE UNIT SPV',
+                                        state_agent_id='E123',
+                                        given_names='FIRST',
+                                        surname='LAST',
+                                        middle_names='MIDDLE')],
                                 )
                             ]
                         )
@@ -1443,6 +1461,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     is_draft='True',
                                     response_date='20090416',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION & PAROLE OFCR I',
+                                        state_agent_id='E234',
+                                        given_names='F',
+                                        surname='L')],
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='CO',
@@ -1478,6 +1501,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     is_draft='True',
                                     response_date='20090416',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION & PAROLE OFCR I',
+                                        state_agent_id='E234',
+                                        given_names='F',
+                                        surname='L')],
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='CO',
@@ -1507,6 +1535,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     response_date='2009-07-03',
                                     is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
+                                    decision_agents=[StateAgent(
+                                        agent_type='PROBATION & PAROLE OFCR I',
+                                        state_agent_id='E234',
+                                        given_names='F',
+                                        surname='L')],
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='RN',
@@ -3223,6 +3256,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                decision_agents=[agent_123],
                 person=person_110035,
             )
         ssvrd_110035_20040712_r1_1_a = \
@@ -3298,6 +3332,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                decision_agents=[agent_123],
                 person=person_110035,
             )
         sss_110035_20040712_1.supervision_periods.append(
@@ -3393,6 +3428,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                decision_agents=[agent_234],
                 supervision_violation=ssv_910324_19890825_r1,
                 person=person_910324,
             )
@@ -3465,6 +3501,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
+                decision_agents=[agent_234],
                 supervision_violation=ssv_910324_19890825_r2,
                 person=person_910324,
             )
