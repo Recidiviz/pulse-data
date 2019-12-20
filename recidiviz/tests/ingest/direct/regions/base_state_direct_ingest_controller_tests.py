@@ -39,7 +39,8 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids, assert_no_unexpected_entities_in_db
+    clear_db_ids, assert_no_unexpected_entities_in_db, \
+    sort_based_on_flat_fields
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.utils.regions import Region
 
@@ -112,9 +113,11 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
 
         if debug:
             print_visible_header_label('FINAL')
+            sort_based_on_flat_fields(found_people)
             for p in found_people:
                 print_entity_tree(p)
             print_visible_header_label('EXPECTED')
+            sort_based_on_flat_fields(expected_db_people)
             for p in expected_db_people:
                 print_entity_tree(p)
 
