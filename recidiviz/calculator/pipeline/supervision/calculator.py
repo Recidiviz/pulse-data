@@ -22,7 +22,6 @@ metrics, key-value pairs where the key represents all of the dimensions
 represented in the data point, and the value represents an indicator of whether
 the person should contribute to that metric.
 """
-import json
 from copy import deepcopy
 from datetime import date
 from typing import Dict, List, Tuple, Any, Optional
@@ -31,11 +30,12 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
-    age_bucket, for_characteristics_races_ethnicities, for_characteristics
+    age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
+    convert_event_based_to_person_based_metrics
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, json_serializable_metric_key
+    MetricMethodologyType
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -306,38 +306,6 @@ def map_metric_combinations(
             metrics.append((combo, 1))
 
     return metrics
-
-
-def convert_event_based_to_person_based_metrics(
-        metrics: List[Tuple[Dict[str, Any], Any]]) -> \
-        List[Tuple[Dict[str, Any], Any]]:
-    """
-    Takes in a set of event-based metrics and converts them to be person-based
-    by removing any duplicate metric dictionaries attributed to this person.
-
-    By eliminating duplicate instances of metric keys, this person will only
-    contribute a +1 to a metric once per metric for all person-based counts.
-    """
-
-    person_based_metrics_set = set()
-
-    for metric, value in metrics:
-        metric['methodology'] = MetricMethodologyType.PERSON
-        # Converting the metric key to a JSON string so it is hashable
-        serializable_dict = json_serializable_metric_key(metric)
-        json_key = json.dumps(serializable_dict, sort_keys=True)
-        # Add the metric to the set
-        person_based_metrics_set.add((json_key, value))
-
-    person_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
-
-    for json_metric, value in person_based_metrics_set:
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(json_metric)
-
-        person_based_metrics.append((dict_metric_key, value))
-
-    return person_based_metrics
 
 
 def _organize_projected_completion_buckets_by_month(

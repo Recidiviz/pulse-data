@@ -932,7 +932,6 @@ def expected_metric_combos_count(
     # projected completion months
     supervision_success_combos -= duplicated_success_combos
 
-
     # Pick which one is relevant for the test case: some tests above use a
     # different call that only looks at combos for either population or
     # revocation, but not both
