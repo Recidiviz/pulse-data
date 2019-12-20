@@ -64,7 +64,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
-    SupervisionSuccessFn
+    SupervisionSuccessFn, ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
@@ -90,24 +90,6 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 def clear_job_id():
     global _job_id
     _job_id = None
-
-
-@with_input_types(beam.typehints.Dict[str, Any], str)
-@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
-class ConvertDictToKVTuple(beam.DoFn):
-    """Converts a dictionary into a key value tuple by extracting a value from
-     the dictionary and setting it as the key."""
-
-    #pylint: disable=arguments-differ
-    def process(self, element, key):
-        key_value = element.get(key)
-
-        if key_value:
-            yield (key_value, element)
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
                                        List[SupervisionTimeBucket]])

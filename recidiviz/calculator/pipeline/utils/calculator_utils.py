@@ -15,10 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for the various calculation pipelines."""
+import json
 from datetime import date
 from itertools import combinations
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Tuple
 
+from recidiviz.calculator.pipeline.utils.metric_utils import \
+    MetricMethodologyType, json_serializable_metric_key
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 
@@ -170,3 +173,35 @@ def augment_combination(characteristic_combo: Dict[str, Any],
         augmented_combo[key] = value
 
     return augmented_combo
+
+
+def convert_event_based_to_person_based_metrics(
+        metrics: List[Tuple[Dict[str, Any], Any]]) -> \
+        List[Tuple[Dict[str, Any], Any]]:
+    """
+    Takes in a set of event-based metrics and converts them to be person-based
+    by removing any duplicate metric dictionaries attributed to this person.
+
+    By eliminating duplicate instances of metric keys, this person will only
+    contribute a +1 to a metric once per metric for all person-based counts.
+    """
+
+    person_based_metrics_set = set()
+
+    for metric, value in metrics:
+        metric['methodology'] = MetricMethodologyType.PERSON
+        # Converting the metric key to a JSON string so it is hashable
+        serializable_dict = json_serializable_metric_key(metric)
+        json_key = json.dumps(serializable_dict, sort_keys=True)
+        # Add the metric to the set
+        person_based_metrics_set.add((json_key, value))
+
+    person_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
+
+    for json_metric, value in person_based_metrics_set:
+        # Convert JSON string to dictionary
+        dict_metric_key = json.loads(json_metric)
+
+        person_based_metrics.append((dict_metric_key, value))
+
+    return person_based_metrics

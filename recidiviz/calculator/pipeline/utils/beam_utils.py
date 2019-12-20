@@ -16,8 +16,10 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method, arguments-differ, redefined-builtin
+from typing import Any, Dict
 
 import apache_beam as beam
+from apache_beam.typehints import with_input_types, with_output_types
 
 
 def _add_input_for_average_metric(accumulator, input):
@@ -155,3 +157,20 @@ class SumFn(beam.CombineFn):
 
     def extract_output(self, accumulator):
         return accumulator
+
+
+@with_input_types(beam.typehints.Dict[str, Any], str)
+@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
+class ConvertDictToKVTuple(beam.DoFn):
+    """Converts a dictionary into a key value tuple by extracting a value from
+     the dictionary and setting it as the key."""
+
+    #pylint: disable=arguments-differ
+    def process(self, element, key):
+        key_value = element.get(key)
+
+        if key_value:
+            yield(key_value, element)
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
