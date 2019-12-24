@@ -69,7 +69,8 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, \
     StatePersonExternalId, StateAssessment, StatePersonEthnicity, \
     StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateProgramAssignment
+    StateIncarcerationIncidentOutcome, StateProgramAssignment, \
+    StateSupervisionViolationTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.\
     base_state_direct_ingest_controller_tests import \
@@ -1137,6 +1138,11 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         violation_for_140408 = StateSupervisionViolation(
             violation_type='TECHNICAL',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    violation_type='TECHNICAL'
+                )
+            ],
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(
                     response_type='PERMANENT_DECISION',
@@ -1151,6 +1157,11 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         violation_for_147777 = StateSupervisionViolation(
             violation_type='FELONY',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    violation_type='FELONY'
+                )
+            ],
             is_violent='True',
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(
@@ -2999,6 +3010,14 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE,
                 supervision_periods=[supervision_period_140408],
                 person=supervision_period_140408.person)
+        supervision_violation_type_entry_140408 = \
+            entities.StateSupervisionViolationTypeEntry(
+                state_code=_STATE_CODE,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text='TECHNICAL',
+                person=supervision_period_140408.person,
+                supervision_violation=supervision_violation_140408
+            )
         supervision_violation_response_140408 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 response_type=
@@ -3070,6 +3089,14 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE,
                 supervision_periods=[supervision_period_147777],
                 person=supervision_period_147777.person)
+        supervision_violation_type_entry_147777 = \
+            entities.StateSupervisionViolationTypeEntry(
+                state_code=_STATE_CODE,
+                violation_type=StateSupervisionViolationType.FELONY,
+                violation_type_raw_text='FELONY',
+                person=supervision_period_147777.person,
+                supervision_violation=supervision_violation_147777
+            )
         supervision_violation_response_147777 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 response_type=
@@ -3110,6 +3137,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             supervision_violation_response_140408
         charge_140408.court_case = court_case_140408
         supervision_sentence_140408.charges = [charge_140408]
+        supervision_violation_140408.supervision_violation_types.append(
+            supervision_violation_type_entry_140408)
         supervision_violation_140408.supervision_violation_responses.append(
             supervision_violation_response_140408)
         supervision_period_140408.supervision_violation_entries.append(
@@ -3121,6 +3150,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         charge_147777.court_case = court_case_147777
         supervision_sentence_147777.charges = [charge_147777]
+        supervision_violation_147777.supervision_violation_types.append(
+            supervision_violation_type_entry_147777)
         supervision_violation_147777.supervision_violation_responses.append(
             supervision_violation_response_147777)
         supervision_period_147777.supervision_violation_entries.append(
