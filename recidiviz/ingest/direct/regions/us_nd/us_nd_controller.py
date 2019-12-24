@@ -82,7 +82,8 @@ from recidiviz.ingest.models.ingest_info import IngestObject, \
     StateCharge, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateAgent, StateIncarcerationIncidentOutcome, StateIncarcerationIncident, \
     StateSupervisionSentence, StateCourtCase, \
-    StateSupervisionPeriod, StateProgramAssignment, StatePersonEthnicity
+    StateSupervisionPeriod, StateProgramAssignment, StatePersonEthnicity, \
+    StateSupervisionViolationTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -593,13 +594,14 @@ class UsNdController(CsvGcsfsDirectIngestController):
             if isinstance(extracted_object, StateSupervisionViolation):
                 extracted_object = cast(
                     StateSupervisionViolation, extracted_object)
+
+                violation_types = []
                 if revocation_occurred:
-                    # TODO(1763): Add support for multiple violation types
-                    # on one violation
                     violation_type = None
                     if revocation_for_new_offense:
                         violation_type = \
                             StateSupervisionViolationType.FELONY.value
+                        violation_types.append(violation_type)
 
                         ncic_codes = _get_ncic_codes()
                         violent_flags = [ncic.get_is_violent(code)
@@ -608,12 +610,26 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     elif revocation_for_absconsion:
                         violation_type = \
                             StateSupervisionViolationType.ABSCONDED.value
+                        violation_types.append(violation_type)
                     elif revocation_for_technical:
                         violation_type = \
                             StateSupervisionViolationType.TECHNICAL.value
+                        violation_types.append(violation_type)
+                    # TODO(2668): Once BQ dashboard for ND is using new
+                    #  pipeline calcs that reference
+                    #  state_supervision_violation_types (2750), delete the flat
+                    #  violation_type field on StateSupervisionViolation
+                    #  entirely.
                     extracted_object.violation_type = violation_type
                 else:
                     extracted_object.violation_type = None
+
+                for violation_type in violation_types:
+                    vt = StateSupervisionViolationTypeEntry(
+                        violation_type=violation_type)
+                    create_if_not_exists(
+                        vt, extracted_object,
+                        'state_supervision_violation_types')
 
             if isinstance(extracted_object, StateSupervisionViolationResponse):
                 extracted_object = cast(
