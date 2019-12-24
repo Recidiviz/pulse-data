@@ -161,7 +161,7 @@ cron:
 
   - description: Start Cloud SQL to BigQuery export tasks for state tables
     url: /export_manager/create_state_export_tasks
-    schedule: 29 of nov 12:30 # TODO(2743): Once ND rerun is complete, change back to: every day 5:00
+    schedule: every day 5:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
