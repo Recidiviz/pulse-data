@@ -32,6 +32,7 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     # A parole/probation officer (PO)
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
     UNIT_SUPERVISOR = state_enum_strings.state_agent_unit_supervisor
+    INTERNAL_UNKNOWN = enum_canonical_strings.internal_unknown
 
     @staticmethod
     def _get_default_map():
@@ -44,4 +45,5 @@ _STATE_AGENT_TYPE_MAP = {
     'PAROLE BOARD MEMBER': StateAgentType.PAROLE_BOARD_MEMBER,
     'SUPERVISION OFFICER': StateAgentType.SUPERVISION_OFFICER,
     'UNIT SUPERVISOR': StateAgentType.UNIT_SUPERVISOR,
+    'INTERNAL_UNKNOWN': StateAgentType.INTERNAL_UNKNOWN,
 }

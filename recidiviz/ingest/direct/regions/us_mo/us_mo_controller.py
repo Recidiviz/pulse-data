@@ -552,41 +552,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'PROBATION 7 PAROLE OFCR I',
             'PROBATION & PAROLE OFCR I',
         ],
-    }
-
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
-        StateSupervisionType: ['INT'],  # Unknown meaning, rare
-
-        # TODO(2647): Test to see if these omissions have calculation impact
-        # Note, there are 312 records (as of 11-6-19) without a release reason
-        # but with a release date
-        StateIncarcerationPeriodReleaseReason: [
-            'CN-FB',  # Committed New Charge- No Vio: seems erroneous
-            'CN-NV',
-            'RV-FF',  # Revoked: seems erroneous
-            'RV-FM',
-            'RV-FT',
-
-            # Inmate Release to EMP (electronic monitoring program). Doesn't
-            # make sense as a Supervision termination reason and only 1
-            # occurrence of any of these in the last 10 years.
-            'EM-FB',
-            'EM-FF',
-            'EM-FM',
-            'EM-FT',
-        ],
-        StateSpecializedPurposeForIncarceration: [
-            'S',  # Serving Sentence
-        ],
-        StateSupervisionPeriodTerminationReason: [
-            'IB-TR',  # Institutional Administrative: seems erroneous
-            'IT-FB',  # Institutional Release to Supervision: seems erroneous
-        ],
-        StateSupervisionViolationResponseDecision: [
-            'NOREC',  # No Recommendation
-        ],
         # All non-PO roles
-        StateAgentType: [
+        StateAgentType.INTERNAL_UNKNOWN: [
             'CORRECTIONS MGR B1',
             'CORRECTIONS CASE MANAGER',
             'CORRTNL SERVICES TRNE',
@@ -651,6 +618,39 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'ACCOUNT CLERK II',
             'LABORATORY AIDE',
         ]
+    }
+
+    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
+        StateSupervisionType: ['INT'],  # Unknown meaning, rare
+
+        # TODO(2647): Test to see if these omissions have calculation impact
+        # Note, there are 312 records (as of 11-6-19) without a release reason
+        # but with a release date
+        StateIncarcerationPeriodReleaseReason: [
+            'CN-FB',  # Committed New Charge- No Vio: seems erroneous
+            'CN-NV',
+            'RV-FF',  # Revoked: seems erroneous
+            'RV-FM',
+            'RV-FT',
+
+            # Inmate Release to EMP (electronic monitoring program). Doesn't
+            # make sense as a Supervision termination reason and only 1
+            # occurrence of any of these in the last 10 years.
+            'EM-FB',
+            'EM-FF',
+            'EM-FM',
+            'EM-FT',
+        ],
+        StateSpecializedPurposeForIncarceration: [
+            'S',  # Serving Sentence
+        ],
+        StateSupervisionPeriodTerminationReason: [
+            'IB-TR',  # Institutional Administrative: seems erroneous
+            'IT-FB',  # Institutional Release to Supervision: seems erroneous
+        ],
+        StateSupervisionViolationResponseDecision: [
+            'NOREC',  # No Recommendation
+        ],
     }
 
     def __init__(self,
