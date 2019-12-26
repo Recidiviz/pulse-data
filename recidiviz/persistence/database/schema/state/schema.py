@@ -152,6 +152,7 @@ state_agent_type = Enum(
     state_enum_strings.state_agent_parole_board_member,
     state_enum_strings.state_agent_supervision_officer,
     state_enum_strings.state_agent_unit_supervisor,
+    enum_strings.internal_unknown,
     name='state_agent_type')
 
 state_person_alias_type = Enum(

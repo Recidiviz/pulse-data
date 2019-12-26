@@ -1536,8 +1536,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     decision_agents=[StateAgent(
-                                        agent_type='PROBATION & PAROLE OFCR I',
-                                        state_agent_id='E234',
+                                        agent_type='LIBRARIAN I',
+                                        state_agent_id='E345',
                                         given_names='F',
                                         surname='L')],
                                     supervision_violation_response_decisions=[
@@ -3488,6 +3488,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_violation=ssv_910324_19890825_r2,
                 person=person_910324,
             )
+        agent_345_name = '{"given_names": "F", "surname": "L"}'
+        agent_345 = entities.StateAgent.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='E345',
+            agent_type=StateAgentType.INTERNAL_UNKNOWN,
+            agent_type_raw_text='LIBRARIAN I',
+            full_name=agent_345_name)
         ssvr_910324_19890825_r2_1 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -3501,7 +3508,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 StateSupervisionViolationResponseDecidingBodyType.
                 SUPERVISION_OFFICER,
                 deciding_body_type_raw_text='SUPERVISION_OFFICER',
-                decision_agents=[agent_234],
+                decision_agents=[agent_345],
                 supervision_violation=ssv_910324_19890825_r2,
                 person=person_910324,
             )
