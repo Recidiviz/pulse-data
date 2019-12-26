@@ -33,6 +33,7 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.move_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
     --date-bound 2019-07-12 --dry-run True
+    [--file_filter "docstars_offendercases|elite_offender"]
 """
 
 import argparse
@@ -86,12 +87,14 @@ class MoveFilesFromStorageController:
                  project_id: str,
                  region: str,
                  date_bound: Optional[str],
-                 dry_run: bool):
+                 dry_run: bool,
+                 file_filter: Optional[str]):
 
         self.project_id = project_id
         self.region = region
         self.date_bound = date_bound
         self.dry_run = dry_run
+        self.file_filter = file_filter
 
         self.storage_bucket = \
             gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -299,7 +302,9 @@ class MoveFilesFromStorageController:
         for file_path in file_paths:
             _, file_name = os.path.split(file_path)
             if re.match(self.FILE_TO_MOVE_RE, file_name):
-                result.append(file_path)
+                if not self.file_filter or \
+                        re.search(self.file_filter, file_name):
+                    result.append(file_path)
         with self.mutex:
             if self.collect_progress:
                 self.collect_progress.next()
@@ -367,6 +372,10 @@ def main():
     parser.add_argument('--dry-run', default=True, type=str_to_bool,
                         help='Runs move in dry-run mode, only prints the file '
                              'moves it would do.')
+
+    parser.add_argument('--file-filter', default=None,
+                        help='Regex name filter - when set, will only move '
+                             'files that match this regex.')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -375,7 +384,8 @@ def main():
         project_id=args.project_id,
         region=args.region,
         date_bound=args.date_bound,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        file_filter=args.file_filter
     ).run_move()
 
 
