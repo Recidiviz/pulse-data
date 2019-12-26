@@ -139,18 +139,28 @@ class SchemaEdgeDirectionChecker:
         return self._class_hierarchy_map[from_class_name] >= \
             self._class_hierarchy_map[to_class_name]
 
-    def assert_sorted(self, entity_types: List[Type[DatabaseEntity]]):
+    def is_higher_ranked(
+            self,
+            cls_1: Type[CoreEntity],
+            cls_2: Type[CoreEntity]):
+        """Returns True if the provided |cls_1| has a higher rank than the
+        provided |cls_2|.
+        """
+        type_1_name = cls_1.__name__
+        type_2_name = cls_2.__name__
+
+        return self._class_hierarchy_map[type_1_name] \
+            < self._class_hierarchy_map[type_2_name]
+
+    def assert_sorted(self, entity_types: List[Type[CoreEntity]]):
         """Throws if the input |entity_types| list is not in descending order
         based on class hierarchy.
         """
         for type_1, type_2 in pairwise(entity_types):
-            type_1_name = type_1.__name__
-            type_2_name = type_2.__name__
-
-            if not self._class_hierarchy_map[type_1_name] \
-                    < self._class_hierarchy_map[type_2_name]:
-                raise ValueError(f'Unexpected ordering, found {type_1_name} '
-                                 f'before {type_2_name}')
+            if not self.is_higher_ranked(type_1, type_2):
+                raise ValueError(
+                    f'Unexpected ordering, found {type_1.__name__} before '
+                    f'{type_2.__name__}')
 
 
 def _build_class_hierarchy_map(class_hierarchy: List[str],

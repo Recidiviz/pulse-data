@@ -20,9 +20,9 @@ from unittest import TestCase
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import EntityFieldType, \
-    get_set_entity_field_names, is_standalone_class
+    get_set_entity_field_names, is_standalone_class, SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
-    StateFine, StatePerson
+    StateFine, StatePerson, StateSupervisionViolation
 
 _ID = 1
 _STATE_CODE = 'NC'
@@ -98,3 +98,24 @@ class TestEntityUtils(TestCase):
                 self.assertTrue(is_standalone_class(cls))
             else:
                 self.assertFalse(is_standalone_class(cls))
+
+    def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self):
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        self.assertTrue(direction_checker.is_higher_ranked(
+            StatePerson, StateSentenceGroup))
+        self.assertTrue(direction_checker.is_higher_ranked(
+            StateSentenceGroup, StateSupervisionViolation))
+
+    def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self):
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        self.assertFalse(direction_checker.is_higher_ranked(
+            StateSentenceGroup, StatePerson))
+        self.assertFalse(direction_checker.is_higher_ranked(
+            StateSupervisionViolation, StateSentenceGroup))
+
+    def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self):
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        self.assertFalse(direction_checker.is_higher_ranked(
+            StatePerson, StatePerson))
+        self.assertFalse(direction_checker.is_higher_ranked(
+            StateSupervisionViolation, StateSupervisionViolation))
