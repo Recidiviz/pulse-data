@@ -45,6 +45,11 @@ present_without_info = 'PRESENT_WITHOUT_INFO'
 # situation that an entity is removed from the website, and we cannot infer
 # anything about what removal means (i.e. 'INFER_DROPPED')
 removed_without_info = 'REMOVED_WITHOUT_INFO'
+# This value is used when the external data source specifies a known value for
+# an enum field, but we internally don't have an enum value that it should map
+# to. This should NOT be treated as a default value for enums fields that are
+# not provided.
+internal_unknown = 'INTERNAL_UNKNOWN'
 
 # person_characteristics.py
 
