@@ -432,9 +432,11 @@ def get_all_entity_trees_of_cls(
     """
     seen_ids: Set[int] = set()
     seen_trees: List[EntityTree] = []
+    direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
     for person in persons:
         tree = EntityTree(entity=person, ancestor_chain=[])
-        _get_all_entity_trees_of_cls_helper(tree, cls, seen_ids, seen_trees)
+        _get_all_entity_trees_of_cls_helper(
+            tree, cls, seen_ids, seen_trees, direction_checker)
     return seen_trees
 
 
@@ -442,14 +444,21 @@ def _get_all_entity_trees_of_cls_helper(
         tree: EntityTree,
         cls: Type[DatabaseEntity],
         seen_ids: Set[int],
-        seen_trees: List[EntityTree]):
+        seen_trees: List[EntityTree],
+        direction_checker: SchemaEdgeDirectionChecker):
     """
     Finds all objects in the provided |tree| graph which have the type |cls|.
     When an object of type |cls| is found, updates the provided |seen_ids| and
     |seen_trees| with the object's id and EntityTree respectively.
     """
     entity = tree.entity
-    if isinstance(entity, cls) and id(entity) not in seen_ids:
+    entity_cls = entity.__class__
+
+    # If |cls| is higher ranked than |entity_cls|, it is impossible to reach
+    # an object of type |cls| from the current entity.
+    if direction_checker.is_higher_ranked(cls, entity_cls):
+        return
+    if entity_cls == cls and id(entity) not in seen_ids:
         seen_ids.add(id(entity))
         seen_trees.append(tree)
         return
@@ -459,7 +468,7 @@ def _get_all_entity_trees_of_cls_helper(
             entity.get_field_as_list(child_field_name))
         for child_tree in child_trees:
             _get_all_entity_trees_of_cls_helper(
-                child_tree, cls, seen_ids, seen_trees)
+                child_tree, cls, seen_ids, seen_trees, direction_checker)
 
 
 def get_root_entity_cls(
