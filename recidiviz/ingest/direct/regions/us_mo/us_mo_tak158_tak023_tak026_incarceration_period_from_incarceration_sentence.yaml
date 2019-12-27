@@ -43,3 +43,5 @@ keys_to_ignore:
   - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller
   - START_STATUS_SEQ_NUM  # Populated when valid from BW$SSO - Handled manually in the controller
   - END_STATUS_SEQ_NUM    # Populated when valid from BW$SSO - Handled manually in the controller
+  - START_SCD_CODES       # Status codes for the period start date - Handled manually in the controller
+  - END_SCD_CODES         # Status codes for the period end date - Handled manually in the controller

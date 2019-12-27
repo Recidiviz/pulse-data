@@ -745,7 +745,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-19890901-3-0',
             status='NOT_IN_CUSTODY',
             admission_date='19930701',
-            admission_reason='FT-BP',
+            admission_reason='40I1060',
             release_date='19931102',
             release_reason='IT-BP',
             specialized_purpose_for_incarceration='I',
@@ -755,7 +755,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-19890901-5-0',
             status='NOT_IN_CUSTODY',
             admission_date='19940609',
-            admission_reason='FT-BP',
+            admission_reason='40I1060',
             release_date='19950206',
             release_reason='IT-BD',
             specialized_purpose_for_incarceration='S',
@@ -766,7 +766,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-2-0',
             status='NOT_IN_CUSTODY',
             admission_date='20010420',
-            admission_reason='FT-PB',
+            admission_reason='40I2000',
             release_date='20121102',
             release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
@@ -889,7 +889,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '710448-20010414-3-0',
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='20020912',
-                                                admission_reason='FT-BP',
+                                                admission_reason='40I1060',
                                                 release_date='20040928',
                                                 release_reason='IT-BP',
                                                 specialized_purpose_for_incarceration='S',
@@ -2458,7 +2458,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1993, month=7, day=1),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='FT-BP',
+                admission_reason_raw_text='40I1060',
                 release_date=datetime.date(year=1993, month=11, day=2),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -2499,7 +2499,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=1994, month=6, day=9),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='FT-BP',
+                admission_reason_raw_text='40I1060',
                 release_date=datetime.date(year=1995, month=2, day=6),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -2544,7 +2544,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2001, month=4, day=20),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                admission_reason_raw_text='FT-PB',
+                admission_reason_raw_text='40I2000',
                 release_date=datetime.date(year=2012, month=11, day=2),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -2682,7 +2682,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2002, month=9, day=12),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='FT-BP',
+                admission_reason_raw_text='40I1060',
                 release_date=datetime.date(year=2004, month=9, day=28),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
