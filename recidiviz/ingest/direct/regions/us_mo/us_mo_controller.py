@@ -71,7 +71,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_CODE_SUBTYPE, \
     PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
-    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, PERIOD_CASE_TYPE_CURRENT, \
+    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
     PERIOD_START_STATUSES
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
@@ -135,6 +135,30 @@ class UsMoController(CsvGcsfsDirectIngestController):
         '95O3600',  # Bond Supv-Pb Susp-Trm-Tech
         '95O7145',  # DATA ERROR-Suspended
     }
+
+    PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES = [
+        # All Parole Update (50N10*) statuses
+        '50N1010',  # Parole Update - Tech Viol
+        '50N1015',  # Parole Update - ITC Failure
+        '50N1020',  # Parole Update - New Felony - Viol
+        '50N1021',  # Parole Update - No Violation
+        '50N1045',  # Parole Update - ITC Ineligible
+        '50N1050',  # Parole Viol Upd - Fel Law Viol
+        '50N1055',  # Parole Viol Upd - Misd Law Viol
+        '50N1060',  # Parole Update - Treatment Center
+        '50N1065',  # Parole Update - CRC
+
+        # All Conditional Release Update (50N30*) statuses
+        '50N3010',  # CR Update - Tech Viol
+        '50N3015',  # CR Update - ITC Failure
+        '50N3020',  # CR Update - New Felony - Viol
+        '50N3021',  # CR Update - No Violation
+        '50N3045',  # CR Update - ITC Ineligible
+        '50N3050',  # CR Viol Update - Felony Law Viol
+        '50N3055',  # CR Viol Update - Misd Law Viol
+        '50N3060',  # CR Update - Treatment Center
+        '50N3065',  # CR Update - CRC
+    ]
 
     COMMUTED_SENTENCE_STATUS_CODES = {
         '90O1020',  # Institutional Commutation Comp
@@ -236,6 +260,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'IW-IW',
         ],
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
+            # These statuses start periods that come directly after board hold
+            # periods.
+            *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
+            # TODO(2663): Once we do a stage rerun with changes from #2754,
+            #  check to see if any of these TAK158 statuses still even end up
+            #  as raw text and remove from overrides if not.
             'FB-BP',
             'FB-CR',
             'FF-BP',
@@ -246,7 +276,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FN-CR',
             'FT-BP',
             'FT-CR',
-            'IB-BH',  # Institutional Administrative
             # All Parole Revocation (40I1*) statuses from TAK026
             '40I1010',  # Parole Ret-Tech Viol
             '40I1020',  # Parole Ret-New Felony-Viol
@@ -268,6 +297,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '40I3070',  # CR Return-Work Release
         ],
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
+            # TODO(2663): Once we do a stage rerun with changes from #2754,
+            #  check to see if any of these TAK158 statuses still even end up
+            #  as raw text and remove from overrides if not.
             # TODO(2663): Set this accurately and don't assume PROBATION
             'FB-EM',
             # TODO(2663): Set this accurately and don't assume PROBATION
@@ -369,6 +401,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '40I2435',  # Prob Rev Ret-New Fel-SOAU
             '40I2450',  # Prob Rev Ret-Mis Law-SOAU
         ],
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: [
+            'IB-BH',  # Institutional Administrative - Board Hold
+            # All Board Holdover incarceration admission statuses (40I0*)
+            '40I0050',  # Board Holdover
+        ],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             'BP-FF',  # Board Parole
             'BP-FM',
@@ -415,6 +452,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'XX-XX',  # Unknown (Not Associated)
             '??-??',  # Code Unknown
             '??-XX',
+        ],
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
+            # These statuses indicate an end to a period of temporary hold since
+            # it has now been determined that the person has had their parole
+            # revoked. With the exception of a few rare cases, these
+            # statuses, are always closing a board hold period when seen as an
+            # end code .
+            *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
             'DC-DC',  # Discharge
@@ -756,7 +801,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             gen_set_field_as_concatenated_values_hook(
                 StateIncarcerationPeriod, 'release_reason',
                 [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
-            self._adjust_incarceration_period_admission_and_release_reasons,
             self._create_source_violation_response,
             self._set_ip_admission_reason_from_status,
         ]
@@ -1380,49 +1424,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         return _clear_magical_date_values
 
-    def _adjust_incarceration_period_admission_and_release_reasons(
-            self,
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        """
-        Incarceration periods may have an 'IB-BH' (Institutional Administrative
-        - Board Hold) open status in one of three cases:
-            1) if the person is currently being held temporarily, pending a
-                parole board decision, or
-            2) if the person was held, pending a decision, then not revoked and
-                returned to supervision, or
-            3) if their parole has been revoked.
-
-        When the person is revoked, the body status table (TAK158) that we
-        currently use for period information will not update to have a different
-        open reason, but the current case type (F1$CTC) will update to indicate
-        that they are no longer being held temporarily pending review. This hook
-        makes sure we mark periods that are still board holds as temporary
-        holds. If the person has been released and the case type never changed
-        away from 'BP', then we just mark them as released from a temporary
-        hold.
-
-        For more context, see #2665.
-        """
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                if self._is_temporary_board_hold_period(row, obj):
-                    obj.admission_reason = \
-                        StateIncarcerationPeriodAdmissionReason.\
-                        TEMPORARY_CUSTODY.value
-                    if obj.release_reason:
-                        obj.release_reason = \
-                            StateIncarcerationPeriodReleaseReason.\
-                            RELEASED_FROM_TEMPORARY_CUSTODY.value
-
-    @staticmethod
-    def _is_temporary_board_hold_period(row: Dict[str, str],
-                                        ip: StateIncarcerationPeriod):
-        return ip.admission_reason == 'IB-BH' and \
-               row[PERIOD_CASE_TYPE_CURRENT] == 'BP'
-
     def _create_source_violation_response(self,
                                           _file_tag: str,
                                           row: Dict[str, str],
@@ -1478,20 +1479,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if status.startswith((
                     '40I1',  # Parole Revocation
                     '40I3',  # Conditional Release Return (Parole Revocation)
-            )):
+            )) or status in self.PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES:
                 parole_status = status
             elif status.startswith(
                     '40I2'  # Probation Revocation
             ):
                 probation_status = status
-
-        if probation_status and parole_status:
-            logging.warning(
-                'Unexpectedly found probation revocation: [%s] '
-                'and parole revocation: [%s] admission reasons for '
-                'a single incarceration period.',
-                probation_status,
-                parole_status)
 
         admission_status = parole_status if parole_status else probation_status
         if not admission_status:
@@ -1499,6 +1492,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
+                if probation_status and parole_status:
+                    logging.warning(
+                        'Unexpectedly found probation revocation: [%s] '
+                        'and parole revocation: [%s] admission reasons for '
+                        'a single incarceration period [%s].',
+                        probation_status,
+                        parole_status,
+                        obj.state_incarceration_period_id)
+
                 obj.admission_reason = admission_status
 
     def _revocation_admission_reason(
