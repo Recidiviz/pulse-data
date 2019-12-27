@@ -83,6 +83,18 @@ def copy_fields_to_builder(
                                                proto)
     new.release_reason = enum_mappings.get(
         StateIncarcerationPeriodReleaseReason, field_name='release_reason')
+
+    # Temporary hold periods can only be followed by a TRANSFER to another hold
+    # period or a RELEASE_FROM_TEMPORARY_CUSTODY status
+    if new.release_reason \
+            and new.release_reason != \
+            StateIncarcerationPeriodReleaseReason.TRANSFER \
+            and new.admission_reason == \
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+        new.release_reason = \
+            StateIncarcerationPeriodReleaseReason.\
+            RELEASED_FROM_TEMPORARY_CUSTODY
+
     new.release_reason_raw_text = fn(normalize, 'release_reason', proto)
 
     new.specialized_purpose_for_incarceration = enum_mappings.get(

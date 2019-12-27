@@ -286,16 +286,38 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
 #  create enum mappings.
 SUB_SUBCYCLE_SPANS_FRAGMENT = \
     """
-    field_subcycle_partition_statuses AS (
+    status_bw AS (
+        SELECT 
+            * 
+        FROM
+            LBAKRDTA.TAK026
+        WHERE 
+            BW$SCD IS NOT NULL
+            AND BW$SCD != ''
+        ),
+    statuses_by_sentence AS (
+        SELECT 
+            *
+        FROM 
+            LBAKRDTA.TAK025 status_xref_bv
+        LEFT OUTER JOIN 
+            status_bw
+        ON
+            status_xref_bv.BV$DOC = status_bw.BW$DOC AND
+            status_xref_bv.BV$CYC = status_bw.BW$CYC AND
+            status_xref_bv.BV$SSO = status_bw.BW$SSO
+    ),
+    absconsion_subcycle_partition_statuses AS (
         SELECT
             BW$DOC AS DOC,
             BW$CYC AS CYC,
             BW$SSO AS SSO,
+            BV$SEO AS SEO,
             BW$SCD AS SCD,
             BW$SY AS STATUS_CODE_CHG_DT,
             'F' AS SUBCYCLE_TYPE_STATUS_CAN_PARTITION
         FROM
-            LBAKRDTA.TAK026
+            statuses_by_sentence
          WHERE (
             BW$SCD IN (
                 -- Declared Absconder
@@ -305,19 +327,51 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
             )
         )
     ),
+    board_holdover_parole_revocation_partition_statuses AS (
+        SELECT
+            BW$DOC AS DOC,
+            BW$CYC AS CYC,
+            MIN(BW$SSO) AS SSO,
+            BV$SEO AS SEO,
+            -- When the parole update happens there might be multiple related 
+            -- statuses on the same day (multiple updates), but they all should 
+            -- correspond to the same revocation edge so I group them and pick 
+            -- one (doesn't matter which one since they'll all get mapped to the
+            -- same enum).
+            MIN(BW$SCD) AS SCD,
+            BW$SY AS STATUS_CODE_CHG_DT,
+            'I' AS SUBCYCLE_TYPE_STATUS_CAN_PARTITION
+        FROM
+            statuses_by_sentence
+         WHERE (
+            BW$SCD LIKE '50N10%' OR -- Parole Update statuses
+            BW$SCD LIKE '50N30%' -- Conditional Release Update statuses
+        )
+        GROUP BY BW$DOC, BW$CYC, BV$SEO, BW$SY
+    ),
     sub_cycle_partition_statuses AS (
         SELECT
             DOC,
             CYC,
             SSO,
+            SEO,
             SCD,
             STATUS_CODE_CHG_DT,
             SUBCYCLE_TYPE_STATUS_CAN_PARTITION
         FROM
-            field_subcycle_partition_statuses
-            
-        -- NOTE: Add a union with any institutional subcycle partition statuses
-        -- when we need to
+            absconsion_subcycle_partition_statuses
+        UNION
+        SELECT
+            DOC,
+            CYC,
+            SSO,
+            SEO,
+            SCD,
+            STATUS_CODE_CHG_DT,
+            SUBCYCLE_TYPE_STATUS_CAN_PARTITION
+        FROM
+            board_holdover_parole_revocation_partition_statuses
+        -- NOTE: Add more subcycle partition status unions as needed here
     ),
     subcycle_partition_status_change_dates AS (
         SELECT
@@ -337,6 +391,7 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
         ON
             body_status_f1.F1$DOC = sub_cycle_partition_statuses.DOC AND
             body_status_f1.F1$CYC = sub_cycle_partition_statuses.CYC AND
+            body_status_f1.F1$SEO = sub_cycle_partition_statuses.SEO AND
             body_status_f1.F1$SST = sub_cycle_partition_statuses.SUBCYCLE_TYPE_STATUS_CAN_PARTITION AND
             body_status_f1.F1$CD < sub_cycle_partition_statuses.STATUS_CODE_CHG_DT AND
             sub_cycle_partition_statuses.STATUS_CODE_CHG_DT < body_status_f1.F1$WW
@@ -421,27 +476,6 @@ SUB_SUBCYCLE_SPANS_FRAGMENT = \
 
 STATUSES_BY_SENTENCE_AND_DATE_FRAGMENT = \
     """
-    status_bw AS (
-        SELECT 
-            * 
-        FROM
-            LBAKRDTA.TAK026
-        WHERE 
-            BW$SCD IS NOT NULL
-            AND BW$SCD != ''
-        ),
-    statuses_by_sentence AS (
-        SELECT 
-            *
-        FROM 
-            LBAKRDTA.TAK025 status_xref_bv
-        LEFT OUTER JOIN 
-            status_bw
-        ON
-            status_xref_bv.BV$DOC = status_bw.BW$DOC AND
-            status_xref_bv.BV$CYC = status_bw.BW$CYC AND
-            status_xref_bv.BV$SSO = status_bw.BW$SSO
-    ),
     all_scd_codes_by_date AS (
         -- All SCD status codes grouped by DOC, CYC, SEO and SY (Date).
         -- Note about joining this with TAK158 (body status): Because we're 
