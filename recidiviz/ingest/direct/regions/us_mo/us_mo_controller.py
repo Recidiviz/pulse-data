@@ -71,7 +71,8 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_OPEN_CODE_SUBTYPE, \
     PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
-    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, PERIOD_CASE_TYPE_CURRENT
+    PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, PERIOD_CASE_TYPE_CURRENT, \
+    PERIOD_START_STATUSES
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -246,6 +247,25 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FT-BP',
             'FT-CR',
             'IB-BH',  # Institutional Administrative
+            # All Parole Revocation (40I1*) statuses from TAK026
+            '40I1010',  # Parole Ret-Tech Viol
+            '40I1020',  # Parole Ret-New Felony-Viol
+            '40I1021',  # Parole Ret-No Violation
+            '40I1025',  # Medical Parole Ret - Rescinded
+            '40I1040',  # Parole Ret-OTST Decision Pend
+            '40I1050',  # Parole Viol-Felony Law Viol
+            '40I1055',  # Parole Viol-Misd Law Viol
+            '40I1060',  # Parole Ret-Treatment Center
+            '40I1070',  # Parole Return-Work Release
+            # All Conditional Release Return (40I3*) statuses from TAK026
+            '40I3010',  # CR Ret-Tech Viol
+            '40I3020',  # CR Ret-New Felony-Viol
+            '40I3021',  # CR Ret-No Violation
+            '40I3040',  # CR Ret-OTST Decision Pend
+            '40I3050',  # CR Viol-Felony Law Viol
+            '40I3055',  # CR Viol-Misd Law Viol
+            '40I3060',  # CR Ret-Treatment Center
+            '40I3070',  # CR Return-Work Release
         ],
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
             # TODO(2663): Set this accurately and don't assume PROBATION
@@ -292,6 +312,62 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'FT-RF',
             'NA-PB',   # New Admission - Probation Revocation
             'NA-PR',   # New Admission - Probation Revocation Return
+            # All Probation Revocation (40I2*) statuses from TAK026
+            '40I2000',  # Prob Rev-Technical
+            '40I2005',  # Prob Rev-New Felony Conv
+            '40I2010',  # Prob Rev-New Misd Conv
+            '40I2015',  # Prob Rev-Felony Law Viol
+            '40I2020',  # Prob Rev-Misd Law Viol
+            '40I2025',  # Prob Rev-Tech-Long Term Treat
+            '40I2030',  # Prob Rev-New Felon-Lng Trm Trt
+            '40I2035',  # Prob Rev-New Misd-Lng Term Trt
+            '40I2040',  # Prob Rev-Felony Law-Lng Tm Trt
+            '40I2045',  # Prob Rev-Misd Law-Lng Trm Trt
+            '40I2050',  # Prob Rev-Technical-120Day
+            '40I2055',  # Prob Rev-New Felony-120Day
+            '40I2060',  # Prob Rev-New Misd-120Day
+            '40I2065',  # Prob Rev-Felony Law-120Day
+            '40I2070',  # Prob Rev-Misd Law Viol-120Day
+            '40I2075',  # Prob Rev-Tech-Reg Disc Program
+            '40I2080',  # Prob Rev-New Fel Conv-Reg Dis
+            '40I2085',  # Prob Rev-New Mis Conv-Reg Disc
+            '40I2090',  # Prob Rev-Fel Law Vio-Reg Disc
+            '40I2095',  # Prob Rev-Misd Law Vio-Reg Disc
+            '40I2100',  # Prob Rev-Tech-120 Day Treat
+            '40I2105',  # Prob Rev-New Felon-120 Day Trt
+            '40I2110',  # Prob Rev-New Misd-120 Day Trt
+            '40I2115',  # Prob Rev-Fel Law-120 Day Treat
+            '40I2120',  # Prob Rev-Mis Law-120 Day Treat
+            '40I2130',  # Prob Rev-Tech-SOAU
+            '40I2135',  # Prob Rev-New Felony-SOAU
+            '40I2145',  # Prob Rev-Felony Law-SOAU
+            '40I2150',  # Prob Rev-Misdemeanor Law-SOAU
+            '40I2160',  # Prob Rev-Tech-MH 120 Day
+            '40I2300',  # Prob Rev Ret-Technical
+            '40I2305',  # Prob Rev Ret-New Felony Conv
+            '40I2310',  # Prob Rev Ret-New Misd Conv
+            '40I2315',  # Prob Rev Ret-Felony Law Viol
+            '40I2320',  # Prob Rev Ret-Misd Law Viol
+            '40I2325',  # Prob Rev Ret-Tech-Lng Term Trt
+            '40I2330',  # Prob Rev Ret-New Fel-Lg Tm Trt
+            '40I2335',  # Prob Rev Ret-New Mis-Lg Tm Trt
+            '40I2340',  # Prob Rev Ret-Fel Law-Lg Tm Trt
+            '40I2345',  # Prob Rev Ret-Mis Law-Lg Tm Trt
+            '40I2350',  # Prob Rev Ret-Technical-120 Day
+            '40I2355',  # Prob Rev Ret-New Fel-120 Day
+            '40I2365',  # Prob Rev Ret-Fel Law-120 Day
+            '40I2370',  # Prob Rev Ret-Mis Law-120 Day
+            '40I2375',  # Prob Rev Ret-Tech-Reg Disc Pgm
+            '40I2380',  # Prob Rev Ret-New Fel-Reg Disc
+            '40I2390',  # Prob Rev Ret-Fel Law-Reg Disc
+            '40I2400',  # Prob Rev Ret-Tech-120-Day Trt
+            '40I2405',  # Prob Rev Ret-New Fel-120-D Trt
+            '40I2410',  # Prob Rev Ret-New Mis-120-D Trt
+            '40I2415',  # Prob Rev Ret-Fel Law-120-D Trt
+            '40I2420',  # Prob Rev Ret-Mis Law-120-D Trt
+            '40I2430',  # Prob Rev Ret-Technical-SOAU
+            '40I2435',  # Prob Rev Ret-New Fel-SOAU
+            '40I2450',  # Prob Rev Ret-Mis Law-SOAU
         ],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             'BP-FF',  # Board Parole
@@ -682,6 +758,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
             self._adjust_incarceration_period_admission_and_release_reasons,
             self._create_source_violation_response,
+            self._set_ip_admission_reason_from_status,
         ]
         supervision_period_row_posthooks = [
             self._gen_clear_magical_date_value(
@@ -1381,6 +1458,48 @@ class UsMoController(CsvGcsfsDirectIngestController):
                         # Otherwise, we don't know when it actually happens
                         violation_response.response_date = \
                             row.get(PERIOD_START_DATE, None)
+
+    def _set_ip_admission_reason_from_status(
+            self,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets IncarcerationPeriod admission reasons based on statuses from
+        TAK026 (instead of TAK158 body status) when possible.
+
+        If statuses for both parole and probation revocation are found, this
+        method will always pick the parole revocation status.
+        """
+        start_statuses = sorted(row.get(PERIOD_START_STATUSES, '').split(','))
+        probation_status = None
+        parole_status = None
+        for status in start_statuses:
+            if status.startswith((
+                    '40I1',  # Parole Revocation
+                    '40I3',  # Conditional Release Return (Parole Revocation)
+            )):
+                parole_status = status
+            elif status.startswith(
+                    '40I2'  # Probation Revocation
+            ):
+                probation_status = status
+
+        if probation_status and parole_status:
+            logging.warning(
+                'Unexpectedly found probation revocation: [%s] '
+                'and parole revocation: [%s] admission reasons for '
+                'a single incarceration period.',
+                probation_status,
+                parole_status)
+
+        admission_status = parole_status if parole_status else probation_status
+        if not admission_status:
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.admission_reason = admission_status
 
     def _revocation_admission_reason(
             self,
