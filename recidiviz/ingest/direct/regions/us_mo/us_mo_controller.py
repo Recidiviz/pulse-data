@@ -220,6 +220,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'XX-XX',
         ],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
+            # TODO(2663): Once we do a stage rerun with changes from #2754,
+            #  check to see if any of these TAK158 statuses still even end up
+            #  as raw text and remove from overrides if not.
             'IB-BP',
             'IB-CR',
             'IB-CT',
@@ -253,6 +256,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'TR',  # Other State
             'TR-BP',
             'TR-IW',
+            # All New Court Commitment (10I1*) statuses from TAK026
+            '10I1000',  # New Court Comm-Institution
+            '10I1010',  # New Court Comm-120 Day
+            '10I1020',  # New Court Comm-Long Term Treat
+            '10I1030',  # New Court Comm-Reg Dis Prog
+            '10I1040',  # New Court Comm-120 Day Treat
+            '10I1050',  # New Court Commit-SOAU
+            '10I1060',  # New Court Commit-MH 120 Day
         ],
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
             'IE-IE',  # Institutional Escape
@@ -1469,12 +1480,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
         """Sets IncarcerationPeriod admission reasons based on statuses from
         TAK026 (instead of TAK158 body status) when possible.
 
-        If statuses for both parole and probation revocation are found, this
-        method will always pick the parole revocation status.
+        If multiple type of statuses are found, we first look for a non-null
+        parole revocation status, then probation revocation status, and
+        finally a new admission status.
         """
         start_statuses = sorted(row.get(PERIOD_START_STATUSES, '').split(','))
         probation_status = None
         parole_status = None
+        new_admission_status = None
         for status in start_statuses:
             if status.startswith((
                     '40I1',  # Parole Revocation
@@ -1485,21 +1498,36 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     '40I2'  # Probation Revocation
             ):
                 probation_status = status
+            elif status.startswith(
+                    '10I1'  # New Court Commitment (New Admission)
+            ):
+                new_admission_status = status
 
-        admission_status = parole_status if parole_status else probation_status
+        admission_status = None
+        if parole_status:
+            admission_status = parole_status
+        elif probation_status:
+            admission_status = probation_status
+        elif new_admission_status:
+            admission_status = new_admission_status
+
         if not admission_status:
             return
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if probation_status and parole_status:
+                if sum([bool(probation_status),
+                        bool(parole_status),
+                        bool(admission_status)]) > 1:
                     logging.warning(
-                        'Unexpectedly found probation revocation: [%s] '
-                        'and parole revocation: [%s] admission reasons for '
-                        'a single incarceration period [%s].',
-                        probation_status,
-                        parole_status,
-                        obj.state_incarceration_period_id)
+                        'Unexpectedly found multiple types of admission reasons'
+                        'for single incarceration period: [%s]. Found '
+                        'probation revocation status: [%s], parole revocation '
+                        'status: [%s], and new admission status: [%s].',
+                        obj.state_incarceration_period_id,
+                        str(probation_status),
+                        str(parole_status),
+                        str(new_admission_status))
 
                 obj.admission_reason = admission_status
 
