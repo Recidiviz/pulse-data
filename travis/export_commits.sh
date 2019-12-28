@@ -5,9 +5,8 @@ git config user.email "helperbot@recidiviz.com" 2>&1 | ind
 git config user.name "Helper Bot" 2>&1 | ind
 echo "https://helperbot-recidiviz:${GH_TOKEN}@github.com" > .git/credentials 2>&1 | ind
 
-# TODO(#1361): Use pre-built copybara image when it's available.
-# Build the copybara image
-docker build github.com/google/copybara.git -t copybara:latest 2>&1 | ind
+# Pull the copybara image
+docker pull sharelatex/copybara:2019-08.01 2>&1 | ind
 
 # Run copybara
 #
@@ -21,7 +20,7 @@ docker run -e COPYBARA_CONFIG='mirror/copy.bara.sky' \
            -v "$(pwd)/.git/config":/root/.gitconfig \
            -v "$(pwd)/.git/credentials":/root/.git-credentials \
            -v "$(pwd)":/usr/src/app \
-           -it copybara copybara 2>&1 | ind
+           -it sharelatex/copybara:2019-08.01 copybara 2>&1 | ind
 code=$? 
 if [ "$code" -ne 0 -a "$code" -ne 4 ];
 then
