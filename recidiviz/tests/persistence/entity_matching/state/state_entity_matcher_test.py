@@ -2363,6 +2363,63 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
 
+    def test_mergeMultiParentEntities_mergeCharges_errorInMerge_keepsOne(
+            self):
+        # Arrange 1 - Match
+        court_case = StateCourtCase.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID)
+        different_court_case = StateCourtCase.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2)
+        charge = StateCharge.new_with_defaults(
+            charge_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            court_case=court_case)
+        charge_matching = attr.evolve(
+            charge, charge_id=None, court_case=different_court_case)
+        sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge_matching])
+        sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge])
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[sentence, sentence_2])
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group])
+
+        # `different_court_case` was not successfully merged. An error is logged
+        # but otherwise, the failure is silent, as intended (so we do not halt
+        # ingestion because of a failure here).
+        expected_court_case = attr.evolve(court_case)
+        expected_charge = attr.evolve(charge, court_case=expected_court_case)
+        expected_sentence = attr.evolve(sentence, charges=[expected_charge])
+        expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
+        expected_sentence_group = attr.evolve(
+            sentence_group, incarceration_sentences=[
+                expected_sentence, expected_sentence_2])
+        expected_person = attr.evolve(
+            person, sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, [person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session)
+
     def test_mergeMultiParentEntities_mergeCourtCaseWithJudge(self):
         # Arrange 1 - Match
         db_person = generate_person(person_id=_ID)
