@@ -1327,10 +1327,20 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 db_tree = EntityTree(db_with_parents.entity, [])
                 ing_tree = EntityTree(ing_with_parents.entity, [])
 
-                self._match_entity_trees(
+                match_results = self._match_entity_trees(
                     ingested_entity_trees=[ing_tree],
                     db_entity_trees=[db_tree],
-                    root_entity_cls=schema.StatePerson)
+                    root_entity_cls=ing_tree.entity.__class__)
+                # TODO(2760): Report post processing error counts
+                if match_results.error_count:
+                    logging.error(
+                        'Attempting to merge multiparent entities of type '
+                        '[%s], with external_ids [%s] and [%s] but encountered '
+                        '[%s] entity matching errors',
+                        ing_tree.entity.__class__.__name__,
+                        ing_tree.entity.get_external_id(),
+                        db_tree.entity.get_external_id(),
+                        str(match_results.error_count))
                 updated_entity = db_tree.entity
 
                 # As entity matching automatically updates the input db entity,
