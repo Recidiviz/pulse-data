@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 # pylint: disable=unused-import,wrong-import-order,protected-access
-
 """Tests for program/identifier.py."""
 
 from datetime import date
