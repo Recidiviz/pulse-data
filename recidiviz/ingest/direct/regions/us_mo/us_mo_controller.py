@@ -1518,7 +1518,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateIncarcerationPeriod):
                 if sum([bool(probation_status),
                         bool(parole_status),
-                        bool(admission_status)]) > 1:
+                        bool(new_admission_status)]) > 1:
                     logging.warning(
                         'Unexpectedly found multiple types of admission reasons'
                         'for single incarceration period: [%s]. Found '
