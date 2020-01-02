@@ -224,6 +224,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'HOSPITAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'MED': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'MEDICAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'TRANSFER': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRN': StateIncarcerationPeriodReleaseReason.TRANSFER,
 }
 
