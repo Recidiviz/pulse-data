@@ -43,6 +43,8 @@ import logging
 import sys
 import argparse
 
+from recidiviz.calculator.pipeline.incarceration import \
+    pipeline as incarceration_pipeline
 from recidiviz.calculator.pipeline.program import \
     pipeline as program_pipeline
 from recidiviz.calculator.pipeline.recidivism import \
@@ -58,7 +60,8 @@ def parse_arguments(argv):
     parser.add_argument('--pipeline',
                         dest='pipeline',
                         type=str,
-                        choices=['recidivism', 'supervision', 'program'],
+                        choices=['recidivism', 'supervision', 'program',
+                                 'incarceration'],
                         help='The type of pipeline that should be run.',
                         required=True)
 
@@ -106,6 +109,8 @@ def run_calculation_pipelines():
     """Runs the pipeline designated by the given --pipeline argument."""
     known_args, _ = parse_arguments(sys.argv)
 
+    if known_args.pipeline == 'incarceration':
+        incarceration_pipeline.run()
     if known_args.pipeline == 'recidivism':
         recidivism_pipeline.run()
     elif known_args.pipeline == 'supervision':
