@@ -1488,6 +1488,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         probation_status = None
         parole_status = None
         new_admission_status = None
+        temporary_custody_status = None
         for status in start_statuses:
             if status.startswith((
                     '40I1',  # Parole Revocation
@@ -1502,6 +1503,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     '10I1'  # New Court Commitment (New Admission)
             ):
                 new_admission_status = status
+            elif status == '40I0050':
+                temporary_custody_status = status
 
         admission_status = None
         if parole_status:
@@ -1510,6 +1513,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
             admission_status = probation_status
         elif new_admission_status:
             admission_status = new_admission_status
+        elif temporary_custody_status:
+            admission_status = temporary_custody_status
 
         if not admission_status:
             return
@@ -1518,16 +1523,20 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateIncarcerationPeriod):
                 if sum([bool(probation_status),
                         bool(parole_status),
-                        bool(new_admission_status)]) > 1:
+                        bool(new_admission_status),
+                        bool(temporary_custody_status)]) > 1:
                     logging.warning(
                         'Unexpectedly found multiple types of admission reasons'
-                        'for single incarceration period: [%s]. Found '
-                        'probation revocation status: [%s], parole revocation '
-                        'status: [%s], and new admission status: [%s].',
+                        'for single incarceration period: [%s].\n'
+                        'probation revocation status: [%s]\n'
+                        'parole revocation status: [%s]\n '
+                        'new admission status: [%s]\n'
+                        'temporary custody status: [%s].',
                         obj.state_incarceration_period_id,
                         str(probation_status),
                         str(parole_status),
-                        str(new_admission_status))
+                        str(new_admission_status),
+                        str(temporary_custody_status))
 
                 obj.admission_reason = admission_status
 
