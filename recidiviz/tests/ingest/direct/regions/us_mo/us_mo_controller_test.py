@@ -776,7 +776,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-4-0',
             status='NOT_IN_CUSTODY',
             admission_date='20130521',
-            admission_reason='IB-BH',
+            admission_reason='40I0050',
             release_date='20131127',
             release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
@@ -2589,7 +2589,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_date=datetime.date(year=2013, month=5, day=21),
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                admission_reason_raw_text='IB-BH',
+                admission_reason_raw_text='40I0050',
                 release_date=datetime.date(year=2013, month=11, day=27),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
