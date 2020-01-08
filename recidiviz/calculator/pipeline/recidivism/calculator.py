@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    augment_combination
+    augment_combination, last_day_of_month
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -277,14 +277,6 @@ def map_recidivism_liberty_combinations(
                 combo, event, all_reincarcerations))
 
     return metrics
-
-
-def last_day_of_month(any_date):
-    """Returns the date corresponding to the last day of the month for the
-    given date."""
-    next_month = any_date.replace(day=28) + datetime.timedelta(
-        days=4)
-    return next_month - datetime.timedelta(days=next_month.day)
 
 
 def reincarcerations(release_events: Dict[int, List[ReleaseEvent]]) \

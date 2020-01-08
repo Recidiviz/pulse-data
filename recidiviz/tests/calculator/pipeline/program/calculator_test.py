@@ -20,6 +20,7 @@ import unittest
 from datetime import date
 from typing import List, Dict, Set, Tuple
 
+import recidiviz.calculator.pipeline.utils.calculator_utils
 from recidiviz.calculator.pipeline.program import calculator
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
@@ -475,19 +476,6 @@ class TestCharacteristicCombinations(unittest.TestCase):
         for combo in combinations:
             assert combo.get('age_bucket') is None
             assert combo.get('ethnicity') is None
-
-
-def test_assessment_score_bucket():
-    assert calculator.assessment_score_bucket(
-        19, StateAssessmentType.LSIR) == '0-23'
-    assert calculator.assessment_score_bucket(
-        27, StateAssessmentType.LSIR) == '24-29'
-    assert calculator.assessment_score_bucket(
-        30, StateAssessmentType.LSIR) == '30-38'
-    assert calculator.assessment_score_bucket(
-        39, StateAssessmentType.LSIR) == '39+'
-    assert not calculator.assessment_score_bucket(
-        23, StateAssessmentType.ORAS)
 
 
 def demographic_metric_combos_count_for_person_program(

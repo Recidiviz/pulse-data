@@ -21,6 +21,8 @@ from typing import List, Optional, Dict, Any, Set
 
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
+from recidiviz.calculator.pipeline.utils.calculator_utils import \
+    find_most_recent_assessment
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
@@ -95,14 +97,9 @@ def find_program_referrals(
             year = referral_date.year
             month = referral_date.month
 
-            assessment_score = None
-            assessment_type = None
-
-            most_recent_assessment = _find_most_recent_assessment(referral_date,
-                                                                  assessments)
-            if most_recent_assessment:
-                assessment_score = most_recent_assessment.assessment_score
-                assessment_type = most_recent_assessment.assessment_type
+            assessment_score, assessment_type = \
+                find_most_recent_assessment(referral_date,
+                                            assessments)
 
             relevant_supervision_periods = \
                 find_supervision_periods_during_referral(
@@ -120,26 +117,6 @@ def find_program_referrals(
             ))
 
     return program_referrals
-
-
-def _find_most_recent_assessment(referral_date: date,
-                                 assessments: List[StateAssessment]) -> \
-        Optional[StateAssessment]:
-    """Finds the assessment that happened before or on the referral date and
-    has the date closest to the referral date."""
-    assessments_before_referral = [
-        assessment for assessment in assessments
-        if assessment.assessment_date is not None
-        and assessment.assessment_date <= referral_date
-    ]
-
-    if assessments_before_referral:
-        assessments_before_referral.sort(
-            key=lambda b: b.assessment_date)
-
-        return assessments_before_referral[-1]
-
-    return None
 
 
 def find_supervision_periods_during_referral(

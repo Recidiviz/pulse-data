@@ -40,6 +40,8 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.recidivism.pipeline import \
     json_serializable_metric_key
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
@@ -59,7 +61,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
-    StateSupervisionSentence
+    StateSupervisionSentence, StateAssessment
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
@@ -187,6 +189,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             bond=None
         )
 
+        assessment = schema.StateAssessment(
+            assessment_id=298374,
+            assessment_date=date(2015, 3, 19),
+            assessment_type='LSIR',
+            person_id=fake_person_id
+        )
+
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration),
             normalized_database_base_dict(first_reincarceration),
@@ -211,6 +220,10 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_violation_response_data = [
             normalized_database_base_dict(supervision_violation_response)
+        ]
+
+        assessment_data = [
+            normalized_database_base_dict(assessment)
         ]
 
         inclusions = {
@@ -240,7 +253,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             name: [{}],
             schema.
             state_supervision_sentence_supervision_period_association_table.
-            name: supervision_sentence_supervision_period_association
+            name: supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__:
+                assessment_data
         }
 
         test_pipeline = TestPipeline()
@@ -295,6 +310,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateAssessments
+        assessments = (test_pipeline
+                       | 'Load Assessments' >>
+                       extractor_utils.BuildRootEntity(
+                           dataset=None,
+                           data_dict=data_dict,
+                           root_schema_class=
+                           schema.StateAssessment,
+                           root_entity_class=
+                           entities.StateAssessment,
+                           unifying_id_field='person_id',
+                           build_related_entities=False))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
@@ -317,6 +345,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # StateSupervisionSentences
         person_periods_and_sentences = (
             {'person': persons,
+             'assessments': assessments,
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
              'supervision_sentences':
@@ -538,6 +567,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
             source_supervision_violation_response_id=fake_svr_id)
 
+        assessment = schema.StateAssessment(
+            assessment_id=298374,
+            assessment_date=date(2015, 3, 19),
+            assessment_type='LSIR',
+            person_id=fake_person_id
+        )
+
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration),
             normalized_database_base_dict(first_reincarceration),
@@ -562,6 +598,10 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         charge_data = [
             normalized_database_base_dict(charge)
+        ]
+
+        assessment_data = [
+            normalized_database_base_dict(assessment)
         ]
 
         inclusions = {
@@ -593,7 +633,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             name: [{}],
             schema.
             state_supervision_sentence_supervision_period_association_table.
-            name: supervision_sentence_supervision_period_association
+            name: supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__:
+                assessment_data
         }
 
         test_pipeline = TestPipeline()
@@ -648,6 +690,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateAssessments
+        assessments = (test_pipeline
+                       | 'Load Assessments' >>
+                       extractor_utils.BuildRootEntity(
+                           dataset=None,
+                           data_dict=data_dict,
+                           root_schema_class=
+                           schema.StateAssessment,
+                           root_entity_class=
+                           entities.StateAssessment,
+                           unifying_id_field='person_id',
+                           build_related_entities=False))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
@@ -670,6 +725,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # StateSupervisionSentences
         person_periods_and_sentences = (
             {'person': persons,
+             'assessments': assessments,
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
              'supervision_sentences': supervision_sentences
@@ -939,6 +995,13 @@ class TestSupervisionPipeline(unittest.TestCase):
                 admission_date=date(2018, 3, 9),
                 person_id=fake_person_id_2)
 
+        assessment = schema.StateAssessment(
+            assessment_id=298374,
+            assessment_date=date(2015, 3, 19),
+            assessment_type='LSIR',
+            person_id=fake_person_id_1
+        )
+
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration_1),
             normalized_database_base_dict(first_reincarceration_1),
@@ -950,6 +1013,10 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period__1)
+        ]
+
+        assessment_data = [
+            normalized_database_base_dict(assessment)
         ]
 
         inclusions = {
@@ -979,7 +1046,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             name: [{}],
             schema.
             state_supervision_sentence_supervision_period_association_table.
-            name: supervision_sentence_supervision_period_association
+            name: supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__:
+                assessment_data
         }
 
         test_pipeline = TestPipeline()
@@ -1034,6 +1103,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateAssessments
+        assessments = (test_pipeline
+                       | 'Load Assessments' >>
+                       extractor_utils.BuildRootEntity(
+                           dataset=None,
+                           data_dict=data_dict,
+                           root_schema_class=
+                           schema.StateAssessment,
+                           root_entity_class=
+                           entities.StateAssessment,
+                           unifying_id_field='person_id',
+                           build_related_entities=False))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
@@ -1056,6 +1138,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # StateSupervisionSentences
         person_periods_and_sentences = (
             {'person': persons,
+             'assessments': assessments,
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
              'supervision_sentences': supervision_sentences
@@ -1180,7 +1263,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        assessment = StateAssessment.new_with_defaults(
+            state_code='CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 10)
+        )
+
         person_periods = {'person': [fake_person],
+                          'assessments': [assessment],
                           'incarceration_periods': [
                               incarceration_period
                           ],
@@ -1192,24 +1283,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ProjectedSupervisionCompletionBucket(
                 supervision_period.state_code,
                 2015, 5, supervision_period.supervision_type,
-                True, 'OFFICER0009', '10'
+                None, None, True, 'OFFICER0009', '10'
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
-                supervision_period.supervision_type)
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
         ]
 
         correct_output = [
@@ -1310,7 +1409,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        assessment = StateAssessment.new_with_defaults(
+            state_code='CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 10)
+        )
+
         person_periods = {'person': [fake_person],
+                          'assessments': [assessment],
                           'incarceration_periods': [
                               incarceration_period
                           ],
@@ -1322,19 +1429,27 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
-                supervision_period.supervision_type)
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
         ]
 
         correct_output = [
@@ -1424,7 +1539,136 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        assessment = StateAssessment.new_with_defaults(
+            state_code='CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
         person_periods = {'person': [fake_person],
+                          'assessments': [assessment],
+                          'incarceration_periods': [],
+                          'supervision_sentences': [
+                              supervision_sentence
+                          ]}
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, 3,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, 4,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, 5,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                supervision_period.state_code,
+                2015, None,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+        ]
+
+        correct_output = [
+            (fake_person, supervision_time_buckets)]
+
+        test_pipeline = TestPipeline()
+
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
+        output = (test_pipeline
+                  | beam.Create([(fake_person_id,
+                                  person_periods)])
+                  | 'Identify Supervision Time Buckets' >>
+                  beam.ParDo(
+                      pipeline.ClassifySupervisionTimeBuckets(),
+                      AsDict(ssvr_agent_associations_as_kv),
+                      AsDict(supervision_periods_to_agent_associations_as_kv))
+                  )
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
+    def testClassifySupervisionTimeBuckets_NoAssessments(self):
+        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
+        assessments."""
+        fake_person_id = 12345
+
+        fake_person = StatePerson.new_with_defaults(
+            person_id=fake_person_id, gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT)
+
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=1111,
+            state_code='CA',
+            county_code='124',
+            start_date=date(2015, 3, 14),
+            termination_date=date(2015, 5, 29),
+            supervision_type=StateSupervisionType.PROBATION,
+            person_id=fake_person_id
+        )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
+        person_periods = {'person': [fake_person],
+                          'assessments': [],
                           'incarceration_periods': [],
                           'supervision_sentences': [
                               supervision_sentence
@@ -1446,7 +1690,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
-                supervision_period.supervision_type)
+                supervision_period.supervision_type),
         ]
 
         correct_output = [
@@ -1530,7 +1774,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
+        assessment = StateAssessment.new_with_defaults(
+            state_code='CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 10)
+        )
+
         person_periods = {'person': [fake_person],
+                          'assessments': [assessment],
                           'incarceration_periods': [
                               incarceration_period
                           ],
