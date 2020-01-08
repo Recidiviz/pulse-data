@@ -22,21 +22,18 @@ metrics, key-value pairs where the key represents all of the dimensions
 represented in the data point, and the value represents an indicator of whether
 the person should contribute to that metric.
 """
-import logging
 from copy import deepcopy
 from datetime import date
-from typing import List, Dict, Tuple, Any, Optional
+from typing import List, Dict, Tuple, Any
 
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
     ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    convert_event_based_to_person_based_metrics
+    convert_event_based_to_person_based_metrics, assessment_score_bucket
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -237,33 +234,3 @@ def map_metric_combinations(
         metrics.append((combo, 1))
 
     return metrics
-
-
-def assessment_score_bucket(assessment_score: int,
-                            assessment_type: StateAssessmentType) -> \
-        Optional[str]:
-    """Calculates the assessment score bucket that applies to measurement.
-
-    Args:
-        assessment_score: the person's assessment score
-        assessment_type: the type of assessment
-
-    NOTE: Only LSIR buckets are currently supported
-    TODO(2742): Add calculation support for all supported StateAssessmentTypes
-
-    Returns:
-        A string representation of the assessment score for the person.
-        None if the assessment type is not supported.
-    """
-    if assessment_type == StateAssessmentType.LSIR:
-        if assessment_score < 24:
-            return '0-23'
-        if assessment_score <= 29:
-            return '24-29'
-        if assessment_score <= 38:
-            return '30-38'
-        return '39+'
-
-    logging.warning("Assessment type %s is unsupported.", assessment_type)
-
-    return None

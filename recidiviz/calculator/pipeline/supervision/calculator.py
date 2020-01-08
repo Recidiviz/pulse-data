@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     ProjectedSupervisionCompletionBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    convert_event_based_to_person_based_metrics
+    convert_event_based_to_person_based_metrics, assessment_score_bucket
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -198,6 +198,13 @@ def characteristic_combinations(person: StatePerson,
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = \
             supervision_time_bucket.supervision_type
+    if supervision_time_bucket.assessment_score and \
+            supervision_time_bucket.assessment_type:
+        characteristics['assessment_score_bucket'] = \
+            assessment_score_bucket(supervision_time_bucket.assessment_score,
+                                    supervision_time_bucket.assessment_type)
+        characteristics['assessment_type'] = \
+            supervision_time_bucket.assessment_type
     if inclusions.get('age_bucket'):
         year = supervision_time_bucket.year
         month = supervision_time_bucket.month

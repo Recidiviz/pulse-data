@@ -31,6 +31,8 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -93,6 +95,45 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    def test_map_supervision_combinations_assessment(self):
+        """Tests the map_supervision_combinations function when there is
+        assessment data present."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, 3, StateSupervisionType.PAROLE, 31,
+                StateAssessmentType.LSIR),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, None, StateSupervisionType.PAROLE,
+                31, StateAssessmentType.LSIR)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
     def test_map_supervision_revocation_combinations(self):
         """Tests the map_supervision_combinations function for a
         revocation month."""
@@ -114,6 +155,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 3, StateSupervisionType.PAROLE,
+                12, StateAssessmentType.LSIR,
                 RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
         ]
 
@@ -308,7 +350,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 3, StateSupervisionType.PAROLE),
             RevocationReturnSupervisionTimeBucket(
-                'AK', 2018, 4, StateSupervisionType.PAROLE,
+                'AK', 2018, 4, StateSupervisionType.PAROLE, None, None,
                 RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
         ]
 
@@ -661,6 +703,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
+            None, None,
             RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
@@ -693,6 +736,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
+            None, None,
             RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
@@ -724,7 +768,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            'AK', 2018, 3, StateSupervisionType.PAROLE,
+            'AK', 2018, 3, StateSupervisionType.PAROLE, None, None,
             None, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
@@ -760,6 +804,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
+            None, None,
             RevocationType.SHOCK_INCARCERATION, None)
 
         combinations = calculator.characteristic_combinations(
@@ -892,9 +937,17 @@ def expected_metric_combos_count(
     ]
     num_revocation_buckets = len(revocation_buckets)
 
+    population_dimension_multiplier = 1
+    if supervision_time_buckets and \
+            supervision_time_buckets[0].assessment_score:
+        population_dimension_multiplier *= 2
+    if supervision_time_buckets and \
+            supervision_time_buckets[0].assessment_type:
+        population_dimension_multiplier *= 2
+
     supervision_population_combos = \
         demographic_metric_combos * methodology_multiplier * \
-        num_population_buckets
+        num_population_buckets * population_dimension_multiplier
 
     # Calculate total combos for supervision revocation
     revocation_dimension_multiplier = 1
@@ -902,6 +955,12 @@ def expected_metric_combos_count(
         if revocation_buckets and revocation_buckets[0].revocation_type:
             revocation_dimension_multiplier *= 2
         if revocation_buckets and revocation_buckets[0].source_violation_type:
+            revocation_dimension_multiplier *= 2
+        if revocation_buckets and \
+                revocation_buckets[0].assessment_score:
+            revocation_dimension_multiplier *= 2
+        if revocation_buckets and \
+                revocation_buckets[0].assessment_type:
             revocation_dimension_multiplier *= 2
 
     supervision_revocation_combos = \

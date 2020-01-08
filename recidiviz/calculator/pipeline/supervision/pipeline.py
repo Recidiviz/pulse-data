@@ -192,6 +192,9 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         incarceration_periods = \
             list(person_periods['incarceration_periods'])
 
+        # Get the StateAssessments as a list
+        assessments = list(person_periods['assessments'])
+
         # Get the StatePerson
         person = one(person_periods['person'])
 
@@ -201,6 +204,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
             identifier.find_supervision_time_buckets(
                 supervision_sentences,
                 incarceration_periods,
+                assessments,
                 ssvr_agent_associations,
                 supervision_period_to_agent_associations)
 
@@ -522,6 +526,18 @@ def run(argv=None):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateAssessments
+        assessments = (p
+                       | 'Load Assessments' >>
+                       BuildRootEntity(dataset=query_dataset,
+                                       data_dict=None,
+                                       root_schema_class=
+                                       schema.StateAssessment,
+                                       root_entity_class=entities.
+                                       StateAssessment,
+                                       unifying_id_field='person_id',
+                                       build_related_entities=False))
+
         # Bring in the table that associates StateSupervisionViolationResponses
         # to information about StateAgents
         ssvr_to_agent_association_query = \
@@ -585,6 +601,7 @@ def run(argv=None):
         # StateSupervisionSentences
         person_periods_and_sentences = (
             {'person': persons,
+             'assessments': assessments,
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
              'supervision_sentences':

@@ -20,6 +20,8 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -49,6 +51,12 @@ class SupervisionTimeBucket(BuildableAttr):
     # The type of supervision the person was on
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
+    # Most recent assessment score
+    assessment_score: Optional[int] = attr.ib(default=None)
+
+    # Type of the most recent assessment score
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
@@ -74,7 +82,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
     @staticmethod
     def for_year(state_code: str, year: int,
-                 supervision_type: Optional[StateSupervisionType],
+                 supervision_type: Optional[StateSupervisionType] = None,
+                 assessment_score: Optional[int] = None,
+                 assessment_type: Optional[StateAssessmentType] = None,
                  revocation_type:
                  Optional[StateSupervisionViolationResponseRevocationType] =
                  None,
@@ -88,6 +98,8 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=None,
             supervision_type=supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type,
             revocation_type=revocation_type,
             source_violation_type=source_violation_type,
             supervising_officer_external_id=supervising_officer_external_id,
@@ -96,14 +108,19 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
         )
 
     @staticmethod
-    def for_year_from_month(month_bucket:
-                            'RevocationReturnSupervisionTimeBucket') -> \
+    def for_year_from_month_assessment_override(
+            month_bucket:
+            'RevocationReturnSupervisionTimeBucket',
+            assessment_score: Optional[int] = None,
+            assessment_type: Optional[StateAssessmentType] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
         return RevocationReturnSupervisionTimeBucket(
             state_code=month_bucket.state_code,
             year=month_bucket.year,
             month=None,
             supervision_type=month_bucket.supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type,
             revocation_type=month_bucket.revocation_type,
             source_violation_type=month_bucket.source_violation_type,
             supervising_officer_external_id=
@@ -114,7 +131,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
-                  supervision_type: Optional[StateSupervisionType],
+                  supervision_type: Optional[StateSupervisionType] = None,
+                  assessment_score: Optional[int] = None,
+                  assessment_type: Optional[StateAssessmentType] = None,
                   revocation_type:
                   Optional[StateSupervisionViolationResponseRevocationType] =
                   None,
@@ -128,6 +147,8 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=month,
             supervision_type=supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type,
             revocation_type=revocation_type,
             source_violation_type=source_violation_type,
             supervising_officer_external_id=supervising_officer_external_id,
@@ -142,35 +163,50 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
     @staticmethod
     def for_year(state_code: str, year: int,
-                 supervision_type: Optional[StateSupervisionType]) -> \
+                 supervision_type: Optional[StateSupervisionType] = None,
+                 assessment_score: Optional[int] = None,
+                 assessment_type: Optional[StateAssessmentType] = None
+                 ) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
             state_code=state_code,
             year=year,
             month=None,
-            supervision_type=supervision_type
+            supervision_type=supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type
         )
 
     @staticmethod
-    def for_year_from_month(month_bucket:
-                            'NonRevocationReturnSupervisionTimeBucket') -> \
+    def for_year_from_month_assessment_override(
+            month_bucket:
+            'NonRevocationReturnSupervisionTimeBucket',
+            assessment_score: Optional[int] = None,
+            assessment_type: Optional[StateAssessmentType] = None) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
             state_code=month_bucket.state_code,
             year=month_bucket.year,
             month=None,
             supervision_type=month_bucket.supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type
         )
 
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
-                  supervision_type: Optional[StateSupervisionType]) -> \
+                  supervision_type: Optional[StateSupervisionType] = None,
+                  assessment_score: Optional[int] = None,
+                  assessment_type: Optional[StateAssessmentType] = None,
+                  ) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
             state_code=state_code,
             year=year,
             month=month,
-            supervision_type=supervision_type
+            supervision_type=supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type
         )
 
 
@@ -207,5 +243,4 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
             successful_completion=successful_completion,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
-
         )
