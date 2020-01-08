@@ -20,6 +20,8 @@ from datetime import date
 from datetime import datetime
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 
@@ -386,3 +388,16 @@ def test_augment_combination():
                          'race': 'black',
                          'gender': 'female'}
     assert augmented != combo
+
+
+def test_assessment_score_bucket():
+    assert calculator_utils.assessment_score_bucket(
+        19, StateAssessmentType.LSIR) == '0-23'
+    assert calculator_utils.assessment_score_bucket(
+        27, StateAssessmentType.LSIR) == '24-29'
+    assert calculator_utils.assessment_score_bucket(
+        30, StateAssessmentType.LSIR) == '30-38'
+    assert calculator_utils.assessment_score_bucket(
+        39, StateAssessmentType.LSIR) == '39+'
+    assert not calculator_utils.assessment_score_bucket(
+        23, StateAssessmentType.ORAS)

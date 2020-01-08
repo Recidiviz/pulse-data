@@ -23,6 +23,8 @@ from typing import Any, Dict, Optional, cast
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -90,6 +92,14 @@ class SupervisionPopulationMetric(SupervisionMetric):
     # Population count
     count: int = attr.ib(default=None)
 
+    # Optional characteristics
+
+    # Assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
                                     job_id: str) -> \
@@ -121,6 +131,12 @@ class SupervisionRevocationMetric(SupervisionMetric):
     count: int = attr.ib(default=None)
 
     # Optional characteristics
+
+    # Assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # The StateSupervisionViolationResponseRevocationType enum for the type of
     # revocation of supervision that this metric describes

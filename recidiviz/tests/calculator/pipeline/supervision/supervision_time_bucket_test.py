@@ -19,6 +19,8 @@
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -47,12 +49,15 @@ def test_revocation_supervision_time_bucket():
     year = 2000
     month = 11
     supervision_type = StateSupervisionType.PROBATION
+    assessment_score = 22
+    assessment_type = StateAssessmentType.LSIR
     revocation_type = \
         StateSupervisionViolationResponseRevocationType.REINCARCERATION
     source_violation_type = StateSupervisionViolationType.TECHNICAL
 
     supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-        state_code, year, month, supervision_type, revocation_type,
+        state_code, year, month, supervision_type,
+        assessment_score, assessment_type, revocation_type,
         source_violation_type)
 
     assert supervision_time_bucket.state_code == state_code
@@ -99,17 +104,12 @@ def test_eq_different_field():
     year = 2018
     month = None
     supervision_type = StateSupervisionType.PROBATION
-    revocation_type = \
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION
-    source_violation_type = StateSupervisionViolationType.TECHNICAL
 
     first = RevocationReturnSupervisionTimeBucket(
-        state_code, year, month, supervision_type, revocation_type,
-        source_violation_type)
+        state_code, year, month, supervision_type)
 
     second = RevocationReturnSupervisionTimeBucket(
-        state_code, year, 4, supervision_type, revocation_type,
-        source_violation_type)
+        state_code, year, 4, supervision_type)
 
     assert first != second
 
@@ -119,12 +119,16 @@ def test_eq_different_results():
     year = 2003
     month = 12
     supervision_type = StateSupervisionType.PROBATION
+    assessment_score = 19
+    assessment_type = StateAssessmentType.ASI
     revocation_type = \
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
     source_violation_type = StateSupervisionViolationType.MUNICIPAL
 
     first = RevocationReturnSupervisionTimeBucket(
-        state_code, year, month, supervision_type, revocation_type,
+        state_code, year, month, supervision_type,
+        assessment_score, assessment_type,
+        revocation_type,
         source_violation_type)
 
     second = NonRevocationReturnSupervisionTimeBucket(
@@ -138,12 +142,17 @@ def test_eq_different_types():
     year = 1992
     month = 9
     supervision_type = StateSupervisionType.PROBATION
+    assessment_score = 11
+    assessment_type = StateAssessmentType.LSIR
     revocation_type = \
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
     source_violation_type = StateSupervisionViolationType.MUNICIPAL
 
     supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-        state_code, year, month, supervision_type, revocation_type,
+        state_code, year, month, supervision_type,
+        assessment_score,
+        assessment_type,
+        revocation_type,
         source_violation_type)
 
     different = "Everything you do is a banana"

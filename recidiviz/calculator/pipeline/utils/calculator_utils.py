@@ -15,15 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for the various calculation pipelines."""
+import datetime
 import json
+import logging
 from datetime import date
 from itertools import combinations
 from typing import Optional, List, Any, Dict, Tuple
 
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, StatePersonEthnicity
+    StatePersonRace, StatePersonEthnicity, StateAssessment
 
 
 def for_characteristics_races_ethnicities(
@@ -205,3 +209,65 @@ def convert_event_based_to_person_based_metrics(
         person_based_metrics.append((dict_metric_key, value))
 
     return person_based_metrics
+
+
+def last_day_of_month(any_date):
+    """Returns the date corresponding to the last day of the month for the
+    given date."""
+    next_month = any_date.replace(day=28) + datetime.timedelta(
+        days=4)
+    return next_month - datetime.timedelta(days=next_month.day)
+
+
+def find_most_recent_assessment(cutoff_date: date,
+                                assessments: List[StateAssessment]) -> \
+        Tuple[Optional[int], Optional[StateAssessmentType]]:
+    """Finds the assessment that happened before or on the given date and
+    has the date closest to the given date. Returns the assessment score
+    and the assessment type."""
+    if assessments:
+        assessments_before_date = [
+            assessment for assessment in assessments
+            if assessment.assessment_date is not None
+            and assessment.assessment_date <= cutoff_date
+        ]
+
+        if assessments_before_date:
+            assessments_before_date.sort(
+                key=lambda b: b.assessment_date)
+
+            most_recent_assessment = assessments_before_date[-1]
+            return most_recent_assessment.assessment_score, \
+                most_recent_assessment.assessment_type
+
+    return None, None
+
+
+def assessment_score_bucket(assessment_score: int,
+                            assessment_type: StateAssessmentType) -> \
+        Optional[str]:
+    """Calculates the assessment score bucket that applies to measurement.
+
+    Args:
+        assessment_score: the person's assessment score
+        assessment_type: the type of assessment
+
+    NOTE: Only LSIR buckets are currently supported
+    TODO(2742): Add calculation support for all supported StateAssessmentTypes
+
+    Returns:
+        A string representation of the assessment score for the person.
+        None if the assessment type is not supported.
+    """
+    if assessment_type == StateAssessmentType.LSIR:
+        if assessment_score < 24:
+            return '0-23'
+        if assessment_score <= 29:
+            return '24-29'
+        if assessment_score <= 38:
+            return '30-38'
+        return '39+'
+
+    logging.warning("Assessment type %s is unsupported.", assessment_type)
+
+    return None
