@@ -61,7 +61,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
-    StateSupervisionSentence, StateAssessment
+    StateSupervisionSentence, StateAssessment, StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
@@ -1283,32 +1283,36 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ProjectedSupervisionCompletionBucket(
                 supervision_period.state_code,
                 2015, 5, supervision_period.supervision_type,
-                None, None, True, 'OFFICER0009', '10'
+                None, None, 'OFFICER0009', '10', True
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
         ]
 
         correct_output = [
@@ -1391,6 +1395,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             person_id=fake_person_id
         )
 
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=999
+            )
+
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -1400,7 +1409,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             PROBATION_REVOCATION,
             release_date=date(2018, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            SENTENCE_SERVED,
+            source_supervision_violation_response=
+            supervision_violation_response)
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
@@ -1431,25 +1442,29 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2015, 3,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
         ]
 
         correct_output = [
@@ -1459,8 +1474,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         ssvr_to_agent_map = {
             'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': 'X',
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
             'supervision_violation_response_id': 999
         }
 
@@ -1559,25 +1574,29 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 2015, 3,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
                 supervision_period.supervision_type,
                 assessment.assessment_score,
-                assessment.assessment_type),
+                assessment.assessment_type,
+                'OFFICER0009', '10'),
         ]
 
         correct_output = [
@@ -1678,19 +1697,27 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 3,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                None, None,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 4,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                None, None,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, 5,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                None, None,
+                'OFFICER0009', '10'),
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 2015, None,
-                supervision_period.supervision_type),
+                supervision_period.supervision_type,
+                None, None,
+                'OFFICER0009', '10'),
         ]
 
         correct_output = [
