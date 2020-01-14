@@ -21,7 +21,7 @@ import json
 import unittest
 
 import apache_beam as beam
-from apache_beam.pvalue import AsList, AsDict
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -218,6 +218,19 @@ class TestSupervisionPipeline(unittest.TestCase):
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id)
 
+        supervision_violation = \
+            database_test_utils.generate_test_supervision_violation(
+                fake_person_id,
+                [supervision_violation_response]
+            )
+
+        supervision_violation_data = [
+            normalized_database_base_dict(supervision_violation)
+        ]
+
+        supervision_violation_response.supervision_violation_id = \
+            supervision_violation.supervision_violation_id
+
         supervision_violation_response_data = [
             normalized_database_base_dict(supervision_violation_response)
         ]
@@ -241,6 +254,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                 incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__:
                 supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__:
+                supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__:
                 supervision_periods_data,
             schema.StateSupervisionSentence.__tablename__:
@@ -284,6 +299,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateSupervisionViolations
+        supervision_violations = \
+            (test_pipeline
+             | 'Load SupervisionViolations' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolation,
+                 root_entity_class=entities.StateSupervisionViolation,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
@@ -323,11 +351,30 @@ class TestSupervisionPipeline(unittest.TestCase):
                            unifying_id_field='person_id',
                            build_related_entities=False))
 
+        # Group StateSupervisionViolationResponses and
+        # StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {'violations': supervision_violations,
+             'violation_responses': supervision_violation_responses
+             } | 'Group StateSupervisionViolationResponses to '
+                 'StateSupervisionViolations' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on
+        # the corresponding StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | 'Set hydrated StateSupervisionViolations on '
+              'the StateSupervisionViolationResponses' >>
+            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
-             'violation_responses': supervision_violation_responses}
+             'violation_responses':
+                 violation_responses_with_hydrated_violations}
             | 'Group StateIncarcerationPeriods to '
             'StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()
@@ -542,12 +589,18 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ssvr.decision_agents = [state_agent]
 
+        supervision_violation_type = schema.StateSupervisionViolationTypeEntry(
+            person_id=fake_person_id,
+            state_code='us_ca',
+            violation_type=StateSupervisionViolationType.TECHNICAL
+        )
+
         supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
             state_code='us_ca',
             person_id=fake_person_id,
-            supervision_violation_responses=[ssvr]
+            supervision_violation_responses=[ssvr],
+            supervision_violation_types=[supervision_violation_type]
         )
 
         # This incarceration period was due to a probation revocation
@@ -582,6 +635,10 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period)
+        ]
+
+        supervision_violation_type_data = [
+            normalized_database_base_dict(supervision_violation_type)
         ]
 
         supervision_violation_response_data = [
@@ -621,6 +678,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                 supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__:
                 supervision_violation_data,
+            schema.StateSupervisionViolationTypeEntry.__tablename__:
+                supervision_violation_type_data,
             schema.StateSupervisionPeriod.__tablename__:
                 supervision_periods_data,
             schema.StateSupervisionSentence.__tablename__:
@@ -664,6 +723,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateSupervisionViolations
+        supervision_violations = \
+            (test_pipeline
+             | 'Load SupervisionViolations' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolation,
+                 root_entity_class=entities.StateSupervisionViolation,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
@@ -703,11 +775,30 @@ class TestSupervisionPipeline(unittest.TestCase):
                            unifying_id_field='person_id',
                            build_related_entities=False))
 
+        # Group StateSupervisionViolationResponses and
+        # StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {'violations': supervision_violations,
+             'violation_responses': supervision_violation_responses
+             } | 'Group StateSupervisionViolationResponses to '
+                 'StateSupervisionViolations' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on
+        # the corresponding StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | 'Set hydrated StateSupervisionViolations on '
+              'the StateSupervisionViolationResponses' >>
+            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
-             'violation_responses': supervision_violation_responses}
+             'violation_responses':
+                 violation_responses_with_hydrated_violations}
             | 'Group StateIncarcerationPeriods to '
             'StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()
@@ -1077,6 +1168,19 @@ class TestSupervisionPipeline(unittest.TestCase):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateSupervisionViolations
+        supervision_violations = \
+            (test_pipeline
+             | 'Load SupervisionViolations' >>
+             extractor_utils.BuildRootEntity(
+                 dataset=None,
+                 data_dict=data_dict,
+                 root_schema_class=schema.StateSupervisionViolation,
+                 root_entity_class=entities.StateSupervisionViolation,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
@@ -1116,13 +1220,32 @@ class TestSupervisionPipeline(unittest.TestCase):
                            unifying_id_field='person_id',
                            build_related_entities=False))
 
+        # Group StateSupervisionViolationResponses and
+        # StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {'violations': supervision_violations,
+             'violation_responses': supervision_violation_responses
+             } | 'Group StateSupervisionViolationResponses to '
+                 'StateSupervisionViolations' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on
+        # the corresponding StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | 'Set hydrated StateSupervisionViolations on '
+              'the StateSupervisionViolationResponses' >>
+            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
-             'violation_responses': supervision_violation_responses}
+             'violation_responses':
+                 violation_responses_with_hydrated_violations}
             | 'Group StateIncarcerationPeriods to '
-            'StateSupervisionViolationResponses' >>
+              'StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()
         )
 
