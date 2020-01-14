@@ -133,13 +133,15 @@ def find_supervision_time_buckets(
     for supervision_period in supervision_periods:
         # Don't process placeholder supervision periods
         if not is_placeholder(supervision_period):
-            supervision_time_buckets = supervision_time_buckets + \
-                                       find_time_buckets_for_supervision_period(
-                                           supervision_period,
-                                           indexed_incarceration_periods,
-                                           months_of_incarceration,
-                                           assessments,
-                                           ssvr_agent_associations)
+            supervision_time_buckets = \
+                supervision_time_buckets + \
+                find_time_buckets_for_supervision_period(
+                    supervision_period,
+                    indexed_incarceration_periods,
+                    months_of_incarceration,
+                    assessments,
+                    ssvr_agent_associations,
+                    supervision_period_to_agent_associations)
 
     # TODO(2680): Update revocation logic to not rely on adding months for
     #  missing returns
@@ -156,7 +158,9 @@ def find_time_buckets_for_supervision_period(
         Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
         months_of_incarceration: Set[Tuple[int, int]],
         assessments: List[StateAssessment],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]]) -> \
+        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_to_agent_associations:
+        Dict[int, Dict[Any, Any]]) -> \
         List[SupervisionTimeBucket]:
     """Finds time that this person was on supervision for the given
     StateSupervisionPeriod, classified as either an instance of
@@ -184,10 +188,12 @@ def find_time_buckets_for_supervision_period(
             indexed_incarceration_periods,
             months_of_incarceration,
             assessments,
-            ssvr_agent_associations)
+            ssvr_agent_associations,
+            supervision_period_to_agent_associations)
 
     supervision_year_buckets = convert_month_buckets_to_year_buckets(
-        supervision_period, supervision_month_buckets, assessments)
+        supervision_period, supervision_month_buckets, assessments,
+        supervision_period_to_agent_associations)
 
     return supervision_month_buckets + supervision_year_buckets
 
@@ -198,7 +204,9 @@ def find_month_buckets_for_supervision_period(
         Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
         months_of_incarceration: Set[Tuple[int, int]],
         assessments: List[StateAssessment],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]]) -> \
+        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_to_agent_associations:
+        Dict[int, Dict[Any, Any]]) -> \
         List[SupervisionTimeBucket]:
     """Finds months that this person was on supervision for the given
     StateSupervisionPeriod, where the person was not incarcerated for the full
@@ -298,6 +306,12 @@ def find_month_buckets_for_supervision_period(
             assessment_score, assessment_type = \
                 find_most_recent_assessment(end_of_month, assessments)
 
+            supervising_officer_external_id, \
+            supervising_district_external_id = \
+                _get_supervising_officer_and_district(
+                    supervision_period.supervision_period_id,
+                    supervision_period_to_agent_associations)
+
             supervision_month_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket.for_month(
                     state_code=supervision_period.state_code,
@@ -305,7 +319,11 @@ def find_month_buckets_for_supervision_period(
                     month=time_bucket.month,
                     supervision_type=supervision_period.supervision_type,
                     assessment_score=assessment_score,
-                    assessment_type=assessment_type))
+                    assessment_type=assessment_type,
+                    supervising_officer_external_id=
+                    supervising_officer_external_id,
+                    supervising_district_external_id=
+                    supervising_district_external_id))
 
         time_bucket = time_bucket + relativedelta(months=1)
 
@@ -315,7 +333,8 @@ def find_month_buckets_for_supervision_period(
 def convert_month_buckets_to_year_buckets(
         supervision_period: StateSupervisionPeriod,
         supervision_month_buckets: List[SupervisionTimeBucket],
-        assessments: List[StateAssessment]
+        assessments: List[StateAssessment],
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
 ) -> List[SupervisionTimeBucket]:
     """Converts a list of SupervisionTimeBuckets that contains months on
     supervision into a list of SupervisionTimeBuckets for years on supervision.
@@ -401,13 +420,23 @@ def convert_month_buckets_to_year_buckets(
             assessment_score, assessment_type = \
                 find_most_recent_assessment(end_of_year, assessments)
 
+            supervising_officer_external_id, \
+                supervising_district_external_id = \
+                _get_supervising_officer_and_district(
+                    supervision_period.supervision_period_id,
+                    supervision_period_to_agent_associations)
+
             supervision_year_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket.for_year(
                     state_code=supervision_period.state_code,
                     year=year,
                     supervision_type=supervision_period.supervision_type,
                     assessment_score=assessment_score,
-                    assessment_type=assessment_type
+                    assessment_type=assessment_type,
+                    supervising_officer_external_id=
+                    supervising_officer_external_id,
+                    supervising_district_external_id=
+                    supervising_district_external_id
                 )
             )
         else:
@@ -862,19 +891,10 @@ def _get_projected_completion_bucket_from_supervision_period(
                           [StateSupervisionPeriodTerminationReason.DISCHARGE,
                            StateSupervisionPeriodTerminationReason.EXPIRATION]
 
-    supervising_officer_external_id = None
-    supervising_district_external_id = None
-
-    if supervision_period.supervision_period_id:
-        agent_info = \
-            supervision_period_to_agent_associations.get(
-                supervision_period.supervision_period_id)
-
-        if agent_info is not None:
-            supervising_officer_external_id = agent_info.get(
-                'agent_external_id')
-            supervising_district_external_id = agent_info.get(
-                'district_external_id')
+    supervising_officer_external_id, supervising_district_external_id = \
+        _get_supervising_officer_and_district(
+            supervision_period.supervision_period_id,
+            supervision_period_to_agent_associations)
 
     return ProjectedSupervisionCompletionBucket.for_month(
         state_code=supervision_period.state_code,
@@ -885,3 +905,24 @@ def _get_projected_completion_bucket_from_supervision_period(
         supervising_officer_external_id=supervising_officer_external_id,
         supervising_district_external_id=supervising_district_external_id
     )
+
+
+def _get_supervising_officer_and_district(
+        supervision_period_id: Optional[int],
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
+        -> Tuple[Optional[str], Optional[str]]:
+
+    supervising_officer_external_id = None
+    supervising_district_external_id = None
+
+    if supervision_period_id:
+        agent_info = \
+            supervision_period_to_agent_associations.get(supervision_period_id)
+
+        if agent_info is not None:
+            supervising_officer_external_id = agent_info.get(
+                'agent_external_id')
+            supervising_district_external_id = agent_info.get(
+                'district_external_id')
+
+    return supervising_officer_external_id, supervising_district_external_id

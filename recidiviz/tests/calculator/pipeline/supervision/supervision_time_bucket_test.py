@@ -51,13 +51,16 @@ def test_revocation_supervision_time_bucket():
     supervision_type = StateSupervisionType.PROBATION
     assessment_score = 22
     assessment_type = StateAssessmentType.LSIR
+    supervising_officer_external_id = '13247'
+    supervising_district_external_id = 'DISTRICT 3'
     revocation_type = \
         StateSupervisionViolationResponseRevocationType.REINCARCERATION
     source_violation_type = StateSupervisionViolationType.TECHNICAL
 
     supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
         state_code, year, month, supervision_type,
-        assessment_score, assessment_type, revocation_type,
+        assessment_score, assessment_type, supervising_officer_external_id,
+        supervising_district_external_id, revocation_type,
         source_violation_type)
 
     assert supervision_time_bucket.state_code == state_code

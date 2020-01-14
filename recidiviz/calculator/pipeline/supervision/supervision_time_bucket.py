@@ -57,6 +57,14 @@ class SupervisionTimeBucket(BuildableAttr):
     # Type of the most recent assessment score
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
+    # External ID of the officer who was supervising the people described by
+    # this metric
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the district of the officer that was supervising the
+    # people described by this metric
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
@@ -71,14 +79,6 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
-
-    # External ID of the officer who was supervising the people described by
-    # this metric
-    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the district of the officer that was supervising the
-    # people described by this metric
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def for_year(state_code: str, year: int,
@@ -165,7 +165,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     def for_year(state_code: str, year: int,
                  supervision_type: Optional[StateSupervisionType] = None,
                  assessment_score: Optional[int] = None,
-                 assessment_type: Optional[StateAssessmentType] = None
+                 assessment_type: Optional[StateAssessmentType] = None,
+                 supervising_officer_external_id: Optional[str] = None,
+                 supervising_district_external_id: Optional[str] = None
                  ) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
@@ -174,7 +176,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=None,
             supervision_type=supervision_type,
             assessment_score=assessment_score,
-            assessment_type=assessment_type
+            assessment_type=assessment_type,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id
         )
 
     @staticmethod
@@ -190,7 +194,11 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=None,
             supervision_type=month_bucket.supervision_type,
             assessment_score=assessment_score,
-            assessment_type=assessment_type
+            assessment_type=assessment_type,
+            supervising_officer_external_id=
+            month_bucket.supervising_officer_external_id,
+            supervising_district_external_id=
+            month_bucket.supervising_district_external_id
         )
 
     @staticmethod
@@ -198,6 +206,8 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
                   supervision_type: Optional[StateSupervisionType] = None,
                   assessment_score: Optional[int] = None,
                   assessment_type: Optional[StateAssessmentType] = None,
+                  supervising_officer_external_id: Optional[str] = None,
+                  supervising_district_external_id: Optional[str] = None
                   ) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
@@ -206,7 +216,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month=month,
             supervision_type=supervision_type,
             assessment_score=assessment_score,
-            assessment_type=assessment_type
+            assessment_type=assessment_type,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id
         )
 
 
@@ -219,14 +231,6 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
     """
     # Whether or not the supervision was completed successfully
     successful_completion: bool = attr.ib(default=True)
-
-    # External ID of the officer who was supervising the people described by
-    # this metric
-    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the district of the officer that was supervising the
-    # people described by this metric
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
