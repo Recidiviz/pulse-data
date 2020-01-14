@@ -16,28 +16,32 @@
 # =============================================================================
 """Runs the supervision calculation pipeline.
 
-usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
-                    --dataset=DATASET --methodology=METHODOLOGY
+usage: pipeline.py --input=INPUT_LOCATION --output=OUTPUT_LOCATION
+                    --project=PROJECT --reference_input=REFERENCE_LOCATION
+                    --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.supervision.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=gs://recidiviz-bucket/output_location
             --methodology=BOTH
 
 Example output to local file:
 python -m recidiviz.calculator.supervision.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=PERSON
 
 Example output including race and gender dimensions:
 python -m recidiviz.calculator.supervision.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=EVENT
             --include_race=True --include_gender=True
 
@@ -66,7 +70,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     SupervisionSuccessFn, ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
-    SetViolationResponseOnIncarcerationPeriod
+    SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -382,6 +386,12 @@ def parse_arguments(argv):
                         help='BigQuery dataset to query.',
                         required=True)
 
+    parser.add_argument('--reference_input',
+                        dest='reference_input',
+                        type=str,
+                        help='BigQuery reference dataset to query.',
+                        required=True)
+
     # TODO: Generalize these arguments
     parser.add_argument('--include_age',
                         dest='include_age',
@@ -474,13 +484,15 @@ def run(argv=None):
     # Get pipeline job details
     all_pipeline_options = pipeline_options.get_all_options()
 
-    query_dataset = all_pipeline_options['project'] + '.' + known_args.input
+    input_dataset = all_pipeline_options['project'] + '.' + known_args.input
+    reference_dataset = all_pipeline_options['project'] + '.' + \
+        known_args.reference_input
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
-                   BuildRootEntity(dataset=query_dataset,
+                   BuildRootEntity(dataset=input_dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
                                    root_entity_class=entities.StatePerson,
@@ -491,7 +503,7 @@ def run(argv=None):
         incarceration_periods = (p
                                  | 'Load IncarcerationPeriods' >>
                                  BuildRootEntity(
-                                     dataset=query_dataset,
+                                     dataset=input_dataset,
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateIncarcerationPeriod,
@@ -500,12 +512,26 @@ def run(argv=None):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateSupervisionViolations
+        supervision_violations = \
+            (p
+             | 'Load SupervisionViolations' >>
+             BuildRootEntity(
+                 dataset=input_dataset,
+                 data_dict=None,
+                 root_schema_class=schema.StateSupervisionViolation,
+                 root_entity_class=entities.StateSupervisionViolation,
+                 unifying_id_field='person_id',
+                 build_related_entities=True
+             ))
+
+        # TODO(2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (p
              | 'Load SupervisionViolationResponses' >>
              BuildRootEntity(
-                 dataset=query_dataset,
+                 dataset=input_dataset,
                  data_dict=None,
                  root_schema_class=schema.StateSupervisionViolationResponse,
                  root_entity_class=entities.StateSupervisionViolationResponse,
@@ -517,7 +543,7 @@ def run(argv=None):
         supervision_sentences = (p
                                  | 'Load SupervisionSentences' >>
                                  BuildRootEntity(
-                                     dataset=query_dataset,
+                                     dataset=input_dataset,
                                      data_dict=None,
                                      root_schema_class=
                                      schema.StateSupervisionSentence,
@@ -529,7 +555,7 @@ def run(argv=None):
         # Get StateAssessments
         assessments = (p
                        | 'Load Assessments' >>
-                       BuildRootEntity(dataset=query_dataset,
+                       BuildRootEntity(dataset=input_dataset,
                                        data_dict=None,
                                        root_schema_class=
                                        schema.StateAssessment,
@@ -541,7 +567,7 @@ def run(argv=None):
         # Bring in the table that associates StateSupervisionViolationResponses
         # to information about StateAgents
         ssvr_to_agent_association_query = \
-            f"SELECT * FROM `{query_dataset}.ssvr_to_agent_association`"
+            f"SELECT * FROM `{reference_dataset}.ssvr_to_agent_association`"
 
         ssvr_to_agent_associations = (
             p
@@ -560,7 +586,7 @@ def run(argv=None):
         )
 
         supervision_period_to_agent_association_query = \
-            f"SELECT * FROM `{query_dataset}." \
+            f"SELECT * FROM `{reference_dataset}." \
             f"supervision_period_to_agent_association`"
 
         supervision_period_to_agent_associations = (
@@ -579,11 +605,30 @@ def run(argv=None):
                        'supervision_period_id')
         )
 
+        # Group StateSupervisionViolationResponses and
+        # StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {'violations': supervision_violations,
+             'violation_responses': supervision_violation_responses
+             } | 'Group StateSupervisionViolationResponses to '
+                 'StateSupervisionViolations' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on
+        # the corresponding StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | 'Set hydrated StateSupervisionViolations on '
+            'the StateSupervisionViolationResponses' >>
+            beam.ParDo(SetViolationOnViolationsResponse()))
+
         # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
-             'violation_responses': supervision_violation_responses}
+             'violation_responses':
+                 violation_responses_with_hydrated_violations}
             | 'Group StateIncarcerationPeriods to '
               'StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()

@@ -17,27 +17,27 @@
 """Runs the incarceration calculation pipeline.
 
 usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
-                    --dataset=DATASET --methodology=METHODOLOGY
+                    --input=INPUT_LOCATION --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
         --output=gs://recidiviz-bucket/output_location
             --methodology=BOTH
 
 Example output to local file:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
         --output=output_file --methodology=PERSON
 
 Example output including race and gender dimensions:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
         --output=output_file --methodology=EVENT
             --include_race=True --include_gender=True
 

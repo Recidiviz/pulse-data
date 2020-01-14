@@ -27,11 +27,14 @@ from recidiviz.calculator.pipeline.utils import entity_hydration_utils
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, \
-    StateSupervisionViolationResponse, StateSupervisionViolation
+    StateSupervisionViolationResponse, StateSupervisionViolation, \
+    StateSupervisionViolationTypeEntry
 
 
 class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
@@ -105,5 +108,108 @@ class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
                   )
 
         assert_that(output, equal_to([(12345, expected_incarceration_period)]))
+
+        test_pipeline.run()
+
+
+class TestSetViolationOnViolationsResponse(unittest.TestCase):
+    """Tests the SetViolationOnViolationsResponse DoFn."""
+    def testSetViolationOnViolationsResponse(self):
+        """Tests that the hydrated StateSupervisionViolation is set
+        on the StateSupervisionViolationResponse."""
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=123,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION
+            )
+
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=999,
+                supervision_violation_responses=
+                [supervision_violation_response],
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    )]
+            )
+
+        supervision_violations_and_responses = (
+            {'violations': [supervision_violation],
+             'violation_responses': [supervision_violation_response]
+             }
+        )
+
+        expected_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=123,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                supervision_violation=supervision_violation
+            )
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(12345,
+                                  supervision_violations_and_responses)])
+                  | 'Set Supervision Violation on '
+                    'Supervision Violation Response' >>
+                  beam.ParDo(
+                      entity_hydration_utils.SetViolationOnViolationsResponse())
+                  )
+
+        assert_that(output, equal_to([(12345, expected_violation_response)]))
+
+        test_pipeline.run()
+
+    def testSetViolationOnViolationsResponse_NoViolation(self):
+        """Tests that a StateSupervisionViolationResponse is yielded even
+        when there is no corresponding violation."""
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=123,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION
+            )
+
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=999,
+                supervision_violation_responses=[],
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    )]
+            )
+
+        supervision_violations_and_responses = (
+            {'violations': [supervision_violation],
+             'violation_responses': [supervision_violation_response]
+             }
+        )
+
+        expected_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=123,
+                response_type=
+                StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            )
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(12345,
+                                  supervision_violations_and_responses)])
+                  | 'Set Supervision Violation on '
+                    'Supervision Violation Response' >>
+                  beam.ParDo(
+                      entity_hydration_utils.SetViolationOnViolationsResponse())
+                  )
+
+        assert_that(output, equal_to([(12345, expected_violation_response)]))
 
         test_pipeline.run()

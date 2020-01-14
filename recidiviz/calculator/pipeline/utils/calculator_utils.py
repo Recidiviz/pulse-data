@@ -26,8 +26,11 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_supervision_violation import \
+    StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, StatePersonEthnicity, StateAssessment
+    StatePersonRace, StatePersonEthnicity, StateAssessment, \
+    StateSupervisionViolationTypeEntry
 
 
 def for_characteristics_races_ethnicities(
@@ -270,4 +273,26 @@ def assessment_score_bucket(assessment_score: int,
 
     logging.warning("Assessment type %s is unsupported.", assessment_type)
 
+    return None
+
+
+def identify_most_serious_violation_type(
+        violation_type_entries:
+        List[StateSupervisionViolationTypeEntry]) -> \
+        Optional[StateSupervisionViolationType]:
+    """Identifies the most serious violation type on the violation according
+    to the static violation type ranking."""
+    violation_type_severity_order = [
+        StateSupervisionViolationType.FELONY,
+        StateSupervisionViolationType.MISDEMEANOR,
+        StateSupervisionViolationType.ABSCONDED,
+        StateSupervisionViolationType.MUNICIPAL,
+        StateSupervisionViolationType.ESCAPED,
+        StateSupervisionViolationType.TECHNICAL
+    ]
+
+    violation_types = [vte.violation_type for vte in violation_type_entries]
+    for violation_type in violation_type_severity_order:
+        if violation_type in violation_types:
+            return violation_type
     return None
