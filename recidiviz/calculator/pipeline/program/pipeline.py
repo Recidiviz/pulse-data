@@ -16,28 +16,32 @@
 # =============================================================================
 """Runs the program calculation pipeline.
 
-usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
-                    --dataset=DATASET --methodology=METHODOLOGY
+usage: pipeline.py --input=INPUT_LOCATION --output=OUTPUT_LOCATION
+                    --project=PROJECT --reference_input=REFERENCE_LOCATION
+                    --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.program.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=gs://recidiviz-bucket/output_location
             --methodology=BOTH
 
 Example output to local file:
 python -m recidiviz.calculator.program.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=PERSON
 
 Example output including race and gender dimensions:
 python -m recidiviz.calculator.program.pipeline
         --project=recidiviz-project-name
-        --dataset=recidiviz-project-name.dataset
+        --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=EVENT
             --include_race=True --include_gender=True
 
@@ -307,6 +311,12 @@ def parse_arguments(argv):
                         help='BigQuery dataset to query.',
                         required=True)
 
+    parser.add_argument('--reference_input',
+                        dest='reference_input',
+                        type=str,
+                        help='BigQuery reference dataset to query.',
+                        required=True)
+
     # TODO: Generalize these arguments
     parser.add_argument('--include_age',
                         dest='include_age',
@@ -399,13 +409,15 @@ def run(argv=None):
     # Get pipeline job details
     all_pipeline_options = pipeline_options.get_all_options()
 
-    query_dataset = all_pipeline_options['project'] + '.' + known_args.input
+    input_dataset = all_pipeline_options['project'] + '.' + known_args.input
+    reference_dataset = all_pipeline_options['project'] + '.' + \
+        known_args.reference_input
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
-                   BuildRootEntity(dataset=query_dataset,
+                   BuildRootEntity(dataset=input_dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
                                    root_entity_class=entities.StatePerson,
@@ -415,7 +427,7 @@ def run(argv=None):
         # Get StateProgramAssignments
         program_assignments = (p
                                | 'Load Program Assignments' >>
-                               BuildRootEntity(dataset=query_dataset,
+                               BuildRootEntity(dataset=input_dataset,
                                                data_dict=None,
                                                root_schema_class=
                                                schema.StateProgramAssignment,
@@ -427,7 +439,7 @@ def run(argv=None):
         # Get StateAssessments
         assessments = (p
                        | 'Load Assessments' >>
-                       BuildRootEntity(dataset=query_dataset,
+                       BuildRootEntity(dataset=input_dataset,
                                        data_dict=None,
                                        root_schema_class=
                                        schema.StateAssessment,
@@ -440,7 +452,7 @@ def run(argv=None):
         supervision_periods = (p
                                | 'Load SupervisionPeriods' >>
                                BuildRootEntity(
-                                   dataset=query_dataset,
+                                   dataset=input_dataset,
                                    data_dict=None,
                                    root_schema_class=
                                    schema.StateSupervisionPeriod,
@@ -450,7 +462,7 @@ def run(argv=None):
                                    build_related_entities=False))
 
         supervision_period_to_agent_association_query = \
-            f"SELECT * FROM `{query_dataset}." \
+            f"SELECT * FROM `{reference_dataset}." \
             f"supervision_period_to_agent_association`"
 
         supervision_period_to_agent_associations = (

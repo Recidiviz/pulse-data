@@ -30,7 +30,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    last_day_of_month, find_most_recent_assessment
+    last_day_of_month, find_most_recent_assessment, \
+    identify_most_serious_violation_type
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
@@ -46,7 +47,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
-    StateSupervisionViolationTypeEntry, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
     StateAssessment
 
@@ -571,7 +571,7 @@ def _get_revocation_details_from_incarceration_period(
         source_violation = \
             source_violation_response.supervision_violation
         if source_violation:
-            violation_type = _identify_most_serious_violation_type(
+            violation_type = identify_most_serious_violation_type(
                 source_violation.supervision_violation_types)
 
         supervision_violation_response_id = \
@@ -590,28 +590,6 @@ def _get_revocation_details_from_incarceration_period(
 
     return (revocation_type, violation_type, supervising_officer_external_id,
             supervising_district_external_id)
-
-
-def _identify_most_serious_violation_type(
-        violation_type_entries:
-        List[StateSupervisionViolationTypeEntry]) -> \
-        Optional[StateSupervisionViolationType]:
-    """Identifies the most serious violation type on the violation according
-    to the static violation type ranking."""
-    violation_type_severity_order = [
-        StateSupervisionViolationType.FELONY,
-        StateSupervisionViolationType.MISDEMEANOR,
-        StateSupervisionViolationType.ABSCONDED,
-        StateSupervisionViolationType.MUNICIPAL,
-        StateSupervisionViolationType.ESCAPED,
-        StateSupervisionViolationType.TECHNICAL
-    ]
-
-    violation_types = [vte.violation_type for vte in violation_type_entries]
-    for violation_type in violation_type_severity_order:
-        if violation_type in violation_types:
-            return violation_type
-    return None
 
 
 def _identify_most_serious_revocation_type(

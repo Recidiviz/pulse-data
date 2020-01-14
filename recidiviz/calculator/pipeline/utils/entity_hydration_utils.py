@@ -80,3 +80,60 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(
+    beam.typehints.Tuple[int, entities.StateSupervisionViolationResponse])
+class SetViolationOnViolationsResponse(beam.DoFn):
+    """Sets a hydrated StateSupervisionviolation onto the corresponding
+    StateSupervisionviolationResponse."""
+
+    def process(self, element, *args, **kwargs):
+        """For the supervision violations and supervision violation responses of
+        a given person, finds the matching hydrated supervision violation
+        for a resulting supervision violation response, and sets the hydrated
+        version onto the response entity.
+
+        Args:
+            element: a tuple containing person_id and a dictionary of the
+                person's StateSupervisionViolations and
+                StateSupervisionViolationResponses
+
+        Yields:
+            For each response, a tuple containing the person_id and
+            the response.
+        """
+        person_id, violations_and_responses = element
+
+        # Get the StateSupervisionViolations as a list
+        violations = \
+            list(violations_and_responses[
+                'violations'])
+
+        # Get the StateSupervisionViolationResponses as a list
+        violation_responses = \
+            list(violations_and_responses[
+                'violation_responses'])
+
+        if violation_responses:
+            for violation_response in violation_responses:
+                if violations:
+                    for violation in violations:
+                        response_ids = [
+                            response.supervision_violation_response_id for
+                            response in
+                            violation.supervision_violation_responses
+                        ]
+
+                        if violation_response.\
+                                supervision_violation_response_id in \
+                                response_ids:
+                            violation_response.supervision_violation = violation
+
+                        break
+
+                yield (person_id, violation_response)
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
