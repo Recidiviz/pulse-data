@@ -134,6 +134,45 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    def test_map_supervision_combinations_supervising_officer_district(self):
+        """Tests the map_supervision_combinations function when there is
+        supervising officer and district data present."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, 3, StateSupervisionType.PAROLE, 31,
+                StateAssessmentType.LSIR, '143', 'DISTRICT X'),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, None, StateSupervisionType.PAROLE,
+                31, StateAssessmentType.LSIR, '143', 'DISTRICT X')
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
     def test_map_supervision_revocation_combinations(self):
         """Tests the map_supervision_combinations function for a
         revocation month."""
@@ -156,6 +195,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 3, StateSupervisionType.PAROLE,
                 12, StateAssessmentType.LSIR,
+                None, None,
                 RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
         ]
 
@@ -351,6 +391,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 'AK', 2018, 3, StateSupervisionType.PAROLE),
             RevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 4, StateSupervisionType.PAROLE, None, None,
+                None, None,
                 RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
         ]
 
@@ -703,7 +744,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
-            None, None,
+            None, None, None, None,
             RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
@@ -736,7 +777,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
-            None, None,
+            None, None, None, None,
             RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
@@ -769,7 +810,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE, None, None,
-            None, ViolationType.FELONY)
+            None, None, None, ViolationType.FELONY)
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
@@ -804,7 +845,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
             'AK', 2018, 3, StateSupervisionType.PAROLE,
-            None, None,
+            None, None, None, None,
             RevocationType.SHOCK_INCARCERATION, None)
 
         combinations = calculator.characteristic_combinations(
@@ -914,6 +955,12 @@ def expected_metric_combos_count(
         if isinstance(bucket, ProjectedSupervisionCompletionBucket)
     ]
 
+    population_buckets = [
+        bucket for bucket in supervision_time_buckets
+        if isinstance(bucket, (RevocationReturnSupervisionTimeBucket,
+                               NonRevocationReturnSupervisionTimeBucket))
+    ]
+
     num_duplicated_projected_completion_months = 0
     months: Set[Tuple[int, int]] = set()
 
@@ -938,12 +985,19 @@ def expected_metric_combos_count(
     num_revocation_buckets = len(revocation_buckets)
 
     population_dimension_multiplier = 1
-    if supervision_time_buckets and \
-            supervision_time_buckets[0].assessment_score:
-        population_dimension_multiplier *= 2
-    if supervision_time_buckets and \
-            supervision_time_buckets[0].assessment_type:
-        population_dimension_multiplier *= 2
+    if population_buckets:
+        if population_buckets and \
+                population_buckets[0].assessment_score:
+            population_dimension_multiplier *= 2
+        if population_buckets and \
+                population_buckets[0].assessment_type:
+            population_dimension_multiplier *= 2
+        if population_buckets and \
+                population_buckets[0].supervising_officer_external_id:
+            population_dimension_multiplier *= 2
+        if population_buckets and \
+                population_buckets[0].supervising_district_external_id:
+            population_dimension_multiplier *= 2
 
     supervision_population_combos = \
         demographic_metric_combos * methodology_multiplier * \
@@ -961,6 +1015,12 @@ def expected_metric_combos_count(
             revocation_dimension_multiplier *= 2
         if revocation_buckets and \
                 revocation_buckets[0].assessment_type:
+            revocation_dimension_multiplier *= 2
+        if revocation_buckets and \
+                revocation_buckets[0].supervising_officer_external_id:
+            revocation_dimension_multiplier *= 2
+        if revocation_buckets and \
+                revocation_buckets[0].supervising_district_external_id:
             revocation_dimension_multiplier *= 2
 
     supervision_revocation_combos = \

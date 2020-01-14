@@ -1349,8 +1349,10 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 supervision_period, indexed_incarceration_periods,
-                months_of_incarceration, assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                months_of_incarceration,
+                assessments,
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -1426,7 +1428,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 8)
@@ -1504,7 +1507,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -1562,7 +1566,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
@@ -1619,7 +1624,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1680,7 +1686,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 7)
@@ -1746,8 +1753,10 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
+
         self.assertEqual(len(supervision_time_buckets), 5)
 
         self.assertEqual(supervision_time_buckets, [
@@ -1805,7 +1814,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1869,7 +1879,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -1940,7 +1951,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 5)
@@ -2014,7 +2026,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 11)
@@ -2097,7 +2110,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 11)
@@ -2166,7 +2180,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 8)
@@ -2251,7 +2266,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 8)
@@ -2343,7 +2359,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments,
-                DEFAULT_SSVR_AGENT_ASSOCIATIONS
+                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
         self.assertEqual(len(supervision_time_buckets), 4)
