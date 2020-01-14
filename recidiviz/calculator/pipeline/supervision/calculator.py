@@ -182,19 +182,6 @@ def characteristic_combinations(person: StatePerson,
             characteristics['source_violation_type'] = \
                 supervision_time_bucket.source_violation_type
 
-    if isinstance(supervision_time_bucket,
-                  ProjectedSupervisionCompletionBucket) or \
-            with_revocation_dimensions and \
-            isinstance(supervision_time_bucket,
-                       RevocationReturnSupervisionTimeBucket):
-        if supervision_time_bucket.supervising_officer_external_id:
-            characteristics['supervising_officer_external_id'] = \
-                supervision_time_bucket.supervising_officer_external_id
-
-        if supervision_time_bucket.supervising_district_external_id:
-            characteristics['supervising_district_external_id'] = \
-                supervision_time_bucket.supervising_district_external_id
-
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = \
             supervision_time_bucket.supervision_type
@@ -205,6 +192,13 @@ def characteristic_combinations(person: StatePerson,
                                     supervision_time_bucket.assessment_type)
         characteristics['assessment_type'] = \
             supervision_time_bucket.assessment_type
+    if supervision_time_bucket.supervising_officer_external_id:
+        characteristics['supervising_officer_external_id'] = \
+            supervision_time_bucket.supervising_officer_external_id
+
+    if supervision_time_bucket.supervising_district_external_id:
+        characteristics['supervising_district_external_id'] = \
+            supervision_time_bucket.supervising_district_external_id
     if inclusions.get('age_bucket'):
         year = supervision_time_bucket.year
         month = supervision_time_bucket.month
