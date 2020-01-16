@@ -345,9 +345,9 @@ def relevant_metric_periods(event_date: date,
 def augmented_combo_list(combo: Dict[str, Any],
                          state_code: str,
                          year: int,
-                         month: int,
+                         month: Optional[int],
                          methodology: MetricMethodologyType,
-                         metric_period_months: int) -> \
+                         metric_period_months: Optional[int]) -> \
         List[Dict[str, Any]]:
     """Returns a list of combo dictionaries that have been augmented with
     necessary parameters.
@@ -367,9 +367,14 @@ def augmented_combo_list(combo: Dict[str, Any],
     combos = []
     parameters: Dict[str, Any] = {'state_code': state_code,
                                   'methodology': methodology,
-                                  'year': year,
-                                  'month': month,
-                                  'metric_period_months': metric_period_months}
+                                  'year': year
+                                  }
+
+    if month:
+        parameters['month'] = month
+
+    if metric_period_months:
+        parameters['metric_period_months'] = metric_period_months
 
     base_combo = augment_combination(combo, parameters)
     combos.append(base_combo)

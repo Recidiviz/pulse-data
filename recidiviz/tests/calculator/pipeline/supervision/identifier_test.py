@@ -2767,9 +2767,16 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(2, len(projected_completion_buckets))
 
         self.assertEqual([
+            ProjectedSupervisionCompletionBucket.for_month(
+                state_code=first_supervision_period.state_code,
+                year=2018,
+                month=12,
+                supervision_type=first_supervision_period.supervision_type,
+                successful_completion=True
+            ),
             ProjectedSupervisionCompletionBucket.for_month(
                 state_code=second_supervision_period.state_code,
                 year=2018,

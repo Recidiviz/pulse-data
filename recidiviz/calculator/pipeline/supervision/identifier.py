@@ -790,19 +790,9 @@ def classify_supervision_success(
     terminated and finds the one with the latest termination date. From that
     supervision period, classifies the termination as either successful or not
     successful.
-
-    If there are multiple supervision sentences with projected completions
-    in the same month, but of varying supervision types, then one completion
-    bucket is recorded per supervision type per month.  If there are multiple
-    supervision sentences of the same supervision type with projected
-    completions in the same month, this only classifies that month as a
-    successful completion for that supervision type if all of the terminations
-    of that supervision type for that month were successful.
     """
-
-    supervision_success_by_month: \
-        Dict[Tuple[int, int], Dict[StateSupervisionType,
-                                   ProjectedSupervisionCompletionBucket]] = {}
+    projected_completion_buckets: \
+        List[ProjectedSupervisionCompletionBucket] = []
 
     for supervision_sentence in supervision_sentences:
         projected_completion_date = \
@@ -832,29 +822,7 @@ def classify_supervision_success(
                         supervision_period_to_agent_associations
                     )
                 if completion_bucket.supervision_type is not None:
-                    if (year, month) not in \
-                            supervision_success_by_month.keys():
-                        supervision_success_by_month[(year, month)] = {
-                            completion_bucket.supervision_type:
-                                completion_bucket
-                        }
-                    elif completion_bucket.supervision_type not in \
-                            supervision_success_by_month[
-                                    (year, month)].keys() \
-                            or not completion_bucket.successful_completion:
-                        # If this supervision type is already represented
-                        # for this month, only replace the current value if
-                        # this supervision completion bucket represents an
-                        # unsuccessful completion.
-                        supervision_success_by_month[(year, month)][
-                            completion_bucket.supervision_type] = \
-                            completion_bucket
-
-    projected_completion_buckets = [
-        bucket
-        for month_groups in supervision_success_by_month.values()
-        for bucket in month_groups.values()
-    ]
+                    projected_completion_buckets.append(completion_bucket)
 
     return projected_completion_buckets
 
