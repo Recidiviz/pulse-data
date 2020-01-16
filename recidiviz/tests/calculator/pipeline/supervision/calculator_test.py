@@ -18,8 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order
 import unittest
 from datetime import date
-from enum import Enum
-from typing import Dict, List, Tuple, Set, Any
+from typing import Dict, List, Tuple, Set
 
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
@@ -42,7 +41,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person
+    demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
 
 ALL_INCLUSIONS_DICT = {
         'age_bucket': True,
@@ -896,21 +895,6 @@ class TestCharacteristicCombinations(unittest.TestCase):
         for combo in combinations:
             assert combo.get('revocation_type') is None
             assert combo.get('violation_type') is None
-
-
-def combo_has_enum_value_for_key(combo: Dict[str, Any], key: str,
-                                 enum: Enum) -> bool:
-    """Checks whether the combo dict has the enum value for a given key.
-    Person-based metrics are currently sent through a JSON conversion step,
-    which removes the Enum values and leaves just the raw values. Therefore,
-    this function checks if the value for the key is either the enum or the
-    enum.value.
-    """
-    value_for_key = combo.get(key)
-
-    if value_for_key:
-        return value_for_key in (enum, enum.value)
-    return False
 
 
 def demographic_metric_combos_count_for_person_supervision(

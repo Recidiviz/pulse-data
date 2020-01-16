@@ -85,8 +85,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.assertEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type
@@ -163,8 +162,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.assertEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=29,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type
@@ -205,8 +203,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.assertEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS
         )], program_referrals)
@@ -265,8 +262,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                 ProgramReferralEvent(
                     state_code=program_assignment.state_code,
                     program_id=program_assignment.program_id,
-                    year=2009,
-                    month=10,
+                    event_date=program_assignment.referral_date,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS,
                     supervision_type=supervision_period_1.supervision_type
@@ -274,8 +270,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                 ProgramReferralEvent(
                     state_code=program_assignment.state_code,
                     program_id=program_assignment.program_id,
-                    year=2009,
-                    month=10,
+                    event_date=program_assignment.referral_date,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS,
                     supervision_type=supervision_period_2.supervision_type
@@ -333,8 +328,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.assertEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
@@ -438,8 +432,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         program_referrals = identifier.referrals_for_supervision_periods(
             state_code='UT',
             program_id='XXX',
-            year=2009,
-            month=3,
+            referral_date=date(2009, 3, 12),
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=[supervision_period],
@@ -453,8 +446,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
-                year=2009,
-                month=3,
+                event_date=date(2009, 3, 12),
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
                 supervision_type=
@@ -492,8 +484,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         program_referrals = identifier.referrals_for_supervision_periods(
             state_code='UT',
             program_id='XXX',
-            year=2009,
-            month=3,
+            referral_date=date(2009, 3, 19),
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
@@ -507,8 +498,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
-                year=2009,
-                month=3,
+                event_date=date(2009, 3, 19),
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
                 supervision_type=
@@ -546,8 +536,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         program_referrals = identifier.referrals_for_supervision_periods(
             state_code='UT',
             program_id='XXX',
-            year=2009,
-            month=3,
+            referral_date=date(2009, 3, 19),
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
@@ -561,8 +550,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
-                year=2009,
-                month=3,
+                event_date=date(2009, 3, 19),
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
                 supervision_type=
@@ -571,8 +559,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
-                year=2009,
-                month=3,
+                event_date=date(2009, 3, 19),
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
                 supervision_type=

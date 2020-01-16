@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to programs."""
+from datetime import date
 from typing import Optional
 
 import attr
@@ -30,21 +31,18 @@ from recidiviz.common.constants.state.state_supervision import \
 class ProgramEvent(BuildableAttr):
     """Models details related to an event related to a program.
 
-    Describes either a year or a month in which a person interacted with a
+    Describes a date on which a person interacted with a
     program. This includes the information pertaining to the interaction
     that we will want to track when calculating program metrics."""
 
     # The state where the program took place
     state_code: str = attr.ib()
 
+    # Event date when the interaction took place
+    event_date: date = attr.ib()
+
     # Program ID
     program_id: str = attr.ib()
-
-    # Year for when the person interacted with the program
-    year: int = attr.ib()
-
-    # Month for when the person interacted with the program
-    month: Optional[int] = attr.ib()
 
 
 @attr.s(frozen=True)

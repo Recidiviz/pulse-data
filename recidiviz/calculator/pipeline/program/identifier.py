@@ -93,10 +93,10 @@ def find_program_referrals(
         referral_date = program_assignment.referral_date
         program_id = program_assignment.program_id
 
-        if referral_date and program_id:
-            year = referral_date.year
-            month = referral_date.month
+        if not program_id:
+            program_id = 'EXTERNAL_UNKNOWN'
 
+        if referral_date and program_id:
             assessment_score, assessment_type = \
                 find_most_recent_assessment(referral_date,
                                             assessments)
@@ -108,8 +108,7 @@ def find_program_referrals(
             program_referrals.extend(referrals_for_supervision_periods(
                 program_assignment.state_code,
                 program_id,
-                year,
-                month,
+                referral_date,
                 assessment_score,
                 assessment_type,
                 relevant_supervision_periods,
@@ -142,7 +141,7 @@ def find_supervision_periods_during_referral(
 
 
 def referrals_for_supervision_periods(
-        state_code: str, program_id: str, year: int, month: int,
+        state_code: str, program_id: str, referral_date: date,
         assessment_score: Optional[int],
         assessment_type: Optional[StateAssessmentType],
         supervision_periods: Optional[List[StateSupervisionPeriod]],
@@ -179,8 +178,7 @@ def referrals_for_supervision_periods(
                     ProgramReferralEvent(
                         state_code=state_code,
                         program_id=program_id,
-                        year=year,
-                        month=month,
+                        event_date=referral_date,
                         assessment_score=assessment_score,
                         assessment_type=assessment_type,
                         supervision_type=supervision_period.supervision_type,
@@ -199,8 +197,7 @@ def referrals_for_supervision_periods(
             ProgramReferralEvent(
                 state_code=state_code,
                 program_id=program_id,
-                year=year,
-                month=month,
+                event_date=referral_date,
                 assessment_score=assessment_score,
                 assessment_type=assessment_type
             )
