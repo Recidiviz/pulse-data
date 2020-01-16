@@ -420,7 +420,7 @@ def combination_supervision_metrics(
                 # Get all other supervision time buckets for this period that
                 # should contribute to a population metric
                 relevant_buckets_in_period = [
-                    bucket for bucket in all_supervision_time_buckets
+                    bucket for bucket in buckets_in_period
                     if (isinstance(bucket,
                                    (RevocationReturnSupervisionTimeBucket,
                                     NonRevocationReturnSupervisionTimeBucket)))
@@ -429,7 +429,7 @@ def combination_supervision_metrics(
                 # Get all other supervision time buckets for this period that
                 # should contribute to a revocation metric
                 relevant_buckets_in_period = [
-                    bucket for bucket in all_supervision_time_buckets
+                    bucket for bucket in buckets_in_period
                     if isinstance(bucket,
                                   RevocationReturnSupervisionTimeBucket)
                 ]
