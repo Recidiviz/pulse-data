@@ -535,8 +535,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_event = ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
@@ -693,8 +692,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_event = ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10'
@@ -771,8 +769,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_event = ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
-            year=2009,
-            month=10,
+            event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
         )
@@ -826,8 +823,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         program_events = [ProgramReferralEvent(
             state_code='US_TX',
-            year=2011,
-            month=4,
+            event_date=date(2011, 4, 3),
             program_id='program'
         )]
 

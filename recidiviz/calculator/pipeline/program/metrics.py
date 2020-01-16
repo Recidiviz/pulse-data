@@ -53,6 +53,10 @@ class ProgramMetric(RecidivizMetric):
     # Month
     month: Optional[int] = attr.ib(default=None)
 
+    # The number of months this metric describes, starting with the month
+    # of the metric and going back in time
+    metric_period_months: Optional[int] = attr.ib(default=1)
+
     # Program ID
     program_id: str = attr.ib(default=None)
 
