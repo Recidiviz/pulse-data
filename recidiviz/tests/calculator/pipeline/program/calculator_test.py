@@ -25,6 +25,7 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.program import calculator
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
+from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -52,7 +53,7 @@ class TestMapProgramCombinations(unittest.TestCase):
     """Tests the map_program_combinations function."""
 
     # Freezing time to before the events so none of them fall into the
-    # relevant time period periods
+    # relevant metric periods
     @freeze_time('2012-11-02')
     def test_map_program_combinations(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -285,7 +286,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, program_events, ALL_INCLUSIONS_DICT,
-            len(calculator.METRIC_PERIOD_MONTHS))
+            len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(supervision_combinations))
@@ -338,7 +339,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, program_events, ALL_INCLUSIONS_DICT,
-            len(calculator.METRIC_PERIOD_MONTHS))
+            len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(supervision_combinations))
@@ -865,150 +866,6 @@ class TestIncludeReferralInCount(unittest.TestCase):
             combo, program_event_1, end_date, events_in_period)
 
         self.assertTrue(include_first)
-
-
-class TestRelevantMetricPeriods(unittest.TestCase):
-    """Tests the relevant_metric_periods function in the calculator."""
-
-    def test_relevant_metric_periods_all_periods(self):
-        """Tests the relevant_metric_periods function when all metric periods
-        are relevant."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2020, 1, 3),
-            program_id='XXX'
-        )
-
-        end_year = 2020
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = calculator.METRIC_PERIOD_MONTHS
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_all_after_3(self):
-        """Tests the relevant_metric_periods function when all metric periods
-        are relevant except the 3 month period."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2020, 1, 3),
-            program_id='XXX'
-        )
-
-        end_year = 2020
-        end_month = 6
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = [36, 12, 6]
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_all_after_6(self):
-        """Tests the relevant_metric_periods function when all metric periods
-        are relevant except the 1, 3, and 6 month periods."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2007, 2, 3),
-            program_id='XXX'
-        )
-
-        end_year = 2008
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = [36, 12]
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_only_36(self):
-        """Tests the relevant_metric_periods function when only the 36 month
-        period is relevant."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2005, 2, 19),
-            program_id='XXX'
-        )
-
-        end_year = 2008
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = [36]
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_none_relevant(self):
-        """Tests the relevant_metric_periods function when no metric periods
-        are relevant."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2001, 2, 23),
-            program_id='XXX'
-        )
-
-        end_year = 2008
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = []
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_end_of_month(self):
-        """Tests the relevant_metric_periods function when the event is on
-        the last day of the month of the end of the metric period."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2008, 1, 31),
-            program_id='XXX'
-        )
-
-        end_year = 2008
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = calculator.METRIC_PERIOD_MONTHS
-
-        self.assertEqual(expected_periods, relevant_periods)
-
-    def test_relevant_metric_periods_first_of_month(self):
-        """Tests the relevant_metric_periods function when the event is on
-        the first day of the month of the 36 month period start."""
-        program_event = ProgramEvent(
-            state_code='CA',
-            event_date=date(2005, 2, 1),
-            program_id='XXX'
-        )
-
-        end_year = 2008
-        end_month = 1
-
-        relevant_periods = \
-            calculator.relevant_metric_periods(
-                program_event.event_date, end_year, end_month)
-
-        expected_periods = [36]
-
-        self.assertEqual(expected_periods, relevant_periods)
 
 
 def demographic_metric_combos_count_for_person_program(

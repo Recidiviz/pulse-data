@@ -134,13 +134,10 @@ def admission_event_for_period(incarceration_period:
     admission_reason = incarceration_period.admission_reason
 
     if admission_date and admission_reason:
-        year = admission_date.year
-        month = admission_date.month
 
         return IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
-            year=year,
-            month=month,
+            event_date=admission_date,
             facility=incarceration_period.facility,
             admission_reason=admission_reason
         )
@@ -158,13 +155,9 @@ def release_event_for_period(incarceration_period:
     release_reason = incarceration_period.release_reason
 
     if release_date and release_reason:
-        year = release_date.year
-        month = release_date.month
-
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
-            year=year,
-            month=month,
+            event_date=release_date,
             facility=incarceration_period.facility,
             release_reason=release_reason
         )
