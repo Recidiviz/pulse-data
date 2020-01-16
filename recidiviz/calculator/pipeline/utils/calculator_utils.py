@@ -22,6 +22,8 @@ from datetime import date
 from itertools import combinations
 from typing import Optional, List, Any, Dict, Tuple
 
+import dateutil
+
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
 from recidiviz.common.constants.state.state_assessment import \
@@ -31,6 +33,10 @@ from recidiviz.common.constants.state.state_supervision_violation import \
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity, StateAssessment, \
     StateSupervisionViolationTypeEntry
+
+
+# Relevant metric period month lengths for dashboard person-based calculations
+METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
 
 def for_characteristics_races_ethnicities(
@@ -296,3 +302,76 @@ def identify_most_serious_violation_type(
         if violation_type in violation_types:
             return violation_type
     return None
+
+
+def relevant_metric_periods(event_date: date,
+                            end_year: int, end_month: int) -> List[int]:
+    """Given the year and month when this metric period ends, returns the
+    relevant metric period months lengths for the given event_date.
+
+    For example, if the end_year is 2009 and the end_month is 10, then we are
+    looking for events that occurred since the start of the following months:
+        - 10-2009 (metric_period = 1)
+        - 08-2009 (metric_period = 3)
+        - 05-2009 (metric_period = 6)
+        - 11-2008 (metric_period = 12)
+        - 11-2006 (metric_period = 36)
+
+
+    If the event happened in 11-2008, then this function will return:
+    [12, 36], because the event occurred within the 12-month metric period and
+    the 36-month metric period of the given month.
+    """
+    start_of_month = date(end_year, end_month, 1)
+    end_of_month = last_day_of_month(start_of_month)
+
+    relevant_periods = []
+
+    for metric_period in METRIC_PERIOD_MONTHS:
+        start_of_bucket_boundary_month = \
+            start_of_month - \
+            dateutil.relativedelta.relativedelta(months=metric_period)
+
+        boundary_date = last_day_of_month(start_of_bucket_boundary_month)
+
+        if boundary_date < event_date <= end_of_month:
+            relevant_periods.append(metric_period)
+        else:
+            break
+
+    return relevant_periods
+
+
+def augmented_combo_list(combo: Dict[str, Any],
+                         state_code: str,
+                         year: int,
+                         month: int,
+                         methodology: MetricMethodologyType,
+                         metric_period_months: int) -> \
+        List[Dict[str, Any]]:
+    """Returns a list of combo dictionaries that have been augmented with
+    necessary parameters.
+
+    Args:
+        combo: the base combo to be augmented with methodology and period
+        state_code: the state code of the metric combo
+        year: the year this metric describes
+        month: the month this metric describes
+        methodology: the MetricMethodologyType to add to each combo
+        metric_period_months: the metric_period_months value to add to each
+            combo
+
+    Returns: a list of combos augmented with various parameters
+    """
+
+    combos = []
+    parameters: Dict[str, Any] = {'state_code': state_code,
+                                  'methodology': methodology,
+                                  'year': year,
+                                  'month': month,
+                                  'metric_period_months': metric_period_months}
+
+    base_combo = augment_combination(combo, parameters)
+    combos.append(base_combo)
+
+    return combos

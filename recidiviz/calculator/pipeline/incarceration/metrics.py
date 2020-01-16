@@ -51,6 +51,10 @@ class IncarcerationMetric(RecidivizMetric):
     # Month
     month: int = attr.ib(default=None)
 
+    # The number of months this metric describes, starting with the month
+    # of the metric and going back in time
+    metric_period_months: Optional[int] = attr.ib(default=1)
+
     # Optional characteristics
 
     # Facility

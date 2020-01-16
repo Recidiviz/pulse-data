@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for calculator_utils.py."""
-
+import unittest
 from datetime import date
 from datetime import datetime
 
@@ -401,3 +401,111 @@ def test_assessment_score_bucket():
         39, StateAssessmentType.LSIR) == '39+'
     assert not calculator_utils.assessment_score_bucket(
         23, StateAssessmentType.ORAS)
+
+
+class TestRelevantMetricPeriods(unittest.TestCase):
+    """Tests the relevant_metric_periods function."""
+
+    def test_relevant_metric_periods_all_periods(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant."""
+        event_date = date(2020, 1, 3)
+        end_year = 2020
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36, 12, 6, 3]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_all_after_3(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant except the 3 month period."""
+        event_date = date(2020, 1, 3)
+
+        end_year = 2020
+        end_month = 6
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36, 12, 6]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_all_after_6(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant except the 1, 3, and 6 month periods."""
+        event_date = date(2007, 2, 3)
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36, 12]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_only_36(self):
+        """Tests the relevant_metric_periods function when only the 36 month
+        period is relevant."""
+        event_date = date(2006, 3, 3)
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_none_relevant(self):
+        """Tests the relevant_metric_periods function when no metric periods
+        are relevant."""
+        event_date = date(2001, 2, 23)
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = []
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_end_of_month(self):
+        """Tests the relevant_metric_periods function when the event is on
+        the last day of the month of the end of the metric period."""
+        event_date = date(2008, 1, 31)
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36, 12, 6, 3]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_first_of_month(self):
+        """Tests the relevant_metric_periods function when the event is on
+        the first day of the month of the 36 month period start."""
+        event_date = date(2005, 2, 1)
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = calculator_utils.relevant_metric_periods(
+            event_date, end_year, end_month)
+
+        expected_periods = [36]
+
+        self.assertEqual(expected_periods, relevant_periods)
