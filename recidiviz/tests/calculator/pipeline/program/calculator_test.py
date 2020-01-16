@@ -20,7 +20,8 @@ import unittest
 from datetime import date
 from typing import List, Dict, Set, Tuple
 
-import recidiviz.calculator.pipeline.utils.calculator_utils
+from freezegun import freeze_time
+
 from recidiviz.calculator.pipeline.program import calculator
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
@@ -35,7 +36,7 @@ from recidiviz.common.constants.state.state_supervision import \
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person
+    demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
 
 ALL_INCLUSIONS_DICT = {
     'age_bucket': True,
@@ -50,6 +51,9 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 class TestMapProgramCombinations(unittest.TestCase):
     """Tests the map_program_combinations function."""
 
+    # Freezing time to before the events so none of them fall into the
+    # relevant time period periods
+    @freeze_time('2012-11-02')
     def test_map_program_combinations(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -69,15 +73,13 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [
             ProgramReferralEvent(
                 state_code='CA',
-                program_id='XXX',
-                year=2009,
-                month=10,
+                event_date=date(2019, 10, 10),
+                program_id='XXX'
             ),
             ProgramReferralEvent(
                 state_code='CA',
-                program_id='ZZZ',
-                year=2010,
-                month=2,
+                event_date=date(2019, 2, 2),
+                program_id='ZZZ'
             )
         ]
 
@@ -93,6 +95,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('2007-11-02')
     def test_map_program_combinations_full_info(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -112,9 +115,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [
             ProgramReferralEvent(
                 state_code='CA',
+                event_date=date(2009, 10, 31),
                 program_id='XXX',
-                year=2009,
-                month=10,
                 supervision_type=StateSupervisionType.PAROLE,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
@@ -135,7 +137,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
-    def test_map_program_combinations_multiple_supervision_types(self):
+    @freeze_time('2007-11-02')
+    def test_map_program_combinations_full_info_probation(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -154,20 +157,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [
             ProgramReferralEvent(
                 state_code='CA',
+                event_date=date(2009, 10, 31),
                 program_id='XXX',
-                year=2009,
-                month=10,
-                supervision_type=StateSupervisionType.PAROLE,
-                assessment_score=22,
-                assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_external_id='OFFICERZ',
-                supervising_district_external_id='135'
-            ),
-            ProgramReferralEvent(
-                state_code='CA',
-                program_id='XXX',
-                year=2009,
-                month=10,
                 supervision_type=StateSupervisionType.PROBATION,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
@@ -187,6 +178,246 @@ class TestMapProgramCombinations(unittest.TestCase):
                          len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
+
+    @freeze_time('2007-11-02')
+    def test_map_program_combinations_multiple_supervision_types(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        program_events = [
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2009, 10, 7),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            ),
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2009, 10, 7),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PROBATION,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            )
+        ]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, program_events, ALL_INCLUSIONS_DICT,
+            duplicated_months_different_supervision_types=True)
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+        parole_combos = 0
+        probation_combos = 0
+        for combo, _ in supervision_combinations:
+            if combo.get('supervision_type') \
+                and combo_has_enum_value_for_key(
+                        combo, 'methodology', MetricMethodologyType.PERSON):
+                # Ensure that all person-based metrics are of type parole
+                if combo.get('supervision_type') == \
+                        StateSupervisionType.PAROLE:
+                    parole_combos += 1
+                elif combo.get('supervision_type') == \
+                        StateSupervisionType.PROBATION:
+                    probation_combos += 1
+
+        # Assert that there are the same number of parole and probation
+        # person-based combinations
+        assert parole_combos == probation_combos
+
+    @freeze_time('2007-12-30')
+    def test_map_program_combinations_relevant_periods(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        program_events = [
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2007, 12, 7),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            )
+        ]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, program_events, ALL_INCLUSIONS_DICT,
+            len(calculator.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2007-12-30')
+    def test_map_program_combinations_relevant_periods_duplicates(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        program_events = [
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2007, 12, 7),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            ),
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2007, 12, 11),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            )
+        ]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, program_events, ALL_INCLUSIONS_DICT,
+            len(calculator.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    # pylint:disable=line-too-long
+    @freeze_time('2007-12-30')
+    def test_map_program_combinations_relevant_periods_multiple_supervisions(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        program_events = [
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2007, 1, 7),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            ),
+            ProgramReferralEvent(
+                state_code='CA',
+                event_date=date(2007, 1, 11),
+                program_id='XXX',
+                supervision_type=StateSupervisionType.PROBATION,
+                assessment_score=22,
+                assessment_type=StateAssessmentType.LSIR,
+                supervising_officer_external_id='OFFICERZ',
+                supervising_district_external_id='135'
+            )
+        ]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT
+        )
+
+        relevant_periods = [36, 12]
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, program_events, ALL_INCLUSIONS_DICT,
+            len(relevant_periods),
+            duplicated_months_different_supervision_types=True)
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+        parole_combos = 0
+        probation_combos = 0
+        for combo, _ in supervision_combinations:
+            if combo.get('supervision_type') \
+                and combo_has_enum_value_for_key(
+                        combo, 'methodology', MetricMethodologyType.PERSON):
+                # Ensure that all person-based metrics are of type parole
+                if combo.get('supervision_type') == \
+                        StateSupervisionType.PAROLE:
+                    parole_combos += 1
+                elif combo.get('supervision_type') == \
+                        StateSupervisionType.PROBATION:
+                    probation_combos += 1
+
+        # Assert that there are the same number of parole and probation
+        # person-based combinations
+        assert parole_combos == probation_combos
 
 
 class TestCharacteristicCombinations(unittest.TestCase):
@@ -211,8 +442,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         combinations = calculator.characteristic_combinations(
@@ -240,8 +470,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramReferralEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10
+            event_date=date(2009, 10, 1)
         )
 
         combinations = calculator.characteristic_combinations(
@@ -272,8 +501,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramReferralEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1),
             supervision_type=StateSupervisionType.PROBATION,
             assessment_score=25,
             assessment_type=StateAssessmentType.LSIR,
@@ -314,8 +542,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         combinations = calculator.characteristic_combinations(
@@ -346,8 +573,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         inclusions = {
@@ -383,8 +609,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         inclusions = {
@@ -420,8 +645,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         inclusions = {
@@ -457,8 +681,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         program_event = ProgramEvent(
             state_code='CA',
             program_id='XXX',
-            year=2009,
-            month=10,
+            event_date=date(2009, 10, 1)
         )
 
         inclusions = {
@@ -478,6 +701,316 @@ class TestCharacteristicCombinations(unittest.TestCase):
             assert combo.get('ethnicity') is None
 
 
+class TestIncludeReferralInCount(unittest.TestCase):
+    """Tests the include_referral_in_count function."""
+    def test_include_referral_in_count(self):
+        """Tests the include_referral_in_count function when the referral
+        should be included."""
+
+        combo = {
+            'metric_type': 'REFERRAL'
+        }
+
+        program_event = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX'
+        )
+
+        end_date = date(2020, 1, 31)
+
+        include = calculator.include_referral_in_count(
+            combo, program_event, end_date, [program_event])
+
+        self.assertTrue(include)
+
+    def test_include_referral_in_count_last_of_many(self):
+        """Tests the include_referral_in_count function when the referral
+        should be included because it is the last one before the end of the
+        time period."""
+
+        combo = {
+            'metric_type': 'REFERRAL'
+        }
+
+        program_event_1 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX'
+        )
+
+        program_event_2 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 9),
+            program_id='XXX'
+        )
+
+        program_event_3 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 27),
+            program_id='XXX'
+        )
+
+        events_in_period = [program_event_1, program_event_2, program_event_3]
+
+        end_date = date(2020, 1, 31)
+
+        include = calculator.include_referral_in_count(
+            combo, program_event_3, end_date, events_in_period)
+
+        self.assertTrue(include)
+
+    def test_include_referral_in_count_last_of_many_unsorted(self):
+        """Tests the include_referral_in_count function when the referral
+        should be included because it is the last one before the end of the
+        time period."""
+
+        combo = {
+            'metric_type': 'REFERRAL'
+        }
+
+        program_event_1 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2017, 2, 3),
+            program_id='XXX'
+        )
+
+        program_event_2 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 30),
+            program_id='XXX'
+        )
+
+        program_event_3 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2018, 3, 11),
+            program_id='XXX'
+        )
+
+        events_in_period = [program_event_1, program_event_2, program_event_3]
+
+        end_date = date(2020, 1, 31)
+
+        include = calculator.include_referral_in_count(
+            combo, program_event_2, end_date, events_in_period)
+
+        self.assertTrue(include)
+
+    def test_include_referral_in_count_supervision_type_unset(self):
+        """Tests the include_referral_in_count function when there are two
+        events in the same month, but of different supervision types, and the
+        combo does not specify the supervision type."""
+
+        combo = {
+            'metric_type': 'REFERRAL'
+        }
+
+        program_event_1 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            supervision_type=StateSupervisionType.PROBATION
+        )
+
+        program_event_2 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 9),
+            program_id='XXX',
+            supervision_type=StateSupervisionType.PAROLE
+        )
+
+        events_in_period = [program_event_1, program_event_2]
+
+        end_date = date(2020, 1, 31)
+
+        include_first = calculator.include_referral_in_count(
+            combo, program_event_1, end_date, events_in_period)
+
+        self.assertFalse(include_first)
+
+        include_second = calculator.include_referral_in_count(
+            combo, program_event_2, end_date, events_in_period)
+
+        self.assertTrue(include_second)
+
+    def test_include_referral_in_count_supervision_type_set(self):
+        """Tests the include_referral_in_count function when there are two
+        events in the same month, but of different supervision types, and the
+        combo does specify the supervision type."""
+
+        combo = {
+            'metric_type': 'REFERRAL',
+            'supervision_type': StateSupervisionType.PROBATION
+        }
+
+        program_event_1 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            supervision_type=StateSupervisionType.PROBATION
+        )
+
+        program_event_2 = ProgramReferralEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 9),
+            program_id='XXX',
+            supervision_type=StateSupervisionType.PAROLE
+        )
+
+        events_in_period = [program_event_1, program_event_2]
+
+        end_date = date(2020, 1, 31)
+
+        include_first = calculator.include_referral_in_count(
+            combo, program_event_1, end_date, events_in_period)
+
+        self.assertTrue(include_first)
+
+
+class TestRelevantMetricPeriods(unittest.TestCase):
+    """Tests the relevant_metric_periods function in the calculator."""
+
+    def test_relevant_metric_periods_all_periods(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX'
+        )
+
+        end_year = 2020
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = calculator.METRIC_PERIOD_MONTHS
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_all_after_3(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant except the 3 month period."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2020, 1, 3),
+            program_id='XXX'
+        )
+
+        end_year = 2020
+        end_month = 6
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = [36, 12, 6]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_all_after_6(self):
+        """Tests the relevant_metric_periods function when all metric periods
+        are relevant except the 1, 3, and 6 month periods."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2007, 2, 3),
+            program_id='XXX'
+        )
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = [36, 12]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_only_36(self):
+        """Tests the relevant_metric_periods function when only the 36 month
+        period is relevant."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2005, 2, 19),
+            program_id='XXX'
+        )
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = [36]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_none_relevant(self):
+        """Tests the relevant_metric_periods function when no metric periods
+        are relevant."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2001, 2, 23),
+            program_id='XXX'
+        )
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = []
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_end_of_month(self):
+        """Tests the relevant_metric_periods function when the event is on
+        the last day of the month of the end of the metric period."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2008, 1, 31),
+            program_id='XXX'
+        )
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = calculator.METRIC_PERIOD_MONTHS
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+    def test_relevant_metric_periods_first_of_month(self):
+        """Tests the relevant_metric_periods function when the event is on
+        the first day of the month of the 36 month period start."""
+        program_event = ProgramEvent(
+            state_code='CA',
+            event_date=date(2005, 2, 1),
+            program_id='XXX'
+        )
+
+        end_year = 2008
+        end_month = 1
+
+        relevant_periods = \
+            calculator.relevant_metric_periods(
+                program_event.event_date, end_year, end_month)
+
+        expected_periods = [36]
+
+        self.assertEqual(expected_periods, relevant_periods)
+
+
 def demographic_metric_combos_count_for_person_program(
         person: StatePerson,
         inclusions: Dict[str, bool]) -> int:
@@ -495,7 +1028,9 @@ def expected_metric_combos_count(
         person: StatePerson,
         program_events: List[ProgramEvent],
         inclusions: Dict[str, bool],
-        with_methodologies: bool = True) -> int:
+        num_relevant_periods: int = 0,
+        with_methodologies: bool = True,
+        duplicated_months_different_supervision_types: bool = False) -> int:
     """Calculates the expected number of characteristic combinations given
     the person, the program events, and the dimensions that should
     be included in the explosion of feature combinations."""
@@ -520,12 +1055,12 @@ def expected_metric_combos_count(
     months: Set[Tuple[int, int]] = set()
 
     for referral_event in referral_events:
-        if (referral_event.year,
-                referral_event.month) in months:
+        if (referral_event.event_date.year,
+                referral_event.event_date.month) in months:
             num_duplicated_referral_months += 1
-        if referral_event.month:
-            months.add((referral_event.year,
-                        referral_event.month))
+        if referral_event.event_date.month:
+            months.add((referral_event.event_date.year,
+                        referral_event.event_date.month))
 
     # Calculate total combos for program referrals
     referral_dimension_multiplier = 1
@@ -546,15 +1081,32 @@ def expected_metric_combos_count(
         demographic_metric_combos * methodology_multiplier * \
         num_referral_events * referral_dimension_multiplier
 
-    # Referral metrics removed in person-based de-duplication that don't
-    # specify supervision type
+    if num_relevant_periods > 0:
+        program_referral_combos += \
+            demographic_metric_combos * \
+            (num_referral_events - num_duplicated_referral_months) * \
+            referral_dimension_multiplier * \
+            num_relevant_periods
+
+        if duplicated_months_different_supervision_types:
+            program_referral_combos += \
+             int(demographic_metric_combos *
+                 num_duplicated_referral_months *
+                 referral_dimension_multiplier *
+                 num_relevant_periods / 2)
+
+    # Referral metrics removed in person-based de-duplication
     duplicated_referral_combos = \
-        int(demographic_metric_combos / 2 *
+        int(demographic_metric_combos *
             num_duplicated_referral_months *
             referral_dimension_multiplier)
 
-    # Remove the combos that don't specify supervision type for the duplicated
-    # referral months
+    if duplicated_months_different_supervision_types:
+        # If the duplicated months have different supervision types, then
+        # don't remove the supervision-type-specific combos
+        duplicated_referral_combos = int(duplicated_referral_combos / 2)
+
+    # Remove the combos for the duplicated referral months
     program_referral_combos -= duplicated_referral_combos
 
     return program_referral_combos
