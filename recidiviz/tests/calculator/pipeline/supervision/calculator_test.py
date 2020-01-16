@@ -20,12 +20,15 @@ import unittest
 from datetime import date
 from typing import Dict, List, Tuple, Set
 
+from freezegun import freeze_time
+
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket
+from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -58,6 +61,9 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 class TestMapSupervisionCombinations(unittest.TestCase):
     """Tests the map_supervision_combinations function."""
 
+    # Freezing time to before the events so none of them fall into the
+    # relevant metric periods
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations(self):
         """Tests the map_supervision_combinations function."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -94,6 +100,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_assessment(self):
         """Tests the map_supervision_combinations function when there is
         assessment data present."""
@@ -133,6 +140,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervising_officer_district(self):
         """Tests the map_supervision_combinations function when there is
         supervising officer and district data present."""
@@ -172,6 +180,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_revocation_combinations(self):
         """Tests the map_supervision_combinations function for a
         revocation month."""
@@ -202,12 +211,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        # 256 combinations of: 4 demographics + methodology + supervision type
-        # + revocation type + violation type
-        # * 1 month = 256 metrics (for Revocation)
-        # +
-        # 64 combinations of: 4 demographics + methodology + supervision type
-        # * 1 month = 64 metrics (for Population)
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
@@ -217,6 +220,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_success(self):
         """Tests the map_supervision_combinations function when there is a
         ProjectedSupervisionCompletionBucket."""
@@ -258,6 +262,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_unsuccessful(self):
         """Tests the map_supervision_combinations function when there is a
         ProjectedSupervisionCompletionBucket and the supervision is not
@@ -306,6 +311,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    combo_has_enum_value_for_key(_combination, 'metric_type',
                                                 SupervisionMetricType.SUCCESS))
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_mixed_success(self):
         """Tests the map_supervision_combinations function when there is a
         ProjectedSupervisionCompletionBucket and the supervision is not
@@ -364,8 +370,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                        SupervisionMetricType.SUCCESS) and not
                    combo_has_enum_value_for_key(
                        _combination, 'supervision_type',
-                       StateSupervisionType.PROBATION))
+                       StateSupervisionType.PROBATION) and not
+                   _combination.get('supervision_type') is None
+                   )
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_revocation_and_not(self):
         """Tests the map_supervision_combinations function."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -384,31 +393,21 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                'AK', 2018, 4, StateSupervisionType.PAROLE, None, None,
+                None, None,
+                RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY),
             NonRevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 2, StateSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 'AK', 2018, 3, StateSupervisionType.PAROLE),
-            RevocationReturnSupervisionTimeBucket(
-                'AK', 2018, 4, StateSupervisionType.PAROLE, None, None,
-                None, None,
-                RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
+
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        # For the non-revocation month:
-        # 64 combinations of: 4 demographics + methodology + supervision type
-        # * 2 month = 128 metrics (for Population)
-        #
-        # For the revocation month:
-        # 256 combinations of: 4 demographics + methodology + supervision type
-        # + revocation type + violation type
-        # * 1 month = 256 metrics (for Revocation)
-        # +
-        # 64 combinations of: 4 demographics + methodology + supervision type
-        # * 1 month = 64 metrics (for Population)
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
@@ -418,6 +417,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_multiple_months(self):
         """Tests the map_supervision_combinations function where the person
         was on supervision for multiple months."""
@@ -462,6 +462,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months(self):
         """Tests the map_supervision_combinations function where the person
         was serving multiple supervision sentences simultaneously in a given
@@ -494,13 +495,207 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        # Person-based metrics:
-        # 32 combinations of demographics and supervision type
-        # * 2 time buckets (1 month + 1 year) = 64 person-based metrics
-        # Event-based metrics:
-        # 32 combinations of demographics and supervision type
-        # * 3 time buckets (2 months + 1 year) = 96 event-based metrics
-        self.assertEqual(160, len(supervision_combinations))
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('1900-01-01')
+    def test_map_supervision_combinations_overlapping_months_types(self):
+        """Tests the map_supervision_combinations function where the person
+        was serving multiple supervision sentences simultaneously in a given
+        month, but the supervisions are of different types."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, 3, StateSupervisionType.PAROLE),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, 3, StateSupervisionType.PROBATION),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, None, StateSupervisionType.PAROLE),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2018, None, StateSupervisionType.PROBATION)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            duplicated_months_different_supervision_types=True
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PAROLE)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_revocation(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PAROLE)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_duplicates(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PAROLE),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PAROLE)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    # pylint:disable=line-too-long
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_supervision_types(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PROBATION),
+            NonRevocationReturnSupervisionTimeBucket(
+                'AK', 2010, 1, StateSupervisionType.PAROLE)
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            duplicated_months_different_supervision_types=True,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
@@ -897,6 +1092,132 @@ class TestCharacteristicCombinations(unittest.TestCase):
             assert combo.get('violation_type') is None
 
 
+class TestIncludeSupervisionInCount(unittest.TestCase):
+    """Tests the include_non_revocation_bucket function."""
+    def test_include_supervision_in_count(self):
+        """Tests that the revocation bucket is included and the non-revocation
+        bucket is not."""
+        combo = {
+            'metric_type': SupervisionMetricType.POPULATION
+        }
+
+        revocation_bucket = RevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PAROLE, None, None,
+            None, None,
+            RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
+        non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PAROLE)
+
+        supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
+
+        include_revocation_bucket = calculator.include_supervision_in_count(
+            combo, revocation_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertTrue(include_revocation_bucket)
+
+        include_non_revocation_bucket = calculator.include_supervision_in_count(
+            combo, non_revocation_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertFalse(include_non_revocation_bucket)
+
+    def test_include_supervision_in_count_revocation(self):
+        """Tests that the revocation probation bucket is included and the
+        non-revocation parole bucket is not."""
+        combo = {
+            'metric_type': SupervisionMetricType.POPULATION
+        }
+
+        revocation_bucket = RevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PROBATION, None, None,
+            None, None,
+            RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
+        non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PAROLE)
+
+        supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
+
+        include_revocation_bucket = calculator.include_supervision_in_count(
+            combo, revocation_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertTrue(include_revocation_bucket)
+
+        include_non_revocation_bucket = calculator.include_supervision_in_count(
+            combo, non_revocation_bucket,
+            supervision_time_buckets, SupervisionMetricType.POPULATION)
+
+        self.assertFalse(include_non_revocation_bucket)
+
+    def test_include_supervision_in_count_last_probation(self):
+        """Tests that the last probation bucket is included."""
+        combo = {
+            'metric_type': SupervisionMetricType.POPULATION
+        }
+
+        first_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PROBATION)
+        second_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PROBATION)
+
+        supervision_time_buckets = [first_bucket, second_bucket]
+
+        include_first_bucket = calculator.include_supervision_in_count(
+            combo, first_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertFalse(include_first_bucket)
+
+        include_second_bucket = calculator.include_supervision_in_count(
+            combo, second_bucket,
+            supervision_time_buckets, SupervisionMetricType.POPULATION)
+
+        self.assertTrue(include_second_bucket)
+
+    def test_include_supervision_in_count_supervision_type_set_parole(self):
+        """Tests that the bucket is included when the supervision type is
+        set in the combo."""
+        combo = {
+            'metric_type': SupervisionMetricType.POPULATION,
+            'supervision_type': StateSupervisionType.PAROLE
+        }
+
+        first_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PAROLE)
+        second_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PROBATION)
+
+        supervision_time_buckets = [first_bucket, second_bucket]
+
+        include_first_bucket = calculator.include_supervision_in_count(
+            combo, first_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertTrue(include_first_bucket)
+
+    def test_include_supervision_in_count_supervision_type_set_probation(self):
+        """Tests that the bucket is included when the supervision type is
+        set in the combo."""
+        combo = {
+            'metric_type': SupervisionMetricType.POPULATION,
+            'supervision_type': StateSupervisionType.PROBATION
+        }
+
+        first_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PAROLE)
+        second_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2018, 4, StateSupervisionType.PROBATION)
+
+        supervision_time_buckets = [first_bucket, second_bucket]
+
+        include_second_bucket = calculator.include_supervision_in_count(
+            combo, second_bucket, supervision_time_buckets,
+            SupervisionMetricType.POPULATION)
+
+        self.assertTrue(include_second_bucket)
+
+
 def demographic_metric_combos_count_for_person_supervision(
         person: StatePerson,
         inclusions: Dict[str, bool]) -> int:
@@ -919,7 +1240,9 @@ def expected_metric_combos_count(
         inclusions: Dict[str, bool],
         with_revocation_dimensions: bool = True,
         with_methodologies: bool = True,
-        include_all_metrics: bool = True) -> int:
+        include_all_metrics: bool = True,
+        duplicated_months_different_supervision_types: bool = False,
+        num_relevant_periods: int = 0) -> int:
     """Calculates the expected number of characteristic combinations given
     the person, the supervision time buckets, and the dimensions that should
     be included in the explosion of feature combinations."""
@@ -945,16 +1268,27 @@ def expected_metric_combos_count(
                                NonRevocationReturnSupervisionTimeBucket))
     ]
 
+    num_duplicated_population_buckets = 0
+    population_months: Set[Tuple[int, int]] = set()
+
+    for bucket in population_buckets:
+        year = bucket.year
+        month = 0 if bucket.month is None else bucket.month
+        if (year, month) in population_months:
+            num_duplicated_population_buckets += 1
+        if month is not None:
+            population_months.add((year, month))
+
     num_duplicated_projected_completion_months = 0
-    months: Set[Tuple[int, int]] = set()
+    completion_months: Set[Tuple[int, int]] = set()
 
     for projected_completion_bucket in projected_completion_buckets:
         if (projected_completion_bucket.year,
-                projected_completion_bucket.month) in months:
+                projected_completion_bucket.month) in completion_months:
             num_duplicated_projected_completion_months += 1
         if projected_completion_bucket.month:
-            months.add((projected_completion_bucket.year,
-                        projected_completion_bucket.month))
+            completion_months.add((projected_completion_bucket.year,
+                                   projected_completion_bucket.month))
 
     num_projected_completion_buckets = len(projected_completion_buckets)
 
@@ -987,6 +1321,33 @@ def expected_metric_combos_count(
         demographic_metric_combos * methodology_multiplier * \
         num_population_buckets * population_dimension_multiplier
 
+    if num_relevant_periods > 0:
+        supervision_population_combos += \
+            demographic_metric_combos * \
+            (len(population_buckets) - num_duplicated_population_buckets) * \
+            population_dimension_multiplier * \
+            num_relevant_periods
+
+        if duplicated_months_different_supervision_types:
+            supervision_population_combos += \
+                int(demographic_metric_combos *
+                    num_duplicated_population_buckets *
+                    population_dimension_multiplier *
+                    num_relevant_periods / 2)
+
+    # Supervision population metrics removed in person-based de-duplication
+    duplicated_population_combos = \
+        int(demographic_metric_combos *
+            num_duplicated_population_buckets *
+            population_dimension_multiplier)
+
+    if duplicated_months_different_supervision_types:
+        # If the duplicated months have different supervision types, then
+        # don't remove the supervision-type-specific combos
+        duplicated_population_combos = int(duplicated_population_combos / 2)
+
+    supervision_population_combos -= duplicated_population_combos
+
     # Calculate total combos for supervision revocation
     revocation_dimension_multiplier = 1
     if with_revocation_dimensions:
@@ -1010,6 +1371,12 @@ def expected_metric_combos_count(
     supervision_revocation_combos = \
         demographic_metric_combos * methodology_multiplier * \
         num_revocation_buckets * revocation_dimension_multiplier
+
+    if num_relevant_periods > 0:
+        supervision_revocation_combos += \
+            demographic_metric_combos * \
+            (len(revocation_buckets)) * \
+            num_relevant_periods
 
     projected_completion_dimension_multiplier = 1
     if projected_completion_buckets and \
