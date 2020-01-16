@@ -22,9 +22,9 @@ metrics, key-value pairs where the key represents all of the dimensions
 represented in the data point, and the value represents an indicator of whether
 the person should contribute to that metric.
 """
-from copy import deepcopy
+from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Tuple, Any, Type
+from typing import List, Dict, Tuple, Any, Type, Sequence
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent
@@ -32,9 +32,11 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    convert_event_based_to_person_based_metrics
+    last_day_of_month, relevant_metric_periods, augmented_combo_list
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.common.constants.state.state_incarceration_period import \
+    StateIncarcerationPeriodAdmissionReason
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -82,7 +84,27 @@ def map_incarceration_combinations(person: StatePerson,
     """
     metrics: List[Tuple[Dict[str, Any], Any]] = []
 
-    event_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
+    periods_and_events: Dict[int, List[IncarcerationEvent]] = defaultdict()
+
+    # We will calculate person-based metrics for each metric period in
+    # METRIC_PERIOD_MONTHS ending with the current month
+    metric_period_end_date = last_day_of_month(date.today())
+
+    # Organize the events by the relevant metric periods
+    for incarceration_event in incarceration_events:
+        relevant_periods = relevant_metric_periods(
+            incarceration_event.event_date,
+            metric_period_end_date.year,
+            metric_period_end_date.month)
+
+        if relevant_periods:
+            for period in relevant_periods:
+                period_events = periods_and_events.get(period)
+
+                if period_events:
+                    period_events.append(incarceration_event)
+                else:
+                    periods_and_events[period] = [incarceration_event]
 
     for incarceration_event in incarceration_events:
         characteristic_combos = characteristic_combinations(
@@ -94,22 +116,11 @@ def map_incarceration_combinations(person: StatePerson,
                 'No metric type mapped to incarceration event '
                 'of type {}'.format(type(incarceration_event)))
 
-        incarceration_admission_metrics_event_based = \
-            map_metric_combinations(
-                characteristic_combos, incarceration_event,
-                metric_type
-            )
-        event_based_metrics.extend(
-            incarceration_admission_metrics_event_based)
-
-    metrics.extend(event_based_metrics)
-
-    # Convert the event-based incarceration metrics to person-based
-    person_based_metrics = convert_event_based_to_person_based_metrics(
-        deepcopy(event_based_metrics)
-    )
-
-    metrics.extend(person_based_metrics)
+        metrics.extend(map_metric_combinations(
+            characteristic_combos, incarceration_event,
+            metric_period_end_date, incarceration_events,
+            periods_and_events, metric_type
+        ))
 
     return metrics
 
@@ -159,8 +170,8 @@ def characteristic_combinations(person: StatePerson,
         characteristics['facility'] = incarceration_event.facility
 
     if inclusions.get('age_bucket'):
-        year = incarceration_event.year
-        month = incarceration_event.month
+        year = incarceration_event.event_date.year
+        month = incarceration_event.event_date.month
 
         if month is None:
             month = 1
@@ -193,6 +204,9 @@ def characteristic_combinations(person: StatePerson,
 def map_metric_combinations(
         characteristic_combos: List[Dict[str, Any]],
         incarceration_event: IncarcerationEvent,
+        metric_period_end_date: date,
+        all_incarceration_events: List[IncarcerationEvent],
+        periods_and_events: Dict[int, List[IncarcerationEvent]],
         metric_type: IncarcerationMetricType) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given time bucket and characteristic combinations to a variety
@@ -207,6 +221,10 @@ def map_metric_combinations(
              combinations of characteristics.
          incarceration_event: The incarceration event from which
              the combination was derived.
+         metric_period_end_date: The day the metric periods end
+         all_incarceration_events: All of the person's IncarcerationEvents
+         periods_and_events: A dictionary mapping metric period month values to
+            the corresponding relevant IncarcerationEvents
          metric_type: The metric type to set on each combination
 
      Returns:
@@ -216,23 +234,217 @@ def map_metric_combinations(
 
     metrics = []
 
-    year = incarceration_event.year
-    month = incarceration_event.month
-    state_code = incarceration_event.state_code
+    all_admission_events = [
+        event for event in all_incarceration_events
+        if isinstance(event, IncarcerationAdmissionEvent)
+    ]
+
+    all_release_events = [
+        event for event in all_incarceration_events
+        if isinstance(event, IncarcerationReleaseEvent)
+    ]
 
     for combo in characteristic_combos:
         combo['metric_type'] = metric_type.value
-        combo['state_code'] = state_code
-        combo['year'] = year
-        combo['month'] = month
-        combo['methodology'] = MetricMethodologyType.EVENT
 
-        if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        if metric_type == IncarcerationMetricType.ADMISSION and \
+                isinstance(incarceration_event, IncarcerationAdmissionEvent):
             combo['admission_reason'] = incarceration_event.admission_reason
-
-        if isinstance(incarceration_event, IncarcerationReleaseEvent):
+        elif metric_type == IncarcerationMetricType.RELEASE and \
+                isinstance(incarceration_event, IncarcerationReleaseEvent):
             combo['release_reason'] = incarceration_event.release_reason
 
-        metrics.append((combo, 1))
+        metrics.extend(combination_incarceration_metrics(
+            combo, incarceration_event, metric_period_end_date,
+            periods_and_events, all_admission_events, all_release_events))
 
     return metrics
+
+
+def combination_incarceration_metrics(
+        combo: Dict[str, Any],
+        incarceration_event: IncarcerationEvent,
+        metric_period_end_date: date,
+        periods_and_events: Dict[int, List[IncarcerationEvent]],
+        all_admission_events:
+        List[IncarcerationAdmissionEvent],
+        all_release_events: List[IncarcerationReleaseEvent]) \
+        -> List[Tuple[Dict[str, Any], int]]:
+    """Returns all unique incarceration metrics for the given event and
+    combination.
+
+    First, includes an event-based count for the month the event occurred with
+    a metric period of 1 month. Then, if this event should be included in the
+    person-based count for the month when the event occurred, adds those person-
+    based metrics. Finally, returns metrics for each of the metric period length
+    that this event falls into if this event should be included in the person-
+    based count for that metric period.
+
+    Args:
+        combo: A characteristic combination to convert into metrics
+        incarceration_event: The IncarcerationEvent from which the combination
+            was derived
+        metric_period_end_date: The day the metric periods end
+        periods_and_events: Dictionary mapping metric period month lengths to
+            the IncarcerationEvents that fall in that period
+        all_admission_events: All of this person's IncarcerationAdmissionEvents
+        all_release_events: All of this person's IncarcerationReleaseEvents
+
+    Returns:
+        A list of key-value tuples representing specific metric combination
+            dictionaries and the number 1 representing a positive contribution
+            to that count metric.
+    """
+    metrics = []
+
+    event_date = incarceration_event.event_date
+    event_year = event_date.year
+    event_month = event_date.month
+
+    # Add event-based combos for the 1-month period the month of the event
+    event_based_same_month_combos = augmented_combo_list(
+        combo, incarceration_event.state_code,
+        event_year, event_month,
+        MetricMethodologyType.EVENT, 1)
+
+    for event_combo in event_based_same_month_combos:
+        metrics.append((event_combo, 1))
+
+    # Create the person-based combos for the 1-month period of the month of the
+    # event
+    person_based_same_month_combos = augmented_combo_list(
+        combo, incarceration_event.state_code,
+        event_year, event_month,
+        MetricMethodologyType.PERSON, 1
+    )
+
+    related_events: Sequence[IncarcerationEvent] = []
+    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        related_events = all_admission_events
+    elif isinstance(incarceration_event, IncarcerationReleaseEvent):
+        related_events = all_release_events
+
+    # All related events that happened the same month as this one
+    events_in_month = [
+        event for event in related_events
+        if event.event_date.year == event_date.year and
+        event.event_date.month == event_date.month
+    ]
+
+    if include_event_in_count(
+            incarceration_event,
+            last_day_of_month(event_date),
+            events_in_month):
+        # Include this event in the person-based count
+        for person_combo in person_based_same_month_combos:
+            metrics.append((person_combo, 1))
+
+    period_end_year = metric_period_end_date.year
+    period_end_month = metric_period_end_date.month
+
+    for period_length, events_in_period in periods_and_events.items():
+        if incarceration_event in events_in_period:
+            # This event falls within this metric period
+            person_based_period_combos = augmented_combo_list(
+                combo, incarceration_event.state_code,
+                period_end_year, period_end_month,
+                MetricMethodologyType.PERSON, period_length
+            )
+
+            related_events_in_period: List[IncarcerationEvent] = []
+
+            if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+                related_events_in_period = [
+                    event for event in events_in_period
+                    if isinstance(event, IncarcerationAdmissionEvent)
+                ]
+            elif isinstance(incarceration_event, IncarcerationReleaseEvent):
+                related_events_in_period = [
+                    event for event in events_in_period
+                    if isinstance(event, IncarcerationReleaseEvent)
+                ]
+
+            if include_event_in_count(
+                    incarceration_event,
+                    metric_period_end_date,
+                    related_events_in_period):
+                # Include this event in the person-based count for this time
+                # period
+                for person_combo in person_based_period_combos:
+                    metrics.append((person_combo, 1))
+
+    return metrics
+
+
+def include_event_in_count(incarceration_event: IncarcerationEvent,
+                           metric_period_end_date: date,
+                           all_events_in_period:
+                           Sequence[IncarcerationEvent]) -> bool:
+    """Determines whether the given incarceration_event should be included in a
+    person-based count for this given metric_period_end_date.
+
+    For the release counts, the last instance of a release before the end of the
+    period is included.
+
+    For the admission counts, if any of the admissions have an admission_reason
+    indicating a supervision revocation, then this incarceration_event is only
+    included if it is the last instance of a revocation admission before the end
+    of that period. If none of the admissions in the period are revocation
+    admissions, then this event is included only if it is the last instance of
+    an admission before the end of the period.
+    """
+    events_rest_of_period = \
+        incarceration_events_in_period(
+            incarceration_event.event_date,
+            metric_period_end_date,
+            all_events_in_period)
+
+    events_rest_of_period.sort(key=lambda b: b.event_date)
+
+    if isinstance(incarceration_event, IncarcerationReleaseEvent):
+        if len(events_rest_of_period) == 1:
+            # If this is the last instance of a release before the end of the
+            # period, then include it in the person-based count.
+            return True
+    elif isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        revocation_events_in_period = [
+            event for event in all_events_in_period
+            if isinstance(event, IncarcerationAdmissionEvent) and
+            event.admission_reason in (
+                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION)
+        ]
+
+        revocation_events_in_period.sort(key=lambda b: b.event_date)
+
+        if (not revocation_events_in_period or
+                len(revocation_events_in_period) == len(all_events_in_period)) \
+                and len(events_rest_of_period) == 1:
+            # If all of the admission events this period are either all
+            # revocation or all non-revocation, and this is the last instance
+            # of an admission before the end of the period, then include it in
+            # the person-based count.
+            return True
+
+        if revocation_events_in_period and incarceration_event == \
+                revocation_events_in_period[-1]:
+            # This person has both revocation and non-revocation admissions
+            # during this period. If this is the last revocation admission
+            # event, then include it in the person-based count.
+            return True
+
+    return False
+
+
+def incarceration_events_in_period(start_date: date,
+                                   end_date: date,
+                                   all_incarceration_events:
+                                   Sequence[IncarcerationEvent]) \
+        -> List[IncarcerationEvent]:
+    """Returns all of the events that occurred between the start_date
+     and end_date, inclusive."""
+    events_in_period = \
+        [event for event in all_incarceration_events
+         if start_date <= event.event_date <= end_date]
+
+    return events_in_period

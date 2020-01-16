@@ -59,15 +59,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.assertEqual([
             IncarcerationAdmissionEvent(
                 state_code='TX',
-                year=2008,
-                month=11,
+                event_date=incarceration_period.admission_date,
                 facility='PRISON3',
                 admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
-                year=2010,
-                month=12,
+                event_date=incarceration_period.release_date,
                 facility='PRISON3',
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -108,15 +106,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.assertEqual([
             IncarcerationAdmissionEvent(
                 state_code='TX',
-                year=2008,
-                month=11,
+                event_date=incarceration_period_1.admission_date,
                 facility='PRISON3',
                 admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
-                year=2010,
-                month=12,
+                event_date=incarceration_period_2.release_date,
                 facility='PRISON3',
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -288,8 +284,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 
         self.assertEqual(IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
-            year=2008,
-            month=11,
+            event_date=incarceration_period.admission_date,
             facility='PRISON3',
             admission_reason=incarceration_period.admission_reason
         ), admission_event)
@@ -336,8 +331,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
         self.assertEqual(IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
-            year=2010,
-            month=12,
+            event_date=incarceration_period.release_date,
             facility='PRISON3',
             release_reason=incarceration_period.release_reason
         ), release_event)

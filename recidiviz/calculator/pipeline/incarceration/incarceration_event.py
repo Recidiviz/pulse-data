@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to incarceration."""
+from datetime import date
 from typing import Optional
 
 import attr
@@ -28,18 +29,15 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 class IncarcerationEvent(BuildableAttr):
     """Models details related to an incarceration event.
 
-    Describes either a year or a month in which a person interacted with a
-    incarceration. This includes the information pertaining to the interaction
+    Describes a date on which a person interacted with incarceration.
+    This includes the information pertaining to the interaction
     that we will want to track when calculating incarceration metrics."""
 
     # The state where the incarceration took place
     state_code: str = attr.ib()
 
-    # Year for when the incarceration event occurred
-    year: int = attr.ib()
-
-    # Month for when the incarceration event occurred
-    month: int = attr.ib()
+    # Event date when the interaction took place
+    event_date: date = attr.ib()
 
     # Facility
     facility: Optional[str] = attr.ib(default=None)

@@ -365,14 +365,12 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         incarceration_events = [
             IncarcerationAdmissionEvent(
                 state_code='TX',
-                year=2008,
-                month=11,
+                event_date=date(2008, 11, 20),
                 admission_reason=incarceration_period.admission_reason
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
-                year=2010,
-                month=12,
+                event_date=date(2010, 12, 4),
                 release_reason=incarceration_period.release_reason
             )
         ]
@@ -435,16 +433,14 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
         incarceration_events = [
             IncarcerationAdmissionEvent(
                 state_code='CA',
-                year=2000,
-                month=3,
+                event_date=date(2001, 3, 16),
                 facility='SAN QUENTIN',
                 admission_reason=StateIncarcerationPeriodAdmissionReason.
                 PROBATION_REVOCATION
             ),
             IncarcerationReleaseEvent(
                 state_code='CA',
-                year=2002,
-                month=5,
+                event_date=date(2002, 5, 26),
                 facility='SAN QUENTIN',
                 release_reason=StateIncarcerationPeriodReleaseReason.
                 SENTENCE_SERVED

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for incarceration/incarceration_event.py."""
+from datetime import date
+
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -24,77 +26,69 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 
 def test_incarceration_event():
     state_code = 'CA'
-    year = 2000
-    month = 11
+    event_date = date(2013, 4, 1)
     facility = 'FACILITY D'
 
     incarceration_event = IncarcerationEvent(
-        state_code, year, month, facility)
+        state_code, event_date, facility)
 
     assert incarceration_event.state_code == state_code
-    assert incarceration_event.year == year
-    assert incarceration_event.month == month
+    assert incarceration_event.event_date == event_date
     assert incarceration_event.facility == facility
 
 
 def test_incarceration_admission_event():
     state_code = 'CA'
-    year = 2000
-    month = 11
+    event_date = date(2011, 9, 18)
     facility = 'PRISON V'
     admission_reason = StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
 
     incarceration_event = IncarcerationAdmissionEvent(
-        state_code, year, month, facility, admission_reason
+        state_code, event_date, facility, admission_reason
     )
 
     assert incarceration_event.state_code == state_code
-    assert incarceration_event.year == year
-    assert incarceration_event.month == month
+    assert incarceration_event.event_date == event_date
     assert incarceration_event.facility == facility
     assert incarceration_event.admission_reason == admission_reason
 
 
 def test_incarceration_release_event():
     state_code = 'CA'
-    year = 2000
-    month = 11
+    event_date = date(2004, 11, 8)
     facility = 'PRISON V'
     release_reason = StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
     incarceration_event = IncarcerationReleaseEvent(
-        state_code, year, month, facility, release_reason
+        state_code, event_date, facility, release_reason
     )
 
     assert incarceration_event.state_code == state_code
-    assert incarceration_event.year == year
-    assert incarceration_event.month == month
+    assert incarceration_event.event_date == event_date
     assert incarceration_event.facility == facility
     assert incarceration_event.release_reason == release_reason
 
 
 def test_eq_different_field():
     state_code = 'CA'
-    year = 2000
-    month = 11
+    event_date = date(2020, 1, 1)
     facility = 'HELLO'
 
-    first = IncarcerationEvent(state_code, year, month, facility)
+    first = IncarcerationEvent(state_code, event_date, facility)
 
-    second = IncarcerationEvent(state_code, year, month, 'DIFFERENT')
+    second = IncarcerationEvent(state_code, event_date, 'DIFFERENT')
 
     assert first != second
 
 
 def test_eq_different_types():
     state_code = 'CA'
-    year = 2000
-    month = 11
+    event_date = date(1999, 9, 9)
     facility = 'PRISON V'
     admission_reason = StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
 
     incarceration_event = IncarcerationAdmissionEvent(
-        state_code, year, month, facility, admission_reason
+        state_code, event_date, facility, admission_reason
     )
 
     different = "Everything you do is a banana"
