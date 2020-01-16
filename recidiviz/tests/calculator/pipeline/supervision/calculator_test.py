@@ -586,6 +586,58 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    in supervision_combinations)
 
     @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_one_non_relevant_period(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        relevant_bucket = NonRevocationReturnSupervisionTimeBucket(
+            'AK', 2010, 1, StateSupervisionType.PAROLE)
+        not_relevant_bucket = RevocationReturnSupervisionTimeBucket(
+            'AK', 1980, 1, StateSupervisionType.PAROLE)
+
+        supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        # Hack to get the right expected number. The relevant periods should
+        # only apply to the relevant non-revocation bucket, so we
+        # are subtracting the two instances in the expected_metric_combos_count
+        # function when this bucket was included in these relevant period
+        # counts.
+        demographic_metric_combos = \
+            demographic_metric_combos_count_for_person_supervision(
+                person, ALL_INCLUSIONS_DICT)
+
+        expected_combinations_count -= (
+            demographic_metric_combos *
+            len(calculator_utils.METRIC_PERIOD_MONTHS) * 2
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_revocation(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
