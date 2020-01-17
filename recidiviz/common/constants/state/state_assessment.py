@@ -17,6 +17,7 @@
 
 """Constants related to an assessment entity."""
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -35,9 +36,28 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     ASI = state_enum_strings.state_assessment_type_asi
     LSIR = state_enum_strings.state_assessment_type_lsir
     ORAS = state_enum_strings.state_assessment_type_oras
+    ORAS_COMMUNITY_SUPERVISION = \
+        state_enum_strings.state_assessment_type_oras_community_supervision
+    ORAS_COMMUNITY_SUPERVISION_SCREENING = \
+        state_enum_strings.\
+        state_assessment_type_oras_community_supervision_screening
+    ORAS_MISDEMEANOR_ASSESSMENT = \
+        state_enum_strings.state_assessment_type_oras_misdemeanor_assessment
+    ORAS_MISDEMEANOR_SCREENING = \
+        state_enum_strings.state_assessment_type_oras_misdemeanor_screening
+    ORAS_PRE_TRIAL = state_enum_strings.state_assessment_type_oras_pre_trial
+    ORAS_PRISON_SCREENING = \
+        state_enum_strings.state_assessment_type_oras_prison_screening
+    ORAS_PRISON_INTAKE = \
+        state_enum_strings.state_assessment_type_oras_prison_intake
+    ORAS_REENTRY = state_enum_strings.state_assessment_type_oras_reentry
+    ORAS_STATIC = state_enum_strings.state_assessment_type_oras_static
+    ORAS_SUPPLEMENTAL_REENTRY = \
+        state_enum_strings.state_assessment_type_oras_supplemental_reentry
     PSA = state_enum_strings.state_assessment_type_psa
     SORAC = state_enum_strings.state_assessment_type_sorac
 
@@ -53,6 +73,7 @@ class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     MEDIUM_HIGH = state_enum_strings.state_assessment_level_medium_high
     MODERATE = state_enum_strings.state_assessment_level_moderate
     HIGH = state_enum_strings.state_assessment_level_high
+    VERY_HIGH = state_enum_strings.state_assessment_level_very_high
     NOT_APPLICABLE = state_enum_strings.state_assessment_level_not_applicable
     UNDETERMINED = state_enum_strings.state_assessment_level_undetermined
 

@@ -25,6 +25,8 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
     US_MO_OLN, US_MO_FBI, US_MO_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import \
@@ -59,7 +61,7 @@ from recidiviz.ingest.models.ingest_info import StatePerson, \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponse, StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry, StateAgent
+    StateSupervisionViolationResponseDecisionEntry, StateAgent, StateAssessment
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -293,6 +295,52 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected, 'apfx90_apfx91_tak034_current_po_assignments')
+
+    def test_populate_data_oras_assessments_weekly(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='110035',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='110035',
+                                    id_type=US_MO_DOC),
+                            ],
+                            state_assessments=[
+                                StateAssessment(
+                                    assessment_type='Prison Intake Tool',
+                                    assessment_score='10',
+                                    assessment_level='Moderate',
+                                    assessment_date='2010-01-01',
+                                    state_assessment_id='110035-1',
+                                )]
+                            ),
+                StatePerson(state_person_id='310261',
+                            state_person_external_ids=[
+                                StatePersonExternalId(
+                                    state_person_external_id_id='310261',
+                                    id_type=US_MO_DOC),
+                            ],
+                            state_assessments=[
+                                StateAssessment(
+                                    assessment_type=
+                                    'Community Supervision Tool',
+                                    assessment_score='5',
+                                    assessment_level='Low',
+                                    assessment_date='2000-01-01',
+                                    state_assessment_id='310261-2',
+                                ),
+                                StateAssessment(
+                                    assessment_type='Prison Intake Tool',
+                                    assessment_score='7',
+                                    assessment_level='Low/Moderate',
+                                    assessment_date='1900-01-01',
+                                    state_assessment_id='310261-1',
+                                ),
+                            ]
+                            ),
+            ])
+
+        self.run_parse_file_test(expected, 'oras_assessments_weekly')
 
     def test_populate_data_tak040_offender_identification(self):
         expected = IngestInfo(state_people=[
@@ -1973,6 +2021,53 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Act
         self._run_ingest_job_for_filename(
             'apfx90_apfx91_tak034_current_po_assignments.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # ORAS_ASSESSMENTS_WEEKLY
+        ######################################
+        # Arrange
+        assessment_110035 = entities.StateAssessment.new_with_defaults(
+            assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
+            assessment_type_raw_text='PRISON INTAKE TOOL',
+            assessment_score=10,
+            assessment_level=StateAssessmentLevel.MEDIUM,
+            assessment_level_raw_text='MODERATE',
+            assessment_date=datetime.date(year=2010, month=1, day=1),
+            external_id='110035-1',
+            state_code=_STATE_CODE_UPPER,
+            person=person_110035)
+
+        assessment_310261_1 = entities.StateAssessment.new_with_defaults(
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            assessment_type_raw_text='COMMUNITY SUPERVISION TOOL',
+            assessment_score=5,
+            assessment_level=StateAssessmentLevel.LOW,
+            assessment_level_raw_text='LOW',
+            assessment_date=datetime.date(year=2000, month=1, day=1),
+            external_id='310261-2',
+            state_code=_STATE_CODE_UPPER,
+            person=person_310261)
+
+        assessment_310261_2 = entities.StateAssessment.new_with_defaults(
+            assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
+            assessment_type_raw_text='PRISON INTAKE TOOL',
+            assessment_score=7,
+            assessment_level=StateAssessmentLevel.LOW_MEDIUM,
+            assessment_level_raw_text='LOW/MODERATE',
+            assessment_date=datetime.date(year=1900, month=1, day=1),
+            external_id='310261-1',
+            state_code=_STATE_CODE_UPPER,
+            person=person_310261)
+
+        person_110035.assessments.append(assessment_110035)
+        person_310261.assessments.append(assessment_310261_1)
+        person_310261.assessments.append(assessment_310261_2)
+
+        # Act
+        self._run_ingest_job_for_filename('oras_assessments_weekly.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
