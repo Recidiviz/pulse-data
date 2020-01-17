@@ -330,7 +330,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_assessment_id='310261-2',
                                 ),
                                 StateAssessment(
-                                    assessment_type='Prison Intake Tool',
+                                    assessment_type='Reentry Tool',
                                     assessment_score='7',
                                     assessment_level='Low/Moderate',
                                     assessment_date='1900-01-01',
@@ -2052,8 +2052,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             person=person_310261)
 
         assessment_310261_2 = entities.StateAssessment.new_with_defaults(
-            assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
-            assessment_type_raw_text='PRISON INTAKE TOOL',
+            assessment_type=StateAssessmentType.ORAS_REENTRY,
+            assessment_type_raw_text='REENTRY TOOL',
             assessment_score=7,
             assessment_level=StateAssessmentLevel.LOW_MEDIUM,
             assessment_level_raw_text='LOW/MODERATE',
