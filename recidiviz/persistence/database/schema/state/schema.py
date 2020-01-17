@@ -80,6 +80,18 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_oras,
     state_enum_strings.state_assessment_type_psa,
     state_enum_strings.state_assessment_type_sorac,
+    state_enum_strings.state_assessment_type_oras_community_supervision,
+    state_enum_strings.
+    state_assessment_type_oras_community_supervision_screening,
+    state_enum_strings.state_assessment_type_oras_misdemeanor_assessment,
+    state_enum_strings.state_assessment_type_oras_misdemeanor_screening,
+    state_enum_strings.state_assessment_type_oras_pre_trial,
+    state_enum_strings.state_assessment_type_oras_prison_screening,
+    state_enum_strings.state_assessment_type_oras_prison_intake,
+    state_enum_strings.state_assessment_type_oras_reentry,
+    state_enum_strings.state_assessment_type_oras_static,
+    state_enum_strings.state_assessment_type_oras_supplemental_reentry,
+    enum_strings.internal_unknown,
     name='state_assessment_type')
 
 state_assessment_level = Enum(
@@ -89,6 +101,7 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_medium_high,
     state_enum_strings.state_assessment_level_moderate,
     state_enum_strings.state_assessment_level_high,
+    state_enum_strings.state_assessment_level_very_high,
     state_enum_strings.state_assessment_level_not_applicable,
     state_enum_strings.state_assessment_level_undetermined,
     name='state_assessment_level')

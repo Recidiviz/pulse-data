@@ -1,0 +1,25 @@
+key_mappings:
+  E18: state_assessment.assessment_date     # Date entered into UCCI system.
+  E05: state_assessment.assessment_type
+  E12: state_assessment.assessment_level
+  E16: state_assessment.assessment_score
+
+ancestor_keys:
+  E03: state_person.state_person_id
+
+keys_to_ignore:
+  - E01     # Unused - Date of download from UCCI
+  - E02     # Unused - Date of download from UCCI
+  - E04     # Unused - Duplicate of E18
+  - E06     # Unused - First name
+  - E07     # Unused - Last name
+  - E08     # Unused - Full name
+  - E10     # Unused - Birthdate
+  - E11     # Unused - Gender
+  - E17     # Unused - Person who administered the assessment
+  - FOCLIST # Assessment Seq No - Handled manually in the controller
+  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  - E09     # Unused - Agency name
+  - E13     # Unused - Override risk level (not uniform in data)
+  - E14     # Unused - Override risk reason
+  - E15     # Unused - Assessment status (all Complete)

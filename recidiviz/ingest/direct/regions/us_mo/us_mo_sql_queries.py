@@ -1026,11 +1026,26 @@ APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS = \
 """
 
 
+ORAS_ASSESSMENTS_WEEKLY = \
+    f"""
+    SELECT 
+        * 
+    FROM 
+        FOCTEST.ORAS_ASSESSMENTS_WEEKLY
+    WHERE
+        E15 = 'Complete'
+    -- explicitly filter out any test data from UCCI
+        AND E08 NOT LIKE '%Test%' 
+        AND E08 NOT LIKE '%test%';
+    """
+
 if __name__ == '__main__':
     print('\n\n/* TAK001_OFFENDER_IDENTIFICATION_QUERY */\n')
     print(TAK001_OFFENDER_IDENTIFICATION_QUERY)
     print('\n\n/* APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS */\n')
     print(APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS)
+    print('\n\n/* ORAS_ASSESSMENTS_WEEKLY */\n')
+    print(ORAS_ASSESSMENTS_WEEKLY)
     print('\n\n/* TAK040_OFFENDER_CYCLES */\n')
     print(TAK040_OFFENDER_CYCLES)
     print('\n\n/* TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION */\n')
