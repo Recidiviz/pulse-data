@@ -766,7 +766,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'Prison Intake Tool'
         ],
         StateAssessmentType.ORAS_REENTRY: [
-            'Reentry Tool'
+            'Reentry Tool',
             'Reentry Instrument'
         ],
         StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: [
