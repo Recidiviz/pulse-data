@@ -46,7 +46,20 @@ state_assessment_class_substance_abuse = 'SUBSTANCE_ABUSE'
 
 state_assessment_type_asi = 'ASI'
 state_assessment_type_lsir = 'LSIR'
+# TODO(2668): Deprecated - Delete this enum value from our schema.
 state_assessment_type_oras = 'ORAS'
+state_assessment_type_oras_community_supervision = 'ORAS_COMMUNITY_SUPERVISION'
+state_assessment_type_oras_community_supervision_screening = \
+    'ORAS_COMMUNITY_SUPERVISION_SCREENING'
+state_assessment_type_oras_misdemeanor_assessment = \
+    'ORAS_MISDEMEANOR_ASSESSMENT'
+state_assessment_type_oras_misdemeanor_screening = 'ORAS_MISDEMEANOR_SCREENING'
+state_assessment_type_oras_pre_trial = 'ORAS_PRE_TRIAL'
+state_assessment_type_oras_prison_screening = 'ORAS_PRISON_SCREENING'
+state_assessment_type_oras_prison_intake = 'ORAS_PRISON_INTAKE'
+state_assessment_type_oras_reentry = 'ORAS_REENTRY'
+state_assessment_type_oras_static = 'ORAS_STATIC'
+state_assessment_type_oras_supplemental_reentry = 'ORAS_SUPPLEMENTAL_REENTRY'
 state_assessment_type_psa = 'PSA'
 state_assessment_type_sorac = 'SORAC'
 
@@ -56,6 +69,7 @@ state_assessment_level_medium = 'MEDIUM'
 state_assessment_level_medium_high = 'MEDIUM_HIGH'
 state_assessment_level_moderate = 'MODERATE'
 state_assessment_level_high = 'HIGH'
+state_assessment_level_very_high = 'VERY_HIGH'
 state_assessment_level_not_applicable = 'NOT_APPLICABLE'
 state_assessment_level_undetermined = 'UNDETERMINED'
 
