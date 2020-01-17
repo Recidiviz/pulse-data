@@ -25,6 +25,8 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
     US_MO_SID, US_MO_FBI, US_MO_OLN
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_assessment import \
+    StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -72,7 +74,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
-    PERIOD_START_STATUSES
+    PERIOD_START_STATUSES, ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -100,6 +102,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     FILE_TAGS = [
         'tak001_offender_identification',
         'apfx90_apfx91_tak034_current_po_assignments',
+        'oras_assessments_weekly',
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
@@ -749,7 +752,41 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'CORR OF II',
             'ACCOUNT CLERK II',
             'LABORATORY AIDE',
-        ]
+        ],
+        StateAssessmentType.INTERNAL_UNKNOWN:  [
+            'Diversion Instrument'  # One record with this entry in DB.
+        ],
+        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING: [
+            'Community Supervision Screening Tool - 9 Item'
+        ],
+        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: [
+            'Community Supervision Tool'
+        ],
+        StateAssessmentType.ORAS_PRISON_INTAKE: [
+            'Prison Intake Tool'
+        ],
+        StateAssessmentType.ORAS_REENTRY: [
+            'Reentry Tool'
+            'Reentry Instrument'
+        ],
+        StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: [
+            'Supplemental Reentry Tool'
+        ],
+        StateAssessmentLevel.LOW: [
+            'Low'
+        ],
+        StateAssessmentLevel.LOW_MEDIUM: [
+            'Low/Moderate'
+        ],
+        StateAssessmentLevel.MEDIUM: [
+            'Moderate'
+        ],
+        StateAssessmentLevel.HIGH: [
+            'High'
+        ],
+        StateAssessmentLevel.VERY_HIGH: [
+            'Very High'
+        ],
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -936,6 +973,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
+            'oras_assessments_weekly':
+                self._generate_assessment_id_coords,
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
                 self._generate_incarceration_sentence_id_coords,
             'tak022_tak024_tak025_tak026_offender_sentence_probation':
@@ -1015,6 +1054,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         # pylint: disable=line-too-long
         if file_tag in [
+                'oras_assessments_weekly',
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',
                 'tak022_tak024_tak025_tak026_offender_sentence_probation',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
@@ -1697,6 +1737,20 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 obj.__setattr__(
                     'state_sentence_group_id',
                     cls._generate_sentence_group_id(col_prefix, row))
+
+    @classmethod
+    def _generate_assessment_id_coords(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str]) -> IngestFieldCoordinates:
+
+        doc_id = row.get(ORAS_ASSESSMENTS_DOC_ID, '')
+        person_assessment_id = row.get(ORAS_ASSESSMENT_ID, '')
+        return IngestFieldCoordinates(
+            'state_assessment',
+            'state_assessment_id',
+            f'{doc_id}-{person_assessment_id}'
+        )
 
     @classmethod
     def _generate_sentence_group_id_coords(
