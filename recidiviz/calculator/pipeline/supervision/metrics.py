@@ -27,6 +27,8 @@ from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -39,6 +41,7 @@ class SupervisionMetricType(Enum):
     POPULATION = 'POPULATION'
     REVOCATION = 'REVOCATION'
     SUCCESS = 'SUCCESS'
+    ASSESSMENT_CHANGE = 'ASSESSMENT_CHANGE'
 
 
 @attr.s
@@ -210,5 +213,53 @@ class SupervisionSuccessMetric(SupervisionMetric):
         supervision_metric = cast(SupervisionSuccessMetric,
                                   SupervisionSuccessMetric.
                                   build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric):
+    """Subclass of SupervisionMetric that contains counts of supervision
+    that have been terminated, the reason for the termination, and the
+    average change in assessment score between the last assessment and the
+    first reassessment."""
+    # Required characteristics
+
+    # Number of terminated supervisions
+    count: int = attr.ib(default=None)
+
+    # Average change in scores between termination and first reassessment
+    average_score_change: float = attr.ib(default=None)
+
+    # Optional characteristics
+
+    # Assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
+    # The reason the supervisions were terminated
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = \
+        attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    job_id: str) -> \
+            Optional['TerminatedSupervisionAssessmentScoreChangeMetric']:
+        """Builds a TerminatedSupervisionAssessmentScoreChangeMetric object
+         from the given arguments.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(
+            TerminatedSupervisionAssessmentScoreChangeMetric,
+            TerminatedSupervisionAssessmentScoreChangeMetric.
+            build_from_dictionary(metric_key))
 
         return supervision_metric

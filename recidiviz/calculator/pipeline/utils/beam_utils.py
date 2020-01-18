@@ -143,6 +143,43 @@ class SupervisionSuccessFn(beam.CombineFn):
 
         return output
 
+
+class TerminatedSupervisionAssessmentScoreChange(beam.CombineFn):
+    """Combine function that calculates the values of a terminated supervision
+     assessment score change metric.
+
+    All inputs are integer values representing the change in assessment score
+    to be averaged.
+
+    This function incrementally keeps track of the number of elements
+    corresponding to the key and the sum of those elements. At the end, it
+    produces a dictionary containing values for the following fields:
+        - count: the count of all inputs
+        - average_score_change: the average of the assessment score changes
+    """
+    def create_accumulator(self):
+        return (0, 0)
+
+    def add_input(self, accumulator, input):
+        return _add_input_for_average_metric(accumulator, input)
+
+    def merge_accumulators(self, accumulators):
+        return _merge_accumulators_for_average_metric(accumulators)
+
+    def extract_output(self, sum_count):
+        (sum_score_changes, total_count) = sum_count
+
+        average_score_change = (sum_score_changes + 0.0) / total_count \
+            if total_count else float('NaN')
+
+        output = {
+            'average_score_change': average_score_change,
+            'count': total_count
+        }
+
+        return output
+
+
 class SumFn(beam.CombineFn):
     """Combine function that calculates the sum of values."""
     def create_accumulator(self):

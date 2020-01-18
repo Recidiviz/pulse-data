@@ -61,14 +61,16 @@ from more_itertools import one
 
 from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetric, SupervisionPopulationMetric,\
-    SupervisionRevocationMetric, SupervisionSuccessMetric
+    SupervisionMetric, SupervisionPopulationMetric, \
+    SupervisionRevocationMetric, SupervisionSuccessMetric, \
+    TerminatedSupervisionAssessmentScoreChangeMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
-    SupervisionSuccessFn, ConvertDictToKVTuple
+    SupervisionSuccessFn, ConvertDictToKVTuple,\
+    TerminatedSupervisionAssessmentScoreChange
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
@@ -117,7 +119,8 @@ class GetSupervisionMetrics(beam.PTransform):
             beam.ParDo(CalculateSupervisionMetricCombinations(),
                        **self.inclusions).with_outputs('populations',
                                                        'revocations',
-                                                       'successes'))
+                                                       'successes',
+                                                       'assessment_changes'))
 
         # Calculate the supervision population values for the metrics combined
         # by key
@@ -133,6 +136,12 @@ class GetSupervisionMetrics(beam.PTransform):
         successes_with_sums = (supervision_metric_combinations.successes
                                | 'Calculate the supervision success values' >>
                                beam.CombinePerKey(SupervisionSuccessFn()))
+
+        assessment_changes_with_averages = (
+            supervision_metric_combinations.assessment_changes
+            | 'Calculate the assessment score change average values' >>
+            beam.CombinePerKey(TerminatedSupervisionAssessmentScoreChange())
+        )
 
         # Produce the SupervisionPopulationMetrics
         population_metrics = (populations_with_sums
@@ -155,11 +164,21 @@ class GetSupervisionMetrics(beam.PTransform):
                                ProduceSupervisionMetrics(),
                                **self._pipeline_options))
 
+        # Produce the TerminatedSupervisionAssessmentScoreChangeMetrics
+        assessment_change_metrics = (
+            assessment_changes_with_averages
+            | 'Produce assessment score change metrics' >>
+            beam.ParDo(
+                ProduceSupervisionMetrics(),
+                **self._pipeline_options
+            )
+        )
+
         # Merge the metric groups
         merged_metrics = ((population_metrics, revocation_metrics,
-                           success_metrics)
-                          | 'Merge population, revocation, and success'
-                            ' metrics' >>
+                           success_metrics, assessment_change_metrics)
+                          | 'Merge population, revocation, success, and'
+                            ' assessment change metrics' >>
                           beam.Flatten())
 
         # Return SupervisionMetrics objects
@@ -274,6 +293,9 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             elif metric_type == MetricType.SUCCESS.value:
                 yield beam.pvalue.TaggedOutput('successes',
                                                (json_key, value))
+            elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
+                yield beam.pvalue.TaggedOutput('assessment_changes',
+                                               (json_key, value))
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -328,6 +350,17 @@ class ProduceSupervisionMetrics(beam.DoFn):
             supervision_metric = \
                 SupervisionSuccessMetric.build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id)
+        elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
+            dict_metric_key['count'] = value.get('count')
+
+            dict_metric_key['average_score_change'] = \
+                value.get('average_score_change')
+
+            supervision_metric = \
+                TerminatedSupervisionAssessmentScoreChangeMetric.\
+                build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id
+                )
         else:
             logging.error("Unexpected metric of type: %s",
                           dict_metric_key.get('metric_type'))
@@ -370,6 +403,9 @@ class SupervisionMetricWritableDict(beam.DoFn):
             yield beam.pvalue.TaggedOutput('revocations', element_dict)
         elif isinstance(element, SupervisionSuccessMetric):
             yield beam.pvalue.TaggedOutput('successes', element_dict)
+        elif isinstance(element,
+                        TerminatedSupervisionAssessmentScoreChangeMetric):
+            yield beam.pvalue.TaggedOutput('assessment_changes', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -690,7 +726,8 @@ def run(argv=None):
                             | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
-                                    'populations', 'revocations', 'successes'))
+                                    'populations', 'revocations', 'successes',
+                                    'assessment_changes'))
 
         # Write the metrics to the output tables in BigQuery
         populations_table = known_args.output + \
@@ -701,6 +738,9 @@ def run(argv=None):
 
         successes_table = known_args.output + \
             '.supervision_success_metrics'
+
+        assessment_changes_table = known_args.output + \
+            '.terminated_supervision_assessment_score_change_metrics'
 
         _ = (writable_metrics.populations
              | f"Write population metrics to BQ table: {populations_table}" >>
@@ -722,6 +762,15 @@ def run(argv=None):
              | f"Write success metrics to BQ table: {successes_table}" >>
              beam.io.WriteToBigQuery(
                  table=successes_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.assessment_changes
+             | "Write assessment change metrics to BQ table: "
+               f"{assessment_changes_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=assessment_changes_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

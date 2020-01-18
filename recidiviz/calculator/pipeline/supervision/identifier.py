@@ -28,10 +28,11 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
-    ProjectedSupervisionCompletionBucket
+    ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    last_day_of_month, find_most_recent_assessment, \
-    identify_most_serious_violation_type
+    last_day_of_month, identify_most_serious_violation_type
+from recidiviz.calculator.pipeline.utils.assessment_utils import \
+    find_most_recent_assessment, find_assessment_score_change
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
@@ -130,6 +131,9 @@ def find_supervision_time_buckets(
                 supervision_period_ids.add(
                     supervision_period.supervision_period_id)
 
+    indexed_supervision_periods = \
+        index_supervision_periods_by_termination_month(supervision_periods)
+
     for supervision_period in supervision_periods:
         # Don't process placeholder supervision periods
         if not is_placeholder(supervision_period):
@@ -142,6 +146,17 @@ def find_supervision_time_buckets(
                     assessments,
                     ssvr_agent_associations,
                     supervision_period_to_agent_associations)
+
+            supervision_termination_bucket = \
+                find_supervision_termination_bucket(
+                    supervision_period,
+                    indexed_supervision_periods,
+                    assessments,
+                    supervision_period_to_agent_associations
+                )
+
+            if supervision_termination_bucket:
+                supervision_time_buckets.append(supervision_termination_bucket)
 
     # TODO(2680): Update revocation logic to not rely on adding months for
     #  missing returns
@@ -445,6 +460,83 @@ def convert_month_buckets_to_year_buckets(
                 supervision_year_buckets.append(year_bucket)
 
     return supervision_year_buckets
+
+
+def find_supervision_termination_bucket(
+        supervision_period: StateSupervisionPeriod,
+        indexed_supervision_periods:
+        Dict[int, Dict[int, List[StateSupervisionPeriod]]],
+        assessments: List[StateAssessment],
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+) -> Optional[SupervisionTimeBucket]:
+    """Identifies an instance of supervision termination. If the given
+    supervision_period has a valid start_date and termination_date, then
+    returns a SupervisionTerminationBucket with the details of the termination.
+
+    Calculates the change in assessment score from the beginning of supervision
+    to the termination of supervision. This is done by identifying the first
+    reassessment (or, the second score) and the last score during a
+    supervision period, and taking the difference between the last score and the
+    first reassessment score.
+
+    If a person has multiple supervision periods that end in a given month, the
+    the earliest start date and the latest termination date of the periods is
+    used to estimate the start and end dates of the supervision. These dates
+    are then used to determine what the second and last assessment scores are.
+
+    If this supervision does not have a termination_date, then None is returned.
+    """
+    if supervision_period.start_date is not None and \
+            supervision_period.termination_date is not None:
+        start_date = supervision_period.start_date
+        termination_date = supervision_period.termination_date
+
+        termination_year = termination_date.year
+        termination_month = termination_date.month
+
+        periods_terminated_in_year = \
+            indexed_supervision_periods.get(termination_year)
+
+        if periods_terminated_in_year:
+            periods_terminated_in_month = \
+                periods_terminated_in_year.get(termination_month)
+
+            if periods_terminated_in_month:
+                for period in periods_terminated_in_month:
+                    if period.start_date and period.start_date < start_date:
+                        start_date = period.start_date
+
+                    if period.termination_date and \
+                            period.termination_date > termination_date:
+                        termination_date = period.termination_date
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_type = \
+            find_assessment_score_change(
+                start_date, termination_date, assessments)
+
+        supervising_officer_external_id, \
+            supervising_district_external_id = \
+            _get_supervising_officer_and_district(
+                supervision_period.supervision_period_id,
+                supervision_period_to_agent_associations)
+
+        return SupervisionTerminationBucket.for_month(
+            state_code=supervision_period.state_code,
+            year=termination_date.year,
+            month=termination_date.month,
+            supervision_type=supervision_period.supervision_type,
+            assessment_score=end_assessment_score,
+            assessment_type=end_assessment_type,
+            termination_reason=supervision_period.termination_reason,
+            assessment_score_change=assessment_score_change,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=
+            supervising_district_external_id
+        )
+
+    return None
 
 
 def _revocation_occurred(admission_reason: AdmissionReason,
@@ -872,3 +964,31 @@ def _get_supervising_officer_and_district(
                 'district_external_id')
 
     return supervising_officer_external_id, supervising_district_external_id
+
+
+def index_supervision_periods_by_termination_month(
+        supervision_periods: List[StateSupervisionPeriod]) -> \
+        Dict[int, Dict[int, List[StateSupervisionPeriod]]]:
+    """Organizes the list of StateSupervisionPeriods by the year and month
+     of the termination_date on the period."""
+
+    indexed_supervision_periods: \
+        Dict[int, Dict[int, List[StateSupervisionPeriod]]] = defaultdict()
+
+    for supervision_period in supervision_periods:
+        if supervision_period.termination_date:
+            year = supervision_period.termination_date.year
+            month = supervision_period.termination_date.month
+
+            if year not in indexed_supervision_periods.keys():
+                indexed_supervision_periods[year] = {
+                    month: [supervision_period]
+                }
+            elif month not in indexed_supervision_periods[year].keys():
+                indexed_supervision_periods[year][month] = \
+                    [supervision_period]
+            else:
+                indexed_supervision_periods[year][month].append(
+                    supervision_period)
+
+    return indexed_supervision_periods
