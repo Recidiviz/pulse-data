@@ -34,7 +34,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
-    RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket
+    RevocationReturnSupervisionTimeBucket,\
+    ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -1436,6 +1437,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment.assessment_score,
                 assessment.assessment_type,
                 'OFFICER0009', '10'),
+            SupervisionTerminationBucket.for_month(
+                supervision_period.state_code,
+                supervision_period.termination_date.year,
+                supervision_period.termination_date.month,
+                supervision_period.supervision_type,
+                None,
+                None,
+                supervision_period.termination_reason,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'
+            )
         ]
 
         correct_output = [
@@ -1588,6 +1600,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment.assessment_score,
                 assessment.assessment_type,
                 'OFFICER0009', '10'),
+            SupervisionTerminationBucket.for_month(
+                supervision_period.state_code,
+                supervision_period.termination_date.year,
+                supervision_period.termination_date.month,
+                supervision_period.supervision_type,
+                None,
+                None,
+                supervision_period.termination_reason,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'
+            )
         ]
 
         correct_output = [
@@ -1720,6 +1743,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment.assessment_score,
                 assessment.assessment_type,
                 'OFFICER0009', '10'),
+            SupervisionTerminationBucket.for_month(
+                supervision_period.state_code,
+                supervision_period.termination_date.year,
+                supervision_period.termination_date.month,
+                supervision_period.supervision_type,
+                None,
+                None,
+                supervision_period.termination_reason,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'
+            )
         ]
 
         correct_output = [
@@ -1841,6 +1875,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.supervision_type,
                 None, None,
                 'OFFICER0009', '10'),
+            SupervisionTerminationBucket.for_month(
+                supervision_period.state_code,
+                supervision_period.termination_date.year,
+                supervision_period.termination_date.month,
+                supervision_period.supervision_type,
+                termination_reason=supervision_period.termination_reason,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'
+            )
         ]
 
         correct_output = [
@@ -2060,9 +2103,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         supervision_months = [
             RevocationReturnSupervisionTimeBucket(
                 'CA', 2015, 2, StateSupervisionType.PROBATION,
+                None, None, None, None,
                 RevocationType.REINCARCERATION, ViolationType.TECHNICAL),
             RevocationReturnSupervisionTimeBucket(
                 'CA', 2015, 3, StateSupervisionType.PROBATION,
+                None, None, None, None,
                 RevocationType.REINCARCERATION, ViolationType.TECHNICAL),
         ]
 

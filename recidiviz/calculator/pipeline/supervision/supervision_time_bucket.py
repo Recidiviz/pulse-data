@@ -24,6 +24,8 @@ from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -247,4 +249,45 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
             successful_completion=successful_completion,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
+        )
+
+
+@attr.s(frozen=True)
+class SupervisionTerminationBucket(SupervisionTimeBucket):
+    """Models a month and year in which supervision was terminated.
+
+    Describes the reason for termination, and the change in assessment score
+    between first reassessment and termination of supervision.
+    """
+    # The reason for supervision termination
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = \
+        attr.ib(default=None)
+
+    # The difference between the first reassessment score and the score at
+    # termination of supervision
+    assessment_score_change: Optional[int] = attr.ib(default=None)
+
+    @staticmethod
+    def for_month(state_code: str, year: int, month: int,
+                  supervision_type: Optional[StateSupervisionType],
+                  assessment_score: Optional[int] = None,
+                  assessment_type: Optional[StateAssessmentType] = None,
+                  termination_reason:
+                  Optional[StateSupervisionPeriodTerminationReason] = None,
+                  assessment_score_change: Optional[int] = None,
+                  supervising_officer_external_id: Optional[str] = None,
+                  supervising_district_external_id: Optional[str] = None
+                  ) -> \
+            'SupervisionTerminationBucket':
+        return SupervisionTerminationBucket(
+            state_code=state_code,
+            year=year,
+            month=month,
+            supervision_type=supervision_type,
+            assessment_score=assessment_score,
+            assessment_type=assessment_type,
+            termination_reason=termination_reason,
+            assessment_score_change=assessment_score_change,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id,
         )

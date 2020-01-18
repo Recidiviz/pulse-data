@@ -21,7 +21,7 @@ from typing import List, Optional, Dict, Any, Set
 
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import \
+from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
