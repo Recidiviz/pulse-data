@@ -31,8 +31,9 @@ from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
     ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    assessment_score_bucket, last_day_of_month, relevant_metric_periods, \
-    augmented_combo_list
+    last_day_of_month, relevant_metric_periods, augmented_combo_list
+from recidiviz.calculator.pipeline.utils.assessment_utils import \
+    assessment_score_bucket
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.persistence.entity.state.entities import StatePerson

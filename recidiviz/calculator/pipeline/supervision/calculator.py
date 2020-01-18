@@ -30,11 +30,12 @@ from typing import Dict, List, Tuple, Any
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, \
-    NonRevocationReturnSupervisionTimeBucket
+    NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    assessment_score_bucket, \
     augmented_combo_list, last_day_of_month, relevant_metric_periods
+from recidiviz.calculator.pipeline.utils.assessment_utils import \
+    assessment_score_bucket
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -117,6 +118,15 @@ def map_supervision_combinations(person: StatePerson,
                 SupervisionMetricType.SUCCESS)
 
             metrics.extend(supervision_success_metrics)
+        elif isinstance(supervision_time_bucket,
+                        SupervisionTerminationBucket):
+            assessment_change_metrics = map_metric_combinations(
+                characteristic_combos_population, supervision_time_bucket,
+                metric_period_end_date, all_buckets_sorted,
+                periods_and_buckets,
+                SupervisionMetricType.ASSESSMENT_CHANGE)
+
+            metrics.extend(assessment_change_metrics)
         else:
             population_metrics = map_metric_combinations(
                 characteristic_combos_population, supervision_time_bucket,
@@ -197,6 +207,12 @@ def characteristic_combinations(person: StatePerson,
         if supervision_time_bucket.source_violation_type:
             characteristics['source_violation_type'] = \
                 supervision_time_bucket.source_violation_type
+
+    if isinstance(supervision_time_bucket,
+                  SupervisionTerminationBucket):
+        if supervision_time_bucket.termination_reason:
+            characteristics['termination_reason'] = \
+                supervision_time_bucket.termination_reason
 
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = \
@@ -320,7 +336,7 @@ def combination_supervision_metrics(
         A list of key-value tuples representing specific metric combination
             dictionaries and the the metric value corresponding to that metric.
     """
-    metrics = []
+    metrics: List[Tuple[Dict[str, Any], int]] = []
 
     bucket_year = supervision_time_bucket.year
     bucket_month = supervision_time_bucket.month
@@ -344,6 +360,20 @@ def combination_supervision_metrics(
         # Set 1 for successful completion, 0 for unsuccessful completion
         event_combo_value = 1 if \
             supervision_time_bucket.successful_completion else 0
+    elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE and \
+            isinstance(supervision_time_bucket,
+                       SupervisionTerminationBucket):
+        if supervision_time_bucket.assessment_score_change is not None:
+            # Only include this combo if there is an assessment score change
+            # associated with this termination. Set the value as the assessment
+            # score change
+            event_combo_value = supervision_time_bucket.assessment_score_change
+        else:
+            # The only metric relying on the SupervisionTerminationBuckets is
+            # the TerminatedSupervisionAssessmentScoreChangeMetric. So, if
+            # there's no recorded assessment score change on this termination,
+            # don't include it in any of the metrics.
+            return metrics
 
     for event_combo in event_based_same_bucket_combos:
         metrics.append((event_combo, event_combo_value))
@@ -385,6 +415,16 @@ def combination_supervision_metrics(
             bucket for bucket in all_supervision_time_buckets
             if isinstance(bucket,
                           ProjectedSupervisionCompletionBucket)
+            and bucket.year == bucket_year and
+            bucket.month == bucket_month
+        ]
+    elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
+        # Get all other termination buckets for the same month as this
+        # one
+        buckets_in_period = [
+            bucket for bucket in all_supervision_time_buckets
+            if isinstance(bucket,
+                          SupervisionTerminationBucket)
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
@@ -465,8 +505,9 @@ def include_supervision_in_count(combo: Dict[str, Any],
     revocation in that period, then this bucket is included only if it
     is the last instance of revocation for the period. However, if none of the
     buckets represent revocation, then this bucket is included if it is the last
-    bucket in the period. If the metric is of type REVOCATION, then this bucket
-    is included only if it is the last bucket in the period.
+    bucket in the period. If the metric is of type REVOCATION, SUCCESS, or
+    ASSESSMENT_CHANGE, then this bucket is included only if it is the last
+    bucket in the period.
 
     This function assumes that the SupervisionTimeBuckets in
     all_buckets_in_period are of the same type and that the list is sorted in
@@ -501,7 +542,9 @@ def include_supervision_in_count(combo: Dict[str, Any],
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
     if metric_type in (SupervisionMetricType.REVOCATION,
-                       SupervisionMetricType.SUCCESS):
+                       SupervisionMetricType.SUCCESS,
+                       SupervisionMetricType.ASSESSMENT_CHANGE):
+
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
     return False
@@ -520,6 +563,9 @@ def _person_combo_value(combo: Dict[str, Any],
     implies that the person was counted towards the supervision population for
     that time bucket, and possibly that the person was counted towards the
     revoked population for that same time bucket.
+
+    The value for ASSESSMENT_CHANGE metrics will be the assessment_score_change
+    on the given supervision_time_bucket.
 
     The value for the SUCCESS metrics is 1 for a successful completion, and 0
     for an unsuccessful completion. For any combos that do not specify
@@ -552,6 +598,11 @@ def _person_combo_value(combo: Dict[str, Any],
                           ProjectedSupervisionCompletionBucket) and not \
                     completion_bucket.successful_completion:
                 person_combo_value = 0
+    elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE and \
+            isinstance(supervision_time_bucket, SupervisionTerminationBucket):
+        # This should always evaluate to true at this point
+        if supervision_time_bucket.assessment_score_change is not None:
+            person_combo_value = supervision_time_bucket.assessment_score_change
 
     return person_combo_value
 
