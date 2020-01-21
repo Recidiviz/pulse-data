@@ -1,7 +1,7 @@
 key_mappings:
   BS$CNS: state_supervision_sentence.county_code
   BU$PBT: state_supervision_sentence.supervision_type
-  # BU$SF: state_supervision_sentence.date_imposed  TODO(1759): Add date_imposed to state_supervision_sentence
+  BU$SF: state_supervision_sentence.start_date
   BS$PD: state_supervision_sentence.projected_completion_date
 
 
@@ -51,7 +51,6 @@ keys_to_ignore:
 - BU$CYC  # Unused - Duplicate of BS$CYC
 - BU$SEO  # Unused - Duplicate of BS$SEO
 - BU$FSO  # TODO(2604) - Field Sentence Key Sequence Number
-- BU$SF   # TODO(2604) - Sentence - F Probation Date
 - BU$SBY  # Years - Handled manually in the controller
 - BU$SBM  # Months - Handled manually in the controller
 - BU$SBD  # Days - Handled manually in the controller
