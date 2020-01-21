@@ -82,5 +82,6 @@ def copy_fields_to_builder(
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.county_code = fn(normalize, 'county_code', proto)
+    new.supervision_site = fn(normalize, 'supervision_site', proto)
     if proto.conditions:
         new.conditions = create_comma_separated_list(proto, 'conditions')

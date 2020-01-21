@@ -415,6 +415,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '110035-19890901-1',
                                         status='COMPLETED',
                                         date_imposed='19560316',
+                                        start_date='19560425',
                                         projected_min_release_date=None,
                                         projected_max_release_date=None,
                                         parole_eligibility_date='1956-04-25',
@@ -444,6 +445,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '110035-20010414-1',
                                         status='COMPLETED',
                                         date_imposed='20030110',
+                                        start_date='20030103',
                                         projected_min_release_date='20070102',
                                         projected_max_release_date='20070102',
                                         parole_eligibility_date='2003-01-03',
@@ -482,6 +484,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '310261-19890821-3',
                                         status='SERVING',
                                         date_imposed='20150428',
+                                        start_date='20161206',
                                         projected_min_release_date='20211205',
                                         projected_max_release_date='20211205',
                                         parole_eligibility_date='2016-12-06',
@@ -520,6 +523,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '710448-20010414-1',
                                         status='COMPLETED',
                                         date_imposed='20050513',
+                                        start_date='20051023',
                                         projected_min_release_date='20091022',
                                         projected_max_release_date='20091022',
                                         parole_eligibility_date='2005-10-23',
@@ -545,6 +549,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '710448-20010414-2',
                                         status='COMPLETED',
                                         date_imposed='20061214',
+                                        start_date='20061207',
                                         projected_min_release_date='20111206',
                                         projected_max_release_date='20111206',
                                         parole_eligibility_date='2006-12-07',
@@ -567,6 +572,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '710448-20010414-3',
                                         status='COMPLETED',
                                         date_imposed='20061214',
+                                        start_date='20061207',
                                         projected_min_release_date='20101206',
                                         projected_max_release_date='20101206',
                                         parole_eligibility_date='2006-12-07',
@@ -600,6 +606,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '910324-19890825-1',
                                         status='COMPLETED',
                                         date_imposed='19890829',
+                                        start_date='19890430',
                                         projected_min_release_date='19911229',
                                         projected_max_release_date='19930429',
                                         parole_eligibility_date='1989-04-30',
@@ -644,6 +651,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '910324-19890825-1',
                                         status='COMPLETED',
                                         supervision_type='SES',
+                                        start_date='19870126',
                                         projected_completion_date='19920125',
                                         county_code='US_MO_DEKALB',
                                         max_length='5Y 0M 0D',
@@ -664,6 +672,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '910324-19890825-2',
                                         status='COMPLETED',
                                         supervision_type='CPR',
+                                        start_date='19870416',
                                         projected_completion_date='19880206',
                                         county_code='US_MO_PLATTE',
                                         max_length='1Y 0M 0D',
@@ -720,6 +729,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '110035-20040712-1',
                                         status='COMPLETED',
                                         supervision_type='SES',
+                                        start_date='19740712',
                                         projected_completion_date='19770712',
                                         county_code='US_MO_GREENE',
                                         max_length='3Y 0M 0D',
@@ -2112,6 +2122,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1956, month=3, day=16),
+                start_date=datetime.date(year=1956, month=4, day=25),
                 projected_min_release_date=None,
                 projected_max_release_date=None,
                 parole_eligibility_date=
@@ -2150,6 +2161,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2003, month=1, day=10),
+                start_date=datetime.date(year=2003, month=1, day=3),
                 projected_min_release_date=
                 datetime.date(year=2007, month=1, day=2),
                 projected_max_release_date=
@@ -2193,6 +2205,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='SERVING',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2015, month=4, day=28),
+                start_date=datetime.date(year=2016, month=12, day=6),
                 projected_min_release_date=
                 datetime.date(year=2021, month=12, day=5),
                 projected_max_release_date=
@@ -2233,6 +2246,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2005, month=5, day=13),
+                start_date=datetime.date(year=2005, month=10, day=23),
                 projected_min_release_date=
                 datetime.date(year=2009, month=10, day=22),
                 projected_max_release_date=
@@ -2272,6 +2286,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2006, month=12, day=14),
+                start_date=datetime.date(year=2006, month=12, day=7),
                 projected_min_release_date=
                 datetime.date(year=2011, month=12, day=6),
                 projected_max_release_date=
@@ -2310,6 +2325,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=2006, month=12, day=14),
+                start_date=datetime.date(year=2006, month=12, day=7),
                 projected_min_release_date=
                 datetime.date(year=2010, month=12, day=6),
                 projected_max_release_date=
@@ -2354,6 +2370,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 date_imposed=datetime.date(year=1989, month=8, day=29),
+                start_date=datetime.date(year=1989, month=4, day=30),
                 projected_min_release_date=
                 datetime.date(year=1991, month=12, day=29),
                 projected_max_release_date=
@@ -2404,6 +2421,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 supervision_type=StateSupervisionType.PROBATION,
                 supervision_type_raw_text='SES',
+                start_date=
+                datetime.date(year=1987, month=1, day=26),
                 projected_completion_date=
                 datetime.date(year=1992, month=1, day=25),
                 county_code='US_MO_DEKALB',
@@ -2432,6 +2451,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 supervision_type=StateSupervisionType.PROBATION,
                 supervision_type_raw_text='CPR',
+                start_date=
+                datetime.date(year=1987, month=4, day=16),
                 projected_completion_date=
                 datetime.date(year=1988, month=2, day=6),
                 county_code='US_MO_PLATTE',
@@ -2499,6 +2520,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='COMPLETED',
                 supervision_type=StateSupervisionType.PROBATION,
                 supervision_type_raw_text='SES',
+                start_date=
+                datetime.date(year=1974, month=7, day=12),
                 projected_completion_date=
                 datetime.date(year=1977, month=7, day=12),
                 county_code='US_MO_GREENE',

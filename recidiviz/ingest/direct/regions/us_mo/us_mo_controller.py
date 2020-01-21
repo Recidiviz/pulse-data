@@ -74,7 +74,8 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
-    PERIOD_START_STATUSES, ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID
+    PERIOD_START_STATUSES, ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID, \
+    SUPERVISION_SENTENCE_START_DATE
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -929,6 +930,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     test_for_fallback=self._test_length_string,
                     fallback_parser=self._parse_days_with_long_range
                 ),
+                self._gen_clear_magical_date_value(
+                    'start_date',
+                    SUPERVISION_SENTENCE_START_DATE,
+                    self.SENTENCE_MAGICAL_DATES,
+                    StateSupervisionSentence),
                 self._gen_clear_magical_date_value(
                     'projected_completion_date',
                     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE,

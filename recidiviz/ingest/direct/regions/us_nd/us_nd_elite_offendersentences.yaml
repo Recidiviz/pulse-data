@@ -1,5 +1,5 @@
 key_mappings:
-  START_DATE: state_incarceration_sentence.date_imposed
+  START_DATE: state_incarceration_sentence.start_date
   PROBABLE_RELEASE_DATE: state_incarceration_sentence.projected_min_release_date
   SENTENCE_EXPIRY_DATE: state_incarceration_sentence.projected_max_release_date
 

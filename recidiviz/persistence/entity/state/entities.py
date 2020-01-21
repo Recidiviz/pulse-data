@@ -464,7 +464,15 @@ class StateSupervisionSentence(ExternalIdEntity,
 
     # Attributes
     #   - When
+
+    # The date the person was sentenced
+    date_imposed: Optional[datetime.date] = attr.ib()
+
+    # The date the person actually started serving this sentence
+    start_date: Optional[datetime.date] = attr.ib()
     projected_completion_date: Optional[datetime.date] = attr.ib()
+
+    # The date the person finished serving this sentence
     completion_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
@@ -513,10 +521,18 @@ class StateIncarcerationSentence(ExternalIdEntity,
 
     # Attributes
     #   - When
+
+    # The date the person was sentenced
     date_imposed: Optional[datetime.date] = attr.ib()
+
+    # The date the person actually started serving this sentence
+    start_date: Optional[datetime.date] = attr.ib()
     projected_min_release_date: Optional[datetime.date] = attr.ib()
     projected_max_release_date: Optional[datetime.date] = attr.ib()
     parole_eligibility_date: Optional[datetime.date] = attr.ib()
+
+    # The date the person finished serving this sentence
+    completion_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable
@@ -694,6 +710,8 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
     # The county where this person is being supervised
     county_code: Optional[str] = attr.ib()
+
+    supervision_site: Optional[str] = attr.ib()
 
     #   - What
     admission_reason: \
