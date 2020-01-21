@@ -3021,6 +3021,20 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ################################################################
+        # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
+        ################################################################
+        # Arrange
+        ip_910324_19890825_1_0.supervision_sentences = [sss_910324_19890825_1]
+        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
+
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ################################################################
         # TAK158_TAK023 SUPERVISION PERIOD FROM INCARCERATION SENTENCE
         ################################################################
         # Arrange
@@ -3284,19 +3298,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        ################################################################
-        # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
-        ################################################################
-        # Arrange
-        ip_910324_19890825_1_0.supervision_sentences = [sss_910324_19890825_1]
-        sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
-
-        # Act
-        self._run_ingest_job_for_filename(
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence.csv')
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
 
         ################################################################
         # TAK158_TAK024 SUPERVISION PERIOD FROM SUPERVISION SENTENCE
