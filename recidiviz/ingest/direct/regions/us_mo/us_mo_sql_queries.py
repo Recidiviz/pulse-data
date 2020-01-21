@@ -52,7 +52,10 @@ TAK001_OFFENDER_IDENTIFICATION_QUERY = \
         LBAKRDTA.VAK003 dob_view
     ON EK$DOC = dob_view.DOC_ID_DOB
     WHERE
-        MAX(EK$DLU, EK$DCR, UPDATE_DT, CREATE_DT) >= {lower_bound_update_date}
+        MAX(COALESCE(EK$DLU, 0), 
+            COALESCE(EK$DCR, 0), 
+            COALESCE(UPDATE_DT, 0), 
+            COALESCE(CREATE_DT, 0)) >= {lower_bound_update_date}
     ORDER BY EK$DOC DESC;
     """
 
@@ -63,7 +66,8 @@ TAK040_OFFENDER_CYCLES = \
     SELECT *
     FROM LBAKRDTA.TAK040
     WHERE
-        MAX(DQ$DLU, DQ$DCR) >= {lower_bound_update_date}
+        MAX(COALESCE(DQ$DLU, 0), 
+            COALESCE(DQ$DCR, 0)) >= {lower_bound_update_date}
     ORDER BY DQ$DOC;
     """
 
@@ -71,101 +75,109 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
     f"""
     -- tak022_tak023_tak025_tak026_offender_sentence_institution
 
-    WITH incarceration_status_xref_bv AS (
-        /* Chooses only status codes that are associated with incarceration 
-        sentences */
-        SELECT *
-        FROM LBAKRDTA.TAK025 status_xref_bv 
-        WHERE BV$FSO = 0
-    ),
-    incarceration_status_xref_with_dates AS (
-        /* Joins status code ids with table containing update date and status 
-        code info */
-        SELECT *
+    WITH sentence_status_xref AS (
+        /* Join all statuses with their associated sentences, create a recency 
+           rank for every status among all statuses for that sentence. */
+        SELECT 
+            status_xref_bv.*, 
+            status_bw.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY BV$DOC, BV$CYC, BV$SEO 
+                ORDER BY 
+                    BW$SY DESC, 
+                    -- If multiple statuses are on the same day, pick the larger 
+                    -- status code, alphabetically, giving preference to close (9*) 
+                    -- statuses
+                    BW$SCD DESC, 
+                    -- If there are multiple field sequence numbers (FSO) with 
+                    -- the same status update on the same day, pick the largest 
+                    -- FSO.
+                    BV$FSO DESC 
+            ) AS RECENCY_RANK_WITHIN_SENTENCE
         FROM 
-            incarceration_status_xref_bv
+        	-- Note: We explicitly do not filter out probation sentences here -
+        	-- if the SEO is the same, there may be relevant status dates that
+        	-- we want to capture.
+            LBAKRDTA.TAK025 status_xref_bv
         LEFT OUTER JOIN 
             LBAKRDTA.TAK026 status_bw
         ON
-            incarceration_status_xref_bv.BV$DOC = status_bw.BW$DOC AND
-            incarceration_status_xref_bv.BV$CYC = status_bw.BW$CYC AND
-            incarceration_status_xref_bv.BV$SSO = status_bw.BW$SSO
+            status_xref_bv.BV$DOC = status_bw.BW$DOC AND
+            status_xref_bv.BV$CYC = status_bw.BW$CYC AND
+            status_xref_bv.BV$SSO = status_bw.BW$SSO
     ),
-    max_update_date_for_sentence AS (
-        -- Max status update date for a given incarceration sentence
-        SELECT BV$DOC, BV$CYC, BV$SEO, MAX(BW$SY) AS MAX_UPDATE_DATE
-        FROM 
-            incarceration_status_xref_with_dates
-        GROUP BY BV$DOC, BV$CYC, BV$SEO
+    sentence_max_status_update_dates AS (
+        /* Get the max create/update dates for all the status info for a given 
+          sentence. If any status changes for a given sentence, we want to 
+          re-ingest max status info for that sentence */
+    	SELECT 
+    		BV$DOC, BV$CYC, BV$SEO, 
+    		MAX(COALESCE(BV$DCR, 0)) AS MAX_BV_DCR, 
+    		MAX(COALESCE(BV$DLU, 0)) AS MAX_BV_DLU,
+    		MAX(COALESCE(BW$DCR, 0)) AS MAX_BW_DCR, 
+    		MAX(COALESCE(BW$DLU, 0)) AS MAX_BW_DLU
+    	FROM
+    		sentence_status_xref
+    	GROUP BY BV$DOC, BV$CYC, BV$SEO
     ),
-    max_status_seq_with_max_update_date AS (
-        /* For max dates where there are two updates on the same date, we pick
-        the status with the largest sequence number */
+    most_recent_status_by_sentence AS (
+        /* Select the most recent status for a given sentence, with max 
+           create/update info. */
         SELECT 
-            incarceration_status_xref_with_dates.BV$DOC, 
-            incarceration_status_xref_with_dates.BV$CYC, 
-            incarceration_status_xref_with_dates.BV$SEO, 
-            MAX_UPDATE_DATE, 
-            COUNT(*) AS SEQ_ON_SAME_DAY_CNT, 
-            MAX(incarceration_status_xref_with_dates.BV$SSO) AS MAX_STATUS_SEQ
+        	sentence_status_xref.BV$DOC,
+        	sentence_status_xref.BV$CYC,
+        	sentence_status_xref.BV$SEO,
+        	sentence_status_xref.BW$SSO AS MOST_RECENT_SENTENCE_STATUS_SSO,
+        	sentence_status_xref.BW$SCD AS MOST_RECENT_SENTENCE_STATUS_SCD,
+        	sentence_status_xref.BW$SY AS MOST_RECENT_SENTENCE_STATUS_DATE,
+           	sentence_max_status_update_dates.MAX_BV_DCR, 
+    		sentence_max_status_update_dates.MAX_BV_DLU,
+    		sentence_max_status_update_dates.MAX_BW_DCR, 
+    		sentence_max_status_update_dates.MAX_BW_DLU
         FROM 
-            incarceration_status_xref_with_dates
+        	sentence_status_xref
         LEFT OUTER JOIN
-            max_update_date_for_sentence
-        ON
-            incarceration_status_xref_with_dates.BV$DOC = max_update_date_for_sentence.BV$DOC AND
-            incarceration_status_xref_with_dates.BV$CYC = max_update_date_for_sentence.BV$CYC AND
-            incarceration_status_xref_with_dates.BV$SEO = max_update_date_for_sentence.BV$SEO AND
-            incarceration_status_xref_with_dates.BW$SY = max_update_date_for_sentence.MAX_UPDATE_DATE
-        WHERE MAX_UPDATE_DATE IS NOT NULL
-        GROUP BY 
-            incarceration_status_xref_with_dates.BV$DOC, 
-            incarceration_status_xref_with_dates.BV$CYC, 
-            incarceration_status_xref_with_dates.BV$SEO, 
-            MAX_UPDATE_DATE
-    ),
-    incarceration_sentence_status_explosion AS (
-            /* Explosion of all incarceration sentences with one row per status 
-            update */
-            SELECT *
-            FROM 
-                LBAKRDTA.TAK022 sentence_bs
-            LEFT OUTER JOIN
-                LBAKRDTA.TAK023 sentence_inst_bt
-            ON 
-                sentence_bs.BS$DOC = sentence_inst_bt.BT$DOC AND
-                sentence_bs.BS$CYC = sentence_inst_bt.BT$CYC AND
-                sentence_bs.BS$SEO = sentence_inst_bt.BT$SEO
-            LEFT OUTER JOIN 
-                incarceration_status_xref_with_dates
-            ON
-                sentence_bs.BS$DOC = 
-                    incarceration_status_xref_with_dates.BV$DOC AND
-                sentence_bs.BS$CYC = 
-                    incarceration_status_xref_with_dates.BV$CYC AND 
-                sentence_bs.BS$SEO = incarceration_status_xref_with_dates.BV$SEO
-            WHERE sentence_inst_bt.BT$DOC IS NOT NULL
+        	sentence_max_status_update_dates
+	    ON 
+	        sentence_status_xref.BV$DOC = sentence_max_status_update_dates.BV$DOC AND
+	        sentence_status_xref.BV$CYC = sentence_max_status_update_dates.BV$CYC AND
+	        sentence_status_xref.BV$SEO = sentence_max_status_update_dates.BV$SEO
+        	
+        WHERE RECENCY_RANK_WITHIN_SENTENCE = 1
     )
-    /* Choose the incarceration sentence and status info with max date / status 
-    sequence numbers */
-    SELECT incarceration_sentence_status_explosion.*
+    SELECT 
+        sentence_bs.*,
+        sentence_inst_bt.*,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SSO,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_DATE,
+        most_recent_status_by_sentence.MAX_BV_DCR,
+        most_recent_status_by_sentence.MAX_BV_DLU,
+        most_recent_status_by_sentence.MAX_BW_DCR,
+        most_recent_status_by_sentence.MAX_BW_DLU
     FROM 
-        incarceration_sentence_status_explosion
-    LEFT OUTER JOIN
-        max_status_seq_with_max_update_date
+        LBAKRDTA.TAK022 sentence_bs
+    JOIN
+        LBAKRDTA.TAK023 sentence_inst_bt
     ON 
-        incarceration_sentence_status_explosion.BS$DOC = 
-            max_status_seq_with_max_update_date.BV$DOC AND
-        incarceration_sentence_status_explosion.BS$CYC = 
-            max_status_seq_with_max_update_date.BV$CYC AND
-        incarceration_sentence_status_explosion.BS$SEO = 
-            max_status_seq_with_max_update_date.BV$SEO AND
-        incarceration_sentence_status_explosion.BW$SSO = MAX_STATUS_SEQ
+        sentence_bs.BS$DOC = sentence_inst_bt.BT$DOC AND
+        sentence_bs.BS$CYC = sentence_inst_bt.BT$CYC AND
+        sentence_bs.BS$SEO = sentence_inst_bt.BT$SEO
+    LEFT OUTER JOIN
+        most_recent_status_by_sentence
+    ON 
+        sentence_bs.BS$DOC = most_recent_status_by_sentence.BV$DOC AND
+        sentence_bs.BS$CYC = most_recent_status_by_sentence.BV$CYC AND
+        sentence_bs.BS$SEO = most_recent_status_by_sentence.BV$SEO
     WHERE
-        MAX_STATUS_SEQ IS NOT NULL
-        AND MAX(BS$DLU, BS$DCR, BT$DLU, 
-                BT$DCR, BV$DLU, BV$DCR, 
-                BW$DLU, BW$DCR) >= {lower_bound_update_date}
+        MAX(COALESCE(BS$DLU, 0), 
+            COALESCE(BS$DCR, 0), 
+            COALESCE(BT$DLU, 0), 
+            COALESCE(BT$DCR, 0), 
+            COALESCE(MAX_BV_DLU, 0), 
+            COALESCE(MAX_BV_DCR, 0), 
+            COALESCE(MAX_BW_DLU, 0), 
+            COALESCE(MAX_BW_DCR, 0)) >= 0
     ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
@@ -173,113 +185,136 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
     f"""
     -- tak022_tak024_tak025_tak026_offender_sentence_probation
 
-    WITH probation_status_xref_bv AS (
-        /* Chooses only status codes that are associated with 
-        supervision sentences */
-        SELECT *
-        FROM LBAKRDTA.TAK025 status_xref_bv 
-        WHERE BV$FSO != 0
+    WITH
+	{NON_INVESTIGATION_PROBATION_SENTENCES},
+    full_prob_sentence_info AS (
+    	SELECT *
+    	FROM
+    		LBAKRDTA.TAK022 sentence_bs
+	    JOIN
+	        non_investigation_prob_sentences_bu
+	    ON 
+	        sentence_bs.BS$DOC = non_investigation_prob_sentences_bu.BU$DOC AND
+	        sentence_bs.BS$CYC = non_investigation_prob_sentences_bu.BU$CYC AND
+	        sentence_bs.BS$SEO = non_investigation_prob_sentences_bu.BU$SEO
     ),
-    probation_status_xref_with_dates AS (
-        SELECT *
+    distinct_prob_sentence_ids AS (
+		SELECT DISTINCT BS$DOC, BS$CYC, BS$SEO, BU$FSO 
+      	FROM full_prob_sentence_info
+    ),
+    sentence_status_xref AS (
+        /* Join all statuses with their associated sentences, create a recency 
+           rank for every status among all statuses for that sentence.*/
+        SELECT
+        	BS$DOC, BS$CYC, BS$SEO, BU$FSO,
+            status_xref_bv.*, 
+            status_bw.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY BS$DOC, BS$CYC, BS$SEO
+                ORDER BY 
+                    BW$SY DESC, 
+                    -- If multiple statuses are on the same day, pick the larger 
+                    -- status code, alphabetically, giving preference to close (9*) 
+                    -- statuses
+                    BW$SCD DESC,
+                    -- If there are multiple field sequence numbers (FSO) with 
+                    -- the same status update on the same day, pick the largest 
+                    -- FSO.
+                    BU$FSO DESC 
+            ) AS RECENCY_RANK_WITHIN_SENTENCE
         FROM 
-            probation_status_xref_bv
+        	distinct_prob_sentence_ids
+        LEFT OUTER JOIN
+            LBAKRDTA.TAK025 status_xref_bv
+        ON
+            status_xref_bv.BV$DOC = distinct_prob_sentence_ids.BS$DOC AND
+            status_xref_bv.BV$CYC = distinct_prob_sentence_ids.BS$CYC AND
+            status_xref_bv.BV$SEO = distinct_prob_sentence_ids.BS$SEO AND
+            -- Note: if a status is associated with an incarceration part of 
+            -- this sentence (FSO=0), we still associated that status with this 
+            -- FSO, since often a final status update for the incarceration 
+            -- portion of the sentence also marks the end of the supervision
+            -- portion of the sentence.
+            (status_xref_bv.BV$FSO = distinct_prob_sentence_ids.BU$FSO OR 
+             status_xref_bv.BV$FSO = 0)
         LEFT OUTER JOIN 
             LBAKRDTA.TAK026 status_bw
         ON
-            probation_status_xref_bv.BV$DOC = status_bw.BW$DOC AND
-            probation_status_xref_bv.BV$CYC = status_bw.BW$CYC AND
-            probation_status_xref_bv.BV$SSO = status_bw.BW$SSO
+            status_xref_bv.BV$DOC = status_bw.BW$DOC AND
+            status_xref_bv.BV$CYC = status_bw.BW$CYC AND
+            status_xref_bv.BV$SSO = status_bw.BW$SSO
     ),
-    max_update_date_for_sentence AS (
-        SELECT BV$DOC, BV$CYC, BV$SEO, MAX(BW$SY) AS MAX_UPDATE_DATE
-        FROM 
-            probation_status_xref_with_dates
-        GROUP BY BV$DOC, BV$CYC, BV$SEO
+    sentence_max_status_update_dates AS (
+        /* Get the max create/update dates for all the status info for a given 
+          sentence. If any status changes for a given sentence, we want to 
+          re-ingest max status info for that sentence */
+    	SELECT 
+    		BS$DOC, BS$CYC, BS$SEO, 
+    		MAX(COALESCE(BV$DCR, 0)) AS MAX_BV_DCR, 
+    		MAX(COALESCE(BV$DLU, 0)) AS MAX_BV_DLU,
+    		MAX(COALESCE(BW$DCR, 0)) AS MAX_BW_DCR, 
+    		MAX(COALESCE(BW$DLU, 0)) AS MAX_BW_DLU
+    	FROM
+    		sentence_status_xref
+    	GROUP BY BS$DOC, BS$CYC, BS$SEO
     ),
-    max_status_seq_with_max_update_date AS (
+    most_recent_status_by_sentence AS (
+        /* Select the most recent status for a given sentence, with max 
+           create/update info. */
         SELECT 
-            probation_status_xref_with_dates.BV$DOC, 
-            probation_status_xref_with_dates.BV$CYC, 
-            probation_status_xref_with_dates.BV$SEO, 
-            MAX_UPDATE_DATE, 
-            MAX(probation_status_xref_with_dates.BV$SSO) AS MAX_STATUS_SEQ
+        	sentence_status_xref.BS$DOC,
+        	sentence_status_xref.BS$CYC,
+        	sentence_status_xref.BS$SEO,
+        	sentence_status_xref.BU$FSO,
+        	sentence_status_xref.BW$SSO AS MOST_RECENT_SENTENCE_STATUS_SSO,
+        	sentence_status_xref.BW$SCD AS MOST_RECENT_SENTENCE_STATUS_SCD,
+        	sentence_status_xref.BW$SY AS MOST_RECENT_SENTENCE_STATUS_DATE,
+           	sentence_max_status_update_dates.MAX_BV_DCR, 
+    		sentence_max_status_update_dates.MAX_BV_DLU,
+    		sentence_max_status_update_dates.MAX_BW_DCR, 
+    		sentence_max_status_update_dates.MAX_BW_DLU
         FROM 
-            probation_status_xref_with_dates
+        	sentence_status_xref
         LEFT OUTER JOIN
-            max_update_date_for_sentence
-        ON
-            probation_status_xref_with_dates.BV$DOC = max_update_date_for_sentence.BV$DOC AND
-            probation_status_xref_with_dates.BV$CYC = max_update_date_for_sentence.BV$CYC AND
-            probation_status_xref_with_dates.BV$SEO = max_update_date_for_sentence.BV$SEO AND
-            probation_status_xref_with_dates.BW$SY = max_update_date_for_sentence.MAX_UPDATE_DATE
-        WHERE MAX_UPDATE_DATE IS NOT NULL
-        GROUP BY 
-            probation_status_xref_with_dates.BV$DOC, 
-            probation_status_xref_with_dates.BV$CYC, 
-            probation_status_xref_with_dates.BV$SEO, 
-            MAX_UPDATE_DATE
-    ),
-    {NON_INVESTIGATION_PROBATION_SENTENCES},
-    probation_sentence_status_explosion AS (
-            SELECT *
-            FROM 
-                LBAKRDTA.TAK022 sentence_bs
-            LEFT OUTER JOIN
-                non_investigation_prob_sentences_bu
-            ON 
-                sentence_bs.BS$DOC = non_investigation_prob_sentences_bu.BU$DOC AND
-                sentence_bs.BS$CYC = non_investigation_prob_sentences_bu.BU$CYC AND
-                sentence_bs.BS$SEO = non_investigation_prob_sentences_bu.BU$SEO
-            LEFT OUTER JOIN 
-                probation_status_xref_with_dates
-            ON
-                sentence_bs.BS$DOC = probation_status_xref_with_dates.BV$DOC AND
-                sentence_bs.BS$CYC = probation_status_xref_with_dates.BV$CYC AND 
-                sentence_bs.BS$SEO = probation_status_xref_with_dates.BV$SEO AND
-                non_investigation_prob_sentences_bu.BU$FSO = probation_status_xref_with_dates.BV$FSO
-            WHERE non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
-    ),
-    last_updated_field_seq AS (
-        SELECT 
-            probation_sentence_status_explosion.BS$DOC,
-            probation_sentence_status_explosion.BS$CYC,
-            probation_sentence_status_explosion.BS$SEO,
-            MAX_STATUS_SEQ,
-            MAX(probation_sentence_status_explosion.BU$FSO) AS MAX_UPDATED_FSO
-        FROM 
-            probation_sentence_status_explosion
-        LEFT OUTER JOIN
-            max_status_seq_with_max_update_date
-        ON 
-            probation_sentence_status_explosion.BS$DOC = max_status_seq_with_max_update_date.BV$DOC AND
-            probation_sentence_status_explosion.BS$CYC = max_status_seq_with_max_update_date.BV$CYC AND
-            probation_sentence_status_explosion.BS$SEO = max_status_seq_with_max_update_date.BV$SEO AND
-            probation_sentence_status_explosion.BW$SSO = MAX_STATUS_SEQ
-        WHERE MAX_STATUS_SEQ IS NOT NULL
-        GROUP BY         
-            probation_sentence_status_explosion.BS$DOC,
-            probation_sentence_status_explosion.BS$CYC,
-            probation_sentence_status_explosion.BS$SEO,
-            MAX_STATUS_SEQ
+        	sentence_max_status_update_dates
+	    ON 
+	        sentence_status_xref.BS$DOC = sentence_max_status_update_dates.BS$DOC AND
+	        sentence_status_xref.BS$CYC = sentence_max_status_update_dates.BS$CYC AND
+	        sentence_status_xref.BS$SEO = sentence_max_status_update_dates.BS$SEO
+        	
+        WHERE RECENCY_RANK_WITHIN_SENTENCE = 1
     )
-    SELECT probation_sentence_status_explosion.*
+    SELECT 
+        full_prob_sentence_info.*,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SSO,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_DATE,
+        most_recent_status_by_sentence.MAX_BV_DCR,
+        most_recent_status_by_sentence.MAX_BV_DLU,
+        most_recent_status_by_sentence.MAX_BW_DCR,
+        most_recent_status_by_sentence.MAX_BW_DLU
     FROM 
-        probation_sentence_status_explosion
-    LEFT OUTER JOIN
-        last_updated_field_seq
+        full_prob_sentence_info
+    JOIN
+        most_recent_status_by_sentence
     ON 
-        probation_sentence_status_explosion.BS$DOC = last_updated_field_seq.BS$DOC AND
-        probation_sentence_status_explosion.BS$CYC = last_updated_field_seq.BS$CYC AND
-        probation_sentence_status_explosion.BS$SEO = last_updated_field_seq.BS$SEO AND
-        probation_sentence_status_explosion.BW$SSO = MAX_STATUS_SEQ AND
-        probation_sentence_status_explosion.BU$FSO = MAX_UPDATED_FSO
+        full_prob_sentence_info.BS$DOC = most_recent_status_by_sentence.BS$DOC AND
+        full_prob_sentence_info.BS$CYC = most_recent_status_by_sentence.BS$CYC AND
+        full_prob_sentence_info.BS$SEO = most_recent_status_by_sentence.BS$SEO AND
+        full_prob_sentence_info.BU$FSO = most_recent_status_by_sentence.BU$FSO
     WHERE
-        MAX_STATUS_SEQ IS NOT NULL AND MAX_UPDATED_FSO IS NOT NULL
-        AND MAX(BS$DLU, BS$DCR, BU$DLU, 
-                BU$DCR, BV$DLU, BV$DCR, 
-                BW$DLU, BW$DCR) >= {lower_bound_update_date}
-    ORDER BY BS$DOC, BS$CYC, BS$SEO;
+        MAX(COALESCE(BS$DLU, 0), 
+            COALESCE(BS$DCR, 0), 
+            COALESCE(BU$DLU, 0), 
+            COALESCE(BU$DCR, 0), 
+            COALESCE(MAX_BV_DLU, 0), 
+            COALESCE(MAX_BV_DCR, 0), 
+            COALESCE(MAX_BW_DCR, 0),
+            COALESCE(MAX_BW_DCR, 0)) >= 0
+     ORDER BY 
+        full_prob_sentence_info.BS$DOC, 
+        full_prob_sentence_info.BS$CYC, 
+        full_prob_sentence_info.BS$SEO;
     """
 
 # TODO(2649) - Finalize the list of Board holdover related releases below and
@@ -792,8 +827,8 @@ TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
             finally_formed_documents_e6.E6$DOC, 
             finally_formed_documents_e6.E6$CYC, 
             finally_formed_documents_e6.E6$DOS, 
-            MAX(finally_formed_documents_e6.E6$DCR) as final_formed_create_date, 
-            MAX(finally_formed_documents_e6.E6$DLU) as final_formed_update_date  
+            MAX(COALESCE(finally_formed_documents_e6.E6$DCR, 0)) as final_formed_create_date, 
+            MAX(COALESCE(finally_formed_documents_e6.E6$DLU, 0)) as final_formed_update_date  
         FROM 
             LBAKRDTA.TAK142 finally_formed_documents_e6
         WHERE 
@@ -822,8 +857,8 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
             conditions_cf.CF$CYC, 
             conditions_cf.CF$VSN, 
             LISTAGG(conditions_cf.CF$VCV, ',') AS violated_conditions,
-            MAX(conditions_cf.CF$DCR) as create_dt,
-            MAX(conditions_cf.CF$DLU) as update_dt
+            MAX(COALESCE(conditions_cf.CF$DCR, 0)) as create_dt,
+            MAX(COALESCE(conditions_cf.CF$DLU, 0)) as update_dt
         FROM 
             LBAKRDTA.TAK042 AS conditions_cf
         GROUP BY 
@@ -894,14 +929,14 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     ON 
         violation_reports_by.BY$PON = officers_with_recent_role.BDGNO
     WHERE
-        MAX(conditions_violated_cf.UPDATE_DT, 
-            conditions_violated_cf.CREATE_DT, 
-            violation_reports_by.BY$DLU, 
-            violation_reports_by.BY$DCR, 
-            valid_sentences_cz.CZ$DLU, 
-            valid_sentences_cz.CZ$DCR,
-            finally_formed_violations_e6.final_formed_create_date,
-            finally_formed_violations_e6.final_formed_update_date) >= {lower_bound_update_date}
+        MAX(COALESCE(conditions_violated_cf.UPDATE_DT, 0), 
+            COALESCE(conditions_violated_cf.CREATE_DT, 0), 
+            COALESCE(violation_reports_by.BY$DLU, 0), 
+            COALESCE(violation_reports_by.BY$DCR, 0), 
+            COALESCE(valid_sentences_cz.CZ$DLU, 0), 
+            COALESCE(valid_sentences_cz.CZ$DCR, 0),
+            COALESCE(finally_formed_violations_e6.final_formed_create_date, 0),
+            COALESCE(finally_formed_violations_e6.final_formed_update_date, 0)) >= {lower_bound_update_date}
     ORDER BY BY$DOC, BY$CYC, BY$VSN;
     """
 
@@ -944,10 +979,10 @@ TAK291_TAK292_TAK024_CITATIONS = \
             citations_jt.JT$DOC, 
             citations_jt.JT$CYC, 
             citations_jt.JT$CSQ, 
-            MAX(citations_jt.JT$VG) AS max_date,
+            MAX(COALESCE(citations_jt.JT$VG, 0)) AS max_date,
             LISTAGG(citations_jt.JT$VCV, ',') AS violated_conditions,
-            MAX(citations_jt.JT$DCR) AS create_dt,
-            MAX(citations_jt.JT$DLU) AS update_dt
+            MAX(COALESCE(citations_jt.JT$DCR, 0)) AS create_dt,
+            MAX(COALESCE(citations_jt.JT$DLU, 0)) AS update_dt
         FROM 
             LBAKRDTA.TAK292 citations_jt
         GROUP BY 
@@ -980,12 +1015,12 @@ TAK291_TAK292_TAK024_CITATIONS = \
         AND citations_with_multiple_violations_jt.JT$CYC = finally_formed_citations_e6.E6$CYC
         AND citations_with_multiple_violations_jt.JT$CSQ = finally_formed_citations_e6.E6$DOS
     WHERE
-        MAX(citations_with_multiple_violations_jt.UPDATE_DT, 
-            citations_with_multiple_violations_jt.CREATE_DT, 
-            valid_sentences_js.JS$DLU, 
-            valid_sentences_js.JS$DCR,
-            finally_formed_citations_e6.final_formed_create_date,
-            finally_formed_citations_e6.final_formed_update_date) >= {lower_bound_update_date}
+        MAX(COALESCE(citations_with_multiple_violations_jt.UPDATE_DT, 0), 
+            COALESCE(citations_with_multiple_violations_jt.CREATE_DT, 0), 
+            COALESCE(valid_sentences_js.JS$DLU, 0), 
+            COALESCE(valid_sentences_js.JS$DCR, 0),
+            COALESCE(finally_formed_citations_e6.final_formed_create_date, 0),
+            COALESCE(finally_formed_citations_e6.final_formed_update_date, 0)) >= {lower_bound_update_date}
     ORDER BY JT$DOC, JT$CYC, JT$CSQ;
     """
 
@@ -1019,7 +1054,8 @@ APFX90_APFX91_TAK034_CURRENT_PO_ASSIGNMENTS = \
     WHERE 
         -- ORD = 1 means the assignment is active
         field_assignments_ce.CE$OR0 = 1
-        AND MAX(field_assignments_ce.CE$DCR, field_assignments_ce.CE$DLU) >= {lower_bound_update_date}
+        AND MAX(COALESCE(field_assignments_ce.CE$DCR, 0), 
+                COALESCE(field_assignments_ce.CE$DLU, 0)) >= {lower_bound_update_date}
     ORDER BY 
         field_assignments_ce.CE$DOC, 
         field_assignments_ce.CE$HF;

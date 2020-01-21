@@ -61,8 +61,8 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     INCARCERATION_SENTENCE_LENGTH_DAYS, CHARGE_COUNTY_CODE, \
     SENTENCE_COUNTY_CODE, INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS, \
     INCARCERATION_SENTENCE_START_DATE, SENTENCE_OFFENSE_DATE, \
-    SENTENCE_COMPLETED_FLAG, SENTENCE_STATUS_CODE, STATE_ID, FBI_ID, \
-    LICENSE_ID, SUPERVISION_SENTENCE_LENGTH_YEARS, \
+    SENTENCE_COMPLETED_FLAG, MOST_RECENT_SENTENCE_STATUS_CODE, STATE_ID, \
+    FBI_ID, LICENSE_ID, SUPERVISION_SENTENCE_LENGTH_YEARS, \
     TAK076_PREFIX, TAK291_PREFIX, VIOLATION_REPORT_ID_PREFIX, \
     VIOLATION_KEY_SEQ, CITATION_ID_PREFIX, CITATION_KEY_SEQ, DOC_ID, CYCLE_ID, \
     SENTENCE_KEY_SEQ, FIELD_KEY_SEQ, \
@@ -75,7 +75,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
     PERIOD_START_STATUSES, ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID, \
-    SUPERVISION_SENTENCE_START_DATE
+    SUPERVISION_SENTENCE_START_DATE, MOST_RECENT_SENTENCE_STATUS_DATE
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -910,7 +910,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     INCARCERATION_SENTENCE_PROJECTED_MIN_DATE,
                     self.SENTENCE_MAGICAL_DATES,
                     StateIncarcerationSentence),
-                self.set_sentence_status,
+                self._set_sentence_status,
+                self._set_completion_date_if_necessary,
                 self._clear_zero_date_string,
                 self.tak022_tak023_set_parole_eligibility_date,
                 self.set_charge_id_from_sentence_id,
@@ -940,7 +941,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE,
                     self.SENTENCE_MAGICAL_DATES,
                     StateSupervisionSentence),
-                self.set_sentence_status,
+                self._set_sentence_status,
+                self._set_completion_date_if_necessary,
                 self._clear_zero_date_string,
                 self.set_charge_id_from_sentence_id,
             ],
@@ -1415,11 +1417,27 @@ class UsMoController(CsvGcsfsDirectIngestController):
             surname=surname)
 
     @classmethod
-    def set_sentence_status(cls,
-                            _file_tag: str,
-                            row: Dict[str, str],
-                            extracted_objects: List[IngestObject],
-                            _cache: IngestObjectCache):
+    def _set_completion_date_if_necessary(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+
+        sentence_completed_flag = row[SENTENCE_COMPLETED_FLAG]
+        if sentence_completed_flag == 'Y':
+            completion_date = row[MOST_RECENT_SENTENCE_STATUS_DATE]
+            for obj in extracted_objects:
+                if isinstance(obj, (StateIncarcerationSentence,
+                                    StateSupervisionSentence)):
+                    obj.__setattr__('completion_date', completion_date)
+
+    @classmethod
+    def _set_sentence_status(cls,
+                             _file_tag: str,
+                             row: Dict[str, str],
+                             extracted_objects: List[IngestObject],
+                             _cache: IngestObjectCache):
 
         status_enum_str = \
             cls._sentence_status_enum_str_from_row(row)
@@ -1435,8 +1453,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
         if sentence_completed_flag == 'Y':
             return StateSentenceStatus.COMPLETED.value
 
-        raw_status_str = row[SENTENCE_STATUS_CODE]
+        raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
 
+        # TODO(XXXX): This might be a bad way to determine if a sentence is
+        #  suspended since there could be, in theory, statuses that come between
+        #  the suspension status and the actual status that means the probation
+        #  has been reinstated (like a a random warrant status)
         if raw_status_str in cls.SUSPENDED_SENTENCE_STATUS_CODES:
             return StateSentenceStatus.SUSPENDED.value
         if raw_status_str in cls.COMMUTED_SENTENCE_STATUS_CODES:
