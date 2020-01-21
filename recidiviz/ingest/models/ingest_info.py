@@ -819,15 +819,18 @@ class StateSupervisionSentence(IngestObject):
     """
 
     def __init__(self, state_supervision_sentence_id=None, status=None,
-                 supervision_type=None, projected_completion_date=None,
-                 completion_date=None, state_code=None, county_code=None,
-                 min_length=None, max_length=None, state_charges=None,
+                 supervision_type=None, date_imposed=None, start_date=None,
+                 projected_completion_date=None, completion_date=None,
+                 state_code=None, county_code=None, min_length=None,
+                 max_length=None, state_charges=None,
                  state_incarceration_periods=None,
                  state_supervision_periods=None):
         self.state_supervision_sentence_id: Optional[str] = \
             state_supervision_sentence_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
+        self.date_imposed: Optional[str] = date_imposed
+        self.start_date: Optional[str] = start_date
         self.projected_completion_date: Optional[str] = \
             projected_completion_date
         self.completion_date: Optional[str] = completion_date
@@ -908,24 +911,26 @@ class StateIncarcerationSentence(IngestObject):
     """
 
     def __init__(self, state_incarceration_sentence_id=None, status=None,
-                 incarceration_type=None, date_imposed=None,
+                 incarceration_type=None, date_imposed=None, start_date=None,
                  projected_min_release_date=None,
-                 projected_max_release_date=None, parole_eligibility_date=None,
-                 state_code=None, county_code=None, min_length=None,
-                 max_length=None, is_life=None, is_capital_punishment=None,
-                 parole_possible=None, initial_time_served=None, good_time=None,
-                 earned_time=None, state_charges=None,
-                 state_incarceration_periods=None,
+                 projected_max_release_date=None, completion_date=None,
+                 parole_eligibility_date=None, state_code=None,
+                 county_code=None, min_length=None, max_length=None,
+                 is_life=None, is_capital_punishment=None, parole_possible=None,
+                 initial_time_served=None, good_time=None, earned_time=None,
+                 state_charges=None, state_incarceration_periods=None,
                  state_supervision_periods=None):
         self.state_incarceration_sentence_id: Optional[str] = \
             state_incarceration_sentence_id
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
         self.date_imposed: Optional[str] = date_imposed
+        self.start_date: Optional[str] = start_date
         self.projected_min_release_date: Optional[str] = \
             projected_min_release_date
         self.projected_max_release_date: Optional[str] = \
             projected_max_release_date
+        self.completion_date: Optional[str] = completion_date
         self.parole_eligibility_date: Optional[str] = parole_eligibility_date
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
@@ -1264,9 +1269,9 @@ class StateSupervisionPeriod(IngestObject):
     def __init__(self, state_supervision_period_id=None, status=None,
                  supervision_type=None, start_date=None,
                  termination_date=None, state_code=None, county_code=None,
-                 admission_reason=None, termination_reason=None,
-                 supervision_level=None, conditions=None,
-                 supervising_officer=None,
+                 supervision_site=None, admission_reason=None,
+                 termination_reason=None, supervision_level=None,
+                 conditions=None, supervising_officer=None,
                  state_supervision_violation_entries=None,
                  state_assessments=None, state_program_assignments=None):
         self.state_supervision_period_id: Optional[str] = \
@@ -1277,6 +1282,7 @@ class StateSupervisionPeriod(IngestObject):
         self.termination_date: Optional[str] = termination_date
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
+        self.supervision_site: Optional[str] = supervision_site
         self.admission_reason: Optional[str] = admission_reason
         self.termination_reason: Optional[str] = termination_reason
         self.supervision_level: Optional[str] = supervision_level
