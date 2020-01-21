@@ -71,23 +71,10 @@ keys_to_ignore:
 - BT$TCR  # Unused - Time Created (BT$* cols)
 - BT$DLU  # Unused - Date Last Updated (BT$* cols)
 - BT$TLU  # Unused - Time Last Updated (BT$* cols)
-- BV$DOC  # Unused - Duplicate of BS$DOC
-- BV$CYC  # Unused - Duplicate of BS$CYC
-- BV$SSO  # Unused - Status Sequence Number (used only for join)
-- BV$SEO  # Unused - Duplicate of BS$SEO
-- BV$FSO  # Unused - Field Sentence Key Sequence Number
-- BV$DCR  # Unused - Date Created (BV$* cols)
-- BV$TCR  # Unused - Time Created (BV$* cols)
-- BV$DLU  # Unused - Date Last Updated (BV$* cols)
-- BV$TLU  # Unused - Time Last Updated (BV$* cols)
-- BW$DOC  # Unused - Duplicate of BS$DOC
-- BW$CYC  # Unused - Duplicate of BS$CYC
-- BW$SSO  # Unused - Duplicate of MAX_BV$SSO
-- BW$SCD  # Status Code (Most recent) - Handled manually in the controller
-- BW$SY   # Unused - Status Code Change Date
-- BW$SM   # TODO(2604) - What is this? - not in TAK table index
-- BW$CSC  # TODO(2604) - Status Code Interstate Compact State Code
-- BW$DCR  # Unused - Date Created (BW$* cols)
-- BW$TCR  # Unused - Time Created (BW$* cols)
-- BW$DLU  # Unused - Date Last Updated (BW$* cols)
-- BW$TLU  # Unused - Time Last Updated (BW$* cols)
+- MOST_RECENT_SENTENCE_STATUS_SSO  # Unused - Sentence Status Seq Num (Most recent)
+- MOST_RECENT_SENTENCE_STATUS_SCD  # Sentence Status Code (Most recent) - Handled manually in the controller
+- MOST_RECENT_SENTENCE_STATUS_DATE   # Sentence Status Code Date (Most recent) - Handled manually in the controller
+- MAX_BV_DCR  # Unused - Max Date Created (BV$* cols)
+- MAX_BV_DLU  # Unused - Max Date Last Updated (BV$* cols)
+- MAX_BW_DCR  # Unused - Max Date Created (BW$* cols)
+- MAX_BW_DLU # Unused - Max Date Last Updated (BW$* cols)
