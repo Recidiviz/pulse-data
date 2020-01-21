@@ -67,10 +67,12 @@ def copy_fields_to_builder(
     new.external_id = fn(parse_external_id, 'state_incarceration_sentence_id',
                          proto)
     new.date_imposed = fn(parse_date, 'date_imposed', proto)
+    new.start_date = fn(parse_date, 'start_date', proto)
     new.projected_min_release_date = fn(
         parse_date, 'projected_min_release_date', proto)
     new.projected_max_release_date = fn(
         parse_date, 'projected_max_release_date', proto)
+    new.completion_date = fn(parse_date, 'completion_date', proto)
     new.parole_eligibility_date = fn(
         parse_date, 'parole_eligibility_date', proto)
     new.state_code = parse_region_code_with_override(

@@ -3,6 +3,7 @@ key_mappings:
   BS$PD: state_incarceration_sentence.projected_max_release_date
   BT$PC: state_incarceration_sentence.projected_min_release_date
   BT$SD: state_incarceration_sentence.date_imposed
+  BT$EM: state_incarceration_sentence.start_date
   BT$SDI: state_incarceration_sentence.is_capital_punishment
 
 
@@ -62,7 +63,6 @@ keys_to_ignore:
 - BT$SRC  # TODO(2604) - Sentence Count
 - BT$SRF  # TODO(2604) - Sentence Count Type
 - BT$PCR  # TODO(2604) - Sentence Percent Required
-- BT$EM   # Unused - Sentence Start Date - We rely on StateIncarcerationPeriods for this info
 - BT$OTD  # TODO(2604) - Sentence 120 Day Flag
 - BT$OH   # TODO(2604) - Sentence 120 Day Date
 - BT$SCT  # TODO(2604) - Sentence Credit Time

@@ -28,7 +28,7 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_completion_date,
     parse_region_code_with_override)
-from recidiviz.common.str_field_utils import parse_days, normalize
+from recidiviz.common.str_field_utils import parse_days, normalize, parse_date
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
@@ -61,6 +61,8 @@ def copy_fields_to_builder(
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'state_supervision_sentence_id',
                          proto)
+    new.date_imposed = fn(parse_date, 'date_imposed', proto)
+    new.start_date = fn(parse_date, 'start_date', proto)
     new.completion_date, new.projected_completion_date = parse_completion_date(
         proto, metadata)
     new.state_code = parse_region_code_with_override(

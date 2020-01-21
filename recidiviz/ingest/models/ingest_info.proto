@@ -254,16 +254,18 @@ message StateSupervisionSentence {
     optional string state_supervision_sentence_id = 1;
     optional string status = 2;
     optional string supervision_type = 3;
-    optional string projected_completion_date = 4;
-    optional string completion_date = 5;
-    optional string state_code = 6;
-    optional string county_code = 7;
-    optional string min_length = 8;
-    optional string max_length = 9;
+    optional string date_imposed = 4;
+    optional string start_date = 5;
+    optional string projected_completion_date = 6;
+    optional string completion_date = 7;
+    optional string state_code = 8;
+    optional string county_code = 9;
+    optional string min_length = 10;
+    optional string max_length = 11;
 
-    repeated string state_charge_ids = 10;
-    repeated string state_incarceration_period_ids = 11;
-    repeated string state_supervision_period_ids = 12;
+    repeated string state_charge_ids = 12;
+    repeated string state_incarceration_period_ids = 13;
+    repeated string state_supervision_period_ids = 14;
 }
 
 message StateIncarcerationSentence {
@@ -271,23 +273,25 @@ message StateIncarcerationSentence {
     optional string status = 2;
     optional string incarceration_type = 3;
     optional string date_imposed = 4;
-    optional string projected_min_release_date = 5;
-    optional string projected_max_release_date = 6;
-    optional string parole_eligibility_date = 7;
-    optional string state_code = 8;
-    optional string county_code = 9;
-    optional string min_length = 10;
-    optional string max_length = 11;
-    optional string is_life = 12;
-    optional string is_capital_punishment = 13;
-    optional string parole_possible = 14;
-    optional string initial_time_served = 15;
-    optional string good_time = 16;
-    optional string earned_time = 17;
+    optional string start_date = 5;
+    optional string projected_min_release_date = 6;
+    optional string projected_max_release_date = 7;
+    optional string completion_date = 8;
+    optional string parole_eligibility_date = 9;
+    optional string state_code = 10;
+    optional string county_code = 11;
+    optional string min_length = 12;
+    optional string max_length = 13;
+    optional string is_life = 14;
+    optional string is_capital_punishment = 15;
+    optional string parole_possible = 16;
+    optional string initial_time_served = 17;
+    optional string good_time = 18;
+    optional string earned_time = 19;
 
-    repeated string state_charge_ids = 18;
-    repeated string state_incarceration_period_ids = 19;
-    repeated string state_supervision_period_ids = 20;
+    repeated string state_charge_ids = 20;
+    repeated string state_incarceration_period_ids = 21;
+    repeated string state_supervision_period_ids = 22;
 }
 
 message StateFine {
@@ -379,15 +383,16 @@ message StateSupervisionPeriod {
     optional string termination_date = 5;
     optional string state_code = 6;
     optional string county_code = 7;
-    optional string admission_reason = 8;
-    optional string termination_reason = 9;
-    optional string supervision_level = 10;
-    optional string supervising_officer_id = 11;
+    optional string supervision_site = 8;
+    optional string admission_reason = 9;
+    optional string termination_reason = 10;
+    optional string supervision_level = 11;
+    optional string supervising_officer_id = 12;
 
-    repeated string conditions = 12;
-    repeated string state_supervision_violation_entry_ids = 13;
-    repeated string state_assessment_ids = 14;
-    repeated string state_program_assignment_ids = 15;
+    repeated string conditions = 13;
+    repeated string state_supervision_violation_entry_ids = 14;
+    repeated string state_assessment_ids = 15;
+    repeated string state_program_assignment_ids = 16;
 }
 
 message StateIncarcerationIncident {

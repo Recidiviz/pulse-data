@@ -49,6 +49,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             termination_date='2/2/2112',
             state_code='us_nd',
             county_code='bis',
+            supervision_site='07-CENTRAL',
             conditions=['CURFEW', 'DRINKING']
         )
 
@@ -77,6 +78,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             termination_date=date(year=2112, month=2, day=2),
             state_code='US_ND',
             county_code='BIS',
+            supervision_site='07-CENTRAL',
             conditions='CURFEW, DRINKING',
         )
 
