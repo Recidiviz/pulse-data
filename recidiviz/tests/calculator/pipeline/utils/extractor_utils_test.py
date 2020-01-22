@@ -697,7 +697,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
         supervision_period = \
-            database_test_utils.generate_test_supervision_period(123, [])
+            database_test_utils.generate_test_supervision_period(123, [], [])
 
         assessment = database_test_utils.generate_test_assessment(123)
 
@@ -747,7 +747,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 123, [], [])
 
         supervision_period = \
-            database_test_utils.generate_test_supervision_period(123, [])
+            database_test_utils.generate_test_supervision_period(123, [], [])
 
         # Build association table for many-to-many relationship
         incarceration_sentence_supervision_period_association_table = [{
