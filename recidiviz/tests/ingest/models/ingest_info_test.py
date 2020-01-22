@@ -112,7 +112,9 @@ class TestIngestInfo(unittest.TestCase):
              'state_supervision_violation_entry_ids',
              'state_supervision_violation_entries',
              'state_assessment_ids', 'state_assessments',
-             'state_program_assignment_ids', 'state_program_assignments']
+             'state_program_assignment_ids', 'state_program_assignments',
+             'state_supervision_case_type_entry_ids',
+             'state_supervision_case_type_entries']
         supervision_violation_fields_ignore = \
             ['state_supervision_violation_response_ids',
              'state_supervision_violation_responses',

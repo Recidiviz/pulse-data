@@ -8,6 +8,8 @@ from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -65,6 +67,17 @@ def generate_test_assessment(person_id) -> state_schema.StateAssessment:
     return instance
 
 
+def generate_test_supervision_case_type(person_id) \
+        -> state_schema.StateSupervisionCaseTypeEntry:
+    instance = state_schema.StateSupervisionCaseTypeEntry(
+        person_id=person_id,
+        supervision_case_type_entry_id=12345,
+        state_code='us_ca',
+        case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE.value,
+        case_type_raw_text='DV')
+    return instance
+
+
 def generate_test_supervision_violation(person_id,
                                         supervision_violation_responses) -> \
         state_schema.StateSupervisionViolation:
@@ -97,13 +110,15 @@ def generate_test_supervision_violation(person_id,
     return instance
 
 
-def generate_test_supervision_period(person_id, supervision_violations) -> \
+def generate_test_supervision_period(
+        person_id, supervision_violations, case_types) -> \
         state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
         status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
         state_code='us_ca',
         person_id=person_id,
+        case_type_entries=case_types,
         supervision_violation_entries=supervision_violations,
     )
 
@@ -364,8 +379,11 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
             test_person_id,
             [test_supervision_violation_response])
 
+    test_supervision_case_type = generate_test_supervision_case_type(
+        test_person_id)
     test_supervision_period = generate_test_supervision_period(
-        test_person_id, [test_supervision_violation])
+        test_person_id, [test_supervision_violation],
+        [test_supervision_case_type])
 
     test_incarceration_incident_outcome = \
         generate_test_incarceration_incident_outcome(test_person_id)

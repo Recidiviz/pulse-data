@@ -42,6 +42,8 @@ from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
     ResidencyStatus
 )
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
@@ -749,6 +751,28 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(
         factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
+    case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(
+        factory=list)
+
+
+@attr.s(eq=False)
+class StateSupervisionCaseTypeEntry(Entity, BuildableAttr, DefaultableAttr):
+    # Attributes
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    case_type: Optional[StateSupervisionCaseType] = attr.ib()
+    case_type_raw_text: Optional[str] = attr.ib()
+
+    # Primary key - Only optional when hydrated in the data converter, before
+    # we have written this entity to the persistence layer
+    supervision_case_type_entry_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    supervision_period: Optional['StateSupervisionPeriod'] = \
+        attr.ib(default=None)
 
 
 @attr.s(eq=False)
