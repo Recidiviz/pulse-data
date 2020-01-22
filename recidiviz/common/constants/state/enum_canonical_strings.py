@@ -207,6 +207,12 @@ state_supervision_period_termination_reason_return_from_absconsion = \
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
+# state_supervision_case_type_entry.py
+state_supervision_case_type_domestic_violence = 'DOMESTIC_VIOLENCE'
+state_supervision_case_type_general = 'GENERAL'
+state_supervision_case_type_serious_mental_illness = 'SERIOUS_MENTAL_ILLNESS'
+state_supervision_case_type_sex_offender = 'SEX_OFFENDER'
+
 # state_supervision_violation.py
 state_supervision_violation_type_absconded = 'ABSCONDED'
 state_supervision_violation_type_escaped = 'ESCAPED'

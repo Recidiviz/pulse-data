@@ -395,6 +395,13 @@ class TestIngestUtils:
         supervision_period_agent.state_agent_id = 'agentPO'
         supervision_period_agent.full_name = 'Officer Paroley'
         supervision_period.state_program_assignments = [program_assignment]
+
+        supervision_case_type_entry = \
+            supervision_period.create_state_supervision_case_type_entry()
+        supervision_case_type_entry.case_type = 'case_type'
+        supervision_case_type_entry.state_supervision_case_type_entry_id = \
+            'case_type_entry_id'
+
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = 'violation1'
         violation.violated_conditions = 'cond'
@@ -513,6 +520,14 @@ class TestIngestUtils:
         supervision_period_agent_pb = expected_proto.state_agents.add()
         supervision_period_agent_pb.state_agent_id = 'agentPO'
         supervision_period_agent_pb.full_name = 'Officer Paroley'
+
+        supervision_case_type_entry_pb = \
+            expected_proto.state_supervision_case_type_entries.add()
+        supervision_case_type_entry_pb.state_supervision_case_type_entry_id = \
+            'case_type_entry_id'
+        supervision_case_type_entry_pb.case_type = 'case_type'
+        supervision_period_pb.state_supervision_case_type_entry_ids.append(
+            'case_type_entry_id')
 
         supervision_period_pb.state_supervision_violation_entry_ids.append(
             'violation1')

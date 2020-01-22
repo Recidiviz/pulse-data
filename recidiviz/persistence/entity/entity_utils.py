@@ -59,6 +59,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateIncarcerationIncidentOutcome.__name__,
     state_entities.StateParoleDecision.__name__,
     state_entities.StateSupervisionPeriod.__name__,
+    state_entities.StateSupervisionCaseTypeEntry.__name__,
     state_entities.StateSupervisionViolation.__name__,
     state_entities.StateSupervisionViolatedConditionEntry.__name__,
     state_entities.StateSupervisionViolationTypeEntry.__name__,

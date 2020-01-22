@@ -26,6 +26,8 @@ from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import \
     get_all_table_classes_in_module, _get_all_database_entities_in_module
+from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
+    state_supervision_case_type_entry
 from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaEnums,
     TestSchemaTableConsistency)
@@ -93,6 +95,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
             'state_program_assignment_discharge_reason':
                 state_program_assignment.
                 StateProgramAssignmentDischargeReason,
+            'state_supervision_case_type':
+                state_supervision_case_type_entry.StateSupervisionCaseType,
             'state_supervision_violation_type':
                 state_supervision_violation.StateSupervisionViolationType,
             'state_supervision_violation_response_type':
