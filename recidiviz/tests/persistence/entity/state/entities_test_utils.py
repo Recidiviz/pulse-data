@@ -28,6 +28,8 @@ from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass, StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
@@ -481,6 +483,12 @@ def generate_full_graph_state_person(
         full_name='MS MADAM',
     )
 
+    supervision_case_type_entry = \
+        entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code='us_ca',
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DOMESTIC_VIOLENCE')
+
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
         status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         status_raw_text='UNDER SUPERVISION',
@@ -497,7 +505,8 @@ def generate_full_graph_state_person(
         supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
         supervision_level_raw_text='UNKNOWN',
         conditions='10PM CURFEW',
-        supervising_officer=supervising_officer
+        supervising_officer=supervising_officer,
+        case_type_entries=[supervision_case_type_entry]
     )
 
     incarceration_sentence.supervision_periods = [supervision_period]
@@ -641,7 +650,8 @@ def generate_full_graph_state_person(
         supervision_period_children = \
             supervision_period.supervision_violation_entries + \
             supervision_period.assessments + \
-            supervision_period.program_assignments
+            supervision_period.program_assignments + \
+            supervision_period.case_type_entries
 
         for child in supervision_period_children:
             if hasattr(child, 'supervision_periods'):

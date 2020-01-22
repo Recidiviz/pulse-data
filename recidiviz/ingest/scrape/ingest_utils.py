@@ -158,6 +158,8 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         Dict[str, ingest_info.StateIncarcerationPeriod] = {}
     state_supervision_period_map: \
         Dict[str, ingest_info.StateSupervisionPeriod] = {}
+    state_case_type_map: Dict[
+        str, ingest_info.StateSupervisionCaseTypeEntry] = {}
     state_incarceration_incident_map: \
         Dict[str, ingest_info.StateIncarcerationIncident] = {}
     state_incarceration_incident_outcome_map: \
@@ -367,6 +369,16 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                     'state_agent_id', state_agent_map)
                 proto_period.supervising_officer_id = \
                     proto_supervising_officer.state_agent_id
+
+            for case_type_entries in \
+                    supervision_period.state_supervision_case_type_entries:
+                proto_case_type_entry = _populate_proto(
+                    'state_supervision_case_type_entries',
+                    case_type_entries,
+                    'state_supervision_case_type_entry_id',
+                    state_case_type_map)
+                proto_period.state_supervision_case_type_entry_ids.append(
+                    proto_case_type_entry.state_supervision_case_type_entry_id)
 
             for violation in \
                     supervision_period.state_supervision_violation_entries:
@@ -716,6 +728,12 @@ def convert_proto_to_ingest_info(
                           ingest_info.StateSupervisionPeriod,
                           'state_supervision_period_id')
              for supervision_period in proto.state_supervision_periods)
+    state_supervision_case_type_entry_map: \
+        Dict[str, ingest_info.StateSupervisionCaseTypeEntry] = \
+        dict(_proto_to_py(case_type_entry,
+                          ingest_info.StateSupervisionCaseTypeEntry,
+                          'state_supervision_case_type_entry_id')
+             for case_type_entry in proto.state_supervision_case_type_entries)
     state_incarceration_incident_map: \
         Dict[str, ingest_info.StateIncarcerationIncident] = \
         dict(_proto_to_py(incarceration_incident,
@@ -912,6 +930,9 @@ def convert_proto_to_ingest_info(
         supervision_period.state_program_assignments = \
             [state_program_assignment_map[proto_id] for proto_id
              in proto_supervision_period.state_program_assignment_ids]
+        supervision_period.state_supervision_case_type_entries = \
+            [state_supervision_case_type_entry_map[proto_id] for proto_id in
+             proto_supervision_period.state_supervision_case_type_entry_ids]
 
     # Wire child entities to respective incarceration periods
     for proto_incarceration_period in proto.state_incarceration_periods:

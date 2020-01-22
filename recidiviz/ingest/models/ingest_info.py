@@ -1273,7 +1273,8 @@ class StateSupervisionPeriod(IngestObject):
                  termination_reason=None, supervision_level=None,
                  conditions=None, supervising_officer=None,
                  state_supervision_violation_entries=None,
-                 state_assessments=None, state_program_assignments=None):
+                 state_assessments=None, state_program_assignments=None,
+                 state_supervision_case_type_entries=None):
         self.state_supervision_period_id: Optional[str] = \
             state_supervision_period_id
         self.status: Optional[str] = status
@@ -1295,9 +1296,12 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments: List[StateAssessment] = state_assessments or []
         self.state_program_assignments: List[StateProgramAssignment] = \
             state_program_assignments or []
+        self.state_supervision_case_type_entries: \
+            List[StateSupervisionCaseTypeEntry] = \
+            state_supervision_case_type_entries or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_program_assignments', name, value)
+        restricted_setattr(self, 'state_case_type_entries', name, value)
 
     def create_state_agent(self, **kwargs) -> 'StateAgent':
         self.supervising_officer = StateAgent(**kwargs)
@@ -1320,6 +1324,12 @@ class StateSupervisionPeriod(IngestObject):
         self.state_program_assignments.append(program_assignment)
         return program_assignment
 
+    def create_state_supervision_case_type_entry(self, **kwargs) \
+            -> 'StateSupervisionCaseTypeEntry':
+        case_type = StateSupervisionCaseTypeEntry(**kwargs)
+        self.state_supervision_case_type_entries.append(case_type)
+        return case_type
+
     def get_state_supervision_violation_by_id(
             self, state_supervision_violation_id
     ) -> Optional['StateSupervisionViolation']:
@@ -1336,6 +1346,8 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments = [a for a in self.state_assessments if a]
         self.state_program_assignments = [
             p.prune() for p in self.state_program_assignments if p]
+        self.state_supervision_case_type_entries = [
+            c for c in self.state_supervision_case_type_entries if c]
 
         return self
 
@@ -1343,6 +1355,24 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_violation_entries.sort()
         self.state_assessments.sort()
         self.state_program_assignments.sort()
+        self.state_supervision_case_type_entries.sort()
+
+
+class StateSupervisionCaseTypeEntry(IngestObject):
+    """Class for information about a supervision case type. Referenced from
+    SupervisionPeriod.
+    """
+    def __init__(self,
+                 state_supervision_case_type_entry_id=None,
+                 case_type=None,
+                 state_code=None):
+        self.state_supervision_case_type_entry_id = \
+            state_supervision_case_type_entry_id
+        self.case_type = case_type
+        self.state_code = state_code
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'state_code', name, value)
 
 
 class StateIncarcerationIncident(IngestObject):

@@ -125,6 +125,13 @@ state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_probation,
     name='state_supervision_type')
 
+state_supervision_case_type = Enum(
+    state_enum_strings.state_supervision_case_type_domestic_violence,
+    state_enum_strings.state_supervision_case_type_general,
+    state_enum_strings.state_supervision_case_type_serious_mental_illness,
+    state_enum_strings.state_supervision_case_type_sex_offender,
+    name='state_supervision_case_type')
+
 state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_civil,
     enum_strings.external_unknown,
@@ -1525,6 +1532,10 @@ class StateSupervisionPeriod(StateBase,
         secondary=state_supervision_period_program_assignment_association_table,
         backref='supervision_periods',
         lazy='selectin')
+    case_type_entries = relationship(
+        'StateSupervisionCaseTypeEntry',
+        backref='supervision_period',
+        lazy='selectin')
 
 
 class StateSupervisionPeriodHistory(StateBase,
@@ -1540,6 +1551,62 @@ class StateSupervisionPeriodHistory(StateBase,
     supervision_period_id = Column(
         Integer, ForeignKey(
             'state_supervision_period.supervision_period_id'),
+        nullable=False, index=True)
+
+
+# StateSupervisionCaseTypeEntry
+
+class _StateSupervisionCaseTypeEntrySharedColumns(
+        _ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to
+    StateSupervisionCaseTypeEntry and StateSupervisionCaseTypeEntryHistory
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateSupervisionCaseTypeEntrySharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    case_type = Column(state_supervision_case_type)
+    case_type_raw_text = Column(String(255))
+    state_code = Column(String(255), nullable=False, index=True)
+
+    @declared_attr
+    def supervision_period_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_supervision_period.supervision_period_id'),
+            index=True,
+            nullable=True)
+
+
+class StateSupervisionCaseTypeEntry(
+        StateBase, _StateSupervisionCaseTypeEntrySharedColumns):
+    """Represents a StateSupervisionCaseTypeEntry in the SQL schema"""
+    __tablename__ = 'state_supervision_case_type_entry'
+
+    supervision_case_type_entry_id = Column(Integer, primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+
+
+# TODO: Update historical column names here -- or downgrade and upgrade?
+class StateSupervisionCaseTypeEntryHistory(
+        StateBase, _StateSupervisionCaseTypeEntrySharedColumns,
+        HistoryTableSharedColumns):
+    """Represents the historical state of a StateSupervisionCaseTypeEntry"""
+    __tablename__ = 'state_supervision_case_type_entry_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    supervision_case_type_entry_history_id = Column(
+        Integer, primary_key=True)
+
+    supervision_case_type_entry_id = Column(
+        Integer, ForeignKey(
+            'state_supervision_case_type_entry'
+            '.supervision_case_type_entry_id'),
         nullable=False, index=True)
 
 

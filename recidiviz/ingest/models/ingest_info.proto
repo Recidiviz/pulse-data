@@ -53,16 +53,17 @@ message IngestInfo {
     repeated StateBond state_bonds = 21;
     repeated StateIncarcerationPeriod state_incarceration_periods = 22;
     repeated StateSupervisionPeriod state_supervision_periods = 23;
-    repeated StateIncarcerationIncident state_incarceration_incidents = 24;
-    repeated StateIncarcerationIncidentOutcome state_incarceration_incident_outcomes = 25;
-    repeated StateParoleDecision state_parole_decisions = 26;
-    repeated StateSupervisionViolation state_supervision_violations = 27;
-    repeated StateSupervisionViolationTypeEntry state_supervision_violation_type_entries = 28;
-    repeated StateSupervisionViolatedConditionEntry state_supervision_violated_condition_entries = 29;
-    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 30;
-    repeated StateSupervisionViolationResponseDecisionEntry state_supervision_violation_response_decision_entries = 31;
-    repeated StateAgent state_agents = 32;
-    repeated StateProgramAssignment state_program_assignments = 33;
+    repeated StateSupervisionCaseTypeEntry state_supervision_case_type_entries = 24;
+    repeated StateIncarcerationIncident state_incarceration_incidents = 25;
+    repeated StateIncarcerationIncidentOutcome state_incarceration_incident_outcomes = 26;
+    repeated StateParoleDecision state_parole_decisions = 27;
+    repeated StateSupervisionViolation state_supervision_violations = 28;
+    repeated StateSupervisionViolationTypeEntry state_supervision_violation_type_entries = 29;
+    repeated StateSupervisionViolatedConditionEntry state_supervision_violated_condition_entries = 30;
+    repeated StateSupervisionViolationResponse state_supervision_violation_responses = 31;
+    repeated StateSupervisionViolationResponseDecisionEntry state_supervision_violation_response_decision_entries = 32;
+    repeated StateAgent state_agents = 33;
+    repeated StateProgramAssignment state_program_assignments = 34;
 }
 
 message Person {
@@ -393,6 +394,13 @@ message StateSupervisionPeriod {
     repeated string state_supervision_violation_entry_ids = 14;
     repeated string state_assessment_ids = 15;
     repeated string state_program_assignment_ids = 16;
+    repeated string state_supervision_case_type_entry_ids = 17;
+}
+
+message StateSupervisionCaseTypeEntry {
+    optional string state_supervision_case_type_entry_id = 1;
+    optional string case_type = 2;
+    optional string state_code = 3;
 }
 
 message StateIncarcerationIncident {
