@@ -59,6 +59,100 @@ def _remove_suffix_from_violation_entity(
         entity.external_id = splits[0]
 
 
+def set_current_supervising_officer_from_supervision_periods(
+        matched_persons: List[schema.StatePerson]):
+    """
+    For every matched person, update the supervising_officer field to pull in
+    the supervising_officer from the latest supervision period (sorted by
+    termination date).
+    """
+    for person in matched_persons:
+
+        sps = get_all_entities_of_cls(
+            person.sentence_groups, schema.StateSupervisionPeriod)
+
+        non_placeholder_sps = [sp for sp in sps if not is_placeholder(sp)]
+
+        if not non_placeholder_sps:
+            continue
+
+        non_placeholder_sps.sort(
+            key=lambda sp: sp.termination_date
+            if sp.termination_date else datetime.date.max)
+
+        latest_supervision_period = non_placeholder_sps[-1]
+        person.supervising_officer = \
+            latest_supervision_period.supervising_officer
+
+
+def move_supervision_periods_onto_sentences_by_date(
+        matched_persons: List[schema.StatePerson]):
+    """Given a list of |matched_persons|, for each SentenceGroup associates all
+    SupervisionPeriods in that sentence group with the corresponding
+    Sentence (incarceration or supervision) based on date.
+    """
+    for person in matched_persons:
+        for sentence_group in person.sentence_groups:
+            _move_supervision_periods_onto_sentences_for_sentence_group(
+                sentence_group)
+
+
+def _move_supervision_periods_onto_sentences_for_sentence_group(
+        sentence_group: schema.StateSentenceGroup):
+    """Looks at all SupervisionPeriods in the provided |sentence_group|, and
+    attempts to match them to any corresponding sentences, based on date.
+    """
+    sentences = sentence_group.supervision_sentences \
+        + sentence_group.incarceration_sentences
+
+    # TODO(XXXX): Update this to also associate incarceration sentences by
+    #  date as a fast follow (don't want to make test updates to complicated).
+    # Get all supervision periods from sentence group
+    supervision_periods = get_all_entities_of_cls(
+        [sentence_group], schema.StateSupervisionPeriod)
+
+    # Clear the links from sentence to supervision period. We will
+    # re-add/update these relationships below.
+    for sentence in sentences:
+        sentence.supervision_periods = []
+
+    unmatched_sps = []
+    non_placeholder_sentences = [s for s in sentences if not is_placeholder(s)]
+
+    # Match SVs to non_placeholder_periods by date.
+    for sp in supervision_periods:
+        matched = False
+        sp_start_date = sp.start_date if sp.start_date else datetime.date.min
+        sp_termination_date = \
+            sp.termination_date \
+            if sp.termination_date else datetime.date.max
+
+        for s in non_placeholder_sentences:
+            s_start_date = s.start_date \
+                if s.start_date else datetime.date.min
+            s_completion_date = s.completion_date \
+                if s.completion_date else datetime.date.max
+
+            if (s_start_date <= sp_start_date < s_completion_date) or \
+                    (s_start_date <= sp_termination_date < s_completion_date):
+                matched = True
+                s.supervision_periods.append(sp)
+
+        # Unmatched SPs will be re-added to a placeholder sentence at the end.
+        if not matched:
+            unmatched_sps.append(sp)
+
+    # Add unmatched supervision violations to a placeholder period
+    if unmatched_sps:
+        placeholder_sentences = [s for s in sentences if is_placeholder(s)]
+        if not placeholder_sentences:
+            raise EntityMatchingError(
+                f'Expected a placeholder sentence to exist on sentence group '
+                f'{sentence_group.external_id}, but none were present.',
+                sentence_group.__class__.__name__)
+        placeholder_sentences[0].supervision_periods = unmatched_sps
+
+
 def move_violations_onto_supervision_periods_by_date(
         matched_persons: List[schema.StatePerson]):
     """Given a list of |matched_persons|, for each sentence (either
