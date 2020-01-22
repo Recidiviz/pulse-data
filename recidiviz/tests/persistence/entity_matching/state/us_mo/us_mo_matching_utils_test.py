@@ -22,6 +22,8 @@ from unittest import TestCase
 import attr
 import pytest
 
+from recidiviz.common.constants.state.state_supervision_period import \
+    StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 from recidiviz.persistence.database.schema.state import schema
@@ -31,8 +33,14 @@ from recidiviz.persistence.entity.state.entities import \
     StateSupervisionViolationResponse, StateIncarcerationSentence
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids, \
-    move_violations_onto_supervision_periods_by_date
+    move_violations_onto_supervision_periods_by_date, \
+    move_supervision_periods_onto_sentences_by_date, \
+    set_current_supervising_officer_from_supervision_periods
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.tests.persistence.database.schema.state.schema_test_utils import \
+    generate_sentence_group, generate_agent, generate_person, \
+    generate_external_id, generate_supervision_period, \
+    generate_supervision_sentence
 
 _DATE = datetime.date(year=2001, month=7, day=20)
 _DATE_2 = datetime.date(year=2002, month=7, day=20)
@@ -47,7 +55,10 @@ _EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
 _EXTERNAL_ID_4 = 'EXTERNAL_ID_4'
 _ID = 1
-
+_ID_2 = 2
+_ID_3 = 3
+_ID_TYPE = 'ID_TYPE'
+_STATE_CODE = 'US_MO'
 
 class TestUsMoMatchingUtils(TestCase):
     """Test class for US_MO specific matching utils."""
@@ -115,6 +126,135 @@ class TestUsMoMatchingUtils(TestCase):
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])
             remove_suffix_from_violation_ids([p])
+
+    def test_setCurrentSupervisingOfficerFromSupervision_periods(self):
+        # Arrange
+        person = generate_person(person_id=_ID)
+        external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE)
+
+        supervising_officer = generate_agent(
+            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_STATE_CODE)
+        supervising_officer_2 = generate_agent(
+            agent_id=_ID_2, external_id=_EXTERNAL_ID_2, state_code=_STATE_CODE)
+
+        open_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            supervising_officer=supervising_officer_2)
+        placeholder_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID_2,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE)
+        closed_supervision_period = generate_supervision_period(
+            person=person,
+            supervision_period_id=_ID_3,
+            external_id=_EXTERNAL_ID_3,
+            start_date=_DATE_3,
+            termination_date=_DATE_4,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            supervising_officer=supervising_officer)
+        supervision_sentence = generate_supervision_sentence(
+            person=person,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            supervision_sentence_id=_ID,
+            supervision_periods=[open_supervision_period,
+                                 placeholder_supervision_period,
+                                 closed_supervision_period])
+        sentence_group = generate_sentence_group(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            sentence_group_id=_ID,
+            supervision_sentences=[supervision_sentence])
+        person.external_ids = [external_id]
+        person.sentence_groups = [sentence_group]
+
+        # Act
+        set_current_supervising_officer_from_supervision_periods([person])
+
+        # Assert
+        self.assertEqual(
+            closed_supervision_period.supervising_officer, supervising_officer)
+        self.assertEqual(
+            open_supervision_period.supervising_officer, supervising_officer_2)
+        self.assertIsNone(placeholder_supervision_period.supervising_officer)
+        self.assertEqual(
+            person.supervising_officer, supervising_officer_2)
+
+    def test_associatedSupervisionPeriodsWithSentences(self):
+        # Arrange
+        sp_no_match = StateSupervisionPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE,
+            termination_date=_DATE_2
+        )
+
+        sp_1 = StateSupervisionPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE_4,
+            termination_date=_DATE_6
+        )
+
+        sp_2 = StateSupervisionPeriod.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            start_date=_DATE_6,
+            termination_date=None)
+
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[sp_no_match, sp_1, sp_2])
+
+        ss = StateSupervisionSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE_4,
+            completion_date=None)
+        inc_s = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE_3,
+            completion_date=_DATE_5
+        )
+
+        sg = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[inc_s],
+            supervision_sentences=[ss, placeholder_ss])
+
+        state_person = StatePerson.new_with_defaults(
+            sentence_groups=[sg])
+
+        expected_sp_1 = attr.evolve(sp_1)
+        expected_sp_2 = attr.evolve(sp_2)
+
+        expected_placeholder_ss = attr.evolve(placeholder_ss,
+                                              supervision_periods=[sp_no_match])
+        expected_inc_s = attr.evolve(
+            inc_s, supervision_periods=[expected_sp_1])
+        expected_ss = attr.evolve(
+            ss,
+            supervision_periods=[expected_sp_1, expected_sp_2])
+
+        expected_sg = attr.evolve(
+            sg,
+            supervision_sentences=[expected_ss, expected_placeholder_ss],
+            incarceration_sentences=[expected_inc_s])
+        expected_person = attr.evolve(
+            state_person, sentence_groups=[expected_sg])
+
+        # Act
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [state_person])
+        move_supervision_periods_onto_sentences_by_date(input_people)
+
+        # Assert
+        self.assert_people_match([expected_person], input_people)
 
     def test_associateViolationsWithSupervisionPeriods(self):
         sv_ss = StateSupervisionViolation.new_with_defaults(
