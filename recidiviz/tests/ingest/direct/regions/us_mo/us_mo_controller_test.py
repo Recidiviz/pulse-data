@@ -524,12 +524,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '710448-20010414-1',
                                         status='COMPLETED',
-                                        date_imposed='20050513',
-                                        start_date='20051023',
-                                        projected_min_release_date='20091022',
-                                        projected_max_release_date='20091022',
-                                        parole_eligibility_date='2005-10-23',
-                                        completion_date='20190607',
+                                        date_imposed='20010627',
+                                        start_date='20010805',
+                                        projected_min_release_date='20050804',
+                                        projected_max_release_date='20050804',
+                                        parole_eligibility_date='2001-08-05',
+                                        completion_date='20060911',
                                         county_code='US_MO_ST_LOUIS_CITY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
@@ -551,12 +551,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '710448-20010414-2',
                                         status='COMPLETED',
-                                        date_imposed='20061214',
-                                        start_date='20061207',
-                                        projected_min_release_date='20111206',
-                                        projected_max_release_date='20111206',
-                                        parole_eligibility_date='2006-12-07',
-                                        completion_date='20190607',
+                                        date_imposed='20021031',
+                                        start_date='20021101',
+                                        projected_min_release_date='20061031',
+                                        projected_max_release_date='20061031',
+                                        parole_eligibility_date='2002-11-01',
+                                        completion_date='20060911',
                                         county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='5Y 0M 0D',
                                         is_life='False',
@@ -564,7 +564,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_charges=[StateCharge(
                                             state_charge_id=
                                             '710448-20010414-2',
-                                            offense_date='20050301',
+                                            offense_date='20010915',
                                             ncic_code='3599',
                                             statute='32500990',
                                             description=
@@ -575,12 +575,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_sentence_id=
                                         '710448-20010414-3',
                                         status='COMPLETED',
-                                        date_imposed='20061214',
-                                        start_date='20061207',
-                                        projected_min_release_date='20101206',
-                                        projected_max_release_date='20101206',
-                                        parole_eligibility_date='2006-12-07',
-                                        completion_date='20190607',
+                                        date_imposed='20021031',
+                                        start_date='20021101',
+                                        projected_min_release_date='20051031',
+                                        projected_max_release_date='20051031',
+                                        parole_eligibility_date='2002-11-01',
+                                        completion_date='20060911',
                                         county_code='US_MO_ST_LOUIS_COUNTY',
                                         max_length='4Y 0M 0D',
                                         is_life='False',
@@ -588,7 +588,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_charges=[StateCharge(
                                             state_charge_id=
                                             '710448-20010414-3',
-                                            offense_date='20050301',
+                                            offense_date='20010915',
                                             ncic_code='4899',
                                             statute='27020990',
                                             description='RESISTING ARREST',
@@ -738,9 +738,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         '110035-20040712-1',
                                         status='COMPLETED',
                                         supervision_type='SES',
-                                        start_date='19740712',
-                                        projected_completion_date='19770712',
-                                        completion_date='19740726',
+                                        start_date='20040201',
+                                        projected_completion_date='20080120',
+                                        completion_date='20080119',
                                         county_code='US_MO_GREENE',
                                         max_length='3Y 0M 0D',
                                         state_charges=[
@@ -998,7 +998,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
                                                 admission_reason='10I1000',
-                                                release_date='20081115',
+                                                release_date='19890516',
                                                 release_reason='IE-IE',
                                                 specialized_purpose_for_incarceration='O',
                                             )
@@ -1237,7 +1237,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 '910324-19890825-2-0',
                                                 status='UNDER_SUPERVISION',
                                                 supervision_type='BP',
-                                                start_date='20081115',
+                                                start_date='19890516',
                                                 admission_reason='IT',
                                             )
                                         ]
@@ -1301,7 +1301,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 status='NOT_IN_CUSTODY',
                                                 admission_date='19891023',
                                                 admission_reason='10I1000',
-                                                release_date='20081115',
+                                                release_date='19890516',
                                                 release_reason='IE-IE',
                                                 specialized_purpose_for_incarceration='O',
                                             )
@@ -1520,7 +1520,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-R1-1-0',
-                            violation_date='20090417',
+                            violation_date='19890617',
                             state_supervision_violation_types=[
                                 StateSupervisionViolationTypeEntry(
                                     violation_type='M'
@@ -1537,7 +1537,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '910324-19890825-R1-1-0',
                                     is_draft='True',
-                                    response_date='20090416',
+                                    response_date='19890616',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     decision_agents=[StateAgent(
                                         agent_type='PROBATION & PAROLE OFCR I',
@@ -1560,7 +1560,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-R1-1-1',
-                            violation_date='20090417',
+                            violation_date='19890617',
                             state_supervision_violation_types=[
                                 StateSupervisionViolationTypeEntry(
                                     violation_type='M'
@@ -1577,7 +1577,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '910324-19890825-R1-1-1',
                                     is_draft='True',
-                                    response_date='20090416',
+                                    response_date='19890616',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     decision_agents=[StateAgent(
                                         agent_type='PROBATION & PAROLE OFCR I',
@@ -1594,7 +1594,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         StateSupervisionViolation(
                             state_supervision_violation_id=
                             '910324-19890825-R2-1-1',
-                            violation_date='20090604',
+                            violation_date='19890804',
                             state_supervision_violation_types=[
                                 StateSupervisionViolationTypeEntry(
                                     violation_type='T'
@@ -1610,7 +1610,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     response_type='VIOLATION_REPORT',
                                     state_supervision_violation_response_id=
                                     '910324-19890825-R2-1-1',
-                                    response_date='2009-07-03',
+                                    response_date='1989-09-03',
                                     is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                     decision_agents=[StateAgent(
@@ -1680,7 +1680,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '110035-20040712-C1-1-1',
                                     response_type='CITATION',
-                                    response_date='20130210',
+                                    response_date='20070210',
                                     is_draft='True',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )])])])
@@ -1705,7 +1705,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '110035-20040712-C1-2-2',
                                     response_type='CITATION',
-                                    response_date='20130210',
+                                    response_date='20070210',
                                     is_draft='True',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )])])])
@@ -1727,7 +1727,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     state_supervision_violation_response_id=
                                     '910324-19890825-C1-1-0',
                                     response_type='CITATION',
-                                    response_date='2001-01-01',
+                                    response_date='1990-01-01',
                                     is_draft='False',
                                     deciding_body_type='SUPERVISION_OFFICER',
                                 )
@@ -2257,16 +2257,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                date_imposed=datetime.date(year=2005, month=5, day=13),
-                start_date=datetime.date(year=2005, month=10, day=23),
+                date_imposed=datetime.date(year=2001, month=6, day=27),
+                start_date=datetime.date(year=2001, month=8, day=5),
                 projected_min_release_date=
-                datetime.date(year=2009, month=10, day=22),
+                datetime.date(year=2005, month=8, day=4),
                 projected_max_release_date=
-                datetime.date(year=2009, month=10, day=22),
+                datetime.date(year=2005, month=8, day=4),
                 parole_eligibility_date=
-                datetime.date(year=2005, month=10, day=23),
+                datetime.date(year=2001, month=8, day=5),
                 completion_date=
-                datetime.date(year=2019, month=6, day=7),
+                datetime.date(year=2006, month=9, day=11),
                 county_code='US_MO_ST_LOUIS_CITY',
                 max_length_days=1461,
                 is_life=False,
@@ -2299,16 +2299,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                date_imposed=datetime.date(year=2006, month=12, day=14),
-                start_date=datetime.date(year=2006, month=12, day=7),
+                date_imposed=datetime.date(year=2002, month=10, day=31),
+                start_date=datetime.date(year=2002, month=11, day=1),
                 projected_min_release_date=
-                datetime.date(year=2011, month=12, day=6),
+                datetime.date(year=2006, month=10, day=31),
                 projected_max_release_date=
-                datetime.date(year=2011, month=12, day=6),
+                datetime.date(year=2006, month=10, day=31),
                 parole_eligibility_date=
-                datetime.date(year=2006, month=12, day=7),
+                datetime.date(year=2002, month=11, day=1),
                 completion_date=
-                datetime.date(year=2019, month=6, day=7),
+                datetime.date(year=2006, month=9, day=11),
                 county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1826,
                 is_life=False,
@@ -2320,7 +2320,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             external_id='710448-20010414-2',
-            offense_date=datetime.date(year=2005, month=3, day=1),
+            offense_date=datetime.date(year=2001, month=9, day=15),
             ncic_code='3599',
             statute='32500990',
             description='TRAFFICKING 2ND DEGREE',
@@ -2340,16 +2340,16 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='COMPLETED',
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                date_imposed=datetime.date(year=2006, month=12, day=14),
-                start_date=datetime.date(year=2006, month=12, day=7),
+                date_imposed=datetime.date(year=2002, month=10, day=31),
+                start_date=datetime.date(year=2002, month=11, day=1),
                 projected_min_release_date=
-                datetime.date(year=2010, month=12, day=6),
+                datetime.date(year=2005, month=10, day=31),
                 projected_max_release_date=
-                datetime.date(year=2010, month=12, day=6),
+                datetime.date(year=2005, month=10, day=31),
                 parole_eligibility_date=
-                datetime.date(year=2006, month=12, day=7),
+                datetime.date(year=2002, month=11, day=1),
                 completion_date=
-                datetime.date(year=2019, month=6, day=7),
+                datetime.date(year=2006, month=9, day=11),
                 county_code='US_MO_ST_LOUIS_COUNTY',
                 max_length_days=1461,
                 is_life=False,
@@ -2361,7 +2361,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='710448-20010414-3',
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            offense_date=datetime.date(year=2005, month=3, day=1),
+            offense_date=datetime.date(year=2001, month=9, day=15),
             ncic_code='4899',
             statute='27020990',
             description='RESISTING ARREST',
@@ -2547,11 +2547,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 supervision_type=StateSupervisionType.PROBATION,
                 supervision_type_raw_text='SES',
                 start_date=
-                datetime.date(year=1974, month=7, day=12),
+                datetime.date(year=2004, month=2, day=1),
                 projected_completion_date=
-                datetime.date(year=1977, month=7, day=12),
+                datetime.date(year=2008, month=1, day=20),
                 completion_date=
-                datetime.date(year=1974, month=7, day=26),
+                datetime.date(year=2008, month=1, day=19),
                 county_code='US_MO_GREENE',
                 max_length_days=1095,
                 person=person_110035,
@@ -2902,7 +2902,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason=
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='10I1000',
-                release_date=datetime.date(year=2008, month=11, day=15),
+                release_date=datetime.date(year=1989, month=5, day=16),
                 release_reason=
                 StateIncarcerationPeriodReleaseReason.ESCAPE,
                 release_reason_raw_text='IE-IE',
@@ -3234,7 +3234,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status_raw_text='UNDER_SUPERVISION',
                 supervision_type=StateSupervisionType.PAROLE,
                 supervision_type_raw_text='BP',
-                start_date=datetime.date(year=2008, month=11, day=15),
+                start_date=datetime.date(year=1989, month=5, day=16),
                 admission_reason=
                 StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
                 admission_reason_raw_text='IT',
@@ -3575,7 +3575,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
-                violation_date=datetime.date(year=2009, month=4, day=17),
+                violation_date=datetime.date(year=1989, month=6, day=17),
                 supervision_periods=[sp_910324_19890825_2_0],
                 person=person_910324,
             )
@@ -3598,7 +3598,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R1',
-                response_date=datetime.date(year=2009, month=4, day=16),
+                response_date=datetime.date(year=1989, month=6, day=16),
                 is_draft=True,
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -3648,8 +3648,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R2',
-                violation_date=datetime.date(year=2009, month=6, day=4),
                 supervision_periods=[placeholder_ssp_910324_19890825_from_ss],
+                violation_date=datetime.date(year=1989, month=8, day=4),
                 person=person_910324,
             )
         ssvc_910324_19890825_r2_1_spc = \
@@ -3678,7 +3678,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-R2',
-                response_date=datetime.date(year=2009, month=7, day=3),
+                response_date=datetime.date(year=1989, month=9, day=3),
                 is_draft=False,
                 response_type=
                 StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -3743,7 +3743,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-C1',
-                supervision_periods=[placeholder_ssp2_110035_20040712_1],
+                supervision_periods=[sp_110035_20040712_1_9],
                 person=person_110035,
             )
         ssvc_110035_20040712_c1_1_drg = \
@@ -3764,7 +3764,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='110035-20040712-C1',
-                response_date=datetime.date(year=2013, month=2, day=10),
+                response_date=datetime.date(year=2007, month=2, day=10),
                 is_draft=True,
                 supervision_violation=ssv_110035_20040712_c1,
                 response_type=StateSupervisionViolationResponseType.CITATION,
@@ -3779,7 +3779,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvr_110035_20040712_c1_1)
         ssv_110035_20040712_c1.supervision_violated_conditions.extend([
             ssvc_110035_20040712_c1_1_drg, ssvc_110035_20040712_c1_1_law])
-        placeholder_ssp2_110035_20040712_1.supervision_violation_entries.append(
+        sp_110035_20040712_1_9.supervision_violation_entries.append(
             ssv_110035_20040712_c1)
         sss_110035_20040712_1.supervision_periods.append(
             placeholder_ssp2_110035_20040712_1)
@@ -3813,7 +3813,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-C1',
                 violated_conditions=None,
-                supervision_periods=[placeholder_ssp2_910324_19890825_1],
+                supervision_periods=[sp_910324_19890825_2_0],
                 person=person_910324,
             )
         ssvc_910324_19890825_c1_1_drg = \
@@ -3827,7 +3827,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 external_id='910324-19890825-C1',
-                response_date=datetime.date(year=2001, month=1, day=1),
+                response_date=datetime.date(year=1990, month=1, day=1),
                 is_draft=False,
                 supervision_violation=ssv_910324_19890825_c1_1,
                 response_type=StateSupervisionViolationResponseType.CITATION,
@@ -3842,7 +3842,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ssvr_910324_19890825_c1_1)
         ssv_910324_19890825_c1_1.supervision_violated_conditions.append(
             ssvc_910324_19890825_c1_1_drg)
-        placeholder_ssp2_910324_19890825_1.supervision_violation_entries.append(
+        sp_910324_19890825_2_0.supervision_violation_entries.append(
             ssv_910324_19890825_c1_1)
         sis_910324_19890825_1.supervision_periods.append(
             placeholder_ssp2_910324_19890825_1)
