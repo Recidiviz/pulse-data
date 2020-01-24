@@ -18,7 +18,7 @@
 GcsfsDirectIngestControllers.
 """
 import abc
-from typing import List, Type
+from typing import List, Type, Optional
 
 from freezegun import freeze_time
 from mock import patch, Mock, create_autospec
@@ -31,7 +31,8 @@ from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.entity.entity_utils import print_entity_tree
+from recidiviz.persistence.entity.entity_utils import person_has_id, \
+    print_entity_trees
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     FakeDirectIngestGCSFileSystem, run_task_queues_to_empty, \
@@ -39,9 +40,9 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids, assert_no_unexpected_entities_in_db, \
-    sort_based_on_flat_fields
-from recidiviz.tests.utils.test_utils import print_visible_header_label
+    clear_db_ids, assert_no_unexpected_entities_in_db
+from recidiviz.tests.utils.test_utils import print_visible_header_label, \
+    is_travis
 from recidiviz.utils.regions import Region
 
 
@@ -104,7 +105,22 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
     def assert_expected_db_people(
             self,
             expected_db_people: List[StatePerson],
-            debug: bool = False) -> None:
+            debug: bool = False,
+            single_person_to_debug: Optional[str] = None
+    ) -> None:
+        """Asserts that the set of expected people matches all the people that
+        currently exist in the database.
+
+        Args:
+            debug: (bool) If true, prints out both the found and expected entity
+                trees.
+            single_person_to_debug: (str) A string external_id of a person. If
+                debug=True and this is not None, this will only check for
+                equality between the people with that external_id. This should
+                be used for debugging only and this function will throw if this
+                value is set in CI.
+        """
+
         if debug:
             print('\n\n************** ASSERTING *************')
         session = SessionFactory.for_schema_base(StateBase)
@@ -112,14 +128,22 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         found_people = self.convert_and_clear_db_ids(found_people_from_db)
 
         if debug:
+            if single_person_to_debug is not None:
+                if is_travis():
+                    self.fail('The |single_person_to_debug| flag should only '
+                              'be used for local debugging.')
+
+                found_people = [p for p in found_people
+                                if person_has_id(p, single_person_to_debug)]
+                expected_db_people = \
+                    [p for p in expected_db_people
+                     if person_has_id(p, single_person_to_debug)]
+
             print_visible_header_label('FINAL')
-            sort_based_on_flat_fields(found_people)
-            for p in found_people:
-                print_entity_tree(p)
+            print_entity_trees(found_people)
+
             print_visible_header_label('EXPECTED')
-            sort_based_on_flat_fields(expected_db_people)
-            for p in expected_db_people:
-                print_entity_tree(p)
+            print_entity_trees(expected_db_people)
 
         self.assertCountEqual(found_people, expected_db_people)
 
