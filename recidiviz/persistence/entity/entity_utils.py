@@ -17,11 +17,12 @@
 """Utils for working with Entity classes or various |entities| modules."""
 
 import inspect
+import json
 import logging
 from collections import defaultdict
 from enum import Enum, auto
 from types import ModuleType
-from typing import Dict, List, Set, Type, Sequence, Optional
+from typing import Dict, List, Set, Type, Sequence, Optional, Union, cast
 from functools import lru_cache
 
 import attr
@@ -430,17 +431,91 @@ def is_placeholder(entity: CoreEntity) -> bool:
     return not bool(set_flat_fields)
 
 
+def _get_entity_sort_key(entity: CoreEntity) -> str:
+    """Generates a sort key for the given entity based on the flat field values
+    in this entity."""
+    return f'{entity.get_external_id()}#{_get_flat_fields_json_str(entity)}'
+
+
+def _sort_based_on_flat_fields(db_entities: Sequence[CoreEntity]):
+    """Helper function that sorts all entities in |db_entities| in place as
+    well as all children of |db_entities|. Sorting is done by first by an
+    external_id if that field exists, then present flat fields.
+    """
+    db_entities = cast(List, db_entities)
+    db_entities.sort(key=_get_entity_sort_key)
+    for entity in db_entities:
+        for field_name in get_set_entity_field_names(
+                entity, EntityFieldType.FORWARD_EDGE):
+            field = entity.get_field_as_list(field_name)
+            _sort_based_on_flat_fields(field)
+
+
+def _get_flat_fields_json_str(entity: CoreEntity):
+    flat_fields_dict: Dict[str, str] = {}
+    for field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FLAT_FIELD):
+        flat_fields_dict[field_name] = str(entity.get_field(field_name))
+    return json.dumps(flat_fields_dict, sort_keys=True)
+
+
 def _print_indented(s: str, indent: int):
     print(f'{" " * indent}{s}')
 
 
-def _obj_id_str(entity: CoreEntity):
-    return f'{entity.get_entity_name()} ({id(entity)})'
+def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
+    python_obj_id = id(entity)
+
+    if python_obj_id not in id_mapping:
+        fake_id = len(id_mapping)
+        id_mapping[python_obj_id] = fake_id
+    else:
+        fake_id = id_mapping[python_obj_id]
+
+    return f'{entity.get_entity_name()} ({fake_id})'
 
 
-def print_entity_tree(entity: CoreEntity, indent: int = 0):
-    """Recursively prints out all objects in the tree below the given entity."""
-    _print_indented(_obj_id_str(entity), indent)
+def print_entity_trees(entities_list: Sequence[CoreEntity],
+                       python_id_to_fake_id: Dict[int, int] = None):
+    """Recursively prints out all objects in the trees below the given list of
+    entities. Each time we encounter a new object, we assign a new fake id (an
+    auto-incrementing count) and print that with the object.
+
+    This means that two lists with the exact same shape/flat fields will print
+    out the exact same string, making it much easier to debug edge-related
+    issues in Diffchecker, etc.
+
+    Note: this function sorts any list fields in the provided entity IN PLACE
+    (should not matter for any equality checks we generally do).
+    """
+
+    if python_id_to_fake_id is None:
+        python_id_to_fake_id = {}
+        _sort_based_on_flat_fields(entities_list)
+
+    for entity in entities_list:
+        print_entity_tree(entity, python_id_to_fake_id=python_id_to_fake_id)
+
+
+def print_entity_tree(entity: CoreEntity,
+                      indent: int = 0,
+                      python_id_to_fake_id: Dict[int, int] = None):
+    """Recursively prints out all objects in the tree below the given entity.
+    Each time we encounter a new object, we assign a new fake id (an
+    auto-incrementing count) and print that with the object.
+
+    This means that two entity trees with the exact same shape/flat fields will
+    print out the exact same string, making it much easier to debug edge-related
+    issues in Diffchecker, etc.
+
+    Note: this function sorts any list fields in the provided entity IN PLACE
+    (should not matter for any equality checks we generally do).
+    """
+    if python_id_to_fake_id is None:
+        python_id_to_fake_id = {}
+        _sort_based_on_flat_fields([entity])
+
+    _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent)
 
     indent = indent + 2
     for field in get_all_core_entity_field_names(entity,
@@ -460,12 +535,12 @@ def print_entity_tree(entity: CoreEntity, indent: int = 0):
                 else:
                     _print_indented(f'{child_field}: [', indent)
                     for c in child:
-                        print_entity_tree(c, indent + 2)
+                        print_entity_tree(c, indent + 2, python_id_to_fake_id)
                     _print_indented(f']', indent)
 
             else:
                 _print_indented(f'{child_field}:', indent)
-                print_entity_tree(child, indent + 2)
+                print_entity_tree(child, indent + 2, python_id_to_fake_id)
         else:
             _print_indented(f'{child_field}: None', indent)
 
@@ -479,12 +554,15 @@ def print_entity_tree(entity: CoreEntity, indent: int = 0):
                 len_str = f'{len(child)}' \
                     if len(unique) == len(child) \
                     else f'{len(child)} - ONLY {len(unique)} UNIQUE!'
+
+                id_str = _obj_id_str(first_child, python_id_to_fake_id)
                 _print_indented(
                     f'{child_field} ({len_str}): '
-                    f'[{_obj_id_str(first_child)}, ...] - backedge', indent)
+                    f'[{id_str}, ...] - backedge', indent)
             else:
+                id_str = _obj_id_str(child, python_id_to_fake_id)
                 _print_indented(
-                    f'{child_field}: {_obj_id_str(child)} - backedge', indent)
+                    f'{child_field}: {id_str} - backedge', indent)
         else:
             _print_indented(f'{child_field}: None - backedge', indent)
 
@@ -611,3 +689,12 @@ def log_entity_count(db_persons: List[schema.StatePerson]):
     for cls, entities_of_cls in entities_by_type.items():
         debug_msg += f'{str(cls.__name__)}: {str(len(entities_of_cls))}\n'
     logging.info(debug_msg)
+
+
+def person_has_id(person: Union[entities.StatePerson, schema.StatePerson],
+                  person_external_id: str):
+    """ Returns true if the given |person_external_id| matches any of the
+    external_ids for the given |person|.
+    """
+    external_ids_for_person = [eid.external_id for eid in person.external_ids]
+    return person_external_id in external_ids_for_person

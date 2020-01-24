@@ -22,9 +22,9 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.entity.entity_utils import print_entity_tree
+from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids, assert_no_unexpected_entities_in_db, sort_based_on_flat_fields
+    clear_db_ids, assert_no_unexpected_entities_in_db
 from recidiviz.tests.utils import fakes
 
 from recidiviz.persistence.database.base_schema import StateBase
@@ -86,13 +86,9 @@ class BaseStateEntityMatcherTest(TestCase):
 
         if debug:
             print('============== EXPECTED WITH BACKEDGES ==============')
-            sort_based_on_flat_fields(expected_with_backedges)
-            for p in expected_with_backedges:
-                print_entity_tree(p)
+            print_entity_trees(expected_with_backedges)
             print('============== CONVERTED MATCHED ==============')
-            sort_based_on_flat_fields(converted_matched)
-            for p in converted_matched:
-                print_entity_tree(p)
+            print_entity_trees(converted_matched)
         self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def _session(self):

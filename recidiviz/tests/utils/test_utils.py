@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util functions common to all tests."""
+import os
 
 
 def print_visible_header_label(label_text: str) -> None:
@@ -25,3 +26,10 @@ def print_visible_header_label(label_text: str) -> None:
     for _ in range(0, 3):
         print('*' * 200)
     print(f"\n{label_text}")
+
+
+def is_travis() -> bool:
+    """Returns true if this test is running inside of a Travis environment,
+    false otherwise.
+    """
+    return 'TRAVIS' in os.environ
