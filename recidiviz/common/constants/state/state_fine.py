@@ -36,6 +36,8 @@ class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_FINE_STATUS_MAP: Dict[str, StateFineStatus] = {
+    'EXTERNAL UNKNOWN': StateFineStatus.EXTERNAL_UNKNOWN,
     'PAID': StateFineStatus.PAID,
+    'PRESENT WITHOUT INFO': StateFineStatus.PRESENT_WITHOUT_INFO,
     'UNPAID': StateFineStatus.UNPAID,
 }
