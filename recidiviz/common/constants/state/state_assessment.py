@@ -86,6 +86,7 @@ _STATE_ASSESSMENT_CLASS_MAP = {
     'MENTAL HEALTH': StateAssessmentClass.MENTAL_HEALTH,
     'MH': StateAssessmentClass.MENTAL_HEALTH,
     'RISK': StateAssessmentClass.RISK,
+    'SECURITY CLASSIFICATION': StateAssessmentClass.SECURITY_CLASSIFICATION,
     'SUBSTANCE ABUSE': StateAssessmentClass.SUBSTANCE_ABUSE,
     'SUBSTANCE': StateAssessmentClass.SUBSTANCE_ABUSE,
 }
@@ -95,8 +96,23 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     'ASI': StateAssessmentType.ASI,
     'LSIR': StateAssessmentType.LSIR,
     'ORAS': StateAssessmentType.ORAS,
+    'ORAS COMMUNITY SUPERVISION':
+        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+    'ORAS COMMUNITY SUPERVISION SCREENING':
+        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+    'ORAS MISDEMEANOR ASSESSMENT':
+        StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
+    'ORAS MISDEMEANOR SCREENING':
+        StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
+    'ORAS PRE TRIAL': StateAssessmentType.ORAS_PRE_TRIAL,
+    'ORAS PRISON SCREENING': StateAssessmentType.ORAS_PRISON_SCREENING,
+    'ORAS PRISON INTAKE': StateAssessmentType.ORAS_PRISON_INTAKE,
+    'ORAS REENTRY': StateAssessmentType.ORAS_REENTRY,
+    'ORAS STATIC': StateAssessmentType.ORAS_STATIC,
+    'ORAS SUPPLEMENTAL REENTRY': StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
     'PSA': StateAssessmentType.PSA,
     'SORAC': StateAssessmentType.SORAC,
+    'INTERNAL UNKNOWN': StateAssessmentType.INTERNAL_UNKNOWN,
 }
 
 _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
@@ -108,4 +124,5 @@ _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
     'HIGH': StateAssessmentLevel.HIGH,
     'NOT APPLICABLE': StateAssessmentLevel.NOT_APPLICABLE,
     'UNDETERMINED': StateAssessmentLevel.UNDETERMINED,
+    'VERY HIGH': StateAssessmentLevel.VERY_HIGH,
 }
