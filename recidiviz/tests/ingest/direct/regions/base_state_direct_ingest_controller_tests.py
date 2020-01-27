@@ -42,7 +42,7 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     clear_db_ids, assert_no_unexpected_entities_in_db
 from recidiviz.tests.utils.test_utils import print_visible_header_label, \
-    is_travis
+    is_running_in_ci
 from recidiviz.utils.regions import Region
 
 
@@ -129,7 +129,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
 
         if debug:
             if single_person_to_debug is not None:
-                if is_travis():
+                if is_running_in_ci():
                     self.fail('The |single_person_to_debug| flag should only '
                               'be used for local debugging.')
 
