@@ -97,6 +97,8 @@ def move_supervision_periods_onto_sentences_by_date(
                 sentence_group)
 
 
+# TODO(2798): Update this to also associate incarceration sentences by
+#  date as a fast follow (don't want to make test updates too complicated).
 def _move_supervision_periods_onto_sentences_for_sentence_group(
         sentence_group: schema.StateSentenceGroup):
     """Looks at all SupervisionPeriods in the provided |sentence_group|, and
@@ -105,22 +107,26 @@ def _move_supervision_periods_onto_sentences_for_sentence_group(
     sentences = sentence_group.supervision_sentences \
         + sentence_group.incarceration_sentences
 
-    # TODO(XXXX): Update this to also associate incarceration sentences by
-    #  date as a fast follow (don't want to make test updates to complicated).
     # Get all supervision periods from sentence group
     supervision_periods = get_all_entities_of_cls(
         [sentence_group], schema.StateSupervisionPeriod)
 
-    # Clear the links from sentence to supervision period. We will
+    # Clear non-placeholder links from sentence to supervision period. We will
     # re-add/update these relationships below.
     for sentence in sentences:
-        sentence.supervision_periods = []
+        placeholder_supervision_periods = [
+            sp for sp in sentence.supervision_periods if is_placeholder(sp)]
+        sentence.supervision_periods = placeholder_supervision_periods
 
     unmatched_sps = []
-    non_placeholder_sentences = [s for s in sentences if not is_placeholder(s)]
+    non_placeholder_sentences = [s for s in sentences
+                                 if not is_placeholder(s)]
+
+    non_placeholder_supervision_periods = [
+        sp for sp in supervision_periods if not is_placeholder(sp)]
 
     # Match SVs to non_placeholder_periods by date.
-    for sp in supervision_periods:
+    for sp in non_placeholder_supervision_periods:
         matched = False
         sp_start_date = sp.start_date if sp.start_date else datetime.date.min
         sp_termination_date = \
@@ -128,13 +134,14 @@ def _move_supervision_periods_onto_sentences_for_sentence_group(
             if sp.termination_date else datetime.date.max
 
         for s in non_placeholder_sentences:
-            s_start_date = s.start_date \
-                if s.start_date else datetime.date.min
+            if not s.start_date:
+                continue
+
             s_completion_date = s.completion_date \
                 if s.completion_date else datetime.date.max
 
-            if (s_start_date <= sp_start_date < s_completion_date) or \
-                    (s_start_date <= sp_termination_date < s_completion_date):
+            if (s.start_date <= sp_start_date < s_completion_date) or \
+                    (s.start_date <= sp_termination_date < s_completion_date):
                 matched = True
                 s.supervision_periods.append(sp)
 
@@ -142,7 +149,7 @@ def _move_supervision_periods_onto_sentences_for_sentence_group(
         if not matched:
             unmatched_sps.append(sp)
 
-    # Add unmatched supervision violations to a placeholder period
+    # Add unmatched supervision periods to a placeholder sentence
     if unmatched_sps:
         placeholder_sentences = [s for s in sentences if is_placeholder(s)]
         if not placeholder_sentences:

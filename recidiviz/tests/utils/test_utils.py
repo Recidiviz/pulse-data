@@ -28,8 +28,16 @@ def print_visible_header_label(label_text: str) -> None:
     print(f"\n{label_text}")
 
 
-def is_travis() -> bool:
-    """Returns true if this test is running inside of a Travis environment,
-    false otherwise.
+def in_docker():
+    """ Returns: True if running in a Docker container, else False """
+    if not os.path.exists('/proc/1/cgroup'):
+        return False
+    with open('/proc/1/cgroup', 'rt') as ifh:
+        return 'docker' in ifh.read()
+
+
+def is_running_in_ci() -> bool:
+    """Returns True if this code is running in the CI environment, False
+    otherwise.
     """
-    return 'TRAVIS' in os.environ
+    return in_docker()
