@@ -183,6 +183,10 @@ state_supervision_period_admission_reason_absconsion = 'ABSCONSION'
 state_supervision_period_admission_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
 state_supervision_period_admission_reason_court_sentence = 'COURT_SENTENCE'
+state_supervision_period_admission_reason_transfer_out_of_state = \
+    'TRANSFER_OUT_OF_STATE'
+state_supervision_period_admission_reason_transfer_within_state = \
+    'TRANSFER_WITHIN_STATE'
 state_supervision_period_admission_reason_return_from_absconsion = \
     'RETURN_FROM_ABSCONSION'
 state_supervision_period_admission_reason_return_from_suspension = \
@@ -202,6 +206,10 @@ state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
 state_supervision_period_termination_reason_death = 'DEATH'
 state_supervision_period_termination_reason_discharge = 'DISCHARGE'
 state_supervision_period_termination_reason_expiration = 'EXPIRATION'
+state_supervision_period_termination_reason_transfer_out_of_state = \
+    'TRANSFER_OUT_OF_STATE'
+state_supervision_period_termination_reason_transfer_within_state = \
+    'TRANSFER_WITHIN_STATE'
 state_supervision_period_termination_reason_return_from_absconsion = \
     'RETURN_FROM_ABSCONSION'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'

@@ -147,16 +147,22 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
 _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
     'ADM': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
+    'EXTERNAL UNKNOWN': StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN,
     'IN': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'IN CUSTODY': StateIncarcerationPeriodStatus.IN_CUSTODY,
     'NOT IN CUSTODY': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
     'OUT': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
     'REL': StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+    'PRESENT WITHOUT INFO': StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
 }
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'ADM ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'ADMITTED IN ERROR':
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     'ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'EXTERNAL UNKNOWN':
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     'ADMN': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
     'NEW ADMISSION': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
     'PAROLE REVOCATION':
@@ -169,6 +175,8 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'RECA': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     'RETURN FROM ESCAPE':
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    'RETURN FROM ERRONEOUS RELEASE':
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     'COURT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'CRT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'DETOX': StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -185,6 +193,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'CMM': StateIncarcerationPeriodReleaseReason.COMMUTED,
     'COMMUTED': StateIncarcerationPeriodReleaseReason.COMMUTED,
     'COMMUTATION': StateIncarcerationPeriodReleaseReason.COMMUTED,
+    'COMPASSIONATE': StateIncarcerationPeriodReleaseReason.COMPASSIONATE,
     'CONDITIONAL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'CONDITIONAL RELEASE':
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -199,6 +208,8 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'ESCAPE': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'EXECUTION': StateIncarcerationPeriodReleaseReason.EXECUTION,
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'EXTERNAL UNKNOWN':
+        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -214,10 +225,13 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     'ERROR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+    'RELEASED IN ERROR':
+        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     'RELEASED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'TIME EARNED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'TIME SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'SENTENCE SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'COURT': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'CRT': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'DETOX': StateIncarcerationPeriodReleaseReason.TRANSFER,

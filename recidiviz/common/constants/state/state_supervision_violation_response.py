@@ -115,7 +115,12 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     'CONTINUANCE': StateSupervisionViolationResponseDecision.CONTINUANCE,
     'EXTENSION': StateSupervisionViolationResponseDecision.EXTENSION,
+    'DELAYED ACTION': StateSupervisionViolationResponseDecision.DELAYED_ACTION,
+    'PRIVILEGES REVOKED':
+        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
     'REVOCATION': StateSupervisionViolationResponseDecision.REVOCATION,
+    'SERVICE TERMINATION':
+        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
     'SUSPENSION': StateSupervisionViolationResponseDecision.SUSPENSION,
 }
 
@@ -128,11 +133,12 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {
         StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
     'SUPERVISION':
         StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+    'RETURN TO SUPERVISION':
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
     'SHOCK INCARCERATION':
         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
     'TREATMENT IN PRISON':
         StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
-
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP = {

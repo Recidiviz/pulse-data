@@ -34,6 +34,7 @@ class StateParoleDecisionOutcome(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_PAROLE_DECISION_OUTCOME_MAP = {
+    'EXTERNAL UNKNOWN': StateParoleDecisionOutcome.EXTERNAL_UNKNOWN,
     'DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,
     'DENIED PAROLE': StateParoleDecisionOutcome.PAROLE_DENIED,
     'PAROLE DENIED': StateParoleDecisionOutcome.PAROLE_DENIED,

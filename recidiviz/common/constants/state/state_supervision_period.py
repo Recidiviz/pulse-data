@@ -26,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class StateSupervisionPeriodAdmissionReason(EntityEnum,
                                             metaclass=EntityEnumMeta):
+    """Admission reasons for StateSupervisionPeriod"""
     ABSCONSION = \
         state_enum_strings.\
         state_supervision_period_admission_reason_absconsion
@@ -38,6 +39,13 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum,
         state_enum_strings.\
         state_supervision_period_admission_reason_court_sentence
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    TRANSFER_OUT_OF_STATE = \
+        state_enum_strings.\
+        state_supervision_period_admission_reason_transfer_out_of_state
+    TRANSFER_WITHIN_STATE = \
+        state_enum_strings.\
+        state_supervision_period_admission_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = \
         state_enum_strings.\
         state_supervision_period_admission_reason_return_from_absconsion
@@ -84,6 +92,7 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateSupervisionPeriodTerminationReason(EntityEnum,
                                               metaclass=EntityEnumMeta):
+    """Termination reasons for StateSupervisionPeriod"""
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     ABSCONSION = state_enum_strings.\
         state_supervision_period_termination_reason_absconsion
@@ -93,6 +102,13 @@ class StateSupervisionPeriodTerminationReason(EntityEnum,
     EXPIRATION = \
         state_enum_strings.\
         state_supervision_period_termination_reason_expiration
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    TRANSFER_OUT_OF_STATE = \
+        state_enum_strings.\
+        state_supervision_period_termination_reason_transfer_out_of_state
+    TRANSFER_WITHIN_STATE = \
+        state_enum_strings.\
+        state_supervision_period_termination_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = \
         state_enum_strings.\
         state_supervision_period_termination_reason_return_from_absconsion
@@ -114,17 +130,26 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
     'ABSCONSION':
         StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    'TRANSFER WITHIN STATE':
+        StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+    'TRANSFER OUT OF STATE':
+        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
     'RETURN FROM ABSCOND':
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'RETURN FROM ABSCONSION':
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'ABSCONDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+    'RETURN FROM SUSPENSION':
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
 }
 
 _STATE_SUPERVISION_STATUS_MAP = {
+    'EXTERNAL UNKNOWN': StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN,
+    'PRESENT WITHOUT INFO': StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
     'TERMINATED': StateSupervisionPeriodStatus.TERMINATED,
     'RELEASED': StateSupervisionPeriodStatus.TERMINATED,
     'UNDER SUPERVISION': StateSupervisionPeriodStatus.UNDER_SUPERVISION,
@@ -132,6 +157,8 @@ _STATE_SUPERVISION_STATUS_MAP = {
 }
 
 _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
+    'EXTERNAL UNKNOWN': StateSupervisionLevel.EXTERNAL_UNKNOWN,
+    'PRESENT WITHOUT INFO': StateSupervisionLevel.PRESENT_WITHOUT_INFO,
     'MINIMUM': StateSupervisionLevel.MINIMUM,
     'MIN': StateSupervisionLevel.MINIMUM,
     'MEDIUM': StateSupervisionLevel.MEDIUM,
@@ -146,15 +173,25 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'ABSCOND': StateSupervisionPeriodTerminationReason.ABSCONSION,
     'ABSCONDED': StateSupervisionPeriodTerminationReason.ABSCONSION,
+    'ABSCONSION': StateSupervisionPeriodTerminationReason.ABSCONSION,
     'DEATH': StateSupervisionPeriodTerminationReason.DEATH,
     'DECEASED': StateSupervisionPeriodTerminationReason.DEATH,
     'DISCHARGE': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'DISCHARGED': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'EXPIRATION': StateSupervisionPeriodTerminationReason.EXPIRATION,
+    'EXTERNAL UNKNOWN':
+        StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
     'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
+    'INTERNAL UNKNOWN':
+        StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+    'TRANSFER WITHIN STATE':
+        StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+    'TRANSFER OUT OF STATE':
+        StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
     'RETURN FROM ABSCONSION':
         StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     'REVOCATION': StateSupervisionPeriodTerminationReason.REVOCATION,
     'REVOKED': StateSupervisionPeriodTerminationReason.REVOCATION,
-    'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+    'SUSPENDED': StateSupervisionPeriodTerminationReason.SUSPENSION,
+    'SUSPENSION': StateSupervisionPeriodTerminationReason.SUSPENSION,
 }

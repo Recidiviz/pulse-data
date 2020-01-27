@@ -43,6 +43,7 @@ _SUPERVISION_TYPE_MAP = {
     'CIVIL COMMITMENT': StateSupervisionType.CIVIL_COMMITMENT,
     'CC': StateSupervisionType.CIVIL_COMMITMENT,
     'CCC': StateSupervisionType.CIVIL_COMMITMENT,
+    'EXTERNAL UNKNOWN': StateSupervisionType.EXTERNAL_UNKNOWN,
     'HALFWAY HOUSE': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY HOME': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY': StateSupervisionType.HALFWAY_HOUSE,

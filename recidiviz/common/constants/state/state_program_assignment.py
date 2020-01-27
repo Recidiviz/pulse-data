@@ -44,8 +44,12 @@ class StateProgramAssignmentParticipationStatus(
 _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
     'DENIED': StateProgramAssignmentParticipationStatus.DENIED,
     'DISCHARGED': StateProgramAssignmentParticipationStatus.DISCHARGED,
+    'EXTERNAL UNKNOWN':
+        StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
     'IN PROGRESS': StateProgramAssignmentParticipationStatus.IN_PROGRESS,
     'PENDING': StateProgramAssignmentParticipationStatus.PENDING,
+    'PRESENT WITHOUT INFO':
+        StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
 }
 
 
@@ -76,6 +80,8 @@ _STATE_PROGRAM_ASSIGNMENT_DISCHARGE_REASON_MAP = {
     'ADVERSE TERMINATION':
         StateProgramAssignmentDischargeReason.ADVERSE_TERMINATION,
     'COMPLETED': StateProgramAssignmentDischargeReason.COMPLETED,
+    'EXTERNAL UNKNOWN':
+        StateProgramAssignmentDischargeReason.EXTERNAL_UNKNOWN,
     'MOVED': StateProgramAssignmentDischargeReason.MOVED,
     'OPTED OUT': StateProgramAssignmentDischargeReason.OPTED_OUT,
     'PROGRAM TRANSFER': StateProgramAssignmentDischargeReason.PROGRAM_TRANSFER,
