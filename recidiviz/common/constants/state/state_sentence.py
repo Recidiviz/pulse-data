@@ -42,6 +42,8 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
 _STATE_SENTENCE_STATUS_MAP = {
     'COMMUTED': StateSentenceStatus.COMMUTED,
     'COMPLETED': StateSentenceStatus.COMPLETED,
+    'EXTERNAL UNKNOWN': StateSentenceStatus.EXTERNAL_UNKNOWN,
+    'PRESENT WITHOUT INFO': StateSentenceStatus.PRESENT_WITHOUT_INFO,
     'SERVING': StateSentenceStatus.SERVING,
     'SUSPENDED': StateSentenceStatus.SUSPENDED,
 }

@@ -52,6 +52,7 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
     'COMM': StateChargeClassificationType.CIVIL,
     'CRIMINAL TRAFFIC VIOLATION': StateChargeClassificationType.INFRACTION,
     'ENHANCEMENT': None,
+    'EXTERNAL UNKNOWN': StateChargeClassificationType.EXTERNAL_UNKNOWN,
     'F': StateChargeClassificationType.FELONY,
     'FEL': StateChargeClassificationType.FELONY,
     'FELONY': StateChargeClassificationType.FELONY,
