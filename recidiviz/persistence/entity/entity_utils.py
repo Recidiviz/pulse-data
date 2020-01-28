@@ -381,6 +381,33 @@ def _get_all_entity_field_names(entity: Entity,
         'entity_field_type')
 
 
+def prune_dangling_placeholders_from_tree(
+        entity: CoreEntity) -> Optional[CoreEntity]:
+    """Recursively prunes dangling placeholders from the entity tree, returning
+    the pruned entity tree, or None if the tree itself is a dangling
+    placeholder. The returned tree will have no subtrees where all the nodes are
+    placeholders.
+    """
+
+    has_non_placeholder_children = False
+    for field_name in get_set_entity_field_names(
+            entity, EntityFieldType.FORWARD_EDGE):
+
+        children_to_keep = []
+        for child in entity.get_field_as_list(field_name):
+            pruned_tree = prune_dangling_placeholders_from_tree(child)
+            if pruned_tree:
+                children_to_keep.append(pruned_tree)
+                has_non_placeholder_children = True
+
+        entity.set_field_from_list(field_name, children_to_keep)
+
+    if has_non_placeholder_children or not is_placeholder(entity):
+        return entity
+
+    return None
+
+
 def is_placeholder(entity: CoreEntity) -> bool:
     """Determines if the provided entity is a placeholder. Conceptually, a
     placeholder is an object that we have no information about, but have
