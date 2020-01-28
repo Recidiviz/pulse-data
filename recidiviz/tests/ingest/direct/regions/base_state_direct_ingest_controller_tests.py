@@ -18,7 +18,7 @@
 GcsfsDirectIngestControllers.
 """
 import abc
-from typing import List, Type, Optional
+from typing import List, Type, Optional, cast
 
 from freezegun import freeze_time
 from mock import patch, Mock, create_autospec
@@ -32,7 +32,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import person_has_id, \
-    print_entity_trees
+    print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     FakeDirectIngestGCSFileSystem, run_task_queues_to_empty, \
@@ -106,7 +106,10 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
             self,
             expected_db_people: List[StatePerson],
             debug: bool = False,
-            single_person_to_debug: Optional[str] = None
+            single_person_to_debug: Optional[str] = None,
+            # TODO(2492): Once we properly clean up dangling placeholders,
+            #  delete this.
+            ignore_dangling_placeholders: bool = False
     ) -> None:
         """Asserts that the set of expected people matches all the people that
         currently exist in the database.
@@ -119,6 +122,10 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
                 equality between the people with that external_id. This should
                 be used for debugging only and this function will throw if this
                 value is set in CI.
+            ignore_dangling_placeholders: (bool) If True, eliminates dangling
+                placeholder objects (i.e. placeholders with no non-placeholder
+                children) from both the result and expected trees before doing a
+                comparison.
         """
 
         if debug:
@@ -126,6 +133,23 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)
         found_people = self.convert_and_clear_db_ids(found_people_from_db)
+
+        if ignore_dangling_placeholders:
+            pruned_found_people = []
+            for person in found_people:
+                pruned_person = prune_dangling_placeholders_from_tree(person)
+                if pruned_person is not None:
+                    pruned_found_people.append(pruned_person)
+            found_people = pruned_found_people
+
+            pruned_expected_people: List[StatePerson] = []
+            for person in expected_db_people:
+                pruned_expected_person = \
+                    cast(StatePerson,
+                         prune_dangling_placeholders_from_tree(person))
+                if pruned_expected_person is not None:
+                    pruned_expected_people.append(pruned_expected_person)
+            expected_db_people = pruned_expected_people
 
         if debug:
             if single_person_to_debug is not None:
