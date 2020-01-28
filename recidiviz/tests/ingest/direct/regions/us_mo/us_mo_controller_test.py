@@ -3859,7 +3859,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f'{file_tag}.csv')
 
-        self.assert_expected_db_people(expected_people)
+        # TODO(2492): Until we implement proper cleanup of dangling
+        #   placeholders, reruns of certain files will create new dangling
+        #   placeholders with each rerun.
+        self.assert_expected_db_people(expected_people,
+                                       ignore_dangling_placeholders=True)
 
     def test_run_incarceration_period_na_not_converted_to_NaN(self) -> None:
         """Tests that values of 'NA' are not automatically converted to NaN

@@ -17,12 +17,19 @@
 """Tests for entity_utils.py"""
 from unittest import TestCase
 
+import attr
+
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import EntityFieldType, \
-    get_set_entity_field_names, is_standalone_class, SchemaEdgeDirectionChecker
+    get_set_entity_field_names, is_standalone_class, \
+    SchemaEdgeDirectionChecker, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StateSentenceGroup, \
     StateFine, StatePerson, StateSupervisionViolation
+from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
+    import generate_person, generate_sentence_group
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter)
 
 _ID = 1
 _STATE_CODE = 'NC'
@@ -32,6 +39,11 @@ _ID_TYPE = 'ID_TYPE'
 
 class TestEntityUtils(TestCase):
     """Tests the functionality of our entity utils."""
+
+    @staticmethod
+    def to_entity(schema_obj):
+        return converter.convert_schema_object_to_entity(
+            schema_obj, populate_back_edges=False)
 
     def test_getEntityRelationshipFieldNames_children(self):
         entity = StateSentenceGroup.new_with_defaults(
@@ -119,3 +131,63 @@ class TestEntityUtils(TestCase):
             StatePerson, StatePerson))
         self.assertFalse(direction_checker.is_higher_ranked(
             StateSupervisionViolation, StateSupervisionViolation))
+
+    def test_pruneDanglingPlaceholders_isDangling(self):
+        # Arrange
+        dangling_placeholder_person = generate_person()
+        dangling_placeholder_sg = generate_sentence_group()
+
+        # Act
+        pruned_person = \
+            prune_dangling_placeholders_from_tree(dangling_placeholder_person)
+        pruned_sentence_group = \
+            prune_dangling_placeholders_from_tree(dangling_placeholder_sg)
+
+        # Assert
+        self.assertIsNone(pruned_person)
+        self.assertIsNone(pruned_sentence_group)
+
+    def test_pruneDanglingPlaceholders_placeholderHasNonPlaceholderChildren(
+            self):
+        # Arrange
+        non_placeholder_sg = generate_sentence_group(external_id='external_id')
+        placeholder_person = \
+            generate_person(sentence_groups=[non_placeholder_sg])
+
+        expected_non_placeholder_sg = \
+            generate_sentence_group(external_id='external_id')
+        expected_placeholder_person = \
+            generate_person(sentence_groups=[expected_non_placeholder_sg])
+
+        # Act
+        pruned_tree = prune_dangling_placeholders_from_tree(placeholder_person)
+
+        # Assert
+        self.assertIsNotNone(pruned_tree)
+        self.assertEqual(
+            attr.evolve(self.to_entity(pruned_tree)),
+            attr.evolve(self.to_entity(expected_placeholder_person))
+        )
+
+    def test_pruneDanglingPlaceholders_placeholderHasMixedChildren(
+            self):
+        # Arrange
+        non_placeholder_sg = generate_sentence_group(external_id='external_id')
+        placeholder_sg = generate_sentence_group()
+        placeholder_person = generate_person(
+            sentence_groups=[non_placeholder_sg, placeholder_sg])
+
+        expected_non_placeholder_sg = \
+            generate_sentence_group(external_id='external_id')
+        expected_placeholder_person = \
+            generate_person(sentence_groups=[expected_non_placeholder_sg])
+
+        # Act
+        pruned_tree = prune_dangling_placeholders_from_tree(placeholder_person)
+
+        # Assert
+        self.assertIsNotNone(pruned_tree)
+        self.assertEqual(
+            attr.evolve(self.to_entity(pruned_tree)),
+            attr.evolve(self.to_entity(expected_placeholder_person))
+        )
