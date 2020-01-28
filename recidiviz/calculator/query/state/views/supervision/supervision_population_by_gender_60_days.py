@@ -41,6 +41,7 @@ SUPERVISION_POPULATION_BY_GENDER_60_DAYS_QUERY = \
     FROM `{project_id}.{views_dataset}.persons_on_supervision_60_days` persons_on_supervision
     JOIN `{project_id}.{base_dataset}.state_person` state_persons
     ON state_persons.person_id = persons_on_supervision.person_id
+    WHERE gender IS NOT NULL
     GROUP BY state_code, gender
     """.format(
         description=
