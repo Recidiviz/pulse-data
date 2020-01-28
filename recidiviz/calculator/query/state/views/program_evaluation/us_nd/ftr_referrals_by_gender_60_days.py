@@ -43,6 +43,7 @@ FTR_REFERRALS_BY_GENDER_60_DAYS_QUERY = \
     FROM `{project_id}.{views_dataset}.ftr_referrals_60_days` ftr_referrals
     JOIN `{project_id}.{base_dataset}.state_person` state_persons
     ON state_persons.person_id = ftr_referrals.person_id
+    WHERE gender IS NOT NULL
     GROUP BY state_code, gender
     """.format(
         description=
