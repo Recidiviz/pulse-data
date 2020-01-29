@@ -27,6 +27,8 @@ from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import \
@@ -61,7 +63,8 @@ from recidiviz.ingest.models.ingest_info import StatePerson, \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponse, StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry, StateAgent, StateAssessment
+    StateSupervisionViolationResponseDecisionEntry, StateAgent, \
+    StateAssessment, StateSupervisionCaseTypeEntry
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -1123,7 +1126,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20050808',
             termination_reason='65L9100',
             supervision_site='14',
-            supervising_officer=po_E123
+            supervising_officer=po_E123,
+            state_supervision_case_type_entries=[
+                StateSupervisionCaseTypeEntry(
+                    case_type='DSO'
+                ),
+                StateSupervisionCaseTypeEntry(
+                    case_type='DVS'
+                ),
+            ]
         )
 
         sp_110035_20040712_1_8 = StateSupervisionPeriod(
@@ -1134,7 +1145,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20050909',
             termination_reason='65N9500',
             supervision_site='14',
-            supervising_officer=po_E123
+            supervising_officer=po_E123,
+            state_supervision_case_type_entries=[
+                StateSupervisionCaseTypeEntry(
+                    case_type='DSO'
+                ),
+                StateSupervisionCaseTypeEntry(
+                    case_type='DVS'
+                ),
+            ]
         )
         sp_110035_20040712_1_9 = StateSupervisionPeriod(
             state_supervision_period_id=
@@ -1144,7 +1163,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='20080119',
             termination_reason='99O2010',
             supervision_site='14',
-            supervising_officer=po_E123
+            supervising_officer=po_E123,
+            state_supervision_case_type_entries=[
+                StateSupervisionCaseTypeEntry(
+                    case_type='DSO'
+                ),
+                StateSupervisionCaseTypeEntry(
+                    case_type='DVS'
+                ),
+            ]
         )
 
         sp_110035_20010414_1_0 = StateSupervisionPeriod(
@@ -1213,6 +1240,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='40O1010',
             supervision_site='17',
             supervising_officer=po_E234,
+            state_supervision_case_type_entries=[
+                StateSupervisionCaseTypeEntry(
+                    case_type='DSO'
+                ),
+            ]
         )
 
         sp_624624_19890617_1_0 = StateSupervisionPeriod(
@@ -1222,6 +1254,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='15I1000',
             supervision_site='17',
             supervising_officer=po_E234,
+            state_supervision_case_type_entries=[
+                StateSupervisionCaseTypeEntry(
+                    case_type='DOM'
+                ),
+                StateSupervisionCaseTypeEntry(
+                    case_type='DVS'
+                ),
+                StateSupervisionCaseTypeEntry(
+                    case_type='SMI'
+                ),
+            ]
         )
 
         expected = IngestInfo(state_people=[
@@ -3224,6 +3267,15 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_910324_19890825_1],
                 supervision_sentences=[sss_910324_19890825_1]
             )
+        ct_910324_19890825_2_0_dso = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='DSO',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_910324_19890825_2_0,
+            person=person_910324,
+        )
+        sp_910324_19890825_2_0.case_type_entries.append(
+            ct_910324_19890825_2_0_dso)
         sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
         sss_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
 
@@ -3269,6 +3321,30 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_624624,
                 supervision_sentences=[placeholder_sss_624624_19890617_1],
             )
+        ct_624624_19890617_1_0_dom = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DOM',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_624624_19890617_1_0,
+            person=person_624624,
+        )
+        ct_624624_19890617_1_0_dvs = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DVS',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_624624_19890617_1_0,
+            person=person_624624,
+        )
+        ct_624624_19890617_1_0_smi = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+            case_type_raw_text='SMI',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_624624_19890617_1_0,
+            person=person_624624,
+        )
+        sp_624624_19890617_1_0.case_type_entries.extend(
+            [ct_624624_19890617_1_0_dom, ct_624624_19890617_1_0_dvs,
+             ct_624624_19890617_1_0_smi])
         placeholder_sss_624624_19890617_1.supervision_periods.append(
             sp_624624_19890617_1_0)
 
@@ -3303,6 +3379,22 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 supervision_sentences=[sss_110035_20040712_1]
             )
+        ct_110035_20040712_1_0_dso = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='DSO',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_0,
+            person=person_110035,
+        )
+        ct_110035_20040712_1_0_dvs = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DVS',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_0,
+            person=person_110035,
+        )
+        sp_110035_20040712_1_0.case_type_entries.extend(
+            [ct_110035_20040712_1_0_dso, ct_110035_20040712_1_0_dvs])
         sp_110035_20040712_1_8 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -3321,6 +3413,22 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 supervision_sentences=[sss_110035_20040712_1]
             )
+        ct_110035_20040712_1_8_dso = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='DSO',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_8,
+            person=person_110035,
+        )
+        ct_110035_20040712_1_8_dvs = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DVS',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_8,
+            person=person_110035,
+        )
+        sp_110035_20040712_1_8.case_type_entries.extend(
+            [ct_110035_20040712_1_8_dso, ct_110035_20040712_1_8_dvs])
         sp_110035_20040712_1_9 = \
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
@@ -3339,6 +3447,22 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 person=person_110035,
                 supervision_sentences=[sss_110035_20040712_1]
             )
+        ct_110035_20040712_1_9_dso = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='DSO',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_9,
+            person=person_110035,
+        )
+        ct_110035_20040712_1_9_dvs = entities.StateSupervisionCaseTypeEntry(
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            case_type_raw_text='DVS',
+            state_code=_STATE_CODE_UPPER,
+            supervision_period=sp_110035_20040712_1_9,
+            person=person_110035,
+        )
+        sp_110035_20040712_1_9.case_type_entries.extend(
+            [ct_110035_20040712_1_9_dso, ct_110035_20040712_1_9_dvs])
 
         sss_110035_20040712_1.supervision_periods.extend([
             sp_110035_20040712_1_0,

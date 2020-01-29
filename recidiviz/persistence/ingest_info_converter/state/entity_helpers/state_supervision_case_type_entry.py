@@ -29,14 +29,13 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
 
-def copy_fields_to_builder(
-        case_type_builder: entities.StateSupervisionCaseTypeEntry.Builder,
+def convert(
         proto: StateSupervisionCaseTypeEntry,
-        metadata: IngestMetadata) -> None:
+        metadata: IngestMetadata) -> entities.StateSupervisionCaseTypeEntry:
     """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
     persistence entity.
     """
-    new = case_type_builder
+    new = entities.StateSupervisionCaseTypeEntry.builder()
 
     enum_fields = {
         'case_type': StateSupervisionCaseType,
@@ -48,3 +47,5 @@ def copy_fields_to_builder(
         proto, 'state_code', metadata)
     new.case_type = enum_mappings.get(StateSupervisionCaseType)
     new.case_type_raw_text = fn(normalize, 'case_type', proto)
+
+    return new.build()

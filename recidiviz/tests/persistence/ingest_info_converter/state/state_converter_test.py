@@ -28,6 +28,8 @@ from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, \
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentClass
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
@@ -63,9 +65,10 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StateIncarcerationSentence, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateParoleDecision, StateFine, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
-    StatePersonAlias, StateIncarcerationIncidentOutcome,\
-    StateProgramAssignment, StateSupervisionViolationResponseDecisionEntry,\
-    StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry
+    StatePersonAlias, StateIncarcerationIncidentOutcome, \
+    StateProgramAssignment, StateSupervisionViolationResponseDecisionEntry, \
+    StateSupervisionViolationTypeEntry, \
+    StateSupervisionViolatedConditionEntry, StateSupervisionCaseTypeEntry
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
     IngestInfoConversionResult
@@ -285,8 +288,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_period_id='S_PERIOD_ID3',
             state_assessment_ids=['ASSESSMENT_ID'],
             supervising_officer_id='AGENT_ID_PO',
-            supervision_type='PROBATION'
+            supervision_type='PROBATION',
+            state_supervision_case_type_entry_ids=['CASE_TYPE_ID'],
         )
+        ingest_info.state_supervision_case_type_entries.add(
+            state_supervision_case_type_entry_id='CASE_TYPE_ID',
+            case_type='DOMESTIC_VIOLENCE'
+        )
+
         ingest_info.state_incarceration_periods.add(
             state_incarceration_period_id='I_PERIOD_ID',
             state_incarceration_incident_ids=['INCIDENT_ID'],
@@ -524,6 +533,91 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             court_case=court_case
         )
 
+        incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
+            external_id='INCARCERATION_SENTENCE_ID1',
+            state_code='US_ND',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=
+            StateIncarcerationType.STATE_PRISON,
+            charges=[charge_1],
+            incarceration_periods=[
+                StateIncarcerationPeriod.new_with_defaults(
+                    external_id='I_PERIOD_ID',
+                    status=
+                    StateIncarcerationPeriodStatus.
+                    PRESENT_WITHOUT_INFO,
+                    incarceration_type=
+                    StateIncarcerationType.STATE_PRISON,
+                    state_code='US_ND',
+                    incarceration_incidents=[
+                        incident
+                    ],
+                    program_assignments=[program_assignment],
+                    parole_decisions=[
+                        StateParoleDecision.new_with_defaults(
+                            external_id='DECISION_ID',
+                            state_code='US_ND',
+                            decision_agents=[
+                                StateAgent.new_with_defaults(
+                                    external_id='AGENT_ID2',
+                                    state_code='US_ND',
+                                    full_name=
+                                    '{"full_name": '
+                                    '"AGENT HERNANDEZ"}'
+                                ),
+                                StateAgent.new_with_defaults(
+                                    external_id='AGENT_ID3',
+                                    state_code='US_ND',
+                                    full_name=
+                                    '{"full_name": '
+                                    '"AGENT SMITH"}'
+                                )
+                            ]
+                        )
+                    ],
+                    assessments=[assessment],
+                    source_supervision_violation_response=
+                    response,
+                )
+            ]
+        )
+
+        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            external_id='INCARCERATION_SENTENCE_ID2',
+            state_code='US_ND',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=
+            StateIncarcerationType.STATE_PRISON,
+            charges=[charge_2, charge_3],
+            supervision_periods=[
+                StateSupervisionPeriod.new_with_defaults(
+                    external_id='S_PERIOD_ID3',
+                    status=StateSupervisionPeriodStatus.
+                    PRESENT_WITHOUT_INFO,
+                    state_code='US_ND',
+                    supervision_type=
+                    StateSupervisionType.PROBATION,
+                    supervision_type_raw_text='PROBATION',
+                    assessments=[assessment],
+                    supervising_officer=
+                    StateAgent.new_with_defaults(
+                        external_id='AGENT_ID_PO',
+                        state_code='US_ND',
+                        full_name=
+                        '{"full_name": "AGENT PAROLEY"}',
+                    ),
+                    case_type_entries=[
+                        StateSupervisionCaseTypeEntry.new_with_defaults(
+                            case_type=
+                            StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                            case_type_raw_text='DOMESTIC_VIOLENCE',
+                            state_code='US_ND',
+                        )
+                    ]
+                )
+            ]
+        )
+
         expected_result = [StatePerson.new_with_defaults(
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
@@ -595,81 +689,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         )
                     ],
                     incarceration_sentences=[
-                        StateIncarcerationSentence.new_with_defaults(
-                            external_id='INCARCERATION_SENTENCE_ID1',
-                            state_code='US_ND',
-                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            incarceration_type=
-                            StateIncarcerationType.STATE_PRISON,
-                            charges=[charge_1],
-                            incarceration_periods=[
-                                StateIncarcerationPeriod.new_with_defaults(
-                                    external_id='I_PERIOD_ID',
-                                    status=
-                                    StateIncarcerationPeriodStatus.
-                                    PRESENT_WITHOUT_INFO,
-                                    incarceration_type=
-                                    StateIncarcerationType.STATE_PRISON,
-                                    state_code='US_ND',
-                                    incarceration_incidents=[
-                                        incident
-                                    ],
-                                    program_assignments=[program_assignment],
-                                    parole_decisions=[
-                                        StateParoleDecision.new_with_defaults(
-                                            external_id='DECISION_ID',
-                                            state_code='US_ND',
-                                            decision_agents=[
-                                                StateAgent.new_with_defaults(
-                                                    external_id='AGENT_ID2',
-                                                    state_code='US_ND',
-                                                    full_name=
-                                                    '{"full_name": '
-                                                    '"AGENT HERNANDEZ"}'
-                                                ),
-                                                StateAgent.new_with_defaults(
-                                                    external_id='AGENT_ID3',
-                                                    state_code='US_ND',
-                                                    full_name=
-                                                    '{"full_name": '
-                                                    '"AGENT SMITH"}'
-                                                )
-                                            ]
-                                        )
-                                    ],
-                                    assessments=[assessment],
-                                    source_supervision_violation_response=
-                                    response,
-                                )
-                            ]
-                        ),
-                        StateIncarcerationSentence.new_with_defaults(
-                            external_id='INCARCERATION_SENTENCE_ID2',
-                            state_code='US_ND',
-                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                            incarceration_type=
-                            StateIncarcerationType.STATE_PRISON,
-                            charges=[charge_2, charge_3],
-                            supervision_periods=[
-                                StateSupervisionPeriod.new_with_defaults(
-                                    external_id='S_PERIOD_ID3',
-                                    status=StateSupervisionPeriodStatus.
-                                    PRESENT_WITHOUT_INFO,
-                                    state_code='US_ND',
-                                    supervision_type=
-                                    StateSupervisionType.PROBATION,
-                                    supervision_type_raw_text='PROBATION',
-                                    assessments=[assessment],
-                                    supervising_officer=
-                                    StateAgent.new_with_defaults(
-                                        external_id='AGENT_ID_PO',
-                                        state_code='US_ND',
-                                        full_name=
-                                        '{"full_name": "AGENT PAROLEY"}',
-                                    ),
-                                )
-                            ]
-                        )
+                        incarceration_sentence_1,
+                        incarceration_sentence_2
                     ]
                 ),
                 StateSentenceGroup.new_with_defaults(
