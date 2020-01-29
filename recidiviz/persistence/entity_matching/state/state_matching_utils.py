@@ -114,7 +114,8 @@ def _is_match(*,
     if isinstance(ingested_entity,
                   (schema.StateSupervisionViolationResponseDecisionEntry,
                    schema.StateSupervisionViolatedConditionEntry,
-                   schema.StateSupervisionViolationTypeEntry)):
+                   schema.StateSupervisionViolationTypeEntry,
+                   schema.StateSupervisionCaseTypeEntry)):
         return _base_entity_match(ingested_entity, db_entity)
 
     # Placeholders entities are considered equal

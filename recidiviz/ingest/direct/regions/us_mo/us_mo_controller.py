@@ -27,6 +27,8 @@ from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -96,7 +98,8 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StateSupervisionViolation, \
     StateSupervisionViolatedConditionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolationResponseDecisionEntry, StateAgent
+    StateSupervisionViolationResponseDecisionEntry, StateAgent, \
+    StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -810,6 +813,17 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '65O2015',  # Court Probation Suspension
             '65O3015',  # Court Parole Suspension
         ],
+        StateSupervisionCaseType.DOMESTIC_VIOLENCE: [
+            'DVS',  # Domestic Violence Supervision
+            'DOM',  # Domestic Violence
+        ],
+        StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: [
+            'SMI',  # Seriously Mentally Ill Caseload
+        ],
+        StateSupervisionCaseType.SEX_OFFENDER: [
+            'DSO',  # Designated Sex Offenders
+            'ISO',  # Interstate Sex Offenders
+        ],
         StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
             'S',  # Serve a Sentence
         ],
@@ -1143,6 +1157,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     StateSupervisionPeriod),
                 self._parse_supervision_period_status_codes,
                 self._set_supervising_officer_on_period,
+                self._parse_case_types,
             ],
             'tak028_tak042_tak076_tak024_violation_reports': [
                 self._gen_violation_response_type_posthook(
@@ -1574,6 +1589,25 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionPeriod):
                 create_if_not_exists(
                     agent_to_create, obj, 'supervising_officer')
+
+    @classmethod
+    def _parse_case_types(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+
+        case_types = cls._sorted_list_from_col(row, 'CASE_TYPE_LIST')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                for case_type in case_types:
+                    case_type_to_create = StateSupervisionCaseTypeEntry(
+                        case_type=case_type)
+                    create_if_not_exists(
+                        case_type_to_create, obj,
+                        'state_supervision_case_type_entries')
 
     @classmethod
     def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:

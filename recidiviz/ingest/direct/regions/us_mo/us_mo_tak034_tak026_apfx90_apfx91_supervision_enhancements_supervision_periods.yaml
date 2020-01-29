@@ -20,7 +20,7 @@ keys_to_ignore:
   - START_STATUS_SEQ_NUM      # Sub-sequence number - Handled manually in the controller
   - START_STATUS_CODE_LIST    # Start TAK026 status codes list - Handled manually in the controller
   - END_STATUS_CODE_LIST      # End TAK026 status codes list - Handled manually in the controller
-  - CASE_TYPE_LIST            # Case Type List - TODO(XXXX): Hydrate case types in controller
+  - CASE_TYPE_LIST            # Case Type List - Handled manually in the controller
   # TODO(1883): Update to child mappings once data extractor is flexible
   - BDGNO   # Employee Id - Handled manually in the controller
   - DEPCLS  # Unused - Employee Job Code
