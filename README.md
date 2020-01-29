@@ -138,6 +138,16 @@ On Ubuntu 18.04, you can install the JRE with:
 $ apt update -y && apt install -y default-jre
 ```
 
+On a Mac with [Homebrew](https://brew.sh/), you can install jq (needed to deploy calculation pipelines) with:
+```bash
+$ brew install jq
+```
+
+On Ubuntu 18.04, you can install jq with:
+```bash
+$ apt update -y && apt install -y jq
+```
+
 ##### Option 2: Docker container
 
 If you can't install `python3.7` locally, you can use Docker instead.
