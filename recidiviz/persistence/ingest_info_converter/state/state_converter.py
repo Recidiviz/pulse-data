@@ -37,7 +37,8 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_incarceration_incident_outcome, state_program_assignment, \
     state_supervision_violation_type_entry, \
     state_supervision_violated_condition_entry, \
-    state_supervision_violation_response_decision_entry
+    state_supervision_violation_response_decision_entry, \
+    state_supervision_case_type_entry
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -77,6 +78,10 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         self.supervision_periods = {
             sp.state_supervision_period_id: sp for sp
             in ingest_info.state_supervision_periods
+        }
+        self.supervision_case_type_entries = {
+            c.state_supervision_case_type_entry_id: c for c in
+            ingest_info.state_supervision_case_type_entries
         }
         self.incarceration_periods = {
             ip.state_incarceration_period_id: ip for ip
@@ -440,6 +445,12 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         supervision_period_builder.program_assignments = \
             converted_program_assignments
+        converted_case_types = [
+            state_supervision_case_type_entry.convert(
+                self.supervision_case_type_entries[case_type_id], self.metadata)
+            for case_type_id in
+            ingest_supervision_period.state_supervision_case_type_entry_ids]
+        supervision_period_builder.case_type_entries = converted_case_types
         return supervision_period_builder.build()
 
     def _convert_supervision_violation(

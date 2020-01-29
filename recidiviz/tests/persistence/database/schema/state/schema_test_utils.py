@@ -162,6 +162,15 @@ def generate_supervision_violated_condition_entry(person, **kwargs) \
     return schema.StateSupervisionViolatedConditionEntry(person=person, **args)
 
 
+def generate_supervision_case_type_entry(person, **kwargs) \
+        -> schema.StateSupervisionCaseTypeEntry:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateSupervisionCaseTypeEntry(person=person, **args)
+
+
 def generate_supervision_period(person, **kwargs) \
         -> schema.StateSupervisionPeriod:
     args = {

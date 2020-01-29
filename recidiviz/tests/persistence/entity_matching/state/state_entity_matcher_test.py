@@ -26,6 +26,8 @@ from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -47,7 +49,8 @@ from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StateCourtCase, StateCharge, StateFine, StateIncarcerationIncident, \
     StateIncarcerationPeriod, StateIncarcerationSentence, StateSentenceGroup, \
     StateAgent, StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateSupervisionPeriod, StateSupervisionSentence
+    StateSupervisionPeriod, StateSupervisionSentence, \
+    StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
@@ -62,7 +65,8 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     generate_supervision_sentence, \
     generate_supervision_violation_response_decision_entry, \
     generate_supervision_violation_type_entry, \
-    generate_supervision_violated_condition_entry
+    generate_supervision_violated_condition_entry, \
+    generate_supervision_case_type_entry
 from recidiviz.tests.persistence.entity_matching.state.\
     base_state_entity_matcher_test import BaseStateEntityMatcherTest
 
@@ -1129,6 +1133,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violated_conditions=[
                 db_supervision_violated_condition],
             supervision_violation_responses=[db_supervision_violation_response])
+        db_case_type_dv = generate_supervision_case_type_entry(
+            person=db_person,
+            supervision_case_type_entry_id=_ID,
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE.value,
+            case_type_raw_text='DV')
         db_supervision_period = generate_supervision_period(
             person=db_person,
             supervision_period_id=_ID, external_id=_EXTERNAL_ID,
@@ -1136,6 +1146,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE, county_code='county_code',
             assessments=[db_assessment_2],
             supervision_violation_entries=[db_supervision_violation],
+            case_type_entries=[db_case_type_dv],
             supervising_officer=db_agent_po)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
@@ -1238,12 +1249,20 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation_responses=[supervision_violation_response],
             supervision_violated_conditions=[supervision_violated_condition],
             supervision_violation_types=[supervision_violation_type])
+        case_type_dv = attr.evolve(
+            self.to_entity(db_case_type_dv),
+            supervision_case_type_entry_id=None)
+        case_type_so = StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='SO')
         supervision_period = attr.evolve(
             self.to_entity(db_supervision_period),
             supervision_period_id=None,
             county_code='county_code-updated',
             assessments=[assessment_2],
             supervision_violation_entries=[supervision_violation],
+            case_type_entries=[case_type_dv, case_type_so],
             supervising_officer=agent_po)
         supervision_sentence = attr.evolve(
             self.to_entity(db_supervision_sentence),
@@ -1321,10 +1340,15 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation_types=[
                 expected_supervision_violation_type
             ])
+        expected_case_type_dv = attr.evolve(
+            case_type_dv,
+            supervision_case_type_entry_id=_ID)
+        expected_case_type_so = attr.evolve(case_type_so)
         expected_supervision_period = attr.evolve(
             supervision_period, supervision_period_id=_ID,
             assessments=[expected_assessment_2],
             supervision_violation_entries=[expected_supervision_violation],
+            case_type_entries=[expected_case_type_dv, expected_case_type_so],
             supervising_officer=expected_agent_po)
         expected_supervision_sentence = attr.evolve(
             supervision_sentence, supervision_sentence_id=_ID,

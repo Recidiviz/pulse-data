@@ -41,10 +41,8 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
         )
 
         # Act
-        builder = entities.StateSupervisionCaseTypeEntry.builder()
-        state_supervision_case_type_entry.copy_fields_to_builder(
-            builder, ingest_case_type_entry, _EMPTY_METADATA)
-        result = builder.build()
+        result = state_supervision_case_type_entry.convert(
+            ingest_case_type_entry, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateSupervisionCaseTypeEntry(
