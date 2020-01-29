@@ -38,7 +38,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodStatus
+    StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -75,7 +75,12 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
     PERIOD_START_STATUSES, ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID, \
-    SUPERVISION_SENTENCE_START_DATE, MOST_RECENT_SENTENCE_STATUS_DATE
+    SUPERVISION_SENTENCE_START_DATE, MOST_RECENT_SENTENCE_STATUS_DATE, \
+    SUPERVISION_PERIOD_START_STATUSES, SUPERVISION_PERIOD_END_STATUSES, \
+    SUPERVISION_PERIOD_RELEASE_DATE, TAK026_STATUS_CYCLE_TERMINATION_REGEX, \
+    TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX, \
+    TAK026_STATUS_SUPERVISION_PERIOD_TERMINATION_REGEX, \
+    TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX
 from recidiviz.ingest.direct.state_shared_row_posthooks import \
     copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, \
@@ -102,30 +107,27 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     FILE_TAGS = [
         'tak001_offender_identification',
-        'apfx90_apfx91_tak034_current_po_assignments',
         'oras_assessments_weekly',
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-        'tak158_tak023_tak026_supervision_period_from_incarceration_sentence',
-        'tak158_tak024_tak026_supervision_period_from_supervision_sentence',
+        # pylint: disable=line-too-long
+        'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
         'tak028_tak042_tak076_tak024_violation_reports',
         'tak291_tak292_tak024_citations',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
         'tak001_offender_identification': 'EK',
-        'apfx90_apfx91_tak034_current_po_assignments': 'CE',
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
         'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
         # pylint: disable=line-too-long
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': 'BT',
-        'tak158_tak023_tak026_supervision_period_from_incarceration_sentence': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': 'BU',
-        'tak158_tak024_tak026_supervision_period_from_supervision_sentence': 'BU',
+        'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
     }
@@ -498,26 +500,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'I',  # Inst Treatment Center
             'L',  # Long Term Drug Treatment
         ],
-
-        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
-            'IB',  # Institutional Administrative
-            'IC',  # Institutional Release to Probation
-            'IC-EM',
-            'IC-RF',
-            'IT',  # Institutional Release to Supervision
-            'IT-EM',
-            'IT-RF',
-        ],
-        StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
-            'NA',  # New Admission
-            'NA-NA',
-            'TR',  # Other State
-            'TR-EM',
-        ],
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: [
-            'RT',  # Reinstatement
-            'RT-EM',
-        ],
         StateSupervisionPeriodAdmissionReason.ABSCONSION: [
             '65O1010',  # Offender declared absconder - from TAK026 BW$SCD
             '65O1020',  # Offender declared absconder - from TAK026 BW$SCD
@@ -525,17 +507,82 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '99O2035',  # Offender declared absconder - from TAK026 BW$SCD
             '65L9100',  # Offender declared absconder - from TAK026 BW$SCD
         ],
+        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
+            # All 40O* statuses correspond to being released from an
+            # institution to supervision.
+            '40O0010',  # Emer Board RF Housing-Release
+            '40O0050',  # Board Holdover Release
+            '40O0055',  # Board Hold Rel To Custody/Det
+            '40O1010',  # Parole Release
+            '40O1015',  # Parolee Released From CRC
+            '40O1020',  # Parole To Custody/Detainer
+            '40O1025',  # Medical Parole Release
+            '40O1030',  # Parole Re-Release
+            '40O1040',  # Parole Return Rescinded
+            '40O1060',  # Parolee Re-Rel From Inst Pgm
+            '40O1065',  # Parolee Rel From Inst Pgm-New
+            '40O1080',  # Parolee Released from Inst
+            '40O2000',  # Prob Rev-Rel to Field-Spc Cir
+            '40O3010',  # Conditional Release
+            '40O3015',  # Conditional Released From CRC
+            '40O3020',  # CR To Custody/Detainer
+            '40O3030',  # Conditional Re-Release
+            '40O3040',  # CR Return Rescinded
+            '40O3060',  # CR Re-Release From Inst Pgm
+            '40O3065',  # CR Released From Inst Pgm-New
+            '40O3080',  # Cond Releasee Rel from Inst
+            '40O4010',  # Emer Inmate RF Housing-Release
+            '40O4099',  # Inmate Release to RF
+            '40O4199',  # Inmate Release to EMP
+            '40O4270',  # IS Compact-Parole-Rel From CRC
+            '40O4900',  # CR Deferred-Release to Field
+            '40O5000',  # Release to Field-Invest Pend
+            '40O5100',  # Rel to Field-PSI Assess Comm
+            '40O6000',  # Converted-CRC DAI to CRC Field
+            '40O6010',  # Release for SVP Commit Hearing
+            '40O6020',  # Release for Lifetime Supv
+            '40O7000',  # Rel to Field-DAI Other Sent
+            '40O7001',  # Rel to Field-Same Offense
+            '40O7010',  # Rel to Prob-Shck Incarceration
+            '40O7020',  # Rel to Prob-Ct Order Det Sanc
+            '40O7030',  # Rel to Prob-MH 120 Day
+            '40O7060',  # Rel to Prob-Post Conv-Trt Pgm
+            '40O7065',  # Rel to Prob-Post-Conv-RDP
+            '40O7400',  # IS Compact Parole to Missouri
+            '40O7700',  # IS Compact-Err Commit-Release
+            '40O8010',  # Admin Parole Release
+            '40O8015',  # Adm Parolee Released from CRC
+            '40O8020',  # Adm Parole To Custody/Detainer
+            '40O8060',  # Adm Par Re-Rel From Inst Pgm
+            '40O8065',  # Adm Par Rel From Inst Pgm-New
+            '40O8080',  # Adm Parolee Rel from Inst
+            '40O9010',  # Release to Probation
+            '40O9020',  # Release to Prob-Custody/Detain
+            '40O9030',  # Statutory Probation Release
+            '40O9040',  # Stat Prob Rel-Custody/Detainer
+            '40O9060',  # Release to Prob-Treatment Ctr
+            '40O9070',  # Petition Probation Release
+            '40O9080',  # Petition Prob Rel-Cust/Detain
+            '40O9100',  # Petition Parole Release
+            '40O9110',  # Petition Parole Rel-Cus/Detain
+        ],
+        StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
+            '15I1000',  # New Court Probation
+            '15I1200',  # New Court Parole
+            '15I2000',  # New Diversion Supervision
+            '15I3000',  # New PreTrial Bond Supervision
+        ],
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: [
+            '65I1099',  # Supervision Reinstated
+            '65I2015',  # Court Probation Reinstated
+            '65I3015',  # Court Parole Reinstated
+            '65I6010',  # Inmate Reinstated EMP / RF
+        ],
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: [
-            'CI',  # Captured from Absconsion
             '65N9500',  # Offender re-engaged - from TAK026 BW$SCD
         ],
-        StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
-            '??',  # Code Unknown
-        ],
-
+        StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN: [],
         StateSupervisionPeriodTerminationReason.ABSCONSION: [
-            'FA-FA',  # Field Absconder
-
             '65O1010',  # Offender declared absconder - from TAK026 BW$SCD
             '65O1020',  # Offender declared absconder - from TAK026 BW$SCD
             '65O1030',  # Offender declared absconder - from TAK026 BW$SCD
@@ -546,80 +593,222 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '65N9500',  # Offender re-engaged - from TAK026 BW$SCD
         ],
         StateSupervisionPeriodTerminationReason.DEATH: [
-            'DE-DE',  # Death
+            '99O9020',  # Suicide-Institution
+            '99O9025',  # Suicide-Inst-Off Premises
+            '99O9030',  # Accidental Death-Institution
+            '99O9035',  # Accid Death-Inst-Off Premises
+            '99O9040',  # Offense Related Death-Instit
+            '99O9045',  # Offense Rel Death-Inst-Off Prm
+            '99O9050',  # Natural Death-Institution
+            '99O9055',  # Natural Death-Inst-Off Premise
+            '99O9060',  # Death-Unknown Causes-Instit
+            '99O9065',  # Death-Unk Cause-Inst-Off Prem
+            '99O9070',  # Death Under Supervision-Field
+            '99O9080',  # Death While Off DAI Premises
+            '99O9520',  # Suicide-Field
+            '99O9530',  # Accidental Death-Field
+            '99O9540',  # Offense Related Death-Field
+            '99O9550',  # Natural Death-Field
+            '99O9560',  # Death-Unknown Causes-Field
+            '99O9999',  # Execution
         ],
         StateSupervisionPeriodTerminationReason.DISCHARGE: [
-            # Discharge - encompasses a collection of statuses including those
-            # that reference 'commutation', 'discharge', and 'expiration'
-            # TODO(2738): Derive the periods tables from TAK026 so we can
-            #  capture this nuance.
-            'DC-DC',
-
-            # 'Director's Discharge'
-            'DC-DR',
-
-            # 'Resentenced-Field Completion'
-            'DC-OR',
-
-            # 'Field Pardon'
-            'DC-PD',
-
-            # Parole/Conditional Release Completion-Retroactive
-            'ID-ID',
+            '99O0000',  # Converted Inactive-Institution
+            '99O0010',  # Converted Off Records-Field
+            '99O0020',  # Converted Revoked-Field
+            '99O0989',  # Erroneous Commitment-Field
+            '99O0999',  # Erroneous Commit-Institution
+            '99O1000',  # Court Probation Discharge
+            '99O1001',  # Court Probation ECC Discharge
+            '99O1010',  # Court Prob Disc-CONFIDENTIAL
+            '99O1011',  # Ct Prob ECC Disc-CONFIDENTIAL
+            '99O1015',  # Court Prob-No Further Action
+            '99O1016',  # No Further Action - Closed
+            '99O1020',  # Institutional Commutation
+            '99O1025',  # Field Commutation
+            '99O1026',  # CONFIDENTIAL CLOSED-P&P
+            '99O1027',  # Rev/Disch-DAI RETIRED
+            '99O1030',  # Institutional Pardon
+            '99O1035',  # Field Pardon
+            '99O1040',  # Resentenced-Field Completion
+            '99O1050',  # Reverse/Remand Discharge-DAI
+            '99O1051',  # Reverse/Remand Discharge-P&P
+            '99O1055',  # Court Ordered Disc-Institution
+            '99O1060',  # Director's Discharge
+            '99O1065',  # Director's Discharge-Field
+            '99O1070',  # Director's Disc To Custody/Det
+            '99O1080',  # CONFIDENTIAL CLOSED-DAI
+            '99O1200',  # Court Parole Discharge
+            '99O1210',  # Court Parole Revoked-Local
+            '99O2000',  # Diversion Disc-CONFIDENTIAL
+            '99O2005',  # Div-Term Services-CONFIDENTIAL
+            '99O2010',  # Parole Discharge
+            '99O2011',  # Parole Discharge-Institution
+            '99O2012',  # Parole ECC Discharge
+            '99O2013',  # Parole ECC Disc-Institution
+            '99O2015',  # Parole Discharge-Admin
+            '99O2020',  # Conditional Release Discharge
+            '99O2021',  # CR Discharge-Institution
+            '99O2022',  # Cond Release ECC Discharge
+            '99O2023',  # Cond Rel ECC Disc-Institution
+            '99O2025',  # CR Discharge-Admin
+            '99O2030',  # Disc-Escape-Inst(Comment-ICOM)
+            '99O2035',  # Disc-Absc-Field (Comment-POTR)
+            '99O2040',  # Administrative Parole Disc
+            '99O2041',  # Admin Parole Disc-Institution
+            '99O2042',  # Administrative Parole ECC Disc
+            '99O2043',  # Admin Parole ECC Disc-Inst
+            '99O2045',  # Admin Parole Disc-Admin
+            '99O2050',  # Inmate Field Discharge
+            '99O2100',  # Prob Rev-Technical-Jail
+            '99O2105',  # Prob Rev-New Felony Conv-Jail
+            '99O2110',  # Prob Rev-New Misd Conv-Jail
+            '99O2115',  # Prob Rev-Felony Law Viol-Jail
+            '99O2120',  # Prob Rev-Codes Not Applicable
+            '99O2215',  # Parole Disc-Retroactive
+            '99O2225',  # CR Discharge-Retroactive
+            '99O2245',  # Admin Parole Disc-Retroactive
+            '99O3000',  # PreTrial Bond Supv Discharge
+            '99O3100',  # PreTrial Bond-Close Interest
+            '99O3130',  # Bond Supv-No Further Action
+            '99O4000',  # IS Compact-Prob Discharge
+            '99O4010',  # IS Compact-Prob Return/Tran
+            '99O4020',  # IS Compact-Probation Revoked
+            '99O4030',  # IS Comp-Unsup/Priv Prob-Disc
+            '99O4040',  # IS Comp-Unsup/Priv PB-Ret/Tran
+            '99O4050',  # IS Comp-Unsup/Priv Prob-Rev
+            '99O4100',  # IS Compact-Parole Discharge
+            '99O4110',  # IS Compact-Parole Ret/Tran
+            '99O4120',  # IS Compact-Parole Revoked
+            '99O4200',  # Discharge-Interstate Compact
+            '99O4210',  # Interstate Compact Return
+            '99O5005',  # PSI Other Disposition
+            '99O5010',  # PSI Probation Denied-Other
+            '99O5015',  # PSI Plea Withdrawn
+            '99O5020',  # PSI Probation Denied-Jail
+            '99O5030',  # PSI Cancelled by Court
+            '99O5099',  # Investigation Close Interest
+            '99O5300',  # Executive Clemency Denied
+            '99O5305',  # Executive Clemency Granted
+            '99O5310',  # Executive Clemency Inv Comp.
+            '99O5405',  # Bond Invest-No Charge
+            '99O5500',  # Diversion Denied
+            '99O5605',  # SAR Other Disposition
+            '99O5610',  # SAR Probation Denied-Other
+            '99O5615',  # SAR Plea Withdrawn
+            '99O5620',  # SAR Probation Denied-Jail
+            '99O5630',  # SAR Cancelled by Court
+            '99O6000',  # Discharge-Cell Leasing
+            '99O7000',  # Relieved of Supv-Court Disc
         ],
-        StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
-            'XX-XX',  # Unknown (Not Associated)
-            '??',  # Code Unknown
-            '??-??',
-            '??-RR',
-        ],
+        StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [],
         StateSupervisionPeriodTerminationReason.REVOCATION: [
-            'BB-FN',  # Field to DAI-New Charge
-            'BP-FF',  # Board Parole
-            'BP-FM',
-            'BP-FN',
-            'BP-FT',
-            'CN-FB',  # Committed New Charge- No Vio
-            'CN-FN',
-            'CN-NV',
-            'CR-FF',  # Conditional Release (odd, yes, but appears to be true)
-            'CR-FM',
-            'CR-FN',
-            'CR-FT',
-            'FB',     # Field Administrative
-            'FB-DC',
-            'FB-EI',
-            'FB-TR',
-            'FB-UK',
+            # TODO(2666): Consider reclassifying some of these as a status that
+            #  indicates that it's a return but not a revocation
+            '45O0ZZZ',  # Board Holdover     'MUST VERIFY'
+            '45O0010',  # Emergency Board RF Housing
+            '45O0050',  # Board Holdover
+            '45O1ZZZ',  # Parole Return      'MUST VERIFY'
+            '45O1010',  # Parole Ret-Tech Viol
+            '45O1020',  # Parole Ret-New Felony-Viol
+            '45O1021',  # Parole Ret-No Violation
+            '45O1050',  # Parole Viol-Felony Law Viol
+            '45O1055',  # Parole Viol-Misd Law Viol
+            '45O1060',  # Parole Ret-Treatment Center
+            '45O1070',  # Parole Return-Work Release
+            '45O2ZZZ',  # Probation Revoked  'MUST VERIFY'
+            '45O2000',  # Prob Rev-Technical
+            '45O2005',  # Prob Rev-New Felony Conv
+            '45O2010',  # Prob Rev-New Misd Conv
+            '45O2015',  # Prob Rev-Felony Law Viol
+            '45O2020',  # Prob Rev-Misd Law Viol
+            '45O3ZZZ',  # CR Return          'MUST VERIFY'
+            '45O3010',  # CR Ret-Tech Viol
+            '45O3020',  # CR Ret-New Felony-Viol
+            '45O3021',  # CR Ret-No Violation
+            '45O3050',  # CR Viol-Felony Law Viol
+            '45O3055',  # CR Viol-Misd Law Viol
+            '45O3060',  # CR Ret-Treatment Center
+            '45O3070',  # CR Return-Work Release
+            '45O40ZZ',  # Resid Fac Return   'MUST VERIFY'
+            '45O4010',  # Emergency Inmate RF Housing
+            '45O4030',  # RF Return-Administrative
+            '45O4035',  # RF Return-Treatment Center
+            '45O4040',  # RF Return-Technical
+            '45O4045',  # RF Return-New Felony Conv
+            '45O4050',  # RF Return-New Misd Conv
+            '45O41ZZ',  # EMP Return         'MUST VERIFY'
+            '45O4130',  # EMP Return-Administrative
+            '45O4135',  # EMP Return-Treatment Center
+            '45O4140',  # EMP Return-Technical
+            '45O4145',  # EMP Return-New Felony Conv
+            '45O4150',  # EMP Return-New Misd Conv
+            '45O42ZZ',  # IS Compact-Parole- 'MUST VERIFY'
+            '45O4270',  # IS Compact-Parole-CRC Work Rel
+            '45O490Z',  # CR Deferred Return 'MUST VERIFY'
+            '45O4900',  # CR Deferred Return
+            '45O4999',  # Inmate Return From EMP/RF
+            '45O50ZZ',  # PSI-Prob Denied    'MUST VERIFY'
+            '45O5000',  # PSI Probation Denied-DAI
+            '45O51ZZ',  # Pre-Sentence Comm  'MUST VERIFY'
+            '45O5100',  # Pre-Sent Assess Commit to DAI
+            '45O56ZZ',  # SAR-Prob Denied    'MUST VERIFY'
+            '45O5600',  # SAR Probation Denied-DAI
+            '45O57ZZ',  # Resentenced-No Rev 'MUST VERIFY'
+            '45O5700',  # Resentenced-No Revocation
+            '45O59ZZ',  # Inv/Bnd Sup to DAI 'MUST VERIFY'
+            '45O5999',  # Inv/Bnd Sup Complete- To DAI
+            '45O700Z',  # To DAI-Other Sent  'MUST VERIFY'
+            '45O7000',  # Field to DAI-Other Sentence
+            '45O7001',  # Field Supv to DAI-Same Offense
+            '45O701Z',  # Prob to DAI-Shock  'MUST VERIFY'
+            '45O7010',  # Prob-DAI-Shock Incarceration
+            '45O702Z',  # Prob-Ct Order Det--'MUST VERIFY'
+            '45O7020',  # Prob-Ct Order Detention Sanctn
+            '45O703Z',  # Prob-MH 120 Day--'MUST VERIFY'
+            '45O7030',  # Prob-Mental Health 120 Day
+            '45O706Z',  # Prob-Post Conv-Trt 'MUST VERIFY'
+            '45O7060',  # Prob-Post Conv-Trt Pgm
+            '45O7065',  # Prob-Post Conv-RDP
+            '45O77ZZ',  # IS Cmpct-Err Commt 'MUST VERIFY'
+            '45O7700',  # IS Compact-Erroneous Commit
+            '45O7999',  # Err Release-P&P Return to DAI
+            '45O8ZZZ',  # Admin Return       'MUST VERIFY'
+            '45O8010',  # Adm Ret-Tech Viol
+            '45O8020',  # Adm Ret-New Felony-Viol
+            '45O8021',  # Adm Return-No Violation
+            '45O8050',  # Adm Viol-Felony Law Viol
+            '45O8055',  # Adm Viol-Misd Law Viol
+            '45O8060',  # Adm Ret-Treatment Center
+            '45O8070',  # Admin Par Return-Work Release
+            '45O9998',  # Converted-Revoke DOC-No Vio
+            '45O9999',  # Revocation-Code Not Applicable
 
-            # Parole/Conditional Release Completion-Lifetime Supervision
-            # Note: This seems to be immediately followed by a new admission to
-            # a lifetime (un-terminated) supervision period
-            'ID-DC',
+            # All Parole Revocation (40I1*) statuses from TAK026
+            '40I1010',  # Parole Ret-Tech Viol
+            '40I1020',  # Parole Ret-New Felony-Viol
+            '40I1021',  # Parole Ret-No Violation
+            '40I1025',  # Medical Parole Ret - Rescinded
+            '40I1040',  # Parole Ret-OTST Decision Pend
+            '40I1050',  # Parole Viol-Felony Law Viol
+            '40I1055',  # Parole Viol-Misd Law Viol
+            '40I1060',  # Parole Ret-Treatment Center
+            '40I1070',  # Parole Return-Work Release
+            # All Conditional Release Return (40I3*) statuses from TAK026
+            '40I3010',  # CR Ret-Tech Viol
+            '40I3020',  # CR Ret-New Felony-Viol
+            '40I3021',  # CR Ret-No Violation
+            '40I3040',  # CR Ret-OTST Decision Pend
+            '40I3050',  # CR Viol-Felony Law Viol
+            '40I3055',  # CR Viol-Misd Law Viol
+            '40I3060',  # CR Ret-Treatment Center
+            '40I3070',  # CR Return-Work Release
 
-            'RT-BH',  # Board Return
-            'RT-ER',
-            'RT-FF',
-            'RT-FM',
-            'RT-FT',
-            'RF-FB',  # Return to RF (Residential facility)
-            'RF-FF',
-            'RF-FM',
-            'RF-FT',
-            'RV-FF',  # Revocation
-            'RV-FM',
-            'RV-FN',
-            'RV-FT',
-            'RV-OR',
-            'RV-UK',
+
         ],
         StateSupervisionPeriodTerminationReason.SUSPENSION: [
-            'OR-FA',  # Off Records; Suspension
-            'OR-IW',
-            'OR-OR',
-
-            # Reverse/Remand Completion or Discharge (case sent back to courts)
-            'DC-RR',
+            '65O2015',  # Court Probation Suspension
+            '65O3015',  # Court Parole Suspension
         ],
         StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
             'S',  # Serve a Sentence
@@ -753,6 +942,19 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'CORR OF II',
             'ACCOUNT CLERK II',
             'LABORATORY AIDE',
+            'STOREKEEPER II',
+            'CORR SUPT III',
+            'REHABILITATION CONSULTANT',
+            'SUBSTANCE ABUSE CNSLR III',
+            'SPEC ASST / TECH',
+            'CORRTNL SERVICE TRNE',
+            'CORRECTIONS CASEWORKER II',
+            'CORRS MANAGER - B3',
+            'CLERK STENO III',
+            'CLERK IV',
+            'COMMUNITY CORR - COOR',
+            'CORR INVSTGTR I',
+            'SPEC ASST / ADMIN',
         ],
         StateAssessmentType.INTERNAL_UNKNOWN:  [
             'Diversion Instrument'  # One record with this entry in DB.
@@ -814,10 +1016,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSpecializedPurposeForIncarceration: [
             'S',  # Serving Sentence
         ],
-        StateSupervisionPeriodTerminationReason: [
-            'IB-TR',  # Institutional Administrative: seems erroneous
-            'IT-FB',  # Institutional Release to Supervision: seems erroneous
-        ],
         StateSupervisionViolationResponseDecision: [
             'NOREC',  # No Recommendation
         ],
@@ -852,20 +1050,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
             self._create_source_violation_response,
             self._set_ip_admission_reason_from_status,
-        ]
-        supervision_period_row_posthooks = [
-            self._gen_clear_magical_date_value(
-                'termination_date',
-                PERIOD_RELEASE_DATE,
-                self.PERIOD_MAGICAL_DATES,
-                StateSupervisionPeriod),
-            self._set_supervision_period_status,
-            gen_set_field_as_concatenated_values_hook(
-                StateSupervisionPeriod, 'admission_reason',
-                [PERIOD_OPEN_CODE, PERIOD_OPEN_CODE_SUBTYPE]),
-            gen_set_field_as_concatenated_values_hook(
-                StateSupervisionPeriod, 'termination_reason',
-                [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
         ]
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
@@ -951,10 +1135,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 incarceration_period_row_posthooks,
-            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence':
-                supervision_period_row_posthooks,
-            'tak158_tak024_tak026_supervision_period_from_supervision_sentence':
-                supervision_period_row_posthooks,
+            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods': [
+                self._gen_clear_magical_date_value(
+                    'termination_date',
+                    SUPERVISION_PERIOD_RELEASE_DATE,
+                    self.PERIOD_MAGICAL_DATES,
+                    StateSupervisionPeriod),
+                self._parse_supervision_period_status_codes,
+                self._set_supervising_officer_on_period,
+            ],
             'tak028_tak042_tak076_tak024_violation_reports': [
                 self._gen_violation_response_type_posthook(
                     StateSupervisionViolationResponseType.VIOLATION_REPORT),
@@ -974,10 +1163,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violation_response_id_from_violation,
                 self._set_finally_formed_date_on_response,
             ],
-            'apfx90_apfx91_tak034_current_po_assignments': [
-                gen_label_single_external_id_hook(US_MO_DOC),
-                self._set_supervising_officer
-            ]
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -992,9 +1177,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_period_id_coords,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._generate_incarceration_period_id_coords,
-            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence':
-                self._generate_supervision_period_id_coords,
-            'tak158_tak024_tak026_supervision_period_from_supervision_sentence':
+            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods':
                 self._generate_supervision_period_id_coords,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._generate_supervision_violation_id_coords_for_reports,
@@ -1012,10 +1195,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._incarceration_sentence_ancestor_chain_override,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._supervision_sentence_ancestor_chain_override,
-            'tak158_tak023_tak026_supervision_period_from_incarceration_sentence':
-                self._incarceration_sentence_ancestor_chain_override,
-            'tak158_tak024_tak026_supervision_period_from_supervision_sentence':
-                self._supervision_sentence_ancestor_chain_override,
+            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods':
+                self._sentence_group_ancestor_chain_override,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._supervision_violation_report_ancestor_chain_override,
             'tak291_tak292_tak024_citations':
@@ -1066,9 +1247,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',
                 'tak022_tak024_tak025_tak026_offender_sentence_probation',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
-                'tak158_tak023_tak026_supervision_period_from_incarceration_sentence',
                 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-                'tak158_tak024_tak026_supervision_period_from_supervision_sentence',
+                'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
                 'tak028_tak042_tak076_tak024_violation_reports',
                 'tak291_tak292_tak024_citations',
         ]:
@@ -1379,24 +1559,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
                         agent_to_create, response, 'decision_agents')
 
     @classmethod
-    def _set_supervising_officer(
+    def _set_supervising_officer_on_period(
             cls,
             _file_tag: str,
             row: Dict[str, str],
-            _extracted_objects: List[IngestObject],
-            cache: IngestObjectCache):
-        person_id = row.get('CE$DOC', '')
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+
         agent_to_create = cls._get_agent_from_row(row)
         if not agent_to_create:
             return
 
-        cached_person = cache.get_object_by_id('state_person', person_id)
-        if not cached_person:
-            raise ValueError(f"Expected person with id {person_id} to be "
-                             f"present in ingest object cache, but it was not "
-                             f"present")
-        create_if_not_exists(
-            agent_to_create, cached_person, 'supervising_officer')
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                create_if_not_exists(
+                    agent_to_create, obj, 'supervising_officer')
 
     @classmethod
     def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:
@@ -1455,7 +1632,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
 
-        # TODO(XXXX): This might be a bad way to determine if a sentence is
+        # TODO(2806): This might be a bad way to determine if a sentence is
         #  suspended since there could be, in theory, statuses that come between
         #  the suspension status and the actual status that means the probation
         #  has been reinstated (like a a random warrant status)
@@ -1538,6 +1715,153 @@ class UsMoController(CsvGcsfsDirectIngestController):
                         # Otherwise, we don't know when it actually happens
                         violation_response.response_date = \
                             row.get(PERIOD_START_DATE, None)
+
+    @staticmethod
+    def _sorted_list_from_col(row: Dict[str, str], col_name: str):
+        value = row.get(col_name, '')
+        if not value:
+            return []
+
+        unsorted = [result_str.strip()
+                    for result_str in value.split(',')
+                    if result_str.strip()]
+        return sorted(unsorted)
+
+    @staticmethod
+    def status_rank_str(status: str, rank_fn: Callable[[str], int]):
+        return f'{str({rank_fn(status)}).zfill(3)}{status}'
+
+    @classmethod
+    def _parse_supervision_period_admission_reason_str(
+            cls,
+            enum_overrides: EnumOverrides,
+            tak026_statuses: List[str]
+    ) -> str:
+        """Given a list of status codes from the TAK026 table, returns the most
+        relevant status string to map to a
+        StateSupervisionPeriodAdmissionReason. If the status list is empty, we
+        assume that this period started because the person transfered between
+        POs or offices.
+        """
+        if not tak026_statuses:
+            return StateSupervisionPeriodAdmissionReason.\
+                TRANSFER_WITHIN_STATE.value
+
+        def status_rank(status: str) -> int:
+            """In the case that there are multiple statuses on the same day, we
+            pick the status that is most likely to give us accurate info about
+            the reason this supervision period was started. In the case of
+            supervision period admissions, we pick statuses that have the
+            pattern X5I* (e.g. '15I1000'), since those statuses are field (5)
+            IN (I) statuses. In the absence if one of those statuses, we get our
+            info from other statuses.
+            """
+            if re.match(TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX, status):
+                return 0
+            return 1
+
+        sorted_statuses = sorted(
+            tak026_statuses,
+            key=lambda status: cls.status_rank_str(status, status_rank))
+
+        for sp_admission_reason_str in sorted_statuses:
+            sp_admission_reason = \
+                enum_overrides.parse(
+                    sp_admission_reason_str,
+                    StateSupervisionPeriodAdmissionReason)
+
+            if sp_admission_reason:
+                return sp_admission_reason_str
+
+        return StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN.value
+
+    @classmethod
+    def _parse_supervision_period_termination_reason_str(
+            cls,
+            enum_overrides: EnumOverrides,
+            tak026_statuses: List[str]
+    ) -> str:
+        """Given a list of status codes from the TAK026 table, returns the most
+        relevant status string to map to a
+        StateSupervisionPeriodTerminationReason. If the status list is empty, we
+        assume that this period ended because the person transfered between POs
+        or offices.
+        """
+
+        if not tak026_statuses:
+            return StateSupervisionPeriodTerminationReason.\
+                TRANSFER_WITHIN_STATE.value
+
+        def status_rank(status: str):
+            """In the case that there are multiple statuses on the same day, we
+            pick the status that is most likely to give us accurate info about
+            the reason this supervision period was terminated. In the case of
+            supervision period terminations, we pick statuses first that have
+            the pattern 99O* (e.g. '99O9020'), since those statuses always end a
+            whole offender cycle, then statuses with pattern 95O* (sentence
+            termination), then finally X5O*, since those statuses are field (5)
+            OUT (O) statuses. In the absence if one of those statuses, we get
+            our info from other statuses.
+            """
+            if re.match(TAK026_STATUS_CYCLE_TERMINATION_REGEX, status):
+                return 0
+            if re.match(TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX,
+                        status):
+                return 1
+            if re.match(TAK026_STATUS_SUPERVISION_PERIOD_TERMINATION_REGEX,
+                        status):
+                return 2
+            return 3
+
+        sorted_statuses = sorted(
+            tak026_statuses,
+            key=lambda status: cls.status_rank_str(status, status_rank))
+
+        for sp_termination_reason_str in sorted_statuses:
+            sp_termination_reason = \
+                enum_overrides.parse(
+                    sp_termination_reason_str,
+                    StateSupervisionPeriodTerminationReason)
+
+            if sp_termination_reason:
+                return sp_termination_reason_str
+
+        return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN.value
+
+    # TODO(2804): This function and others like it that do custom parsing to
+    #  produce a single enum value from a column's string value should not
+    #  exist as row post-processors but rather custom enum overrides that
+    #  function on a per-state/file basis. The way this functions currently, we
+    #  clobber the raw text string that contains info on the list of all TAK026
+    #  statuses from a given day, picking only one. However, it would be very
+    #  useful to be able to preserve that raw text string and only choose the
+    #  enum as part of the proto -> entity conversion code.
+    def _parse_supervision_period_status_codes(
+            self,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache
+    ):
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                start_statuses = \
+                    self._sorted_list_from_col(
+                        row, SUPERVISION_PERIOD_START_STATUSES)
+                obj.admission_reason = \
+                    self._parse_supervision_period_admission_reason_str(
+                        self.get_enum_overrides(),
+                        start_statuses)
+
+                if obj.termination_date:
+                    end_statuses = \
+                        self._sorted_list_from_col(
+                            row, SUPERVISION_PERIOD_END_STATUSES)
+                    obj.termination_reason = \
+                        self._parse_supervision_period_termination_reason_str(
+                            self.get_enum_overrides(),
+                            end_statuses)
 
     def _set_ip_admission_reason_from_status(
             self,
@@ -1665,23 +1989,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     obj.__setattr__(
                         'status',
                         StateIncarcerationPeriodStatus.IN_CUSTODY.value)
-
-    @classmethod
-    def _set_supervision_period_status(cls,
-                                       _file_tag: str,
-                                       _row: Dict[str, str],
-                                       extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache):
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                if obj.termination_date:
-                    obj.__setattr__(
-                        'status',
-                        StateSupervisionPeriodStatus.TERMINATED.value)
-                else:
-                    obj.__setattr__(
-                        'status',
-                        StateSupervisionPeriodStatus.UNDER_SUPERVISION.value)
 
     @classmethod
     def _sentence_group_ancestor_chain_override(cls,
@@ -1823,10 +2130,18 @@ class UsMoController(CsvGcsfsDirectIngestController):
             file_tag: str,
             row: Dict[str, str]) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+
+        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+
+        field_assignment_seq = row['FIELD_ASSIGNMENT_SEQ_NUM']
+        start_status_seq_num = row['START_STATUS_SEQ_NUM']
+        supervision_period_id =\
+            f'{sentence_group_id}-{field_assignment_seq}-{start_status_seq_num}'
+
         return IngestFieldCoordinates(
             'state_supervision_period',
             'state_supervision_period_id',
-            cls._generate_period_id(col_prefix, row))
+            supervision_period_id)
 
     @classmethod
     def _generate_incarceration_period_id_coords(
@@ -1834,10 +2149,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
             file_tag: str,
             row: Dict[str, str]) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+
+        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+
+        # TODO(2728): The SQN is potentially not a stable ID if status
+        #  information gets backdated and the SQN numbers generated in the
+        #  roll-up shift.
+        subcycle_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN']
+        start_status_seq_num = row['START_STATUS_SEQ_NUM']
+        incarceration_period_id = \
+            f'{sentence_group_id}-{subcycle_seq_num}-{start_status_seq_num}'
+
         return IngestFieldCoordinates(
             'state_incarceration_period',
             'state_incarceration_period_id',
-            cls._generate_period_id(col_prefix, row))
+            incarceration_period_id)
 
     @classmethod
     def _generate_supervision_violation_id_coords_for_reports(
@@ -1869,8 +2195,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _generate_sentence_group_id(cls,
                                     col_prefix: str,
                                     row: Dict[str, str]) -> str:
-        doc_id = row[f'{col_prefix}${DOC_ID}']
-        cyc_id = row[f'{col_prefix}${CYCLE_ID}']
+
+        if col_prefix:
+            doc_id = row[f'{col_prefix}${DOC_ID}']
+            cyc_id = row[f'{col_prefix}${CYCLE_ID}']
+        else:
+            doc_id = row[DOC_ID]
+            cyc_id = row[CYCLE_ID]
         return f'{doc_id}-{cyc_id}'
 
     @classmethod
@@ -1878,17 +2209,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
         sen_seq_num = row[f'{col_prefix}${SENTENCE_KEY_SEQ}']
         return f'{sentence_group_id}-{sen_seq_num}'
-
-    @classmethod
-    def _generate_period_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
-        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
-
-        # TODO(2728): The SQN is potentially not a stable ID if status
-        #  information gets backdated and the SQN numbers generated in the
-        #  roll-up shift.
-        subcycle_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN']
-        start_status_seq_num = row['START_STATUS_SEQ_NUM']
-        return f'{sentence_group_id}-{subcycle_seq_num}-{start_status_seq_num}'
 
     @classmethod
     def _generate_supervision_violation_id_with_report_prefix(
