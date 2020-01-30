@@ -27,7 +27,8 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 def find_incarceration_events(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        incarceration_periods: List[StateIncarcerationPeriod],
+        county_of_residence: Optional[str]) -> \
         List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
 
@@ -52,7 +53,8 @@ def find_incarceration_events(
     )
 
     for incarceration_period in de_duplicated_incarceration_admissions:
-        admission_event = admission_event_for_period(incarceration_period)
+        admission_event = admission_event_for_period(
+            incarceration_period, county_of_residence)
 
         if admission_event:
             incarceration_events.append(admission_event)
@@ -62,7 +64,8 @@ def find_incarceration_events(
     )
 
     for incarceration_period in de_duplicated_incarceration_releases:
-        release_event = release_event_for_period(incarceration_period)
+        release_event = release_event_for_period(
+            incarceration_period, county_of_residence)
 
         if release_event:
             incarceration_events.append(release_event)
@@ -86,7 +89,7 @@ def de_duplicated_admissions(incarceration_periods:
             'state_code': incarceration_period.state_code,
             'admission_date': incarceration_period.admission_date,
             'admission_reason': incarceration_period.admission_reason,
-            'facility': incarceration_period.facility
+            'facility': incarceration_period.facility,
         })
 
         if admission_dict not in unique_admission_dicts:
@@ -124,8 +127,9 @@ def de_duplicated_releases(incarceration_periods:
     return unique_incarceration_releases
 
 
-def admission_event_for_period(incarceration_period:
-                               StateIncarcerationPeriod) \
+def admission_event_for_period(
+        incarceration_period: StateIncarcerationPeriod,
+        county_of_residence: Optional[str]) \
         -> Optional[IncarcerationAdmissionEvent]:
     """Returns an IncarcerationAdmissionEvent if this incarceration period
     represents an admission to incarceration."""
@@ -139,14 +143,16 @@ def admission_event_for_period(incarceration_period:
             state_code=incarceration_period.state_code,
             event_date=admission_date,
             facility=incarceration_period.facility,
-            admission_reason=admission_reason
+            admission_reason=admission_reason,
+            county_of_residence=county_of_residence,
         )
 
     return None
 
 
-def release_event_for_period(incarceration_period:
-                             StateIncarcerationPeriod) \
+def release_event_for_period(
+        incarceration_period: StateIncarcerationPeriod,
+        county_of_residence: Optional[str]) \
         -> Optional[IncarcerationReleaseEvent]:
     """Returns an IncarcerationReleaseEvent if this incarceration period
     represents an release from incarceration."""
@@ -159,7 +165,8 @@ def release_event_for_period(incarceration_period:
             state_code=incarceration_period.state_code,
             event_date=release_date,
             facility=incarceration_period.facility,
-            release_reason=release_reason
+            release_reason=release_reason,
+            county_of_residence=county_of_residence,
         )
 
     return None

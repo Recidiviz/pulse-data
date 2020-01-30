@@ -48,7 +48,8 @@ from recidiviz.persistence.entity.state.entities import \
 
 
 def find_release_events_by_cohort_year(
-        incarceration_periods: List[StateIncarcerationPeriod]) \
+        incarceration_periods: List[StateIncarcerationPeriod],
+        county_of_residence: Optional[str]) \
         -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
 
@@ -71,6 +72,8 @@ def find_release_events_by_cohort_year(
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
+        county_of_residence: the county that the incarcerated person lives in
+            (prior to incarceration).
 
     Returns:
         A dictionary mapping release cohorts to a list of ReleaseEvents
@@ -99,7 +102,8 @@ def find_release_events_by_cohort_year(
                                                       status,
                                                       release_date,
                                                       release_reason,
-                                                      release_facility)
+                                                      release_facility,
+                                                      county_of_residence)
             else:
                 reincarceration_period = \
                     incarceration_periods[index + 1]
@@ -123,10 +127,17 @@ def find_release_events_by_cohort_year(
                         reincarceration_admission_reason:
 
                     event = for_intermediate_incarceration_period(
-                        state_code, admission_date, release_date,
-                        release_reason, release_facility,
-                        reincarceration_date, reincarceration_facility,
+                        state_code=state_code,
+                        admission_date=admission_date,
+                        release_date=release_date,
+                        release_reason=release_reason,
+                        release_facility=release_facility,
+                        county_of_residence=county_of_residence,
+                        reincarceration_date=reincarceration_date,
+                        reincarceration_facility=reincarceration_facility,
+                        reincarceration_admission_reason=
                         reincarceration_admission_reason,
+                        source_supervision_violation_response=
                         source_supervision_violation_response)
 
         if event:
@@ -143,7 +154,8 @@ def for_last_incarceration_period(
         status: StateIncarcerationPeriodStatus,
         release_date: Optional[date],
         release_reason: Optional[ReleaseReason],
-        release_facility: Optional[str]) \
+        release_facility: Optional[str],
+        county_of_residence: Optional[str]) \
         -> Optional[ReleaseEvent]:
     """Looks at the last StateIncarcerationPeriod for a non-recidivism event.
 
@@ -163,6 +175,8 @@ def for_last_incarceration_period(
                 StateIncarcerationPeriod
             release_facility: the facility they were released from on this
                 StateIncarcerationPeriod
+            county_of_residence: the county that the incarcerated person lives
+                in (prior to incarceration).
 
 
         Returns:
@@ -202,9 +216,12 @@ def for_last_incarceration_period(
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED]:
 
-        return NonRecidivismReleaseEvent(state_code, admission_date,
-                                         release_date,
-                                         release_facility)
+        return NonRecidivismReleaseEvent(
+            state_code=state_code,
+            original_admission_date=admission_date,
+            release_date=release_date,
+            release_facility=release_facility,
+            county_of_residence=county_of_residence)
 
     if release_reason == ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
         # This should never happen. Should have been filtered by
@@ -224,6 +241,7 @@ def for_intermediate_incarceration_period(
         release_date: date,
         release_reason: ReleaseReason,
         release_facility: Optional[str],
+        county_of_residence: Optional[str],
         reincarceration_date: date,
         reincarceration_facility: Optional[str],
         reincarceration_admission_reason: AdmissionReason,
@@ -237,6 +255,7 @@ def for_intermediate_incarceration_period(
     released, there is probably an instance of recidivism to count.
 
     Args:
+        state_code: state where the incarceration takes place
         admission_date: when the StateIncarcerationPeriod started
         release_date: when they were released from the StateIncarcerationPeriod
         release_reason: the reason they were released from the
@@ -245,6 +264,8 @@ def for_intermediate_incarceration_period(
             StateIncarcerationPeriod
         reincarceration_date: date they were admitted to the subsequent
             StateIncarcerationPeriod
+        county_of_residence: the county that the incarcerated person lives in
+            (prior to incarceration).
         reincarceration_facility: facility in which the subsequent
             StateIncarcerationPeriod started
         reincarceration_admission_reason: reason they were admitted to the
@@ -268,10 +289,17 @@ def for_intermediate_incarceration_period(
         get_source_violation_type(source_supervision_violation_response)
 
     # This is a new admission recidivism event. Return it.
-    return RecidivismReleaseEvent(state_code, admission_date, release_date,
-                                  release_facility, reincarceration_date,
-                                  reincarceration_facility, return_type,
-                                  from_supervision_type, source_violation_type)
+    return RecidivismReleaseEvent(
+        state_code=state_code,
+        original_admission_date=admission_date,
+        release_date=release_date,
+        release_facility=release_facility,
+        county_of_residence=county_of_residence,
+        reincarceration_date=reincarceration_date,
+        reincarceration_facility=reincarceration_facility,
+        return_type=return_type,
+        from_supervision_type=from_supervision_type,
+        source_violation_type=source_violation_type)
 
 
 def should_include_in_release_cohort(

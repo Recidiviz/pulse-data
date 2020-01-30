@@ -45,6 +45,7 @@ ALL_INCLUSIONS_DICT = {
 }
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
+_COUNTY_OF_RESIDENCE = 'county'
 
 
 class TestMapIncarcerationCombinations(unittest.TestCase):
@@ -72,7 +73,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
             event_date=date(2000, 3, 12),
-            facility='SAN QUENTIN'
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -115,12 +117,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2000, 3, 12),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationReleaseEvent(
                 state_code='CA',
                 event_date=date(2003, 9, 12),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -159,12 +163,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2000, 3, 12),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2000, 3, 17),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -203,12 +209,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             IncarcerationReleaseEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 12),
-                facility='FACILITY 33'
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationReleaseEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 24),
-                facility='FACILITY 33'
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -246,7 +254,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
             event_date=date(2000, 3, 12),
-            facility='SAN QUENTIN'
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -289,7 +298,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_event = IncarcerationReleaseEvent(
             state_code='CA',
             event_date=date(2010, 10, 2),
-            facility='SAN QUENTIN'
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -333,12 +343,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2010, 10, 2),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationReleaseEvent(
                 state_code='CA',
                 event_date=date(2010, 10, 19),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -382,12 +394,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2010, 10, 2),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2010, 10, 19),
-                facility='SAN QUENTIN'
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -431,12 +445,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2010, 10, 2),
                 facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2010, 10, 19),
                 facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION
             )
         ]
@@ -490,14 +506,15 @@ class TestCharacteristicCombinations(unittest.TestCase):
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
             event_date=date(2018, 9, 13),
-            facility='SAN QUENTIN'
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, ALL_INCLUSIONS_DICT)
 
-        # 32 combinations of demographics
-        assert len(combinations) == 32
+        # 64 combinations of demographics
+        assert len(combinations) == 64
 
     def test_characteristic_combinations_no_facility(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -518,13 +535,42 @@ class TestCharacteristicCombinations(unittest.TestCase):
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
             event_date=date(2018, 9, 13),
+            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, ALL_INCLUSIONS_DICT)
 
         # 32 combinations of demographics
-        assert len(combinations) == 16
+        assert len(combinations) == 32
+
+    def test_characteristic_combinations_no_county(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(2018, 9, 13),
+            facility='facility',
+        )
+
+        combinations = calculator.characteristic_combinations(
+            person, incarceration_event, ALL_INCLUSIONS_DICT)
+
+        # 32 combinations of demographics
+        assert len(combinations) == 32
 
 
 def demographic_metric_combos_count_for_person_incarceration(
@@ -538,6 +584,9 @@ def demographic_metric_combos_count_for_person_incarceration(
     )
 
     # Facility is always included
+    total_metric_combos *= 2
+
+    # County_of_residence is always included
     total_metric_combos *= 2
 
     return total_metric_combos
