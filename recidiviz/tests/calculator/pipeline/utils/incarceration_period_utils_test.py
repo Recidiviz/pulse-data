@@ -41,7 +41,6 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
     """Tests the drop_placeholder_temporary_and_missing_status_periods
     function."""
 
-    # pylint: disable=line-too-long
     def test_drop_placeholder_temporary_and_missing_status_periods_placeholder(self):
         incarceration_periods = [StateIncarcerationPeriod.new_with_defaults(
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -55,7 +54,6 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
 
         self.assertEqual([], validated_incarceration_periods)
 
-    # pylint: disable=line-too-long
     def test_drop_placeholder_temporary_and_missing_status_periods_temporary(self):
         incarceration_periods = [StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -73,7 +71,6 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
 
         self.assertEqual([], validated_incarceration_periods)
 
-    # pylint: disable=line-too-long
     def test_drop_placeholder_temporary_and_missing_status_periods_multiple_temporary(self):
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -815,7 +812,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(validated_incarceration_periods,
                          input_incarceration_periods)
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_empty_admission_data_us_nd(self):
         """Tests that the incarceration periods are correctly collapsed when
         there's an empty admission_date and admission_reason following a
@@ -862,7 +858,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
         ])
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_empty_admission_data_not_us_nd(self):
         """Tests that the validator does not call the state-specific code to
         set empty admission data when the state code is not 'US_ND'.
@@ -899,7 +894,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([first_incarceration_period],
                          collapsed_incarceration_periods)
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_multiple_temporary_and_valid(self):
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -941,7 +935,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(validated_incarceration_periods,
                          [valid_incarceration_period])
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_multiple_temporary_and_transfer(self):
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -1018,7 +1011,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(validated_incarceration_periods,
                          [collapsed_incarceration_period])
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_valid_then_temporary(self):
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1049,7 +1041,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual(validated_incarceration_periods,
                          [valid_incarceration_period])
 
-    # pylint: disable=line-too-long
     def test_prepare_incarceration_periods_for_calculations_temporary_between_valid(self):
 
         valid_incarceration_period_1 = \
@@ -1094,7 +1085,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                          [valid_incarceration_period_1,
                           valid_incarceration_period_2])
 
-    # pylint: disable=line-too-long
     def test_sort_incarceration_periods(self):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1139,7 +1129,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             first_reincarceration_period,
             second_reincarceration_period])
 
-    # pylint: disable=line-too-long
     def test_collapse_incarceration_periods(self):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1182,7 +1171,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 release_reason=first_reincarceration_period.release_reason)
         ])
 
-    # pylint: disable=line-too-long
     def test_collapse_incarceration_periods_missing_transfer_in(self):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(

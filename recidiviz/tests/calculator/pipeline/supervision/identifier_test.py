@@ -348,7 +348,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-    # pylint: disable=line-too-long
     def test_find_supervision_time_buckets_overlapping_supervision_periods(self):
         """Tests the find_supervision_time_buckets function for two supervision
         periods with no incarceration periods, where the supervision
@@ -439,7 +438,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         ])
 
-    # pylint: disable=line-too-long
     def test_find_supervision_time_buckets_overlapping_periods_different_types(self):
         """Tests the find_supervision_time_buckets function for two supervision
         periods with no incarceration periods, where the supervision
@@ -1619,7 +1617,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_period.supervision_type),
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_revocation_before_termination(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
@@ -1678,7 +1675,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_revocation_before_termination_month(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
@@ -1737,7 +1733,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_revocation_no_termination(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
@@ -1798,7 +1793,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2003, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     @freeze_time('2019-11-03')
     def test_find_time_buckets_for_supervision_period_nested_revocation_no_termination(self):
         """Tests the find_time_buckets_for_supervision_period function
@@ -1927,7 +1921,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2019, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_admission_no_revocation(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a non-revocation admission
@@ -2053,7 +2046,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_multiple_incarcerations_in_year(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there are multiple incarceration periods in the year of
@@ -2125,7 +2117,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_multiple_incarcerations_overlap(
             self):
         """Tests the find_time_buckets_for_supervision_period function when
@@ -2218,7 +2209,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2018, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_multiple_years(
             self):
         """Tests the find_time_buckets_for_supervision_period function when
@@ -2363,7 +2353,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 2001, supervision_period.supervision_type)
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_multiple_assessments(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
@@ -2473,7 +2462,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 assessment_2.assessment_type),
         ])
 
-    # pylint: disable=line-too-long
     def test_find_time_buckets_for_supervision_period_assessment_year_before(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is no revocation and the assessment date is the year before
@@ -2604,7 +2592,6 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             }
         })
 
-    # pylint: disable=line-too-long
     def test_index_incarceration_periods_by_admission_month_multiple_month(self):
         """Tests the index_incarceration_periods_by_admission_month function
         when there are multiple incarceration periods with admission dates

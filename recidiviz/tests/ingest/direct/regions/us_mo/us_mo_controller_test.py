@@ -718,7 +718,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             expected,
             'tak022_tak024_tak025_tak026_offender_sentence_probation')
 
-    # pylint: disable=line-too-long
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
@@ -1027,7 +1026,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             expected,
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
 
-    # pylint: disable=line-too-long
     def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='910324',
@@ -1065,7 +1063,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             expected,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
-    # pylint: disable=line-too-long
     def test_populate_data_tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods(
             self):
 

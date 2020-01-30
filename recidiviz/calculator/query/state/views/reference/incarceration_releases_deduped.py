@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 """Incarceration releases de-duped for any incarceration periods that share
 state_code, person_id, release_date, release_reason, and facility.
 

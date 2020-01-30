@@ -159,7 +159,6 @@ class CloudSqlExportTest(unittest.TestCase):
         with self.assertLogs(level='ERROR'):
             cloudsql_export.wait_until_operation_finished('fake-op')
 
-    # pylint: disable=line-too-long
     @mock.patch('recidiviz.calculator.query.cloudsql_export.wait_until_operation_finished')
     def test_export_table(self, mock_wait):
         """Test that client().instances().export() is called and
@@ -176,7 +175,6 @@ class CloudSqlExportTest(unittest.TestCase):
         )
         mock_wait.assert_called()
 
-    # pylint: disable=line-too-long
     @mock.patch('recidiviz.calculator.query.cloudsql_export.wait_until_operation_finished')
     def test_export_table_api_fail(self, mock_wait):
         """Test that export_table fails if the export API request fails."""

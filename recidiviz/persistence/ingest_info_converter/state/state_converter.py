@@ -123,9 +123,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
 
         self.violation_response_decision_entries = {
             svrdte.state_supervision_violation_response_decision_entry_id:
-            svrdte for svrdte
-            # pylint: disable=line-too-long
-            in ingest_info.state_supervision_violation_response_decision_entries
+            svrdte for svrdte in ingest_info.state_supervision_violation_response_decision_entries
         }
 
     def _is_complete(self) -> bool:
@@ -480,7 +478,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             state_supervision_violation_type_entry.convert(
                 self.violation_type_entries[type_entry_id], self.metadata)
             for type_entry_id in
-            # pylint: disable=line-too-long
             ingest_supervision_violation.state_supervision_violation_type_entry_ids
         ]
         supervision_violation_builder.supervision_violation_types \
@@ -491,7 +488,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
                 self.violated_condition_entries[condition_entry_id],
                 self.metadata)
             for condition_entry_id in
-            # pylint: disable=line-too-long
             ingest_supervision_violation.state_supervision_violated_condition_entry_ids
         ]
         supervision_violation_builder.supervision_violated_conditions \
