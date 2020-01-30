@@ -169,6 +169,11 @@ def characteristic_combinations(person: StatePerson,
     if incarceration_event.facility:
         characteristics['facility'] = incarceration_event.facility
 
+    # Always include county_of_residence as a dimension
+    if incarceration_event.county_of_residence:
+        characteristics['county_of_residence'] = \
+            incarceration_event.county_of_residence
+
     if inclusions.get('age_bucket'):
         year = incarceration_event.event_date.year
         month = incarceration_event.event_date.month
