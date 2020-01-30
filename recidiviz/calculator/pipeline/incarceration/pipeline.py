@@ -17,7 +17,8 @@
 """Runs the incarceration calculation pipeline.
 
 usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
-                    --input=INPUT_LOCATION --methodology=METHODOLOGY
+                    --input=INPUT_LOCATION  --reference_input=REFERENCE_LOCATION
+                    --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
 
@@ -25,6 +26,7 @@ Example output to GCP storage bucket:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
         --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=gs://recidiviz-bucket/output_location
             --methodology=BOTH
 
@@ -32,12 +34,14 @@ Example output to local file:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
         --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=PERSON
 
 Example output including race and gender dimensions:
 python -m recidiviz.calculator.incarceration.pipeline
         --project=recidiviz-project-name
         --input=recidiviz-project-name.dataset
+        --reference_input=recidiviz-project-name.ref_dataset
         --output=output_file --methodology=EVENT
             --include_race=True --include_gender=True
 
@@ -51,6 +55,8 @@ import logging
 
 from typing import Any, Dict, List, Tuple
 import datetime
+
+from apache_beam.pvalue import AsDict
 from more_itertools import one
 
 import apache_beam as beam
@@ -66,7 +72,8 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn
+from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
+    ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -92,13 +99,16 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
+                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]]
+                  )
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         List[IncarcerationEvent]])
 class ClassifyIncarcerationEvents(beam.DoFn):
     """Classifies incarceration periods as admission and release events."""
 
-    def process(self, element, *args, **kwargs):
+    # pylint: disable=arguments-differ
+    def process(self, element, person_id_to_county):
         """Identifies instances of admission and release from incarceration."""
         _, person_incarceration_periods = element
 
@@ -109,11 +119,17 @@ class ClassifyIncarcerationEvents(beam.DoFn):
         # Get the StatePerson
         person = one(person_incarceration_periods['person'])
 
+        # Get the person's county of residence, if present
+        person_id_to_county_fields = person_id_to_county.get(
+            person.person_id, None)
+        county_of_residence = \
+            person_id_to_county_fields.get('county_of_residence', None) \
+            if person_id_to_county_fields else None
+
         # Find the IncarcerationEvent from the StateProgramAssignments
         incarceration_events = \
             identifier.find_incarceration_events(
-                incarceration_periods
-            )
+                incarceration_periods, county_of_residence)
 
         if not incarceration_events:
             logging.info(
@@ -350,6 +366,12 @@ def parse_arguments(argv):
                         help='BigQuery dataset to query.',
                         required=True)
 
+    parser.add_argument('--reference_input',
+                        dest='reference_input',
+                        type=str,
+                        help='BigQuery reference dataset to query.',
+                        required=True)
+
     parser.add_argument('--include_age',
                         dest='include_age',
                         type=bool,
@@ -452,6 +474,8 @@ def run(argv=None):
     all_pipeline_options = pipeline_options.get_all_options()
 
     query_dataset = all_pipeline_options['project'] + '.' + known_args.input
+    reference_dataset = all_pipeline_options['project'] + '.' + \
+                        known_args.reference_input
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
@@ -486,12 +510,28 @@ def run(argv=None):
             beam.CoGroupByKey()
         )
 
+        # Bring in the table that associates people and their county of
+        # residence
+        person_id_to_county_query = \
+            f"SELECT * FROM " \
+            f"`{reference_dataset}.persons_to_recent_county_of_residence`"
+        person_id_to_county_kv = (
+            p
+            | "Read person_id to county associations from BigQuery" >>
+            beam.io.Read(beam.io.BigQuerySource(
+                query=person_id_to_county_query,
+                use_standard_sql=True))
+            | "Convert person_id to county association table to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
         # Identify IncarcerationEvents events from the StatePerson's
         # StateIncarcerationPeriods
         person_events = (
             person_and_incarceration_periods |
             'Classify Incarceration Events' >>
-            beam.ParDo(ClassifyIncarcerationEvents()))
+            beam.ParDo(ClassifyIncarcerationEvents(),
+                       AsDict(person_id_to_county_kv)))
 
         # Get dimensions to include and methodologies to use
         inclusions, _ = dimensions_and_methodologies(known_args)

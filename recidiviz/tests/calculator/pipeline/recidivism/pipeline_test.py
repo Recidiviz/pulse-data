@@ -22,6 +22,7 @@ import json
 import unittest
 
 import apache_beam as beam
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -37,11 +38,12 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.recidivism.pipeline import \
-    json_serializable_metric_key
+    json_serializable_metric_key, ClassifyReleaseEvents
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
@@ -57,6 +59,8 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.tests.persistence.database import database_test_utils
+
+_COUNTY_OF_RESIDENCE = 'county'
 
 
 class TestRecidivismPipeline(unittest.TestCase):
@@ -269,10 +273,21 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         person_events = (
-            person_and_incarceration_periods |
-            'Get Recidivism Events' >>
-            pipeline.GetReleaseEvents())
+            person_and_incarceration_periods
+            | "ClassifyReleaseEvents" >>
+            beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+        )
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -578,10 +593,21 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         # Identify ReleaseEvents events from the StatePerson's
         # StateIncarcerationPeriods
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id_1,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         person_events = (
-            person_and_incarceration_periods |
-            'Get Recidivism Events' >>
-            pipeline.GetReleaseEvents())
+            person_and_incarceration_periods
+            | "ClassifyReleaseEvents" >>
+            beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+        )
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -666,6 +692,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -675,6 +702,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -687,11 +715,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents())
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             AsDict(person_id_to_county_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -725,7 +764,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         non_recidivism_release_event = NonRecidivismReleaseEvent(
             'TX', only_incarceration.admission_date,
-            only_incarceration.release_date, only_incarceration.facility)
+            only_incarceration.release_date, only_incarceration.facility,
+            _COUNTY_OF_RESIDENCE)
 
         correct_output = [(fake_person,
                            {only_incarceration.release_date.year:
@@ -733,11 +773,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents()))
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             AsDict(person_id_to_county_kv)))
 
         assert_that(output, equal_to(correct_output))
 
@@ -762,11 +813,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents())
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             AsDict(person_id_to_county_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -826,6 +888,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -835,6 +898,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -845,11 +909,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                             second_recidivism_release_event]})]
 
         test_pipeline = TestPipeline()
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents())
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             AsDict(person_id_to_county_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -908,6 +983,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -917,6 +993,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
@@ -929,11 +1006,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_incarceration_periods)])
                   | 'Identify Recidivism Events' >>
-                  beam.ParDo(pipeline.ClassifyReleaseEvents())
+                  beam.ParDo(pipeline.ClassifyReleaseEvents(),
+                             AsDict(person_id_to_county_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -961,6 +1049,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             release_date=date(2010, 12, 4), release_facility=None,
             reincarceration_date=date(2011, 4, 5),
             reincarceration_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -969,6 +1058,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             release_date=date(2014, 4, 14), release_facility=None,
             reincarceration_date=date(2017, 1, 4),
             reincarceration_facility=None,
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         person_events = [

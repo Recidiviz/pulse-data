@@ -32,6 +32,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
+_COUNTY_OF_RESIDENCE = 'county'
+
 
 class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
@@ -51,8 +53,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_periods = [incarceration_period]
 
         incarceration_events = identifier.find_incarceration_events(
-            incarceration_periods
-        )
+            incarceration_periods, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(2, len(incarceration_events))
 
@@ -61,12 +62,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code='TX',
                 event_date=incarceration_period.admission_date,
                 facility='PRISON3',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
                 event_date=incarceration_period.release_date,
                 facility='PRISON3',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
         ], incarceration_events)
@@ -98,8 +101,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                                  incarceration_period_2]
 
         incarceration_events = identifier.find_incarceration_events(
-            incarceration_periods
-        )
+            incarceration_periods, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(2, len(incarceration_events))
 
@@ -108,12 +110,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code='TX',
                 event_date=incarceration_period_1.admission_date,
                 facility='PRISON3',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
                 event_date=incarceration_period_2.release_date,
                 facility='PRISON3',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
         ], incarceration_events)
@@ -279,13 +283,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         admission_event = identifier.admission_event_for_period(
-            incarceration_period
-        )
+            incarceration_period, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
             event_date=incarceration_period.admission_date,
             facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             admission_reason=incarceration_period.admission_reason
         ), admission_event)
 
@@ -304,8 +308,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period.admission_reason = admission_reason
 
             admission_event = identifier.admission_event_for_period(
-                incarceration_period
-            )
+                incarceration_period, _COUNTY_OF_RESIDENCE)
 
             self.assertIsNotNone(admission_event)
 
@@ -326,13 +329,13 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         release_event = identifier.release_event_for_period(
-            incarceration_period
-        )
+            incarceration_period, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=incarceration_period.release_date,
             facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
             release_reason=incarceration_period.release_reason
         ), release_event)
 
@@ -351,7 +354,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period.release_reason = release_reason
 
             release_event = identifier.release_event_for_period(
-                incarceration_period
-            )
+                incarceration_period, _COUNTY_OF_RESIDENCE)
 
             self.assertIsNotNone(release_event)

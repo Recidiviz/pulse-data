@@ -60,6 +60,9 @@ class IncarcerationMetric(RecidivizMetric):
     # Facility
     facility: Optional[str] = attr.ib(default=None)
 
+    # County of residence
+    county_of_residence: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
                                     job_id: str) -> \

@@ -21,6 +21,7 @@ import json
 import unittest
 
 import apache_beam as beam
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -34,6 +35,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
@@ -45,6 +47,8 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
+
+_COUNTY_OF_RESIDENCE = 'county_of_residence'
 
 
 class TestIncarcerationPipeline(unittest.TestCase):
@@ -194,10 +198,22 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         # Identify IncarcerationEvents events from the StatePerson's
         # StateIncarcerationPeriods
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         person_events = (
             person_and_incarceration_periods |
             'Classify Incarceration Events' >>
-            beam.ParDo(pipeline.ClassifyIncarcerationEvents()))
+            beam.ParDo(
+                pipeline.ClassifyIncarcerationEvents(),
+                AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -214,7 +230,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                      inclusions=inclusions))
 
         assert_that(incarceration_metrics,
-                    AssertMatchers.validate_pipeline_test())
+                    AssertMatchers.validate_metric_type())
 
         test_pipeline.run()
 
@@ -310,10 +326,25 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         # Identify IncarcerationEvents events from the StatePerson's
         # StateIncarcerationPeriods
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id_1,
+             'county_of_residence': _COUNTY_OF_RESIDENCE},
+            {'person_id': fake_person_id_2,
+             'county_of_residence': _COUNTY_OF_RESIDENCE},
+        ]
+
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
         person_events = (
             person_and_incarceration_periods |
             'Classify Incarceration Events' >>
-            beam.ParDo(pipeline.ClassifyIncarcerationEvents()))
+            beam.ParDo(pipeline.ClassifyIncarcerationEvents(),
+                       AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -330,7 +361,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                      inclusions=inclusions))
 
         assert_that(incarceration_metrics,
-                    AssertMatchers.validate_pipeline_test())
+                    AssertMatchers.validate_metric_type())
 
         test_pipeline.run()
 
@@ -361,15 +392,20 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         person_periods = {'person': [fake_person],
                           'incarceration_periods':
                               [incarceration_period]}
+        fake_person_id_to_county_query_result = [
+            {'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
 
         incarceration_events = [
             IncarcerationAdmissionEvent(
                 state_code='TX',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 event_date=date(2008, 11, 20),
                 admission_reason=incarceration_period.admission_reason
             ),
             IncarcerationReleaseEvent(
                 state_code='TX',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
                 event_date=date(2010, 12, 4),
                 release_reason=incarceration_period.release_reason
             )
@@ -380,12 +416,21 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        person_id_to_county_kv = (
+            test_pipeline
+            | "Read person id to county associations from BigQuery" >>
+            beam.Create(fake_person_id_to_county_query_result)
+            | "Convert to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Incarceration Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyIncarcerationEvents())
+                      pipeline.ClassifyIncarcerationEvents(),
+                      AsDict(person_id_to_county_kv))
                   )
 
         assert_that(output, equal_to(correct_output))
@@ -411,7 +456,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                                   person_periods)])
                   | 'Identify Incarceration Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyIncarcerationEvents())
+                      pipeline.ClassifyIncarcerationEvents(), {})
                   )
 
         assert_that(output, equal_to([]))
@@ -435,6 +480,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2001, 3, 16),
                 facility='SAN QUENTIN',
+                county_of_residence='county_of_residence',
                 admission_reason=StateIncarcerationPeriodAdmissionReason.
                 PROBATION_REVOCATION
             ),
@@ -442,6 +488,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2002, 5, 26),
                 facility='SAN QUENTIN',
+                county_of_residence='county_of_residence',
                 release_reason=StateIncarcerationPeriodReleaseReason.
                 SENTENCE_SERVED
             )
@@ -532,18 +579,17 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test():
+    def validate_metric_type():
 
-        def _validate_pipeline_test(output):
+        def _validate_metric_type(output):
 
             for metric in output:
                 if not isinstance(metric, IncarcerationMetric):
                     raise BeamAssertException(
-                        'Failed assert. Output is not'
-                        'of type'
-                        ' IncarcerationMetric.')
+                        'Failed assert. Output is not of type'
+                        'IncarcerationMetric.')
 
-        return _validate_pipeline_test
+        return _validate_metric_type
 
     @staticmethod
     def count_combinations(expected_combination_counts):
