@@ -115,7 +115,6 @@ class CountyHistoricalSnapshotUpdater(
 
                 self._execute_action_for_all_entities(
                     self._get_related_entities(booking),
-                    # pylint:disable=line-too-long
                     self._set_provided_start_and_end_time_for_booking_descendant,
                     booking_start_date_for_descendants,
                     context_registry)

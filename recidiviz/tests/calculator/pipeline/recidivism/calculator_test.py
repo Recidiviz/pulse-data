@@ -566,7 +566,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         1    # NEW_ADMISSSION - all
     )
 
-    # pylint:disable=line-too-long
     RETURN_TYPE_COMBOS_INCLUDING_REVOCATION = (
         (
             (

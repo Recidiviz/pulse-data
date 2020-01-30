@@ -179,7 +179,6 @@ class ExportManagerTestCounty(unittest.TestCase):
         with self.assertLogs(level='ERROR'):
             export_manager.export_all_then_load_all('nonsense')
 
-    # pylint: disable=line-too-long
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(
         'recidiviz.calculator.query.export_manager.export_table_then_load_table')
@@ -205,7 +204,6 @@ class ExportManagerTestCounty(unittest.TestCase):
         assert response.status_code == HTTPStatus.OK
         mock_export.assert_called_with(table, dataset_ref, SchemaType.JAILS)
 
-    # pylint: disable=line-too-long
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_state(self, mock_export, mock_project_id):
@@ -230,7 +228,6 @@ class ExportManagerTestCounty(unittest.TestCase):
         assert response.status_code == HTTPStatus.OK
         mock_export.assert_called_with(table, dataset_ref, SchemaType.STATE)
 
-    # pylint: disable=line-too-long
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_invalid_module(self, mock_export,

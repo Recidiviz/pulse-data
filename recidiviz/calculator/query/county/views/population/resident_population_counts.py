@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Resident population counts by race and gender for each year-fips."""
-# pylint: disable=line-too-long
 
 from recidiviz.calculator.query import bqview
 

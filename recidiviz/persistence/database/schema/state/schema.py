@@ -333,7 +333,6 @@ state_supervision_violation_response_type = Enum(
     state_supervision_violation_response_type_permanent_decision,
     name='state_supervision_violation_response_type')
 
-# pylint: disable=line-too-long
 state_supervision_violation_response_decision = Enum(
     state_enum_strings.
     state_supervision_violation_response_decision_continuance,
@@ -2028,7 +2027,6 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
 
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        # pylint:disable=line-too-long
         if cls is _StateSupervisionViolationResponseDecisionEntrySharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)

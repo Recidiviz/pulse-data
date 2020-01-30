@@ -71,7 +71,6 @@ class StateSupervisionViolationResponseRevocationType(EntityEnum,
                                                       metaclass=EntityEnumMeta):
     REINCARCERATION = state_enum_strings. \
         state_supervision_violation_response_revocation_type_reincarceration
-    # pylint: disable=line-too-long
     RETURN_TO_SUPERVISION = state_enum_strings. \
         state_supervision_violation_response_revocation_type_return_to_supervision
     SHOCK_INCARCERATION = \
@@ -95,7 +94,6 @@ class StateSupervisionViolationResponseDecidingBodyType(
         state_enum_strings.\
         state_supervision_violation_response_deciding_body_parole_board
     # A parole/probation officer (PO)
-    # pylint: disable=line-too-long
     SUPERVISION_OFFICER = \
         state_enum_strings. \
         state_supervision_violation_response_deciding_body_type_supervision_officer

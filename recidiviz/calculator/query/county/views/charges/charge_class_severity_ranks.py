@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates a View that has a list of charge classes and their severity rank."""
-# pylint: disable=line-too-long
 
 from recidiviz.calculator.query import bqview
 

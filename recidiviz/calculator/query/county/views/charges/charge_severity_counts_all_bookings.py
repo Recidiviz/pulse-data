@@ -19,7 +19,8 @@
 
 from recidiviz.calculator.query import export_config, bqview
 from recidiviz.calculator.query.county import view_config
-from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
+from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import \
+    CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
 from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
 
 from recidiviz.persistence.database.schema.county.schema import Booking, Person

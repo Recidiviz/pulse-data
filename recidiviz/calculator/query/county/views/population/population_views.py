@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """"Views related to jail population."""
-# pylint: disable=line-too-long
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW
