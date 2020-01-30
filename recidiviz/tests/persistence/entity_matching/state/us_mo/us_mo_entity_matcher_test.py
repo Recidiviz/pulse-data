@@ -218,7 +218,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    # pylint: disable=line-too-long
     def test_runMatch_supervisingOfficerNotMovedFromPersonOntoOpenSupervisionPeriods(self):
         db_supervising_officer = generate_agent(
             agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_US_MO)

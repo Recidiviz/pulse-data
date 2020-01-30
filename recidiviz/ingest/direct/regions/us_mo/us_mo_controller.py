@@ -116,7 +116,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-        # pylint: disable=line-too-long
         'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
         'tak028_tak042_tak076_tak024_violation_reports',
         'tak291_tak292_tak024_citations',
@@ -127,7 +126,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
         'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
-        # pylint: disable=line-too-long
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': 'BU',
         'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
@@ -1144,7 +1142,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._clear_zero_date_string,
                 self.set_charge_id_from_sentence_id,
             ],
-            # pylint: disable=line-too-long
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
@@ -1187,7 +1184,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_sentence_id_coords,
             'tak022_tak024_tak025_tak026_offender_sentence_probation':
                 self._generate_supervision_sentence_id_coords,
-            # pylint: disable=line-too-long
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._generate_incarceration_period_id_coords,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
@@ -1205,7 +1201,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._sentence_group_ancestor_chain_override,
             'tak022_tak024_tak025_tak026_offender_sentence_probation':
                 self._sentence_group_ancestor_chain_override,
-            # pylint: disable=line-too-long
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._incarceration_sentence_ancestor_chain_override,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
@@ -1256,7 +1251,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
-        # pylint: disable=line-too-long
         if file_tag in [
                 'oras_assessments_weekly',
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',

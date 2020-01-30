@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Total population, admissions, releases by race, gender and day-fips."""
-# pylint: disable=line-too-long
 
 from recidiviz.calculator.query import export_config, bqview
 from recidiviz.calculator.query.county import view_config
