@@ -575,6 +575,9 @@ def characteristic_combinations(person: StatePerson,
     """
     characteristics: Dict[str, Any] = {}
 
+    if event.county_of_residence:
+        characteristics['county_of_residence'] = event.county_of_residence
+
     if inclusions.get('age_bucket'):
         entry_age = age_at_date(person, event.original_admission_date)
         entry_age_bucket = age_bucket(entry_age)

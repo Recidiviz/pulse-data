@@ -58,6 +58,9 @@ class ReincarcerationRecidivismMetric(RecidivizMetric):
     # The facility the persons were released from prior to recidivating
     release_facility: Optional[str] = attr.ib(default=None)
 
+    # County of residence
+    county_of_residence: Optional[str] = attr.ib(default=None)
+
     # ReincarcerationReturnType enum indicating whether the persons returned to
     # incarceration because of a revocation of supervision or because of a
     # new admission
