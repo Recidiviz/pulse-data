@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Reference views used by other views."""
-# pylint: disable=line-too-long
 from recidiviz.calculator.query.state.views.reference.incarceration_admissions_deduped import \
     INCARCERATION_ADMISSIONS_DEDUPED_VIEW
 from recidiviz.calculator.query.state.views.reference.incarceration_admissions_by_person_and_month import \
@@ -50,8 +49,8 @@ from recidiviz.calculator.query.state.views.reference.state_person_race_and_ethn
     STATE_PERSON_RACE_AND_ETHNICITY_VIEW
 from recidiviz.calculator.query.state.views.reference.supervision_success_by_person import \
     SUPERVISION_SUCCESS_BY_PERSON_VIEW
-from recidiviz.calculator.query.state.views.reference.supervision_termination_by_person_and_projected_completion import \
-    SUPERVISION_TERMINATION_BY_PERSON_AND_PROJECTED_COMPLETION_VIEW
+from recidiviz.calculator.query.state.views.reference.supervision_termination_by_person_and_projected_completion \
+    import SUPERVISION_TERMINATION_BY_PERSON_AND_PROJECTED_COMPLETION_VIEW
 from recidiviz.calculator.query.state.views.reference.persons_with_most_recent_lsir import \
     PERSONS_WITH_MOST_RECENT_LSIR_VIEW
 

@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Tests for view_manager.py."""
-# pylint: disable=line-too-long
 
 import unittest
 from unittest import mock

@@ -17,7 +17,7 @@
 
 """Tests for export_manager.py."""
 
-# pylint: disable=protected-access, line-too-long
+# pylint: disable=protected-access
 import unittest
 from unittest import mock
 

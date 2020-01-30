@@ -421,7 +421,6 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         .append(proto_response.
                                 state_supervision_violation_response_id)
 
-                    # pylint: disable=line-too-long
                     for decision_type in \
                             response.state_supervision_violation_response_decisions:
                         proto_decision_type = _populate_proto(
@@ -783,7 +782,6 @@ def convert_proto_to_ingest_info(
              for violation_response
              in proto.state_supervision_violation_responses)
 
-    # pylint: disable=line-too-long
     state_supervision_violation_response_decision_entry_map: \
         Dict[str,
              ingest_info.StateSupervisionViolationResponseDecisionEntry] = \
@@ -886,7 +884,6 @@ def convert_proto_to_ingest_info(
 
     # Wire child entities to respective violations
     for proto_response in proto.state_supervision_violation_responses:
-        # pylint: disable=line-too-long
         violation_response = state_supervision_violation_response_map[
             proto_response.state_supervision_violation_response_id]
         violation_response.state_supervision_violation_response_decisions = \

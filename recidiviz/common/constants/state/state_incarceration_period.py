@@ -63,7 +63,6 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
         state_incarceration_period_admission_reason_parole_revocation
     PROBATION_REVOCATION = state_enum_strings.\
         state_incarceration_period_admission_reason_probation_revocation
-    # pylint:disable=line-too-long
     RETURN_FROM_ERRONEOUS_RELEASE = \
         state_enum_strings.\
         state_incarceration_period_admission_reason_return_from_erroneous_release
@@ -103,7 +102,6 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     EXECUTION = \
         state_enum_strings.state_incarceration_period_release_reason_execution
-    # pylint:disable=line-too-long
     RELEASED_FROM_TEMPORARY_CUSTODY = \
         state_enum_strings.\
         state_incarceration_period_release_reason_released_from_temporary_custody

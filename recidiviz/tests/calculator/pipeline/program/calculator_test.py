@@ -346,7 +346,6 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
-    # pylint:disable=line-too-long
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods_multiple_supervisions(self):
         person = StatePerson.new_with_defaults(person_id=12345,

@@ -62,9 +62,7 @@ from recidiviz.persistence.database.schema.shared_enums import (
 admission_reason = Enum(county_enum_strings.admission_reason_escape,
                         county_enum_strings.admission_reason_new_commitment,
                         county_enum_strings.admission_reason_parole_violation,
-                        # pylint:disable=line-too-long
                         county_enum_strings.admission_reason_probation_violation,
-                        # pylint:disable=line-too-long
                         county_enum_strings.admission_reason_supervision_violation_for_sex_offense,
                         county_enum_strings.admission_reason_transfer,
                         name='admission_reason')
@@ -133,7 +131,6 @@ charge_class = Enum(county_enum_strings.charge_class_civil,
                     county_enum_strings.charge_class_other,
                     county_enum_strings.charge_class_parole_violation,
                     county_enum_strings.charge_class_probation_violation,
-                    # pylint:disable=line-too-long
                     county_enum_strings.charge_class_supervision_violation_for_sex_offense,
                     name='charge_class')
 

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Define views for combining scraper & state-reports & ITP."""
-# pylint:disable=line-too-long
 
 from recidiviz.calculator.query.bqview import BigQueryView
 from recidiviz.calculator.query.county.views.stitch import combined_stitch
