@@ -15,63 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Reference views used by other views."""
-from recidiviz.calculator.query.state.views.reference.incarceration_admissions_deduped import \
-    INCARCERATION_ADMISSIONS_DEDUPED_VIEW
-from recidiviz.calculator.query.state.views.reference.incarceration_admissions_by_person_and_month import \
-    INCARCERATION_ADMISSIONS_BY_PERSON_AND_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reference.incarceration_releases_by_person_and_month import \
-    INCARCERATION_RELEASES_BY_PERSON_AND_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reference.incarceration_releases_deduped import \
-    INCARCERATION_RELEASES_DEDUPED_VIEW
-from recidiviz.calculator.query.state.views.reference.lsir_scores_by_person_period_and_date_month import \
-    LSIR_SCORES_BY_PERSON_PERIOD_AND_DATE_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reference.most_recent_calculate_job import \
-    MOST_RECENT_CALCULATE_JOB_VIEW
-from recidiviz.calculator.query.state.views.reference.incarceration_admissions_by_person_60_days import \
-    INCARCERATION_ADMISSIONS_BY_PERSON_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.reference.persons_on_supervision_60_days import \
-    PERSONS_ON_SUPERVISION_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.reference.persons_on_supervision_60_days_with_county_and_revocation import \
-    PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_VIEW
-from recidiviz.calculator.query.state.views.reference.second_and_last_lsir_scores_by_supervision_period import \
-    SECOND_AND_LAST_LSIR_SCORES_BY_SUPERVISION_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.reference.persons_with_age import \
-    PERSONS_WITH_AGE_VIEW
-from recidiviz.calculator.query.state.views.reference.persons_with_last_known_address import \
-    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW
-from recidiviz.calculator.query.state.views.reference.supervision_termination_earliest_start_latest_end import \
-    SUPERVISION_TERMINATION_EARLIEST_START_LATEST_END_VIEW
-from recidiviz.calculator.query.state.views.reference.supervision_terminations_10_years import \
-    SUPERVISION_TERMINATIONS_10_YEARS_VIEW
-from recidiviz.calculator.query.state.views.reference.us_nd.ftr_referrals_60_days import \
-    FTR_REFERRAL_VIEW
-from recidiviz.calculator.query.state.views.reference.state_person_race_and_ethnicity import \
-    STATE_PERSON_RACE_AND_ETHNICITY_VIEW
-from recidiviz.calculator.query.state.views.reference.supervision_success_by_person import \
-    SUPERVISION_SUCCESS_BY_PERSON_VIEW
-from recidiviz.calculator.query.state.views.reference.supervision_termination_by_person_and_projected_completion \
-    import SUPERVISION_TERMINATION_BY_PERSON_AND_PROJECTED_COMPLETION_VIEW
-from recidiviz.calculator.query.state.views.reference.persons_with_most_recent_lsir import \
-    PERSONS_WITH_MOST_RECENT_LSIR_VIEW
+from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW
+from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
+    SSVR_TO_AGENT_ASSOCIATION_VIEW
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW
 
 REF_VIEWS = [
-    MOST_RECENT_CALCULATE_JOB_VIEW,
-    INCARCERATION_ADMISSIONS_DEDUPED_VIEW,
-    INCARCERATION_ADMISSIONS_BY_PERSON_AND_MONTH_VIEW,
-    INCARCERATION_ADMISSIONS_BY_PERSON_60_DAYS_VIEW,
-    INCARCERATION_RELEASES_DEDUPED_VIEW,
-    INCARCERATION_RELEASES_BY_PERSON_AND_MONTH_VIEW,
-    STATE_PERSON_RACE_AND_ETHNICITY_VIEW,
-    SUPERVISION_TERMINATIONS_10_YEARS_VIEW,
-    SUPERVISION_TERMINATION_BY_PERSON_AND_PROJECTED_COMPLETION_VIEW,
-    SUPERVISION_TERMINATION_EARLIEST_START_LATEST_END_VIEW,
-    SUPERVISION_SUCCESS_BY_PERSON_VIEW,
-    PERSONS_ON_SUPERVISION_60_DAYS_VIEW,
-    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
-    PERSONS_ON_SUPERVISION_60_DAYS_WITH_COUNTY_AND_REVOCATION_VIEW,
-    PERSONS_WITH_MOST_RECENT_LSIR_VIEW,
-    LSIR_SCORES_BY_PERSON_PERIOD_AND_DATE_MONTH_VIEW,
-    SECOND_AND_LAST_LSIR_SCORES_BY_SUPERVISION_PERIOD_VIEW,
-    FTR_REFERRAL_VIEW,
-    PERSONS_WITH_AGE_VIEW,
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW,
+    SSVR_TO_AGENT_ASSOCIATION_VIEW,
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW,
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW,
 ]

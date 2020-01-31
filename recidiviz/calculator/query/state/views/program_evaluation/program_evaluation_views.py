@@ -15,22 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to program evaluation."""
-# pylint: disable=line-too-long, trailing-whitespace
+# pylint: disable=line-too-long
 from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_month import \
     FTR_REFERRALS_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_age_60_days import \
-    FTR_REFERRALS_BY_AGE_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_gender_60_days import \
-    FTR_REFERRALS_BY_GENDER_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_lsir_60_days import \
-    FTR_REFERRALS_BY_LSIR_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_race_and_ethnicity_60_days import \
-    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_age_by_period import \
+    FTR_REFERRALS_BY_AGE_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_gender_by_period import \
+    FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_lsir_by_period import \
+    FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_period import \
+    FTR_REFERRALS_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_race_and_ethnicity_by_period import \
+    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW
 
 PROGRAM_EVALUATION_VIEWS = [
     FTR_REFERRALS_BY_MONTH_VIEW,
-    FTR_REFERRALS_BY_AGE_60_DAYS_VIEW,
-    FTR_REFERRALS_BY_GENDER_60_DAYS_VIEW,
-    FTR_REFERRALS_BY_LSIR_60_DAYS_VIEW,
-    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW,
+    FTR_REFERRALS_BY_PERIOD_VIEW,
+    FTR_REFERRALS_BY_AGE_BY_PERIOD_VIEW,
+    FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW,
+    FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW,
+    FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW,
 ]

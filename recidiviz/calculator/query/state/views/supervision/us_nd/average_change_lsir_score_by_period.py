@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-The average change in LSIR score by month of scheduled supervision termination.
-Per ND-specific request, compares the LSIR score at termination to the second
-LSIR score of the person's supervision.
+"""The average change in LSIR score by metric period months of scheduled
+supervision termination. Per ND-request, compares the LSIR score at
+termination to the second LSIR score of the person's supervision.
 """
 # pylint: disable=trailing-whitespace
 
@@ -29,19 +28,20 @@ PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
-AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME = 'average_change_lsir_score_by_month'
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = \
+    'average_change_lsir_score_by_period'
 
-AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION = """
-    The average change in LSIR score by month of scheduled supervision 
-    termination. Per ND-request, compares the LSIR score at termination to the 
-    second LSIR score of the person's supervision.
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
+    The average change in LSIR score by metric period months of scheduled 
+    supervision termination. Per ND-request, compares the LSIR score at 
+    termination to the second LSIR score of the person's supervision.
 """
 
-AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
     """
     /*{description}*/
     SELECT 
-      state_code, year as termination_year, month as termination_month, 
+      state_code, metric_period_months, 
       IFNULL(average_score_change, 0.0) as average_change,
       IFNULL(supervision_type, 'ALL') as supervision_type, 
       IFNULL(supervising_district_external_id, 'ALL') as district
@@ -49,7 +49,6 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
     JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
       USING (state_code, job_id)
     WHERE methodology = 'PERSON'
-      AND metric_period_months = 1
       AND assessment_score_bucket IS NULL
       AND assessment_type = 'LSIR'
       AND age_bucket IS NULL
@@ -58,23 +57,23 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
       AND gender IS NULL
       AND supervising_officer_external_id IS NULL
       AND termination_reason IS NULL
-      AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-      AND month IS NOT NULL
+      AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+      AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
       AND IFNULL(supervision_type, 'ALL') in ('ALL', 'PAROLE', 'PROBATION')
       AND job.metric_type = 'SUPERVISION_ASSESSMENT_CHANGE'
-    ORDER BY state_code, termination_year, termination_month, district, supervision_type
+    ORDER BY state_code, district, supervision_type, metric_period_months
     """.format(
-        description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
+        description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         views_dataset=VIEWS_DATASET,
     )
 
-AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW = bqview.BigQueryView(
-    view_id=AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME,
-    view_query=AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = bqview.BigQueryView(
+    view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
+    view_query=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY
 )
 
 if __name__ == '__main__':
-    print(AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW.view_id)
-    print(AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW.view_query)
+    print(AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW.view_id)
+    print(AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW.view_query)

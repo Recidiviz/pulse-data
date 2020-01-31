@@ -15,19 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to reincarcerations."""
-# pylint: disable=line-too-long
-from recidiviz.calculator.query.state.views.reincarcerations.days_at_liberty_by_month import \
-    DAYS_AT_LIBERTY_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reincarcerations.reincarceration_rate_by_release_facility import \
-    REINCARCERATION_RATE_BY_RELEASE_FACILITY_VIEW
+from recidiviz.calculator.query.state.views.reincarcerations.average_days_at_liberty_by_month import \
+    AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.reincarcerations.reincarceration_rate_by_stay_length import \
     REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW
 from recidiviz.calculator.query.state.views.reincarcerations.reincarcerations_by_month import \
     REINCARCERATIONS_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.reincarcerations.reincarcerations_by_period import \
+    REINCARCERATIONS_BY_PERIOD_VIEW
 
 REINCARCERATIONS_VIEWS = [
-    DAYS_AT_LIBERTY_BY_MONTH_VIEW,
-    REINCARCERATION_RATE_BY_RELEASE_FACILITY_VIEW,
+    AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW,
     REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW,
     REINCARCERATIONS_BY_MONTH_VIEW,
+    REINCARCERATIONS_BY_PERIOD_VIEW,
 ]
