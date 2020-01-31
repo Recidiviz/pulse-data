@@ -21,10 +21,19 @@
 from datetime import date
 
 import unittest
+from typing import List
+
+from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.incarceration import identifier
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationAdmissionEvent, IncarcerationReleaseEvent
+    IncarcerationAdmissionEvent, IncarcerationReleaseEvent, \
+    IncarcerationStayEvent
+from recidiviz.calculator.pipeline.utils.calculator_utils import \
+    last_day_of_month
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
@@ -42,12 +51,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2010, 12, 4),
+                release_date=date(2009, 1, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [incarceration_period]
@@ -55,20 +65,35 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_events = identifier.find_incarceration_events(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(2, len(incarceration_events))
+        self.assertEqual(4, len(incarceration_events))
 
         self.assertEqual([
+            IncarcerationStayEvent(
+                state_code=incarceration_period.state_code,
+                event_date=last_day_of_month(
+                    incarceration_period.admission_date),
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationStayEvent(
+                state_code=incarceration_period.state_code,
+                event_date=last_day_of_month(
+                    incarceration_period.admission_date +
+                    relativedelta(months=1)),
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
             IncarcerationAdmissionEvent(
-                state_code='TX',
+                state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
-                facility='PRISON3',
+                facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationReleaseEvent(
-                state_code='TX',
+                state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
-                facility='PRISON3',
+                facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -78,10 +103,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
-                admission_date=date(2008, 11, 20),
+                admission_date=date(2009, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2009, 12, 1),
                 release_reason=ReleaseReason.TRANSFER)
@@ -89,12 +115,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                facility='PRISON3',
+                facility='PRISON 10',
                 admission_date=date(2009, 12, 1),
                 admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2010, 12, 4),
+                release_date=date(2010, 2, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [incarceration_period_1,
@@ -103,24 +130,288 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_events = identifier.find_incarceration_events(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(2, len(incarceration_events))
+        self.assertEqual(7, len(incarceration_events))
 
         self.assertEqual([
-            IncarcerationAdmissionEvent(
-                state_code='TX',
-                event_date=incarceration_period_1.admission_date,
-                facility='PRISON3',
+            IncarcerationStayEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=last_day_of_month(
+                    incarceration_period_1.admission_date),
+                facility=incarceration_period_1.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=AdmissionReason.NEW_ADMISSION
+            ),
+            IncarcerationStayEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=last_day_of_month(
+                    incarceration_period_1.admission_date +
+                    relativedelta(months=1)),
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationStayEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=last_day_of_month(
+                    incarceration_period_1.admission_date +
+                    relativedelta(months=2)),
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.admission_date,
+                facility=incarceration_period_1.facility,
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=incarceration_period_2.admission_date,
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.TRANSFER
             ),
             IncarcerationReleaseEvent(
-                state_code='TX',
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.release_date,
+                facility=incarceration_period_1.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=ReleaseReason.TRANSFER
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_2.state_code,
                 event_date=incarceration_period_2.release_date,
-                facility='PRISON3',
+                facility=incarceration_period_2.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
         ], incarceration_events)
+
+
+class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
+    """Tests the find_end_of_month_state_prison_stays function."""
+    def test_find_end_of_month_state_prison_stays(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2000, 1, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2010, 12, 1),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 131
+
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    @freeze_time('2019-11-01')
+    def test_find_end_of_month_state_prison_stays_no_release(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2018, 1, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 22
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_no_admission(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3')
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        self.assertEqual(0, len(incarceration_events))
+        self.assertEqual([], incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_admitted_end_of_month(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2000, 1, 31),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2000, 2, 13),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    @freeze_time('2019-12-02')
+    def test_find_end_of_month_state_prison_stays_still_in_custody(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2019, 11, 30),
+                admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_released_end_of_month(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2019, 11, 29),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 11, 30),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_released_first_of_month(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2019, 11, 15),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 12, 1),
+                release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_only_one_day(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2019, 7, 31),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 7, 31),
+                release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_county_jail(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2000, 1, 31),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2000, 2, 13),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_events = \
+            identifier.find_end_of_month_state_prison_stays(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 0
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
 
 
 class TestDeDuplicatedAdmissions(unittest.TestCase):
@@ -130,6 +421,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
         incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -141,6 +433,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -164,6 +457,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
         incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -175,6 +469,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -202,6 +497,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
         incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -213,6 +509,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -236,6 +533,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
         incarceration_period_1 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -247,6 +545,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -274,6 +573,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -297,6 +597,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -312,6 +613,25 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 
             self.assertIsNotNone(admission_event)
 
+    def test_admission_event_for_period_county_jail(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2013, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 12, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        admission_event = identifier.admission_event_for_period(
+            incarceration_period, _COUNTY_OF_RESIDENCE
+        )
+
+        self.assertIsNone(admission_event)
+
 
 class TestReleaseEventForPeriod(unittest.TestCase):
     """Tests the release_event_for_period function."""
@@ -320,6 +640,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -343,6 +664,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
@@ -357,3 +679,46 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 incarceration_period, _COUNTY_OF_RESIDENCE)
 
             self.assertIsNotNone(release_event)
+
+    def test_release_event_for_period_county_jail(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2013, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 12, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        release_event = identifier.release_event_for_period(
+            incarceration_period, _COUNTY_OF_RESIDENCE
+        )
+
+        self.assertIsNone(release_event)
+
+
+def expected_incarceration_stay_events(
+        incarceration_period: StateIncarcerationPeriod,
+        expected_month_count: int
+) -> List[IncarcerationStayEvent]:
+
+    expected_incarceration_events = []
+    months_incarcerated_eom_range = range(0, expected_month_count, 1)
+
+    if incarceration_period.admission_date:
+        for month in months_incarcerated_eom_range:
+            event = IncarcerationStayEvent(
+                state_code=incarceration_period.state_code,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                event_date=last_day_of_month(
+                    incarceration_period.admission_date +
+                    relativedelta(months=month))
+            )
+
+            expected_incarceration_events.append(event)
+
+    return expected_incarceration_events

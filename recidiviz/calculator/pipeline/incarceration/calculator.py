@@ -27,7 +27,8 @@ from datetime import date
 from typing import List, Dict, Tuple, Any, Type, Sequence
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent
+    IncarcerationEvent, IncarcerationAdmissionEvent,\
+    IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
@@ -42,6 +43,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
     IncarcerationAdmissionEvent: IncarcerationMetricType.ADMISSION,
+    IncarcerationStayEvent: IncarcerationMetricType.POPULATION,
     IncarcerationReleaseEvent: IncarcerationMetricType.RELEASE
 }
 
@@ -239,16 +241,6 @@ def map_metric_combinations(
 
     metrics = []
 
-    all_admission_events = [
-        event for event in all_incarceration_events
-        if isinstance(event, IncarcerationAdmissionEvent)
-    ]
-
-    all_release_events = [
-        event for event in all_incarceration_events
-        if isinstance(event, IncarcerationReleaseEvent)
-    ]
-
     for combo in characteristic_combos:
         combo['metric_type'] = metric_type.value
 
@@ -261,7 +253,7 @@ def map_metric_combinations(
 
         metrics.extend(combination_incarceration_metrics(
             combo, incarceration_event, metric_period_end_date,
-            periods_and_events, all_admission_events, all_release_events))
+            periods_and_events, all_incarceration_events))
 
     return metrics
 
@@ -271,9 +263,7 @@ def combination_incarceration_metrics(
         incarceration_event: IncarcerationEvent,
         metric_period_end_date: date,
         periods_and_events: Dict[int, List[IncarcerationEvent]],
-        all_admission_events:
-        List[IncarcerationAdmissionEvent],
-        all_release_events: List[IncarcerationReleaseEvent]) \
+        all_incarceration_events: List[IncarcerationEvent]) \
         -> List[Tuple[Dict[str, Any], int]]:
     """Returns all unique incarceration metrics for the given event and
     combination.
@@ -292,8 +282,7 @@ def combination_incarceration_metrics(
         metric_period_end_date: The day the metric periods end
         periods_and_events: Dictionary mapping metric period month lengths to
             the IncarcerationEvents that fall in that period
-        all_admission_events: All of this person's IncarcerationAdmissionEvents
-        all_release_events: All of this person's IncarcerationReleaseEvents
+        all_incarceration_events: All of this person's IncarcerationEvents
 
     Returns:
         A list of key-value tuples representing specific metric combination
@@ -323,20 +312,34 @@ def combination_incarceration_metrics(
         MetricMethodologyType.PERSON, 1
     )
 
-    related_events: Sequence[IncarcerationEvent] = []
+    events_in_month: List[IncarcerationEvent] = []
+
     if isinstance(incarceration_event, IncarcerationAdmissionEvent):
-        related_events = all_admission_events
+        # All admission events that happened the same month as this one
+        events_in_month = [
+            event for event in all_incarceration_events
+            if isinstance(event, IncarcerationAdmissionEvent) and
+            event.event_date.year == event_date.year and
+            event.event_date.month == event_date.month
+        ]
+    elif isinstance(incarceration_event, IncarcerationStayEvent):
+        # All stay events that happened the same month as this one
+        events_in_month = [
+            event for event in all_incarceration_events
+            if isinstance(event, IncarcerationStayEvent) and
+            event.event_date.year == event_date.year and
+            event.event_date.month == event_date.month
+        ]
     elif isinstance(incarceration_event, IncarcerationReleaseEvent):
-        related_events = all_release_events
+        # All release events that happened the same month as this one
+        events_in_month = [
+            event for event in all_incarceration_events
+            if isinstance(event, IncarcerationReleaseEvent) and
+            event.event_date.year == event_date.year and
+            event.event_date.month == event_date.month
+        ]
 
-    # All related events that happened the same month as this one
-    events_in_month = [
-        event for event in related_events
-        if event.event_date.year == event_date.year and
-        event.event_date.month == event_date.month
-    ]
-
-    if include_event_in_count(
+    if events_in_month and include_event_in_count(
             incarceration_event,
             last_day_of_month(event_date),
             events_in_month):
@@ -369,7 +372,7 @@ def combination_incarceration_metrics(
                     if isinstance(event, IncarcerationReleaseEvent)
                 ]
 
-            if include_event_in_count(
+            if related_events_in_period and include_event_in_count(
                     incarceration_event,
                     metric_period_end_date,
                     related_events_in_period):
@@ -389,7 +392,8 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
     person-based count for this given metric_period_end_date.
 
     For the release counts, the last instance of a release before the end of the
-    period is included.
+    period is included. For the counts of stay events, the last instance of a
+    stay in the period is included.
 
     For the admission counts, if any of the admissions have an admission_reason
     indicating a supervision revocation, then this incarceration_event is only
@@ -436,6 +440,10 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
             # This person has both revocation and non-revocation admissions
             # during this period. If this is the last revocation admission
             # event, then include it in the person-based count.
+            return True
+    elif isinstance(incarceration_event, IncarcerationStayEvent):
+        # If this is the last recorded event for this month, include it
+        if id(incarceration_event) == id(events_rest_of_period[-1]):
             return True
 
     return False
