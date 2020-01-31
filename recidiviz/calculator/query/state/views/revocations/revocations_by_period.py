@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Month over month count for the unique number of people who were referred
-to Free Through Recovery."""
+"""Revocations by metric month period."""
 # pylint: disable=trailing-whitespace
 
 from recidiviz.calculator.query import bqview
@@ -26,36 +25,30 @@ PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
-FTR_REFERRALS_BY_MONTH_VIEW_NAME = \
-    'ftr_referrals_by_month'
+REVOCATIONS_BY_PERIOD_VIEW_NAME = 'revocations_by_period'
 
-FTR_REFERRALS_BY_MONTH_DESCRIPTION = """
- Month over month count for the unique number of people who were referred
- to Free Through Recovery.
-"""
+REVOCATIONS_BY_PERIOD_DESCRIPTION = """ Revocations by metric month period """
 
-FTR_REFERRALS_BY_MONTH_QUERY = \
+REVOCATIONS_BY_PERIOD_QUERY = \
     """
     /*{description}*/
     SELECT 
-      state_code, 
-      year, 
-      month, 
-      IFNULL(ref.count, 0) AS count, 
-      pop.count AS total_supervision_count,
-      supervision_type,
-      supervising_district_external_id AS district 
+      state_code,
+      metric_period_months,
+      IFNULL(rev.count, 0) as revocation_count, 
+      pop.count as total_supervision_count,
+      supervision_type, 
+      supervising_district_external_id as district
     FROM (
       SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') AS supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id 
+        state_code, metric_period_months, count, 
+        IFNULL(supervision_type, 'ALL') as supervision_type, 
+        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id 
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
-        AND metric_period_months = 1
         AND assessment_score_bucket IS NULL
         AND assessment_type IS NULL
         AND supervising_officer_external_id IS NULL
@@ -63,47 +56,48 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_POPULATION'
     ) pop
     LEFT JOIN (
       SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') AS supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id  
-      FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
+        state_code, metric_period_months, count, 
+        IFNULL(supervision_type, 'ALL') as supervision_type, 
+        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id  
+      FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND program_id IS NULL
         AND assessment_score_bucket IS NULL
         AND assessment_type IS NULL
+        AND revocation_type IS NULL
+        AND source_violation_type IS NULL
         AND supervising_officer_external_id IS NULL
         AND age_bucket IS NULL
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'PROGRAM_REFERRAL'
-    ) ref
-    USING (state_code, year, month, supervision_type, supervising_district_external_id)
+        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
+        AND job.metric_type = 'SUPERVISION_REVOCATION'
+    ) rev
+    USING (state_code, metric_period_months, supervision_type, supervising_district_external_id)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
-      AND state_code = 'US_ND'
-    ORDER BY state_code, year, month, district, supervision_type
+    ORDER BY state_code, district, supervision_type, metric_period_months
     """.format(
-        description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
+        description=REVOCATIONS_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         views_dataset=VIEWS_DATASET,
     )
 
-FTR_REFERRALS_BY_MONTH_VIEW = bqview.BigQueryView(
-    view_id=FTR_REFERRALS_BY_MONTH_VIEW_NAME,
-    view_query=FTR_REFERRALS_BY_MONTH_QUERY
+REVOCATIONS_BY_PERIOD_VIEW = bqview.BigQueryView(
+    view_id=REVOCATIONS_BY_PERIOD_VIEW_NAME,
+    view_query=REVOCATIONS_BY_PERIOD_QUERY
 )
 
 if __name__ == '__main__':
-    print(FTR_REFERRALS_BY_MONTH_VIEW.view_id)
-    print(FTR_REFERRALS_BY_MONTH_VIEW.view_query)
+    print(REVOCATIONS_BY_PERIOD_VIEW.view_id)
+    print(REVOCATIONS_BY_PERIOD_VIEW.view_query)

@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations by violation type by month."""
-# pylint: disable=line-too-long, trailing-whitespace
-from recidiviz.calculator.query import export_config, bqview
+# pylint: disable=trailing-whitespace, line-too-long
+from recidiviz.calculator.query import bqview
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_NAME = \
@@ -33,25 +33,70 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION = \
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
     """
     /*{description}*/
-    
-    SELECT state_code, year, month, COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'ABSCONDED') as absconsion_count,
-    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'ESCAPE') as escape_count,
-    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type in ('FELONY', 'MISDEMEANOR', 'MUNICIPAL')) as felony_count,
-    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type = 'TECHNICAL') as technical_count,
-    COUNTIF(admission_reason in ('PAROLE_REVOCATION', 'PROBATION_REVOCATION') AND violation_type is null) as unknown_count
-    FROM
-    (SELECT inc.state_code, EXTRACT(YEAR FROM admission_date) as year, EXTRACT(MONTH FROM admission_date) as month, inc.admission_reason, viol.violation_type
-    FROM `{project_id}.{views_dataset}.incarceration_admissions_by_person_and_month` inc
-    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation_response` resp
-    ON inc.source_supervision_violation_response_id = resp.supervision_violation_response_id
-    LEFT JOIN `{project_id}.{base_dataset}.state_supervision_violation` viol 
-    ON resp.supervision_violation_id = viol.supervision_violation_id)
-    GROUP BY state_code, year, month having year > EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-    ORDER BY year, month
+    SELECT
+        state_code, year, month,
+        IFNULL(felony_count, 0) AS felony_count,
+        IFNULL(absconsion_count, 0) AS absconsion_count,
+        IFNULL(technical_count, 0) AS technical_count,
+        IFNULL(SAFE_SUBTRACT(all_violation_types_count, (felony_count + technical_count + absconsion_count)), 0) AS unknown_count,
+        total_supervision_count,
+        supervision_type,
+        supervising_district_external_id AS district
+    FROM (
+        SELECT
+            state_code, year, month, count AS total_supervision_count,
+            IFNULL(supervision_type, 'ALL') AS supervision_type,
+            IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id
+        FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
+        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+          USING (state_code, job_id)
+        WHERE methodology = 'PERSON'
+            AND month IS NOT NULL
+            AND assessment_score_bucket IS NULL
+            AND assessment_type IS NULL
+            AND supervising_officer_external_id IS NULL
+            AND age_bucket IS NULL
+            AND race IS NULL
+            AND ethnicity IS NULL
+            AND gender IS NULL
+            AND metric_period_months = 1
+            AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+            AND job.metric_type = 'SUPERVISION_POPULATION'
+    ) pop
+    LEFT JOIN (
+        SELECT
+            state_code, year, month,
+            IFNULL(supervision_type, 'ALL') as supervision_type,
+            SUM(IF(source_violation_type = 'FELONY', count, 0)) AS felony_count,
+            SUM(IF(source_violation_type = 'TECHNICAL', count, 0)) AS technical_count,
+            SUM(IF(source_violation_type = 'ABSCONDED', count, 0)) AS absconsion_count,
+            SUM(IF(source_violation_type IS NULL, count, 0)) AS all_violation_types_count,
+            IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id
+        FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
+        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+          USING (state_code, job_id)
+        WHERE methodology = 'PERSON'
+            AND month IS NOT NULL
+            AND assessment_score_bucket IS NULL
+            AND assessment_type IS NULL
+            AND supervising_officer_external_id IS NULL
+            AND revocation_type IS NULL
+            AND age_bucket IS NULL
+            AND race IS NULL
+            AND ethnicity IS NULL
+            AND gender IS NULL
+            AND metric_period_months = 1
+            AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+            AND job.metric_type = 'SUPERVISION_REVOCATION'
+        GROUP BY state_code, year, month, supervision_type, supervising_district_external_id
+    ) rev
+    USING (state_code, year, month, supervision_type, supervising_district_external_id)
+    WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
+    ORDER BY state_code, year, month, district, supervision_type
     """.format(
         description=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
-        base_dataset=BASE_DATASET,
+        metrics_dataset=METRICS_DATASET,
         views_dataset=VIEWS_DATASET,
         )
 
