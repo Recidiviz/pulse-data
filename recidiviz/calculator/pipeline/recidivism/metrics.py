@@ -38,6 +38,7 @@ class ReincarcerationRecidivismMetricType(Enum):
     LIBERTY = 'LIBERTY'
     RATE = 'RATE'
 
+
 # TODO: Implement rearrest and reconviction recidivism metrics
 #  (Issues #1841 and #1842)
 @attr.s
@@ -117,11 +118,15 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     """
     # Required characteristics
 
-    # Starting date of the count window
-    start_date: int = attr.ib(default=None)
+    # Year
+    year: int = attr.ib(default=None)
 
-    # Ending date of the count window
-    end_date: int = attr.ib(default=None)
+    # Month
+    month: int = attr.ib(default=None)
+
+    # The number of months this metric describes, starting with the month
+    # of the metric and going back in time
+    metric_period_months: Optional[int] = attr.ib(default=1)
 
     # Number of reincarceration returns
     returns: int = attr.ib(default=None)

@@ -23,6 +23,7 @@ from datetime import date
 from typing import Dict, List
 
 from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.recidivism import calculator
@@ -655,7 +656,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         recidivism_count_metrics = (
             self.RETURN_TYPE_METRIC_COMBOS *
-            self.RECIDIVISM_COUNT_WINDOWS *
             len(recidivism_release_events)
         )
 
@@ -702,6 +702,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             )
         return expected_combos_count
 
+    @freeze_time('2100-01-01')
     def test_map_recidivism_combinations(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism."""
@@ -790,20 +791,22 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #       128 combinations of characteristics
         #       * 46 combinations of methodology/return type/supervision type
         #       * 5 periods
-        #       * + 128 * 2 count windows * 46 combos of methodology etc.
-        #       * + 128 * 2 liberty windows * 4 relevant combos
-        #           = 42240 metrics
+        #       * + 64 * 1 count window * 46 combos of methodology etc.
+        #       * + 64 * 2 liberty windows * 4 relevant combos
+        #           = 18176 metrics
         #   For the second 5 periods, there is an additional event-based count:
-        #       128 combinations of characteristics
+        #       64 combinations of characteristics
         #       * (46 combinations of methodology/return type/supervision type
         #           + 23 more instances) * 5 periods = 44160 metrics
         #
         # For the second event:
-        #   128 combinations * 46 combos * 10 periods +
-        #   128 combos * 2 count windows * 46 combos of methodology etc. +
-        #   128 * 2 liberty windows * 4 combos of methodology etc.
-        #   = 71680 metrics
-        self.assertEqual(42240 + 44160 + 71680, len(recidivism_combinations))
+        #   64 combinations * 46 combos * 10 periods +
+        #   64 combos * 1 count window * 46 combos of methodology etc. +
+        #   64 * 2 liberty windows * 4 combos of methodology etc.
+        #   = 32896 metrics
+
+        # Multiplied by 2 to include the county of residence field
+        assert len(recidivism_combinations) == (18176 + 22080 + 32896) * 2
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.RATE and \
@@ -871,13 +874,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         release_events_by_cohort = {
             2008: [RecidivismReleaseEvent(
-                'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+                'CA', date(1995, 7, 19), date(1998, 9, 19), 'Hudson',
                 _COUNTY_OF_RESIDENCE,
-                date(2018, 10, 12), 'Upstate',
+                date(2008, 10, 12), 'Upstate',
                 ReincarcerationReturnType.NEW_ADMISSION)]
         }
 
-        days_at_liberty = (date(2018, 10, 12) - date(2008, 9, 19)).days
+        days_at_liberty = (date(2008, 10, 12) - date(1998, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
             person, release_events_by_cohort, ALL_INCLUSIONS_DICT)
@@ -1251,40 +1254,16 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
 
-        num_count_metrics = 0
-        num_year_metrics = 0
-        num_month_metrics = 0
-
         for combo, value in recidivism_combinations:
             if combo['metric_type'] == MetricType.COUNT:
-                num_count_metrics += 1
+                assert combo['year'] == 2014
+                assert combo['month'] == 5
 
-                assert combo['start_date'].year == 2014
-                if combo['start_date'].month == 5:
-                    num_month_metrics += 1
-                    # Month bucket
-                    assert combo['start_date'] == date(2014, 5, 1)
-                    assert combo['end_date'] == date(2014, 5, 31)
-                else:
-                    num_year_metrics += 1
-                    # Year bucket
-                    assert combo['start_date'] == date(2014, 1, 1)
-                    assert combo['end_date'] == date(2014, 12, 31)
                 if combo.get('return_type') != \
                         ReincarcerationReturnType.REVOCATION:
                     assert value == 1
                 else:
                     assert value == 0
-
-        # Half of the expected count metrics should be year metrics,
-        # and half should be month metrics
-        expected_count_combos = self.expected_count_metric_combos_count(
-            person, release_events_by_cohort, ALL_INCLUSIONS_DICT
-        )
-
-        self.assertEqual(expected_count_combos, num_count_metrics)
-        assert num_year_metrics == expected_count_combos / 2
-        assert num_month_metrics == expected_count_combos / 2
 
     def test_map_recidivism_combinations_count_metric_no_recidivism(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1316,9 +1295,10 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                    MetricType.RATE for _combination, value
                    in recidivism_combinations)
 
-    def test_map_recidivism_combinations_count_twice_in_year(self):
+    @freeze_time('1914-09-30')
+    def test_map_recidivism_combinations_count_relevant_periods(self):
         person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
+                                               birthdate=date(1884, 8, 31),
                                                gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA',
@@ -1353,106 +1333,68 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         # For the first event:
         #   For the first 5 periods:
-        #       128  combinations of characteristics
+        #       64  combinations of characteristics
         #       * 46 combinations of methodology/return type/supervision type
         #       * 5 periods = 14720 metrics
-        #   For the second 5 periods
-        #       128 combinations of characteristics
+        #   For the next 2 periods:
+        #       64 combinations of characteristics
         #       * (46 combinations of methodology/return type/supervision type
-        #           + 23 more instances) * 5 periods = 22080 metrics
+        #           + 23 more instances) * 2 periods = 8832 metrics
         #
-        #   Count + liberty windows: 128 * 2 count windows * 46 combos +
-        #       128 * 2 liberty windows * 4 combos = 6400
+        #   Count + liberty windows: 64 * 1 count windows * 46 combos +
+        #       64 * 2 liberty windows * 4 combos = 3456
         #
         # For the second event:
-        #   128 combinations * 46 combos * 10 periods +
-        #   128 * 2 count windows * 23 event-based-combos  +
-        #   128 * 1 count window (month) * 23 person-based-combos +
-        #   128 * 2 liberty windows * 2 event-based combos +
-        #   128 * 1 liberty window (month) * 2 person-based combos = 34240
+        #   64 combinations * 46 combos * 1 period +
+        #   64 * 1 month window * 46 event and person-based-combos  +
+        #   64 * 2 liberty windows * 2 event-based combos +
+        #   64 * 1 liberty window (month) * 2 person-based combos = 6272
+        #
+        # For the relevant metric_period_months count metrics:
+        # (6 event-based + 4 person-based) * 64 combinations * 23 combos = 14720
 
-        assert len(recidivism_combinations) == (29440 + 44160 + 12800 + 68480)
-
-        num_count_metrics = 0
-        num_person_year_count_metrics = 0
-        num_event_year_count_metrics = 0
-        num_march_month_count_metrics = 0
-        num_sept_month_count_metrics = 0
-
-        num_liberty_metrics = 0
-        num_person_year_liberty_metrics = 0
-        num_event_year_liberty_metrics = 0
-        num_march_month_liberty_metrics = 0
-        num_sept_month_liberty_metrics = 0
+        # Multiplied by 2 to include the county of residence field
+        assert len(recidivism_combinations) == \
+                (14720 + 8832 + 3456 + 6272 + 14720) * 2
 
         for combo, value in recidivism_combinations:
             if combo['metric_type'] == MetricType.COUNT:
-                num_count_metrics += 1
 
-                assert combo['start_date'].year == 1914
-                if combo['start_date'].month == 3:
-                    num_march_month_count_metrics += 1
-                    # March month bucket
-                    assert combo['start_date'] == date(1914, 3, 1)
-                    assert combo['end_date'] == date(1914, 3, 31)
-                elif combo['start_date'].month == 9:
-                    num_sept_month_count_metrics += 1
-                    # September month bucket
-                    assert combo['start_date'] == date(1914, 9, 1)
-                    assert combo['end_date'] == date(1914, 9, 30)
-                else:
-                    if combo['methodology'] == MetricMethodologyType.EVENT:
-                        num_event_year_count_metrics += 1
-                    else:
-                        num_person_year_count_metrics += 1
+                assert combo['year'] == 1914
+                assert combo['month'] in (3, 9)
 
-                    # Year bucket
-                    assert combo['start_date'] == date(1914, 1, 1)
-                    assert combo['end_date'] == date(1914, 12, 31)
                 if combo.get('return_type') != \
                         ReincarcerationReturnType.REVOCATION:
                     assert value == 1
                 else:
                     assert value == 0
+
+                if combo.get('metric_period_months') > 1:
+                    assert combo['year'] == 1914
+                    assert combo['month'] == 9
             elif combo['metric_type'] == MetricType.LIBERTY:
-                num_liberty_metrics += 1
 
                 assert combo['start_date'].year == 1914
                 if combo['start_date'].month == 3:
                     assert value == days_at_liberty_1
-                    num_march_month_liberty_metrics += 1
+
                     # March month bucket
                     assert combo['start_date'] == date(1914, 3, 1)
                     assert combo['end_date'] == date(1914, 3, 31)
                 elif combo['start_date'].month == 9:
                     assert value == days_at_liberty_2
-                    num_sept_month_liberty_metrics += 1
                     # September month bucket
                     assert combo['start_date'] == date(1914, 9, 1)
                     assert combo['end_date'] == date(1914, 9, 30)
                 else:
                     if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
-                        num_event_year_liberty_metrics += 1
                     else:
                         assert value == days_at_liberty_1
-                        num_person_year_liberty_metrics += 1
 
                     # Year bucket
                     assert combo['start_date'] == date(1914, 1, 1)
                     assert combo['end_date'] == date(1914, 12, 31)
-
-        assert num_count_metrics == (11776 + 8832)
-        assert num_person_year_count_metrics == 11776 / 4
-        assert num_event_year_count_metrics == 11776 / 2
-        assert num_march_month_count_metrics == 11776 / 2
-        assert num_sept_month_count_metrics == 11776 / 2
-
-        assert num_liberty_metrics == 1792
-        assert num_person_year_liberty_metrics == 256
-        assert num_event_year_liberty_metrics == 512
-        assert num_march_month_liberty_metrics == 512
-        assert num_sept_month_liberty_metrics == 512
 
     def test_map_recidivism_combinations_count_twice_in_month(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1491,32 +1433,27 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         # For the first event:
         #   For the first 5 periods:
-        #       128 combinations of characteristics
+        #       64 combinations of characteristics
         #       * 46 combinations of methodology/return type/supervision type
-        #       * 5 periods = 29440 metrics
+        #       * 5 periods = 14720 metrics
         #   For the second 5 periods
-        #       128 combinations of characteristics
+        #       64 combinations of characteristics
         #       * (46 combinations of methodology/return type/supervision type
-        #           + 23 more instances) * 5 periods = 44160 metrics
+        #           + 23 more instances) * 5 periods = 22080 metrics
         #
-        #   Count + liberty windows: 64 * 2 count windows * 46 combos +
-        #       128 * 2 liberty windows * 4 combos = 12800
+        #   Count + liberty windows: 64 * 1 count window * 46 combos +
+        #       64 * 2 liberty windows * 4 combos = 3456
         #
         # For the second event:
-        #   128 combinations * 46 combos * 10 periods +
-        #   128 * 2 count windows * 23 event-based-combos  +
-        #   128 * 0 person-based-combos +
-        #   128 * 2 liberty windows * 2 event-based-combos +
-        #   128 * 0 person-based-combos = 65280 metrics
+        #   64 combinations * 46 combos * 10 periods +
+        #   64 * 1 count window * 23 event-based-combos  +
+        #   64 * 0 person-based-combos +
+        #   64 * 2 liberty windows * 2 event-based-combos +
+        #   64 * 0 person-based-combos = 31168 metrics
 
-        assert len(recidivism_combinations) == (29440 + 44160 + 12800 + 65280)
-
-        num_count_metrics = 0
-        num_person_year_count_metrics = 0
-        num_event_year_count_metrics = 0
-        num_person_month_count_metrics = 0
-        num_event_month_count_metrics = 0
-        num_march_month_count_metrics = 0
+        # Multiplied by 2 to include the county of residence field
+        assert len(recidivism_combinations) == \
+               (14720 + 22080 + 3456 + 31168) * 2
 
         num_liberty_metrics = 0
         num_person_year_liberty_metrics = 0
@@ -1527,29 +1464,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combo, value in recidivism_combinations:
             if combo['metric_type'] == MetricType.COUNT:
-                num_count_metrics += 1
+                assert combo['year'] == 1914
+                assert combo['month'] == 3
 
-                assert combo['start_date'].year == 1914
-                if combo['start_date'].month == 3:
-                    num_march_month_count_metrics += 1
-                    # March month bucket
-                    assert combo['start_date'] == date(1914, 3, 1)
-                    assert combo['end_date'] == date(1914, 3, 31)
-
-                    if combo['methodology'] == MetricMethodologyType.EVENT:
-                        num_event_month_count_metrics += 1
-                    else:
-                        num_person_month_count_metrics += 1
-
-                else:
-                    if combo['methodology'] == MetricMethodologyType.EVENT:
-                        num_event_year_count_metrics += 1
-                    else:
-                        num_person_year_count_metrics += 1
-
-                    # Year bucket
-                    assert combo['start_date'] == date(1914, 1, 1)
-                    assert combo['end_date'] == date(1914, 12, 31)
                 if combo.get('return_type') != \
                         ReincarcerationReturnType.REVOCATION:
                     assert value == 1
@@ -1582,13 +1499,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     # Year bucket
                     assert combo['start_date'] == date(1914, 1, 1)
                     assert combo['end_date'] == date(1914, 12, 31)
-
-        assert num_count_metrics == (11776 + 5888)
-        assert num_person_year_count_metrics == 11776 / 4
-        assert num_event_year_count_metrics == 11776 / 2
-        assert num_march_month_count_metrics == (3 * 11776) / 4
-        assert num_person_month_count_metrics == 11776 / 4
-        assert num_event_month_count_metrics == 11776 / 2
 
         assert num_liberty_metrics == 1536
         assert num_person_year_liberty_metrics == 256

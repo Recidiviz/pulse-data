@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    augment_combination, last_day_of_month
+    augment_combination, last_day_of_month, relevant_metric_periods
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -103,6 +103,8 @@ def map_recidivism_combinations(person: StatePerson,
     metrics = []
     all_reincarcerations = reincarcerations(release_events)
 
+    metric_period_end_date = last_day_of_month(date.today())
+
     for release_cohort, events in release_events.items():
         for event in events:
             characteristic_combos_rates = \
@@ -121,7 +123,8 @@ def map_recidivism_combinations(person: StatePerson,
             count_metrics = \
                 map_recidivism_count_combinations(characteristic_combos_counts,
                                                   event,
-                                                  all_reincarcerations)
+                                                  all_reincarcerations,
+                                                  metric_period_end_date)
 
             metrics.extend(count_metrics)
 
@@ -185,7 +188,8 @@ def map_recidivism_rate_combinations(
 def map_recidivism_count_combinations(
         characteristic_combos: List[Dict[str, Any]],
         event: ReleaseEvent,
-        all_reincarcerations: Dict[date, Dict[str, Any]]) -> \
+        all_reincarcerations: Dict[date, Dict[str, Any]],
+        metric_period_end_date: date) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given event and characteristic combinations to a variety of
     metrics that track count-based recidivism.
@@ -212,29 +216,31 @@ def map_recidivism_count_combinations(
     if isinstance(event, RecidivismReleaseEvent):
         reincarceration_date = event.reincarceration_date
 
-        year = reincarceration_date.year
-        year_start_day = date(year, 1, 1)
-        year_end_day = date(year, 12, 31)
-        month_start_day = date(year, reincarceration_date.month, 1)
-        month_end_day = date(year, reincarceration_date.month,
-                             last_day_of_month(reincarceration_date).day)
+        relevant_periods = relevant_metric_periods(reincarceration_date,
+                                                   metric_period_end_date.year,
+                                                   metric_period_end_date.month)
 
         for combo in characteristic_combos:
             combo['metric_type'] = ReincarcerationRecidivismMetricType.COUNT
 
-            # Year bucket
-            combo['start_date'] = year_start_day
-            combo['end_date'] = year_end_day
+            # Bucket for the month of the incarceration
+            combo['year'] = reincarceration_date.year
+            combo['month'] = reincarceration_date.month
+            combo['metric_period_months'] = 1
+
+            end_of_event_month = last_day_of_month(reincarceration_date)
 
             metrics.extend(combination_count_metrics(
-                combo, event, all_reincarcerations))
+                combo, event, all_reincarcerations, end_of_event_month))
 
-            # Month bucket
-            combo['start_date'] = month_start_day
-            combo['end_date'] = month_end_day
+            # Bucket for each of the relevant metric period month lengths
+            for relevant_period in relevant_periods:
+                combo['year'] = metric_period_end_date.year
+                combo['month'] = metric_period_end_date.month
+                combo['metric_period_months'] = relevant_period
 
-            metrics.extend(combination_count_metrics(
-                combo, event, all_reincarcerations))
+                metrics.extend(combination_count_metrics(
+                    combo, event, all_reincarcerations, metric_period_end_date))
 
     return metrics
 
@@ -696,7 +702,8 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
 def combination_count_metrics(combo: Dict[str, Any], event:
                               RecidivismReleaseEvent,
                               all_reincarcerations:
-                              Dict[date, Dict[str, Any]]) \
+                              Dict[date, Dict[str, Any]],
+                              metric_period_end_date: date) \
         -> List[Tuple[Dict[str, Any], int]]:
     """"Returns all unique recidivism count metrics for the given event and
     combination.
@@ -731,7 +738,7 @@ def combination_count_metrics(combo: Dict[str, Any], event:
     # Adds one day because the reincarcerations_in_window function is
     # exclusive of the end date, and we want the count to include
     # reincarcerations that happen on the last day of this count window.
-    end_date = combo['end_date'] + datetime.timedelta(days=1)
+    end_date = metric_period_end_date + datetime.timedelta(days=1)
 
     all_reincarcerations_in_window = \
         reincarcerations_in_window(
