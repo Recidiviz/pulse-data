@@ -33,9 +33,10 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
-from recidiviz.utils import environment, regions, monitoring
+from recidiviz.utils import regions, monitoring
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
@@ -100,9 +101,9 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(region_code):
         try:
-            controller = controller_for_region_code(region_code)
+            controller = controller_for_region_code(region_code, allow_unlaunched=True)
         except DirectIngestError as e:
-            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+            if e.is_bad_request():
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
@@ -175,7 +176,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
                 controller = controller_for_region_code(region_code)
             except DirectIngestError as e:
-                if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+                if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
@@ -200,7 +201,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
         try:
             controller = controller_for_region_code(region_code)
         except DirectIngestError as e:
-            if e.error_type == DirectIngestErrorType.INPUT_ERROR:
+            if e.is_bad_request():
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
@@ -228,12 +229,7 @@ def controller_for_region_code(
         )
 
     if not allow_unlaunched and not region.is_ingest_launched_in_env():
-        gae_env = environment.get_gae_environment()
-        raise DirectIngestError(
-            msg=f"Bad environment [{gae_env}] for direct region "
-            f"[{region_code}].",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
+        check_is_region_launched_in_env(region)
 
     controller = region.get_ingestor()
 
