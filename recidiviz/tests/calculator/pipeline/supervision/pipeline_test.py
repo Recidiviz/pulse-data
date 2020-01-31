@@ -21,7 +21,7 @@ import json
 import unittest
 
 import apache_beam as beam
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsSingleton
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -67,6 +67,17 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.tests.persistence.database import database_test_utils
+
+ALL_INCLUSIONS_DICT = {
+        'age_bucket': True,
+        'gender': True,
+        'race': True,
+        'ethnicity': True,
+        SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
+        SupervisionMetricType.SUCCESS.value: True,
+        SupervisionMetricType.REVOCATION.value: True,
+        SupervisionMetricType.POPULATION.value: True,
+    }
 
 
 class TestSupervisionPipeline(unittest.TestCase):
@@ -239,13 +250,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         assessment_data = [
             normalized_database_base_dict(assessment)
         ]
-
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
@@ -446,6 +450,10 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_period_id')
         )
 
+        identifier_options = {
+            'state_code': 'ALL'
+        }
+
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
@@ -455,7 +463,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                 AsDict(
                     ssvr_agent_associations_as_kv),
                 AsDict(
-                    supervision_periods_to_agent_associations_as_kv)))
+                    supervision_periods_to_agent_associations_as_kv),
+                **identifier_options))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -469,7 +478,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions))
+                                   inclusions=ALL_INCLUSIONS_DICT,
+                                   metric_type='ALL'))
 
         assert_that(supervision_metrics,
                     AssertMatchers.validate_pipeline_test())
@@ -661,13 +671,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         assessment_data = [
             normalized_database_base_dict(assessment)
         ]
-
-        inclusions = {
-            'age_bucket': False,
-            'gender': False,
-            'race': False,
-            'ethnicity': False,
-        }
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
@@ -868,6 +871,10 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_period_id')
         )
 
+        identifier_options = {
+            'state_code': 'ALL'
+        }
+
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
@@ -877,7 +884,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                 AsDict(
                     ssvr_agent_associations_as_kv),
                 AsDict(
-                    supervision_periods_to_agent_associations_as_kv)))
+                    supervision_periods_to_agent_associations_as_kv),
+                **identifier_options))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -891,7 +899,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions))
+                                   inclusions=ALL_INCLUSIONS_DICT,
+                                   metric_type='ALL'))
 
         assert_that(supervision_metrics,
                     AssertMatchers.validate_pipeline_test())
@@ -1111,13 +1120,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        inclusions = {
-            'age_bucket': False,
-            'gender': False,
-            'race': False,
-            'ethnicity': False,
-        }
-
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__:
@@ -1313,6 +1315,10 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_period_id')
         )
 
+        identifier_options = {
+            'state_code': 'ALL'
+        }
+
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
@@ -1322,7 +1328,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                 AsDict(
                     ssvr_agent_associations_as_kv),
                 AsDict(
-                    supervision_periods_to_agent_associations_as_kv)))
+                    supervision_periods_to_agent_associations_as_kv),
+                **identifier_options))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -1336,7 +1343,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                | 'Get Supervision Metrics' >>
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions))
+                                   inclusions=ALL_INCLUSIONS_DICT,
+                                   metric_type='ALL'))
 
         assert_that(supervision_metrics,
                     AssertMatchers.validate_pipeline_test())
@@ -2057,16 +2065,9 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 StateSupervisionType.PROBATION),
         ]
 
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
-
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_time_buckets[0], inclusions))
+            fake_person, supervision_time_buckets[0], ALL_INCLUSIONS_DICT))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -2083,7 +2084,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             **inclusions).with_outputs('populations')
+                             **ALL_INCLUSIONS_DICT).with_outputs('populations')
                   )
 
         assert_that(output.populations, AssertMatchers.
@@ -2111,17 +2112,10 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 RevocationType.REINCARCERATION, ViolationType.TECHNICAL),
         ]
 
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
-
         # Get expected number of combinations for revocation counts
         num_combinations_revocation = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], inclusions,
+                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT,
                 with_revocation_dimensions=True))
         assert num_combinations_revocation > 0
 
@@ -2136,7 +2130,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for population count
         num_combinations_population = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], inclusions))
+                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT))
         assert num_combinations_population > 0
 
         # Multiply by the number of months and by 2 (to account for methodology)
@@ -2153,8 +2147,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, supervision_months)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             **inclusions).with_outputs('populations',
-                                                        'revocations')
+                             **ALL_INCLUSIONS_DICT).with_outputs('populations',
+                                                                 'revocations')
                   )
 
         assert_that(output.revocations, AssertMatchers.
