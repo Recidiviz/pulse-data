@@ -15,19 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to revocations of supervision."""
-# pylint: disable=line-too-long
-from recidiviz.calculator.query.state.views.revocations.revocation_rate_by_county_60_days import \
-    REVOCATION_RATE_BY_COUNTY_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_county_60_days import \
-    REVOCATIONS_BY_COUNTY_60_DAYS_VIEW
 from recidiviz.calculator.query.state.views.revocations.revocations_by_month import \
     REVOCATIONS_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_officer_60_days import \
-    REVOCATIONS_BY_OFFICER_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_race_and_ethnicity_60_days import \
-    REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_site_id_60_days import \
-    REVOCATIONS_BY_SITE_ID_60_DAYS_VIEW
+from recidiviz.calculator.query.state.views.revocations.revocations_by_officer_by_period import \
+    REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.revocations.revocations_by_period import \
+    REVOCATIONS_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.revocations.revocations_by_race_and_ethnicity_by_period import \
+    REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.revocations.revocations_by_site_id_by_period import \
+    REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW
 from recidiviz.calculator.query.state.views.revocations.revocations_by_supervision_type_by_month import \
     REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.revocations.revocations_by_violation_type_by_month import \
@@ -35,12 +32,11 @@ from recidiviz.calculator.query.state.views.revocations.revocations_by_violation
 
 
 REVOCATIONS_VIEWS = [
-    REVOCATION_RATE_BY_COUNTY_60_DAYS_VIEW,
     REVOCATIONS_BY_MONTH_VIEW,
-    REVOCATIONS_BY_COUNTY_60_DAYS_VIEW,
-    REVOCATIONS_BY_OFFICER_60_DAYS_VIEW,
-    REVOCATIONS_BY_SITE_ID_60_DAYS_VIEW,
-    REVOCATIONS_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW,
+    REVOCATIONS_BY_PERIOD_VIEW,
+    REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW,
+    REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW,
+    REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW,
     REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW,
     REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW
 ]

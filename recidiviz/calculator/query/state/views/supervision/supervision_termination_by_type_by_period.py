@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Successful and unsuccessful terminations of supervision by month."""
+"""Successful and unsuccessful terminations of supervision by metric period month."""
 # pylint: disable=trailing-whitespace
 
 from recidiviz.calculator.query import bqview
@@ -25,21 +25,21 @@ PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME = 'supervision_termination_by_type_by_month'
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME = 'supervision_termination_by_type_by_period'
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION = """
- Supervision termination by type and by month.
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
+ Supervision termination by type and by metric period month.
  The counts of supervision that were projected to end in a given month and
  that have ended by now, broken down by whether or not the
  supervision ended because of a revocation or successful completion.
 """
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY = \
     """
     /*{description}*/
     SELECT * FROM (
       SELECT 
-        state_code, year as projected_year, month as projected_month, 
+        state_code, metric_period_months, 
         successful_completion_count as successful_termination, 
         (projected_completion_count - successful_completion_count) as revocation_termination, 
         IFNULL(supervision_type, 'ALL') as supervision_type, 
@@ -48,29 +48,29 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id)
       WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
         AND supervising_officer_external_id IS NULL
         AND age_bucket IS NULL
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL 
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_SUCCESS'
     )
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
-    ORDER BY state_code, projected_year, projected_month, district, supervision_type
+    ORDER BY state_code, metric_period_months, district, supervision_type
     """.format(
-        description=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION,
+        description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         views_dataset=VIEWS_DATASET,
         metrics_dataset=METRICS_DATASET,
     )
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW = bqview.BigQueryView(
-    view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME,
-    view_query=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY
+SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW = bqview.BigQueryView(
+    view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME,
+    view_query=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY
 )
 
 if __name__ == '__main__':
-    print(SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW.view_id)
-    print(SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW.view_query)
+    print(SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW.view_id)
+    print(SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW.view_query)

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Reincarcerations by month."""
+"""Reincarcerations by metric period month."""
 # pylint: disable=trailing-whitespace
 from recidiviz.calculator.query import bqview
 from recidiviz.calculator.query.state import view_config
@@ -24,22 +24,23 @@ PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 
-REINCARCERATIONS_BY_MONTH_VIEW_NAME = 'reincarcerations_by_month'
+REINCARCERATIONS_BY_PERIOD_VIEW_NAME = 'reincarcerations_by_period'
 
-REINCARCERATIONS_BY_MONTH_DESCRIPTION = """ Reincarcerations by month """
+REINCARCERATIONS_BY_PERIOD_DESCRIPTION = \
+    """Reincarcerations by metric period month."""
 
-REINCARCERATIONS_BY_MONTH_QUERY = \
+REINCARCERATIONS_BY_PERIOD_QUERY = \
     """
     /*{description}*/
     SELECT
-      state_code, year, month, district,
+      state_code, metric_period_months, district,
       IFNULL(ret.returns, 0) as returns,
       IFNULL(adm.total_admissions, 0) as total_admissions
     FROM (
       SELECT
-        state_code, year, month,
+        state_code, metric_period_months,
         IFNULL(county_of_residence, 'ALL') AS district,
-        SUM(count) as total_admissions
+        sum(count) as total_admissions
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id)
@@ -49,18 +50,16 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL -3 YEAR))
+        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
-      GROUP BY state_code, year, month, county_of_residence
+      GROUP BY state_code, metric_period_months, county_of_residence
     ) adm
     LEFT JOIN (
       SELECT
         state_code,
         IFNULL(county_of_residence, 'ALL') AS district,
-        year,
-        month,
+        metric_period_months,
         returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
@@ -75,25 +74,24 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         AND return_type IS NULL
         AND from_supervision_type IS NULL
         AND source_violation_type IS NULL
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL -3 YEAR))
+        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'RECIDIVISM_COUNT'
     ) ret
-    USING (state_code, year, month, district)
-    ORDER BY state_code, year, month, district
+    USING (state_code, metric_period_months, district)
+    ORDER BY state_code, metric_period_months, district
     """.format(
-        description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
+        description=REINCARCERATIONS_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         views_dataset=VIEWS_DATASET,
-        )
+    )
 
-REINCARCERATIONS_BY_MONTH_VIEW = bqview.BigQueryView(
-    view_id=REINCARCERATIONS_BY_MONTH_VIEW_NAME,
-    view_query=REINCARCERATIONS_BY_MONTH_QUERY
+REINCARCERATIONS_BY_PERIOD_VIEW = bqview.BigQueryView(
+    view_id=REINCARCERATIONS_BY_PERIOD_VIEW_NAME,
+    view_query=REINCARCERATIONS_BY_PERIOD_QUERY
 )
 
 if __name__ == '__main__':
-    print(REINCARCERATIONS_BY_MONTH_VIEW.view_id)
-    print(REINCARCERATIONS_BY_MONTH_VIEW.view_query)
+    print(REINCARCERATIONS_BY_PERIOD_VIEW.view_id)
+    print(REINCARCERATIONS_BY_PERIOD_VIEW.view_query)

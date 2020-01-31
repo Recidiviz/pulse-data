@@ -47,7 +47,7 @@ VIEWS_TO_UPDATE: List[bqview.BigQueryView] = \
 # Views that rely on new data from a Dataflow job
 DATAFLOW_VIEWS: List[bqview.BigQueryView] = \
     reincarcerations_views.REINCARCERATIONS_VIEWS + \
-    [reference_views.MOST_RECENT_CALCULATE_JOB_VIEW]
+    [reference_views.MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW]
 
 
 def create_dataset_and_update_views(
