@@ -1095,8 +1095,8 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
         expected_combinations_count_2014 = (num_combinations * 46 * periods)
 
-        expected_count_metric_combinations = (num_combinations * 2 * 46 +
-                                              num_combinations * 2 * 46)
+        expected_count_metric_combinations = (num_combinations * 46 +
+                                              num_combinations * 46)
 
         expected_combination_counts_rates = \
             {2010: expected_combinations_count_2010,
