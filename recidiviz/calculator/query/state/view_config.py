@@ -21,3 +21,6 @@ DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
 
 # Where the metrics that Dataflow jobs produce live
 DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
+
+# Where static reference tables live.
+REFERENCE_TABLES_DATASET: str = 'reference_tables'

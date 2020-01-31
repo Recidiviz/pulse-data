@@ -15,16 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to admissions."""
-# pylint: disable=line-too-long, trailing-whitespace
-from recidiviz.calculator.query.state.views.admissions.admissions_by_type_60_days import \
-    ADMISSIONS_BY_TYPE_60_DAYS_VIEW
+from recidiviz.calculator.query.state.views.admissions.admissions_by_type_by_period import \
+    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW
 from recidiviz.calculator.query.state.views.admissions.admissions_by_type_by_month import \
     ADMISSIONS_BY_TYPE_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.admissions.admissions_versus_releases_by_month import \
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.admissions.admissions_versus_releases_by_period import \
+    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW
 
 ADMISSIONS_VIEWS = [
-    ADMISSIONS_BY_TYPE_60_DAYS_VIEW,
+    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW,
     ADMISSIONS_BY_TYPE_BY_MONTH_VIEW,
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW,
+    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW,
 ]

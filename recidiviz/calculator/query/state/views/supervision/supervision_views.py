@@ -15,25 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to supervision."""
-# pylint: disable=line-too-long
+from recidiviz.calculator.query.state.views.supervision.supervision_termination_by_type_by_period import \
+    SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW
 from recidiviz.calculator.query.state.views.supervision.us_nd.average_change_lsir_score_by_month import \
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW
-from recidiviz.calculator.query.state.views.supervision.supervision_population_by_age_60_days import \
-    SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.supervision.supervision_population_by_gender_60_days import \
-    SUPERVISION_POPULATION_BY_GENDER_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.supervision.supervision_population_by_lsir_60_days import \
-    SUPERVISION_POPULATION_BY_LSIR_60_DAYS_VIEW
-from recidiviz.calculator.query.state.views.supervision.supervision_population_by_race_and_ethnicity_60_days import \
-    SUPERVISION_POPULATION_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW
 from recidiviz.calculator.query.state.views.supervision.supervision_termination_by_type_by_month import \
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.supervision.us_nd.average_change_lsir_score_by_period import \
+    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW
 
 SUPERVISION_VIEWS = [
+    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW,
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW,
-    SUPERVISION_POPULATION_BY_AGE_60_DAYS_VIEW,
-    SUPERVISION_POPULATION_BY_GENDER_60_DAYS_VIEW,
-    SUPERVISION_POPULATION_BY_LSIR_60_DAYS_VIEW,
-    SUPERVISION_POPULATION_BY_RACE_AND_ETHNICITY_60_DAYS_VIEW,
-    SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
+    SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW,
+    SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW,
 ]
