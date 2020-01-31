@@ -354,11 +354,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            duplicated_months_different_supervision_types=True
+        )
 
         self.assertEqual(expected_combinations_count,
                          len(supervision_combinations))
@@ -718,6 +720,111 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
 
+    # pylint:disable=line-too-long
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_duplicate_success(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                successful_completion=True
+            ),
+            ProjectedSupervisionCompletionBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                successful_completion=False
+            )
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(not value for _combination, value
+                   in supervision_combinations
+                   if _combination.get('methodology') ==
+                   MetricMethodologyType.PERSON)
+
+    # pylint:disable=line-too-long
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_duplicate_termination(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            SupervisionTerminationBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=12,
+                assessment_score_change=-3
+            ),
+            SupervisionTerminationBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=12,
+                assessment_score_change=-3
+            ),
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == -3 for _combination, value
+                   in supervision_combinations)
+
+    # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_supervision_types(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -756,6 +863,68 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                          len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
+
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_relevant_periods_all_metrics(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                'CA', 2010, 1, StateSupervisionType.PAROLE),
+            SupervisionTerminationBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=12,
+                assessment_score_change=-3
+            ),
+            ProjectedSupervisionCompletionBucket(
+                state_code='CA',
+                year=2010,
+                month=1,
+                supervision_type=StateSupervisionType.PAROLE,
+                successful_completion=True
+            )
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+        )
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations
+                   if not
+                   combo_has_enum_value_for_key(
+                       _combination,
+                       'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
+        assert all(value == -3 for _combination, value
+                   in supervision_combinations
+                   if
+                   combo_has_enum_value_for_key(
+                       _combination,
+                       'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_bucket(self):
@@ -911,6 +1080,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value
                    in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_assessment_change(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -983,6 +1153,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.ASSESSMENT_CHANGE)
             for _combination, value in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_success(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1055,6 +1226,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.SUCCESS)
             for _combination, value in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_revocation(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1127,6 +1299,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.REVOCATION)
             for _combination, value in supervision_combinations)
 
+    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_population(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1854,20 +2027,6 @@ def expected_metric_combos_count(
         demographic_metric_combos * methodology_multiplier * \
         num_population_buckets * population_dimension_multiplier
 
-    if num_relevant_periods > 0:
-        supervision_population_combos += \
-            demographic_metric_combos * \
-            (len(population_buckets) - num_duplicated_population_buckets) * \
-            population_dimension_multiplier * \
-            num_relevant_periods
-
-        if duplicated_months_different_supervision_types:
-            supervision_population_combos += \
-                int(demographic_metric_combos *
-                    num_duplicated_population_buckets *
-                    population_dimension_multiplier *
-                    num_relevant_periods / 2)
-
     # Supervision population metrics removed in person-based de-duplication
     duplicated_population_combos = \
         int(demographic_metric_combos *
@@ -1903,12 +2062,6 @@ def expected_metric_combos_count(
         demographic_metric_combos * methodology_multiplier * \
         num_revocation_buckets * revocation_dimension_multiplier
 
-    if num_relevant_periods > 0:
-        supervision_revocation_combos += \
-            demographic_metric_combos * \
-            (len(revocation_buckets)) * \
-            num_relevant_periods
-
     projected_completion_dimension_multiplier = 1
     if projected_completion_buckets:
         first_projected_completion_bucket = projected_completion_buckets[0]
@@ -1930,9 +2083,14 @@ def expected_metric_combos_count(
     # Success metrics removed in person-based de-duplication that don't
     # specify supervision type
     duplicated_success_combos = \
-        int(demographic_metric_combos / 2 *
+        int(demographic_metric_combos *
             num_duplicated_projected_completion_months *
             projected_completion_dimension_multiplier)
+
+    if duplicated_months_different_supervision_types:
+        # If the duplicated months have different supervision types, then
+        # don't remove the supervision-type-specific combos
+        duplicated_success_combos = int(duplicated_success_combos / 2)
 
     # Remove the combos that don't specify supervision type for the duplicated
     # projected completion months
@@ -1969,6 +2127,43 @@ def expected_metric_combos_count(
             termination_dimension_multiplier)
 
     supervision_termination_combos -= duplicated_termination_combos
+
+    if num_relevant_periods > 0:
+        # Population combos
+        supervision_population_combos += \
+            demographic_metric_combos * \
+            (len(population_buckets) - num_duplicated_population_buckets) * \
+            population_dimension_multiplier * \
+            num_relevant_periods
+
+        if duplicated_months_different_supervision_types:
+            supervision_population_combos += \
+                int(demographic_metric_combos *
+                    num_duplicated_population_buckets *
+                    population_dimension_multiplier *
+                    num_relevant_periods / 2)
+
+        # Revocation combos
+        supervision_revocation_combos += \
+            demographic_metric_combos * \
+            (len(revocation_buckets)) * \
+            revocation_dimension_multiplier * \
+            num_relevant_periods
+
+        # Success combos
+        supervision_success_combos += \
+            demographic_metric_combos * \
+            (num_projected_completion_buckets -
+             num_duplicated_projected_completion_months) * \
+            projected_completion_dimension_multiplier * \
+            num_relevant_periods
+
+        # Termination combos
+        supervision_termination_combos += \
+            demographic_metric_combos * \
+            (len(termination_buckets) - num_duplicated_termination_buckets) * \
+            termination_dimension_multiplier * \
+            num_relevant_periods
 
     # Pick which one is relevant for the test case: some tests above use a
     # different call that only looks at combos for either population or
