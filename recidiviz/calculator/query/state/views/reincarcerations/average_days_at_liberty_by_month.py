@@ -50,6 +50,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
       AND return_type IS NULL
       AND from_supervision_type IS NULL
       AND source_violation_type IS NULL
+      AND county_of_residence IS NULL
       AND EXTRACT(YEAR FROM start_date) >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
       AND EXTRACT(MONTH FROM start_date) = EXTRACT(MONTH FROM end_date)
       AND job.metric_type = 'RECIDIVISM_LIBERTY'
