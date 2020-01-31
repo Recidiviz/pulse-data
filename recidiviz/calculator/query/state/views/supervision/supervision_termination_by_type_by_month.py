@@ -48,6 +48,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id)
       WHERE methodology = 'PERSON'
+        AND metric_period_months = 1
         AND month IS NOT NULL
         AND supervising_officer_external_id IS NULL
         AND age_bucket IS NULL
