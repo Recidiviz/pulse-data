@@ -31,11 +31,17 @@ from datetime import date
 
 from recidiviz.calculator.pipeline.incarceration import pipeline, calculator
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationAdmissionEvent, IncarcerationReleaseEvent
+    IncarcerationAdmissionEvent, IncarcerationReleaseEvent, \
+    IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import \
+    ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.calculator_utils import \
+    last_day_of_month
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
@@ -380,9 +386,11 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2008, 11, 20),
+            facility='PRISON XX',
+            admission_date=date(2010, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.
             NEW_ADMISSION,
             release_date=date(2010, 12, 4),
@@ -397,16 +405,25 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
 
         incarceration_events = [
+            IncarcerationStayEvent(
+                state_code=incarceration_period.state_code,
+                event_date=
+                last_day_of_month(incarceration_period.admission_date),
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE
+            ),
             IncarcerationAdmissionEvent(
-                state_code='TX',
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                event_date=date(2008, 11, 20),
                 admission_reason=incarceration_period.admission_reason
             ),
             IncarcerationReleaseEvent(
-                state_code='TX',
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.release_date,
+                facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                event_date=date(2010, 12, 4),
                 release_reason=incarceration_period.release_reason
             )
         ]

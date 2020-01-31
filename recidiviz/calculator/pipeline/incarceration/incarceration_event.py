@@ -47,8 +47,14 @@ class IncarcerationEvent(BuildableAttr):
 
 
 @attr.s(frozen=True)
+class IncarcerationStayEvent(IncarcerationEvent):
+    """Models an IncarcerationEvent where a person spent time incarcerated
+    during the given day."""
+
+
+@attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):
-    """Models a IncarcerationEvent where a person was admitted to
+    """Models an IncarcerationEvent where a person was admitted to
     incarceration for any reason."""
 
     # Admission reason
@@ -58,7 +64,7 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 
 @attr.s(frozen=True)
 class IncarcerationReleaseEvent(IncarcerationEvent):
-    """Models a IncarcerationEvent where a person was released from
+    """Models an IncarcerationEvent where a person was released from
     incarceration for any reason."""
 
     # Release reason
