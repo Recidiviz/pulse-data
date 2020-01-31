@@ -19,6 +19,7 @@ from enum import Enum, auto
 
 
 class DirectIngestErrorType(Enum):
+    ENVIRONMENT_ERROR = auto()
     INPUT_ERROR = auto()
     TASKS_ERROR = auto()
     READ_ERROR = auto()
@@ -33,3 +34,7 @@ class DirectIngestError(Exception):
     def __init__(self, *, msg: str, error_type: DirectIngestErrorType):
         super().__init__(msg)
         self.error_type = error_type
+
+    def is_bad_request(self):
+        return self.error_type == DirectIngestErrorType.ENVIRONMENT_ERROR \
+               or self.error_type == DirectIngestErrorType.INPUT_ERROR

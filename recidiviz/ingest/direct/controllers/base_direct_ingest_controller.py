@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgsType, ContentsHandleType
+from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.ingestor import Ingestor
@@ -69,6 +70,8 @@ class BaseDirectIngestController(Ingestor,
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next
         job immediately."""
+        check_is_region_launched_in_env(self.region)
+
         process_job_queue_info = \
             self.cloud_task_manager.get_process_job_queue_info(self.region)
         if process_job_queue_info.size() and not just_finished_job:
@@ -148,6 +151,8 @@ class BaseDirectIngestController(Ingestor,
     # =================== #
     def run_ingest_job_and_kick_scheduler_on_completion(self,
                                                         args: IngestArgsType):
+        check_is_region_launched_in_env(self.region)
+
         should_schedule = self._run_ingest_job(args)
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
@@ -162,6 +167,8 @@ class BaseDirectIngestController(Ingestor,
             True if we should try to schedule the next job on completion. False,
              otherwise.
         """
+        check_is_region_launched_in_env(self.region)
+
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
 
