@@ -34,10 +34,10 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
     /*{description}*/
     SELECT
       state_code,
-      IFNULL(SUM(new_admissions), 0) as new_admissions,
-      SUM(technicals) as technicals,
-      SUM(non_technicals) as non_technicals,
-      SUM(unknown_revocations) as unknown_revocations,
+      IFNULL(new_admissions, 0) as new_admissions,
+      technicals as technicals,
+      non_technicals as non_technicals,
+      unknown_revocations as unknown_revocations,
       supervision_type,
       district,
       metric_period_months
@@ -90,7 +90,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
     LEFT JOIN (
       SELECT
         state_code,
-        count AS new_admissions,
+        SUM(count) AS new_admissions,
         'ALL' AS supervision_type, 'ALL' as district,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
@@ -107,9 +107,9 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
+      GROUP BY state_code, metric_period_months
     ) adm
     USING (state_code, metric_period_months, supervision_type, district)
-    GROUP BY state_code, supervision_type, district, metric_period_months
     ORDER BY state_code, supervision_type, district, metric_period_months
 """.format(
         description=ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION,
