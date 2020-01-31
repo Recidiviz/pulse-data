@@ -69,7 +69,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationAdmissionMetric, \
-    IncarcerationReleaseMetric
+    IncarcerationReleaseMetric, IncarcerationPopulationMetric
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType as MetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
@@ -164,11 +164,16 @@ class GetIncarcerationMetrics(beam.PTransform):
             | 'Map to metric combinations' >>
             beam.ParDo(CalculateIncarcerationMetricCombinations(),
                        **self.inclusions).with_outputs('admissions',
+                                                       'populations',
                                                        'releases'))
 
         admissions_with_sums = (incarceration_metric_combinations.admissions
                                 | 'Calculate admission counts values' >>
                                 beam.CombinePerKey(SumFn()))
+
+        populations_with_sums = (incarceration_metric_combinations.populations
+                                 | 'Calculate population counts values' >>
+                                 beam.CombinePerKey(SumFn()))
 
         releases_with_sums = (incarceration_metric_combinations.releases
                               | 'Calculate release counts values' >>
@@ -181,6 +186,13 @@ class GetIncarcerationMetrics(beam.PTransform):
                                  ProduceIncarcerationMetric(),
                                  **self._pipeline_options))
 
+        # Produce the IncarcerationPopulationMetrics
+        population_metrics = (populations_with_sums
+                              | 'Produce population count metrics' >>
+                              beam.ParDo(
+                                  ProduceIncarcerationMetric(),
+                                  **self._pipeline_options))
+
         # Produce the IncarcerationReleaseMetrics
         release_metrics = (releases_with_sums
                            | 'Produce release count metrics' >>
@@ -189,8 +201,11 @@ class GetIncarcerationMetrics(beam.PTransform):
                                **self._pipeline_options))
 
         # Merge the metric groups
-        merged_metrics = ((admission_metrics, release_metrics)
-                          | 'Merge admission and release metrics' >>
+        merged_metrics = ((admission_metrics,
+                           population_metrics,
+                           release_metrics)
+                          | 'Merge admission, population, and'
+                            ' release metrics' >>
                           beam.Flatten())
 
         # Return IncarcerationMetric objects
@@ -240,6 +255,9 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
 
             if metric_type == MetricType.ADMISSION.value:
                 yield beam.pvalue.TaggedOutput('admissions',
+                                               (json_key, value))
+            elif metric_type == MetricType.POPULATION.value:
+                yield beam.pvalue.TaggedOutput('populations',
                                                (json_key, value))
             elif metric_type == MetricType.RELEASE.value:
                 yield beam.pvalue.TaggedOutput('releases',
@@ -303,7 +321,12 @@ class ProduceIncarcerationMetric(beam.DoFn):
             incarceration_metric = \
                 IncarcerationAdmissionMetric.build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id)
+        elif metric_type == MetricType.POPULATION.value:
+            dict_metric_key['count'] = value
 
+            incarceration_metric = \
+                IncarcerationPopulationMetric.build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.RELEASE.value:
             dict_metric_key['count'] = value
 
@@ -348,6 +371,8 @@ class IncarcerationMetricWritableDict(beam.DoFn):
 
         if isinstance(element, IncarcerationAdmissionMetric):
             yield beam.pvalue.TaggedOutput('admissions', element_dict)
+        if isinstance(element, IncarcerationPopulationMetric):
+            yield beam.pvalue.TaggedOutput('populations', element_dict)
         if isinstance(element, IncarcerationReleaseMetric):
             yield beam.pvalue.TaggedOutput('releases', element_dict)
 
@@ -555,11 +580,14 @@ def run(argv=None):
                             | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
                                 IncarcerationMetricWritableDict()).with_outputs(
-                                    'admissions', 'releases'))
+                                    'admissions', 'populations', 'releases'))
 
         # Write the metrics to the output tables in BigQuery
         admissions_table = known_args.output + \
             '.incarceration_admission_metrics'
+
+        population_table = known_args.output + \
+            '.incarceration_population_metrics'
 
         releases_table = known_args.output + \
             '.incarceration_release_metrics'
@@ -568,6 +596,14 @@ def run(argv=None):
              | f"Write admission metrics to BQ table: {admissions_table}" >>
              beam.io.WriteToBigQuery(
                  table=admissions_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.populations
+             | f"Write population metrics to BQ table: {population_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=population_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
