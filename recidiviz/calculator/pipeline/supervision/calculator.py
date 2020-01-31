@@ -462,7 +462,14 @@ def combination_supervision_metrics(
 
             relevant_buckets_in_period: List[SupervisionTimeBucket] = []
 
-            if metric_type == SupervisionMetricType.POPULATION:
+            if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
+                # Get all other supervision time buckets for this period that
+                # should contribute to an assessment change metric
+                relevant_buckets_in_period = [
+                    bucket for bucket in buckets_in_period
+                    if (isinstance(bucket, SupervisionTerminationBucket))
+                ]
+            elif metric_type == SupervisionMetricType.POPULATION:
                 # Get all other supervision time buckets for this period that
                 # should contribute to a population metric
                 relevant_buckets_in_period = [
@@ -479,15 +486,29 @@ def combination_supervision_metrics(
                     if isinstance(bucket,
                                   RevocationReturnSupervisionTimeBucket)
                 ]
+            elif metric_type == SupervisionMetricType.SUCCESS:
+                # Get all other supervision time buckets for this period that
+                # should contribute to a supervision success metric
+                relevant_buckets_in_period = [
+                    bucket for bucket in buckets_in_period
+                    if (isinstance(bucket,
+                                   ProjectedSupervisionCompletionBucket))
+                ]
 
             if relevant_buckets_in_period and include_supervision_in_count(
                     combo,
                     supervision_time_bucket,
                     relevant_buckets_in_period,
                     metric_type):
+
+                person_combo_value = _person_combo_value(
+                    combo, supervision_time_bucket, relevant_buckets_in_period,
+                    metric_type
+                )
+
                 # Include this event in the person-based count
                 for person_combo in person_based_period_combos:
-                    metrics.append((person_combo, 1))
+                    metrics.append((person_combo, person_combo_value))
 
     return metrics
 
