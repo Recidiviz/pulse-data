@@ -50,8 +50,7 @@ class TestDirectIngestControl(unittest.TestCase):
         """Tests that the start operation chains together the correct calls."""
 
         mock_controller = create_autospec(GcsfsDirectIngestController)
-        mock_region.return_value = fake_region(environment='production',
-                                               ingestor=mock_controller)
+        mock_region.return_value = fake_region(environment='production', ingestor=mock_controller)
         mock_environment.return_value = 'production'
 
         region = 'us_nd'
@@ -63,8 +62,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         mock_region.assert_called_with('us_nd', is_direct_ingest=True)
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary. \
-            assert_called_with(just_finished_job=False)
+        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_called_with(just_finished_job=False)
         self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
@@ -74,22 +72,24 @@ class TestDirectIngestControl(unittest.TestCase):
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = 'production'
         mock_controller = create_autospec(GcsfsDirectIngestController)
-        mock_region.return_value = fake_region(environment='staging',
-                                               ingestor=mock_controller)
 
         region = 'us_nd'
+
+        mock_region.return_value = fake_region(environment='staging',
+                                               region_code=region,
+                                               ingestor=mock_controller)
+
         request_args = {'region': region}
         headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/scheduler',
                                    query_string=request_args,
                                    headers=headers)
 
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary. \
-            assert_not_called()
+        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_not_called()
         self.assertEqual(400, response.status_code)
         self.assertEqual(
             response.get_data().decode(),
-            "Bad environment [production] for direct region [us_nd].")
+            "Bad environment [production] for region [us_nd].")
 
         mock_region.assert_called_with('us_nd', is_direct_ingest=True)
 
@@ -112,8 +112,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         mock_region.assert_called_with('us_nd', is_direct_ingest=True)
-        mock_controller.schedule_next_ingest_job_or_wait_if_necessary. \
-            assert_called_with(just_finished_job=True)
+        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_called_with(just_finished_job=True)
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_schedule_unsupported_region(self, mock_supported):
@@ -154,7 +153,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(400, response.status_code)
         self.assertEqual(
             response.get_data().decode(),
-            "Bad environment [production] for direct region [us_nd].")
+            "Bad environment [production] for region [us_nd].")
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -189,9 +188,7 @@ class TestDirectIngestControl(unittest.TestCase):
                                     headers=headers,
                                     data=body_encoded)
         self.assertEqual(200, response.status_code)
-        mock_controller. \
-            run_ingest_job_and_kick_scheduler_on_completion. \
-            assert_called_with(ingest_args)
+        mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_called_with(ingest_args)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -226,9 +223,7 @@ class TestDirectIngestControl(unittest.TestCase):
                                     headers=headers,
                                     data=body_encoded)
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Bad environment [production] for direct region [us_ca].")
+        self.assertEqual(response.get_data().decode(), "Bad environment [production] for region [us_ca].")
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -243,8 +238,7 @@ class TestDirectIngestControl(unittest.TestCase):
             environment='production',
             ingestor=mock_controller)
 
-        path = GcsfsFilePath.from_absolute_path(
-            'bucket-us-nd/Elite_Offenders.csv')
+        path = GcsfsFilePath.from_absolute_path('bucket-us-nd/Elite_Offenders.csv')
 
         request_args = {
             'region': region_code,
@@ -375,6 +369,31 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controller.handle_new_files.assert_called_with(False)
 
         self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_handle_new_files_no_start_ingest_in_production(
+            self, mock_region, mock_environment):
+        """Tests that handle_new_files will run and rename files in unlaunched locations, but will not schedule a job to
+        process any files."""
+        region_code = 'us_nd'
+
+        mock_environment.return_value = 'production'
+        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_region.return_value = fake_region(region_code=region_code, environment='staging', ingestor=mock_controller)
+        request_args = {
+            'region': region_code,
+            'can_start_ingest': 'False',
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/handle_new_files', query_string=request_args, headers=headers)
+
+        mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_not_called()
+        mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_not_called()
+        mock_controller.handle_new_files.assert_called_with(False)
+
+        self.assertEqual(200, response.status_code)
+
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gae_environment")
