@@ -57,7 +57,8 @@ def find_supervision_time_buckets(
         incarceration_periods: List[StateIncarcerationPeriod],
         assessments: List[StateAssessment],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        state_code: Optional[str] = 'ALL') \
         -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines
     if they resulted in revocation return.
@@ -94,6 +95,8 @@ def find_supervision_time_buckets(
         - supervision_period_to_agent_associations: dictionary associating
             StateSupervisionPeriod ids to information about the corresponding
             StateAgent
+        - state_code: the state_code to limit the output to. If this is 'ALL' or
+            is omitted, then all states will be included in the result.
 
     Returns:
         A list of SupervisionTimeBuckets for the person.
@@ -163,6 +166,12 @@ def find_supervision_time_buckets(
     supervision_time_buckets = add_missing_revocation_returns(
         incarceration_periods, supervision_time_buckets, assessments,
         ssvr_agent_associations)
+
+    if state_code != 'ALL':
+        supervision_time_buckets = [
+            bucket for bucket in supervision_time_buckets
+            if bucket.state_code == state_code
+        ]
 
     return supervision_time_buckets
 
