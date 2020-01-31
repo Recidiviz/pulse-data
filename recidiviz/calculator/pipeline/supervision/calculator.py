@@ -111,45 +111,51 @@ def map_supervision_combinations(person: StatePerson,
 
         if isinstance(supervision_time_bucket,
                       ProjectedSupervisionCompletionBucket):
-            supervision_success_metrics = map_metric_combinations(
-                characteristic_combos_population, supervision_time_bucket,
-                metric_period_end_date, all_buckets_sorted,
-                periods_and_buckets,
-                SupervisionMetricType.SUCCESS)
-
-            metrics.extend(supervision_success_metrics)
-        elif isinstance(supervision_time_bucket,
-                        SupervisionTerminationBucket):
-            assessment_change_metrics = map_metric_combinations(
-                characteristic_combos_population, supervision_time_bucket,
-                metric_period_end_date, all_buckets_sorted,
-                periods_and_buckets,
-                SupervisionMetricType.ASSESSMENT_CHANGE)
-
-            metrics.extend(assessment_change_metrics)
-        else:
-            population_metrics = map_metric_combinations(
-                characteristic_combos_population, supervision_time_bucket,
-                metric_period_end_date, all_buckets_sorted,
-                periods_and_buckets,
-                SupervisionMetricType.POPULATION)
-
-            metrics.extend(population_metrics)
-
-            characteristic_combos_revocation = \
-                characteristic_combinations(
-                    person, supervision_time_bucket, inclusions,
-                    with_revocation_dimensions=True)
-
-            if isinstance(supervision_time_bucket,
-                          RevocationReturnSupervisionTimeBucket):
-                revocation_metrics = map_metric_combinations(
-                    characteristic_combos_revocation, supervision_time_bucket,
+            if inclusions.get(SupervisionMetricType.SUCCESS.value):
+                supervision_success_metrics = map_metric_combinations(
+                    characteristic_combos_population, supervision_time_bucket,
                     metric_period_end_date, all_buckets_sorted,
                     periods_and_buckets,
-                    SupervisionMetricType.REVOCATION)
+                    SupervisionMetricType.SUCCESS)
 
-                metrics.extend(revocation_metrics)
+                metrics.extend(supervision_success_metrics)
+        elif isinstance(supervision_time_bucket,
+                        SupervisionTerminationBucket):
+            if inclusions.get(SupervisionMetricType.ASSESSMENT_CHANGE.value):
+                assessment_change_metrics = map_metric_combinations(
+                    characteristic_combos_population, supervision_time_bucket,
+                    metric_period_end_date, all_buckets_sorted,
+                    periods_and_buckets,
+                    SupervisionMetricType.ASSESSMENT_CHANGE)
+
+                metrics.extend(assessment_change_metrics)
+        else:
+            if inclusions.get(SupervisionMetricType.POPULATION.value):
+                population_metrics = map_metric_combinations(
+                    characteristic_combos_population, supervision_time_bucket,
+                    metric_period_end_date, all_buckets_sorted,
+                    periods_and_buckets,
+                    SupervisionMetricType.POPULATION)
+
+                metrics.extend(population_metrics)
+
+            if inclusions.get(SupervisionMetricType.REVOCATION.value):
+                characteristic_combos_revocation = \
+                    characteristic_combinations(
+                        person, supervision_time_bucket, inclusions,
+                        with_revocation_dimensions=True)
+
+                if isinstance(supervision_time_bucket,
+                              RevocationReturnSupervisionTimeBucket):
+                    revocation_metrics = map_metric_combinations(
+                        characteristic_combos_revocation,
+                        supervision_time_bucket,
+                        metric_period_end_date,
+                        all_buckets_sorted,
+                        periods_and_buckets,
+                        SupervisionMetricType.REVOCATION)
+
+                    metrics.extend(revocation_metrics)
 
     return metrics
 

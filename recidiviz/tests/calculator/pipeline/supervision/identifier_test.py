@@ -1412,6 +1412,139 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         ])
 
+    def test_find_supervision_time_buckets_filter_state_code(self):
+        """Tests the find_supervision_time_buckets function where the state_code
+        does not match the state_code filter."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_UT',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                state_code='US_UT',
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                projected_completion_date=date(2018, 5, 19),
+                supervision_periods=[supervision_period]
+            )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_UT',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 10)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
+        assessments = [assessment]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences, incarceration_periods,
+            assessments,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            state_code='US_CA'
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 0)
+        self.assertEqual(supervision_time_buckets, [])
+
+    def test_find_supervision_time_buckets_include_state(self):
+        """Tests the find_supervision_time_buckets function where the state_code
+        matches the state_code filter."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_CA',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                state_code='US_CA',
+                supervision_sentence_id=111,
+                status=StateSentenceStatus.COMPLETED,
+                projected_completion_date=date(2018, 5, 19),
+                supervision_periods=[supervision_period]
+            )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 10)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
+        assessments = [assessment]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences, incarceration_periods,
+            assessments,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            state_code='US_CA'
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 6)
+
+        self.assertEqual(supervision_time_buckets, [
+            ProjectedSupervisionCompletionBucket.for_month(
+                supervision_period.state_code,
+                2018, 5, supervision_period.supervision_type, True
+            ),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 3,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 4,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket.for_month(
+                supervision_period.state_code,
+                2018, 5,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket.for_year(
+                supervision_period.state_code,
+                2018,
+                supervision_period.supervision_type,
+                assessment.assessment_score,
+                assessment.assessment_type),
+            SupervisionTerminationBucket.for_month(
+                supervision_period.state_code,
+                supervision_period.termination_date.year,
+                supervision_period.termination_date.month,
+                supervision_period.supervision_type,
+                None,
+                None,
+                supervision_period.termination_reason
+            )
+        ])
+
 
 class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
     """Tests for the find_months_for_supervision_period function."""
