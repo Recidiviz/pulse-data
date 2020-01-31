@@ -21,6 +21,7 @@ usage: pipeline.py --input=INPUT_LOCATION --output=OUTPUT_LOCATION
                     --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
+                    [--metric_type] [--state_code]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.supervision.pipeline
@@ -28,7 +29,8 @@ python -m recidiviz.calculator.supervision.pipeline
         --input=recidiviz-project-name.dataset
         --reference_input=recidiviz-project-name.ref_dataset
         --output=gs://recidiviz-bucket/output_location
-            --methodology=BOTH
+            --methodology=BOTH --metric_type='POPULATION'
+            --state_code='US_ND'
 
 Example output to local file:
 python -m recidiviz.calculator.supervision.pipeline
@@ -97,6 +99,7 @@ def clear_job_id():
     global _job_id
     _job_id = None
 
+
 @with_input_types(beam.typehints.Tuple[entities.StatePerson,
                                        List[SupervisionTimeBucket]])
 @with_output_types(SupervisionMetric)
@@ -105,10 +108,18 @@ class GetSupervisionMetrics(beam.PTransform):
     SupervisionMetrics."""
 
     def __init__(self, pipeline_options: Dict[str, str],
-                 inclusions: Dict[str, bool]):
+                 inclusions: Dict[str, bool],
+                 metric_type: str):
         super(GetSupervisionMetrics, self).__init__()
         self._pipeline_options = pipeline_options
         self.inclusions = inclusions
+
+        for metric_option in MetricType:
+            if metric_type in ('ALL', metric_option.value):
+                self.inclusions[metric_option.value] = True
+                logging.info("Producing %s metrics", metric_option.value)
+            else:
+                self.inclusions[metric_option.value] = False
 
     def expand(self, input_or_inputs):
         # Calculate supervision metric combinations from a StatePerson and their
@@ -200,11 +211,18 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
 
     #pylint: disable=arguments-differ
     def process(self, element, ssvr_agent_associations,
-                supervision_period_to_agent_associations):
+                supervision_period_to_agent_associations,
+                **kwargs):
         """Identifies instances of revocation and non-revocation time buckets on
         supervision, and classifies months of projected completion as either
         successful or not.
         """
+        state_code = 'ALL'
+
+        if kwargs.get('state_code') is not None:
+            state_code = kwargs.get('state_code')
+            logging.info("Limiting calculations to state: %s", state_code)
+
         _, person_periods = element
 
         # Get the StateSupervisionSentences as a list
@@ -229,7 +247,8 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
                 incarceration_periods,
                 assessments,
                 ssvr_agent_associations,
-                supervision_period_to_agent_associations)
+                supervision_period_to_agent_associations,
+                state_code)
 
         if not supervision_time_buckets:
             logging.info("No valid supervision time buckets for person with"
@@ -466,6 +485,27 @@ def parse_arguments(argv):
                         help='Output dataset to write results to.',
                         required=True)
 
+    parser.add_argument('--metric_type',
+                        dest='metric_type',
+                        type=str,
+                        choices=[
+                            'ALL',
+                            MetricType.ASSESSMENT_CHANGE.value,
+                            MetricType.POPULATION.value,
+                            MetricType.REVOCATION.value,
+                            MetricType.SUCCESS.value
+                        ],
+                        help='The type of metric to calculate.',
+                        default='ALL')
+
+    # NOTE: Must stay up to date to include all active states
+    parser.add_argument('--state_code',
+                        dest='state_code',
+                        type=str,
+                        choices=['ALL', 'US_MO', 'US_ND'],
+                        help='The state_code to include in the calculations',
+                        default='ALL')
+
     return parser.parse_known_args(argv)
 
 
@@ -693,22 +733,33 @@ def run(argv=None):
             beam.CoGroupByKey()
         )
 
+        # The state_code to run calculations on
+        state_code = known_args.state_code
+
+        identifier_options = {
+            'state_code': state_code
+        }
+
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
             person_periods_and_sentences
-            | beam.ParDo(ClassifySupervisionTimeBuckets(),
-                         AsDict(
-                             ssvr_agent_associations_as_kv),
-                         AsDict(
-                             supervision_period_to_agent_associations_as_kv
-                         )))
+            | 'Get SupervisionTimeBuckets' >>
+            beam.ParDo(ClassifySupervisionTimeBuckets(),
+                       AsDict(
+                           ssvr_agent_associations_as_kv),
+                       AsDict(
+                           supervision_period_to_agent_associations_as_kv),
+                       **identifier_options))
 
         # Get dimensions to include and methodologies to use
         inclusions, _ = dimensions_and_methodologies(known_args)
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
+
+        # Get the type of metric to calculate
+        metric_type = known_args.metric_type
 
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
@@ -719,7 +770,8 @@ def run(argv=None):
                                | 'Get Supervision Metrics' >>
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions))
+                                   inclusions=inclusions,
+                                   metric_type=metric_type))
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (supervision_metrics
