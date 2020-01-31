@@ -15,14 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies instances of admission and release from incarceration."""
+from datetime import date
 from typing import List, Optional, Any, Dict, Set
 
+from dateutil.relativedelta import relativedelta
 from pydot import frozendict
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent
+    IncarcerationEvent, IncarcerationAdmissionEvent, \
+    IncarcerationReleaseEvent, IncarcerationStayEvent
+from recidiviz.calculator.pipeline.utils.calculator_utils import \
+    last_day_of_month
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
+from recidiviz.common.constants.state.state_incarceration import \
+    StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -32,9 +39,9 @@ def find_incarceration_events(
         List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
 
-    Transforms StateIncarcerationPeriods into IncarcerationAdmissionEvents and
-    IncarcerationReleaseEvents, representing admission and release from
-    incarceration.
+    Transforms StateIncarcerationPeriods into IncarcerationAdmissionEvents,
+    IncarcerationStayEvents, and IncarcerationReleaseEvents, representing
+    admissions, stays in, and releases from incarceration in a state prison.
 
     Args:
         - incarceration_periods: All of the person's StateIncarcerationPeriods
@@ -46,7 +53,17 @@ def find_incarceration_events(
     incarceration_events: List[IncarcerationEvent] = []
 
     incarceration_periods = \
-        prepare_incarceration_periods_for_calculations(incarceration_periods)
+        prepare_incarceration_periods_for_calculations(incarceration_periods,
+                                                       collapse_transfers=False)
+
+    for incarceration_period in incarceration_periods:
+        incarceration_stay_events = \
+            find_end_of_month_state_prison_stays(
+                incarceration_period, county_of_residence
+            )
+
+        if incarceration_stay_events:
+            incarceration_events.extend(incarceration_stay_events)
 
     de_duplicated_incarceration_admissions = de_duplicated_admissions(
         incarceration_periods
@@ -71,6 +88,46 @@ def find_incarceration_events(
             incarceration_events.append(release_event)
 
     return incarceration_events
+
+
+def find_end_of_month_state_prison_stays(
+        incarceration_period: StateIncarcerationPeriod,
+        county_of_residence: Optional[str]) -> \
+        List[IncarcerationEvent]:
+    """Finds months for which this person was incarcerated in a state prison
+    on the last day of the month.
+    """
+    incarceration_stay_events: List[IncarcerationEvent] = []
+
+    if incarceration_period.incarceration_type != \
+            StateIncarcerationType.STATE_PRISON:
+        return incarceration_stay_events
+
+    admission_date = incarceration_period.admission_date
+    release_date = incarceration_period.release_date
+
+    if release_date is None:
+        release_date = date.today()
+
+    if admission_date is None:
+        return incarceration_stay_events
+
+    end_of_month = last_day_of_month(
+        date(admission_date.year, admission_date.month, 1))
+
+    while end_of_month <= release_date:
+        incarceration_stay_events.append(
+            IncarcerationStayEvent(
+                state_code=incarceration_period.state_code,
+                event_date=end_of_month,
+                facility=incarceration_period.facility,
+                county_of_residence=county_of_residence
+            )
+        )
+
+        end_of_month = last_day_of_month(end_of_month + relativedelta(days=1))
+
+    return incarceration_stay_events
 
 
 def de_duplicated_admissions(incarceration_periods:
@@ -136,9 +193,10 @@ def admission_event_for_period(
 
     admission_date = incarceration_period.admission_date
     admission_reason = incarceration_period.admission_reason
+    incarceration_type = incarceration_period.incarceration_type
 
-    if admission_date and admission_reason:
-
+    if admission_date and admission_reason and \
+            incarceration_type == StateIncarcerationType.STATE_PRISON:
         return IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
             event_date=admission_date,
@@ -159,8 +217,10 @@ def release_event_for_period(
 
     release_date = incarceration_period.release_date
     release_reason = incarceration_period.release_reason
+    incarceration_type = incarceration_period.incarceration_type
 
-    if release_date and release_reason:
+    if release_date and release_reason and \
+            incarceration_type == StateIncarcerationType.STATE_PRISON:
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=release_date,

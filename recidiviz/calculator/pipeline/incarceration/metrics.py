@@ -32,6 +32,7 @@ class IncarcerationMetricType(Enum):
     """The type of incarceration metrics."""
 
     ADMISSION = 'ADMISSION'
+    POPULATION = 'POPULATION'
     RELEASE = 'RELEASE'
 
 
@@ -79,6 +80,36 @@ class IncarcerationMetric(RecidivizMetric):
 
         incarceration_metric = cast(IncarcerationMetric,
                                     IncarcerationMetric.
+                                    build_from_dictionary(metric_key))
+
+        return incarceration_metric
+
+
+@attr.s
+class IncarcerationPopulationMetric(IncarcerationMetric):
+    """Subclass of IncarcerationMetric that contains incarceration population
+    counts at the end of the month."""
+    # Required characteristics
+
+    # Population count
+    count: int = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    job_id: str) -> \
+            Optional['IncarcerationPopulationMetric']:
+        """Builds a IncarcerationPopulationMetric object from the
+         given arguments.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        incarceration_metric = cast(IncarcerationPopulationMetric,
+                                    IncarcerationPopulationMetric.
                                     build_from_dictionary(metric_key))
 
         return incarceration_metric

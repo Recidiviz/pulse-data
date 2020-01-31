@@ -18,6 +18,8 @@
 calculations."""
 
 import logging
+from copy import deepcopy
+
 from datetime import date
 from typing import List
 
@@ -29,7 +31,6 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-
 
 
 def drop_placeholder_temporary_and_missing_status_periods(
@@ -201,8 +202,8 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
     """Combines two StateIncarcerationPeriods.
 
     Brings together two StateIncarcerationPeriods by setting the following
-    fields on the |start| StateIncarcerationPeriod to the values on the |end|
-    StateIncarcerationPeriod:
+    fields on a deep copy of the |start| StateIncarcerationPeriod to the values
+    on the |end| StateIncarcerationPeriod:
 
         [status, release_date, facility, housing_unit, facility_security_level,
         facility_security_level_raw_text, projected_release_reason,
@@ -214,24 +215,30 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
             end: The ending StateIncarcerationPeriod.
     """
 
-    start.status = end.status
-    start.release_date = end.release_date
-    start.facility = end.facility
-    start.housing_unit = end.housing_unit
-    start.facility_security_level = end.facility_security_level
-    start.facility_security_level_raw_text = \
-        end.facility_security_level_raw_text
-    start.projected_release_reason = end.projected_release_reason
-    start.projected_release_reason_raw_text = \
-        end.projected_release_reason_raw_text
-    start.release_reason = end.release_reason
-    start.release_reason_raw_text = end.release_reason_raw_text
+    collapsed_incarceration_period = deepcopy(start)
 
-    return start
+    collapsed_incarceration_period.status = end.status
+    collapsed_incarceration_period.release_date = end.release_date
+    collapsed_incarceration_period.facility = end.facility
+    collapsed_incarceration_period.housing_unit = end.housing_unit
+    collapsed_incarceration_period.facility_security_level = \
+        end.facility_security_level
+    collapsed_incarceration_period.facility_security_level_raw_text = \
+        end.facility_security_level_raw_text
+    collapsed_incarceration_period.projected_release_reason = \
+        end.projected_release_reason
+    collapsed_incarceration_period.projected_release_reason_raw_text = \
+        end.projected_release_reason_raw_text
+    collapsed_incarceration_period.release_reason = end.release_reason
+    collapsed_incarceration_period.release_reason_raw_text = \
+        end.release_reason_raw_text
+
+    return collapsed_incarceration_period
 
 
 def prepare_incarceration_periods_for_calculations(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        incarceration_periods: List[StateIncarcerationPeriod],
+        collapse_transfers: bool = True) -> \
         List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
 
@@ -257,7 +264,7 @@ def prepare_incarceration_periods_for_calculations(
 
     validated_incarceration_periods.sort(key=lambda b: b.admission_date)
 
-    collapsed_incarceration_periods = \
-        collapse_incarceration_periods(validated_incarceration_periods)
+    if collapse_transfers:
+        return collapse_incarceration_periods(validated_incarceration_periods)
 
-    return collapsed_incarceration_periods
+    return validated_incarceration_periods
