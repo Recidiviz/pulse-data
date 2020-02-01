@@ -40,7 +40,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_success(self, mock_get_job,
                                                   mock_cloud_task_manager,
                                                   mock_pubsub_helper,
@@ -75,7 +75,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_running(self, mock_get_job,
                                                   mock_cloud_task_manager,
                                                   mock_pubsub_helper,
@@ -110,7 +110,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_stopped(self, mock_get_job,
                                                   mock_cloud_task_manager,
                                                   mock_pubsub_helper,
@@ -145,7 +145,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_pending(self, mock_get_job,
                                                   mock_cloud_task_manager,
                                                   mock_pubsub_helper,
@@ -180,7 +180,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_queued(self, mock_get_job,
                                                  mock_cloud_task_manager,
                                                  mock_pubsub_helper,
@@ -215,7 +215,7 @@ class DataflowMonitorManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.CalculateCloudTaskManager')
-    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_job_with_id')
+    @mock.patch(f'{MONITOR_MANAGER_PACKAGE_NAME}.get_dataflow_job_with_id')
     def test_handle_dataflow_monitor_task_failed(self, mock_get_job,
                                                  mock_cloud_task_manager,
                                                  mock_pubsub_helper,

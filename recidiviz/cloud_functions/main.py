@@ -174,9 +174,9 @@ def run_calculation_pipelines(_event, _context):
         logging.error('No job_name set, returning.')
         return
 
-    topic = os.environ.get('TOPIC')
-    if not topic:
-        logging.error('No topic set, returning.')
+    on_dataflow_job_completion_topic = os.environ.get('ON_DATAFLOW_JOB_COMPLETION_TOPIC')
+    if not on_dataflow_job_completion_topic:
+        logging.error('No on-completion topic set, returning.')
         return
 
     response = trigger_dataflow_job_from_template(project_id, bucket,
@@ -186,10 +186,10 @@ def run_calculation_pipelines(_event, _context):
 
     job_id = response['id']
     location = response['location']
-    topic = topic.replace('.', '-')
+    on_dataflow_job_completion_topic = on_dataflow_job_completion_topic.replace('.', '-')
 
     # Monitor the successfully triggered Dataflow job
-    url = _DATAFLOW_MONITOR_URL.format(project_id, job_id, location, topic)
+    url = _DATAFLOW_MONITOR_URL.format(project_id, job_id, location, on_dataflow_job_completion_topic)
 
     monitor_response = make_iap_request(url, _CLIENT_ID[project_id])
     logging.info("The monitoring Dataflow response is %s", monitor_response)

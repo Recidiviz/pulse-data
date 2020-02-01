@@ -104,7 +104,7 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
     return pipeline_job_id
 
 
-def get_job_with_id(project, job_id, location) -> Dict[str, str]:
+def get_dataflow_job_with_id(project, job_id, location) -> Dict[str, str]:
     """Returns information about the Dataflow job with the given `job_id`."""
     service_name = 'dataflow'
     dataflow_api_version = 'v1b3'
