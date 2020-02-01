@@ -35,9 +35,9 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
     SELECT
       state_code,
       IFNULL(new_admissions, 0) as new_admissions,
-      technicals as technicals,
-      non_technicals as non_technicals,
-      unknown_revocations as unknown_revocations,
+      IFNULL(technicals, 0) as technicals,
+      IFNULL(non_technicals, 0) as non_technicals,
+      IFNULL(unknown_revocations, 0) as unknown_revocations,
       supervision_type,
       district,
       metric_period_months
@@ -87,7 +87,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
         GROUP BY state_code, supervision_type, supervising_district_external_id, metric_period_months
       )
     ) rev
-    LEFT JOIN (
+    FULL OUTER JOIN (
       SELECT
         state_code,
         SUM(count) AS new_admissions,
