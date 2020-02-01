@@ -31,7 +31,7 @@ from datetime import date
 
 from recidiviz.calculator.pipeline.supervision import pipeline, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetric, SupervisionMetricType
+    SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
@@ -904,6 +904,418 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assert_that(supervision_metrics,
                     AssertMatchers.validate_pipeline_test())
+
+        test_pipeline.run()
+
+    def testSupervisionPipeline_withTechnicalRevocations(self):
+        fake_person_id = 562
+        fake_svr_id = 5582552
+        fake_violation_id = 4702488
+
+        fake_person = schema.StatePerson(person_id=fake_person_id, gender=Gender.MALE, birthdate=date(1991, 8, 16),
+                                         residency_status=ResidencyStatus.PERMANENT)
+
+        persons_data = [normalized_database_base_dict(fake_person)]
+
+        race_1 = schema.StatePersonRace(person_race_id=531, state_code='us_ca',
+                                        race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE, person_id=fake_person_id)
+
+        races_data = normalized_database_base_dict_list([race_1])
+
+        ethnicity = schema.StatePersonEthnicity(person_ethnicity_id=None, state_code='us_ca', ethnicity=None,
+                                                person_id=fake_person_id)
+
+        ethnicity_data = normalized_database_base_dict_list([ethnicity])
+
+        initial_supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=5876524,
+            state_code='us_ca',
+            county_code='US_ND_RAMSEY',
+            start_date=date(2014, 10, 31),
+            termination_date=date(2015, 4, 21),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+            person_id=fake_person_id
+        )
+
+        initial_supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=105109,
+                                                                       state_code='us_ca',
+                                                                       supervision_periods=[initial_supervision_period],
+                                                                       projected_completion_date=date(2016, 10, 31),
+                                                                       person_id=fake_person_id
+                                                                       )
+
+        # violation of the first probation
+        ssvr_1 = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=5578679,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            supervision_violation_id=4698615
+        )
+        state_agent = database_test_utils.generate_test_assessment_agent()
+        ssvr_1.decision_agents = [state_agent]
+        supervision_violation_type_1 = schema.StateSupervisionViolationTypeEntry(
+            person_id=fake_person_id,
+            state_code='us_ca',
+            violation_type=StateSupervisionViolationType.FELONY,
+            supervision_violation_id=4698615
+        )
+        supervision_violation_1 = schema.StateSupervisionViolation(
+            supervision_violation_id=4698615,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            supervision_violation_responses=[ssvr_1],
+            supervision_violation_types=[supervision_violation_type_1]
+        )
+        initial_incarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=2499739,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='us_ca',
+            county_code=None,
+            facility='NDSP',
+            facility_security_level=None,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            projected_release_reason=None,
+            admission_date=date(2015, 4, 28),
+            release_date=date(2015, 6, 16),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            person_id=fake_person_id,
+            source_supervision_violation_response_id=ssvr_1.supervision_violation_response_id
+        )
+
+        # This reincarceration was due to a transfer
+        transfer_incarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=2499740,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='us_ca',
+            county_code=None,
+            facility='JRCC',
+            facility_security_level=None,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            projected_release_reason=None,
+            admission_date=date(2015, 6, 16),
+            release_date=date(2016, 11, 22),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            person_id=fake_person_id
+        )
+
+        # This probation supervision period ended in a revocation
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=5887825,
+            state_code='us_ca',
+            county_code='US_ND_BURLEIGH',
+            start_date=date(2016, 11, 22),
+            termination_date=date(2017, 2, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+            person_id=fake_person_id
+        )
+
+        supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=116412, state_code='us_ca',
+                                                               supervision_periods=[supervision_period],
+                                                               projected_completion_date=date(2017, 7, 24),
+                                                               person_id=fake_person_id)
+
+        supervision_sentence_supervision_period_association = [
+            {'supervision_period_id': 5876524, 'supervision_sentence_id': 105109},
+            {'supervision_period_id': 5887825, 'supervision_sentence_id': 116412},
+        ]
+
+        charge = database_test_utils.generate_test_charge(
+            person_id=fake_person_id,
+            charge_id=1234523,
+            court_case=None,
+            bond=None
+        )
+
+        # This incarceration period was due to a parole revocation
+        revocation_reincarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=2508394,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='us_ca',
+            county_code=None,
+            facility='NDSP',
+            facility_security_level=None,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            projected_release_reason=None,
+            admission_date=date(2017, 1, 31),
+            release_date=date(2017, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            person_id=fake_person_id,
+            source_supervision_violation_response_id=fake_svr_id
+        )
+
+        # violation on parole
+        ssvr_2 = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=fake_svr_id,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            supervision_violation_id=fake_violation_id
+        )
+        ssvr_2.decision_agents = [state_agent]
+        supervision_violation_type_2 = schema.StateSupervisionViolationTypeEntry(
+            person_id=fake_person_id,
+            state_code='us_ca',
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            supervision_violation_id=fake_violation_id
+        )
+        supervision_violation = schema.StateSupervisionViolation(
+            supervision_violation_id=fake_violation_id,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            supervision_violation_responses=[ssvr_2],
+            supervision_violation_types=[supervision_violation_type_2]
+        )
+
+        assessment = schema.StateAssessment(assessment_id=298374, assessment_date=date(2016, 12, 20),
+                                            assessment_score=32, assessment_type='LSIR', person_id=fake_person_id)
+
+        incarceration_periods_data = [
+            normalized_database_base_dict(initial_incarceration),
+            normalized_database_base_dict(transfer_incarceration),
+            normalized_database_base_dict(revocation_reincarceration)
+        ]
+        supervision_periods_data = [
+            normalized_database_base_dict(initial_supervision_period),
+            normalized_database_base_dict(supervision_period)
+        ]
+        supervision_violation_type_data = [
+            normalized_database_base_dict(supervision_violation_type_1),
+            normalized_database_base_dict(supervision_violation_type_2)
+        ]
+        supervision_violation_response_data = [
+            normalized_database_base_dict(ssvr_1),
+            normalized_database_base_dict(ssvr_2)
+        ]
+        supervision_violation_data = [
+            normalized_database_base_dict(supervision_violation_1),
+            normalized_database_base_dict(supervision_violation)
+        ]
+        supervision_sentences_data = [
+            normalized_database_base_dict(initial_supervision_sentence),
+            normalized_database_base_dict(supervision_sentence)
+        ]
+        charge_data = [
+            normalized_database_base_dict(charge)
+        ]
+        assessment_data = [
+            normalized_database_base_dict(assessment)
+        ]
+
+        data_dict = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StatePersonRace.__tablename__: races_data,
+            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
+            schema.StateIncarcerationPeriod.__tablename__:
+                incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__:
+                supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__:
+                supervision_violation_data,
+            schema.StateSupervisionViolationTypeEntry.__tablename__:
+                supervision_violation_type_data,
+            schema.StateSupervisionPeriod.__tablename__:
+                supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__:
+                supervision_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name:
+                [{}],
+            schema.
+            state_supervision_sentence_incarceration_period_association_table.
+            name: [{}],
+            schema.
+            state_supervision_sentence_supervision_period_association_table.
+            name: supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__:
+                assessment_data
+        }
+
+        test_pipeline = TestPipeline()
+
+        # Get StatePersons
+        persons = test_pipeline | 'Load Persons' >> extractor_utils.BuildRootEntity(
+            dataset=None,
+            data_dict=data_dict,
+            root_schema_class=schema.StatePerson,
+            root_entity_class=entities.StatePerson,
+            unifying_id_field='person_id',
+            build_related_entities=True)
+
+        # Get StateIncarcerationPeriods
+        incarceration_periods = test_pipeline | 'Load IncarcerationPeriods' >> extractor_utils.BuildRootEntity(
+            dataset=None,
+            data_dict=data_dict,
+            root_schema_class=schema.StateIncarcerationPeriod,
+            root_entity_class=entities.StateIncarcerationPeriod,
+            unifying_id_field='person_id',
+            build_related_entities=True)
+
+        # Get StateSupervisionViolations
+        supervision_violations = test_pipeline | 'Load SupervisionViolations' >> extractor_utils.BuildRootEntity(
+            dataset=None,
+            data_dict=data_dict,
+            root_schema_class=schema.StateSupervisionViolation,
+            root_entity_class=entities.StateSupervisionViolation,
+            unifying_id_field='person_id',
+            build_related_entities=True)
+
+        # Get StateSupervisionViolationResponses
+        supervision_violation_responses = (test_pipeline | 'Load SupervisionViolationResponses' >>
+                                           extractor_utils.BuildRootEntity(
+                                               dataset=None,
+                                               data_dict=data_dict,
+                                               root_schema_class=schema.StateSupervisionViolationResponse,
+                                               root_entity_class=entities.StateSupervisionViolationResponse,
+                                               unifying_id_field='person_id',
+                                               build_related_entities=True))
+
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline | 'Load SupervisionSentences' >>
+                                 extractor_utils.BuildRootEntity(
+                                     dataset=None,
+                                     data_dict=data_dict,
+                                     root_schema_class=schema.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
+                                     unifying_id_field='person_id',
+                                     build_related_entities=True))
+
+        # Get StateAssessments
+        assessments = test_pipeline | 'Load Assessments' >> extractor_utils.BuildRootEntity(
+            dataset=None,
+            data_dict=data_dict,
+            root_schema_class=schema.StateAssessment,
+            root_entity_class=entities.StateAssessment,
+            unifying_id_field='person_id',
+            build_related_entities=False)
+
+        # Group StateSupervisionViolationResponses and
+        # StateSupervisionViolations by person_id
+        supervision_violations_and_responses = (
+            {'violations': supervision_violations,
+             'violation_responses': supervision_violation_responses
+             } | 'Group StateSupervisionViolationResponses to StateSupervisionViolations' >> beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolation entities on
+        # the corresponding StateSupervisionViolationResponses
+        violation_responses_with_hydrated_violations = (
+            supervision_violations_and_responses
+            | 'Set hydrated StateSupervisionViolations on the StateSupervisionViolationResponses' >>
+            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
+
+        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
+        # by person_id
+        incarceration_periods_and_violation_responses = (
+            {'incarceration_periods': incarceration_periods,
+             'violation_responses': violation_responses_with_hydrated_violations}
+            | 'Group StateIncarcerationPeriods to StateSupervisionViolationResponses' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set the fully hydrated StateSupervisionViolationResponse entities on
+        # the corresponding StateIncarcerationPeriods
+        incarceration_periods_with_source_violations = (
+            incarceration_periods_and_violation_responses
+            | 'Set hydrated StateSupervisionViolationResponses on '
+            'the StateIncarcerationPeriods' >>
+            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
+
+        # Group each StatePerson with their StateIncarcerationPeriods and
+        # StateSupervisionSentences
+        person_periods_and_sentences = (
+            {'person': persons,
+             'assessments': assessments,
+             'incarceration_periods':
+                 incarceration_periods_with_source_violations,
+             'supervision_sentences': supervision_sentences
+             }
+            | 'Group StatePerson to StateIncarcerationPeriods'
+              ' and StateSupervisionPeriods' >>
+            beam.CoGroupByKey()
+        )
+
+        ssvr_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'ASSAGENT1234',
+            'district_external_id': '4',
+            'supervision_violation_response_id': fake_svr_id
+        }
+
+        ssvr_to_agent_associations = (
+            test_pipeline
+            | 'Create SSVR to Agent table' >>
+            beam.Create([ssvr_to_agent_map])
+        )
+
+        ssvr_agent_associations_as_kv = (
+            ssvr_to_agent_associations |
+            'Convert SSVR to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
+        )
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        supervision_period_to_agent_associations = (
+            test_pipeline
+            | 'Create SupervisionPeriod to Agent table' >>
+            beam.Create([supervision_period_to_agent_map])
+        )
+
+        supervision_periods_to_agent_associations_as_kv = (
+            supervision_period_to_agent_associations |
+            'Convert SupervisionPeriod to Agent table to KV tuples' >>
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
+        )
+
+        identifier_options = {
+            'state_code': 'ALL'
+        }
+
+        # Identify SupervisionTimeBuckets from the StatePerson's
+        # StateSupervisionSentences and StateIncarcerationPeriods
+        person_time_buckets = (
+            person_periods_and_sentences
+            | beam.ParDo(
+                pipeline.ClassifySupervisionTimeBuckets(),
+                AsDict(
+                    ssvr_agent_associations_as_kv),
+                AsDict(
+                    supervision_periods_to_agent_associations_as_kv),
+                **identifier_options))
+
+        # Get pipeline job details for accessing job_id
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        # Add timestamp for local jobs
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        # Get supervision metrics
+        supervision_metrics = (person_time_buckets
+                               | 'Get Supervision Metrics' >>
+                               pipeline.GetSupervisionMetrics(
+                                   pipeline_options=all_pipeline_options,
+                                   inclusions=ALL_INCLUSIONS_DICT,
+                                   metric_type='ALL'))
+
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(), "Assert metrics are produced.")
+
+        assert_that(supervision_metrics, AssertMatchers.assert_source_violation_type_set(ViolationType.TECHNICAL),
+                    "Assert source violation TECHNICAL type is set")
+
+        assert_that(supervision_metrics, AssertMatchers.assert_source_violation_type_set(ViolationType.FELONY),
+                    "Assert source violation FELONY type is set")
 
         test_pipeline.run()
 
@@ -2310,11 +2722,23 @@ class AssertMatchers:
             for metric in output:
                 if not isinstance(metric, SupervisionMetric):
                     raise BeamAssertException(
-                        'Failed assert. Output is not'
-                        'of type'
-                        ' SupervisionMetric.')
+                        'Failed assert. Output is not of type SupervisionMetric.')
 
         return _validate_pipeline_test
+
+    @staticmethod
+    def assert_source_violation_type_set(expected_violation: ViolationType):
+        """Asserts that there are some revocation metrics with the source_violation_type set."""
+        def _assert_source_violation_type_set(output):
+
+            with_violation_types = [metric for metric in output if
+                                    isinstance(metric, SupervisionRevocationMetric)
+                                    and metric.source_violation_type == expected_violation]
+
+            if len(with_violation_types) == 0:
+                raise BeamAssertException('No metrics with source violation type {} set.'.format(expected_violation))
+
+        return _assert_source_violation_type_set
 
     @staticmethod
     def count_combinations(expected_combination_counts):

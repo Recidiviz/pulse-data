@@ -131,7 +131,8 @@ class SetViolationOnViolationsResponse(beam.DoFn):
                                 response_ids:
                             violation_response.supervision_violation = violation
 
-                        break
+                            # Escape the inner loop when the supervision violation has been set
+                            break
 
                 yield (person_id, violation_response)
 
