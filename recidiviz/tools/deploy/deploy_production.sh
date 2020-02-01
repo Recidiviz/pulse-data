@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-source ./recidiviz/tools/deploy_pipeline_from_yaml.sh
+BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
+
+source ${BASH_SOURCE_DIR}/deploy_pipeline_helpers.sh
 
 echo "Fetching all tags"
 git fetch --all --tags --prune
@@ -13,9 +15,9 @@ gcloud -q app deploy cron.yaml --project=recidiviz-123
 echo "Starting task queue initialization"
 pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-123 --google_auth_token $(gcloud auth print-access-token)
 
-echo "Deploying calculation pipelines to templates"
-deploy_pipelines "pipenv run ./deploy_pipeline_to_template.sh" recidiviz-123 recidiviz-123-dataflow-templates ./calculation_pipeline_templates.yaml
-deploy_pipelines "pipenv run ./deploy_pipeline_to_template.sh" recidiviz-staging recidiviz-staging-dataflow-templates ./calculation_pipeline_templates.yaml
+echo "Deploying pipeline templates"
+deploy_pipeline_templates_to_staging
+deploy_pipeline_templates_to_production
 
 VERSION=$(echo $1 | tr '.' '-')
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
