@@ -851,7 +851,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             Race.OTHER: ['MUL'],
 
             StatePersonAliasType.AFFILIATION_NAME: ['GNG'],
-            StatePersonAliasType.ALIAS: ['A'],
+            StatePersonAliasType.ALIAS: ['A', 'O'],
             StatePersonAliasType.GIVEN_NAME: ['G', 'CN'],
             StatePersonAliasType.MAIDEN_NAME: ['M'],
             StatePersonAliasType.NICKNAME: ['N'],
