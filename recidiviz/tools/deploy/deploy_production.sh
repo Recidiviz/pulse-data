@@ -17,7 +17,7 @@ pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --proje
 
 echo "Deploying pipeline templates"
 deploy_pipeline_templates_to_staging
-deploy_pipeline_templates_to_production
+deploy_pipeline_templates_to_prod
 
 VERSION=$(echo $1 | tr '.' '-')
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
