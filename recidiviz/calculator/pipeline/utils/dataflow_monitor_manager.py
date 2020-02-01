@@ -25,7 +25,7 @@ from flask import request
 
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_with_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_dataflow_job_with_id
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper, metadata
 
@@ -50,7 +50,7 @@ def handle_dataflow_monitor_task():
     topic_dashed = data['topic']
     topic = topic_dashed.replace('-', '.')
 
-    job = get_job_with_id(project_id, job_id, location)
+    job = get_dataflow_job_with_id(project_id, job_id, location)
 
     if job:
         state = job['currentState']
