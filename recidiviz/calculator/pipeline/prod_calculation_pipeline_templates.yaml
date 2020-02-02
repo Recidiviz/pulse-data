@@ -19,9 +19,15 @@ pipelines:
     input: state
     reference_input: dashboard_views
     output: dataflow_metrics
-  # TODO(2822): Once we have fixed memory issues so we can run the whole supervision pipeline at once, collapse all
-  #   these supervision pipelines into one with no metric_type or state_code filters, and update the cloud functions
-  #   to only trigger a single supervision pipeline.
+  - pipeline: supervision
+    job_name: full-supervision-calculations
+    input: state
+    # TODO(2821): Move to reference dataset
+    reference_input: dashboard_views
+    output: dataflow_metrics
+  # TODO(2822): Once we have confirmed that we have fixed memory issues so we can run the whole supervision pipeline at
+  #   once, remove these supervision pipelines with specified metric_type and state_code filters, and update the
+  #   cloud functions to only trigger the single supervision pipeline above.
   - pipeline: supervision
     job_name: supervision-assessment-change-us-nd-calculations
     input: state
