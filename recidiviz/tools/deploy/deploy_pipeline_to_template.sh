@@ -29,6 +29,8 @@ function run_cmd {
     fi
 }
 
+# We hard-code to n1-standard-4 below because we don't want low-level config
+# like worker provisioning to be a high-level parameter for configuration
 echo "Deploying $pipeline pipeline to template"
 command="python -m recidiviz.tools.run_calculation_pipelines
     --pipeline $pipeline
@@ -39,6 +41,7 @@ command="python -m recidiviz.tools.run_calculation_pipelines
     --staging_location gs://$bucket/staging
     --temp_location gs://$bucket/temp
     --template_location gs://$bucket/templates/$job_name
+    --worker_machine_type n1-standard-4
     --experiments=shuffle_mode=service
     --region=us-west1
     --input $input
