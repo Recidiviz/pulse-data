@@ -52,6 +52,9 @@ def find_incarceration_events(
 
     incarceration_events: List[IncarcerationEvent] = []
 
+    collapsed_periods = prepare_incarceration_periods_for_calculations(
+        incarceration_periods)
+
     incarceration_periods = \
         prepare_incarceration_periods_for_calculations(incarceration_periods,
                                                        collapse_transfers=False)
@@ -66,7 +69,7 @@ def find_incarceration_events(
             incarceration_events.extend(incarceration_stay_events)
 
     de_duplicated_incarceration_admissions = de_duplicated_admissions(
-        incarceration_periods
+        collapsed_periods
     )
 
     for incarceration_period in de_duplicated_incarceration_admissions:
@@ -77,7 +80,7 @@ def find_incarceration_events(
             incarceration_events.append(admission_event)
 
     de_duplicated_incarceration_releases = de_duplicated_releases(
-        incarceration_periods
+        collapsed_periods
     )
 
     for incarceration_period in de_duplicated_incarceration_releases:

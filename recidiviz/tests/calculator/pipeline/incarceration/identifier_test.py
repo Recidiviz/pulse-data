@@ -130,7 +130,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_events = identifier.find_incarceration_events(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(7, len(incarceration_events))
+        self.assertEqual(5, len(incarceration_events))
 
         self.assertEqual([
             IncarcerationStayEvent(
@@ -159,23 +159,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             IncarcerationAdmissionEvent(
                 state_code=incarceration_period_1.state_code,
                 event_date=incarceration_period_1.admission_date,
-                facility=incarceration_period_1.facility,
+                facility=incarceration_period_2.facility,
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-            ),
-            IncarcerationAdmissionEvent(
-                state_code=incarceration_period_2.state_code,
-                event_date=incarceration_period_2.admission_date,
-                facility=incarceration_period_2.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=AdmissionReason.TRANSFER
-            ),
-            IncarcerationReleaseEvent(
-                state_code=incarceration_period_1.state_code,
-                event_date=incarceration_period_1.release_date,
-                facility=incarceration_period_1.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=ReleaseReason.TRANSFER
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period_2.state_code,
