@@ -4,7 +4,7 @@
 #  If you want to deploy a pipeline just to stage, add it to staging_only_calculation_pipeline_templates.yaml
 
 # Number of pipelines to deploy
-pipeline_count: 7
+pipeline_count: 4
 
 # List of pipelines with their necessary details
 pipelines:
@@ -25,41 +25,6 @@ pipelines:
     # TODO(2821): Move to reference dataset
     reference_input: dashboard_views
     output: dataflow_metrics
-  # TODO(2822): Once we have confirmed that we have fixed memory issues so we can run the whole supervision pipeline at
-  #   once, remove these supervision pipelines with specified metric_type and state_code filters, and update the
-  #   cloud functions to only trigger the single supervision pipeline above.
-  - pipeline: supervision
-    job_name: supervision-assessment-change-us-nd-calculations
-    input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
-    output: dataflow_metrics
-    metric_type: ASSESSMENT_CHANGE
-    state_code: US_ND
-  - pipeline: supervision
-    job_name: supervision-population-us-nd-calculations
-    input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
-    output: dataflow_metrics
-    metric_type: POPULATION
-    state_code: US_ND
-  - pipeline: supervision
-    job_name: supervision-revocation-us-nd-calculations
-    input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
-    output: dataflow_metrics
-    metric_type: REVOCATION
-    state_code: US_ND
-  - pipeline: supervision
-    job_name: supervision-success-us-nd-calculations
-    input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
-    output: dataflow_metrics
-    metric_type: SUCCESS
-    state_code: US_ND
   - pipeline: program
     job_name: full-program-calculations
     input: state
