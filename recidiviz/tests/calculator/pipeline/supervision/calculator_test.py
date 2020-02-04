@@ -383,6 +383,61 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    _combination.get('supervision_type') is None
                    )
 
+    @freeze_time('2020-02-01')
+    def test_map_supervision_combinations_supervision_with_district_officer(self):
+        """Tests the map_supervision_combinations function when there is a mix of missing & non-null district/officer
+        data for one person over many ProjectedSupervisionCompletionBuckets."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1993, 4, 2),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket.for_month(
+                'AK', 2017, 6, StateSupervisionType.PROBATION, False,
+                None, None
+            ),
+            ProjectedSupervisionCompletionBucket.for_month(
+                'AK', 2020, 1, StateSupervisionType.PROBATION, False,
+                'officer45', 'district5'
+            ),
+            ProjectedSupervisionCompletionBucket.for_month(
+                'AK', 2018, 12, StateSupervisionType.PROBATION, False,
+                None, None
+            )
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+        )
+
+        tested_metric_period_months = set()
+
+        for combo, value in supervision_combinations:
+            metric_period_months = combo.get('metric_period_months')
+
+            # Track the metric period months where the officer & district data is set for the most recent 2020 metrics
+            if ((combo.get('supervising_district_external_id') is not None)
+                    and (combo.get('supervising_officer_external_id') is not None)):
+                tested_metric_period_months.add(metric_period_months)
+
+            self.assertEqual(0, value,
+                             f'Expected supervision success value 0'
+                             f' but got {value} for metric period months {metric_period_months}')
+
+        # Validate the most recent 2020 metrics have officer & district for all metric period months
+        self.assertEqual(len(tested_metric_period_months), len([1, 3, 6, 12, 36]))
+
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_revocation_and_not(self):
         """Tests the map_supervision_combinations function."""
