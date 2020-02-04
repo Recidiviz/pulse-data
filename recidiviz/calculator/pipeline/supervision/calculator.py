@@ -85,10 +85,6 @@ def map_supervision_combinations(person: StatePerson,
     # METRIC_PERIOD_MONTHS ending with the current month
     metric_period_end_date = last_day_of_month(date.today())
 
-    periods_and_buckets = _classify_buckets_by_relevant_metric_periods(
-        supervision_time_buckets, metric_period_end_date
-    )
-
     month_buckets = [
         bucket for bucket in supervision_time_buckets
         if bucket.month is not None
@@ -104,7 +100,11 @@ def map_supervision_combinations(person: StatePerson,
 
     all_buckets_sorted = month_buckets + year_buckets
 
-    for supervision_time_bucket in supervision_time_buckets:
+    periods_and_buckets = _classify_buckets_by_relevant_metric_periods(
+        all_buckets_sorted, metric_period_end_date
+    )
+
+    for supervision_time_bucket in all_buckets_sorted:
         characteristic_combos_population = \
             characteristic_combinations(
                 person, supervision_time_bucket, inclusions)
