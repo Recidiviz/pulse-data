@@ -39,13 +39,12 @@ def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.agent_type = enum_mappings.get(StateAgentType)
+    new.agent_type = enum_mappings.get(StateAgentType, default=StateAgentType.PRESENT_WITHOUT_INFO)
     new.agent_type_raw_text = fn(normalize, 'agent_type', proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, 'state_agent_id', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
     new.full_name = parse_name(proto)
 
     return new.build()
