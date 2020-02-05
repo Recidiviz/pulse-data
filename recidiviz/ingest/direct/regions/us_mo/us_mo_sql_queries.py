@@ -177,7 +177,7 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
             COALESCE(MAX_BV_DLU, 0),
             COALESCE(MAX_BV_DCR, 0),
             COALESCE(MAX_BW_DLU, 0),
-            COALESCE(MAX_BW_DCR, 0)) >= 0
+            COALESCE(MAX_BW_DCR, 0)) >= {lower_bound_update_date}
     ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
@@ -310,7 +310,7 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
             COALESCE(MAX_BV_DLU, 0),
             COALESCE(MAX_BV_DCR, 0),
             COALESCE(MAX_BW_DCR, 0),
-            COALESCE(MAX_BW_DCR, 0)) >= 0
+            COALESCE(MAX_BW_DCR, 0)) >= {lower_bound_update_date}
      ORDER BY
         full_prob_sentence_info.BS$DOC,
         full_prob_sentence_info.BS$CYC,
@@ -365,17 +365,6 @@ INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
         GROUP BY BW$DOC, BW$CYC, BV$SEO, BW$SY
     ),
     sub_cycle_partition_statuses AS (
-        SELECT
-            DOC,
-            CYC,
-            SSO,
-            SEO,
-            SCD,
-            STATUS_CODE_CHG_DT,
-            SUBCYCLE_TYPE_STATUS_CAN_PARTITION
-        FROM
-            absconsion_subcycle_partition_statuses
-        UNION
         SELECT
             DOC,
             CYC,
@@ -693,7 +682,6 @@ OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = \
             LNAME,
             FNAME,
             MINTL,
-            CRTDTE,
             ROW_NUMBER() OVER (PARTITION BY BDGNO ORDER BY STRDTE DESC) AS recency_rank
         FROM
             normalized_all_officers),
@@ -704,8 +692,7 @@ OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT = \
             CLSTTL,
             LNAME,
             FNAME,
-            MINTL,
-            CRTDTE
+            MINTL
         FROM
             officers_with_role_recency_ranks
         WHERE
