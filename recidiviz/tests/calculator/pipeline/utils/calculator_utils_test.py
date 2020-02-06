@@ -20,8 +20,12 @@ from datetime import date
 from datetime import datetime
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
+from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId, StateSupervisionViolationTypeEntry
 
 
 def test_for_characteristics():
@@ -494,3 +498,108 @@ class TestRelevantMetricPeriods(unittest.TestCase):
         expected_periods = [36]
 
         self.assertEqual(expected_periods, relevant_periods)
+
+
+class TestPersonExternalIdToInclude(unittest.TestCase):
+    """Tests the person_external_id_to_include function."""
+    def test_person_external_id_to_include(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        person_external_id = StatePersonExternalId.new_with_defaults(
+            external_id='SID1341',
+            id_type='US_MO_DOC',
+            state_code='US_MO'
+        )
+
+        person.external_ids = [person_external_id]
+
+        external_id = calculator_utils.person_external_id_to_include(person)
+
+        self.assertEqual(external_id, person_external_id.external_id)
+
+    def test_person_external_id_to_include_no_results(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        person_external_id = StatePersonExternalId.new_with_defaults(
+            external_id='SID10928',
+            id_type='US_ND_SID',
+            state_code='US_ND'
+        )
+
+        person.external_ids = [person_external_id]
+
+        external_id = calculator_utils.person_external_id_to_include(person)
+
+        self.assertIsNone(external_id)
+
+    def test_person_external_id_to_include_multiple(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        person_external_id_exclude = StatePersonExternalId.new_with_defaults(
+            external_id='SID10928',
+            id_type='US_ND_SID',
+            state_code='US_ND'
+        )
+
+        person_external_id_include = StatePersonExternalId.new_with_defaults(
+            external_id='SID1341',
+            id_type='US_MO_DOC',
+            state_code='US_MO'
+        )
+
+        person.external_ids = [person_external_id_exclude, person_external_id_include]
+
+        external_id = calculator_utils.person_external_id_to_include(person)
+
+        self.assertEqual(external_id, person_external_id_include.external_id)
+
+
+class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
+    def test_identify_most_severe_response_decision(self):
+        decisions = [StateSupervisionViolationResponseDecision.CONTINUANCE,
+                     StateSupervisionViolationResponseDecision.REVOCATION]
+
+        most_severe_decision = calculator_utils.identify_most_severe_response_decision(decisions)
+
+        self.assertEqual(most_severe_decision, StateSupervisionViolationResponseDecision.REVOCATION)
+
+    def test_identify_most_severe_response_decision_test_all_types(self):
+        for decision in StateSupervisionViolationResponseDecision:
+            decisions = [decision]
+
+            most_severe_decision = calculator_utils.identify_most_severe_response_decision(decisions)
+
+            self.assertEqual(most_severe_decision, decision)
+
+
+class TestIdentifyMostSevereViolationType(unittest.TestCase):
+    def test_identify_most_severe_violation_type(self):
+        violation_type_entries = [
+            StateSupervisionViolationTypeEntry.new_with_defaults(
+                violation_type=StateSupervisionViolationType.TECHNICAL
+            ),
+            StateSupervisionViolationTypeEntry.new_with_defaults(
+                violation_type=StateSupervisionViolationType.FELONY
+            )
+        ]
+
+        most_severe_violation_type = calculator_utils.identify_most_severe_violation_type(violation_type_entries)
+
+        self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
+
+    def test_identify_most_severe_violation_type_test_all_types(self):
+        for violation_type in StateSupervisionViolationType:
+            violation_type_entries = [
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=violation_type)
+            ]
+
+            most_severe_violation_type = calculator_utils.identify_most_severe_violation_type(violation_type_entries)
+
+            self.assertEqual(most_severe_violation_type, violation_type)
