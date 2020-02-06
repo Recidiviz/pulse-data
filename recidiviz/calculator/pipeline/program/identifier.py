@@ -97,7 +97,7 @@ def find_program_referrals(
             program_id = 'EXTERNAL_UNKNOWN'
 
         if referral_date and program_id:
-            assessment_score, assessment_type = \
+            assessment_score, _, assessment_type = \
                 find_most_recent_assessment(referral_date,
                                             assessments)
 

@@ -33,9 +33,10 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    augmented_combo_list, last_day_of_month, relevant_metric_periods
+    augmented_combo_list, last_day_of_month, relevant_metric_periods, \
+    person_external_id_to_include
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    assessment_score_bucket
+    assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -157,13 +158,35 @@ def map_supervision_combinations(person: StatePerson,
 
                     metrics.extend(revocation_metrics)
 
+            if inclusions.get(SupervisionMetricType.REVOCATION_ANALYSIS.value) and \
+                    isinstance(supervision_time_bucket,
+                               RevocationReturnSupervisionTimeBucket):
+                characteristic_combos_revocation_analysis = \
+                    characteristic_combinations(
+                        person, supervision_time_bucket, inclusions,
+                        with_revocation_dimensions=True,
+                        with_revocation_analysis_dimensions=True)
+
+                revocation_analysis_metrics = map_metric_combinations(
+                    characteristic_combos_revocation_analysis,
+                    supervision_time_bucket,
+                    metric_period_end_date,
+                    all_buckets_sorted,
+                    periods_and_buckets,
+                    SupervisionMetricType.REVOCATION_ANALYSIS
+                )
+
+                metrics.extend(revocation_analysis_metrics)
+
     return metrics
 
 
 def characteristic_combinations(person: StatePerson,
                                 supervision_time_bucket: SupervisionTimeBucket,
                                 inclusions: Dict[str, bool],
-                                with_revocation_dimensions: bool = False) -> \
+                                with_revocation_dimensions: bool = False,
+                                with_revocation_analysis_dimensions:
+                                bool = False) -> \
         List[Dict[str, Any]]:
     """Calculates all supervision metric combinations.
 
@@ -195,6 +218,9 @@ def characteristic_combinations(person: StatePerson,
             the dimension in the calculations.
         with_revocation_dimensions: Whether or not to include revocation-related
             dimensions, if relevant to the given month. Defaults to False.
+        with_revocation_analysis_dimensions: Whether or not to include
+            revocation-analysis-related dimensions, if relevant to the given
+            month. Defaults to False.
 
     Returns:
         A list of dictionaries containing all unique combinations of
@@ -214,6 +240,19 @@ def characteristic_combinations(person: StatePerson,
             characteristics['source_violation_type'] = \
                 supervision_time_bucket.source_violation_type
 
+        if with_revocation_analysis_dimensions:
+            if supervision_time_bucket.most_severe_violation_type:
+                characteristics['most_severe_violation_type'] = \
+                    supervision_time_bucket.most_severe_violation_type
+
+            if supervision_time_bucket.most_severe_response_decision:
+                characteristics['most_severe_response_decision'] = \
+                    supervision_time_bucket.most_severe_response_decision
+
+            if supervision_time_bucket.response_count is not None:
+                characteristics['response_count'] = \
+                    supervision_time_bucket.response_count
+
     if isinstance(supervision_time_bucket,
                   SupervisionTerminationBucket):
         if supervision_time_bucket.termination_reason:
@@ -223,13 +262,21 @@ def characteristic_combinations(person: StatePerson,
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = \
             supervision_time_bucket.supervision_type
+    if supervision_time_bucket.case_type:
+        characteristics['case_type'] = \
+            supervision_time_bucket.case_type
     if supervision_time_bucket.assessment_score and \
             supervision_time_bucket.assessment_type:
-        characteristics['assessment_score_bucket'] = \
-            assessment_score_bucket(supervision_time_bucket.assessment_score,
-                                    supervision_time_bucket.assessment_type)
-        characteristics['assessment_type'] = \
-            supervision_time_bucket.assessment_type
+        assessment_bucket = assessment_score_bucket(
+            supervision_time_bucket.assessment_score,
+            supervision_time_bucket.assessment_level,
+            supervision_time_bucket.assessment_type)
+
+        if assessment_bucket and include_assessment_in_metric(
+                'supervision', supervision_time_bucket.state_code, supervision_time_bucket.assessment_type):
+            characteristics['assessment_score_bucket'] = assessment_bucket
+            characteristics['assessment_type'] = \
+                supervision_time_bucket.assessment_type
     if supervision_time_bucket.supervising_officer_external_id:
         characteristics['supervising_officer_external_id'] = \
             supervision_time_bucket.supervising_officer_external_id
@@ -252,6 +299,7 @@ def characteristic_combinations(person: StatePerson,
     if inclusions.get('gender'):
         if person.gender is not None:
             characteristics['gender'] = person.gender
+
     if person.races or person.ethnicities:
         if inclusions.get('race'):
             races = person.races
@@ -263,10 +311,32 @@ def characteristic_combinations(person: StatePerson,
         else:
             ethnicities = []
 
-        return for_characteristics_races_ethnicities(
-            races, ethnicities, characteristics)
+        all_combinations = \
+            for_characteristics_races_ethnicities(
+                races, ethnicities, characteristics)
+    else:
+        all_combinations = for_characteristics(characteristics)
 
-    return for_characteristics(characteristics)
+    if with_revocation_analysis_dimensions:
+        # Person external id is added to a characteristics combination
+        # dictionary that has all fields set. We only want person-level
+        # output that has all possible fields set.
+        person_external_id = person_external_id_to_include(person)
+
+        if person_external_id is not None:
+            characteristics['person_external_id'] = person_external_id
+
+            # Only include violation history descriptions on person-level
+            # metrics
+            if isinstance(supervision_time_bucket,
+                          RevocationReturnSupervisionTimeBucket) and \
+                    supervision_time_bucket.violation_history_description:
+                characteristics['violation_history_description'] = \
+                    supervision_time_bucket.violation_history_description
+
+            all_combinations.append(characteristics)
+
+    return all_combinations
 
 
 def map_metric_combinations(
@@ -299,6 +369,12 @@ def map_metric_combinations(
 
     for combo in characteristic_combos:
         combo['metric_type'] = metric_type.value
+
+        if combo.get('person_external_id') is not None and \
+                metric_type != SupervisionMetricType.REVOCATION_ANALYSIS:
+            # Only output person-level metrics for the revocation analysis
+            # metrics
+            continue
 
         metrics.extend(combination_supervision_metrics(
             combo, supervision_time_bucket, metric_period_end_date,
@@ -371,18 +447,23 @@ def combination_supervision_metrics(
                        SupervisionTerminationBucket):
         if supervision_time_bucket.assessment_score_change is not None:
             # Only include this combo if there is an assessment score change
-            # associated with this termination. Set the value as the assessment
-            # score change
-            event_combo_value = supervision_time_bucket.assessment_score_change
+            # associated with this termination. Set the value as the
+            # assessment score change
+            event_combo_value = \
+                supervision_time_bucket.assessment_score_change
         else:
-            # The only metric relying on the SupervisionTerminationBuckets is
-            # the TerminatedSupervisionAssessmentScoreChangeMetric. So, if
-            # there's no recorded assessment score change on this termination,
-            # don't include it in any of the metrics.
+            # The only metric relying on the SupervisionTerminationBuckets
+            # is the TerminatedSupervisionAssessmentScoreChangeMetric. So,
+            # if there's no recorded assessment score change on this
+            # termination, don't include it in any of the metrics.
             return metrics
 
-    for event_combo in event_based_same_bucket_combos:
-        metrics.append((event_combo, event_combo_value))
+    if metric_type != SupervisionMetricType.REVOCATION_ANALYSIS or \
+            combo.get('person_external_id') is None:
+        # If this is a revocation analysis metric, only include it if it's not
+        # a person-level metric
+        for event_combo in event_based_same_bucket_combos:
+            metrics.append((event_combo, event_combo_value))
 
     # Create the person-based combos for the base metric period of the month
     # or year of the bucket
@@ -395,7 +476,8 @@ def combination_supervision_metrics(
     buckets_in_period: List[SupervisionTimeBucket] = []
 
     if metric_type == SupervisionMetricType.POPULATION:
-        # Get all other supervision time buckets for the same month as this one
+        # Get all other supervision time buckets for the same month as
+        # this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
             if (isinstance(bucket,
@@ -415,8 +497,8 @@ def combination_supervision_metrics(
             bucket.month == bucket_month
         ]
     elif metric_type == SupervisionMetricType.SUCCESS:
-        # Get all other projected completion buckets for the same month as this
-        # one
+        # Get all other projected completion buckets for the same month
+        # as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
             if isinstance(bucket,
@@ -434,6 +516,21 @@ def combination_supervision_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
+    elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
+        # If this is a person-level metric, only include it if it falls in the
+        # 1-month metric period
+        if combo.get('person_external_id') is None or (
+                supervision_time_bucket.year == metric_period_end_date.year and
+                supervision_time_bucket.month == metric_period_end_date.month):
+            # Get all other revocation supervision buckets for the same month as
+            # this one
+            buckets_in_period = [
+                bucket for bucket in all_supervision_time_buckets
+                if isinstance(bucket,
+                              RevocationReturnSupervisionTimeBucket)
+                and bucket.year == bucket_year and
+                bucket.month == bucket_month
+            ]
 
     if buckets_in_period and include_supervision_in_count(
             combo,
@@ -478,7 +575,8 @@ def combination_supervision_metrics(
                                    (RevocationReturnSupervisionTimeBucket,
                                     NonRevocationReturnSupervisionTimeBucket)))
                 ]
-            elif metric_type == SupervisionMetricType.REVOCATION:
+            elif metric_type in (SupervisionMetricType.REVOCATION,
+                                 SupervisionMetricType.REVOCATION_ANALYSIS):
                 # Get all other supervision time buckets for this period that
                 # should contribute to a revocation metric
                 relevant_buckets_in_period = [
@@ -569,6 +667,7 @@ def include_supervision_in_count(combo: Dict[str, Any],
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
     if metric_type in (SupervisionMetricType.REVOCATION,
+                       SupervisionMetricType.REVOCATION_ANALYSIS,
                        SupervisionMetricType.SUCCESS,
                        SupervisionMetricType.ASSESSMENT_CHANGE):
 

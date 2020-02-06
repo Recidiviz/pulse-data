@@ -33,7 +33,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
     last_day_of_month, relevant_metric_periods, augmented_combo_list
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    assessment_score_bucket
+    assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -162,11 +162,17 @@ def characteristic_combinations(person: StatePerson,
             characteristics['supervision_type'] = \
                 program_event.supervision_type
         if program_event.assessment_score and program_event.assessment_type:
-            characteristics['assessment_score_bucket'] = \
-                assessment_score_bucket(program_event.assessment_score,
-                                        program_event.assessment_type)
-            characteristics['assessment_type'] = \
-                program_event.assessment_type
+            assessment_bucket = assessment_score_bucket(
+                assessment_score=program_event.assessment_score,
+                assessment_level=None,
+                assessment_type=program_event.assessment_type)
+
+            if assessment_bucket and include_assessment_in_metric(
+                    'program', program_event.state_code, program_event.assessment_type):
+                characteristics['assessment_score_bucket'] = assessment_bucket
+                characteristics['assessment_type'] = \
+                    program_event.assessment_type
+
         if program_event.supervising_officer_external_id:
             characteristics['supervising_officer_external_id'] = \
                 program_event.supervising_officer_external_id

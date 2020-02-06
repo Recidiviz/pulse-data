@@ -25,6 +25,8 @@ import attr
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -32,16 +34,18 @@ from recidiviz.common.constants.state.state_supervision_period import \
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType
+    import StateSupervisionViolationResponseRevocationType, \
+    StateSupervisionViolationResponseDecision
 
 
 class SupervisionMetricType(Enum):
     """The type of supervision metrics."""
 
+    ASSESSMENT_CHANGE = 'ASSESSMENT_CHANGE'
     POPULATION = 'POPULATION'
     REVOCATION = 'REVOCATION'
+    REVOCATION_ANALYSIS = 'REVOCATION_ANALYSIS'
     SUCCESS = 'SUCCESS'
-    ASSESSMENT_CHANGE = 'ASSESSMENT_CHANGE'
 
 
 @attr.s
@@ -68,6 +72,9 @@ class SupervisionMetric(RecidivizMetric):
 
     # Supervision Type
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+
+    # The type of supervision case
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
     # External ID of the officer who was supervising the people described by
     # this metric
@@ -179,6 +186,52 @@ class SupervisionRevocationMetric(SupervisionMetric):
 
         supervision_metric = cast(SupervisionRevocationMetric,
                                   SupervisionRevocationMetric.
+                                  build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric):
+    """Subclass of SupervisionRevocationMetric that contains information for
+    supervision revocation analysis."""
+
+    # The most severe violation type leading up to the revocation
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = \
+        attr.ib(default=None)
+
+    # The most severe decision on a response leading up to the revocation
+    most_severe_response_decision: \
+        Optional[StateSupervisionViolationResponseDecision] = \
+        attr.ib(default=None)
+
+    # The number of violation responses leading up to the revocation
+    response_count: Optional[int] = attr.ib(default=None)
+
+    # A string representation of the violations recorded in the period leading
+    # up to the revocation, which is the number of each of the represented types
+    # separated by a semicolon
+    violation_history_description: Optional[str] = attr.ib(default=None)
+
+    # The external_id of StatePerson for person-specific metrics
+    person_external_id: Optional[str] = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any],
+                                    job_id: str) -> \
+            Optional['SupervisionRevocationAnalysisMetric']:
+        """Builds a SupervisionRevocationAnalysisMetric object from the given
+         arguments.
+        """
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionRevocationAnalysisMetric,
+                                  SupervisionRevocationAnalysisMetric.
                                   build_from_dictionary(metric_key))
 
         return supervision_metric

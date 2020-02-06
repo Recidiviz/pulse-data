@@ -27,12 +27,37 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response \
+    import StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity, StateSupervisionViolationTypeEntry
 
 
 # Relevant metric period month lengths for dashboard person-based calculations
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
+
+PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
+    'US_MO': ['US_MO_DOC']
+}
+
+DECISION_SEVERITY_ORDER = [
+        StateSupervisionViolationResponseDecision.REVOCATION,
+        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+        StateSupervisionViolationResponseDecision.EXTENSION,
+        StateSupervisionViolationResponseDecision.SUSPENSION,
+        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+        StateSupervisionViolationResponseDecision.DELAYED_ACTION,
+        StateSupervisionViolationResponseDecision.CONTINUANCE
+    ]
+
+VIOLATION_TYPE_SEVERITY_ORDER = [
+    StateSupervisionViolationType.FELONY,
+    StateSupervisionViolationType.MISDEMEANOR,
+    StateSupervisionViolationType.ABSCONDED,
+    StateSupervisionViolationType.MUNICIPAL,
+    StateSupervisionViolationType.ESCAPED,
+    StateSupervisionViolationType.TECHNICAL
+]
 
 
 def for_characteristics_races_ethnicities(
@@ -224,26 +249,26 @@ def last_day_of_month(any_date):
     return next_month - datetime.timedelta(days=next_month.day)
 
 
-def identify_most_serious_violation_type(
+def identify_most_severe_violation_type(
         violation_type_entries:
         List[StateSupervisionViolationTypeEntry]) -> \
         Optional[StateSupervisionViolationType]:
-    """Identifies the most serious violation type on the violation according
+    """Identifies the most severe violation type on the violation according
     to the static violation type ranking."""
-    violation_type_severity_order = [
-        StateSupervisionViolationType.FELONY,
-        StateSupervisionViolationType.MISDEMEANOR,
-        StateSupervisionViolationType.ABSCONDED,
-        StateSupervisionViolationType.MUNICIPAL,
-        StateSupervisionViolationType.ESCAPED,
-        StateSupervisionViolationType.TECHNICAL
-    ]
-
     violation_types = [vte.violation_type for vte in violation_type_entries]
-    for violation_type in violation_type_severity_order:
-        if violation_type in violation_types:
-            return violation_type
-    return None
+
+    return next((violation_type for violation_type in VIOLATION_TYPE_SEVERITY_ORDER
+                 if violation_type in violation_types), None)
+
+
+def identify_most_severe_response_decision(
+        decisions:
+        List[StateSupervisionViolationResponseDecision]) -> \
+        Optional[StateSupervisionViolationResponseDecision]:
+    """Identifies the most severe decision on the responses according
+    to the static decision type ranking."""
+    return next((decision for decision in DECISION_SEVERITY_ORDER
+                 if decision in decisions), None)
 
 
 def relevant_metric_periods(event_date: date,
@@ -322,3 +347,20 @@ def augmented_combo_list(combo: Dict[str, Any],
     combos.append(base_combo)
 
     return combos
+
+
+def person_external_id_to_include(person: StatePerson) -> Optional[str]:
+    """Finds an external_id on the person that should be included in
+    calculations for person-level metrics."""
+    external_ids = person.external_ids
+
+    for external_id in external_ids:
+        if external_id.state_code in PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.keys():
+            id_types_to_include = \
+                PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(external_id.state_code)
+
+            if id_types_to_include and external_id.id_type in \
+                    id_types_to_include:
+                return external_id.external_id
+
+    return None

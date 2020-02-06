@@ -21,7 +21,9 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
+    StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import \
+    StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -29,7 +31,8 @@ from recidiviz.common.constants.state.state_supervision_period import \
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType
+    import StateSupervisionViolationResponseRevocationType, \
+    StateSupervisionViolationResponseDecision
 
 
 @attr.s(frozen=True)
@@ -53,8 +56,14 @@ class SupervisionTimeBucket(BuildableAttr):
     # The type of supervision the person was on
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
+    # The type of supervision case
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+
     # Most recent assessment score
     assessment_score: Optional[int] = attr.ib(default=None)
+
+    # Most recent assessment level
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
 
     # Type of the most recent assessment score
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
@@ -82,16 +91,40 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
 
+    # The most severe violation type leading up to the revocation
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = \
+        attr.ib(default=None)
+
+    # The most severe decision on a response leading up to the revocation
+    most_severe_response_decision: \
+        Optional[StateSupervisionViolationResponseDecision] = \
+        attr.ib(default=None)
+
+    # The number of violation responses leading up to the revocation
+    response_count: Optional[int] = attr.ib(default=0)
+
+    # A string representation of the violations recorded in the period leading
+    # up to the revocation
+    violation_history_description: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def for_year(state_code: str, year: int,
                  supervision_type: Optional[StateSupervisionType] = None,
+                 case_type: Optional[StateSupervisionCaseType] = None,
                  assessment_score: Optional[int] = None,
+                 assessment_level: Optional[StateAssessmentLevel] = None,
                  assessment_type: Optional[StateAssessmentType] = None,
                  revocation_type:
                  Optional[StateSupervisionViolationResponseRevocationType] =
                  None,
                  source_violation_type:
                  Optional[StateSupervisionViolationType] = None,
+                 most_severe_violation_type:
+                 Optional[StateSupervisionViolationType] = None,
+                 most_severe_response_decision:
+                 Optional[StateSupervisionViolationResponseDecision] = None,
+                 response_count: Optional[int] = 0,
+                 violation_history_description: Optional[str] = None,
                  supervising_officer_external_id: Optional[str] = None,
                  supervising_district_external_id: Optional[str] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
@@ -100,13 +133,18 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=None,
             supervision_type=supervision_type,
+            case_type=case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             revocation_type=revocation_type,
             source_violation_type=source_violation_type,
+            most_severe_violation_type=most_severe_violation_type,
+            most_severe_response_decision=most_severe_response_decision,
+            response_count=response_count,
+            violation_history_description=violation_history_description,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
-
         )
 
     @staticmethod
@@ -114,6 +152,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month_bucket:
             'RevocationReturnSupervisionTimeBucket',
             assessment_score: Optional[int] = None,
+            assessment_level: Optional[StateAssessmentLevel] = None,
             assessment_type: Optional[StateAssessmentType] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
         return RevocationReturnSupervisionTimeBucket(
@@ -121,10 +160,18 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=month_bucket.year,
             month=None,
             supervision_type=month_bucket.supervision_type,
+            case_type=month_bucket.case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             revocation_type=month_bucket.revocation_type,
             source_violation_type=month_bucket.source_violation_type,
+            most_severe_violation_type=month_bucket.most_severe_violation_type,
+            most_severe_response_decision=
+            month_bucket.most_severe_response_decision,
+            response_count=month_bucket.response_count,
+            violation_history_description=
+            month_bucket.violation_history_description,
             supervising_officer_external_id=
             month_bucket.supervising_officer_external_id,
             supervising_district_external_id=
@@ -134,13 +181,21 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
                   supervision_type: Optional[StateSupervisionType] = None,
+                  case_type: Optional[StateSupervisionCaseType] = None,
                   assessment_score: Optional[int] = None,
+                  assessment_level: Optional[StateAssessmentLevel] = None,
                   assessment_type: Optional[StateAssessmentType] = None,
                   revocation_type:
                   Optional[StateSupervisionViolationResponseRevocationType] =
                   None,
                   source_violation_type:
                   Optional[StateSupervisionViolationType] = None,
+                  most_severe_violation_type:
+                  Optional[StateSupervisionViolationType] = None,
+                  most_severe_response_decision:
+                  Optional[StateSupervisionViolationResponseDecision] = None,
+                  response_count: Optional[int] = 0,
+                  violation_history_description: Optional[str] = None,
                   supervising_officer_external_id: Optional[str] = None,
                   supervising_district_external_id: Optional[str] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
@@ -149,10 +204,16 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=month,
             supervision_type=supervision_type,
+            case_type=case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             revocation_type=revocation_type,
             source_violation_type=source_violation_type,
+            most_severe_violation_type=most_severe_violation_type,
+            most_severe_response_decision=most_severe_response_decision,
+            response_count=response_count,
+            violation_history_description=violation_history_description,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
         )
@@ -166,7 +227,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     @staticmethod
     def for_year(state_code: str, year: int,
                  supervision_type: Optional[StateSupervisionType] = None,
+                 case_type: Optional[StateSupervisionCaseType] = None,
                  assessment_score: Optional[int] = None,
+                 assessment_level: Optional[StateAssessmentLevel] = None,
                  assessment_type: Optional[StateAssessmentType] = None,
                  supervising_officer_external_id: Optional[str] = None,
                  supervising_district_external_id: Optional[str] = None
@@ -177,7 +240,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=None,
             supervision_type=supervision_type,
+            case_type=case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
@@ -188,6 +253,7 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             month_bucket:
             'NonRevocationReturnSupervisionTimeBucket',
             assessment_score: Optional[int] = None,
+            assessment_level: Optional[StateAssessmentLevel] = None,
             assessment_type: Optional[StateAssessmentType] = None) -> \
             'NonRevocationReturnSupervisionTimeBucket':
         return NonRevocationReturnSupervisionTimeBucket(
@@ -195,7 +261,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=month_bucket.year,
             month=None,
             supervision_type=month_bucket.supervision_type,
+            case_type=month_bucket.case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             supervising_officer_external_id=
             month_bucket.supervising_officer_external_id,
@@ -206,7 +274,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
                   supervision_type: Optional[StateSupervisionType] = None,
+                  case_type: Optional[StateSupervisionCaseType] = None,
                   assessment_score: Optional[int] = None,
+                  assessment_level: Optional[StateAssessmentLevel] = None,
                   assessment_type: Optional[StateAssessmentType] = None,
                   supervising_officer_external_id: Optional[str] = None,
                   supervising_district_external_id: Optional[str] = None
@@ -217,7 +287,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             year=year,
             month=month,
             supervision_type=supervision_type,
+            case_type=case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
@@ -238,6 +310,7 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
     def for_month(state_code: str, year: int, month: int,
                   supervision_type: Optional[StateSupervisionType],
                   successful_completion: bool,
+                  case_type: Optional[StateSupervisionCaseType] = None,
                   supervising_officer_external_id: Optional[str] = None,
                   supervising_district_external_id: Optional[str] = None) -> \
             'ProjectedSupervisionCompletionBucket':
@@ -246,6 +319,7 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
             year=year,
             month=month,
             supervision_type=supervision_type,
+            case_type=case_type,
             successful_completion=successful_completion,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
@@ -270,7 +344,9 @@ class SupervisionTerminationBucket(SupervisionTimeBucket):
     @staticmethod
     def for_month(state_code: str, year: int, month: int,
                   supervision_type: Optional[StateSupervisionType],
+                  case_type: Optional[StateSupervisionCaseType] = None,
                   assessment_score: Optional[int] = None,
+                  assessment_level: Optional[StateAssessmentLevel] = None,
                   assessment_type: Optional[StateAssessmentType] = None,
                   termination_reason:
                   Optional[StateSupervisionPeriodTerminationReason] = None,
@@ -284,7 +360,9 @@ class SupervisionTerminationBucket(SupervisionTimeBucket):
             year=year,
             month=month,
             supervision_type=supervision_type,
+            case_type=case_type,
             assessment_score=assessment_score,
+            assessment_level=assessment_level,
             assessment_type=assessment_type,
             termination_reason=termination_reason,
             assessment_score_change=assessment_score_change,
