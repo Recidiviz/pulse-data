@@ -65,7 +65,8 @@ from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
-    TerminatedSupervisionAssessmentScoreChangeMetric
+    TerminatedSupervisionAssessmentScoreChangeMetric, \
+    SupervisionRevocationAnalysisMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -131,7 +132,8 @@ class GetSupervisionMetrics(beam.PTransform):
                        **self.inclusions).with_outputs('populations',
                                                        'revocations',
                                                        'successes',
-                                                       'assessment_changes'))
+                                                       'assessment_changes',
+                                                       'revocation_analyses'))
 
         # Calculate the supervision population values for the metrics combined
         # by key
@@ -144,14 +146,26 @@ class GetSupervisionMetrics(beam.PTransform):
                                  | 'Calculate supervision revocation values' >>
                                  beam.CombinePerKey(SumFn()))
 
+        # Calculate the supervision success values for the metrics combined by
+        # key
         successes_with_sums = (supervision_metric_combinations.successes
                                | 'Calculate the supervision success values' >>
                                beam.CombinePerKey(SupervisionSuccessFn()))
 
+        # Calculate the assessment score changes for the metrics combined by
+        # key
         assessment_changes_with_averages = (
             supervision_metric_combinations.assessment_changes
             | 'Calculate the assessment score change average values' >>
             beam.CombinePerKey(TerminatedSupervisionAssessmentScoreChange())
+        )
+
+        # Calculate the revocation analyses count values for metrics combined
+        # by key
+        revocation_analyses_with_sums = (
+            supervision_metric_combinations.revocation_analyses
+            | 'Calculate the revocation analyses count values' >>
+            beam.CombinePerKey(SumFn())
         )
 
         # Produce the SupervisionPopulationMetrics
@@ -185,10 +199,19 @@ class GetSupervisionMetrics(beam.PTransform):
             )
         )
 
+        # Produce the SupervisionRevocationAnalysisMetrics
+        revocation_analysis_metrics = (
+            revocation_analyses_with_sums
+            | 'Produce supervision revocation analysis metrics' >>
+            beam.ParDo(ProduceSupervisionMetrics(),
+                       **self._pipeline_options))
+
         # Merge the metric groups
         merged_metrics = ((population_metrics, revocation_metrics,
-                           success_metrics, assessment_change_metrics)
-                          | 'Merge population, revocation, success, and'
+                           success_metrics, assessment_change_metrics,
+                           revocation_analysis_metrics)
+                          | 'Merge population, revocation, success,'
+                            'revocation analysis and'
                             ' assessment change metrics' >>
                           beam.Flatten())
 
@@ -229,6 +252,10 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         supervision_sentences = \
             list(person_periods['supervision_sentences'])
 
+        # Get the StateSupervisionPeriods as a list
+        supervision_periods = \
+            list(person_periods['supervision_periods'])
+
         # Get the StateIncarcerationPeriods as a list
         incarceration_periods = \
             list(person_periods['incarceration_periods'])
@@ -236,19 +263,23 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         # Get the StateAssessments as a list
         assessments = list(person_periods['assessments'])
 
+        # Get the StateSupervisionViolationResponses as a list
+        violation_responses = list(person_periods['violation_responses'])
+
         # Get the StatePerson
         person = one(person_periods['person'])
 
         # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
-        supervision_time_buckets = \
-            identifier.find_supervision_time_buckets(
-                supervision_sentences,
-                incarceration_periods,
-                assessments,
-                ssvr_agent_associations,
-                supervision_period_to_agent_associations,
-                state_code)
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            ssvr_agent_associations,
+            supervision_period_to_agent_associations,
+            state_code)
 
         if not supervision_time_buckets:
             logging.info("No valid supervision time buckets for person with"
@@ -315,6 +346,9 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
                 yield beam.pvalue.TaggedOutput('assessment_changes',
                                                (json_key, value))
+            elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
+                yield beam.pvalue.TaggedOutput('revocation_analyses',
+                                               (json_key, value))
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -380,6 +414,13 @@ class ProduceSupervisionMetrics(beam.DoFn):
                 build_from_metric_key_group(
                     dict_metric_key, pipeline_job_id
                 )
+        elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
+            dict_metric_key['count'] = value
+
+            supervision_metric = \
+                SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
+                    dict_metric_key, pipeline_job_id
+                )
         else:
             logging.error("Unexpected metric of type: %s",
                           dict_metric_key.get('metric_type'))
@@ -418,7 +459,11 @@ class SupervisionMetricWritableDict(beam.DoFn):
 
         if isinstance(element, SupervisionPopulationMetric):
             yield beam.pvalue.TaggedOutput('populations', element_dict)
-        elif isinstance(element, SupervisionRevocationMetric):
+        elif isinstance(element,
+                        SupervisionRevocationAnalysisMetric):
+            yield beam.pvalue.TaggedOutput('revocation_analyses', element_dict)
+        elif isinstance(element, SupervisionRevocationMetric) and not \
+                isinstance(element, SupervisionRevocationAnalysisMetric):
             yield beam.pvalue.TaggedOutput('revocations', element_dict)
         elif isinstance(element, SupervisionSuccessMetric):
             yield beam.pvalue.TaggedOutput('successes', element_dict)
@@ -628,6 +673,19 @@ def run(argv=None):
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
+        # Get StateSupervisionPeriods
+        supervision_periods = (p
+                               | 'Load SupervisionPeriods' >>
+                               BuildRootEntity(
+                                   dataset=input_dataset,
+                                   data_dict=None,
+                                   root_schema_class=
+                                   schema.StateSupervisionPeriod,
+                                   root_entity_class=
+                                   entities.StateSupervisionPeriod,
+                                   unifying_id_field='person_id',
+                                   build_related_entities=False))
+
         # Get StateAssessments
         assessments = (p
                        | 'Load Assessments' >>
@@ -725,11 +783,11 @@ def run(argv=None):
              'assessments': assessments,
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
-             'supervision_sentences':
-                 supervision_sentences
+             'supervision_periods': supervision_periods,
+             'supervision_sentences': supervision_sentences,
+             'violation_responses': violation_responses_with_hydrated_violations
              }
-            | 'Group StatePerson to StateIncarcerationPeriods and'
-              ' StateSupervisionPeriods' >>
+            | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()
         )
 
@@ -779,7 +837,9 @@ def run(argv=None):
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
                                     'populations', 'revocations', 'successes',
-                                    'assessment_changes'))
+                                    'assessment_changes', 'revocation_analyses'
+                                )
+                            )
 
         # Write the metrics to the output tables in BigQuery
         populations_table = known_args.output + \
@@ -793,6 +853,9 @@ def run(argv=None):
 
         assessment_changes_table = known_args.output + \
             '.terminated_supervision_assessment_score_change_metrics'
+
+        revocation_analysis_table = known_args.output + \
+            '.supervision_revocation_analysis_metrics'
 
         _ = (writable_metrics.populations
              | f"Write population metrics to BQ table: {populations_table}" >>
@@ -823,6 +886,15 @@ def run(argv=None):
                f"{assessment_changes_table}" >>
              beam.io.WriteToBigQuery(
                  table=assessment_changes_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.revocation_analyses
+             | f"Write revocation analyses metrics to BQ table: "
+               f"{revocation_analysis_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=revocation_analysis_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

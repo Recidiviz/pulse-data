@@ -20,13 +20,31 @@ from datetime import date
 from typing import List, Tuple, Optional
 
 from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
+    StateAssessmentType, StateAssessmentLevel
 from recidiviz.persistence.entity.state.entities import StateAssessment
+
+ASSESSMENT_TYPES_TO_INCLUDE = {
+    'program': {
+        'US_MO': [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
+        ],
+        'US_ND': [StateAssessmentType.LSIR],
+    },
+    'supervision': {
+        'US_MO': [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
+        ],
+        'US_ND': [StateAssessmentType.LSIR],
+    },
+}
 
 
 def find_most_recent_assessment(cutoff_date: date,
                                 assessments: List[StateAssessment]) -> \
-        Tuple[Optional[int], Optional[StateAssessmentType]]:
+        Tuple[Optional[int], Optional[StateAssessmentLevel],
+              Optional[StateAssessmentType]]:
     """Finds the assessment that happened before or on the given date and
     has the date closest to the given date. Returns the assessment score
     and the assessment type."""
@@ -43,21 +61,24 @@ def find_most_recent_assessment(cutoff_date: date,
 
             most_recent_assessment = assessments_before_date[-1]
             return most_recent_assessment.assessment_score, \
+                most_recent_assessment.assessment_level, \
                 most_recent_assessment.assessment_type
 
-    return None, None
+    return None, None, None
 
 
 def assessment_score_bucket(assessment_score: int,
+                            assessment_level: Optional[StateAssessmentLevel],
                             assessment_type: StateAssessmentType) -> \
         Optional[str]:
     """Calculates the assessment score bucket that applies to measurement.
 
     Args:
         assessment_score: the person's assessment score
+        assessment_level: the person's assessment level
         assessment_type: the type of assessment
 
-    NOTE: Only LSIR buckets are currently supported
+    NOTE: Only LSIR and ORAS buckets are currently supported
     TODO(2742): Add calculation support for all supported StateAssessmentTypes
 
     Returns:
@@ -73,6 +94,11 @@ def assessment_score_bucket(assessment_score: int,
             return '30-38'
         return '39+'
 
+    if assessment_type and assessment_type.value.startswith('ORAS'):
+        if assessment_level:
+            return assessment_level.value
+        return None
+
     logging.warning("Assessment type %s is unsupported.", assessment_type)
 
     return None
@@ -81,14 +107,15 @@ def assessment_score_bucket(assessment_score: int,
 def find_assessment_score_change(start_date: date,
                                  termination_date: date,
                                  assessments: List[StateAssessment]) -> \
-        Tuple[Optional[int], Optional[int], Optional[StateAssessmentType]]:
+        Tuple[Optional[int], Optional[int], Optional[StateAssessmentLevel],
+              Optional[StateAssessmentType]]:
     """Finds the difference in scores between the first reassessment
     (the second assessment) and the last assessment that happened
     between the start_date and termination_date (inclusive). Returns the
-    assessment score change, the ending assessment score, and the assessment
-    type. If there aren't enough assessments to compare, or the first
-    reassessment and the last assessment are not of the same type, returns
-    (None, None, None)."""
+    assessment score change, the ending assessment score, the ending assessment
+    level, and the assessment type. If there aren't enough assessments to
+    compare, or the first reassessment and the last assessment are not of the
+    same type, returns (None, None, None, None)."""
     if assessments:
         assessments_in_period = [
             assessment for assessment in assessments
@@ -129,6 +156,24 @@ def find_assessment_score_change(start_date: date,
 
                         return assessment_score_change, \
                             last_assessment.assessment_score, \
+                            last_assessment.assessment_level, \
                             last_assessment.assessment_type
 
-    return None, None, None
+    return None, None, None, None
+
+
+def include_assessment_in_metric(pipeline: str, state_code: str, assessment_type: StateAssessmentType) -> bool:
+    """Returns whether assessment data from the assessment with the given StateAssessmentType should be included in
+    the results for metrics in the given pipeline with the given state_code."""
+    values_for_pipeline = ASSESSMENT_TYPES_TO_INCLUDE.get(pipeline)
+
+    if values_for_pipeline:
+        assessment_types_to_include = values_for_pipeline.get(state_code)
+
+        if assessment_types_to_include:
+            return assessment_type is not None and assessment_type in assessment_types_to_include
+
+        raise ValueError(f"Unsupported state_code:{state_code} for pipeline type: {pipeline}."
+                         " Update ASSESSMENT_TYPES_TO_INCLUDE.")
+
+    raise ValueError(f"Unsupported pipeline type: {pipeline}. Update ASSESSMENT_TYPES_TO_INCLUDE.")
