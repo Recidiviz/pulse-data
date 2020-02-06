@@ -60,25 +60,25 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2019, 10, 10),
                 program_id='XXX'
             ),
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2019, 2, 2),
                 program_id='ZZZ'
             )
@@ -102,20 +102,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2009, 10, 31),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -144,20 +144,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2009, 10, 31),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PROBATION,
@@ -186,20 +186,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2009, 10, 7),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -209,7 +209,7 @@ class TestMapProgramCombinations(unittest.TestCase):
                 supervising_district_external_id='135'
             ),
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2009, 10, 7),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PROBATION,
@@ -256,20 +256,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2007, 12, 7),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -299,20 +299,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2007, 12, 7),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -322,7 +322,7 @@ class TestMapProgramCombinations(unittest.TestCase):
                 supervising_district_external_id='135'
             ),
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2007, 12, 11),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -352,20 +352,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_events = [
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2007, 1, 7),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
@@ -375,7 +375,7 @@ class TestMapProgramCombinations(unittest.TestCase):
                 supervising_district_external_id='135'
             ),
             ProgramReferralEvent(
-                state_code='CA',
+                state_code='US_ND',
                 event_date=date(2007, 1, 11),
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PROBATION,
@@ -428,19 +428,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -456,19 +456,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -487,19 +487,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1),
             supervision_type=StateSupervisionType.PROBATION,
@@ -523,13 +523,13 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -540,7 +540,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -559,19 +559,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -595,19 +595,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -631,19 +631,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -667,19 +667,19 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         program_event = ProgramEvent(
-            state_code='CA',
+            state_code='US_ND',
             program_id='XXX',
             event_date=date(2009, 10, 1)
         )
@@ -712,7 +712,7 @@ class TestIncludeReferralInCount(unittest.TestCase):
         }
 
         program_event = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 3),
             program_id='XXX'
         )
@@ -734,19 +734,19 @@ class TestIncludeReferralInCount(unittest.TestCase):
         }
 
         program_event_1 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 3),
             program_id='XXX'
         )
 
         program_event_2 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 9),
             program_id='XXX'
         )
 
         program_event_3 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 27),
             program_id='XXX'
         )
@@ -770,19 +770,19 @@ class TestIncludeReferralInCount(unittest.TestCase):
         }
 
         program_event_1 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2017, 2, 3),
             program_id='XXX'
         )
 
         program_event_2 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 30),
             program_id='XXX'
         )
 
         program_event_3 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2018, 3, 11),
             program_id='XXX'
         )
@@ -806,14 +806,14 @@ class TestIncludeReferralInCount(unittest.TestCase):
         }
 
         program_event_1 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 3),
             program_id='XXX',
             supervision_type=StateSupervisionType.PROBATION
         )
 
         program_event_2 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 9),
             program_id='XXX',
             supervision_type=StateSupervisionType.PAROLE
@@ -844,14 +844,14 @@ class TestIncludeReferralInCount(unittest.TestCase):
         }
 
         program_event_1 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 3),
             program_id='XXX',
             supervision_type=StateSupervisionType.PROBATION
         )
 
         program_event_2 = ProgramReferralEvent(
-            state_code='CA',
+            state_code='US_ND',
             event_date=date(2020, 1, 9),
             program_id='XXX',
             supervision_type=StateSupervisionType.PAROLE

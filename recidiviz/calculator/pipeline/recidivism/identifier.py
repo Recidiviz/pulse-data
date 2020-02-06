@@ -32,7 +32,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    identify_most_serious_violation_type
+    identify_most_severe_violation_type
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -477,6 +477,6 @@ def get_source_violation_type(source_supervision_violation_response:
         if supervision_violation:
             violation_types = supervision_violation.supervision_violation_types
             if violation_types:
-                return identify_most_serious_violation_type(violation_types)
+                return identify_most_severe_violation_type(violation_types)
 
     return None

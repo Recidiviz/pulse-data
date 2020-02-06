@@ -18,23 +18,29 @@
 import unittest
 from datetime import date
 
+import pytest
+
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
+    StateAssessmentType, StateAssessmentLevel
 from recidiviz.persistence.entity.state.entities import StateAssessment
 
 
 def test_assessment_score_bucket():
     assert assessment_utils.assessment_score_bucket(
-        19, StateAssessmentType.LSIR) == '0-23'
+        19, None, StateAssessmentType.LSIR) == '0-23'
     assert assessment_utils.assessment_score_bucket(
-        27, StateAssessmentType.LSIR) == '24-29'
+        27, None, StateAssessmentType.LSIR) == '24-29'
     assert assessment_utils.assessment_score_bucket(
-        30, StateAssessmentType.LSIR) == '30-38'
+        30, None, StateAssessmentType.LSIR) == '30-38'
     assert assessment_utils.assessment_score_bucket(
-        39, StateAssessmentType.LSIR) == '39+'
+        39, None, StateAssessmentType.LSIR) == '39+'
+    assert assessment_utils.assessment_score_bucket(
+        23, StateAssessmentLevel.MEDIUM, StateAssessmentType.ORAS) == \
+        StateAssessmentLevel.MEDIUM.value
     assert not assessment_utils.assessment_score_bucket(
-        23, StateAssessmentType.ORAS)
+        13, None, StateAssessmentType.PSA
+    )
 
 
 class TestFindAssessmentScoreChange(unittest.TestCase):
@@ -43,6 +49,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         assessment_1 = StateAssessment.new_with_defaults(
             state_code='CA',
             assessment_type=StateAssessmentType.ORAS,
+            assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
             assessment_date=date(2015, 3, 23)
         )
@@ -51,6 +58,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             state_code='CA',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=29,
+            assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2015, 11, 2)
         )
 
@@ -58,6 +66,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             state_code='CA',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=23,
+            assessment_level=StateAssessmentLevel.MEDIUM,
             assessment_date=date(2016, 1, 13)
         )
 
@@ -70,6 +79,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -79,6 +89,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertEqual(-6, assessment_score_change)
         self.assertEqual(assessment_3.assessment_score, end_assessment_score)
+        self.assertEqual(assessment_3.assessment_level, end_assessment_level)
         self.assertEqual(assessment_3.assessment_type, end_assessment_type)
 
     def test_find_assessment_score_change_insufficient_assessments(self):
@@ -104,6 +115,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -113,6 +125,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertIsNone(assessment_score_change)
         self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
     def test_find_assessment_score_change_different_type(self):
@@ -146,6 +159,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -155,6 +169,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertIsNone(assessment_score_change)
         self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
     def test_find_assessment_score_change_same_date(self):
@@ -188,6 +203,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -197,6 +213,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertIsNone(assessment_score_change)
         self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
     def test_find_assessment_score_change_no_assessments(self):
@@ -207,6 +224,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -216,6 +234,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertIsNone(assessment_score_change)
         self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
     def test_find_assessment_score_change_outside_boundary(self):
@@ -249,6 +268,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_score_change, \
             end_assessment_score, \
+            end_assessment_level, \
             end_assessment_type = \
             assessment_utils.find_assessment_score_change(
                 start_date,
@@ -258,4 +278,49 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         self.assertIsNone(assessment_score_change)
         self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+
+
+class TestIncludeAssessmentInMetric(unittest.TestCase):
+    """Tests the include_assessment_in_metric function."""
+
+    def test_include_assessment_in_metric(self):
+        pipeline = 'supervision'
+        state_code = 'US_MO'
+        assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
+
+        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+        self.assertTrue(include_assessment)
+
+        assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
+
+        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+        self.assertTrue(include_assessment)
+
+    def test_include_assessment_in_metric_exclude_type(self):
+        pipeline = 'supervision'
+        state_code = 'US_MO'
+        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
+
+        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+        self.assertFalse(include_assessment)
+
+    def test_include_assessment_in_metric_unsupported_pipeline(self):
+        pipeline = 'incarceration'
+        state_code = 'US_MO'
+        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
+
+        with pytest.raises(ValueError):
+            assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+    def test_include_assessment_in_metric_unsupported_state_code(self):
+        pipeline = 'supervision'
+        state_code = 'US_KY'
+        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
+
+        with pytest.raises(ValueError):
+            assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
