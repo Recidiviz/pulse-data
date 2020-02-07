@@ -32,7 +32,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    identify_most_severe_violation_type
+    identify_most_severe_violation_type_and_subtype
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -460,23 +460,18 @@ def get_from_supervision_type(
                      f" {reincarceration_admission_reason}.")
 
 
-def get_source_violation_type(source_supervision_violation_response:
-                              Optional[StateSupervisionViolationResponse]) -> \
-        Optional[StateSupervisionViolationType]:
-    """Returns, where applicable, the type of violation that caused the period
-    of incarceration.
+def get_source_violation_type(source_supervision_violation_response: Optional[StateSupervisionViolationResponse]) \
+        -> Optional[StateSupervisionViolationType]:
+    """Returns, where applicable, the type of violation that caused the period of incarceration.
 
-    If the person returned from supervision, and we know the supervision
-    violation response that caused the return, then this returns the type of
-    violation that prompted this revocation.
+    If the person returned from supervision, and we know the supervision violation response that caused the return, then
+    this returns the type of violation that prompted this revocation.
     """
 
     if source_supervision_violation_response:
-        supervision_violation = \
-            source_supervision_violation_response.supervision_violation
+        supervision_violation = source_supervision_violation_response.supervision_violation
         if supervision_violation:
-            violation_types = supervision_violation.supervision_violation_types
-            if violation_types:
-                return identify_most_severe_violation_type(violation_types)
+            violation_type, _ = identify_most_severe_violation_type_and_subtype([supervision_violation])
+            return violation_type
 
     return None

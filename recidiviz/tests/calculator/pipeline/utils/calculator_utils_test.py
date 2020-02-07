@@ -25,7 +25,8 @@ from recidiviz.common.constants.state.state_supervision_violation import StateSu
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId, StateSupervisionViolationTypeEntry
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId, StateSupervisionViolationTypeEntry, \
+    StateSupervisionViolation
 
 
 def test_for_characteristics():
@@ -579,27 +580,36 @@ class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
 
 
 class TestIdentifyMostSevereViolationType(unittest.TestCase):
-    def test_identify_most_severe_violation_type(self):
-        violation_type_entries = [
-            StateSupervisionViolationTypeEntry.new_with_defaults(
-                violation_type=StateSupervisionViolationType.TECHNICAL
-            ),
-            StateSupervisionViolationTypeEntry.new_with_defaults(
-                violation_type=StateSupervisionViolationType.FELONY
-            )
-        ]
+    """Tests code that identifies the msot severe violation type."""
 
-        most_severe_violation_type = calculator_utils.identify_most_severe_violation_type(violation_type_entries)
+    def test_identify_most_severe_violation_type(self):
+        violation = StateSupervisionViolation.new_with_defaults(
+            state_code='US_MO',
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.FELONY
+                )
+            ])
+
+        most_severe_violation_type, most_severe_violation_type_subtype = \
+            calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
 
         self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
+        self.assertEqual('UNSET', most_severe_violation_type_subtype)
 
     def test_identify_most_severe_violation_type_test_all_types(self):
         for violation_type in StateSupervisionViolationType:
-            violation_type_entries = [
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    violation_type=violation_type)
-            ]
-
-            most_severe_violation_type = calculator_utils.identify_most_severe_violation_type(violation_type_entries)
+            violation = StateSupervisionViolation.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=violation_type)
+                ])
+            most_severe_violation_type, most_severe_violation_type_subtype = \
+                calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
 
             self.assertEqual(most_severe_violation_type, violation_type)
+            self.assertEqual('UNSET', most_severe_violation_type_subtype)
