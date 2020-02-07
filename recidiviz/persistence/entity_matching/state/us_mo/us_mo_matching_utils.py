@@ -16,8 +16,11 @@
 # =============================================================================
 """Contains util methods for UsMoMatchingDelegate."""
 import datetime
+import logging
 from typing import List, Union, Optional
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.schema import \
     StateSupervisionViolation, StateSupervisionSentence, \
@@ -153,10 +156,21 @@ def _move_supervision_periods_onto_sentences_for_sentence_group(
     if unmatched_sps:
         placeholder_sentences = [s for s in sentences if is_placeholder(s)]
         if not placeholder_sentences:
-            raise EntityMatchingError(
-                f'Expected a placeholder sentence to exist on sentence group '
-                f'{sentence_group.external_id}, but none were present.',
-                sentence_group.__class__.__name__)
+            # We may hit this case if an entity that has already been committed to the DB has a date updated in a later
+            # run such that the dates of the existing sentences no longer line up with one of the existing
+            # supervision periods.
+            logging.info(
+                'No placeholder sentences exist on sentence group '
+                '[%s]([%s]), creating a new placeholder sentence.',
+                sentence_group.external_id,
+                sentence_group.sentence_group_id)
+            new_placeholder_sentence = schema.StateSupervisionSentence(
+                state_code=sentence_group.state_code,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+                person=sentence_group.person
+            )
+            placeholder_sentences.append(new_placeholder_sentence)
+            sentence_group.supervision_sentences.append(new_placeholder_sentence)
         placeholder_sentences[0].supervision_periods = unmatched_sps
 
 
@@ -217,11 +231,21 @@ def _move_violations_onto_supervision_periods_for_sentence(
             sp for sp in supervision_periods if is_placeholder(sp)]
 
         if not placeholder_periods:
-            raise EntityMatchingError(
-                f'Expected a placeholder period to exist on sentence '
-                f'{sentence.external_id} with type '
-                f'{sentence.__class__.__name__}, but none were present.',
-                sentence.__class__.__name__)
+            # We may hit this case if an entity that has already been committed to the DB has a date updated in a later
+            # run such that the dates of the existing supervision periods no longer line up with one of the existing
+            # supervision violations.
+            logging.info(
+                'No placeholder supervision periods exist on sentence '
+                '[%s]([%s]), creating a new placeholder supervision period.',
+                sentence.external_id, sentence.get_id())
+            new_placeholder_supervision_period = schema.StateSupervisionPeriod(
+                state_code=sentence.state_code,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+                person=sentence.person
+            )
+            placeholder_periods.append(new_placeholder_supervision_period)
+            sentence.supervision_periods.append(new_placeholder_supervision_period)
+
         placeholder_periods[0].supervision_violation_entries = unmatched_svs
 
 
