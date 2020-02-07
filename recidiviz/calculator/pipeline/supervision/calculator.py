@@ -226,7 +226,6 @@ def characteristic_combinations(person: StatePerson,
         A list of dictionaries containing all unique combinations of
         characteristics.
     """
-
     characteristics: Dict[str, Any] = {}
 
     # Set Population violation dimensions if revocation analysis flags are false
@@ -273,6 +272,10 @@ def characteristic_combinations(person: StatePerson,
         characteristics['supervision_type'] = supervision_time_bucket.supervision_type
     if supervision_time_bucket.case_type:
         characteristics['case_type'] = supervision_time_bucket.case_type
+
+    # TODO(2853): Figure out more robust solution for not assessed people. Here we don't set assessment_type when
+    # someone is not assessed. This only works as desired because BQ doesn't rely on assessment_type at all.
+    characteristics['assessment_score_bucket'] = 'NOT_ASSESSED'
     if supervision_time_bucket.assessment_score and supervision_time_bucket.assessment_type:
         assessment_bucket = assessment_score_bucket(
             supervision_time_bucket.assessment_score,
