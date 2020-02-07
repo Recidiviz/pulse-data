@@ -52,9 +52,8 @@ class SupervisionMetricType(Enum):
 class SupervisionMetric(RecidivizMetric):
     """Models a single supervision metric.
 
-    Contains all of the identifying characteristics of the metric, including
-    required characteristics for normalization as well as optional
-    characteristics for slicing the data.
+    Contains all of the identifying characteristics of the metric, including required characteristics for
+    normalization as well as optional characteristics for slicing the data.
     """
     # Required characteristics
 
@@ -66,8 +65,7 @@ class SupervisionMetric(RecidivizMetric):
     # Month
     month: Optional[int] = attr.ib(default=None)
 
-    # The number of months this metric describes, starting with the month
-    # of the metric and going back in time
+    # The number of months this metric describes, starting with the month of the metric and going back in time.
     metric_period_months: Optional[int] = attr.ib(default=None)
 
     # Supervision Type
@@ -76,21 +74,16 @@ class SupervisionMetric(RecidivizMetric):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
-    # External ID of the officer who was supervising the people described by
-    # this metric
+    # External ID of the officer who was supervising the people described by this metric.
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 
-    # External ID of the district of the officer that was supervising the
-    # people described by this metric
+    # External ID of the district of the officer that was supervising the people described by this metric.
     supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionMetric']:
-        """Builds a SupervisionMetric object from the given
-         arguments.
-        """
+        """Builds a SupervisionMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -99,16 +92,14 @@ class SupervisionMetric(RecidivizMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionMetric,
-                                  SupervisionMetric.
-                                  build_from_dictionary(metric_key))
+                                  SupervisionMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
 
 @attr.s
 class SupervisionPopulationMetric(SupervisionMetric):
-    """Subclass of SupervisionMetric that contains supervision population
-    counts."""
+    """Subclass of SupervisionMetric that contains supervision population counts."""
     # Required characteristics
 
     # Population count
@@ -123,12 +114,9 @@ class SupervisionPopulationMetric(SupervisionMetric):
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionPopulationMetric']:
-        """Builds a SupervisionPopulationMetric object from the given
-         arguments.
-        """
+        """Builds a SupervisionPopulationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -137,16 +125,14 @@ class SupervisionPopulationMetric(SupervisionMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionPopulationMetric,
-                                  SupervisionPopulationMetric.
-                                  build_from_dictionary(metric_key))
+                                  SupervisionPopulationMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
 
 @attr.s
 class SupervisionRevocationMetric(SupervisionMetric):
-    """Subclass of SupervisionMetric that contains supervision revocation
-    counts."""
+    """Subclass of SupervisionMetric that contains supervision revocation counts."""
     # Required characteristics
 
     # Revocation count
@@ -160,23 +146,17 @@ class SupervisionRevocationMetric(SupervisionMetric):
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
-    # The StateSupervisionViolationResponseRevocationType enum for the type of
-    # revocation of supervision that this metric describes
-    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] \
-        = attr.ib(default=None)
+    # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
+    # metric describes
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
 
-    # StateSupervisionViolationType enum for the type of violation that
-    # eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = \
-        attr.ib(default=None)
+    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
+    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionRevocationMetric']:
-        """Builds a SupervisionRevocationMetric object from the given
-         arguments.
-        """
+        """Builds a SupervisionRevocationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -185,44 +165,38 @@ class SupervisionRevocationMetric(SupervisionMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionRevocationMetric,
-                                  SupervisionRevocationMetric.
-                                  build_from_dictionary(metric_key))
+                                  SupervisionRevocationMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
 
 @attr.s
 class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric):
-    """Subclass of SupervisionRevocationMetric that contains information for
-    supervision revocation analysis."""
+    """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
 
     # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = \
-        attr.ib(default=None)
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
 
     # The most severe decision on a response leading up to the revocation
-    most_severe_response_decision: \
-        Optional[StateSupervisionViolationResponseDecision] = \
-        attr.ib(default=None)
+    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
 
     # The number of violation responses leading up to the revocation
     response_count: Optional[int] = attr.ib(default=None)
 
-    # A string representation of the violations recorded in the period leading
-    # up to the revocation, which is the number of each of the represented types
-    # separated by a semicolon
+    # A string representation of the violations recorded in the period leading up to the revocation, which is the
+    # number of each of the represented types separated by a semicolon
     violation_history_description: Optional[str] = attr.ib(default=None)
 
     # The external_id of StatePerson for person-specific metrics
     person_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionRevocationAnalysisMetric']:
-        """Builds a SupervisionRevocationAnalysisMetric object from the given
-         arguments.
-        """
+        """Builds a SupervisionRevocationAnalysisMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -231,16 +205,14 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionRevocationAnalysisMetric,
-                                  SupervisionRevocationAnalysisMetric.
-                                  build_from_dictionary(metric_key))
+                                  SupervisionRevocationAnalysisMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
 
 @attr.s
 class SupervisionSuccessMetric(SupervisionMetric):
-    """Subclass of SupervisionMetric that contains supervision success and
-    failure counts."""
+    """Subclass of SupervisionMetric that contains supervision success and failure counts."""
     # Required characteristics
 
     # Number of successful completions
@@ -250,12 +222,9 @@ class SupervisionSuccessMetric(SupervisionMetric):
     projected_completion_count: int = attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionSuccessMetric']:
-        """Builds a SupervisionSuccessMetric object from the given
-         arguments.
-        """
+        """Builds a SupervisionSuccessMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -264,8 +233,7 @@ class SupervisionSuccessMetric(SupervisionMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionSuccessMetric,
-                                  SupervisionSuccessMetric.
-                                  build_from_dictionary(metric_key))
+                                  SupervisionSuccessMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
@@ -297,12 +265,9 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric):
         attr.ib(default=None)
 
     @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['TerminatedSupervisionAssessmentScoreChangeMetric']:
-        """Builds a TerminatedSupervisionAssessmentScoreChangeMetric object
-         from the given arguments.
-        """
+        """Builds a TerminatedSupervisionAssessmentScoreChangeMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -312,7 +277,6 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric):
 
         supervision_metric = cast(
             TerminatedSupervisionAssessmentScoreChangeMetric,
-            TerminatedSupervisionAssessmentScoreChangeMetric.
-            build_from_dictionary(metric_key))
+            TerminatedSupervisionAssessmentScoreChangeMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
