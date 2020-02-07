@@ -22,6 +22,7 @@ from unittest import TestCase
 import attr
 import pytest
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -300,6 +301,59 @@ class TestUsMoMatchingUtils(TestCase):
         # Assert
         self.assert_people_match([expected_person], input_people)
 
+    def test_associateSupervisionPeriodsWithSentencePeriodNoLongerMatches(self):
+        # Arrange
+        sp_which_no_longer_overlaps = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            start_date=_DATE_6
+        )
+
+        # This sentence, which has already been written to the DB, has presumably been updated so that the date range no
+        # longer overlaps with the attached supervision period.
+        inc_s_updated_dates = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=_ID_2,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            start_date=_DATE_3,
+            completion_date=_DATE_5,
+            supervision_periods=[sp_which_no_longer_overlaps]
+        )
+
+        sg = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID_3,
+            state_code=_STATE_CODE,
+            incarceration_sentences=[inc_s_updated_dates])
+
+        state_person = StatePerson.new_with_defaults(
+            person_id=_ID,
+            sentence_groups=[sg])
+
+        expected_sp = attr.evolve(sp_which_no_longer_overlaps)
+        expected_is = attr.evolve(inc_s_updated_dates, supervision_periods=[])
+
+        # We expect that a new placeholder supervision sentence has been created to hold on to the orphaned supervision
+        # period.
+        expected_placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_periods=[expected_sp],
+        )
+        expected_sg = attr.evolve(sg,
+                                  incarceration_sentences=[expected_is],
+                                  supervision_sentences=[expected_placeholder_ss])
+        expected_person = attr.evolve(state_person, sentence_groups=[expected_sg])
+
+        # Act
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [state_person])
+        move_supervision_periods_onto_sentences_by_date(input_people)
+
+        # Assert
+        self.assert_people_match([expected_person], input_people)
+
     def test_associateSupervisionPeriodsWithSentenceDoNotMoveOntoPlaceholder(self):
         # Arrange
         placeholder_inc_s = StateIncarcerationSentence.new_with_defaults()
@@ -372,6 +426,7 @@ class TestUsMoMatchingUtils(TestCase):
 
 
     def test_associateViolationsWithSupervisionPeriods(self):
+        # Arrange
         sv_ss = StateSupervisionViolation.new_with_defaults(
             violation_date=_DATE_2)
 
@@ -453,6 +508,66 @@ class TestUsMoMatchingUtils(TestCase):
             sg,
             supervision_sentences=[expected_ss],
             incarceration_sentences=[expected_inc_s])
+        expected_person = attr.evolve(
+            state_person, sentence_groups=[expected_sg])
+
+        # Act
+        input_people = \
+            converter.convert_entity_people_to_schema_people(
+                [state_person])
+        move_violations_onto_supervision_periods_by_date(input_people)
+
+        # Assert
+        self.assert_people_match([expected_person], input_people)
+
+    def test_associateViolationsWithSupervisionPeriodsWhereViolationNoLongerOverlaps(self):
+        # Act
+        sv_ss = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=_ID,
+            state_code=_STATE_CODE,
+            violation_date=_DATE_4)
+
+        # This supervision period, which has already been written to the DB, has presumably been updated so that the
+        # date range no longer overlaps with the attached violation (or the violation has been updated).
+        sp_ss = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            start_date=_DATE,
+            termination_date=_DATE_3,
+            supervision_violation_entries=[sv_ss]
+        )
+        ss = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            supervision_periods=[sp_ss])
+
+        sg = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=_ID,
+            state_code=_STATE_CODE,
+            supervision_sentences=[ss])
+
+        state_person = StatePerson.new_with_defaults(
+            person_id=_ID,
+            sentence_groups=[sg])
+
+        expected_sv_ss = attr.evolve(sv_ss)
+        expected_sp_ss = attr.evolve(
+            sp_ss,
+            supervision_violation_entries=[])
+        expected_placeholder_sp_ss = StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_violation_entries=[expected_sv_ss]
+        )
+        expected_ss = attr.evolve(
+            ss,
+            supervision_periods=[
+                expected_placeholder_sp_ss, expected_sp_ss])
+        expected_sg = attr.evolve(
+            sg,
+            supervision_sentences=[expected_ss])
         expected_person = attr.evolve(
             state_person, sentence_groups=[expected_sg])
 
