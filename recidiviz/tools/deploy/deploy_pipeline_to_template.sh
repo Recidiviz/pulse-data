@@ -12,6 +12,9 @@ output=$7
 metric_type=$8
 state_code=$9
 
+# Hard-code to this region until there's a need to allow deploying into separate regions
+region=us-west1
+
 if [ x"$project" == x -o x"$bucket" == x -o x"$pipeline" == x -o x"$job_name" == x -o x"$input" == x -o x"$output" == x -o x"$reference_input" == x ]; then
     echo "usage: $0 <project> <bucket> <pipeline> <job_name> <input> <output>"
     exit 1
@@ -29,8 +32,9 @@ function run_cmd {
     fi
 }
 
-# We hard-code to n1-standard-4 below because we don't want low-level config
-# like worker provisioning to be a high-level parameter for configuration
+# We hard-code to n1-standard-4 below because we don't want low-level config like worker provisioning to be a high-level
+# parameter for configuration. Similarly, we hard-code to using non-public IP addresses in a specific subnet where our
+# NAT is enabled.
 echo "Deploying $pipeline pipeline to template"
 command="python -m recidiviz.tools.run_calculation_pipelines
     --pipeline $pipeline
@@ -43,7 +47,10 @@ command="python -m recidiviz.tools.run_calculation_pipelines
     --template_location gs://$bucket/templates/$job_name
     --worker_machine_type n1-standard-4
     --experiments=shuffle_mode=service
-    --region=us-west1
+    --region=$region
+    --no_use_public_ips
+    --network=default
+    --subnetwork=https://www.googleapis.com/compute/v1/projects/$project/regions/$region/subnetworks/default
     --input $input
     --reference_input $reference_input
     --output $output

@@ -35,6 +35,11 @@ usage: python run_calculation_pipelines.py
           --staging_location gs://YOUR-BUCKET/staging \
           --temp_location gs://YOUR-BUCKET/tmp \
           --worker_machine_type n1-standard-4 \
+          --experiments=shuffle_mode=service
+          --region REGION \
+          --no_use_public_ips \
+          --network=default \
+          --subnetwork=https://www.googleapis.com/compute/v1/projects/PROJECT/regions/REGION/subnetworks/default
 
 You must also include any arguments required by the given pipeline.
 """
