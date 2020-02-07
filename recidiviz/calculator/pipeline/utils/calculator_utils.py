@@ -23,15 +23,15 @@ from typing import Optional, List, Any, Dict, Tuple
 
 import dateutil
 
+from recidiviz.calculator.pipeline.utils import us_mo_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, StatePersonEthnicity, StateSupervisionViolationTypeEntry
-
+from recidiviz.persistence.entity.state.entities import StatePerson, StatePersonRace, StatePersonEthnicity,\
+    StateSupervisionViolation
 
 # Relevant metric period month lengths for dashboard person-based calculations
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
@@ -249,17 +249,42 @@ def last_day_of_month(any_date):
     return next_month - datetime.timedelta(days=next_month.day)
 
 
-def identify_most_severe_violation_type(
-        violation_type_entries:
-        List[StateSupervisionViolationTypeEntry]) -> \
-        Optional[StateSupervisionViolationType]:
+def identify_most_severe_violation_type_and_subtype(violations: List[StateSupervisionViolation]) \
+        -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
+    """Identifies the most severe violation type on the provided |violations|, and, if relevant, the subtype of that
+    most severe violation type. Returns both as a tuple.
+    """
+    most_severe_violation_type = _identify_most_severe_violation_type(violations)
+    identified_subtype = identify_violation_subtype(most_severe_violation_type, violations)
+    # TODO(2853): Figure out how to model unset variables generally in the calculation pipeline.
+    violation_subtype = identified_subtype if identified_subtype else 'UNSET'
+    return most_severe_violation_type, violation_subtype
+
+
+def _identify_most_severe_violation_type(
+        violations: List[StateSupervisionViolation]) -> Optional[StateSupervisionViolationType]:
     """Identifies the most severe violation type on the violation according
     to the static violation type ranking."""
-    violation_types = [vte.violation_type for vte in violation_type_entries]
-
+    violation_types = []
+    for violation in violations:
+        for violation_type_entry in violation.supervision_violation_types:
+            violation_types.append(violation_type_entry.violation_type)
     return next((violation_type for violation_type in VIOLATION_TYPE_SEVERITY_ORDER
                  if violation_type in violation_types), None)
 
+
+def identify_violation_subtype(violation_type: Optional[StateSupervisionViolationType],
+                               violations: List[StateSupervisionViolation]) \
+        -> Optional[str]:
+    """Looks through all provided |violations| of type |violation_type| and returns a string subtype, if necessary."""
+    if not violation_type or not violations:
+        return None
+
+    state_code = violations[0].state_code
+    if state_code.upper() == 'US_MO':
+        return us_mo_utils.identify_violation_subtype(violation_type, violations)
+
+    return None
 
 def identify_most_severe_response_decision(
         decisions:
