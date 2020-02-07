@@ -599,6 +599,28 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=2,
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=13,
+                assessment_level=StateAssessmentLevel.MEDIUM,
+                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                supervising_officer_external_id='OFFICER',
+                supervising_district_external_id='DISTRICT',
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                response_count=19
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                supervision_type=StateSupervisionType.PAROLE,
+                assessment_score=13,
+                assessment_level=StateAssessmentLevel.MEDIUM,
+                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                supervising_officer_external_id='OFFICER',
+                supervising_district_external_id='DISTRICT',
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                response_count=19
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -612,24 +634,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=19
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=2,
-                supervision_type=StateSupervisionType.PAROLE,
-                assessment_score=13,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervising_officer_external_id='OFFICER',
-                supervising_district_external_id='DISTRICT'
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
-                supervision_type=StateSupervisionType.PAROLE,
-                assessment_score=13,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervising_officer_external_id='OFFICER',
-                supervising_district_external_id='DISTRICT'
             ),
         ]
 
@@ -823,24 +827,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_one_non_relevant_period(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_MO', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
-        relevant_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2010, 1, StateSupervisionType.PAROLE)
-        not_relevant_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 1980, 1, StateSupervisionType.PAROLE)
+        relevant_bucket = NonRevocationReturnSupervisionTimeBucket('US_MO', 2010, 1, StateSupervisionType.PAROLE)
+        not_relevant_bucket = RevocationReturnSupervisionTimeBucket('US_MO', 1980, 1, StateSupervisionType.PAROLE)
 
         supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
 
@@ -848,6 +846,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_combinations = calculator.map_supervision_combinations(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
+
         # Get the expected count for the relevant bucket without revocation analysis metrics
         expected_combinations_count = expected_metric_combos_count(
             person, [relevant_bucket], ALL_INCLUSIONS_DICT,
@@ -859,7 +858,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, [not_relevant_bucket], ALL_INCLUSIONS_DICT,
             include_revocation_analysis=True
         )
+
         expected_combinations_count += expected_combinations_count_not_relevant
+
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
@@ -1736,13 +1737,15 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            response_count=None
+        )
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT)
 
         # 32 combinations of demographics and supervision type
-        assert len(combinations) == 32
+        self.assertEqual(len(combinations), 32)
 
     def test_characteristic_combinations_year_bucket(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1766,8 +1769,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT)
 
-        # 32 combinations of demographics and supervision type
-        assert len(combinations) == 32
+        # 64 combinations of demographics, supervision type, and response count
+        self.assertEqual(len(combinations), 64)
 
     def test_characteristic_combinations_exclude_age(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1787,7 +1790,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            response_count=2
+        )
 
         inclusions = {
             **ALL_INCLUSIONS_DICT,
@@ -1797,8 +1803,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 64 combinations of demographics, supervision type, and violations
+        self.assertEqual(len(combinations), 64)
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -1821,7 +1827,11 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
+            most_severe_violation_type_subtype='SUBTYPE',
+            response_count=1
+        )
 
         inclusions = {
             **ALL_INCLUSIONS_DICT,
@@ -1831,8 +1841,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 128 combinations of demographics, supervision type, and violations
+        self.assertEqual(len(combinations), 128)
 
         for combo in combinations:
             assert combo.get('gender') is None
@@ -1855,7 +1865,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            response_count=1
+        )
 
         inclusions = {
             **ALL_INCLUSIONS_DICT,
@@ -1865,8 +1878,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 64 combinations of demographics, supervision type, violation type, and response count
+        self.assertEqual(len(combinations), 64)
 
         for combo in combinations:
             assert combo.get('race') is None
@@ -1889,7 +1902,9 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            response_count=3
+        )
 
         inclusions = {
             **ALL_INCLUSIONS_DICT,
@@ -1899,8 +1914,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 32 combinations of demographics, supervision type, and response count
+        self.assertEqual(len(combinations), 32)
 
         for combo in combinations:
             assert combo.get('ethnicity') is None
@@ -1923,7 +1938,9 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            supervision_type=StateSupervisionType.PAROLE)
+            supervision_type=StateSupervisionType.PAROLE,
+            response_count=1
+        )
 
         inclusions = {
             **ALL_INCLUSIONS_DICT,
@@ -1934,8 +1951,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions)
 
-        # 8 combinations of demographics and supervision type
-        assert len(combinations) == 8
+        # 16 combinations of demographics, supervision type, and response count
+        self.assertEqual(len(combinations), 16)
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -2007,7 +2024,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
             person, [supervision_time_bucket], ALL_INCLUSIONS_DICT,
             with_revocation_dimensions=False, with_methodologies=False,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION)
+            metric_to_include=SupervisionMetricType.POPULATION)
 
         self.assertEqual(expected_combinations_count, len(combinations))
 
@@ -2264,9 +2281,7 @@ def demographic_metric_combos_count_for_person_supervision(
         if key not in metric_inclusions:
             demographic_inclusions[key] = value
 
-    total_metric_combos = demographic_metric_combos_count_for_person(
-        person, demographic_inclusions
-    )
+    total_metric_combos = demographic_metric_combos_count_for_person(person, demographic_inclusions)
 
     # Supervision type is always included
     total_metric_combos *= 2
@@ -2300,19 +2315,16 @@ def expected_metric_combos_count(
         methodology_multiplier *= CALCULATION_METHODOLOGIES
 
     projected_completion_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, ProjectedSupervisionCompletionBucket)
+        bucket for bucket in supervision_time_buckets if isinstance(bucket, ProjectedSupervisionCompletionBucket)
     ]
 
     population_buckets = [
         bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, (RevocationReturnSupervisionTimeBucket,
-                               NonRevocationReturnSupervisionTimeBucket))
+        if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket))
     ]
 
     termination_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, SupervisionTerminationBucket)
+        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
     ]
 
     num_duplicated_population_buckets = 0
@@ -2330,12 +2342,10 @@ def expected_metric_combos_count(
     completion_months: Set[Tuple[int, int]] = set()
 
     for projected_completion_bucket in projected_completion_buckets:
-        if (projected_completion_bucket.year,
-                projected_completion_bucket.month) in completion_months:
+        if (projected_completion_bucket.year, projected_completion_bucket.month) in completion_months:
             num_duplicated_projected_completion_months += 1
         if projected_completion_bucket.month:
-            completion_months.add((projected_completion_bucket.year,
-                                   projected_completion_bucket.month))
+            completion_months.add((projected_completion_bucket.year, projected_completion_bucket.month))
 
     num_projected_completion_buckets = len(projected_completion_buckets)
 
@@ -2347,8 +2357,7 @@ def expected_metric_combos_count(
 
     for termination_bucket in termination_buckets:
         year = termination_bucket.year
-        month = 0 if termination_bucket.month is None else \
-            termination_bucket.month
+        month = 0 if termination_bucket.month is None else termination_bucket.month
         if (year, month) in termination_months:
             num_duplicated_termination_buckets += 1
         if month is not None:
@@ -2368,23 +2377,23 @@ def expected_metric_combos_count(
             'case_type',
             'assessment_score',
             'assessment_type',
+            'most_severe_violation_type',
+            'most_severe_violation_type_subtype',
+            'response_count',
             'supervising_officer_external_id',
             'supervising_district_external_id'
         ]
 
         for dimension in population_dimensions:
-            if getattr(first_population_bucket, dimension):
+            if getattr(first_population_bucket, dimension) is not None:
                 population_dimension_multiplier *= 2
 
-    supervision_population_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_population_buckets * population_dimension_multiplier
+    supervision_population_combos = (demographic_metric_combos * methodology_multiplier * num_population_buckets
+                                     * population_dimension_multiplier)
 
     # Supervision population metrics removed in person-based de-duplication
-    duplicated_population_combos = \
-        int(demographic_metric_combos *
-            num_duplicated_population_buckets *
-            population_dimension_multiplier)
+    duplicated_population_combos = int(demographic_metric_combos * num_duplicated_population_buckets
+                                       * population_dimension_multiplier)
 
     if duplicated_months_different_supervision_types:
         # If the duplicated months have different supervision types, then
@@ -2412,9 +2421,8 @@ def expected_metric_combos_count(
             if getattr(first_revocation_bucket, dimension):
                 revocation_dimension_multiplier *= 2
 
-    supervision_revocation_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_revocation_buckets * revocation_dimension_multiplier
+    supervision_revocation_combos = (demographic_metric_combos * methodology_multiplier * num_revocation_buckets
+                                     * revocation_dimension_multiplier)
 
     revocation_analysis_dimension_multiplier = revocation_dimension_multiplier
 
@@ -2424,24 +2432,19 @@ def expected_metric_combos_count(
         revocation_analysis_dimensions = [
             'most_severe_violation_type',
             'most_severe_violation_type_subtype',
-            'most_severe_response_decision'
+            'most_severe_response_decision',
+            'response_count'
         ]
 
         for dimension in revocation_analysis_dimensions:
-            if getattr(first_revocation_analysis_bucket, dimension):
+            if getattr(first_revocation_analysis_bucket, dimension) is not None:
                 revocation_analysis_dimension_multiplier *= 2
-
-        if first_revocation_analysis_bucket.response_count is not None:
-            revocation_analysis_dimension_multiplier *= 2
 
     supervision_revocation_analysis_combos = 0
 
     if include_revocation_analysis:
-        supervision_revocation_analysis_combos += \
-            (demographic_metric_combos *
-             methodology_multiplier *
-             num_revocation_buckets *
-             revocation_analysis_dimension_multiplier)
+        supervision_revocation_analysis_combos += (demographic_metric_combos * methodology_multiplier
+                                                   * num_revocation_buckets * revocation_analysis_dimension_multiplier)
 
     projected_completion_dimension_multiplier = 1
     if projected_completion_buckets:
@@ -2457,17 +2460,13 @@ def expected_metric_combos_count(
             if getattr(first_projected_completion_bucket, dimension):
                 projected_completion_dimension_multiplier *= 2
 
-    supervision_success_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_projected_completion_buckets * \
-        projected_completion_dimension_multiplier
+    supervision_success_combos = (demographic_metric_combos * methodology_multiplier
+                                  * num_projected_completion_buckets * projected_completion_dimension_multiplier)
 
     # Success metrics removed in person-based de-duplication that don't
     # specify supervision type
-    duplicated_success_combos = \
-        int(demographic_metric_combos *
-            num_duplicated_projected_completion_months *
-            projected_completion_dimension_multiplier)
+    duplicated_success_combos = int(demographic_metric_combos * num_duplicated_projected_completion_months
+                                    * projected_completion_dimension_multiplier)
 
     if duplicated_months_different_supervision_types:
         # If the duplicated months have different supervision types, then
@@ -2498,66 +2497,48 @@ def expected_metric_combos_count(
 
     num_termination_buckets = len(termination_buckets)
 
-    supervision_termination_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_termination_buckets * termination_dimension_multiplier
+    supervision_termination_combos = (demographic_metric_combos * methodology_multiplier
+                                      * num_termination_buckets * termination_dimension_multiplier)
 
     # Termination metrics removed in person-based de-duplication that don't
     # specify supervision type
-    duplicated_termination_combos = \
-        int(demographic_metric_combos *
-            num_duplicated_termination_buckets *
-            termination_dimension_multiplier)
+    duplicated_termination_combos = int(demographic_metric_combos * num_duplicated_termination_buckets
+                                        * termination_dimension_multiplier)
 
     supervision_termination_combos -= duplicated_termination_combos
 
     if num_relevant_periods > 0:
         # Population combos
-        supervision_population_combos += \
-            demographic_metric_combos * \
-            (len(population_buckets) - num_duplicated_population_buckets) * \
-            population_dimension_multiplier * \
-            num_relevant_periods
+        supervision_population_combos += (demographic_metric_combos
+                                          * (len(population_buckets) - num_duplicated_population_buckets)
+                                          * population_dimension_multiplier * num_relevant_periods)
 
         if duplicated_months_different_supervision_types:
-            supervision_population_combos += \
-                int(demographic_metric_combos *
-                    num_duplicated_population_buckets *
-                    population_dimension_multiplier *
-                    num_relevant_periods / 2)
+            supervision_population_combos += int(demographic_metric_combos * num_duplicated_population_buckets
+                                                 * population_dimension_multiplier * num_relevant_periods / 2)
 
         # Revocation combos
-        supervision_revocation_combos += \
-            demographic_metric_combos * \
-            (len(revocation_buckets)) * \
-            revocation_dimension_multiplier * \
-            num_relevant_periods
+        supervision_revocation_combos += (demographic_metric_combos * len(revocation_buckets)
+                                          * revocation_dimension_multiplier * num_relevant_periods)
 
         if include_revocation_analysis:
             # Other metric buckets
-            supervision_revocation_analysis_combos += \
-                demographic_metric_combos * \
-                (len(revocation_buckets)) * \
-                num_relevant_periods * \
-                revocation_analysis_dimension_multiplier
+            supervision_revocation_analysis_combos += (demographic_metric_combos * len(revocation_buckets)
+                                                       * num_relevant_periods
+                                                       * revocation_analysis_dimension_multiplier)
 
             # Person-level metrics
             supervision_revocation_analysis_combos += (num_relevant_periods + 1)
 
         # Success combos
-        supervision_success_combos += \
-            demographic_metric_combos * \
-            (num_projected_completion_buckets -
-             num_duplicated_projected_completion_months) * \
-            projected_completion_dimension_multiplier * \
-            num_relevant_periods
+        supervision_success_combos += (demographic_metric_combos
+                                       * (num_projected_completion_buckets - num_duplicated_projected_completion_months)
+                                       * projected_completion_dimension_multiplier * num_relevant_periods)
 
         # Termination combos
-        supervision_termination_combos += \
-            demographic_metric_combos * \
-            (len(termination_buckets) - num_duplicated_termination_buckets) * \
-            termination_dimension_multiplier * \
-            num_relevant_periods
+        supervision_termination_combos += (demographic_metric_combos
+                                           * (len(termination_buckets) - num_duplicated_termination_buckets)
+                                           * termination_dimension_multiplier * num_relevant_periods)
 
     # Pick which one is relevant for the test case: some tests above use a
     # different call that only looks at combos for either population or

@@ -209,8 +209,16 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
 @attr.s(frozen=True)
 class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
-    """Models a SupervisionTimeBucket where the person was not incarcerated for
-    a revocation."""
+    """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
+
+    # The most severe violation type leading up to the revocation
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # The number of violation responses leading up to the revocation
+    response_count: Optional[int] = attr.ib(default=0)
 
     @staticmethod
     def for_year(state_code: str,
@@ -220,6 +228,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
                  assessment_score: Optional[int] = None,
                  assessment_level: Optional[StateAssessmentLevel] = None,
                  assessment_type: Optional[StateAssessmentType] = None,
+                 most_severe_violation_type: Optional[StateSupervisionViolationType] = None,
+                 most_severe_violation_type_subtype: Optional[str] = None,
+                 response_count: Optional[int] = 0,
                  supervising_officer_external_id: Optional[str] = None,
                  supervising_district_external_id: Optional[str] = None
                  ) \
@@ -233,14 +244,16 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             assessment_score=assessment_score,
             assessment_level=assessment_level,
             assessment_type=assessment_type,
+            most_severe_violation_type=most_severe_violation_type,
+            most_severe_violation_type_subtype=most_severe_violation_type_subtype,
+            response_count=response_count,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
         )
 
     @staticmethod
     def for_year_from_month_assessment_override(
-            month_bucket:
-            'NonRevocationReturnSupervisionTimeBucket',
+            month_bucket: 'NonRevocationReturnSupervisionTimeBucket',
             assessment_score: Optional[int] = None,
             assessment_level: Optional[StateAssessmentLevel] = None,
             assessment_type: Optional[StateAssessmentType] = None) \
@@ -254,6 +267,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             assessment_score=assessment_score,
             assessment_level=assessment_level,
             assessment_type=assessment_type,
+            most_severe_violation_type=month_bucket.most_severe_violation_type,
+            most_severe_violation_type_subtype=month_bucket.most_severe_violation_type_subtype,
+            response_count=month_bucket.response_count,
             supervising_officer_external_id=month_bucket.supervising_officer_external_id,
             supervising_district_external_id=month_bucket.supervising_district_external_id
         )
@@ -265,6 +281,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
                   assessment_score: Optional[int] = None,
                   assessment_level: Optional[StateAssessmentLevel] = None,
                   assessment_type: Optional[StateAssessmentType] = None,
+                  most_severe_violation_type: Optional[StateSupervisionViolationType] = None,
+                  most_severe_violation_type_subtype: Optional[str] = None,
+                  response_count: Optional[int] = 0,
                   supervising_officer_external_id: Optional[str] = None,
                   supervising_district_external_id: Optional[str] = None
                   ) \
@@ -278,6 +297,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             assessment_score=assessment_score,
             assessment_level=assessment_level,
             assessment_type=assessment_type,
+            most_severe_violation_type=most_severe_violation_type,
+            most_severe_violation_type_subtype=most_severe_violation_type_subtype,
+            response_count=response_count,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
         )
