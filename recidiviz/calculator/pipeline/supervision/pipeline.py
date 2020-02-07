@@ -804,10 +804,8 @@ def run(argv=None):
             person_periods_and_sentences
             | 'Get SupervisionTimeBuckets' >>
             beam.ParDo(ClassifySupervisionTimeBuckets(),
-                       AsDict(
-                           ssvr_agent_associations_as_kv),
-                       AsDict(
-                           supervision_period_to_agent_associations_as_kv),
+                       AsDict(ssvr_agent_associations_as_kv),
+                       AsDict(supervision_period_to_agent_associations_as_kv),
                        **identifier_options))
 
         # Get dimensions to include and methodologies to use

@@ -2031,8 +2031,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         test_pipeline.run()
 
     def testClassifySupervisionTimeBucketsRevocation(self):
-        """Tests the ClassifySupervisionTimeBuckets DoFn when there is an
-        instance of revocation."""
+        """Tests the ClassifySupervisionTimeBuckets DoFn when there is an instance of revocation."""
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
@@ -2117,6 +2116,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=2015, month=5,
                 supervision_type=supervision_period.supervision_type,
+                most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=RevocationType.REINCARCERATION,
                 assessment_score=assessment.assessment_score,
@@ -2128,6 +2128,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=2015, month=None,
                 supervision_type=supervision_period.supervision_type,
+                most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=RevocationType.REINCARCERATION,
                 assessment_score=assessment.assessment_score,

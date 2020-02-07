@@ -233,40 +233,34 @@ def characteristic_combinations(person: StatePerson,
             isinstance(supervision_time_bucket,
                        RevocationReturnSupervisionTimeBucket):
         if supervision_time_bucket.revocation_type:
-            characteristics['revocation_type'] = \
-                supervision_time_bucket.revocation_type
+            characteristics['revocation_type'] = supervision_time_bucket.revocation_type
 
         if supervision_time_bucket.source_violation_type:
-            characteristics['source_violation_type'] = \
-                supervision_time_bucket.source_violation_type
+            characteristics['source_violation_type'] = supervision_time_bucket.source_violation_type
 
         if with_revocation_analysis_dimensions:
             if supervision_time_bucket.most_severe_violation_type:
-                characteristics['most_severe_violation_type'] = \
-                    supervision_time_bucket.most_severe_violation_type
+                characteristics['most_severe_violation_type'] = supervision_time_bucket.most_severe_violation_type
+
+            if supervision_time_bucket.most_severe_violation_type_subtype:
+                characteristics['most_severe_violation_type_subtype'] = \
+                    supervision_time_bucket.most_severe_violation_type_subtype
 
             if supervision_time_bucket.most_severe_response_decision:
-                characteristics['most_severe_response_decision'] = \
-                    supervision_time_bucket.most_severe_response_decision
+                characteristics['most_severe_response_decision'] = supervision_time_bucket.most_severe_response_decision
 
             if supervision_time_bucket.response_count is not None:
-                characteristics['response_count'] = \
-                    supervision_time_bucket.response_count
+                characteristics['response_count'] = supervision_time_bucket.response_count
 
-    if isinstance(supervision_time_bucket,
-                  SupervisionTerminationBucket):
+    if isinstance(supervision_time_bucket, SupervisionTerminationBucket):
         if supervision_time_bucket.termination_reason:
-            characteristics['termination_reason'] = \
-                supervision_time_bucket.termination_reason
+            characteristics['termination_reason'] = supervision_time_bucket.termination_reason
 
     if supervision_time_bucket.supervision_type:
-        characteristics['supervision_type'] = \
-            supervision_time_bucket.supervision_type
+        characteristics['supervision_type'] = supervision_time_bucket.supervision_type
     if supervision_time_bucket.case_type:
-        characteristics['case_type'] = \
-            supervision_time_bucket.case_type
-    if supervision_time_bucket.assessment_score and \
-            supervision_time_bucket.assessment_type:
+        characteristics['case_type'] = supervision_time_bucket.case_type
+    if supervision_time_bucket.assessment_score and supervision_time_bucket.assessment_type:
         assessment_bucket = assessment_score_bucket(
             supervision_time_bucket.assessment_score,
             supervision_time_bucket.assessment_level,
@@ -275,15 +269,12 @@ def characteristic_combinations(person: StatePerson,
         if assessment_bucket and include_assessment_in_metric(
                 'supervision', supervision_time_bucket.state_code, supervision_time_bucket.assessment_type):
             characteristics['assessment_score_bucket'] = assessment_bucket
-            characteristics['assessment_type'] = \
-                supervision_time_bucket.assessment_type
+            characteristics['assessment_type'] = supervision_time_bucket.assessment_type
     if supervision_time_bucket.supervising_officer_external_id:
-        characteristics['supervising_officer_external_id'] = \
-            supervision_time_bucket.supervising_officer_external_id
+        characteristics['supervising_officer_external_id'] = supervision_time_bucket.supervising_officer_external_id
 
     if supervision_time_bucket.supervising_district_external_id:
-        characteristics['supervising_district_external_id'] = \
-            supervision_time_bucket.supervising_district_external_id
+        characteristics['supervising_district_external_id'] = supervision_time_bucket.supervising_district_external_id
     if inclusions.get('age_bucket'):
         year = supervision_time_bucket.year
         month = supervision_time_bucket.month
@@ -311,9 +302,7 @@ def characteristic_combinations(person: StatePerson,
         else:
             ethnicities = []
 
-        all_combinations = \
-            for_characteristics_races_ethnicities(
-                races, ethnicities, characteristics)
+        all_combinations = for_characteristics_races_ethnicities(races, ethnicities, characteristics)
     else:
         all_combinations = for_characteristics(characteristics)
 
@@ -328,11 +317,9 @@ def characteristic_combinations(person: StatePerson,
 
             # Only include violation history descriptions on person-level
             # metrics
-            if isinstance(supervision_time_bucket,
-                          RevocationReturnSupervisionTimeBucket) and \
-                    supervision_time_bucket.violation_history_description:
-                characteristics['violation_history_description'] = \
-                    supervision_time_bucket.violation_history_description
+            if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
+                    and supervision_time_bucket.violation_history_description:
+                characteristics['violation_history_description'] = supervision_time_bucket.violation_history_description
 
             all_combinations.append(characteristics)
 

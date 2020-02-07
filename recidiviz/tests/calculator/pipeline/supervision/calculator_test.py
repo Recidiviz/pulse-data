@@ -317,8 +317,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 revocation_type=RevocationType.SHOCK_INCARCERATION,
                 source_violation_type=ViolationType.FELONY,
                 most_severe_violation_type=ViolationType.FELONY,
-                most_severe_response_decision=
-                StateSupervisionViolationResponseDecision.REVOCATION,
+                most_severe_violation_type_subtype='SUBTYPE',
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=10)
         ]
 
@@ -610,8 +610,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 revocation_type=RevocationType.SHOCK_INCARCERATION,
                 source_violation_type=ViolationType.FELONY,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_response_decision=
-                StateSupervisionViolationResponseDecision.REVOCATION,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=19
             ),
             NonRevocationReturnSupervisionTimeBucket(
@@ -642,8 +641,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             include_revocation_analysis=True)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
 
         assert all(value == 1 for _combination, value
                    in supervision_combinations)
@@ -829,8 +827,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -847,41 +844,24 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
 
+
         supervision_combinations = calculator.map_supervision_combinations(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
-
+        # Get the expected count for the relevant bucket without revocation analysis metrics
         expected_combinations_count = expected_metric_combos_count(
-            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            person, [relevant_bucket], ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
+            include_revocation_analysis=False
+        )
+        # Get the expected count for the non-relevant revocation bucket with revocation analysis metrics
+        expected_combinations_count_not_relevant = expected_metric_combos_count(
+            person, [not_relevant_bucket], ALL_INCLUSIONS_DICT,
             include_revocation_analysis=True
         )
-
-        # Hack to get the right expected number. The relevant periods should
-        # only apply to the relevant non-revocation bucket, so we
-        # are subtracting the two instances in the expected_metric_combos_count
-        # function when this bucket was included in these relevant period
-        # counts, once for the revocation metric and once for the revocation
-        # analysis metric.
-        demographic_metric_combos = \
-            demographic_metric_combos_count_for_person_supervision(
-                person, ALL_INCLUSIONS_DICT)
-
-        expected_combinations_count -= (
-            demographic_metric_combos *
-            len(calculator_utils.METRIC_PERIOD_MONTHS) * 2 * 2
-        )
-
-        # Subtracting the person-based metrics for the revocation analysis for
-        # the month of the revocation and all relevant periods because there
-        # is no applicable external id
-        expected_combinations_count -= \
-            (len(calculator_utils.METRIC_PERIOD_MONTHS) + 1)
-
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        expected_combinations_count += expected_combinations_count_not_relevant
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_revocation(self):
@@ -2443,6 +2423,7 @@ def expected_metric_combos_count(
 
         revocation_analysis_dimensions = [
             'most_severe_violation_type',
+            'most_severe_violation_type_subtype',
             'most_severe_response_decision'
         ]
 
