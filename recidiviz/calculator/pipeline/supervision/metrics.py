@@ -113,6 +113,15 @@ class SupervisionPopulationMetric(SupervisionMetric):
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
+    # The most severe violation type leading up to the revocation
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # The number of violation responses leading up to the revocation
+    response_count: Optional[int] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionPopulationMetric']:

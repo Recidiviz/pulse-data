@@ -684,7 +684,7 @@ def run(argv=None):
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
                                    unifying_id_field='person_id',
-                                   build_related_entities=False))
+                                   build_related_entities=True))
 
         # Get StateAssessments
         assessments = (p
