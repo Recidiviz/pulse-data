@@ -398,6 +398,108 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session)
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+
+    def test_runMatch_supervisionPeriodDateChangesSoItDoesNotMatchSentenceOrViolations(self):
+        # Arrange
+        db_supervising_officer = generate_agent(
+            agent_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_US_MO,
+            agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+        db_person = generate_person(person_id=_ID,
+                                    supervising_officer=db_supervising_officer)
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            state_code=_US_MO,
+            id_type=_ID_TYPE)
+
+        # Violation has been date matched to the open supervision period
+        db_supervision_violation = generate_supervision_violation(
+            person=db_person,
+            state_code=_US_MO,
+            supervision_violation_id=_ID,
+            external_id=_EXTERNAL_ID,
+            violation_date=_DATE_4)
+
+        db_supervision_period_open = generate_supervision_period(
+            person=db_person,
+            supervision_period_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            start_date=_DATE_2,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_US_MO,
+            supervising_officer=db_supervising_officer,
+            supervision_violation_entries=[db_supervision_violation])
+        db_supervision_sentence = generate_supervision_sentence(
+            person=db_person,
+            external_id=_EXTERNAL_ID,
+            supervision_sentence_id=_ID,
+            state_code=_US_MO,
+            start_date=_DATE_1,
+            supervision_periods=[db_supervision_period_open])
+        db_sentence_group = generate_sentence_group(
+            external_id=_EXTERNAL_ID,
+            sentence_group_id=_ID,
+            state_code=_US_MO,
+            supervision_sentences=[db_supervision_sentence])
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+        self._commit_to_db(db_person)
+
+        supervsion_period_updated = StateSupervisionPeriod.new_with_defaults(
+            state_code=_US_MO,
+            external_id=db_supervision_period_open.external_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            start_date=_DATE_2,
+            termination_date=_DATE_3,
+        )
+
+        placeholder_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code=_US_MO,
+            supervision_periods=[supervsion_period_updated]
+        )
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=db_sentence_group.external_id,
+            state_code=_US_MO,
+            supervision_sentences=[placeholder_supervision_sentence]
+        )
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=db_external_id.external_id,
+            state_code=_US_MO,
+            id_type=db_external_id.id_type
+        )
+        person = StatePerson.new_with_defaults(
+            external_ids=[external_id],
+            sentence_groups=[sentence_group]
+        )
+
+        expected_person = attr.evolve(self.to_entity(db_person))
+        expected_sentence = expected_person.sentence_groups[0].supervision_sentences[0]
+        expected_original_supervision_period = expected_sentence.supervision_periods[0]
+
+        # Violation is moved off of the supervision period (it no longer matches) and the termination date is updated
+        expected_original_supervision_period.supervision_violation_entries = []
+        expected_original_supervision_period.termination_date = _DATE_3
+
+        # A placeholder periods is created to hold the existing supervision violation
+        expected_new_placeholder_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=_US_MO,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_violation_entries=[self.to_entity(db_supervision_violation)]
+        )
+        expected_sentence.supervision_periods.append(expected_new_placeholder_supervision_period)
+
+        # Act
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _US_MO, ingested_people=[person])
+
+        # Assert
+        self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session, debug=True)
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
