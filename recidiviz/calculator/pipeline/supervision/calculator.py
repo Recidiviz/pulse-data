@@ -229,6 +229,19 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics: Dict[str, Any] = {}
 
+    # Set Population violation dimensions if revocation analysis flags are false
+    # TODO(2850): clean up this logic
+    if (not with_revocation_dimensions and not with_revocation_analysis_dimensions
+            and isinstance(supervision_time_bucket, (RevocationReturnSupervisionTimeBucket,
+                                                     NonRevocationReturnSupervisionTimeBucket))):
+        if supervision_time_bucket.most_severe_violation_type:
+            characteristics['most_severe_violation_type'] = supervision_time_bucket.most_severe_violation_type
+        if supervision_time_bucket.most_severe_violation_type_subtype:
+            characteristics['most_severe_violation_type_subtype'] = \
+                supervision_time_bucket.most_severe_violation_type_subtype
+        if supervision_time_bucket.response_count is not None:
+            characteristics['response_count'] = supervision_time_bucket.response_count
+
     if with_revocation_dimensions and \
             isinstance(supervision_time_bucket,
                        RevocationReturnSupervisionTimeBucket):
