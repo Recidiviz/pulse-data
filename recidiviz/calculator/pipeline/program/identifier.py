@@ -58,6 +58,8 @@ def find_program_events(
 
     program_events: List[ProgramEvent] = []
 
+    # TODO(2855): Bring in supervision and incarceration sentences to infer the supervision type on supervision
+    #  periods that don't have a set supervision type
     program_events.extend(find_program_referrals(
         program_assignments, assessments,
         supervision_periods,
