@@ -66,7 +66,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     TerminatedSupervisionAssessmentScoreChangeMetric, \
-    SupervisionRevocationAnalysisMetric
+    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -101,13 +101,10 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[SupervisionTimeBucket]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]])
 @with_output_types(SupervisionMetric)
 class GetSupervisionMetrics(beam.PTransform):
-    """Transforms a StatePerson and their SupervisionTimeBuckets into
-    SupervisionMetrics."""
-
+    """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
     def __init__(self, pipeline_options: Dict[str, str],
                  inclusions: Dict[str, bool],
                  metric_type: str):
@@ -126,17 +123,16 @@ class GetSupervisionMetrics(beam.PTransform):
         # Calculate supervision metric combinations from a StatePerson and their
         # SupervisionTimeBuckets
         supervision_metric_combinations = (
-            input_or_inputs
-            | 'Map to metric combinations' >>
+            input_or_inputs | 'Map to metric combinations' >>
             beam.ParDo(CalculateSupervisionMetricCombinations(),
                        **self.inclusions).with_outputs('populations',
                                                        'revocations',
                                                        'successes',
                                                        'assessment_changes',
-                                                       'revocation_analyses'))
+                                                       'revocation_analyses',
+                                                       'revocation_violation_type_analyses'))
 
-        # Calculate the supervision population values for the metrics combined
-        # by key
+        # Calculate the supervision population values for the metrics combined by key
         populations_with_sums = (supervision_metric_combinations.populations
                                  | 'Calculate supervision population values' >>
                                  beam.CombinePerKey(SumFn()))
@@ -146,14 +142,12 @@ class GetSupervisionMetrics(beam.PTransform):
                                  | 'Calculate supervision revocation values' >>
                                  beam.CombinePerKey(SumFn()))
 
-        # Calculate the supervision success values for the metrics combined by
-        # key
+        # Calculate the supervision success values for the metrics combined by key
         successes_with_sums = (supervision_metric_combinations.successes
                                | 'Calculate the supervision success values' >>
                                beam.CombinePerKey(SupervisionSuccessFn()))
 
-        # Calculate the assessment score changes for the metrics combined by
-        # key
+        # Calculate the assessment score changes for the metrics combined by key
         assessment_changes_with_averages = (
             supervision_metric_combinations.assessment_changes
             | 'Calculate the assessment score change average values' >>
@@ -168,50 +162,45 @@ class GetSupervisionMetrics(beam.PTransform):
             beam.CombinePerKey(SumFn())
         )
 
-        # Produce the SupervisionPopulationMetrics
-        population_metrics = (populations_with_sums
-                              | 'Produce supervision population metrics' >>
-                              beam.ParDo(
-                                  ProduceSupervisionMetrics(),
-                                  **self._pipeline_options))
-
-        # Produce the SupervisionRevocationMetrics
-        revocation_metrics = (revocations_with_sums
-                              | 'Produce supervision revocation metrics' >>
-                              beam.ParDo(
-                                  ProduceSupervisionMetrics(),
-                                  **self._pipeline_options))
-
-        # Produce the SupervisionSuccessMetrics
-        success_metrics = (successes_with_sums
-                           | 'Produce supervision success metrics' >>
-                           beam.ParDo(
-                               ProduceSupervisionMetrics(),
-                               **self._pipeline_options))
-
-        # Produce the TerminatedSupervisionAssessmentScoreChangeMetrics
-        assessment_change_metrics = (
-            assessment_changes_with_averages
-            | 'Produce assessment score change metrics' >>
-            beam.ParDo(
-                ProduceSupervisionMetrics(),
-                **self._pipeline_options
-            )
+        # Calculate the violation type analyses count values for metrics combined by key
+        revocation_violation_type_analyses_with_sums = (
+            supervision_metric_combinations.revocation_violation_type_analyses
+            | 'Calculate the revocation violation type analyses count values' >>
+            beam.CombinePerKey(SumFn())
         )
 
+        # Produce the SupervisionPopulationMetrics
+        population_metrics = (populations_with_sums | 'Produce supervision population metrics' >>
+                              beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+
+        # Produce the SupervisionRevocationMetrics
+        revocation_metrics = (revocations_with_sums | 'Produce supervision revocation metrics' >>
+                              beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+
+        # Produce the SupervisionSuccessMetrics
+        success_metrics = (successes_with_sums | 'Produce supervision success metrics' >>
+                           beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+
+        # Produce the TerminatedSupervisionAssessmentScoreChangeMetrics
+        assessment_change_metrics = (assessment_changes_with_averages | 'Produce assessment score change metrics' >>
+                                     beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+
         # Produce the SupervisionRevocationAnalysisMetrics
-        revocation_analysis_metrics = (
-            revocation_analyses_with_sums
-            | 'Produce supervision revocation analysis metrics' >>
-            beam.ParDo(ProduceSupervisionMetrics(),
-                       **self._pipeline_options))
+        revocation_analysis_metrics = (revocation_analyses_with_sums |
+                                       'Produce supervision revocation analysis metrics' >>
+                                       beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+
+        # Produce the SupervisionRevocationViolationTypeAnalysisMetrics
+        revocation_violation_type_analysis_metrics = (revocation_violation_type_analyses_with_sums
+                                                      | 'Produce revocation violation type analysis metrics' >>
+                                                      beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
 
         # Merge the metric groups
         merged_metrics = ((population_metrics, revocation_metrics,
                            success_metrics, assessment_change_metrics,
-                           revocation_analysis_metrics)
+                           revocation_analysis_metrics, revocation_violation_type_analysis_metrics)
                           | 'Merge population, revocation, success,'
-                            'revocation analysis and'
+                            ' revocation analysis, revocation violation type analysis metrics and'
                             ' assessment change metrics' >>
                           beam.Flatten())
 
@@ -220,25 +209,17 @@ class GetSupervisionMetrics(beam.PTransform):
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  beam.typehints.Optional[Dict[Any,
-                                               Tuple[Any, Dict[str, Any]]]],
-                  beam.typehints.Optional[Dict[Any,
-                                               Tuple[Any, Dict[str, Any]]]]
-                  )
-@with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[SupervisionTimeBucket]])
+                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]],
+                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
+@with_output_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]])
 class ClassifySupervisionTimeBuckets(beam.DoFn):
-    """Classifies time on supervision as years and months with or without
-    revocation, and classifies months of projected completion as either
-    successful or not."""
+    """Classifies time on supervision as years and months with or without revocation, and classifies months of
+    projected completion as either successful or not."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, ssvr_agent_associations,
-                supervision_period_to_agent_associations,
-                **kwargs):
-        """Identifies instances of revocation and non-revocation time buckets on
-        supervision, and classifies months of projected completion as either
-        successful or not.
+    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations, **kwargs):
+        """Identifies instances of revocation and non-revocation time buckets on supervision, and classifies months of
+        projected completion as either successful or not.
         """
         state_code = 'ALL'
 
@@ -249,16 +230,13 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         _, person_periods = element
 
         # Get the StateSupervisionSentences as a list
-        supervision_sentences = \
-            list(person_periods['supervision_sentences'])
+        supervision_sentences = list(person_periods['supervision_sentences'])
 
         # Get the StateSupervisionPeriods as a list
-        supervision_periods = \
-            list(person_periods['supervision_periods'])
+        supervision_periods = list(person_periods['supervision_periods'])
 
         # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = \
-            list(person_periods['incarceration_periods'])
+        incarceration_periods = list(person_periods['incarceration_periods'])
 
         # Get the StateAssessments as a list
         assessments = list(person_periods['assessments'])
@@ -301,14 +279,12 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
     def process(self, element, *args, **kwargs):
         """Produces various supervision metric combinations.
 
-        Sends the calculator the StatePerson entity and their corresponding
-        SupervisionTimeBuckets for mapping all supervision combinations.
+        Sends the calculator the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
+        supervision combinations.
 
         Args:
-            element: Tuple containing a StatePerson and their
-                SupervisionTimeBuckets
-            **kwargs: This should be a dictionary with values for the
-                following keys:
+            element: Tuple containing a StatePerson and their SupervisionTimeBuckets
+            **kwargs: This should be a dictionary with values for the following keys:
                     - age_bucket
                     - gender
                     - race
@@ -318,12 +294,10 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         """
         person, supervision_time_buckets = element
 
-        # Calculate supervision metric combinations for this person and their
-        # supervision time buckets
-        metric_combinations = \
-            calculator.map_supervision_combinations(person,
-                                                    supervision_time_buckets,
-                                                    kwargs)
+        # Calculate supervision metric combinations for this person and their supervision time buckets
+        metric_combinations = calculator.map_supervision_combinations(person,
+                                                                      supervision_time_buckets,
+                                                                      kwargs)
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
@@ -335,37 +309,30 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
             if metric_type == MetricType.POPULATION.value:
-                yield beam.pvalue.TaggedOutput('populations',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('populations', (json_key, value))
             elif metric_type == MetricType.REVOCATION.value:
-                yield beam.pvalue.TaggedOutput('revocations',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('revocations', (json_key, value))
             elif metric_type == MetricType.SUCCESS.value:
-                yield beam.pvalue.TaggedOutput('successes',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('successes', (json_key, value))
             elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
-                yield beam.pvalue.TaggedOutput('assessment_changes',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('assessment_changes', (json_key, value))
             elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
-                yield beam.pvalue.TaggedOutput('revocation_analyses',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('revocation_analyses', (json_key, value))
+            elif metric_type == MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
+                yield beam.pvalue.TaggedOutput('revocation_violation_type_analyses', (json_key, value))
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, int],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str}
-                  )
+@with_input_types(beam.typehints.Tuple[str, int], **{'runner': str,
+                                                     'project': str,
+                                                     'job_name': str,
+                                                     'region': str,
+                                                     'job_timestamp': str})
 @with_output_types(SupervisionMetric)
 class ProduceSupervisionMetrics(beam.DoFn):
-    """Produces SupervisionPopulationMetrics
-    and SupervisionRevocationMetrics ready for persistence."""
-
+    """Produces SupervisionPopulationMetrics and SupervisionRevocationMetrics ready for persistence."""
     def process(self, element, *args, **kwargs):
         pipeline_options = kwargs
 
@@ -374,8 +341,7 @@ class ProduceSupervisionMetrics(beam.DoFn):
         (metric_key, value) = element
 
         if value is None:
-            # Due to how the pipeline arrives at this function, this should be
-            # impossible.
+            # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
         # Convert JSON string to dictionary
@@ -385,42 +351,39 @@ class ProduceSupervisionMetrics(beam.DoFn):
         if metric_type == MetricType.POPULATION.value:
             dict_metric_key['count'] = value
 
-            supervision_metric = \
-                SupervisionPopulationMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
+            supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.REVOCATION.value:
             dict_metric_key['count'] = value
 
-            supervision_metric = \
-                SupervisionRevocationMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
+            supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.SUCCESS.value:
-            dict_metric_key['successful_completion_count'] = \
-                value.get('successful_completion_count')
-            dict_metric_key['projected_completion_count'] = \
-                value.get('projected_completion_count')
+            dict_metric_key['successful_completion_count'] = value.get('successful_completion_count')
+            dict_metric_key['projected_completion_count'] = value.get('projected_completion_count')
 
-            supervision_metric = \
-                SupervisionSuccessMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
+            supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
             dict_metric_key['count'] = value.get('count')
 
-            dict_metric_key['average_score_change'] = \
-                value.get('average_score_change')
+            dict_metric_key['average_score_change'] = value.get('average_score_change')
 
-            supervision_metric = \
-                TerminatedSupervisionAssessmentScoreChangeMetric.\
-                build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id
-                )
+            supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
         elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
             dict_metric_key['count'] = value
 
-            supervision_metric = \
-                SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id
-                )
+            supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
+        elif metric_type == MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
+            dict_metric_key['count'] = value
+
+            supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
         else:
             logging.error("Unexpected metric of type: %s",
                           dict_metric_key.get('metric_type'))
@@ -436,13 +399,11 @@ class ProduceSupervisionMetrics(beam.DoFn):
 @with_input_types(SupervisionMetric)
 @with_output_types(beam.typehints.Dict[str, Any])
 class SupervisionMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to
-    BigQuery."""
+    """Builds a dictionary in the format necessary to write the output to BigQuery."""
 
     def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in
-        dictionary form, where the values are in formats as required by BigQuery
-        I/O connector.
+        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
+        formats as required by BigQuery I/O connector.
 
         For a list of required formats, see the "Data types" section of:
             https://beam.apache.org/documentation/io/built-in/google-bigquery/
@@ -451,24 +412,23 @@ class SupervisionMetricWritableDict(beam.DoFn):
             element: A SupervisionMetric
 
         Yields:
-            A dictionary representation of the SupervisionMetric
-                in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
+            A dictionary representation of the SupervisionMetric in the format Dict[str, Any] so that it can be written
+                to BigQuery using beam.io.WriteToBigQuery.
         """
         element_dict = json_serializable_metric_key(element.__dict__)
 
         if isinstance(element, SupervisionPopulationMetric):
             yield beam.pvalue.TaggedOutput('populations', element_dict)
-        elif isinstance(element,
-                        SupervisionRevocationAnalysisMetric):
+        elif isinstance(element, SupervisionRevocationAnalysisMetric):
             yield beam.pvalue.TaggedOutput('revocation_analyses', element_dict)
-        elif isinstance(element, SupervisionRevocationMetric) and not \
-                isinstance(element, SupervisionRevocationAnalysisMetric):
+        elif isinstance(element, SupervisionRevocationViolationTypeAnalysisMetric):
+            yield beam.pvalue.TaggedOutput('revocation_violation_type_analyses', element_dict)
+        elif isinstance(element, SupervisionRevocationMetric) \
+                and not isinstance(element, SupervisionRevocationAnalysisMetric):
             yield beam.pvalue.TaggedOutput('revocations', element_dict)
         elif isinstance(element, SupervisionSuccessMetric):
             yield beam.pvalue.TaggedOutput('successes', element_dict)
-        elif isinstance(element,
-                        TerminatedSupervisionAssessmentScoreChangeMetric):
+        elif isinstance(element, TerminatedSupervisionAssessmentScoreChangeMetric):
             yield beam.pvalue.TaggedOutput('assessment_changes', element_dict)
 
     def to_runner_api_parameter(self, _):
@@ -538,6 +498,8 @@ def parse_arguments(argv):
                             MetricType.ASSESSMENT_CHANGE.value,
                             MetricType.POPULATION.value,
                             MetricType.REVOCATION.value,
+                            MetricType.REVOCATION_ANALYSIS.value,
+                            MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
                             MetricType.SUCCESS.value
                         ],
                         help='The type of metric to calculate.',
@@ -588,12 +550,10 @@ def dimensions_and_methodologies(known_args) -> \
 def run(argv=None):
     """Runs the supervision calculation pipeline."""
 
-    # Workaround to load SQLAlchemy objects at start of pipeline. This is
-    # necessary because the BuildRootEntity function tries to access attributes
-    # of relationship properties on the SQLAlchemy room_schema_class before they
-    # have been loaded. However, if *any* SQLAlchemy objects have been
-    # instantiated, then the relationship properties are loaded and their
-    # attributes can be successfully accessed.
+    # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
+    # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they
+    # have been loaded. However, if *any* SQLAlchemy objects have been instantiated, then the relationship properties
+    # are loaded and their attributes can be successfully accessed.
     _ = schema.StatePerson()
 
     # Parse command-line arguments
@@ -611,136 +571,106 @@ def run(argv=None):
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
-        persons = (p
-                   | 'Load Persons' >>
-                   BuildRootEntity(dataset=input_dataset,
-                                   data_dict=None,
-                                   root_schema_class=schema.StatePerson,
-                                   root_entity_class=entities.StatePerson,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=True))
+        persons = (p | 'Load Persons' >> BuildRootEntity(dataset=input_dataset,
+                                                         data_dict=None,
+                                                         root_schema_class=schema.StatePerson,
+                                                         root_entity_class=entities.StatePerson,
+                                                         unifying_id_field='person_id',
+                                                         build_related_entities=True))
 
         # Get StateIncarcerationPeriods
-        incarceration_periods = (p
-                                 | 'Load IncarcerationPeriods' >>
-                                 BuildRootEntity(
-                                     dataset=input_dataset,
-                                     data_dict=None,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
-                                     unifying_id_field='person_id',
-                                     build_related_entities=True))
+        incarceration_periods = (p | 'Load IncarcerationPeriods' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateIncarcerationPeriod,
+            root_entity_class=entities.StateIncarcerationPeriod,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
 
         # Get StateSupervisionViolations
-        supervision_violations = \
-            (p
-             | 'Load SupervisionViolations' >>
-             BuildRootEntity(
-                 dataset=input_dataset,
-                 data_dict=None,
-                 root_schema_class=schema.StateSupervisionViolation,
-                 root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field='person_id',
-                 build_related_entities=True
-             ))
+        supervision_violations = (p | 'Load SupervisionViolations' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateSupervisionViolation,
+            root_entity_class=entities.StateSupervisionViolation,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
 
         # TODO(2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
-        supervision_violation_responses = \
-            (p
-             | 'Load SupervisionViolationResponses' >>
-             BuildRootEntity(
-                 dataset=input_dataset,
-                 data_dict=None,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
-                 root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
-                 build_related_entities=True
-             ))
+        supervision_violation_responses = (p | 'Load SupervisionViolationResponses' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateSupervisionViolationResponse,
+            root_entity_class=entities.StateSupervisionViolationResponse,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
 
         # Get StateSupervisionSentences
-        supervision_sentences = (p
-                                 | 'Load SupervisionSentences' >>
-                                 BuildRootEntity(
-                                     dataset=input_dataset,
-                                     data_dict=None,
-                                     root_schema_class=
-                                     schema.StateSupervisionSentence,
-                                     root_entity_class=
-                                     entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
-                                     build_related_entities=True))
+        supervision_sentences = (p | 'Load SupervisionSentences' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateSupervisionSentence,
+            root_entity_class=entities.StateSupervisionSentence,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
 
         # Get StateSupervisionPeriods
-        supervision_periods = (p
-                               | 'Load SupervisionPeriods' >>
-                               BuildRootEntity(
-                                   dataset=input_dataset,
-                                   data_dict=None,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=True))
+        supervision_periods = (p | 'Load SupervisionPeriods' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateSupervisionPeriod,
+            root_entity_class=entities.StateSupervisionPeriod,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
 
         # Get StateAssessments
-        assessments = (p
-                       | 'Load Assessments' >>
-                       BuildRootEntity(dataset=input_dataset,
-                                       data_dict=None,
-                                       root_schema_class=
-                                       schema.StateAssessment,
-                                       root_entity_class=entities.
-                                       StateAssessment,
-                                       unifying_id_field='person_id',
-                                       build_related_entities=False))
+        assessments = (p | 'Load Assessments' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateAssessment,
+            root_entity_class=entities.StateAssessment,
+            unifying_id_field='person_id',
+            build_related_entities=False
+        ))
 
-        # Bring in the table that associates StateSupervisionViolationResponses
-        # to information about StateAgents
-        ssvr_to_agent_association_query = \
-            f"SELECT * FROM `{reference_dataset}.ssvr_to_agent_association`"
+        # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
+        ssvr_to_agent_association_query = f"SELECT * FROM `{reference_dataset}.ssvr_to_agent_association`"
 
-        ssvr_to_agent_associations = (
-            p
-            | "Read SSVR to Agent table from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource
-                         (query=ssvr_to_agent_association_query,
-                          use_standard_sql=True)))
+        ssvr_to_agent_associations = (p | "Read SSVR to Agent table from BigQuery" >>
+                                      beam.io.Read(beam.io.BigQuerySource
+                                                   (query=ssvr_to_agent_association_query,
+                                                    use_standard_sql=True)))
 
-        # Convert the association table rows into key-value tuples with the
-        # value for the supervision_violation_response_id column as the key
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
+        # Convert the association table rows into key-value tuples with the value for the
+        # supervision_violation_response_id column as the key
+        ssvr_agent_associations_as_kv = (ssvr_to_agent_associations | 'Convert SSVR to Agent table to KV tuples' >>
+                                         beam.ParDo(ConvertDictToKVTuple(),
+                                                    'supervision_violation_response_id')
+                                         )
 
-        supervision_period_to_agent_association_query = \
-            f"SELECT * FROM `{reference_dataset}." \
-            f"supervision_period_to_agent_association`"
+        supervision_period_to_agent_association_query = f"SELECT * FROM `{reference_dataset}." \
+                                                        f"supervision_period_to_agent_association`"
 
-        supervision_period_to_agent_associations = (
-            p
-            | "Read Supervision Period to Agent table from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource
-                         (query=supervision_period_to_agent_association_query,
-                          use_standard_sql=True)))
+        supervision_period_to_agent_associations = (p | "Read Supervision Period to Agent table from BigQuery" >>
+                                                    beam.io.Read(beam.io.BigQuerySource
+                                                                 (query=supervision_period_to_agent_association_query,
+                                                                  use_standard_sql=True)))
 
-        # Convert the association table rows into key-value tuples with the
-        # value for the supervision_period_id column as the key
-        supervision_period_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert Supervision Period to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
+        # Convert the association table rows into key-value tuples with the value for the supervision_period_id column
+        # as the key
+        supervision_period_to_agent_associations_as_kv = (supervision_period_to_agent_associations |
+                                                          'Convert Supervision Period to Agent table to KV tuples' >>
+                                                          beam.ParDo(ConvertDictToKVTuple(),
+                                                                     'supervision_period_id')
+                                                          )
 
-        # Group StateSupervisionViolationResponses and
-        # StateSupervisionViolations by person_id
+        # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
             {'violations': supervision_violations,
              'violation_responses': supervision_violation_responses
@@ -749,16 +679,15 @@ def run(argv=None):
             beam.CoGroupByKey()
         )
 
-        # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding StateSupervisionViolationResponses
+        # Set the fully hydrated StateSupervisionViolation entities on the corresponding
+        # StateSupervisionViolationResponses
         violation_responses_with_hydrated_violations = (
             supervision_violations_and_responses
             | 'Set hydrated StateSupervisionViolations on '
             'the StateSupervisionViolationResponses' >>
             beam.ParDo(SetViolationOnViolationsResponse()))
 
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
-        # by person_id
+        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
              'violation_responses':
@@ -768,16 +697,15 @@ def run(argv=None):
             beam.CoGroupByKey()
         )
 
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
+        # Set the fully hydrated StateSupervisionViolationResponse entities on the corresponding
+        # StateIncarcerationPeriods
         incarceration_periods_with_source_violations = (
             incarceration_periods_and_violation_responses
             | 'Set hydrated StateSupervisionViolationResponses on '
             'the StateIncarcerationPeriods' >>
             beam.ParDo(SetViolationResponseOnIncarcerationPeriod()))
 
-        # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionSentences
+        # Group each StatePerson with their StateIncarcerationPeriods and StateSupervisionSentences
         person_periods_and_sentences = (
             {'person': persons,
              'assessments': assessments,
@@ -798,8 +726,7 @@ def run(argv=None):
             'state_code': state_code
         }
 
-        # Identify SupervisionTimeBuckets from the StatePerson's
-        # StateSupervisionSentences and StateIncarcerationPeriods
+        # Identify SupervisionTimeBuckets from the StatePerson's StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
             person_periods_and_sentences
             | 'Get SupervisionTimeBuckets' >>
@@ -822,38 +749,35 @@ def run(argv=None):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_time_buckets
-                               | 'Get Supervision Metrics' >>
+        supervision_metrics = (person_time_buckets | 'Get Supervision Metrics' >>
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=inclusions,
                                    metric_type=metric_type))
 
         # Convert the metrics into a format that's writable to BQ
-        writable_metrics = (supervision_metrics
-                            | 'Convert to dict to be written to BQ' >>
+        writable_metrics = (supervision_metrics | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
                                     'populations', 'revocations', 'successes',
-                                    'assessment_changes', 'revocation_analyses'
+                                    'assessment_changes', 'revocation_analyses',
+                                    'revocation_violation_type_analyses'
                                 )
                             )
 
         # Write the metrics to the output tables in BigQuery
-        populations_table = known_args.output + \
-            '.supervision_population_metrics'
+        populations_table = known_args.output + '.supervision_population_metrics'
 
-        revocations_table = known_args.output + \
-            '.supervision_revocation_metrics'
+        revocations_table = known_args.output + '.supervision_revocation_metrics'
 
-        successes_table = known_args.output + \
-            '.supervision_success_metrics'
+        successes_table = known_args.output + '.supervision_success_metrics'
 
-        assessment_changes_table = known_args.output + \
-            '.terminated_supervision_assessment_score_change_metrics'
+        assessment_changes_table = known_args.output + '.terminated_supervision_assessment_score_change_metrics'
 
-        revocation_analysis_table = known_args.output + \
-            '.supervision_revocation_analysis_metrics'
+        revocation_analysis_table = known_args.output + '.supervision_revocation_analysis_metrics'
+
+        revocation_violation_type_analysis_table = known_args.output + \
+            '.supervision_revocation_violation_type_analysis_metrics'
 
         _ = (writable_metrics.populations
              | f"Write population metrics to BQ table: {populations_table}" >>
@@ -893,6 +817,15 @@ def run(argv=None):
                f"{revocation_analysis_table}" >>
              beam.io.WriteToBigQuery(
                  table=revocation_analysis_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.revocation_violation_type_analyses
+             | f"Write revocation violation type analyses metrics to BQ table: "
+               f"{revocation_violation_type_analysis_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=revocation_violation_type_analysis_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
