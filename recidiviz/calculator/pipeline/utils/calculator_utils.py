@@ -286,6 +286,7 @@ def identify_violation_subtype(violation_type: Optional[StateSupervisionViolatio
 
     return None
 
+
 def identify_most_severe_response_decision(
         decisions:
         List[StateSupervisionViolationResponseDecision]) -> \

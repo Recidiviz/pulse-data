@@ -27,8 +27,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
-    RevocationReturnSupervisionTimeBucket,\
-    ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
+    RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
@@ -62,19 +61,18 @@ ALL_INCLUSIONS_DICT = {
         SupervisionMetricType.SUCCESS.value: True,
         SupervisionMetricType.REVOCATION.value: True,
         SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
         SupervisionMetricType.POPULATION.value: True,
     }
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
 
-# TODO(2732): Implement more full test coverage of the officer, district,
-#  the supervision success functionality
+# TODO(2732): Implement more full test coverage of the officer, district, the supervision success functionality
 class TestMapSupervisionCombinations(unittest.TestCase):
     """Tests the map_supervision_combinations function."""
 
-    # Freezing time to before the events so none of them fall into the
-    # relevant metric periods
+    # Freezing time to before the events so none of them fall into the relevant metric periods
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations(self):
         """Tests the map_supervision_combinations function."""
@@ -82,8 +80,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -111,21 +108,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_assessment(self):
-        """Tests the map_supervision_combinations function when there is
-        assessment data present."""
+        """Tests the map_supervision_combinations function when there is assessment data present."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -163,10 +156,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_exclude_assessment(self):
@@ -176,8 +167,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -218,21 +208,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         # Remove the dimensional explosions for assessment_type (assessment_score_bucket remains as `NOT_ASSESSED`)
         expected_combinations_count = expected_combinations_count / 2
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervising_officer_district(self):
-        """Tests the map_supervision_combinations function when there is
-        supervising officer and district data present."""
+        """Tests the map_supervision_combinations function when there is supervising officer and district data
+        present."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -272,15 +259,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_revocation_combinations(self):
-        """Tests the map_supervision_combinations function for a
-        revocation month."""
+        """Tests the map_supervision_combinations function for a revocation month."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -293,8 +277,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -331,20 +314,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             include_revocation_analysis=True)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_success(self):
-        """Tests the map_supervision_combinations function when there is a
-        ProjectedSupervisionCompletionBucket."""
+        """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -380,22 +359,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_unsuccessful(self):
-        """Tests the map_supervision_combinations function when there is a
-        ProjectedSupervisionCompletionBucket and the supervision is not
-        successfully completed."""
+        """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket
+        and the supervision is not successfully completed."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -431,28 +406,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations if not
-                   combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.SUCCESS))
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS))
         assert all(value == 0 for _combination, value
                    in supervision_combinations if
-                   combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.SUCCESS))
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS))
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_mixed_success(self):
-        """Tests the map_supervision_combinations function when there is a
-        ProjectedSupervisionCompletionBucket and the supervision is not
-        successfully completed."""
+        """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket and the
+        supervision is not successfully completed."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -494,8 +464,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             duplicated_months_different_supervision_types=True
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations if not
                    combo_has_enum_value_for_key(
@@ -523,8 +492,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1993, 4, 2),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -586,8 +554,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -645,20 +612,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             include_revocation_analysis=True)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_multiple_months(self):
-        """Tests the map_supervision_combinations function where the person
-        was on supervision for multiple months."""
+        """Tests the map_supervision_combinations function where the person was on supervision for multiple months."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -690,22 +653,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months(self):
-        """Tests the map_supervision_combinations function where the person
-        was serving multiple supervision sentences simultaneously in a given
-        month."""
+        """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
+        simultaneously in a given month."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -732,22 +691,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months_types(self):
-        """Tests the map_supervision_combinations function where the person
-        was serving multiple supervision sentences simultaneously in a given
-        month, but the supervisions are of different types."""
+        """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
+        simultaneously in a given month, but the supervisions are of different types."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -778,10 +733,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             duplicated_months_different_supervision_types=True
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods(self):
@@ -789,8 +742,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -819,10 +771,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         # the month of the revocation and all relevant periods because there is no applicable external id.
         expected_combinations_count -= (len(calculator_utils.METRIC_PERIOD_MONTHS) + 1)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_one_non_relevant_period(self):
@@ -875,8 +825,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -901,10 +850,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             include_revocation_analysis=True
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicates(self):
@@ -912,8 +859,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -939,10 +885,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
     # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
@@ -951,8 +895,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -988,8 +931,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(not value for _combination, value
                    in supervision_combinations
                    if _combination.get('methodology') ==
@@ -1010,8 +952,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1038,10 +979,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
 
 
     # pylint:disable=line-too-long
@@ -1051,8 +990,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1092,8 +1030,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == -3 for _combination, value
                    in supervision_combinations)
 
@@ -1111,8 +1048,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1124,7 +1060,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionType.PAROLE),
+                state_code='US_MO', year=2010, month=1,
+                supervision_type=StateSupervisionType.PROBATION,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                response_count=3,
+                violation_history_description='1fel;2misd',
+                violation_type_frequency_counter=[
+                    ['FELONY', 'LAW'],
+                    ['MISD', 'WEA', 'EMP'],
+                    ['MISD', 'DRG', 'ASC']
+                ]
+            ),
             SupervisionTerminationBucket(
                 state_code='US_MO',
                 year=2010,
@@ -1151,7 +1098,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=True
+            include_revocation_analysis=True,
+            include_revocation_violation_type_analysis_dimensions=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1170,8 +1118,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_bucket(self):
-        """Tests the map_supervision_combinations when there are
-        SupervisionTerminationBuckets sent to the calculator."""
+        """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the
+        calculator."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -1209,23 +1157,20 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == termination_bucket.assessment_score_change
                    for _combination, value
                    in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_buckets_no_score_change(self):
-        """Tests the map_supervision_combinations when there are
-        SupervisionTerminationBuckets sent to the calculator, but the bucket
-        doesn't have an assessment_score_change."""
+        """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator,
+        but the bucket doesn't have an assessment_score_change."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1255,17 +1200,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = 0
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == termination_bucket.assessment_score_change
                    for _combination, value
                    in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_buckets(self):
-        """Tests the map_supervision_combinations when there are
-        SupervisionTerminationBuckets sent to the calculator that end in
-        the same month."""
+        """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator
+        that end in the same month."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -1316,8 +1259,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == first_termination_bucket.assessment_score_change
                    for _combination, value
                    in supervision_combinations)
@@ -1328,8 +1270,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1374,6 +1315,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUCCESS.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
             SupervisionMetricType.POPULATION.value: False
         }
 
@@ -1387,8 +1329,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             metric_to_include=SupervisionMetricType.ASSESSMENT_CHANGE
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == termination_bucket.assessment_score_change
                    for _combination, value
                    in supervision_combinations)
@@ -1404,8 +1345,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1449,6 +1389,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUCCESS.value: True,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
             SupervisionMetricType.POPULATION.value: False
         }
 
@@ -1462,8 +1403,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             metric_to_include=SupervisionMetricType.SUCCESS
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value
                    for _combination, value
                    in supervision_combinations)
@@ -1479,8 +1419,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1527,6 +1466,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUCCESS.value: False,
             SupervisionMetricType.REVOCATION.value: True,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
             SupervisionMetricType.POPULATION.value: False
         }
 
@@ -1540,8 +1480,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             metric_to_include=SupervisionMetricType.REVOCATION
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1
                    for _combination, value
                    in supervision_combinations)
@@ -1610,6 +1549,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUCCESS.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
             SupervisionMetricType.POPULATION.value: False
         }
 
@@ -1625,8 +1565,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             metric_to_include=SupervisionMetricType.REVOCATION_ANALYSIS
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1
                    for _combination, value
                    in supervision_combinations)
@@ -1636,14 +1575,107 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.REVOCATION_ANALYSIS)
             for _combination, value in supervision_combinations)
 
+    @freeze_time('2010-01-31')
+    def test_map_supervision_combinations_only_revocation_violation_type_analysis(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        person_external_id = StatePersonExternalId.new_with_defaults(
+            external_id='SID1341',
+            id_type='US_MO_DOC',
+            state_code='US_MO'
+        )
+
+        person.external_ids = [person_external_id]
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_MO', ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        termination_bucket = SupervisionTerminationBucket(
+            state_code='US_MO',
+            year=2000,
+            month=1,
+            supervision_type=StateSupervisionType.PAROLE,
+            assessment_score=11,
+            assessment_type=StateAssessmentType.LSIR,
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            assessment_score_change=-9
+        )
+
+        supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket.for_month(
+                state_code='US_MO', year=2018, month=3, supervision_type=StateSupervisionType.PAROLE,
+                successful_completion=True, supervising_officer_external_id='officer45',
+                supervising_district_external_id='district5'
+            ),
+            termination_bucket,
+            RevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2010, month=1,
+                supervision_type=StateSupervisionType.PROBATION,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                response_count=3,
+                violation_history_description='1fel;2misd',
+                violation_type_frequency_counter=[
+                    ['FELONY', 'LAW'],
+                    ['MISD', 'WEA', 'EMP'],
+                    ['MISD', 'DRG', 'ASC']
+                ]
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2010, month=2,
+                supervision_type=StateSupervisionType.PAROLE)
+        ]
+
+        inclusions_dict = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
+            SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.REVOCATION.value: False,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
+            SupervisionMetricType.POPULATION.value: False
+        }
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, inclusions_dict
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            include_all_metrics=False,
+            include_revocation_analysis=True,
+            include_revocation_violation_type_analysis_dimensions=True,
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
+            metric_to_include=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
+        )
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
+        assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
+                                                SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                   for _combination, value in supervision_combinations)
+        assert all(_combination.get('violation_count_type') is not None
+                   for _combination, value in supervision_combinations)
+
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_population(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1687,6 +1719,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUCCESS.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
             SupervisionMetricType.POPULATION.value: True
         }
 
@@ -1700,8 +1733,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             metric_to_include=SupervisionMetricType.POPULATION
         )
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1
                    for _combination, value
                    in supervision_combinations)
@@ -1720,8 +1752,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1748,8 +1779,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1773,8 +1803,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1810,8 +1839,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1848,8 +1876,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1885,8 +1912,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1921,8 +1947,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1959,8 +1984,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -1994,8 +2018,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -2029,8 +2052,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -2066,8 +2088,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -2096,15 +2117,14 @@ class TestCharacteristicCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(combinations))
 
         for combo in combinations:
-            assert combo.get('violation_type') is None
+            assert combo.get('violation_count_type') is None
 
     def test_characteristic_combinations_revocation_no_extra_types(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
         person.races = [race]
 
@@ -2131,22 +2151,20 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         for combo in combinations:
             assert combo.get('revocation_type') is None
-            assert combo.get('violation_type') is None
+            assert combo.get('violation_count_type') is None
 
 
 class TestIncludeSupervisionInCount(unittest.TestCase):
     """Tests the include_non_revocation_bucket function."""
     def test_include_supervision_in_count(self):
-        """Tests that the revocation bucket is included and the non-revocation
-        bucket is not."""
+        """Tests that the revocation bucket is included and the non-revocation bucket is not."""
         combo = {
             'metric_type': SupervisionMetricType.POPULATION
         }
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionType.PAROLE, None, None,
-            None, None,
-            RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
+            state_code='US_MO', year=2018, month=4, supervision_type=StateSupervisionType.PAROLE,
+            revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
         non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
             'US_MO', 2018, 4, StateSupervisionType.PAROLE)
 
@@ -2165,18 +2183,16 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         self.assertFalse(include_non_revocation_bucket)
 
     def test_include_supervision_in_count_revocation(self):
-        """Tests that the revocation probation bucket is included and the
-        non-revocation parole bucket is not."""
+        """Tests that the revocation probation bucket is included and the non-revocation parole bucket is not."""
         combo = {
             'metric_type': SupervisionMetricType.POPULATION
         }
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionType.PROBATION, None, None,
-            None, None, None,
-            RevocationType.SHOCK_INCARCERATION, ViolationType.FELONY)
+            state_code='US_MO', year=2018, month=4, supervision_type=StateSupervisionType.PROBATION,
+            revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
         non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionType.PAROLE)
+            state_code='US_MO', year=2018, month=4, supervision_type=StateSupervisionType.PAROLE)
 
         supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
 
@@ -2218,8 +2234,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         self.assertTrue(include_second_bucket)
 
     def test_include_supervision_in_count_supervision_type_set_parole(self):
-        """Tests that the bucket is included when the supervision type is
-        set in the combo."""
+        """Tests that the bucket is included when the supervision type is set in the combo."""
         combo = {
             'metric_type': SupervisionMetricType.POPULATION,
             'supervision_type': StateSupervisionType.PAROLE
@@ -2239,8 +2254,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         self.assertTrue(include_first_bucket)
 
     def test_include_supervision_in_count_supervision_type_set_probation(self):
-        """Tests that the bucket is included when the supervision type is
-        set in the combo."""
+        """Tests that the bucket is included when the supervision type is set in the combo."""
         combo = {
             'metric_type': SupervisionMetricType.POPULATION,
             'supervision_type': StateSupervisionType.PROBATION
@@ -2263,8 +2277,8 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 def demographic_metric_combos_count_for_person_supervision(
         person: StatePerson,
         inclusions: Dict[str, bool]) -> int:
-    """Returns the number of possible demographic metric combinations for a
-    given person, given the metric inclusions list."""
+    """Returns the number of possible demographic metric combinations for a given person, given the metric inclusions
+    list."""
 
     metric_inclusions = []
 
@@ -2295,10 +2309,10 @@ def expected_metric_combos_count(
         metric_to_include: SupervisionMetricType = None,
         duplicated_months_different_supervision_types: bool = False,
         num_relevant_periods: int = 0,
-        include_revocation_analysis: bool = False) -> int:
-    """Calculates the expected number of characteristic combinations given
-    the person, the supervision time buckets, and the dimensions that should
-    be included in the explosion of feature combinations."""
+        include_revocation_analysis: bool = False,
+        include_revocation_violation_type_analysis_dimensions: bool = False) -> int:
+    """Calculates the expected number of characteristic combinations given the person, the supervision time buckets,
+    and the dimensions that should be included in the explosion of feature combinations."""
 
     combos_for_person = \
         demographic_metric_combos_count_for_person_supervision(person, inclusions)
@@ -2442,6 +2456,35 @@ def expected_metric_combos_count(
         supervision_revocation_analysis_combos += (combos_for_person * methodology_multiplier
                                                    * num_revocation_buckets * revocation_analysis_dimension_multiplier)
 
+    revocation_violation_type_analysis_dimension_multiplier = 1
+    num_violation_types = 0
+    if with_revocation_dimensions and include_revocation_violation_type_analysis_dimensions and revocation_buckets:
+        first_revocation_bucket = revocation_buckets[0]
+
+        if first_revocation_bucket.violation_type_frequency_counter:
+            violation_type_analysis_dimensions = [
+                'most_severe_violation_type',
+            ]
+
+            for dimension in violation_type_analysis_dimensions:
+                if getattr(first_revocation_bucket, dimension):
+                    revocation_violation_type_analysis_dimension_multiplier *= 2
+
+            if first_revocation_bucket.response_count is not None:
+                revocation_violation_type_analysis_dimension_multiplier *= 2
+
+            for violation_type_list in first_revocation_bucket.violation_type_frequency_counter:
+                num_violation_types += len(violation_type_list) + 1
+
+    revocation_violation_type_analysis_combos = 0
+
+    if include_revocation_violation_type_analysis_dimensions:
+        revocation_violation_type_analysis_combos += (
+            combos_for_person * methodology_multiplier *
+            num_revocation_buckets * revocation_violation_type_analysis_dimension_multiplier *
+            num_violation_types
+        )
+
     projected_completion_dimension_multiplier = 1
     if projected_completion_buckets:
         first_projected_completion_bucket = projected_completion_buckets[0]
@@ -2525,6 +2568,13 @@ def expected_metric_combos_count(
             # Person-level metrics
             supervision_revocation_analysis_combos += (num_relevant_periods + 1)
 
+        if include_revocation_violation_type_analysis_dimensions:
+
+            revocation_violation_type_analysis_combos += (
+                combos_for_person * num_revocation_buckets *
+                revocation_violation_type_analysis_dimension_multiplier * num_violation_types * num_relevant_periods
+            )
+
         # Success combos
         supervision_success_combos += (combos_for_person
                                        * (num_projected_completion_buckets - num_duplicated_projected_completion_months)
@@ -2539,11 +2589,12 @@ def expected_metric_combos_count(
     # different call that only looks at combos for either population or
     # revocation, but not both
     if include_all_metrics:
-        return supervision_population_combos + \
-               supervision_revocation_combos + \
-               supervision_success_combos + \
-               supervision_termination_combos + \
-               supervision_revocation_analysis_combos
+        return (supervision_population_combos +
+                supervision_revocation_combos +
+                supervision_success_combos +
+                supervision_termination_combos +
+                supervision_revocation_analysis_combos +
+                revocation_violation_type_analysis_combos)
 
     if metric_to_include:
         if metric_to_include == SupervisionMetricType.ASSESSMENT_CHANGE:
@@ -2554,6 +2605,8 @@ def expected_metric_combos_count(
             return supervision_revocation_combos
         if metric_to_include == SupervisionMetricType.REVOCATION_ANALYSIS:
             return supervision_revocation_analysis_combos
+        if metric_to_include == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+            return revocation_violation_type_analysis_combos
         if metric_to_include == SupervisionMetricType.POPULATION:
             return supervision_population_combos
 

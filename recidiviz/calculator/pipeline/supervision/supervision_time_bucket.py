@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Buckets of time on supervision that may have included a revocation."""
-from typing import Optional
+from typing import Optional, List
 
 import attr
 
@@ -102,6 +102,12 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # A string representation of the violations recorded in the period leading up to the revocation
     violation_history_description: Optional[str] = attr.ib(default=None)
 
+    # A list of a list of strings for each violation type and subtype recorded during the period leading up to the
+    # revocation. The elements of the outer list represent every StateSupervisionViolation that was reported in the
+    # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
+    # were listed on the given violation.
+    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+
     @staticmethod
     def for_year(state_code: str,
                  year: int,
@@ -117,6 +123,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
                  most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = None,
                  response_count: Optional[int] = 0,
                  violation_history_description: Optional[str] = None,
+                 violation_type_frequency_counter: Optional[List[List[str]]] = None,
                  supervising_officer_external_id: Optional[str] = None,
                  supervising_district_external_id: Optional[str] = None) -> \
             'RevocationReturnSupervisionTimeBucket':
@@ -136,6 +143,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             most_severe_response_decision=most_severe_response_decision,
             response_count=response_count,
             violation_history_description=violation_history_description,
+            violation_type_frequency_counter=violation_type_frequency_counter,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
         )
@@ -163,6 +171,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             most_severe_response_decision=month_bucket.most_severe_response_decision,
             response_count=month_bucket.response_count,
             violation_history_description=month_bucket.violation_history_description,
+            violation_type_frequency_counter=month_bucket.violation_type_frequency_counter,
             supervising_officer_external_id=month_bucket.supervising_officer_external_id,
             supervising_district_external_id=month_bucket.supervising_district_external_id
         )
@@ -183,6 +192,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
                   most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = None,
                   response_count: Optional[int] = 0,
                   violation_history_description: Optional[str] = None,
+                  violation_type_frequency_counter: Optional[List[List[str]]] = None,
                   supervising_officer_external_id: Optional[str] = None,
                   supervising_district_external_id: Optional[str] = None) \
             -> 'RevocationReturnSupervisionTimeBucket':
@@ -202,6 +212,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
             most_severe_response_decision=most_severe_response_decision,
             response_count=response_count,
             violation_history_description=violation_history_description,
+            violation_type_frequency_counter=violation_type_frequency_counter,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id
         )

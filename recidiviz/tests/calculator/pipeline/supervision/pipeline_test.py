@@ -19,6 +19,7 @@
 """Tests for supervision/pipeline.py"""
 import json
 import unittest
+from typing import List, Set
 
 import apache_beam as beam
 from apache_beam.pvalue import AsDict
@@ -33,7 +34,10 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import pipeline, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric
+    SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric, \
+    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
+    SupervisionRevocationAnalysisMetric, \
+    TerminatedSupervisionAssessmentScoreChangeMetric, SupervisionSuccessMetric
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
@@ -61,12 +65,13 @@ from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType as RevocationType, \
-    StateSupervisionViolationResponseRevocationType
+    StateSupervisionViolationResponseRevocationType, StateSupervisionViolationResponseType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
-    StateSupervisionSentence, StateAssessment, StateSupervisionViolationResponse
+    StateSupervisionSentence, StateAssessment, StateSupervisionViolationResponse, StateSupervisionViolation, \
+    StateSupervisionViolationTypeEntry
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
@@ -80,6 +85,8 @@ ALL_INCLUSIONS_DICT = {
         SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
         SupervisionMetricType.SUCCESS.value: True,
         SupervisionMetricType.REVOCATION.value: True,
+        SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
         SupervisionMetricType.POPULATION.value: True,
     }
 
@@ -501,8 +508,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    inclusions=ALL_INCLUSIONS_DICT,
                                    metric_type='ALL'))
 
-        assert_that(supervision_metrics,
-                    AssertMatchers.validate_pipeline_test())
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
+            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}))
 
         test_pipeline.run()
 
@@ -632,19 +639,29 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ssvr.decision_agents = [state_agent]
 
+        violation_report = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=99999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            is_draft=False,
+            response_date=date(2017, 1, 1),
+            person_id=fake_person_id
+        )
+
         supervision_violation_type = schema.StateSupervisionViolationTypeEntry(
             person_id=fake_person_id,
             state_code='us_ca',
-            violation_type=StateSupervisionViolationType.TECHNICAL
+            violation_type=StateSupervisionViolationType.FELONY
         )
 
         supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
             state_code='us_ca',
             person_id=fake_person_id,
-            supervision_violation_responses=[ssvr],
+            supervision_violation_responses=[violation_report, ssvr],
             supervision_violation_types=[supervision_violation_type]
         )
+
+        violation_report.supervision_violation_id = supervision_violation.supervision_violation_id
 
         # This incarceration period was due to a probation revocation
         revocation_reincarceration = schema.StateIncarcerationPeriod(
@@ -685,7 +702,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         supervision_violation_response_data = [
-            normalized_database_base_dict(ssvr)
+            normalized_database_base_dict(ssvr),
+            normalized_database_base_dict(violation_report)
         ]
 
         supervision_violation_data = [
@@ -951,8 +969,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    inclusions=ALL_INCLUSIONS_DICT,
                                    metric_type='ALL'))
 
-        assert_that(supervision_metrics,
-                    AssertMatchers.validate_pipeline_test())
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
+            {SupervisionMetricType.POPULATION, SupervisionMetricType.REVOCATION,
+             SupervisionMetricType.REVOCATION_ANALYSIS, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}))
 
         test_pipeline.run()
 
@@ -965,16 +984,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                                          residency_status=ResidencyStatus.PERMANENT)
 
         persons_data = [normalized_database_base_dict(fake_person)]
-
-        race_1 = schema.StatePersonRace(person_race_id=531, state_code='US_ND',
-                                        race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE, person_id=fake_person_id)
-
-        races_data = normalized_database_base_dict_list([race_1])
-
-        ethnicity = schema.StatePersonEthnicity(person_ethnicity_id=None, state_code='US_ND', ethnicity=None,
-                                                person_id=fake_person_id)
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         initial_supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=5876524,
@@ -998,6 +1007,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_1 = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=5578679,
             state_code='US_ND',
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             person_id=fake_person_id,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=4698615
@@ -1028,27 +1038,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             projected_release_reason=None,
             admission_date=date(2015, 4, 28),
-            release_date=date(2015, 6, 16),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            person_id=fake_person_id,
-            source_supervision_violation_response_id=ssvr_1.supervision_violation_response_id
-        )
-
-        # This reincarceration was due to a transfer
-        transfer_incarceration = schema.StateIncarcerationPeriod(
-            external_id='2222',
-            incarceration_period_id=2499740,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='US_ND',
-            county_code=None,
-            facility='JRCC',
-            facility_security_level=None,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            projected_release_reason=None,
-            admission_date=date(2015, 6, 16),
             release_date=date(2016, 11, 22),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            source_supervision_violation_response_id=ssvr_1.supervision_violation_response_id
         )
 
         # This probation supervision period ended in a revocation
@@ -1073,13 +1066,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             {'supervision_period_id': 5887825, 'supervision_sentence_id': 116412},
         ]
 
-        charge = database_test_utils.generate_test_charge(
-            person_id=fake_person_id,
-            charge_id=1234523,
-            court_case=None,
-            bond=None
-        )
-
         # This incarceration period was due to a parole revocation
         revocation_reincarceration = schema.StateIncarcerationPeriod(
             external_id='3333',
@@ -1102,23 +1088,44 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_2 = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=fake_svr_id,
             state_code='US_ND',
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             person_id=fake_person_id,
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=fake_violation_id
         )
         ssvr_2.decision_agents = [state_agent]
+
+        violation_report = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=99999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            is_draft=False,
+            response_date=date(2017, 1, 1),
+            person_id=fake_person_id,
+            supervision_violation_id=fake_violation_id
+        )
+
         supervision_violation_type_2 = schema.StateSupervisionViolationTypeEntry(
             person_id=fake_person_id,
             state_code='US_ND',
             violation_type=StateSupervisionViolationType.TECHNICAL,
+
             supervision_violation_id=fake_violation_id
         )
+
+        supervision_violation_condition = schema.StateSupervisionViolatedConditionEntry(
+            person_id=fake_person_id,
+            state_code='US_ND',
+            condition='DRG',
+            supervision_violation_id=fake_violation_id
+        )
+
         supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
             state_code='US_ND',
             person_id=fake_person_id,
-            supervision_violation_responses=[ssvr_2],
-            supervision_violation_types=[supervision_violation_type_2]
+            supervision_violation_responses=[violation_report, ssvr_2],
+            supervision_violation_types=[supervision_violation_type_2],
+            supervision_violated_conditions=[supervision_violation_condition]
         )
 
         assessment = schema.StateAssessment(assessment_id=298374, assessment_date=date(2016, 12, 20),
@@ -1127,7 +1134,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration),
-            normalized_database_base_dict(transfer_incarceration),
             normalized_database_base_dict(revocation_reincarceration)
         ]
         supervision_periods_data = [
@@ -1138,7 +1144,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation_type_1),
             normalized_database_base_dict(supervision_violation_type_2)
         ]
+
+        supervision_violation_condition_entry_data = [
+            normalized_database_base_dict(supervision_violation_condition)
+        ]
+
         supervision_violation_response_data = [
+            normalized_database_base_dict(violation_report),
             normalized_database_base_dict(ssvr_1),
             normalized_database_base_dict(ssvr_2)
         ]
@@ -1150,17 +1162,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(initial_supervision_sentence),
             normalized_database_base_dict(supervision_sentence)
         ]
-        charge_data = [
-            normalized_database_base_dict(charge)
-        ]
+
         assessment_data = [
             normalized_database_base_dict(assessment)
         ]
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
-            schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__:
                 incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__:
@@ -1169,11 +1177,12 @@ class TestSupervisionPipeline(unittest.TestCase):
                 supervision_violation_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__:
                 supervision_violation_type_data,
+            schema.StateSupervisionViolatedConditionEntry.__tablename__:
+                supervision_violation_condition_entry_data,
             schema.StateSupervisionPeriod.__tablename__:
                 supervision_periods_data,
             schema.StateSupervisionSentence.__tablename__:
                 supervision_sentences_data,
-            schema.StateCharge.__tablename__: charge_data,
             schema.state_charge_supervision_sentence_association_table.name:
                 [{}],
             schema.
@@ -1377,8 +1386,10 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    inclusions=ALL_INCLUSIONS_DICT,
                                    metric_type='ALL'))
 
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(), "Assert metrics are produced.")
-
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
+            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
+             SupervisionMetricType.REVOCATION_ANALYSIS, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}),
+                    "Assert all expected metric types are produced.")
         assert_that(supervision_metrics, AssertMatchers.assert_source_violation_type_set(ViolationType.TECHNICAL),
                     "Assert source violation TECHNICAL type is set")
 
@@ -1842,8 +1853,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    inclusions=ALL_INCLUSIONS_DICT,
                                    metric_type='ALL'))
 
-        assert_that(supervision_metrics,
-                    AssertMatchers.validate_pipeline_test())
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
+            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
+             SupervisionMetricType.REVOCATION_ANALYSIS}), "Assert all expected metric types are produced.")
 
         test_pipeline.run()
 
@@ -2045,7 +2057,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_MO',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
@@ -2053,15 +2065,30 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             person_id=fake_person_id
         )
 
-        supervision_violation_response = \
-            StateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=999
+        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_MO',
+            supervision_violation_response_id=999
+        )
+
+        violation_report = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_MO',
+            supervision_violation_response_id=111,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2015, 5, 24),
+            supervision_violation=StateSupervisionViolation.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_id=123,
+                supervision_violation_types=[StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR
+                )]
             )
+        )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_MO',
             admission_date=date(2015, 5, 30),
             admission_reason=StateIncarcerationPeriodAdmissionReason.
             PROBATION_REVOCATION,
@@ -2069,7 +2096,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED,
             source_supervision_violation_response=
-            supervision_violation_response)
+            source_supervision_violation_response)
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
@@ -2079,7 +2106,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='CA',
+            state_code='US_MO',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2015, 3, 10)
@@ -2092,7 +2119,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                               incarceration_period
                           ],
                           'supervision_sentences': [supervision_sentence],
-                          'violation_responses': []
+                          'violation_responses': [violation_report]
                           }
 
         supervision_time_buckets = [
@@ -2122,7 +2149,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=2015, month=5,
                 supervision_type=supervision_period.supervision_type,
+                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype='UNSET',
+                response_count=1,
+                violation_history_description='1misd',
+                violation_type_frequency_counter=[['MISDEMEANOR']],
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=RevocationType.REINCARCERATION,
                 assessment_score=assessment.assessment_score,
@@ -2134,7 +2165,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=2015, month=None,
                 supervision_type=supervision_period.supervision_type,
+                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype='UNSET',
+                response_count=1,
+                violation_history_description='1misd',
+                violation_type_frequency_counter=[['MISDEMEANOR']],
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=RevocationType.REINCARCERATION,
                 assessment_score=assessment.assessment_score,
@@ -2868,14 +2903,31 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test():
+    def validate_pipeline_test(expected_metric_types: Set[SupervisionMetricType]):
 
         def _validate_pipeline_test(output):
+            observed_metric_types: Set[SupervisionMetricType] = set()
 
             for metric in output:
                 if not isinstance(metric, SupervisionMetric):
-                    raise BeamAssertException(
-                        'Failed assert. Output is not of type SupervisionMetric.')
+                    raise BeamAssertException('Failed assert. Output is not of type SupervisionMetric.')
+
+                if isinstance(metric, TerminatedSupervisionAssessmentScoreChangeMetric):
+                    observed_metric_types.add(SupervisionMetricType.ASSESSMENT_CHANGE)
+                elif isinstance(metric, SupervisionSuccessMetric):
+                    observed_metric_types.add(SupervisionMetricType.SUCCESS)
+                elif isinstance(metric, SupervisionPopulationMetric):
+                    observed_metric_types.add(SupervisionMetricType.POPULATION)
+                elif isinstance(metric, SupervisionRevocationAnalysisMetric):
+                    observed_metric_types.add(SupervisionMetricType.REVOCATION_ANALYSIS)
+                elif isinstance(metric, SupervisionRevocationViolationTypeAnalysisMetric):
+                    observed_metric_types.add(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                elif isinstance(metric, SupervisionRevocationMetric):
+                    observed_metric_types.add(SupervisionMetricType.REVOCATION)
+
+            if observed_metric_types != expected_metric_types:
+                raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
+                                          f" observed metric types {observed_metric_types}.")
 
         return _validate_pipeline_test
 
