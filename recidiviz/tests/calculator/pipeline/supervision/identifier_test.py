@@ -2370,7 +2370,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission
         in the same month as the supervision period's termination_date.
-        Also ensures that the correct revocation_type, violation_type,
+        Also ensures that the correct revocation_type, violation_count_type,
         supervising_officer_external_id, and supervising_district_external_id
         are set on the RevocationReturnSupervisionTimeBucket."""
 
@@ -2397,15 +2397,25 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
             ]
         )
 
-        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+        violation_report = StateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=999,
-            response_date=date(2018, 4, 23),
+            response_date=date(2018, 4, 21),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            supervision_violation=supervision_violation,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
+            ]
+        )
+
+        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=999,
+            response_date=date(2018, 4, 23),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
             ],
@@ -2434,7 +2444,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         months_of_incarceration = identifier._identify_months_of_incarceration([incarceration_period])
 
         assessments = [assessment]
-        violation_responses = [source_supervision_violation_response]
+        violation_responses = [violation_report, source_supervision_violation_response]
 
         supervision_time_buckets = identifier.find_time_buckets_for_supervision_period(
             supervision_period,
@@ -2449,7 +2459,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(len(supervision_time_buckets), 4)
 
-        self.assertEqual(supervision_time_buckets, [
+        self.assertEqual([
             NonRevocationReturnSupervisionTimeBucket.for_month(
                 state_code=supervision_period.state_code,
                 year=2018, month=3,
@@ -2489,6 +2499,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
                 violation_history_description='1fel;1tech',
+                violation_type_frequency_counter=[['FELONY']],
                 supervising_officer_external_id=r'XXX',
                 supervising_district_external_id='X'),
             RevocationReturnSupervisionTimeBucket.for_year(
@@ -2506,14 +2517,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
                 violation_history_description='1fel;1tech',
+                violation_type_frequency_counter=[['FELONY']],
                 supervising_officer_external_id=r'XXX',
                 supervising_district_external_id='X'),
-        ])
+        ], supervision_time_buckets)
 
     def test_us_mo_find_time_buckets_for_supervision_period_technical_revocation_with_subtype(self):
         """Tests the find_time_buckets_for_supervision_period function when there is an incarceration period with a
         revocation admission in the same month as the supervision period's termination_date. Also ensures that the
-        correct revocation_type, violation_type, violation_subytype, supervising_officer_external_id, and
+        correct revocation_type, violation_count_type, violation_subytype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
 
         supervision_period = \
@@ -2534,11 +2546,23 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         violation_type=StateSupervisionViolationType.TECHNICAL
-                    ),
+                    )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(condition='DRG')]
             )
+
+        violation_report = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=999,
+            response_date=date(2018, 2, 21),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            supervision_violation=supervision_violation,
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+            ]
+        )
 
         source_supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
@@ -2578,7 +2602,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         months_of_incarceration = identifier._identify_months_of_incarceration([incarceration_period])
 
         assessments = [assessment]
-        violation_responses = [source_supervision_violation_response]
+        violation_responses = [violation_report, source_supervision_violation_response]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
@@ -2631,6 +2655,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
                 violation_history_description='1subs',
+                violation_type_frequency_counter=[['DRG']],
                 supervising_officer_external_id=r'XXX',
                 supervising_district_external_id='X'),
             RevocationReturnSupervisionTimeBucket.for_year(
@@ -2648,6 +2673,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
                 violation_history_description='1subs',
+                violation_type_frequency_counter=[['DRG']],
                 supervising_officer_external_id=r'XXX',
                 supervising_district_external_id='X'),
         ])
@@ -4715,6 +4741,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -4731,19 +4758,16 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-            most_severe_violation_type_subtype, \
-            most_severe_decision, \
-            response_count, \
-            violation_history_description = \
-            identifier.get_violation_and_response_history(
-                revocation_date, [supervision_violation_response])
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
 
-        self.assertEqual(StateSupervisionViolationType.FELONY, most_severe_violation_type)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
-        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION, most_severe_decision)
-        self.assertEqual(1, response_count)
-        self.assertEqual(violation_history_description, '1fel;1absc;1tech')
+        self.assertEqual(StateSupervisionViolationType.FELONY, violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual(violation_history.violation_history_description, '1fel;1absc;1tech')
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY', 'ABSCONDED']])
 
     def test_get_violation_and_response_history_with_subtype(self):
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -4762,6 +4786,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code='US_MO',
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
@@ -4779,22 +4804,21 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-        most_severe_violation_type_subtype, \
-        most_severe_decision, \
-        response_count, \
-        violation_history_description = \
+        violation_history = \
             identifier.get_violation_and_response_history(revocation_date, [supervision_violation_response])
 
-        self.assertEqual(StateSupervisionViolationType.TECHNICAL, most_severe_violation_type)
-        self.assertEqual('SUBSTANCE_ABUSE', most_severe_violation_type_subtype)
-        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION, most_severe_decision)
-        self.assertEqual(1, response_count)
-        self.assertEqual(violation_history_description, '1subs')
+        self.assertEqual(StateSupervisionViolationType.TECHNICAL, violation_history.most_severe_violation_type)
+        self.assertEqual('SUBSTANCE_ABUSE', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual(violation_history.violation_history_description, '1subs')
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['DRG', 'OTHER']])
 
     def test_get_violation_and_response_history_no_violations(self):
         supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.
@@ -4814,35 +4838,29 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-            most_severe_violation_type_subtype, \
-            most_severe_decision, \
-            response_count, \
-            violation_history_description = \
-            identifier.get_violation_and_response_history(revocation_date, [supervision_violation_response])
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
 
-        self.assertIsNone(most_severe_violation_type)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
-        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION, most_severe_decision)
-        self.assertEqual(1, response_count)
-        self.assertIsNone(violation_history_description)
+        self.assertIsNone(violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertIsNone(violation_history.violation_history_description)
+        self.assertIsNone(violation_history.violation_type_frequency_counter)
 
     def test_get_violation_and_response_history_no_responses(self):
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-            most_severe_violation_type_subtype, \
-            most_severe_decision, \
-            response_count, \
-            violation_history_description = \
-            identifier.get_violation_and_response_history(revocation_date,
-                                                          [])
+        violation_history = identifier.get_violation_and_response_history(revocation_date,
+                                                                          [])
 
-        self.assertIsNone(most_severe_violation_type)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
-        self.assertIsNone(most_severe_decision)
-        self.assertEqual(0, response_count)
-        self.assertIsNone(violation_history_description)
+        self.assertIsNone(violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertIsNone(violation_history.most_severe_response_decision)
+        self.assertEqual(0, violation_history.response_count)
+        self.assertIsNone(violation_history.violation_history_description)
+        self.assertIsNone(violation_history.violation_type_frequency_counter)
 
     def test_get_violation_and_response_history_citation_date(self):
         supervision_violation = \
@@ -4879,18 +4897,17 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-            most_severe_violation_type_subtype, \
-            most_severe_decision, \
-            response_count, \
-            violation_history_description = \
-            identifier.get_violation_and_response_history(revocation_date, [supervision_violation_response])
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
 
-        self.assertEqual(StateSupervisionViolationType.MISDEMEANOR, most_severe_violation_type)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
-        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION, most_severe_decision)
-        self.assertEqual(1, response_count)
-        self.assertEqual(violation_history_description, '1misd;1absc')
+        self.assertEqual(StateSupervisionViolationType.MISDEMEANOR,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1misd;1absc', violation_history.violation_history_description)
+        self.assertEqual([['ABSCONDED', 'MISDEMEANOR']], violation_history.violation_type_frequency_counter)
 
     def test_get_violation_and_response_history_is_draft(self):
         supervision_violation = \
@@ -4937,21 +4954,15 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        most_severe_violation_type, \
-            most_severe_violation_type_subtype, \
-            most_severe_decision, \
-            response_count, \
-            violation_history_description = \
-            identifier.get_violation_and_response_history(
-                revocation_date,
-                [supervision_violation_response]
-            )
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
 
-        self.assertIsNone(most_severe_violation_type)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
-        self.assertEqual(0, response_count)
-        self.assertIsNone(most_severe_decision)
-        self.assertIsNone(violation_history_description)
+        self.assertIsNone(violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(0, violation_history.response_count)
+        self.assertIsNone(violation_history.most_severe_response_decision)
+        self.assertIsNone(violation_history.violation_history_description)
+        self.assertIsNone(violation_history.violation_type_frequency_counter)
 
 
 class TestIdentifyMostSevereRevocationType(unittest.TestCase):
@@ -5317,3 +5328,106 @@ class TestGetRevocationDetails(unittest.TestCase):
                              DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
+
+
+class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
+    """Tests the _get_violation_type_frequency_counter function."""
+    def test_get_violation_type_frequency_counter(self):
+        violations = [
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.ABSCONDED
+                    ),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.FELONY
+                    )
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition='DRG'
+                    )
+                ]
+            )
+        ]
+
+        violation_type_frequency_counter = identifier._get_violation_type_frequency_counter(violations)
+
+        self.assertEqual([['ABSCONDED', 'FELONY', 'DRG']], violation_type_frequency_counter)
+
+    def test_get_violation_type_frequency_counter_technical_only(self):
+        violations = [
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    )
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition='DRG'
+                    )
+                ]
+            )
+        ]
+
+        violation_type_frequency_counter = identifier._get_violation_type_frequency_counter(violations)
+
+        self.assertEqual([['DRG']], violation_type_frequency_counter)
+
+    def test_get_violation_type_frequency_counter_technical_only_no_conditions(self):
+        violations = [
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    )
+                ]
+            )
+        ]
+
+        violation_type_frequency_counter = identifier._get_violation_type_frequency_counter(violations)
+
+        self.assertEqual([['TECHNICAL_NO_CONDITIONS']], violation_type_frequency_counter)
+
+    def test_get_violation_type_frequency_counter_multiple_violations(self):
+        violations = [
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.ABSCONDED
+                    ),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.FELONY
+                    )
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition='WEA'
+                    )
+                ]
+            ),
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.MISDEMEANOR
+                    ),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL
+                    )
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition='DRG'
+                    ),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition='EMP'
+                    )
+                ]
+            )
+        ]
+
+        violation_type_frequency_counter = identifier._get_violation_type_frequency_counter(violations)
+
+        self.assertEqual([['ABSCONDED', 'FELONY', 'WEA'], ['MISDEMEANOR', 'DRG', 'EMP']],
+                         violation_type_frequency_counter)
