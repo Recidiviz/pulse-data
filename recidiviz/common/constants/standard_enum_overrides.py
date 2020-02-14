@@ -18,7 +18,7 @@
 data parsing, i.e. both scrapers and direct ingest controllers.
 """
 
-from typing import cast
+from typing import cast, Optional
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
@@ -31,25 +31,27 @@ from recidiviz.common.constants.person_characteristics import ETHNICITY_MAP, \
 # TODO(2056): Move this logic into the converters themselves.
 def get_standard_enum_overrides() -> EnumOverrides:
     """
-    Returns a dict that contains all string to enum mappings that are
-    region specific. These overrides have a higher precedence than the
-    global mappings in ingest/constants.
+    Returns a dict that contains all string to enum mappings that are region specific. These overrides have a higher
+    precedence than the global mappings in ingest/constants.
 
-    Note: Before overriding this method, consider directly adding each
-    mapping directly into the respective global mappings instead.
+    Note: Before overriding this method, consider directly adding each mapping directly into the respective global
+    mappings instead.
     """
     overrides_builder = EnumOverrides.Builder()
     for ethnicity_string in ETHNICITY_MAP:
-        # mypy is unable to correctly type the EntityEnums in
-        # constants.person. See https://github.com/python/mypy/issues/3327
+        # mypy is unable to correctly type the EntityEnums in constants.person. See
+        # https://github.com/python/mypy/issues/3327
         ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
         if ethnicity_enum is Ethnicity.HISPANIC:
             overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 
     overrides_builder.add('OUT ON BOND', BondStatus.POSTED, BondType)
-    overrides_builder.add(lambda status: 'FELONY' in status,
-                          ChargeClass.FELONY, ChargeStatus)
-    overrides_builder.add(lambda status: 'MURDER' in status,
-                          ChargeClass.FELONY, ChargeStatus)
+    overrides_builder.add_mapper(_felony_mapper, ChargeClass, ChargeStatus)
 
     return overrides_builder.build()
+
+
+def _felony_mapper(status: str) -> Optional[ChargeClass]:
+    if 'FELONY' in status or 'MURDER' in status:
+        return ChargeClass.FELONY
+    return None
