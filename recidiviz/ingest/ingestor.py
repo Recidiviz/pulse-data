@@ -23,9 +23,7 @@ from recidiviz.common.constants.standard_enum_overrides import \
 
 
 class Ingestor:
-    """Base class for scrapers, direct ingest controllers, and anything
-    else that processes data into the system.
-    """
+    """Base class for scrapers, direct ingest controllers, and anything else that processes data into the system."""
 
     def get_enum_overrides(self) -> EnumOverrides:
         return get_standard_enum_overrides()

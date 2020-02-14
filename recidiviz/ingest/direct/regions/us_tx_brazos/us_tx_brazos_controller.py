@@ -139,7 +139,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
     def get_enum_overrides(self):
         overrides_builder = super().get_enum_overrides().to_builder()
 
-        overrides_builder.ignore(lambda x: True, CustodyStatus)
+        overrides_builder.ignore_with_predicate(lambda x: True, CustodyStatus)
         overrides_builder.add('ACTIVE', ChargeStatus.PRETRIAL)
         overrides_builder.add('ATTORNEY BOND', BondType.SECURED)
         overrides_builder.add('BARRED FROM PROSECUTION', ChargeStatus.DROPPED)
