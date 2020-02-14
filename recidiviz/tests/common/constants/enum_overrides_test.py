@@ -45,28 +45,31 @@ class EnumOverridesTest(unittest.TestCase):
 
         self.assertIsNone(overrides.parse('LATINO', Ethnicity))
 
-    def test_add_matchPredicate(self):
-        is_pending = lambda s: s.startswith('PENDING')
+    def test_add_matcher(self):
+        is_pending = lambda s: BondStatus.PENDING if s.startswith('PENDING') else None
 
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add(is_pending, BondStatus.PENDING)
+        overrides_builder.add_mapper(is_pending, BondStatus)
 
         overrides = overrides_builder.build()
 
         self.assertIsNone(overrides.parse('PEND', BondStatus))
-        self.assertEqual(overrides.parse('PENDING', BondStatus),
-                         BondStatus.PENDING)
-        self.assertEqual(overrides.parse('PENDING - WAITING TO SEE MAGISTRATE',
-                                         BondStatus), BondStatus.PENDING)
+        self.assertEqual(overrides.parse('PENDING', BondStatus), BondStatus.PENDING)
+        self.assertEqual(overrides.parse('PENDING - WAITING TO SEE MAGISTRATE', BondStatus), BondStatus.PENDING)
 
     def test_ignore(self):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore('A', ChargeClass)
-        overrides_builder.ignore(lambda s: s.startswith('NO'), ChargeClass)
+
+        overrides = overrides_builder.build()
+
+        self.assertTrue(overrides.should_ignore('A', ChargeClass))
+        self.assertFalse(overrides.should_ignore('A', BondType))
+
+    def test_ignoreWithPredicate(self):
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.ignore_with_predicate(lambda s: s.startswith('NO'), ChargeClass)
 
         overrides = overrides_builder.build()
 
         self.assertTrue(overrides.should_ignore('NONE', ChargeClass))
-        self.assertTrue(overrides.should_ignore('NONE', ChargeClass))
-        self.assertTrue(overrides.should_ignore('A', ChargeClass))
-        self.assertFalse(overrides.should_ignore('A', BondType))
