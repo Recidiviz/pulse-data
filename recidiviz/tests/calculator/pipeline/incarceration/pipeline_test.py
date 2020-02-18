@@ -56,6 +56,12 @@ from recidiviz.tests.calculator.calculator_test_utils import \
 
 _COUNTY_OF_RESIDENCE = 'county_of_residence'
 
+ALL_INCLUSIONS_DICT = {
+        'age_bucket': True,
+        'gender': True,
+        'race': True,
+        'ethnicity': True,
+    }
 
 class TestIncarcerationPipeline(unittest.TestCase):
     """Tests the entire incarceration pipeline."""
@@ -152,13 +158,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             normalized_database_base_dict(subsequent_reincarceration)
         ]
 
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
-
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -233,7 +232,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                  | 'Get Incarceration Metrics' >>
                                  pipeline.GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
-                                     inclusions=inclusions))
+                                     inclusions=ALL_INCLUSIONS_DICT,
+                                     calculation_month_limit=-1))
 
         assert_that(incarceration_metrics,
                     AssertMatchers.validate_metric_type())
@@ -281,13 +281,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         incarceration_periods_data = [
             normalized_database_base_dict(incarceration_period)
         ]
-
-        inclusions = {
-            'age_bucket': False,
-            'gender': False,
-            'race': False,
-            'ethnicity': False,
-        }
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
@@ -364,7 +357,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                  | 'Get Incarceration Metrics' >>
                                  pipeline.GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
-                                     inclusions=inclusions))
+                                     inclusions=ALL_INCLUSIONS_DICT,
+                                     calculation_month_limit=-1))
 
         assert_that(incarceration_metrics,
                     AssertMatchers.validate_metric_type())
@@ -511,16 +505,9 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
             )
         ]
 
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
-
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, incarceration_events[0], inclusions))
+            fake_person, incarceration_events[0], ALL_INCLUSIONS_DICT))
         assert num_combinations > 0
 
         expected_metric_count = num_combinations * 2
@@ -538,7 +525,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      **inclusions).with_outputs('admissions', 'releases')
+                      -1, ALL_INCLUSIONS_DICT).with_outputs('admissions', 'releases')
                   )
 
         assert_that(output.admissions, AssertMatchers.
@@ -566,7 +553,8 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
-                      pipeline.CalculateIncarcerationMetricCombinations())
+                      pipeline.CalculateIncarcerationMetricCombinations(),
+                      -1, ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -583,7 +571,8 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | beam.Create([])
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
-                      pipeline.CalculateIncarcerationMetricCombinations())
+                      pipeline.CalculateIncarcerationMetricCombinations(),
+                      -1, ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))

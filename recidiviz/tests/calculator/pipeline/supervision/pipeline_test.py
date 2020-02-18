@@ -506,7 +506,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL'))
+                                   metric_type='ALL',
+                                   calculation_month_limit=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
             {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}))
@@ -683,7 +684,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         assessment = schema.StateAssessment(
             assessment_id=298374,
             assessment_date=date(2015, 3, 19),
-            assessment_type='LSIR',
+            assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id
         )
 
@@ -967,11 +968,15 @@ class TestSupervisionPipeline(unittest.TestCase):
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL'))
+                                   metric_type='ALL',
+                                   calculation_month_limit=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
-            {SupervisionMetricType.POPULATION, SupervisionMetricType.REVOCATION,
-             SupervisionMetricType.REVOCATION_ANALYSIS, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}))
+            {SupervisionMetricType.POPULATION,
+             SupervisionMetricType.REVOCATION,
+             SupervisionMetricType.REVOCATION_ANALYSIS,
+             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+             SupervisionMetricType.ASSESSMENT_CHANGE}))
 
         test_pipeline.run()
 
@@ -1384,7 +1389,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL'))
+                                   metric_type='ALL',
+                                   calculation_month_limit=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
             {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
@@ -1851,7 +1857,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL'))
+                                   metric_type='ALL',
+                                   calculation_month_limit=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
             {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
@@ -1963,18 +1970,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10'),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2015, month=None,
-                supervision_type=supervision_period.supervision_type,
-                most_severe_violation_type_subtype='UNSET',
-                case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'),
-            SupervisionTerminationBucket.for_month(
+            SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
@@ -2161,23 +2157,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10'),
-            RevocationReturnSupervisionTimeBucket(
-                supervision_period.state_code,
-                year=2015, month=None,
-                supervision_type=supervision_period.supervision_type,
-                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                most_severe_violation_type_subtype='UNSET',
-                response_count=1,
-                violation_history_description='1misd',
-                violation_type_frequency_counter=[['MISDEMEANOR']],
-                case_type=StateSupervisionCaseType.GENERAL,
-                revocation_type=RevocationType.REINCARCERATION,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'),
-            SupervisionTerminationBucket.for_month(
+            SupervisionTerminationBucket(
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
@@ -2325,18 +2305,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10'),
-            NonRevocationReturnSupervisionTimeBucket(
-                supervision_period.state_code,
-                year=2015, month=None,
-                supervision_type=supervision_period.supervision_type,
-                most_severe_violation_type_subtype='UNSET',
-                case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'),
-            SupervisionTerminationBucket.for_month(
+            SupervisionTerminationBucket(
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
@@ -2468,15 +2437,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10'),
-            NonRevocationReturnSupervisionTimeBucket(
-                supervision_period.state_code,
-                year=2015, month=None,
-                supervision_type=supervision_period.supervision_type,
-                most_severe_violation_type_subtype='UNSET',
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'),
-            SupervisionTerminationBucket.for_month(
+            SupervisionTerminationBucket(
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
@@ -2678,11 +2639,13 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        calculation_month_limit = -1
+
         output = (test_pipeline
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             **ALL_INCLUSIONS_DICT).with_outputs('populations')
+                             calculation_month_limit, ALL_INCLUSIONS_DICT).with_outputs('populations')
                   )
 
         assert_that(output.populations, AssertMatchers.
@@ -2743,12 +2706,15 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        calculation_month_limit = -1
+
         output = (test_pipeline
                   | beam.Create([(fake_person, supervision_months)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             **ALL_INCLUSIONS_DICT).with_outputs('populations',
-                                                                 'revocations')
+                             calculation_month_limit,
+                             ALL_INCLUSIONS_DICT).with_outputs('populations',
+                                                               'revocations')
                   )
 
         assert_that(output.revocations, AssertMatchers.
@@ -2775,7 +2741,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Supervision Metrics' >>
-                  beam.ParDo(pipeline.CalculateSupervisionMetricCombinations())
+                  beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
+                             calculation_month_limit=-1, inclusions=ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -2791,7 +2758,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([])
                   | 'Calculate Supervision Metrics' >>
-                  beam.ParDo(pipeline.CalculateSupervisionMetricCombinations())
+                  beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
+                             calculation_month_limit=-1, inclusions=ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
