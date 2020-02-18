@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for executing calculation pipelines."""
-
+import argparse
 import logging
 
 from typing import Dict
@@ -118,3 +118,14 @@ def get_dataflow_job_with_id(project, job_id, location) -> Dict[str, str]:
         projectId=project,
         jobId=job_id,
         location=location).execute()
+
+
+def calculation_month_limit_arg(value) -> int:
+    """Enforces the acceptable values for the calculation_month_limit parameter in the pipelines."""
+    int_value = int(value)
+
+    if int_value < -1:
+        raise argparse.ArgumentTypeError("Minimum calculation_month_limit is -1")
+    if int_value == 0:
+        raise argparse.ArgumentTypeError("calculation_month_limit cannot be 0")
+    return int_value

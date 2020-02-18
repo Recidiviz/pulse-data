@@ -21,7 +21,7 @@ usage: pipeline.py --input=INPUT_LOCATION --output=OUTPUT_LOCATION
                     --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
-                    [--metric_type] [--state_code]
+                    [--metric_type] [--state_code] [--calculation_month_limit]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.supervision.pipeline
@@ -76,7 +76,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     TerminatedSupervisionAssessmentScoreChange
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key, MetricMethodologyType
@@ -107,10 +107,12 @@ class GetSupervisionMetrics(beam.PTransform):
     """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
     def __init__(self, pipeline_options: Dict[str, str],
                  inclusions: Dict[str, bool],
-                 metric_type: str):
+                 metric_type: str,
+                 calculation_month_limit: int):
         super(GetSupervisionMetrics, self).__init__()
         self._pipeline_options = pipeline_options
         self.inclusions = inclusions
+        self.calculation_month_limit = calculation_month_limit
 
         for metric_option in MetricType:
             if metric_type in ('ALL', metric_option.value):
@@ -125,12 +127,13 @@ class GetSupervisionMetrics(beam.PTransform):
         supervision_metric_combinations = (
             input_or_inputs | 'Map to metric combinations' >>
             beam.ParDo(CalculateSupervisionMetricCombinations(),
-                       **self.inclusions).with_outputs('populations',
-                                                       'revocations',
-                                                       'successes',
-                                                       'assessment_changes',
-                                                       'revocation_analyses',
-                                                       'revocation_violation_type_analyses'))
+                       self.calculation_month_limit, self.inclusions).with_outputs(
+                           'populations',
+                           'revocations',
+                           'successes',
+                           'assessment_changes',
+                           'revocation_analyses',
+                           'revocation_violation_type_analyses'))
 
         # Calculate the supervision population values for the metrics combined by key
         populations_with_sums = (supervision_metric_combinations.populations
@@ -154,8 +157,7 @@ class GetSupervisionMetrics(beam.PTransform):
             beam.CombinePerKey(TerminatedSupervisionAssessmentScoreChange())
         )
 
-        # Calculate the revocation analyses count values for metrics combined
-        # by key
+        # Calculate the revocation analyses count values for metrics combined by key
         revocation_analyses_with_sums = (
             supervision_metric_combinations.revocation_analyses
             | 'Calculate the revocation analyses count values' >>
@@ -260,8 +262,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
             state_code)
 
         if not supervision_time_buckets:
-            logging.info("No valid supervision time buckets for person with"
-                         "id: %d. Excluding them from the "
+            logging.info("No valid supervision time buckets for person with id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
             yield (person, supervision_time_buckets)
@@ -270,13 +271,14 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[SupervisionTimeBucket]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]],
+                  beam.typehints.Optional[int], beam.typehints.Dict[str, bool])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateSupervisionMetricCombinations(beam.DoFn):
     """Calculates supervision metric combinations."""
 
-    def process(self, element, *args, **kwargs):
+    #pylint: disable=arguments-differ
+    def process(self, element, calculation_month_limit, inclusions):
         """Produces various supervision metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
@@ -284,7 +286,8 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
 
         Args:
             element: Tuple containing a StatePerson and their SupervisionTimeBuckets
-            **kwargs: This should be a dictionary with values for the following keys:
+            calculation_month_limit: The number of months to limit the monthly calculation output to.
+            inclusions: This should be a dictionary with values for the following keys:
                     - age_bucket
                     - gender
                     - race
@@ -297,7 +300,8 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         # Calculate supervision metric combinations for this person and their supervision time buckets
         metric_combinations = calculator.map_supervision_combinations(person,
                                                                       supervision_time_buckets,
-                                                                      kwargs)
+                                                                      inclusions,
+                                                                      calculation_month_limit)
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
@@ -512,6 +516,13 @@ def parse_arguments(argv):
                         choices=['ALL', 'US_MO', 'US_ND'],
                         help='The state_code to include in the calculations',
                         default='ALL')
+
+    parser.add_argument('--calculation_month_limit',
+                        dest='calculation_month_limit',
+                        type=calculation_month_limit_arg,
+                        help='The number of months (including this one) to limit the monthly calculation output to. '
+                             'If set to -1, does not limit the calculations.',
+                        default=1)
 
     return parser.parse_known_args(argv)
 
@@ -744,6 +755,9 @@ def run(argv=None):
         # Get the type of metric to calculate
         metric_type = known_args.metric_type
 
+        # The number of months to limit the monthly calculation output to
+        calculation_month_limit = known_args.calculation_month_limit
+
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
@@ -753,7 +767,8 @@ def run(argv=None):
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=inclusions,
-                                   metric_type=metric_type))
+                                   metric_type=metric_type,
+                                   calculation_month_limit=calculation_month_limit))
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (supervision_metrics | 'Convert to dict to be written to BQ' >>
@@ -804,8 +819,7 @@ def run(argv=None):
              ))
 
         _ = (writable_metrics.assessment_changes
-             | "Write assessment change metrics to BQ table: "
-               f"{assessment_changes_table}" >>
+             | f"Write assessment change metrics to BQ table: {assessment_changes_table}" >>
              beam.io.WriteToBigQuery(
                  table=assessment_changes_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
@@ -813,8 +827,7 @@ def run(argv=None):
              ))
 
         _ = (writable_metrics.revocation_analyses
-             | f"Write revocation analyses metrics to BQ table: "
-               f"{revocation_analysis_table}" >>
+             | f"Write revocation analyses metrics to BQ table: {revocation_analysis_table}" >>
              beam.io.WriteToBigQuery(
                  table=revocation_analysis_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,

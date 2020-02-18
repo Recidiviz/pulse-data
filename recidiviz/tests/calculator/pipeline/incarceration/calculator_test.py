@@ -81,9 +81,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_events = [incarceration_event]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -136,9 +137,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -182,9 +184,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -228,9 +231,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -274,9 +278,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -320,9 +325,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -372,9 +378,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -424,9 +431,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -464,9 +472,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_events = [incarceration_event]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -508,9 +517,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         incarceration_events = [incarceration_event]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -558,9 +568,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -609,9 +620,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -661,9 +673,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         ]
 
         incarceration_combinations = calculator.map_incarceration_combinations(
-            person,
-            incarceration_events,
-            ALL_INCLUSIONS_DICT
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -685,6 +698,179 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 # revocation admission reason on them
                 assert combo.get('admission_reason') == \
                        AdmissionReason.PAROLE_REVOCATION
+
+    @freeze_time('2000-03-30')
+    def test_map_incarceration_combinations_calculation_month_limit(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(2000, 3, 12),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        incarceration_events = [incarceration_event]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, incarceration_events, ALL_INCLUSIONS_DICT,
+            num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(incarceration_combinations))
+        assert all(value == 1 for _combination, value
+                   in incarceration_combinations)
+        for combo, _ in incarceration_combinations:
+            assert combo.get('year') == 2000
+
+    @freeze_time('2000-03-30')
+    def test_map_incarceration_combinations_calculation_month_limit_exclude(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(1990, 3, 12),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        incarceration_events = [incarceration_event]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=1
+        )
+
+        self.assertEqual(0, len(incarceration_combinations))
+
+    @freeze_time('2000-03-30')
+    def test_map_incarceration_combinations_calculation_month_limit_include_one(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event_include = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(2000, 3, 12),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        incarceration_event_exclude = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(1994, 3, 12),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        incarceration_events = [incarceration_event_include, incarceration_event_exclude]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=36
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, [incarceration_event_include], ALL_INCLUSIONS_DICT,
+            num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(incarceration_combinations))
+        assert all(value == 1 for _combination, value
+                   in incarceration_combinations)
+        for combo, _ in incarceration_combinations:
+            assert combo.get('year') == 2000
+
+    @freeze_time('2010-12-31')
+    def test_map_incarceration_combinations_calculation_month_limit_include_monthly(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationAdmissionEvent(
+            state_code='CA',
+            event_date=date(2007, 12, 12),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        incarceration_events = [incarceration_event]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=37
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, incarceration_events, ALL_INCLUSIONS_DICT,)
+
+        self.assertEqual(expected_combinations_count,
+                         len(incarceration_combinations))
+        assert all(value == 1 for _combination, value
+                   in incarceration_combinations)
+        for combo, _ in incarceration_combinations:
+            assert combo.get('year') == 2007
 
 
 class TestCharacteristicCombinations(unittest.TestCase):

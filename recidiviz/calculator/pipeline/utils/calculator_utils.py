@@ -22,6 +22,7 @@ from itertools import combinations
 from typing import Optional, List, Any, Dict, Tuple
 
 import dateutil
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils import us_mo_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -241,9 +242,16 @@ def convert_event_based_to_person_based_metrics(
     return person_based_metrics
 
 
+def first_day_of_month(any_date):
+    """Returns the date corresponding to the first day of the month for the given date."""
+    year = any_date.year
+    month = any_date.month
+
+    return date(year, month, 1)
+
+
 def last_day_of_month(any_date):
-    """Returns the date corresponding to the last day of the month for the
-    given date."""
+    """Returns the date corresponding to the last day of the month for the given date."""
     next_month = any_date.replace(day=28) + datetime.timedelta(
         days=4)
     return next_month - datetime.timedelta(days=next_month.day)
@@ -390,3 +398,26 @@ def person_external_id_to_include(person: StatePerson) -> Optional[str]:
                 return external_id.external_id
 
     return None
+
+
+def include_in_monthly_metrics(year: int, month: int, calculation_month_lower_bound: Optional[date]) -> bool:
+    """Determines whether the event with the given year and month should be included in the monthly metric output. If
+    the calculation_month_lower_bound is None, then includes the bucket by default. If the calculation_month_lower_bound
+    is set, then includes the event if it happens in a month on or after the calculation_month_lower_bound. The
+    calculation_month_lower_bound is always the first day of a month."""
+    if not calculation_month_lower_bound:
+        return True
+
+    return year >= calculation_month_lower_bound.year and (date(year, month, 1) >= calculation_month_lower_bound)
+
+
+def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, calculation_month_limit: int) -> \
+        Optional[date]:
+    """Returns the date at the beginning of the first month that should be included in the monthly calculations."""
+
+    first_of_last_month = first_day_of_month(calculation_month_upper_bound)
+
+    calculation_month_lower_bound = (first_of_last_month - relativedelta(months=(calculation_month_limit - 1))) \
+        if calculation_month_limit != -1 else None
+
+    return calculation_month_lower_bound

@@ -85,7 +85,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -127,7 +127,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -169,7 +169,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -221,7 +221,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -281,7 +281,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -334,7 +334,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -387,7 +387,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         relevant_periods = [36, 12]
@@ -418,6 +418,142 @@ class TestMapProgramCombinations(unittest.TestCase):
         # Assert that there are the same number of parole and probation
         # person-based combinations
         assert parole_combos == probation_combos
+
+    @freeze_time('2012-11-30')
+    def test_map_program_combinations_calculation_month_limit_1(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_ND',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        included_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2012, 11, 10),
+            program_id='XXX'
+        )
+
+        not_included_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2000, 2, 2),
+            program_id='ZZZ'
+        )
+
+        program_events = [included_event, not_included_event]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2012-12-31')
+    def test_map_program_combinations_calculation_month_limit_36(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_ND',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        included_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2012, 12, 10),
+            program_id='XXX'
+        )
+
+        not_included_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2009, 12, 10),
+            program_id='ZZZ'
+        )
+
+        program_events = [included_event, not_included_event]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
+
+    @freeze_time('2012-12-31')
+    def test_map_program_combinations_calculation_month_limit_36_include(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_ND',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        same_month_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2012, 12, 10),
+            program_id='XXX'
+        )
+
+        old_month_event = ProgramReferralEvent(
+            state_code='US_ND',
+            event_date=date(2010, 1, 10),
+            program_id='ZZZ'
+        )
+
+        program_events = [same_month_event, old_month_event]
+
+        supervision_combinations = calculator.map_program_combinations(
+            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, [same_month_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+
+        expected_combinations_count += expected_metric_combos_count(
+            person, [old_month_event], ALL_INCLUSIONS_DICT, 1)
+
+        # Hack to remove the double counted person-based referral in the 36 metric period window
+        expected_combinations_count -= (demographic_metric_combos_count_for_person_program(person, ALL_INCLUSIONS_DICT)
+                                        * 2)
+
+        self.assertEqual(expected_combinations_count,
+                         len(supervision_combinations))
+        assert all(value == 1 for _combination, value
+                   in supervision_combinations)
 
 
 class TestCharacteristicCombinations(unittest.TestCase):

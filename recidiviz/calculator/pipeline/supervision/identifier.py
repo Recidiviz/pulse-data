@@ -30,7 +30,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
 from recidiviz.calculator.pipeline.utils import us_mo_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
-    identify_most_severe_response_decision
+    identify_most_severe_response_decision, first_day_of_month
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
 from recidiviz.common.constants.state.state_case_type import \
@@ -57,7 +57,7 @@ from recidiviz.persistence.entity.state.entities import \
 
 # The number of months for the window of time prior to a revocation return in which violations and violation responses
 # should be considered when producing metrics related to a person's violation history leading up to the revocation
-VIOLATION_HISTORY_WINDOW_MONTHS = 6
+VIOLATION_HISTORY_WINDOW_MONTHS = 12
 
 REVOCATION_TYPE_SEVERITY_ORDER = [
     StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
@@ -84,9 +84,9 @@ def find_supervision_time_buckets(
         -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines if they resulted in revocation return.
 
-    Transforms each StateSupervisionPeriod into years and months where the person spent any number of days on
+    Transforms each StateSupervisionPeriod into months where the person spent any number of days on
     supervision. Excludes any time buckets in which the person was incarcerated for the entire time by looking through
-    all of the person's StateIncarcerationPeriods. For each month and year that someone was on supervision, a
+    all of the person's StateIncarcerationPeriods. For each month that someone was on supervision, a
     SupervisionTimeBucket object is created. If the person was admitted to prison in that time for a revocation that
     matches the type of supervision the SupervisionTimeBucket describes, then that object is a
     RevocationSupervisionTimeBucket. If no applicable revocation occurs, then the object is of type
@@ -94,7 +94,7 @@ def find_supervision_time_buckets(
 
     If someone is serving both probation and parole simultaneously, there will be one SupervisionTimeBucket for the
     probation type and one for the parole type. If someone has multiple overlapping supervision periods,
-    there will be one SupervisionTimeBucket for each month and year on each supervision period.
+    there will be one SupervisionTimeBucket for each month on each supervision period.
 
     If a revocation return to prison occurs in a time bucket where there is no recorded supervision period, we count
     the individual as having been on supervision that time so that they can be included in the
@@ -184,48 +184,6 @@ def find_time_buckets_for_supervision_period(
         supervision_period_to_agent_associations:
         Dict[int, Dict[Any, Any]]) -> \
         List[SupervisionTimeBucket]:
-    """Finds time that this person was on supervision for the given StateSupervisionPeriod, classified as either an
-    instance of revocation or not.
-
-    Args:
-        - supervision_period: The supervision period the person was on
-        - indexed_incarceration_periods: A dictionary mapping years and months of admissions to prison to the
-            StateIncarcerationPeriods that started in that month.
-        - months_of_incarceration: A set of tuples in the format (year, month) for each month of which this person has
-            been incarcerated for the full month.
-        - ssvr_agent_associations: dictionary associating StateSupervisionViolationResponse ids to information about the
-            corresponding StateAgent on the response
-
-    Returns
-        - A set of unique SupervisionTimeBuckets for the person for the given StateSupervisionPeriod.
-    """
-    supervision_month_buckets = find_month_buckets_for_supervision_period(
-        supervision_period,
-        indexed_incarceration_periods,
-        months_of_incarceration,
-        assessments,
-        violation_responses,
-        ssvr_agent_associations,
-        supervision_period_to_agent_associations)
-
-    supervision_year_buckets = convert_month_buckets_to_year_buckets(
-        supervision_period, supervision_month_buckets, violation_responses, assessments,
-        supervision_period_to_agent_associations)
-
-    return supervision_month_buckets + supervision_year_buckets
-
-
-def find_month_buckets_for_supervision_period(
-        supervision_period: StateSupervisionPeriod,
-        indexed_incarceration_periods:
-        Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
-        months_of_incarceration: Set[Tuple[int, int]],
-        assessments: List[StateAssessment],
-        violation_responses: List[StateSupervisionViolationResponse],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations:
-        Dict[int, Dict[Any, Any]]) -> \
-        List[SupervisionTimeBucket]:
     """Finds months that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated for the full month. Classifies each time bucket on supervision as either an instance of revocation or
     not.
@@ -252,7 +210,7 @@ def find_month_buckets_for_supervision_period(
     if start_date is None:
         return supervision_month_buckets
 
-    time_bucket = date(start_date.year, start_date.month, 1)
+    time_bucket = first_day_of_month(start_date)
 
     while time_bucket <= termination_date:
         if time_bucket.year in indexed_incarceration_periods.keys() \
@@ -284,29 +242,25 @@ def find_month_buckets_for_supervision_period(
 
                     release_date = incarceration_period.release_date
                     if release_date is None or termination_date < release_date:
-                        # Person is either still in custody or this
-                        # supervision period ended before the incarceration
-                        # period was over. Stop counting supervision months
-                        # for this supervision period.
+                        # Person is either still in custody or this supervision period ended before the incarceration
+                        # period was over. Stop counting supervision months for this supervision period.
                         return supervision_month_buckets
 
                     if release_date.year > time_bucket.year or release_date.month > time_bucket.month:
-                        # If they were released in a later month than the one we
-                        # are currently looking at, start on the month of the
-                        # release and continue to count supervision months.
-                        time_bucket = date(release_date.year, release_date.month, 1)
+                        # If they were released in a later month than the one we are currently looking at, start on the
+                        # month of the release and continue to count supervision months.
+                        time_bucket = first_day_of_month(release_date)
                         time_bucket_incremented = True
 
                     break
 
             if time_bucket_incremented:
-                # The time bucket has been incremented to the year of a release
-                # from incarceration. Continue with this next time bucket year.
+                # The time bucket has been incremented to the year of a release from incarceration. Continue with this
+                # next time bucket year.
                 continue
 
         if (time_bucket.year, time_bucket.month) not in months_of_incarceration:
-
-            start_of_month = date(time_bucket.year, time_bucket.month, 1)
+            start_of_month = first_day_of_month(time_bucket)
             end_of_month = last_day_of_month(start_of_month)
 
             assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_month, assessments)
@@ -320,7 +274,7 @@ def find_month_buckets_for_supervision_period(
             violation_history = get_violation_and_response_history(end_of_violation_window, violation_responses)
 
             supervision_month_buckets.append(
-                NonRevocationReturnSupervisionTimeBucket.for_month(
+                NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
                     year=time_bucket.year,
                     month=time_bucket.month,
@@ -340,124 +294,6 @@ def find_month_buckets_for_supervision_period(
         time_bucket = time_bucket + relativedelta(months=1)
 
     return supervision_month_buckets
-
-
-def convert_month_buckets_to_year_buckets(
-        supervision_period: StateSupervisionPeriod,
-        supervision_month_buckets: List[SupervisionTimeBucket],
-        violation_responses: List[StateSupervisionViolationResponse],
-        assessments: List[StateAssessment],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
-) -> List[SupervisionTimeBucket]:
-    """Converts a list of SupervisionTimeBuckets that contains months on supervision into a list of
-    SupervisionTimeBuckets for years on supervision.
-
-    If there are only NonRevocationReturnSupervisionTimeBuckets for a given year, adds a
-    NonRevocationReturnSupervisionTimeBucket for that year.
-
-    For every RevocationReturnSupervisionTimeBucket, adds a new RevocationReturnSupervisionTimeBucket for the given
-    year. Only includes NonRevocationReturnSupervisionTimeBucket that follow revocations if there are no subsequent
-    revocations during the given year.
-    """
-    years_on_supervision_buckets: Dict[int, List[SupervisionTimeBucket]] = defaultdict()
-
-    # Convert month buckets to year buckets
-    for supervision_month_bucket in supervision_month_buckets:
-        year = supervision_month_bucket.year
-
-        end_of_year = date(year, 12, 31)
-
-        assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_year, assessments)
-
-        if year not in years_on_supervision_buckets.keys():
-            if isinstance(supervision_month_bucket, RevocationReturnSupervisionTimeBucket):
-                years_on_supervision_buckets[year] = [
-                    RevocationReturnSupervisionTimeBucket.for_year_from_month_assessment_override(
-                        supervision_month_bucket,
-                        assessment_score,
-                        assessment_level,
-                        assessment_type
-                    )
-                ]
-            elif isinstance(supervision_month_bucket, NonRevocationReturnSupervisionTimeBucket):
-                # Record that they were on supervision for this year but don't
-                # add any buckets yet.
-                years_on_supervision_buckets[year] = []
-        else:
-            if isinstance(supervision_month_bucket, RevocationReturnSupervisionTimeBucket):
-                if years_on_supervision_buckets[year]:
-                    last_bucket = years_on_supervision_buckets[year][-1]
-                    if isinstance(last_bucket, NonRevocationReturnSupervisionTimeBucket):
-                        # This person was revoked, released from incarceration,
-                        # and then re-revoked. Remove this non-revocation
-                        # bucket.
-                        years_on_supervision_buckets[year].pop(-1)
-                # Add this revocation bucket
-                years_on_supervision_buckets[year].append(
-                    RevocationReturnSupervisionTimeBucket.for_year_from_month_assessment_override(
-                        supervision_month_bucket,
-                        assessment_score,
-                        assessment_level,
-                        assessment_type
-                    )
-                )
-            elif isinstance(supervision_month_bucket, NonRevocationReturnSupervisionTimeBucket):
-                if years_on_supervision_buckets[year]:
-                    last_bucket = years_on_supervision_buckets[year][-1]
-                    if isinstance(last_bucket, RevocationReturnSupervisionTimeBucket):
-                        # If there is a non-revocation following a revocation,
-                        # that means this person was released back onto
-                        # supervision after being revoked. Add this new
-                        # non-revocation bucket.
-                        years_on_supervision_buckets[year].append(
-                            NonRevocationReturnSupervisionTimeBucket.for_year_from_month_assessment_override(
-                                supervision_month_bucket,
-                                assessment_score,
-                                assessment_level,
-                                assessment_type
-                            )
-                        )
-
-    supervision_year_buckets: List[SupervisionTimeBucket] = []
-
-    for year in years_on_supervision_buckets.keys():
-        if not years_on_supervision_buckets[year]:
-            # This person was on supervision for this year and there were no revocations. Add a non-revocation bucket
-            # for this year.
-
-            end_of_year = date(year, 12, 31)
-
-            assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_year, assessments)
-
-            supervising_officer_external_id, supervising_district_external_id = \
-                _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
-
-            violation_history = get_violation_and_response_history(end_of_year, violation_responses)
-
-            case_type = _identify_most_severe_case_type(supervision_period)
-
-            supervision_year_buckets.append(
-                NonRevocationReturnSupervisionTimeBucket.for_year(
-                    state_code=supervision_period.state_code,
-                    year=year,
-                    supervision_type=supervision_period.supervision_type,
-                    case_type=case_type,
-                    assessment_score=assessment_score,
-                    assessment_level=assessment_level,
-                    assessment_type=assessment_type,
-                    most_severe_violation_type=violation_history.most_severe_violation_type,
-                    most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                    response_count=violation_history.response_count,
-                    supervising_officer_external_id=supervising_officer_external_id,
-                    supervising_district_external_id=supervising_district_external_id
-                )
-            )
-        else:
-            # Add all buckets for this year
-            for year_bucket in years_on_supervision_buckets[year]:
-                supervision_year_buckets.append(year_bucket)
-
-    return supervision_year_buckets
 
 
 def find_supervision_termination_bucket(
@@ -512,7 +348,7 @@ def find_supervision_termination_bucket(
 
         case_type = _identify_most_severe_case_type(supervision_period)
 
-        return SupervisionTerminationBucket.for_month(
+        return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
             year=termination_date.year,
             month=termination_date.month,
@@ -602,7 +438,7 @@ def _get_supervision_time_bucket(
             elif incarceration_period.admission_reason == AdmissionReason.PAROLE_REVOCATION:
                 supervision_type = StateSupervisionType.PAROLE
 
-        return RevocationReturnSupervisionTimeBucket.for_month(
+        return RevocationReturnSupervisionTimeBucket(
             state_code=supervision_period.state_code,
             year=bucket_year,
             month=bucket_month,
@@ -636,7 +472,7 @@ def _get_supervision_time_bucket(
             supervision_period, supervision_period_to_agent_associations
         )
 
-        return NonRevocationReturnSupervisionTimeBucket.for_month(
+        return NonRevocationReturnSupervisionTimeBucket(
             state_code=supervision_period.state_code,
             year=bucket_year,
             month=bucket_month,
@@ -897,21 +733,20 @@ def add_missing_revocation_returns(
             elif incarceration_period.admission_reason == AdmissionReason.PAROLE_REVOCATION:
                 supervision_type = StateSupervisionType.PAROLE
 
-            start_of_month = date(year, month, 1)
+            start_of_month = first_day_of_month(incarceration_period.admission_date)
             end_of_month = last_day_of_month(start_of_month)
 
             assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_month, assessments)
 
             admission_date = incarceration_period.admission_date
 
-            # Get details about the violation and response history leading up to
-            # the revocation
+            # Get details about the violation and response history leading up to the revocation
             violation_history = get_violation_and_response_history(admission_date, violation_responses)
 
             case_type = StateSupervisionCaseType.GENERAL
 
             if supervision_type is not None:
-                supervision_month_bucket = RevocationReturnSupervisionTimeBucket.for_month(
+                supervision_month_bucket = RevocationReturnSupervisionTimeBucket(
                     state_code=incarceration_period.state_code,
                     year=year,
                     month=month,
@@ -931,74 +766,16 @@ def add_missing_revocation_returns(
                     supervising_officer_external_id=revocation_details.supervising_officer_external_id,
                     supervising_district_external_id=revocation_details.supervising_district_external_id)
 
-                revocation_year_accounted_for = False
+                revocation_month_accounted_for = False
                 for existing_supervision_bucket in supervision_time_buckets:
                     if isinstance(existing_supervision_bucket, RevocationReturnSupervisionTimeBucket) \
                             and existing_supervision_bucket.year == supervision_month_bucket.year \
                             and existing_supervision_bucket.month == supervision_month_bucket.month:
-                        revocation_year_accounted_for = True
+                        revocation_month_accounted_for = True
                         continue
 
-                if not revocation_year_accounted_for:
+                if not revocation_month_accounted_for:
                     supervision_time_buckets.append(supervision_month_bucket)
-
-                supervision_year_bucket = \
-                    RevocationReturnSupervisionTimeBucket.for_year(
-                        state_code=incarceration_period.state_code,
-                        year=year,
-                        supervision_type=supervision_type,
-                        case_type=case_type,
-                        assessment_score=assessment_score,
-                        assessment_level=assessment_level,
-                        assessment_type=assessment_type,
-                        revocation_type=revocation_details.revocation_type,
-                        source_violation_type=revocation_details.source_violation_type,
-                        most_severe_violation_type=violation_history.most_severe_violation_type,
-                        most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                        most_severe_response_decision=violation_history.most_severe_response_decision,
-                        response_count=violation_history.response_count,
-                        violation_history_description=violation_history.violation_history_description,
-                        violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
-                        supervising_officer_external_id=
-                        revocation_details.supervising_officer_external_id,
-                        supervising_district_external_id=
-                        revocation_details.supervising_district_external_id)
-
-                revocation_year_accounted_for = False
-                for existing_supervision_bucket in supervision_time_buckets:
-                    if isinstance(existing_supervision_bucket, RevocationReturnSupervisionTimeBucket) \
-                            and existing_supervision_bucket.year == supervision_year_bucket.year \
-                            and existing_supervision_bucket.month == supervision_year_bucket.month:
-                        revocation_year_accounted_for = True
-                        continue
-
-                if not revocation_year_accounted_for:
-                    supervision_time_buckets.append(supervision_year_bucket)
-
-                    #  If we had previously classified this year as a non-revocation year, remove that non-revocation
-                    #  time bucket
-                    supervision_time_buckets = remove_non_revocation_return_supervision_time_buckets(
-                        supervision_time_buckets,
-                        year
-                    )
-
-    return supervision_time_buckets
-
-
-def remove_non_revocation_return_supervision_time_buckets(
-        supervision_time_buckets: List[SupervisionTimeBucket],
-        year: int
-) -> List[SupervisionTimeBucket]:
-    """Remove any NonRevocationReturnSupervisionTimeBucket that covers the provided year and has no month set.
-    """
-    buckets_to_remove = []
-    for supervision_time_bucket in supervision_time_buckets:
-        if (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
-                and supervision_time_bucket.year == year
-                and supervision_time_bucket.month is None):
-            buckets_to_remove.append(supervision_time_bucket)
-    for bucket in buckets_to_remove:
-        supervision_time_buckets.remove(bucket)
 
     return supervision_time_buckets
 
@@ -1083,7 +860,7 @@ def _get_projected_completion_bucket_from_supervision_period(
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
-    return ProjectedSupervisionCompletionBucket.for_month(
+    return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
         year=year,
         month=month,
@@ -1163,8 +940,7 @@ def _identify_months_of_incarceration(
         if admission_date.day == 1:
             month_date = admission_date
         else:
-            month_date = date(admission_date.year, admission_date.month, 1) + \
-                relativedelta(months=1)
+            month_date = first_day_of_month(admission_date) + relativedelta(months=1)
 
         while month_date + relativedelta(months=1) <= release_date + relativedelta(days=1):
             months_incarcerated.add((month_date.year, month_date.month))

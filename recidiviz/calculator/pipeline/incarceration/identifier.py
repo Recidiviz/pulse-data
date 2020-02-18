@@ -115,8 +115,7 @@ def find_end_of_month_state_prison_stays(
     if admission_date is None:
         return incarceration_stay_events
 
-    end_of_month = last_day_of_month(
-        date(admission_date.year, admission_date.month, 1))
+    end_of_month = last_day_of_month(admission_date)
 
     while end_of_month <= release_date:
         incarceration_stay_events.append(
