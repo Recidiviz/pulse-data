@@ -21,6 +21,7 @@ usage: pipeline.py --input=INPUT_LOCATION --output=OUTPUT_LOCATION
                     --methodology=METHODOLOGY
                     [--include_age] [--include_gender]
                     [--include_race] [--include_ethnicity]
+                    [--calculation_month_limit]
 
 Example output to GCP storage bucket:
 python -m recidiviz.calculator.program.pipeline
@@ -67,7 +68,7 @@ from recidiviz.calculator.pipeline.program.metrics import \
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key, MetricMethodologyType
@@ -99,29 +100,25 @@ class GetProgramMetrics(beam.PTransform):
     """Transforms a StatePerson and their ProgramEvents into ProgramMetrics."""
 
     def __init__(self, pipeline_options: Dict[str, str],
-                 inclusions: Dict[str, bool]):
+                 inclusions: Dict[str, bool],
+                 calculation_month_limit: int):
         super(GetProgramMetrics, self).__init__()
         self._pipeline_options = pipeline_options
         self.inclusions = inclusions
+        self.calculation_month_limit = calculation_month_limit
 
     def expand(self, input_or_inputs):
-        # Calculate program metric combinations from a StatePerson and their
-        # ProgramEvents
-        program_metric_combinations = (
-            input_or_inputs
-            | 'Map to metric combinations' >>
-            beam.ParDo(CalculateProgramMetricCombinations(),
-                       **self.inclusions).with_outputs('referrals'))
+        # Calculate program metric combinations from a StatePerson and their ProgramEvents
+        program_metric_combinations = (input_or_inputs | 'Map to metric combinations' >>
+                                       beam.ParDo(
+                                           CalculateProgramMetricCombinations(),
+                                           self.calculation_month_limit, self.inclusions).with_outputs('referrals'))
 
-        referrals_with_sums = (program_metric_combinations.referrals
-                               | 'Calculate program referral values' >>
+        referrals_with_sums = (program_metric_combinations.referrals | 'Calculate program referral values' >>
                                beam.CombinePerKey(SumFn()))
 
-        referral_metrics = (referrals_with_sums
-                            | 'Produce program referral metrics' >>
-                            beam.ParDo(
-                                ProduceProgramMetrics(),
-                                **self._pipeline_options))
+        referral_metrics = (referrals_with_sums | 'Produce program referral metrics' >>
+                            beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
 
         return referral_metrics
 
@@ -133,8 +130,7 @@ class GetProgramMetrics(beam.PTransform):
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         List[ProgramEvent]])
 class ClassifyProgramAssignments(beam.DoFn):
-    """Classifies program assignments as program events, such as referrals
-    to a program."""
+    """Classifies program assignments as program events, such as referrals to a program."""
 
     # pylint: disable=arguments-differ
     def process(self, element, supervision_period_to_agent_associations):
@@ -164,8 +160,7 @@ class ClassifyProgramAssignments(beam.DoFn):
 
         if not program_events:
             logging.info(
-                "No valid program events for person with"
-                "id: %d. Excluding them from the "
+                "No valid program events for person with id: %d. Excluding them from the "
                 "calculations.", person.person_id)
         else:
             yield (person, program_events)
@@ -174,22 +169,23 @@ class ClassifyProgramAssignments(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[ProgramEvent]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[ProgramEvent]],
+                  beam.typehints.Optional[int], beam.typehints.Dict[str, bool])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateProgramMetricCombinations(beam.DoFn):
     """Calculates program metric combinations."""
 
-    def process(self, element, *args, **kwargs):
+    #pylint: disable=arguments-differ
+    def process(self, element, calculation_month_limit, inclusions):
         """Produces various program metric combinations.
 
-        Sends the calculator the StatePerson entity and their corresponding
-        ProgramEvents for mapping all program combinations.
+        Sends the calculator the StatePerson entity and their corresponding ProgramEvents for mapping all program
+        combinations.
 
         Args:
-            element: Tuple containing a StatePerson and their
-                ProgramEvents
-            **kwargs: This should be a dictionary with values for the
+            element: Tuple containing a StatePerson and their ProgramEvents
+            calculation_month_limit: The number of months to limit the monthly calculation output to.
+            inclusions: This should be a dictionary with values for the
                 following keys:
                     - age_bucket
                     - gender
@@ -200,12 +196,12 @@ class CalculateProgramMetricCombinations(beam.DoFn):
         """
         person, program_events = element
 
-        # Calculate program metric combinations for this person and their
-        # program events
+        # Calculate program metric combinations for this person and their program events
         metric_combinations = \
-            calculator.map_program_combinations(person,
-                                                program_events,
-                                                kwargs)
+            calculator.map_program_combinations(person=person,
+                                                program_events=program_events,
+                                                inclusions=inclusions,
+                                                calculation_month_limit=calculation_month_limit)
 
         # Return each of the program metric combinations
         for metric_combination in metric_combinations:
@@ -217,8 +213,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
             if metric_type == MetricType.REFERRAL.value:
-                yield beam.pvalue.TaggedOutput('referrals',
-                                               (json_key, value))
+                yield beam.pvalue.TaggedOutput('referrals', (json_key, value))
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -243,8 +238,7 @@ class ProduceProgramMetrics(beam.DoFn):
         (metric_key, value) = element
 
         if value is None:
-            # Due to how the pipeline arrives at this function, this should be
-            # impossible.
+            # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
         # Convert JSON string to dictionary
@@ -254,12 +248,9 @@ class ProduceProgramMetrics(beam.DoFn):
         if metric_type == MetricType.REFERRAL.value:
             dict_metric_key['count'] = value
 
-            program_metric = \
-                ProgramReferralMetric.build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
+            program_metric = ProgramReferralMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
             return
 
         if program_metric:
@@ -272,13 +263,11 @@ class ProduceProgramMetrics(beam.DoFn):
 @with_input_types(ProgramMetric)
 @with_output_types(beam.typehints.Dict[str, Any])
 class ProgramMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to
-    BigQuery."""
+    """Builds a dictionary in the format necessary to write the output to BigQuery."""
 
     def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in
-        dictionary form, where the values are in formats as required by BigQuery
-        I/O connector.
+        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
+        formats as required by BigQuery I/O connector.
 
         For a list of required formats, see the "Data types" section of:
             https://beam.apache.org/documentation/io/built-in/google-bigquery/
@@ -287,8 +276,7 @@ class ProgramMetricWritableDict(beam.DoFn):
             element: A ProgramMetric
 
         Yields:
-            A dictionary representation of the ProgramMetric
-                in the format Dict[str, Any] so that it can be written to
+            A dictionary representation of the ProgramMetric in the format Dict[str, Any] so that it can be written to
                 BigQuery using beam.io.WriteToBigQuery.
         """
         element_dict = json_serializable_metric_key(element.__dict__)
@@ -355,6 +343,13 @@ def parse_arguments(argv):
                         help='Output dataset to write results to.',
                         required=True)
 
+    parser.add_argument('--calculation_month_limit',
+                        dest='calculation_month_limit',
+                        type=calculation_month_limit_arg,
+                        help='The number of months (including this one) to limit the monthly calculation output to. '
+                             'If set to -1, does not limit the calculations.',
+                        default=1)
+
     return parser.parse_known_args(argv)
 
 
@@ -392,12 +387,10 @@ def dimensions_and_methodologies(known_args) -> \
 def run(argv=None):
     """Runs the program calculation pipeline."""
 
-    # Workaround to load SQLAlchemy objects at start of pipeline. This is
-    # necessary because the BuildRootEntity function tries to access attributes
-    # of relationship properties on the SQLAlchemy room_schema_class before they
-    # have been loaded. However, if *any* SQLAlchemy objects have been
-    # instantiated, then the relationship properties are loaded and their
-    # attributes can be successfully accessed.
+    # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
+    # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they
+    # have been loaded. However, if *any* SQLAlchemy objects have been instantiated, then the relationship properties
+    # are loaded and their attributes can be successfully accessed.
     _ = schema.StatePerson()
 
     # Parse command-line arguments
@@ -415,8 +408,7 @@ def run(argv=None):
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
-        persons = (p
-                   | 'Load Persons' >>
+        persons = (p | 'Load Persons' >>
                    BuildRootEntity(dataset=input_dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
@@ -425,8 +417,7 @@ def run(argv=None):
                                    build_related_entities=True))
 
         # Get StateProgramAssignments
-        program_assignments = (p
-                               | 'Load Program Assignments' >>
+        program_assignments = (p | 'Load Program Assignments' >>
                                BuildRootEntity(dataset=input_dataset,
                                                data_dict=None,
                                                root_schema_class=
@@ -437,8 +428,7 @@ def run(argv=None):
                                                build_related_entities=True))
 
         # Get StateAssessments
-        assessments = (p
-                       | 'Load Assessments' >>
+        assessments = (p | 'Load Assessments' >>
                        BuildRootEntity(dataset=input_dataset,
                                        data_dict=None,
                                        root_schema_class=
@@ -449,8 +439,7 @@ def run(argv=None):
                                        build_related_entities=False))
 
         # Get StateSupervisionPeriods
-        supervision_periods = (p
-                               | 'Load SupervisionPeriods' >>
+        supervision_periods = (p | 'Load SupervisionPeriods' >>
                                BuildRootEntity(
                                    dataset=input_dataset,
                                    data_dict=None,
@@ -462,23 +451,19 @@ def run(argv=None):
                                    build_related_entities=False))
 
         supervision_period_to_agent_association_query = \
-            f"SELECT * FROM `{reference_dataset}." \
-            f"supervision_period_to_agent_association`"
+            f"SELECT * FROM `{reference_dataset}.supervision_period_to_agent_association`"
 
         supervision_period_to_agent_associations = (
-            p
-            | "Read Supervision Period to Agent table from BigQuery" >>
+            p | "Read Supervision Period to Agent table from BigQuery" >>
             beam.io.Read(beam.io.BigQuerySource
-                         (query=supervision_period_to_agent_association_query,
-                          use_standard_sql=True)))
+                         (query=supervision_period_to_agent_association_query, use_standard_sql=True)))
 
-        # Convert the association table rows into key-value tuples with the
-        # value for the supervision_period_id column as the key
+        # Convert the association table rows into key-value tuples with the value for the supervision_period_id column
+        # as the key
         supervision_period_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert Supervision Period to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
+            beam.ParDo(ConvertDictToKVTuple(), 'supervision_period_id')
         )
 
         # Group each StatePerson with their other entities
@@ -488,18 +473,14 @@ def run(argv=None):
              'assessments': assessments,
              'supervision_periods': supervision_periods
              }
-            | 'Group StatePerson to StateProgramAssignments and' >>
-            beam.CoGroupByKey()
+            | 'Group StatePerson to StateProgramAssignments and' >> beam.CoGroupByKey()
         )
 
-        # Identify ProgramEvents from the StatePerson's
-        # StateProgramAssignments
+        # Identify ProgramEvents from the StatePerson's StateProgramAssignments
         person_program_events = (
             persons_entities
             | beam.ParDo(ClassifyProgramAssignments(),
-                         AsDict(
-                             supervision_period_to_agent_associations_as_kv
-                         ))
+                         AsDict(supervision_period_to_agent_associations_as_kv))
         )
 
         # Get dimensions to include and methodologies to use
@@ -508,30 +489,29 @@ def run(argv=None):
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
 
+        # The number of months to limit the monthly calculation output to
+        calculation_month_limit = known_args.calculation_month_limit
+
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get program metrics
-        program_metrics = (person_program_events
-                           | 'Get Program Metrics' >>
+        program_metrics = (person_program_events | 'Get Program Metrics' >>
                            GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
-                               inclusions=inclusions))
+                               inclusions=inclusions,
+                               calculation_month_limit=calculation_month_limit))
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (program_metrics
                             | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(
-                                ProgramMetricWritableDict()).with_outputs(
-                                    'referrals'))
+                            beam.ParDo(ProgramMetricWritableDict()).with_outputs('referrals'))
 
         # Write the metrics to the output tables in BigQuery
-        referrals_table = known_args.output + \
-            '.program_referral_metrics'
+        referrals_table = known_args.output + '.program_referral_metrics'
 
-        _ = (writable_metrics.referrals
-             | f"Write referral metrics to BQ table: {referrals_table}" >>
+        _ = (writable_metrics.referrals | f"Write referral metrics to BQ table: {referrals_table}" >>
              beam.io.WriteToBigQuery(
                  table=referrals_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,

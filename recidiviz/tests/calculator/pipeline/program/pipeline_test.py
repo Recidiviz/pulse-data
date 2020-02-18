@@ -52,6 +52,13 @@ from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.tests.persistence.database import database_test_utils
 
+ALL_INCLUSIONS_DICT = {
+    'age_bucket': True,
+    'gender': True,
+    'race': True,
+    'ethnicity': True
+}
+
 
 class TestProgramPipeline(unittest.TestCase):
     """Tests the entire program pipeline."""
@@ -133,13 +140,6 @@ class TestProgramPipeline(unittest.TestCase):
         supervision_violation_response_data = [
             normalized_database_base_dict(supervision_violation_response)
         ]
-
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
@@ -260,7 +260,8 @@ class TestProgramPipeline(unittest.TestCase):
                            | 'Get Program Metrics' >>
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
-                               inclusions=inclusions))
+                               inclusions=ALL_INCLUSIONS_DICT,
+                               calculation_month_limit=-1))
 
         assert_that(program_metrics,
                     AssertMatchers.validate_pipeline_test())
@@ -353,13 +354,6 @@ class TestProgramPipeline(unittest.TestCase):
         supervision_violation_response_data = [
             normalized_database_base_dict(supervision_violation_response)
         ]
-
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
 
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
@@ -480,7 +474,8 @@ class TestProgramPipeline(unittest.TestCase):
                            | 'Get Program Metrics' >>
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
-                               inclusions=inclusions))
+                               inclusions=ALL_INCLUSIONS_DICT,
+                               calculation_month_limit=-1))
 
         assert_that(program_metrics,
                     AssertMatchers.validate_pipeline_test())
@@ -827,16 +822,9 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             program_id='program'
         )]
 
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-        }
-
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, program_events[0], inclusions))
+            fake_person, program_events[0], ALL_INCLUSIONS_DICT))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -853,7 +841,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, program_events)])
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
-                             **inclusions).with_outputs('referrals')
+                             -1, ALL_INCLUSIONS_DICT).with_outputs('referrals')
                   )
 
         assert_that(output.referrals, AssertMatchers.
@@ -876,7 +864,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations())
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -892,7 +880,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations())
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
