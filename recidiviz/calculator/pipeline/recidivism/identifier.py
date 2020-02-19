@@ -392,6 +392,8 @@ def get_return_type(
         return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.EXTERNAL_UNKNOWN:
         return ReincarcerationReturnType.NEW_ADMISSION
+    if reincarceration_admission_reason == AdmissionReason.INTERNAL_UNKNOWN:
+        return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
         return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
@@ -432,6 +434,7 @@ def get_from_supervision_type(
 
     if reincarceration_admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                             AdmissionReason.EXTERNAL_UNKNOWN,
+                                            AdmissionReason.INTERNAL_UNKNOWN,
                                             AdmissionReason.NEW_ADMISSION,
                                             AdmissionReason.TRANSFER]:
         return None

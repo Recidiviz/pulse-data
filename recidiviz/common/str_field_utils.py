@@ -24,7 +24,7 @@ import locale
 import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import dateparser
 from dateutil.relativedelta import relativedelta
@@ -268,3 +268,14 @@ def to_snake_case(capital_case_name: str) -> str:
     """
     s1 = _FIRST_CAP_REGEX.sub(r'\1_\2', capital_case_name)
     return _ALL_CAP_REGEX.sub(r'\1_\2', s1).lower()
+
+
+def sorted_list_from_str(value: str, delimiter: str = ',') -> List[str]:
+    """Converts a string with delimiter-separated values into a sorted list containing those values as separate
+    entries.
+    """
+    if not value:
+        return []
+
+    unsorted = [result_str.strip() for result_str in value.split(delimiter) if result_str.strip()]
+    return sorted(unsorted)

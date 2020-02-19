@@ -264,48 +264,39 @@ def add_child_to_entity(
 
 # TODO(2244): Create general approach for required fields/default values
 def convert_to_placeholder(entity: DatabaseEntity):
-    for field_name in get_set_entity_field_names(
-            entity, EntityFieldType.FLAT_FIELD):
+    for field_name in get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
         if field_name == entity.get_class_id_name():
             continue
         if field_name == 'state_code':
             continue
         if field_name == 'status':
-            entity.set_field(
-                field_name, enum_canonical_strings.present_without_info)
+            entity.set_field(field_name, enum_canonical_strings.present_without_info)
             continue
         if field_name == 'incarceration_type':
-            entity.set_field(field_name,
-                             StateIncarcerationType.STATE_PRISON.value)
+            entity.set_field(field_name, StateIncarcerationType.STATE_PRISON.value)
             continue
         if field_name == 'court_type':
-            entity.set_field(field_name,
-                             StateCourtType.PRESENT_WITHOUT_INFO.value)
+            entity.set_field(field_name, StateCourtType.PRESENT_WITHOUT_INFO.value)
             continue
         if field_name == 'agent_type':
-            entity.set_field(field_name,
-                             StateAgentType.PRESENT_WITHOUT_INFO.value)
+            entity.set_field(field_name, StateAgentType.PRESENT_WITHOUT_INFO.value)
             continue
         entity.clear_field(field_name)
 
 
 # TODO(2244): Create general approach for required fields/default values
 def default_merge_flat_fields(
-        *, new_entity: DatabaseEntity, old_entity: DatabaseEntity
-) -> DatabaseEntity:
-    """Merges all set non-relationship fields on the |new_entity| onto the
-    |old_entity|. Returns the newly merged entity.
-    """
-    for child_field_name in get_set_entity_field_names(
-            new_entity, EntityFieldType.FLAT_FIELD):
+        *, new_entity: DatabaseEntity, old_entity: DatabaseEntity) -> DatabaseEntity:
+    """Merges all set non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly merged
+    entity."""
+    for child_field_name in get_set_entity_field_names(new_entity, EntityFieldType.FLAT_FIELD):
         if child_field_name == old_entity.get_class_id_name():
             continue
         # Do not overwrite with default status
         if child_field_name == 'status' and new_entity.has_default_status():
             continue
 
-        old_entity.set_field(child_field_name,
-                             new_entity.get_field(child_field_name))
+        old_entity.set_field(child_field_name, new_entity.get_field(child_field_name))
 
     return old_entity
 
@@ -320,9 +311,9 @@ def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
     non_revocation_types = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR.value,
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN.value,
+        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN.value,
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
-        StateIncarcerationPeriodAdmissionReason.
-        RETURN_FROM_ERRONEOUS_RELEASE.value,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE.value,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE.value,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value,
         StateIncarcerationPeriodAdmissionReason.TRANSFER.value]
@@ -330,9 +321,8 @@ def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
         return True
     if ip.admission_reason in non_revocation_types:
         return False
-    raise EntityMatchingError(
-        f"Unexpected StateIncarcerationPeriodAdmissionReason "
-        f"{ip.admission_reason}.", ip.get_entity_name())
+    raise EntityMatchingError(f"Unexpected StateIncarcerationPeriodAdmissionReason {ip.admission_reason}.",
+                              ip.get_entity_name())
 
 
 def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
@@ -341,20 +331,16 @@ def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
         return False
     reincarceration_types = [
         StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
-        StateSupervisionViolationResponseRevocationType.
-        SHOCK_INCARCERATION.value,
-        StateSupervisionViolationResponseRevocationType.
-        TREATMENT_IN_PRISON.value]
+        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION.value,
+        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value]
     non_reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.
-        RETURN_TO_SUPERVISION.value]
+        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION.value]
     if svr.revocation_type in reincarceration_types:
         return True
     if svr.revocation_type in non_reincarceration_types:
         return False
-    raise EntityMatchingError(
-        f"Unexpected StateSupervisionViolationRevocationType "
-        f"{svr.revocation_type}.", svr.get_entity_name())
+    raise EntityMatchingError(f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type}.",
+                              svr.get_entity_name())
 
 
 def get_total_entities_of_cls(
