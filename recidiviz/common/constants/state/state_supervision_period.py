@@ -19,39 +19,39 @@
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class StateSupervisionPeriodAdmissionReason(EntityEnum,
-                                            metaclass=EntityEnumMeta):
-    """Admission reasons for StateSupervisionPeriod"""
-    ABSCONSION = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_absconsion
-    # This reason indicates the person has been released from an incarceration
-    # period into a supervision period (i.e. parole).
-    CONDITIONAL_RELEASE = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_conditional_release
-    COURT_SENTENCE = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_court_sentence
+# TODO(2647): Update supervision period objects in schema to use this type
+class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
+    """Enum that denotes what type of supervision someone is serving at a moment in time."""
+    # If the person is serving both probation and parole at the same time, this may be modeled with just one supervision
+    # period if the PO is the same. In this case, the supervision period supervision type is DUAL.
+    DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    TRANSFER_OUT_OF_STATE = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_transfer_out_of_state
-    TRANSFER_WITHIN_STATE = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_transfer_within_state
-    RETURN_FROM_ABSCONSION = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_return_from_absconsion
-    RETURN_FROM_SUSPENSION = \
-        state_enum_strings.\
-        state_supervision_period_admission_reason_return_from_suspension
+    PAROLE = state_enum_strings.state_supervision_period_supervision_type_parole
+    PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
+
+
+class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
+    """Admission reasons for StateSupervisionPeriod"""
+    ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
+    # This reason indicates the person has been released from an incarceration
+    # period into a supervision period (i.e. parole).
+    CONDITIONAL_RELEASE = state_enum_strings.state_supervision_period_admission_reason_conditional_release
+    COURT_SENTENCE = state_enum_strings.state_supervision_period_admission_reason_court_sentence
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_admission_reason_transfer_out_of_state
+    TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_admission_reason_transfer_within_state
+    RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_return_from_absconsion
+    RETURN_FROM_SUSPENSION = state_enum_strings.state_supervision_period_admission_reason_return_from_suspension
 
     @staticmethod
     def _get_default_map():
@@ -62,8 +62,7 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     TERMINATED = state_enum_strings.state_supervision_period_status_terminated
-    UNDER_SUPERVISION = \
-        state_enum_strings.state_supervision_period_status_under_supervision
+    UNDER_SUPERVISION = state_enum_strings.state_supervision_period_status_under_supervision
 
     @staticmethod
     def _get_default_map():
@@ -73,77 +72,58 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    MINIMUM = \
-        state_enum_strings.state_supervision_period_supervision_level_minimum
-    MEDIUM = \
-        state_enum_strings.state_supervision_period_supervision_level_medium
-    MAXIMUM = \
-        state_enum_strings.state_supervision_period_supervision_level_maximum
-    DIVERSION = \
-        state_enum_strings.state_supervision_period_supervision_level_diversion
-    INTERSTATE_COMPACT = \
-        state_enum_strings.\
-        state_supervision_period_supervision_level_interstate_compact
+    MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
+    MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
+    MAXIMUM = state_enum_strings.state_supervision_period_supervision_level_maximum
+    DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
+    INTERSTATE_COMPACT = state_enum_strings.state_supervision_period_supervision_level_interstate_compact
 
     @staticmethod
     def _get_default_map():
         return _STATE_SUPERVISION_LEVEL_MAP
 
 
-class StateSupervisionPeriodTerminationReason(EntityEnum,
-                                              metaclass=EntityEnumMeta):
+class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
     """Termination reasons for StateSupervisionPeriod"""
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    ABSCONSION = state_enum_strings.\
-        state_supervision_period_termination_reason_absconsion
+    ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_absconsion
     DEATH = state_enum_strings.state_supervision_period_termination_reason_death
-    DISCHARGE = \
-        state_enum_strings.state_supervision_period_termination_reason_discharge
-    EXPIRATION = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_expiration
+    DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
+    EXPIRATION = state_enum_strings.state_supervision_period_termination_reason_expiration
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    TRANSFER_OUT_OF_STATE = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_transfer_out_of_state
-    TRANSFER_WITHIN_STATE = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_transfer_within_state
-    RETURN_FROM_ABSCONSION = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_return_from_absconsion
-    REVOCATION = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_revocation
-    SUSPENSION = \
-        state_enum_strings.\
-        state_supervision_period_termination_reason_suspension
+    TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state
+    TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_within_state
+    RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion
+    REVOCATION = state_enum_strings.state_supervision_period_termination_reason_revocation
+    SUSPENSION = state_enum_strings.state_supervision_period_termination_reason_suspension
 
     @staticmethod
     def _get_default_map():
         return _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP
 
 
+_STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
+    'DUAL': StateSupervisionPeriodSupervisionType.DUAL,
+    'EXTERNAL UNKNOWN': StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+    'PAROLE': StateSupervisionPeriodSupervisionType.PAROLE,
+    'PROBATION': StateSupervisionPeriodSupervisionType.PROBATION
+}
+
+
 _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
-    'CONDITIONAL RELEASE':
-        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+    'CONDITIONAL RELEASE': StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     'INTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-    'ABSCONSION':
-        StateSupervisionPeriodAdmissionReason.ABSCONSION,
-    'TRANSFER WITHIN STATE':
-        StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-    'TRANSFER OUT OF STATE':
-        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
-    'RETURN FROM ABSCOND':
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    'RETURN FROM ABSCONSION':
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+    'ABSCONSION': StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    'TRANSFER WITHIN STATE': StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+    'TRANSFER OUT OF STATE': StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+    'RETURN FROM ABSCOND': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+    'RETURN FROM ABSCONSION': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'ABSCONDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    'RETURN FROM SUSPENSION':
-        StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+    'RETURN FROM SUSPENSION': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
 }
 
@@ -179,17 +159,12 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'DISCHARGE': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'DISCHARGED': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'EXPIRATION': StateSupervisionPeriodTerminationReason.EXPIRATION,
-    'EXTERNAL UNKNOWN':
-        StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
+    'EXTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
     'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
-    'INTERNAL UNKNOWN':
-        StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
-    'TRANSFER WITHIN STATE':
-        StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-    'TRANSFER OUT OF STATE':
-        StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
-    'RETURN FROM ABSCONSION':
-        StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+    'INTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+    'TRANSFER WITHIN STATE': StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+    'TRANSFER OUT OF STATE': StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+    'RETURN FROM ABSCONSION': StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     'REVOCATION': StateSupervisionPeriodTerminationReason.REVOCATION,
     'REVOKED': StateSupervisionPeriodTerminationReason.REVOCATION,
     'SUSPENDED': StateSupervisionPeriodTerminationReason.SUSPENSION,

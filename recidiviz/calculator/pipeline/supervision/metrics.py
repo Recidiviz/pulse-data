@@ -69,6 +69,9 @@ class SupervisionMetric(RecidivizMetric):
     # The number of months this metric describes, starting with the month of the metric and going back in time.
     metric_period_months: Optional[int] = attr.ib(default=None)
 
+    # TODO(2647): Update this type to be StateSupervisionPeriodSupervisionType (right now it's ok because the only two
+    #  StateSupervisionPeriodSupervisionType values the supervision pipeline will emit are PAROLE and PROBATION, which
+    #  map to values in StateSupervisionType.
     # Supervision Type
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 

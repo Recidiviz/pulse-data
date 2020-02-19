@@ -59,7 +59,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType as ViolationType, \
     StateSupervisionViolationType
@@ -106,14 +106,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='CA',
+            state_code='US_ND',
             race=Race.BLACK,
             person_id=fake_person_id
         )
 
         race_2 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='ND',
+            state_code='US_ND',
             race=Race.WHITE,
             person_id=fake_person_id
         )
@@ -122,7 +122,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.HISPANIC,
             person_id=fake_person_id)
 
@@ -131,58 +131,47 @@ class TestSupervisionPipeline(unittest.TestCase):
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id
         )
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id)
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id)
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
@@ -192,7 +181,8 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
-            state_code='CA',
+            state_code='US_ND',
+
             supervision_periods=[supervision_period],
             projected_completion_date=date(2016, 12, 31),
             person_id=fake_person_id
@@ -540,7 +530,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='VA',
+            state_code='US_MO',
             race=Race.WHITE,
             person_id=fake_person_id
         )
@@ -549,7 +539,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
-            state_code='VA',
+            state_code='US_MO',
             ethnicity=Ethnicity.HISPANIC,
             person_id=fake_person_id)
 
@@ -558,7 +548,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_MO',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.
@@ -577,7 +567,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_MO',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.
@@ -595,7 +585,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # This probation supervision period ended in a revocation
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_MO',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
@@ -607,7 +597,8 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
-            state_code='CA',
+            state_code='US_MO',
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
             projected_completion_date=date(2017, 12, 31),
             person_id=fake_person_id
@@ -650,13 +641,13 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_violation_type = schema.StateSupervisionViolationTypeEntry(
             person_id=fake_person_id,
-            state_code='us_ca',
+            state_code='US_MO',
             violation_type=StateSupervisionViolationType.FELONY
         )
 
         supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
-            state_code='us_ca',
+            state_code='US_MO',
             person_id=fake_person_id,
             supervision_violation_responses=[violation_report, ssvr],
             supervision_violation_types=[supervision_violation_type]
@@ -668,7 +659,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         revocation_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='CA',
+            state_code='US_MO',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.
@@ -1427,76 +1418,66 @@ class TestSupervisionPipeline(unittest.TestCase):
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            external_id='ip1',
+            state_code='US_ND',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id_1)
 
         first_reincarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
+            external_id='ip2',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id_1)
 
         subsequent_reincarceration_1 = \
             schema.StateIncarcerationPeriod(
                 incarceration_period_id=3333,
+                external_id='ip3',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='CA',
+                state_code='US_ND',
                 county_code='124',
                 facility='San Quentin',
-                facility_security_level=StateIncarcerationFacilitySecurityLevel.
-                MAXIMUM,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.
-                NEW_ADMISSION,
-                projected_release_reason=StateIncarcerationPeriodReleaseReason.
-                CONDITIONAL_RELEASE,
+                facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 admission_date=date(2017, 1, 4),
                 person_id=fake_person_id_1)
 
         initial_incarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=4444,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
+            external_id='ip4',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2004, 12, 20),
             release_date=date(2010, 6, 3),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             person_id=fake_person_id_2)
 
         supervision_period__1 = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_ND',
+            external_id='sp1',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
@@ -1506,9 +1487,13 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
-            state_code='CA',
+            state_code='US_ND',
+            external_id='ss1',
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_periods=[supervision_period__1],
             projected_completion_date=date(2017, 12, 31),
+            completion_date=date(2016, 12, 29),
             person_id=fake_person_id_1
         )
 
@@ -1560,36 +1545,30 @@ class TestSupervisionPipeline(unittest.TestCase):
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_ND',
+            external_id='ip5',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            PAROLE_REVOCATION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
-            source_supervision_violation_response_id=
-            supervision_violation_response.supervision_violation_response_id,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            source_supervision_violation_response_id=supervision_violation_response.supervision_violation_response_id,
             person_id=fake_person_id_2)
 
         subsequent_reincarceration_2 = \
             schema.StateIncarcerationPeriod(
                 incarceration_period_id=6666,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='CA',
+                state_code='US_ND',
+                external_id='ip6',
                 county_code='124',
                 facility='San Quentin',
-                facility_security_level=StateIncarcerationFacilitySecurityLevel.
-                MAXIMUM,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.
-                NEW_ADMISSION,
-                projected_release_reason=StateIncarcerationPeriodReleaseReason.
-                CONDITIONAL_RELEASE,
+                facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 admission_date=date(2018, 3, 9),
                 person_id=fake_person_id_2)
 
@@ -1700,10 +1679,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateSupervisionSentence,
-                                     root_entity_class=
-                                     entities.StateSupervisionSentence,
+                                     root_schema_class=schema.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field='person_id',
                                      build_related_entities=True))
 
@@ -1713,10 +1690,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
+                                   root_schema_class=schema.StateSupervisionPeriod,
+                                   root_entity_class=entities.StateSupervisionPeriod,
                                    unifying_id_field='person_id',
                                    build_related_entities=False))
 
@@ -1726,10 +1701,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                        extractor_utils.BuildRootEntity(
                            dataset=None,
                            data_dict=data_dict,
-                           root_schema_class=
-                           schema.StateAssessment,
-                           root_entity_class=
-                           entities.StateAssessment,
+                           root_schema_class=schema.StateAssessment,
+                           root_entity_class=entities.StateAssessment,
                            unifying_id_field='person_id',
                            build_related_entities=False))
 
@@ -1882,22 +1855,19 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_ND',
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
-            termination_reason=
-            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionType.PROBATION,
             person_id=fake_person_id
         )
@@ -1906,12 +1876,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 projected_completion_date=date(2015, 5, 30),
+                completion_date=date(2015, 5, 29),
                 supervision_periods=[supervision_period]
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2015, 3, 10)
@@ -1927,11 +1899,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                           'violation_responses': []
                           }
 
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
@@ -1940,7 +1913,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=3,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -1951,7 +1924,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=4,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -1962,7 +1935,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -1974,7 +1947,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
@@ -2118,11 +2091,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                           'violation_responses': [violation_report]
                           }
 
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=3,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -2133,7 +2107,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=4,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -2144,7 +2118,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=5,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype='UNSET',
                 response_count=1,
@@ -2161,7 +2135,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
@@ -2241,7 +2215,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
@@ -2257,7 +2231,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2015, 3, 23)
@@ -2271,11 +2245,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                           'violation_responses': []
                           }
 
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=3,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -2286,7 +2261,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=4,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -2297,7 +2272,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=5,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
@@ -2309,7 +2284,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
@@ -2389,7 +2364,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_ND',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
@@ -2412,11 +2387,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                           'violation_responses': []
                           }
 
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=3,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
@@ -2424,7 +2401,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=4,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
@@ -2432,7 +2409,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=5,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
@@ -2441,7 +2418,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                supervision_type=supervision_period.supervision_type,
+                supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
@@ -2522,7 +2499,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_ND',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.
             NEW_ADMISSION,
@@ -2531,7 +2508,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             SENTENCE_SERVED)
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2015, 3, 10)

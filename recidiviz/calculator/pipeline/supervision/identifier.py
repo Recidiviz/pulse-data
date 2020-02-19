@@ -19,7 +19,7 @@ supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Set, Tuple, Optional, Any, NamedTuple
+from typing import List, Dict, Set, Tuple, Optional, Any, NamedTuple, Sequence
 
 from dateutil.relativedelta import relativedelta
 
@@ -33,22 +33,23 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     identify_most_severe_response_decision, first_day_of_month
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
+    get_month_supervision_type, get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.base_entity import ExternalIdEntity
+from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
@@ -72,6 +73,7 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.GENERAL
 ]
 
+
 def find_supervision_time_buckets(
         supervision_sentences: List[StateSupervisionSentence],
         supervision_periods: List[StateSupervisionPeriod],
@@ -80,8 +82,8 @@ def find_supervision_time_buckets(
         violation_responses: List[StateSupervisionViolationResponse],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        state_code: Optional[str] = 'ALL') \
-        -> List[SupervisionTimeBucket]:
+        state_code_filter: Optional[str] = 'ALL'
+) -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines if they resulted in revocation return.
 
     Transforms each StateSupervisionPeriod into months where the person spent any number of days on
@@ -112,19 +114,28 @@ def find_supervision_time_buckets(
             corresponding StateAgent on the response
         - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
             about the corresponding StateAgent
-        - state_code: the state_code to limit the output to. If this is 'ALL' or is omitted, then all states will be
-            included in the result.
+        - state_code_filter: the state_code to limit the output to. If this is 'ALL' or is omitted, then all states
+        will be included in the result.
 
     Returns:
         A list of SupervisionTimeBuckets for the person.
     """
+    if not supervision_periods and not incarceration_periods:
+        return []
+
+    # We assume here that that a person will only have supervision or incarceration periods from a single state - this
+    #  will break in the future when we start entity matching across multiple states.
+    all_periods: Sequence[ExternalIdEntity] = [*supervision_periods, *incarceration_periods]
+    state_code = get_single_state_code(all_periods)
+
+    if state_code_filter not in ('ALL', state_code):
+        return []
+
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
     incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
     incarceration_periods.sort(key=lambda b: b.admission_date)
-
-    supervision_periods = infer_supervision_type_from_sentences(supervision_periods, supervision_sentences)
 
     indexed_incarceration_periods = index_incarceration_periods_by_admission_month(incarceration_periods)
 
@@ -141,6 +152,7 @@ def find_supervision_time_buckets(
         # Don't process placeholder supervision periods
         if not is_placeholder(supervision_period):
             supervision_time_buckets = supervision_time_buckets + find_time_buckets_for_supervision_period(
+                supervision_sentences,
                 supervision_period,
                 indexed_incarceration_periods,
                 months_of_incarceration,
@@ -150,6 +162,7 @@ def find_supervision_time_buckets(
                 supervision_period_to_agent_associations)
 
             supervision_termination_bucket = find_supervision_termination_bucket(
+                supervision_sentences,
                 supervision_period,
                 indexed_supervision_periods,
                 assessments,
@@ -164,16 +177,11 @@ def find_supervision_time_buckets(
     supervision_time_buckets = add_missing_revocation_returns(
         incarceration_periods, supervision_time_buckets, assessments, violation_responses, ssvr_agent_associations)
 
-    if state_code != 'ALL':
-        supervision_time_buckets = [
-            bucket for bucket in supervision_time_buckets
-            if bucket.state_code == state_code
-        ]
-
     return supervision_time_buckets
 
 
 def find_time_buckets_for_supervision_period(
+        supervision_sentences: List[StateSupervisionSentence],
         supervision_period: StateSupervisionPeriod,
         indexed_incarceration_periods:
         Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
@@ -182,8 +190,7 @@ def find_time_buckets_for_supervision_period(
         violation_responses: List[StateSupervisionViolationResponse],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_agent_associations:
-        Dict[int, Dict[Any, Any]]) -> \
-        List[SupervisionTimeBucket]:
+        Dict[int, Dict[Any, Any]]) -> List[SupervisionTimeBucket]:
     """Finds months that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated for the full month. Classifies each time bucket on supervision as either an instance of revocation or
     not.
@@ -213,6 +220,8 @@ def find_time_buckets_for_supervision_period(
     time_bucket = first_day_of_month(start_date)
 
     while time_bucket <= termination_date:
+        supervision_type = get_month_supervision_type(time_bucket, supervision_period, supervision_sentences)
+
         if time_bucket.year in indexed_incarceration_periods.keys() \
                 and time_bucket.month in indexed_incarceration_periods[time_bucket.year].keys():
             # An admission to prison happened during this month
@@ -230,7 +239,9 @@ def find_time_buckets_for_supervision_period(
                     incarceration_period,
                     assessments,
                     violation_responses,
-                    time_bucket_tuple, months_of_incarceration,
+                    time_bucket_tuple,
+                    supervision_type,
+                    months_of_incarceration,
                     ssvr_agent_associations,
                     supervision_period_to_agent_associations)
 
@@ -278,7 +289,7 @@ def find_time_buckets_for_supervision_period(
                     state_code=supervision_period.state_code,
                     year=time_bucket.year,
                     month=time_bucket.month,
-                    supervision_type=supervision_period.supervision_type,
+                    supervision_type=supervision_type,
                     case_type=case_type,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
@@ -297,6 +308,7 @@ def find_time_buckets_for_supervision_period(
 
 
 def find_supervision_termination_bucket(
+        supervision_sentences: List[StateSupervisionSentence],
         supervision_period: StateSupervisionPeriod,
         indexed_supervision_periods:
         Dict[int, Dict[int, List[StateSupervisionPeriod]]],
@@ -347,12 +359,14 @@ def find_supervision_termination_bucket(
             _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
         case_type = _identify_most_severe_case_type(supervision_period)
+        supervision_type = \
+            get_month_supervision_type(termination_date, supervision_period, supervision_sentences)
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
             year=termination_date.year,
             month=termination_date.month,
-            supervision_type=supervision_period.supervision_type,
+            supervision_type=supervision_type,
             case_type=case_type,
             assessment_score=end_assessment_score,
             assessment_level=end_assessment_level,
@@ -366,22 +380,42 @@ def find_supervision_termination_bucket(
     return None
 
 
-def _revocation_occurred(admission_reason: AdmissionReason, supervision_type: Optional[StateSupervisionType],
-                         admission_date: date, supervision_start_date: date) -> bool:
+def _admission_reason_matches_supervision_type(
+        admission_reason: AdmissionReason,
+        supervision_type: Optional[StateSupervisionPeriodSupervisionType]):
+
+    if not supervision_type:
+        return True
+
+    if admission_reason == AdmissionReason.PROBATION_REVOCATION:
+        # Note: we explicitly omit DUAL type here since you could be on supervision but only have PROBATION revoked
+        if supervision_type == StateSupervisionPeriodSupervisionType.PAROLE:
+            return False
+
+    if admission_reason == AdmissionReason.PAROLE_REVOCATION:
+        # Note: we explicitly omit DUAL type here since you could be on supervision but only have PAROLE revoked
+        if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
+            return False
+
+    if admission_reason == AdmissionReason.DUAL_REVOCATION:
+        if supervision_type in (
+                StateSupervisionPeriodSupervisionType.PROBATION,
+                StateSupervisionPeriodSupervisionType.PAROLE
+        ):
+            return False
+
+    return True
+
+
+def _revocation_occurred(admission_reason: AdmissionReason, admission_date: date, supervision_start_date: date) -> bool:
     """If the supervision started before or on the admission date, and the
     admission reason represents a revocation admission, then returns True. Else,
     returns False."""
-    # TODO(2788): Decide whether we should enforce that the supervision type of
-    #  the period that is ending matches the admission reason
     if supervision_start_date > admission_date:
         return False
 
-    if ((admission_reason == AdmissionReason.PROBATION_REVOCATION and supervision_type == StateSupervisionType.PAROLE)
-            or (admission_reason == AdmissionReason.PAROLE_REVOCATION
-                and supervision_type == StateSupervisionType.PROBATION)):
-        logging.info("Revocation type %s does not match the supervision type %s", admission_reason, supervision_type)
-
-    return admission_reason in (AdmissionReason.PAROLE_REVOCATION, AdmissionReason.PROBATION_REVOCATION)
+    return admission_reason in (
+        AdmissionReason.DUAL_REVOCATION, AdmissionReason.PAROLE_REVOCATION, AdmissionReason.PROBATION_REVOCATION)
 
 
 def _get_supervision_time_bucket(
@@ -390,6 +424,7 @@ def _get_supervision_time_bucket(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         time_bucket: Tuple[int, int],
+        supervision_type: Optional[StateSupervisionPeriodSupervisionType],
         months_of_incarceration: Set[Tuple[int, int]],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_agent_associations:
@@ -420,23 +455,18 @@ def _get_supervision_time_bucket(
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
-    if _revocation_occurred(
-            admission_reason, supervision_period.supervision_type, admission_date, supervision_start_date):
+    if not _admission_reason_matches_supervision_type(admission_reason, supervision_type):
+        # TODO(2788): Decide whether we should enforce that the supervision type of
+        #  the period that is ending matches the admission reason
+        logging.info("Revocation type %s does not match the supervision type %s", admission_reason, supervision_type)
+
+    if _revocation_occurred(admission_reason, admission_date, supervision_start_date):
         # A revocation occurred
         revocation_details = _get_revocation_details(incarceration_period, supervision_period, ssvr_agent_associations,
                                                      supervision_period_to_agent_associations)
 
         # Get details about the violation and response history leading up to the revocation
         violation_history = get_violation_and_response_history(admission_date, violation_responses)
-
-        supervision_type = supervision_period.supervision_type
-
-        if not supervision_type:
-            # Infer the supervision type from the admission reason
-            if incarceration_period.admission_reason == AdmissionReason.PROBATION_REVOCATION:
-                supervision_type = StateSupervisionType.PROBATION
-            elif incarceration_period.admission_reason == AdmissionReason.PAROLE_REVOCATION:
-                supervision_type = StateSupervisionType.PAROLE
 
         return RevocationReturnSupervisionTimeBucket(
             state_code=supervision_period.state_code,
@@ -476,7 +506,7 @@ def _get_supervision_time_bucket(
             state_code=supervision_period.state_code,
             year=bucket_year,
             month=bucket_month,
-            supervision_type=supervision_period.supervision_type,
+            supervision_type=supervision_type,
             case_type=case_type,
             assessment_score=assessment_score,
             assessment_level=assessment_level,
@@ -726,12 +756,8 @@ def add_missing_revocation_returns(
             year = incarceration_period.admission_date.year
             month = incarceration_period.admission_date.month
 
-            supervision_type = None
-
-            if incarceration_period.admission_reason == AdmissionReason.PROBATION_REVOCATION:
-                supervision_type = StateSupervisionType.PROBATION
-            elif incarceration_period.admission_reason == AdmissionReason.PAROLE_REVOCATION:
-                supervision_type = StateSupervisionType.PAROLE
+            supervision_type = \
+                get_pre_incarceration_supervision_type(incarceration_period.state_code, incarceration_period)
 
             start_of_month = first_day_of_month(incarceration_period.admission_date)
             end_of_month = last_day_of_month(start_of_month)
@@ -795,8 +821,6 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
         projected_completion_date = supervision_sentence.projected_completion_date
 
         if projected_completion_date and projected_completion_date <= date.today():
-            year = projected_completion_date.year
-            month = projected_completion_date.month
             latest_termination_date = None
             latest_supervision_period = None
 
@@ -809,7 +833,8 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
 
             if latest_supervision_period:
                 completion_bucket = _get_projected_completion_bucket_from_supervision_period(
-                    year, month,
+                    projected_completion_date,
+                    supervision_sentences,
                     latest_supervision_period,
                     supervision_period_to_agent_associations
                 )
@@ -819,34 +844,9 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
     return projected_completion_buckets
 
 
-def infer_supervision_type_from_sentences(supervision_periods: List[StateSupervisionPeriod],
-                                          supervision_sentences: List[StateSupervisionSentence]) -> \
-        List[StateSupervisionPeriod]:
-    """Sets the supervision_type field on supervision periods by inferring the type from the type of sentences the
-    period is a child of."""
-    # TODO(2855): Bring in StateIncarcerationSentences for better supervision type classification
-    supervision_period_from_sentence_ids: Set[int] = set()
-
-    for supervision_sentence in supervision_sentences:
-        for supervision_period in supervision_sentence.supervision_periods:
-            if supervision_period.supervision_period_id:
-                supervision_period_from_sentence_ids.add(supervision_period.supervision_period_id)
-
-    for supervision_period in supervision_periods:
-        if (supervision_period.supervision_type is None
-                and not is_placeholder(supervision_period) and supervision_period.supervision_period_id):
-            if supervision_period.supervision_period_id in supervision_period_from_sentence_ids:
-                # Infer that supervision periods attached to a StateSupervisionSentence are of type PROBATION
-                supervision_period.supervision_type = StateSupervisionType.PROBATION
-            else:
-                # Assume these are hanging off of StateIncarcerationSentences
-                supervision_period.supervision_type = StateSupervisionType.PAROLE
-
-    return supervision_periods
-
-
 def _get_projected_completion_bucket_from_supervision_period(
-        year: int, month: int,
+        projected_completion_date: date,
+        supervision_sentences: List[StateSupervisionSentence],
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
 ) -> ProjectedSupervisionCompletionBucket:
@@ -860,11 +860,15 @@ def _get_projected_completion_bucket_from_supervision_period(
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
+    supervision_type = get_month_supervision_type(projected_completion_date,
+                                                  supervision_period,
+                                                  supervision_sentences)
+
     return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
-        year=year,
-        month=month,
-        supervision_type=supervision_period.supervision_type,
+        year=projected_completion_date.year,
+        month=projected_completion_date.month,
+        supervision_type=supervision_type,
         case_type=case_type,
         successful_completion=supervision_success,
         supervising_officer_external_id=supervising_officer_external_id,

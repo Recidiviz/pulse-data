@@ -100,41 +100,35 @@ def move_supervision_periods_onto_sentences_by_date(
                 sentence_group)
 
 
-# TODO(2798): Update this to also associate incarceration sentences by
-#  date as a fast follow (don't want to make test updates too complicated).
-def _move_supervision_periods_onto_sentences_for_sentence_group(
-        sentence_group: schema.StateSentenceGroup):
+# TODO(2647): Connect incarceration sentences so that we can look only at connected sentences whe determining which
+#  overlapping sentences contribute to the supervision period supervision period.
+# TODO(2798): Update this to also associate incarceration sentences by date as a fast follow (don't want to make test
+# updates too complicated).
+def _move_supervision_periods_onto_sentences_for_sentence_group(sentence_group: schema.StateSentenceGroup):
     """Looks at all SupervisionPeriods in the provided |sentence_group|, and
     attempts to match them to any corresponding sentences, based on date.
     """
-    sentences = sentence_group.supervision_sentences \
-        + sentence_group.incarceration_sentences
+    sentences = sentence_group.supervision_sentences + sentence_group.incarceration_sentences
 
     # Get all supervision periods from sentence group
-    supervision_periods = get_all_entities_of_cls(
-        [sentence_group], schema.StateSupervisionPeriod)
+    supervision_periods = get_all_entities_of_cls([sentence_group], schema.StateSupervisionPeriod)
 
     # Clear non-placeholder links from sentence to supervision period. We will
     # re-add/update these relationships below.
     for sentence in sentences:
-        placeholder_supervision_periods = [
-            sp for sp in sentence.supervision_periods if is_placeholder(sp)]
+        placeholder_supervision_periods = [sp for sp in sentence.supervision_periods if is_placeholder(sp)]
         sentence.supervision_periods = placeholder_supervision_periods
 
     unmatched_sps = []
-    non_placeholder_sentences = [s for s in sentences
-                                 if not is_placeholder(s)]
+    non_placeholder_sentences = [s for s in sentences if not is_placeholder(s)]
 
-    non_placeholder_supervision_periods = [
-        sp for sp in supervision_periods if not is_placeholder(sp)]
+    non_placeholder_supervision_periods = [sp for sp in supervision_periods if not is_placeholder(sp)]
 
     # Match SVs to non_placeholder_periods by date.
     for sp in non_placeholder_supervision_periods:
         matched = False
         sp_start_date = sp.start_date if sp.start_date else datetime.date.min
-        sp_termination_date = \
-            sp.termination_date \
-            if sp.termination_date else datetime.date.max
+        sp_termination_date = sp.termination_date if sp.termination_date else datetime.date.max
 
         for s in non_placeholder_sentences:
             if not s.start_date:
@@ -160,15 +154,12 @@ def _move_supervision_periods_onto_sentences_for_sentence_group(
             # run such that the dates of the existing sentences no longer line up with one of the existing
             # supervision periods.
             logging.info(
-                'No placeholder sentences exist on sentence group '
-                '[%s]([%s]), creating a new placeholder sentence.',
-                sentence_group.external_id,
-                sentence_group.sentence_group_id)
+                'No placeholder sentences exist on sentence group [%s]([%s]), creating a new placeholder sentence.',
+                sentence_group.external_id, sentence_group.sentence_group_id)
             new_placeholder_sentence = schema.StateSupervisionSentence(
                 state_code=sentence_group.state_code,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-                person=sentence_group.person
-            )
+                person=sentence_group.person)
             placeholder_sentences.append(new_placeholder_sentence)
             sentence_group.supervision_sentences.append(new_placeholder_sentence)
         placeholder_sentences[0].supervision_periods = unmatched_sps

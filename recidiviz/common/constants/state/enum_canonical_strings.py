@@ -128,6 +128,8 @@ state_incarceration_period_admission_reason_parole_revocation = \
     'PAROLE_REVOCATION'
 state_incarceration_period_admission_reason_probation_revocation = \
     'PROBATION_REVOCATION'
+state_incarceration_period_admission_reason_dual_revocation = \
+    'DUAL_REVOCATION'
 state_incarceration_period_admission_reason_return_from_court = \
     'RETURN_FROM_COURT'
 state_incarceration_period_admission_reason_return_from_erroneous_release = \
@@ -179,6 +181,10 @@ state_supervision_type_pre_confinement = 'PRE_CONFINEMENT'
 state_supervision_type_probation = 'PROBATION'
 
 # supervision_period.py
+state_supervision_period_supervision_type_parole = 'PAROLE'
+state_supervision_period_supervision_type_probation = 'PROBATION'
+state_supervision_period_supervision_type_dual = 'DUAL'
+
 state_supervision_period_admission_reason_absconsion = 'ABSCONSION'
 state_supervision_period_admission_reason_conditional_release = \
     'CONDITIONAL_RELEASE'
