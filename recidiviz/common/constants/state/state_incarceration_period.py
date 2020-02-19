@@ -26,8 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     IN_CUSTODY = state_enum_strings.state_incarceration_period_status_in_custody
-    NOT_IN_CUSTODY = \
-        state_enum_strings.state_incarceration_period_status_not_in_custody
+    NOT_IN_CUSTODY = state_enum_strings.state_incarceration_period_status_not_in_custody
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
     @staticmethod
@@ -37,12 +36,9 @@ class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateIncarcerationFacilitySecurityLevel(EntityEnum,
                                               metaclass=EntityEnumMeta):
-    MAXIMUM = \
-        state_enum_strings.state_incarceration_facility_security_level_maximum
-    MEDIUM = \
-        state_enum_strings.state_incarceration_facility_security_level_medium
-    MINIMUM = \
-        state_enum_strings.state_incarceration_facility_security_level_minimum
+    MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
+    MEDIUM = state_enum_strings.state_incarceration_facility_security_level_medium
+    MINIMUM = state_enum_strings.state_incarceration_facility_security_level_minimum
 
     @staticmethod
     def _get_default_map():
@@ -52,29 +48,18 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum,
 class StateIncarcerationPeriodAdmissionReason(EntityEnum,
                                               metaclass=EntityEnumMeta):
     """Reasons for admission to a period of incarceration."""
-    ADMITTED_IN_ERROR = \
-        state_enum_strings.\
-        state_incarceration_period_admission_reason_admitted_in_error
+    ADMITTED_IN_ERROR = state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    NEW_ADMISSION = \
-        state_enum_strings.\
-        state_incarceration_period_admission_reason_new_admission
-    PAROLE_REVOCATION = state_enum_strings.\
-        state_incarceration_period_admission_reason_parole_revocation
-    PROBATION_REVOCATION = state_enum_strings.\
-        state_incarceration_period_admission_reason_probation_revocation
+    NEW_ADMISSION = state_enum_strings.state_incarceration_period_admission_reason_new_admission
+    PAROLE_REVOCATION = state_enum_strings.state_incarceration_period_admission_reason_parole_revocation
+    PROBATION_REVOCATION = state_enum_strings.state_incarceration_period_admission_reason_probation_revocation
+    DUAL_REVOCATION = state_enum_strings.state_incarceration_period_admission_reason_dual_revocation
     RETURN_FROM_ERRONEOUS_RELEASE = \
-        state_enum_strings.\
-        state_incarceration_period_admission_reason_return_from_erroneous_release
-    RETURN_FROM_ESCAPE = \
-        state_enum_strings.\
-        state_incarceration_period_admission_reason_return_from_escape
-    TEMPORARY_CUSTODY = \
-        state_enum_strings.\
-        state_incarceration_period_admission_reason_temporary_custody
-    TRANSFER = \
-        state_enum_strings.state_incarceration_period_admission_reason_transfer
+        state_enum_strings.state_incarceration_period_admission_reason_return_from_erroneous_release
+    RETURN_FROM_ESCAPE = state_enum_strings.state_incarceration_period_admission_reason_return_from_escape
+    TEMPORARY_CUSTODY = state_enum_strings.state_incarceration_period_admission_reason_temporary_custody
+    TRANSFER = state_enum_strings.state_incarceration_period_admission_reason_transfer
 
     @staticmethod
     def _get_default_map():
@@ -84,36 +69,21 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
 class StateIncarcerationPeriodReleaseReason(EntityEnum,
                                             metaclass=EntityEnumMeta):
     """Reasons for release from a period of incarceration."""
-    COMMUTED = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_commuted
-    COMPASSIONATE = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_compassionate
+    COMMUTED = state_enum_strings.state_incarceration_period_release_reason_commuted
+    COMPASSIONATE = state_enum_strings.state_incarceration_period_release_reason_compassionate
     # This release type corresponds to any release into some sort of
     # supervision.
-    CONDITIONAL_RELEASE = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_conditional_release
-    COURT_ORDER = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_court_order
+    CONDITIONAL_RELEASE = state_enum_strings.state_incarceration_period_release_reason_conditional_release
+    COURT_ORDER = state_enum_strings.state_incarceration_period_release_reason_court_order
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    EXECUTION = \
-        state_enum_strings.state_incarceration_period_release_reason_execution
+    EXECUTION = state_enum_strings.state_incarceration_period_release_reason_execution
     RELEASED_FROM_TEMPORARY_CUSTODY = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_released_from_temporary_custody
-    RELEASED_IN_ERROR = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_released_in_error
-    SENTENCE_SERVED = \
-        state_enum_strings.\
-        state_incarceration_period_release_reason_sentence_served
-    TRANSFER = \
-        state_enum_strings.state_incarceration_period_release_reason_transfer
+        state_enum_strings.state_incarceration_period_release_reason_released_from_temporary_custody
+    RELEASED_IN_ERROR = state_enum_strings.state_incarceration_period_release_reason_released_in_error
+    SENTENCE_SERVED = state_enum_strings.state_incarceration_period_release_reason_sentence_served
+    TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
 
     @staticmethod
     def _get_default_map():
@@ -123,10 +93,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
 class StateSpecializedPurposeForIncarceration(EntityEnum,
                                               metaclass=EntityEnumMeta):
     """Specialized purposes for a period of incarceration"""
-    SHOCK_INCARCERATION = state_enum_strings.\
-        state_specialized_purpose_for_incarceration_shock_incarceration
-    TREATMENT_IN_PRISON = state_enum_strings.\
-        state_specialized_purpose_for_incarceration_treatment_in_prison
+    SHOCK_INCARCERATION = state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration
+    TREATMENT_IN_PRISON = state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison
 
     @staticmethod
     def _get_default_map():
@@ -158,6 +126,7 @@ _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'ADM ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     'ADMITTED IN ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'DUAL REVOCATION': StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
     'ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     'EXTERNAL UNKNOWN': StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     'INTERNAL UNKNOWN': StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,

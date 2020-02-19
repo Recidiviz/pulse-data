@@ -512,6 +512,7 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
         AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
+        AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION
     }
 
@@ -629,7 +630,8 @@ class TestGetReturnType(unittest.TestCase):
                     assert return_type == \
                         ReincarcerationReturnType.NEW_ADMISSION
                 elif admission_reason in (AdmissionReason.PAROLE_REVOCATION,
-                                          AdmissionReason.PROBATION_REVOCATION):
+                                          AdmissionReason.PROBATION_REVOCATION,
+                                          AdmissionReason.DUAL_REVOCATION):
                     assert return_type == ReincarcerationReturnType.REVOCATION
                 else:
                     # StateIncarcerationPeriodAdmissionReason enum type not
@@ -748,7 +750,8 @@ class TestGetFromSupervisionType(unittest.TestCase):
                                         AdmissionReason.TRANSFER]:
                     assert not from_supervision_type
                 elif admission_reason in [AdmissionReason.PAROLE_REVOCATION,
-                                          AdmissionReason.PROBATION_REVOCATION]:
+                                          AdmissionReason.PROBATION_REVOCATION,
+                                          AdmissionReason.DUAL_REVOCATION]:
                     assert from_supervision_type
                 else:
                     assert str(e.value) == (f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of "

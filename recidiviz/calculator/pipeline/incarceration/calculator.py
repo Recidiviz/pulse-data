@@ -412,7 +412,8 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
             if isinstance(event, IncarcerationAdmissionEvent) and
             event.admission_reason in (
                 StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION)
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION)
         ]
 
         revocation_events_in_period.sort(key=lambda b: b.event_date)

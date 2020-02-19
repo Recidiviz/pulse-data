@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 from enum import Enum, auto
 from types import ModuleType
-from typing import Dict, List, Set, Type, Sequence, Optional, Union, cast
+from typing import Dict, List, Set, Type, Sequence, Optional, Union, cast, Iterable
 from functools import lru_cache
 
 import attr
@@ -725,3 +725,27 @@ def person_has_id(person: Union[entities.StatePerson, schema.StatePerson],
     """
     external_ids_for_person = [eid.external_id for eid in person.external_ids]
     return person_external_id in external_ids_for_person
+
+
+def get_ids(entities_list: Iterable[CoreEntity]) -> Set[int]:
+    """Returns a set of all database ids in a list of entities"""
+    return {e.get_id() for e in entities_list}
+
+
+def get_single_state_code(external_id_entities: Iterable[ExternalIdEntity]) -> str:
+    """Returns the state code corresponding to the list of objects. Asserts if the list is empty or if there are
+    multiple different state codes."""
+    state_code = None
+    for entity in external_id_entities:
+        entity_state_code = entity.get_field('state_code')
+
+        if not state_code:
+            state_code = entity_state_code
+
+        if state_code != entity_state_code:
+            raise ValueError(f'Found two different state codes: {state_code} and {entity_state_code}')
+
+    if not state_code:
+        raise ValueError('Expected at least one entity, found none.')
+
+    return state_code

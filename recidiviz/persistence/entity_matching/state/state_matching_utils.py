@@ -307,7 +307,8 @@ def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
         return False
     revocation_types = [
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value]
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value,
+        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION.value]
     non_revocation_types = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR.value,
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN.value,

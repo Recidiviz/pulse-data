@@ -400,6 +400,8 @@ def get_return_type(
         return ReincarcerationReturnType.REVOCATION
     if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
         return ReincarcerationReturnType.REVOCATION
+    if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
+        return ReincarcerationReturnType.REVOCATION
     if reincarceration_admission_reason == AdmissionReason.TRANSFER:
         # This should be a rare case, but we are considering this a type of
         # new admission recidivism because this person became reincarcerated at
@@ -439,6 +441,9 @@ def get_from_supervision_type(
                                             AdmissionReason.TRANSFER]:
         return None
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
+        return ReincarcerationReturnFromSupervisionType.PAROLE
+    if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
+        # TODO(2647): Return DUAL once this function has been converted to return StateSupervisionPeriodSupervisionType
         return ReincarcerationReturnFromSupervisionType.PAROLE
     if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PROBATION
