@@ -56,6 +56,7 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
         state_enum_strings.\
         state_incarceration_period_admission_reason_admitted_in_error
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     NEW_ADMISSION = \
         state_enum_strings.\
         state_incarceration_period_admission_reason_new_admission
@@ -156,25 +157,20 @@ _STATE_INCARCERATION_PERIOD_STATUS_MAP = {
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'ADM ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-    'ADMITTED IN ERROR':
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    'ADMITTED IN ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     'ERROR': StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-    'EXTERNAL UNKNOWN':
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+    'EXTERNAL UNKNOWN': StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
     'ADMN': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
     'NEW ADMISSION': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-    'PAROLE REVOCATION':
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    'PAROLE REVOCATION': StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
     'PV': StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
     'PRB': StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-    'PROBATION REVOCATION':
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    'PROBATION REVOCATION': StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     'REC': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     'RECA': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-    'RETURN FROM ESCAPE':
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-    'RETURN FROM ERRONEOUS RELEASE':
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+    'RETURN FROM ESCAPE': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    'RETURN FROM ERRONEOUS RELEASE': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     'COURT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'CRT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'DETOX': StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -182,8 +178,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'MED': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'RETURN FROM MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    'TEMPORARY CUSTODY':
-        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+    'TEMPORARY CUSTODY': StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
     'TRANSFER': StateIncarcerationPeriodAdmissionReason.TRANSFER
 }
 
@@ -193,8 +188,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'COMMUTATION': StateIncarcerationPeriodReleaseReason.COMMUTED,
     'COMPASSIONATE': StateIncarcerationPeriodReleaseReason.COMPASSIONATE,
     'CONDITIONAL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    'CONDITIONAL RELEASE':
-        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'CONDITIONAL RELEASE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'COURT ORDER': StateIncarcerationPeriodReleaseReason.COURT_ORDER,
     'DEATH': StateIncarcerationPeriodReleaseReason.DEATH,
     'DECE': StateIncarcerationPeriodReleaseReason.DEATH,
@@ -206,8 +200,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'ESCAPE': StateIncarcerationPeriodReleaseReason.ESCAPE,
     'EXECUTION': StateIncarcerationPeriodReleaseReason.EXECUTION,
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    'EXTERNAL UNKNOWN':
-        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
+    'EXTERNAL UNKNOWN': StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -215,16 +208,12 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'RPRB': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'SUPL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    'RELEASE TO PAROLE':
-        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    'RELEASED FROM TEMPORARY CUSTODY':
-        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-    'RELEASE TO PROBATION':
-        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASE TO PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASED FROM TEMPORARY CUSTODY': StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+    'RELEASE TO PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     'ERROR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
-    'RELEASED IN ERROR':
-        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+    'RELEASED IN ERROR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     'RELEASED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'SERVED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'TIME EARNED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -241,8 +230,6 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
 }
 
 _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
-    'TREATMENT IN PRISON':
-        StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-    'SHOCK INCARCERATION':
-        StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+    'TREATMENT IN PRISON': StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+    'SHOCK INCARCERATION': StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
 }

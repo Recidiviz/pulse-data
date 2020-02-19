@@ -702,7 +702,14 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             deciding_body_type='PAROLE_BOARD'
         )
 
-        vr_110035_20010414_7 = StateSupervisionViolationResponse(
+        vr_110035_20010414_7_0 = StateSupervisionViolationResponse(
+            response_type='PERMANENT_DECISION',
+            response_date='20160328',
+            decision='REVOCATION',
+            revocation_type='S',
+            deciding_body_type='PAROLE_BOARD'
+        )
+        vr_110035_20010414_7_3 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
             response_date='20160428',
             decision='REVOCATION',
@@ -733,7 +740,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-19890901-5-0',
             status='NOT_IN_CUSTODY',
             admission_date='19940609',
-            admission_reason='40I1060',
+            admission_reason='40I1060,40I2000',
             release_date='19950206',
             release_reason='IT-BD',
             specialized_purpose_for_incarceration='S',
@@ -754,7 +761,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-4-0',
             status='NOT_IN_CUSTODY',
             admission_date='20130521',
-            admission_reason='40I0050',
+            admission_reason='45O0050,40I0050',
             release_date='20131127',
             release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
@@ -763,10 +770,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-7-0',
             status='NOT_IN_CUSTODY',
             admission_date='20160328',
-            admission_reason='40I1010',
+            admission_reason='45O0050,65N9999,40I1010',
             release_date='20160428',
             release_reason='50N1010',
             specialized_purpose_for_incarceration='S',
+            source_supervision_violation_response=vr_110035_20010414_7_0
         )
         ip_110035_20010414_7_3 = StateIncarcerationPeriod(
             state_incarceration_period_id='110035-20010414-7-3',
@@ -776,7 +784,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             release_date='20161011',
             release_reason='ID-DR',
             specialized_purpose_for_incarceration='S',
-            source_supervision_violation_response=vr_110035_20010414_7
+            source_supervision_violation_response=vr_110035_20010414_7_3
         )
 
         expected = IngestInfo(state_people=[
@@ -1016,25 +1024,25 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_19890901_2_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-2-0',
             start_date='19921006',
-            admission_reason='40O1010',
+            admission_reason='40O1010,40O0000',
             termination_date='19930701',
-            termination_reason='45O1010',
+            termination_reason='40I1050,45O1010',
             supervision_site='14',
             supervising_officer=po_E123
         )
         sp_110035_19890901_4_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-4-0',
             start_date='19931102',
-            admission_reason='40O1030',
+            admission_reason='40O1030,40O0000',
             termination_date='19940609',
-            termination_reason='45O1010',
+            termination_reason='40I1050,45O1010',
             supervision_site='14',
             supervising_officer=po_E123
         )
         sp_110035_19890901_6_0 = StateSupervisionPeriod(
             state_supervision_period_id='110035-19890901-6-0',
             start_date='19950206',
-            admission_reason='40O1030',
+            admission_reason='40O1030,40O0000',
             termination_date='19950323',
             termination_reason='99O2010',
             supervision_site='14',
@@ -1108,7 +1116,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20121102',
             admission_reason='65I2015',
             termination_date='20130521',
-            termination_reason='45O0050',
+            termination_reason='45O0050,65N9999,40I0050',
             supervision_site='14',
             supervising_officer=po_E123
         )
@@ -1126,7 +1134,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date='20160328',
             admission_reason='65N9500',
             termination_date='20160328',
-            termination_reason='45O1010',
+            termination_reason='45O1010,40I1010',
             supervision_site='14',
             supervising_officer=po_E123
         )
@@ -2456,7 +2464,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 admission_date=datetime.date(year=1994, month=6, day=9),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                admission_reason_raw_text='40I1060',
+                admission_reason_raw_text='40I1060,40I2000',
                 release_date=datetime.date(year=1995, month=2, day=6),
                 release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 release_reason_raw_text='IT-BD',
@@ -2525,7 +2533,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 admission_date=datetime.date(year=2013, month=5, day=21),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                admission_reason_raw_text='40I0050',
+                admission_reason_raw_text='45O0050,40I0050',
                 release_date=datetime.date(year=2013, month=11, day=27),
                 release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                 release_reason_raw_text='IT-BP',
@@ -2542,10 +2550,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 admission_date=datetime.date(year=2016, month=3, day=28),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                admission_reason_raw_text='40I1010',
+                admission_reason_raw_text='45O0050,65N9999,40I1010',
                 release_date=datetime.date(year=2016, month=4, day=28),
-                release_reason=StateIncarcerationPeriodReleaseReason.
-                RELEASED_FROM_TEMPORARY_CUSTODY,
+                release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                 release_reason_raw_text='50N1010',
                 specialized_purpose_for_incarceration_raw_text='S',
                 person=person_110035,
@@ -2570,7 +2577,23 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 incarceration_sentences=[sis_110035_20010414_1]
             )
 
-        vr_110035_20010414_7 = \
+        vr_110035_20010414_7_0 = \
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text='PERMANENT_DECISION',
+                response_date=datetime.date(year=2016, month=3, day=28),
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text='REVOCATION',
+                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                revocation_type_raw_text='S',
+                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text='PAROLE_BOARD',
+                person=person_110035,
+            )
+        ip_110035_20010414_7_0.source_supervision_violation_response = vr_110035_20010414_7_0
+
+        vr_110035_20010414_7_3 = \
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE_UPPER,
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -2584,7 +2607,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 deciding_body_type_raw_text='PAROLE_BOARD',
                 person=person_110035,
             )
-        ip_110035_20010414_7_3.source_supervision_violation_response = vr_110035_20010414_7
+        ip_110035_20010414_7_3.source_supervision_violation_response = vr_110035_20010414_7_3
 
         sis_110035_20010414_1.incarceration_periods = [
             ip_110035_20010414_2_0,
@@ -2784,7 +2807,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self._run_ingest_job_for_filename('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         ################################################################
         # TAK158_TAK024 INCARCERATION PERIOD FROM SUPERVISION SENTENCE
@@ -2843,10 +2866,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 start_date=datetime.date(year=1992, month=10, day=6),
                 admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-                admission_reason_raw_text='40O1010',
+                admission_reason_raw_text='40O1010,40O0000',
                 termination_date=datetime.date(year=1993, month=7, day=1),
                 termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='45O1010',
+                termination_reason_raw_text='40I1050,45O1010',
                 supervision_site='14',
                 person=person_110035,
                 supervision_sentences=[placeholder_sss_110035_19890901],
@@ -2859,10 +2882,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 start_date=datetime.date(year=1993, month=11, day=2),
                 admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-                admission_reason_raw_text='40O1030',
+                admission_reason_raw_text='40O1030,40O0000',
                 termination_date=datetime.date(year=1994, month=6, day=9),
                 termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='45O1010',
+                termination_reason_raw_text='40I1050,45O1010',
                 supervision_site='14',
                 person=person_110035,
                 supervision_sentences=[placeholder_sss_110035_19890901],
@@ -2875,7 +2898,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 start_date=datetime.date(year=1995, month=2, day=6),
                 admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-                admission_reason_raw_text='40O1030',
+                admission_reason_raw_text='40O1030,40O0000',
                 termination_date=datetime.date(year=1995, month=3, day=23),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 termination_reason_raw_text='99O2010',
@@ -2926,7 +2949,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason_raw_text='65I2015',
                 termination_date=datetime.date(year=2013, month=5, day=21),
                 termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='45O0050',
+                termination_reason_raw_text='45O0050,65N9999,40I0050',
                 supervision_site='14',
                 person=person_110035,
                 supervision_sentences=[placeholder_sss_110035_20010414],
@@ -2958,7 +2981,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 admission_reason_raw_text='65N9500',
                 termination_date=datetime.date(year=2016, month=3, day=28),
                 termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-                termination_reason_raw_text='45O1010',
+                termination_reason_raw_text='45O1010,40I1010',
                 supervision_site='14',
                 person=person_110035,
                 supervision_sentences=[placeholder_sss_110035_20010414],
@@ -3723,231 +3746,3 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # Asserting that we processed every row in the file successfully
         self.assertEqual(compliant_periods, 13)
-
-    def test_parse_supervision_admission_reason_empty(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        # pylint:disable=protected-access
-        empty_reason = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=[])
-
-        self.assertEqual(empty_reason, StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value)
-
-    def test_parse_supervision_admission_reason_single_has_mapping(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['65I2015']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, input_statuses[0])
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodAdmissionReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION)
-
-    def test_parse_supervision_admission_reason_single_has_no_mapping(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['40O0000']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN.value)
-
-    def test_parse_supervision_admission_reason_multiple_one_is_mapped(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['40O0000', '40O1010']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, input_statuses[1])
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodAdmissionReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE)
-
-    def test_parse_supervision_admission_reason_multiple_all_unmapped(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['40O0000', '40O9999']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN.value)
-
-    def test_parse_supervision_admission_reason_rank_statuses(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = [
-            '40O9010',  # Release to Probation -> CONDITIONAL_RELEASE
-            '15I1000'   # New Court Probation -> COURT_SENTENCE
-        ]
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        # \d5I\d\d\d\d Statuses chosen over others
-        self.assertEqual(reason_str, '15I1000')
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodAdmissionReason)
-        self.assertEqual(parsed_reason, StateSupervisionPeriodAdmissionReason.COURT_SENTENCE)
-
-    def test_parse_supervision_admission_reason_two_statuses_same_rank(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = [
-            '65I2015',  # Court Probation Reinstated -> RETURN_FROM_SUSPENSION
-            '15I1000'   # New Court Probation -> COURT_SENTENCE
-        ]
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_admission_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        # Both match the \d5I\d\d\d\d pattern, choose the status that is
-        # alphabetically first.
-        self.assertEqual(reason_str, '15I1000')
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodAdmissionReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodAdmissionReason.COURT_SENTENCE)
-
-    def test_parse_supervision_termination_reason_empty(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        # pylint:disable=protected-access
-        empty_reason = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=[])
-
-        self.assertEqual(empty_reason, StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE.value)
-
-    def test_parse_supervision_termination_reason_single_has_mapping(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['99O9020']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, input_statuses[0])
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodTerminationReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodTerminationReason.DEATH)
-
-    def test_parse_supervision_termination_reason_single_has_no_mapping(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['40I0000']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN.value)
-
-    def test_parse_supervision_termination_reason_multiple_one_is_mapped(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['40I0000', '99O1025']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, input_statuses[1])
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodTerminationReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodTerminationReason.DISCHARGE)
-
-    def test_parse_supervision_termination_reason_multiple_all_unmapped(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = ['12O3456', '56I7890']
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        self.assertEqual(reason_str, StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN.value)
-
-    def test_parse_supervision_termination_reason_rank_statuses(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = [
-            '65N9500',  # Offender re-engaged -> RETURN_FROM_ABSCONSION
-            '99O2010',  # Parole Discharge -> DISCHARGE
-            '40O1010'   # Parole Release -> unmapped for Termination reason
-        ]
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        # 99O\d\d\d\d statuses chosen over others
-        self.assertEqual(reason_str, '99O2010')
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodTerminationReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodTerminationReason.DISCHARGE)
-
-    def test_parse_supervision_termination_reason_two_statuses_same_rank(self):
-        controller_cls = self.controller_cls()
-        if not issubclass(controller_cls, UsMoController):
-            self.fail(f'Unexpected controller_cls type: {controller_cls}')
-
-        input_statuses = [
-            '99O0989',  # Erroneous Commitment-Field  -> DISCHARGE
-            '99O0999',  # Erroneous Commit-Institution  -> DISCHARGE
-        ]
-
-        # pylint:disable=protected-access
-        reason_str = controller_cls._parse_supervision_period_termination_reason_str(
-            self.controller.get_enum_overrides(), tak026_statuses=input_statuses)
-
-        # Since there are two staatuses that start with 99*, choose the one that
-        # comes first, alphabetically.
-        self.assertEqual(reason_str, '99O0989')
-
-        parsed_reason = self.controller.get_enum_overrides().parse(reason_str, StateSupervisionPeriodTerminationReason)
-
-        self.assertEqual(parsed_reason, StateSupervisionPeriodTerminationReason.DISCHARGE)
