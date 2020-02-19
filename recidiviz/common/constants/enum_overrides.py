@@ -62,7 +62,6 @@ class EnumOverrides:
             raise ValueError("Overrides map matched too many values from label {}: [{}]".format(label, matches))
         if matches:
             return matches.pop()
-
         return None
 
     # pylint: disable=protected-access

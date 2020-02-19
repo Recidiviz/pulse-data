@@ -506,18 +506,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
 _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
     AdmissionReason, ReincarcerationReturnType] = {
-        AdmissionReason.ADMITTED_IN_ERROR:
-            ReincarcerationReturnType.NEW_ADMISSION,
-        AdmissionReason.EXTERNAL_UNKNOWN:
-            ReincarcerationReturnType.NEW_ADMISSION,
-        AdmissionReason.NEW_ADMISSION:
-            ReincarcerationReturnType.NEW_ADMISSION,
-        AdmissionReason.PAROLE_REVOCATION:
-            ReincarcerationReturnType.REVOCATION,
-        AdmissionReason.PROBATION_REVOCATION:
-            ReincarcerationReturnType.REVOCATION,
-        AdmissionReason.TRANSFER:
-            ReincarcerationReturnType.NEW_ADMISSION
+        AdmissionReason.ADMITTED_IN_ERROR: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.EXTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.INTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
+        AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
+        AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION
     }
 
 
@@ -554,38 +549,21 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         possible combinations of release reason and admission reason."""
         for release_reason in ReleaseReason:
             for admission_reason in AdmissionReason:
-                if release_reason in \
-                        _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
+                if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
                     with pytest.raises(ValueError) as e:
-                        _ = \
-                            identifier.should_include_in_release_cohort(
-                                release_reason, admission_reason)
-                        assert str(e) == ("validate_sort_and_collapse_"
-                                          "incarceration_periods is "
-                                          "not effectively filtering."
-                                          " Found unexpected release_reason"
-                                          f" of: {release_reason}")
+                        _ = identifier.should_include_in_release_cohort(release_reason, admission_reason)
+                        assert str(e) == ("validate_sort_and_collapse_incarceration_periods is not effectively "
+                                          "filtering. Found unexpected release_reason of: {release_reason}")
 
-                elif admission_reason in \
-                        _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION and \
-                        SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason].keys():
+                elif admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION \
+                        and SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason].keys():
                     with pytest.raises(ValueError) as e:
-                        _ = \
-                            identifier.should_include_in_release_cohort(
-                                release_reason, admission_reason)
-                        assert str(e) == ("validate_sort_and_collapse_"
-                                          "incarceration_periods is "
-                                          "not effectively filtering."
-                                          " Found unexpected admission_reason"
-                                          f" of: {admission_reason}")
+                        _ = identifier.should_include_in_release_cohort(release_reason, admission_reason)
+                        assert str(e) == ("validate_sort_and_collapse_incarceration_periods is not effectively "
+                                          "filtering. Found unexpected admission_reason of: {admission_reason}")
                 else:
-                    should_include = \
-                        identifier.should_include_in_release_cohort(
-                            release_reason, admission_reason)
-
-                    if admission_reason in \
-                            SHOULD_INCLUDE_WITH_RETURN_TYPE[
-                                    release_reason].keys():
+                    should_include = identifier.should_include_in_release_cohort(release_reason, admission_reason)
+                    if admission_reason in SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason].keys():
                         assert should_include
                     else:
                         assert not should_include
@@ -645,6 +623,7 @@ class TestGetReturnType(unittest.TestCase):
                 return_type = identifier.get_return_type(admission_reason)
                 if admission_reason in (AdmissionReason.ADMITTED_IN_ERROR,
                                         AdmissionReason.EXTERNAL_UNKNOWN,
+                                        AdmissionReason.INTERNAL_UNKNOWN,
                                         AdmissionReason.NEW_ADMISSION,
                                         AdmissionReason.TRANSFER):
                     assert return_type == \
@@ -764,6 +743,7 @@ class TestGetFromSupervisionType(unittest.TestCase):
                     identifier.get_from_supervision_type(admission_reason)
                 if admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                         AdmissionReason.EXTERNAL_UNKNOWN,
+                                        AdmissionReason.INTERNAL_UNKNOWN,
                                         AdmissionReason.NEW_ADMISSION,
                                         AdmissionReason.TRANSFER]:
                     assert not from_supervision_type
@@ -771,9 +751,8 @@ class TestGetFromSupervisionType(unittest.TestCase):
                                           AdmissionReason.PROBATION_REVOCATION]:
                     assert from_supervision_type
                 else:
-                    assert str(e.value) == (f"Enum case not handled for "
-                                            f"StateIncarcerationPeriodAdmission"
-                                            f"Reason of type: INVALID.")
+                    assert str(e.value) == (f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of "
+                                            f"type: INVALID.")
 
     def test_get_from_supervision_type_invalid(self):
         """Tests the get_from_supervision_type function for an invalid

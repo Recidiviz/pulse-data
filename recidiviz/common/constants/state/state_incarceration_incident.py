@@ -86,8 +86,7 @@ _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
     'ESCAPE': StateIncarcerationIncidentType.ESCAPE,
     'MINOR': StateIncarcerationIncidentType.MINOR_OFFENSE,
     'MINOR OFFENSE': StateIncarcerationIncidentType.MINOR_OFFENSE,
-    'PRESENT WITHOUT INFO':
-        StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO,
+    'PRESENT WITHOUT INFO': StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO,
     'POSITIVE': StateIncarcerationIncidentType.POSITIVE,
     'REPORT': StateIncarcerationIncidentType.REPORT,
     'VIOLENT': StateIncarcerationIncidentType.VIOLENCE,
@@ -96,13 +95,10 @@ _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
 
 
 _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
-    'DISCIPLINARY LABOR':
-        StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
+    'DISCIPLINARY LABOR': StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
     'DISMISSED': StateIncarcerationIncidentOutcomeType.DISMISSED,
-    'EXTERNAL PROSECUTION':
-        StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
-    'FINANCIAL PENALTY':
-        StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
+    'EXTERNAL PROSECUTION': StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
+    'FINANCIAL PENALTY': StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
     'GOOD TIME LOSS': StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
     'MISCELLANEOUS': StateIncarcerationIncidentOutcomeType.MISCELLANEOUS,
     'PRIVILEGE LOSS': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,

@@ -2,7 +2,8 @@ key_mappings:
   SUPV_PERIOD_BEG_DT: state_supervision_period.start_date
   SUPV_PERIOD_END_DT: state_supervision_period.termination_date
   LOCATION_ACRONYM: state_supervision_period.supervision_site
-
+  START_STATUS_CODE_LIST: state_supervision_period.admission_reason
+  END_STATUS_CODE_LIST: state_supervision_period.termination_reason
 # Primary key overridden in controller, with the format: DOC-CYC-FIELD_ASSIGNMENT_SEQ_NUM-START_STATUS_SEQ_NUM
 
 ancestor_keys:
@@ -18,8 +19,6 @@ keys_to_ignore:
   - CYC                       # Offender Cycle Number - Handled manually in the controller
   - FIELD_ASSIGNMENT_SEQ_NUM  # Field assignment sequence number - Handled manually in the controller
   - START_STATUS_SEQ_NUM      # Sub-sequence number - Handled manually in the controller
-  - START_STATUS_CODE_LIST    # Start TAK026 status codes list - Handled manually in the controller
-  - END_STATUS_CODE_LIST      # End TAK026 status codes list - Handled manually in the controller
   - CASE_TYPE_LIST            # Case Type List - Handled manually in the controller
   # TODO(1883): Update to child mappings once data extractor is flexible
   - BDGNO   # Employee Id - Handled manually in the controller

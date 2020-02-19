@@ -957,7 +957,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['ADMN', 'CONT', 'CONV', 'REC', '4139'],
         }
         base_overrides = super(UsNdController, self).get_enum_overrides()
-        return update_overrides_from_maps(base_overrides, overrides, ignores)
+        return update_overrides_from_maps(base_overrides, overrides, ignores, {}, {})
 
 
 def _yaml_filepath(filename):
