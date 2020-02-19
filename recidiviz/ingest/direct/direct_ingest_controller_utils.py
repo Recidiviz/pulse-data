@@ -17,20 +17,36 @@
 """Util functions shared across multiple types of hooks in the direct
 ingest controllers."""
 import logging
-from typing import Dict, List
+from typing import Dict, List, TypeVar
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.models.ingest_info import IngestObject
 from recidiviz.utils import environment
 from recidiviz.utils.regions import Region
 
+EnumType = TypeVar('EnumType', bound=EntityEnum)
+
+
+def invert_enum_to_str_mappings(overrides: Dict[EnumType, List[str]]) -> Dict[str, EnumType]:
+    inverted_overrides: Dict[str, EnumType] = {}
+    for mapped_enum, text_tokens in overrides.items():
+        for text_token in text_tokens:
+            if text_token in inverted_overrides:
+                raise ValueError(f'Unexpected, text_token [{text_token}] is used for both '
+                                 f'[{mapped_enum}] and [{inverted_overrides[text_token]}]')
+            inverted_overrides[text_token] = mapped_enum
+
+    return inverted_overrides
+
 
 def update_overrides_from_maps(
         base_enum_overrides: EnumOverrides,
         overrides: Dict[EntityEnum, List[str]],
-        ignores: Dict[EntityEnumMeta, List[str]]) -> EnumOverrides:
+        ignores: Dict[EntityEnumMeta, List[str]],
+        override_mappers: Dict[EntityEnumMeta, EnumMapper],
+        ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate]) -> EnumOverrides:
     overrides_builder = base_enum_overrides.to_builder()
 
     for mapped_enum, text_tokens in overrides.items():
@@ -40,6 +56,12 @@ def update_overrides_from_maps(
     for ignored_enum, text_tokens in ignores.items():
         for text_token in text_tokens:
             overrides_builder.ignore(text_token, ignored_enum)
+
+    for mapped_enum_cls, mapper in override_mappers.items():
+        overrides_builder.add_mapper(mapper, mapped_enum_cls)
+
+    for ignored_enum_cls, ignore_predicate in ignore_predicates.items():
+        overrides_builder.ignore_with_predicate(ignore_predicate, ignored_enum_cls)
 
     return overrides_builder.build()
 
