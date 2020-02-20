@@ -108,6 +108,16 @@ class RecidivizMetric(BuildableAttr):
         return recidiviz_metric
 
 
+@attr.s
+class PersonLevelMetric(BuildableAttr):
+    """Base class for modeling a person-level metric."""
+    # The external_id of StatePerson for person-specific metrics
+    person_id: Optional[int] = attr.ib(default=None)
+
+    # The external_id of StatePerson for person-specific metrics
+    person_external_id: Optional[str] = attr.ib(default=None)
+
+
 def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
     """Converts a metric key into a format that is JSON serializable.
 

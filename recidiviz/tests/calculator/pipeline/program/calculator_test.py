@@ -84,17 +84,15 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
             person, program_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2007-11-02')
     def test_map_program_combinations_full_info(self):
@@ -126,17 +124,15 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
             person, program_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2007-11-02')
     def test_map_program_combinations_full_info_probation(self):
@@ -168,17 +164,15 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
             person, program_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2007-11-02')
     def test_map_program_combinations_multiple_supervision_types(self):
@@ -220,7 +214,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
@@ -228,13 +222,12 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_INCLUSIONS_DICT,
             duplicated_months_different_supervision_types=True)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
+
         parole_combos = 0
         probation_combos = 0
-        for combo, _ in supervision_combinations:
+        for combo, _ in program_combinations:
             if combo.get('supervision_type') \
                 and combo_has_enum_value_for_key(
                         combo, 'methodology', MetricMethodologyType.PERSON):
@@ -280,7 +273,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
@@ -288,10 +281,8 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_INCLUSIONS_DICT,
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods_duplicates(self):
@@ -333,7 +324,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
@@ -341,10 +332,8 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_INCLUSIONS_DICT,
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods_multiple_supervisions(self):
@@ -386,7 +375,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             )
         ]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
@@ -397,13 +386,11 @@ class TestMapProgramCombinations(unittest.TestCase):
             len(relevant_periods),
             duplicated_months_different_supervision_types=True)
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
         parole_combos = 0
         probation_combos = 0
-        for combo, _ in supervision_combinations:
+        for combo, _ in program_combinations:
             if combo.get('supervision_type') \
                 and combo_has_enum_value_for_key(
                         combo, 'methodology', MetricMethodologyType.PERSON):
@@ -450,17 +437,15 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         program_events = [included_event, not_included_event]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=1
         )
 
         expected_combinations_count = expected_metric_combos_count(
             person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2012-12-31')
     def test_map_program_combinations_calculation_month_limit_36(self):
@@ -493,17 +478,15 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         program_events = [included_event, not_included_event]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
         )
 
         expected_combinations_count = expected_metric_combos_count(
             person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2012-12-31')
     def test_map_program_combinations_calculation_month_limit_36_include(self):
@@ -536,7 +519,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         program_events = [same_month_event, old_month_event]
 
-        supervision_combinations = calculator.map_program_combinations(
+        program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
         )
 
@@ -546,14 +529,21 @@ class TestMapProgramCombinations(unittest.TestCase):
         expected_combinations_count += expected_metric_combos_count(
             person, [old_month_event], ALL_INCLUSIONS_DICT, 1)
 
-        # Hack to remove the double counted person-based referral in the 36 metric period window
+        # Subtract the duplicated count for the metric_period_months = 36 person-based dict
+        expected_combinations_count -= 1
+
+        # 2 person-level event and 2 person-level person based metrics for each referral event, plus the 4 person-based
+        # events for the 4 relevant metric periods
+        expected_combinations_count -= 8
+
+        # Remove the double counted person-based referral in the 36 metric period window
         expected_combinations_count -= (demographic_metric_combos_count_for_person_program(person, ALL_INCLUSIONS_DICT)
                                         * 2)
+        # Add them back
+        expected_combinations_count += 8
 
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
+        self.assertEqual(expected_combinations_count, len(program_combinations))
+        assert all(value == 1 for _combination, value in program_combinations)
 
 
 class TestCharacteristicCombinations(unittest.TestCase):
@@ -584,8 +574,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, ALL_INCLUSIONS_DICT)
 
-        # 32 combinations of demographics
-        assert len(combinations) == 32
+        # 32 combinations of demographics  + 1 person-level metric
+        assert len(combinations) == 33
 
     def test_characteristic_combinations_referral_no_extra_set(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -615,6 +605,9 @@ class TestCharacteristicCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, [program_event], ALL_INCLUSIONS_DICT,
             with_methodologies=False)
+
+        # Subtract the event-based metric dict from the combo count
+        expected_combinations_count -= 1
 
         self.assertEqual(expected_combinations_count, len(combinations))
 
@@ -652,6 +645,9 @@ class TestCharacteristicCombinations(unittest.TestCase):
             person, [program_event], ALL_INCLUSIONS_DICT,
             with_methodologies=False)
 
+        # Subtract the event-based metric dict from the combo count
+        expected_combinations_count -= 1
+
         self.assertEqual(expected_combinations_count, len(combinations))
 
     def test_characteristic_combinations_exclude_age(self):
@@ -684,8 +680,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 16 combinations of demographics and supervision type  + 1 person-level metric
+        assert len(combinations) == 17
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -720,8 +716,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 16 combinations of demographics and supervision type + 1 person-level metric
+        assert len(combinations) == 17
 
         for combo in combinations:
             assert combo.get('gender') is None
@@ -756,8 +752,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 16 combinations of demographics and supervision type + 1 person-level metric
+        assert len(combinations) == 17
 
         for combo in combinations:
             assert combo.get('race') is None
@@ -792,8 +788,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, inclusions)
 
-        # 16 combinations of demographics and supervision type
-        assert len(combinations) == 16
+        # 16 combinations of demographics and supervision type + 1 person-level metric
+        assert len(combinations) == 17
 
         for combo in combinations:
             assert combo.get('ethnicity') is None
@@ -829,8 +825,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, inclusions)
 
-        # 8 combinations of demographics and supervision type
-        assert len(combinations) == 8
+        # 8 combinations of demographics and supervision type + 1 person-level metric
+        assert len(combinations) == 9
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -1100,5 +1096,12 @@ def expected_metric_combos_count(
 
     # Remove the combos for the duplicated referral months
     program_referral_combos -= duplicated_referral_combos
+
+    # Adding person-level metrics
+    duplication_multiplier = 0 if duplicated_months_different_supervision_types else 1
+
+    program_referral_combos += (num_referral_events + (
+        num_referral_events - duplication_multiplier*num_duplicated_referral_months)*(
+            num_relevant_periods + 1))
 
     return program_referral_combos

@@ -1034,9 +1034,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
     pipeline."""
 
     def testCalculateRecidivismMetricCombinations(self):
-        """Tests the CalculateRecidivismMetricCombinations DoFn in the
-        pipeline."""
-
+        """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline."""
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
@@ -1075,35 +1073,35 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             'stay_length_bucket': True
         }
 
-        # Get the number of combinations of person-event characteristics.
+        # Get the number of combinations of person-event characteristics, without the person-level combination
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, first_recidivism_release_event, inclusions))
+            fake_person, first_recidivism_release_event, inclusions)) - 1
         assert num_combinations > 0
 
-        # We do not track metrics for periods that start after today, so we
-        # need to subtract for some number of periods that go beyond whatever
-        # today is.
+        # We do not track metrics for periods that start after today, so we need to subtract for some number of periods
+        # that go beyond whatever today is.
         periods = relativedelta(date.today(), date(2010, 12, 4)).years + 1
         periods_with_single = 6
         periods_with_double = periods - periods_with_single
 
-        expected_combinations_count_2010 = \
-            ((num_combinations * 46 * periods_with_single) +
-             (num_combinations * 69 * periods_with_double))
+        expected_combinations_count_2010 = ((num_combinations * 46 * periods_with_single) +
+                                            (num_combinations * 69 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
         expected_combinations_count_2014 = (num_combinations * 46 * periods)
 
-        expected_count_metric_combinations = (num_combinations * 46 +
-                                              num_combinations * 46)
+        expected_count_metric_combinations = (num_combinations * 46 + num_combinations * 46)
 
-        expected_combination_counts_rates = \
-            {2010: expected_combinations_count_2010,
-             2014: expected_combinations_count_2014}
+        # Add person-level counts for the 2 events and 2 methodologies
+        expected_count_metric_combinations += (2 * 2)
 
-        expected_combination_counts_counts = \
-            {'counts': expected_count_metric_combinations}
+        expected_combination_counts_rates = {
+            2010: expected_combinations_count_2010,
+            2014: expected_combinations_count_2014
+        }
+
+        expected_combination_counts_counts = {'counts': expected_count_metric_combinations}
 
         test_pipeline = TestPipeline()
 
@@ -1111,8 +1109,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
                   | beam.Create(person_events)
                   | 'Calculate Metric Combinations' >>
                   beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(),
-                             **inclusions)
-                  .with_outputs('rates', 'counts')
+                             **inclusions).with_outputs('rates', 'counts')
                   )
 
         assert_that(output.rates, AssertMatchers.
@@ -1649,8 +1646,7 @@ class AssertMatchers:
 
     @staticmethod
     def count_combinations(expected_combination_counts):
-        """Asserts that the number of metric combinations matches the expected
-        counts for each release cohort year."""
+        """Asserts that the number of metric combinations matches the expected counts for each release cohort year."""
         def _count_combinations(output):
             actual_combination_counts = {}
 
@@ -1664,18 +1660,14 @@ class AssertMatchers:
 
                 if combination_dict.get('metric_type') == MetricType.RATE.value:
                     release_cohort_year = combination_dict['release_cohort']
-                    actual_combination_counts[release_cohort_year] = \
-                        actual_combination_counts[release_cohort_year] + 1
-                elif combination_dict.get('metric_type') == \
-                        MetricType.COUNT.value:
-                    actual_combination_counts['counts'] = \
-                        actual_combination_counts['counts'] + 1
+                    actual_combination_counts[release_cohort_year] = actual_combination_counts[release_cohort_year] + 1
+                elif combination_dict.get('metric_type') == MetricType.COUNT.value:
+                    actual_combination_counts['counts'] = actual_combination_counts['counts'] + 1
 
             for key in expected_combination_counts:
-                if expected_combination_counts[key] != \
-                        actual_combination_counts[key]:
-                    raise BeamAssertException('Failed assert. Count does not'
-                                              'match expected value.')
+                if expected_combination_counts[key] != actual_combination_counts[key]:
+                    raise BeamAssertException(f"Failed assert. Count {actual_combination_counts[key]} does not match"
+                                              f" expected value {expected_combination_counts[key]}.")
 
         return _count_combinations
 

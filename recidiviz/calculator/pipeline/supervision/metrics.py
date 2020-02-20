@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
@@ -50,7 +50,7 @@ class SupervisionMetricType(Enum):
 
 
 @attr.s
-class SupervisionMetric(RecidivizMetric):
+class SupervisionMetric(RecidivizMetric, PersonLevelMetric):
     """Models a single supervision metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for
@@ -199,9 +199,6 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric):
     # A string representation of the violations recorded in the period leading up to the revocation, which is the
     # number of each of the represented types separated by a semicolon
     violation_history_description: Optional[str] = attr.ib(default=None)
-
-    # The external_id of StatePerson for person-specific metrics
-    person_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
