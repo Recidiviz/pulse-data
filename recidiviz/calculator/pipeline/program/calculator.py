@@ -30,7 +30,8 @@ from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
     last_day_of_month, relevant_metric_periods, augmented_combo_list, include_in_monthly_metrics, \
-    get_calculation_month_lower_bound_date, first_day_of_month
+    get_calculation_month_lower_bound_date, first_day_of_month, \
+    characteristics_with_person_id_fields
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -183,10 +184,15 @@ def characteristic_combinations(person: StatePerson,
         else:
             ethnicities = []
 
-        return for_characteristics_races_ethnicities(
-            races, ethnicities, characteristics)
+        all_combinations = for_characteristics_races_ethnicities(races, ethnicities, characteristics)
+    else:
+        all_combinations = for_characteristics(characteristics)
 
-    return for_characteristics(characteristics)
+    characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'program')
+
+    all_combinations.append(characteristics_with_person_details)
+
+    return all_combinations
 
 
 def map_metric_combinations(

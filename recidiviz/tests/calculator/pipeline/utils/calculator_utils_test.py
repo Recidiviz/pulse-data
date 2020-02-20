@@ -501,6 +501,9 @@ class TestRelevantMetricPeriods(unittest.TestCase):
         self.assertEqual(expected_periods, relevant_periods)
 
 
+INCLUDED_PIPELINES = ['incarceration', 'supervision']
+
+
 class TestPersonExternalIdToInclude(unittest.TestCase):
     """Tests the person_external_id_to_include function."""
     def test_person_external_id_to_include(self):
@@ -516,9 +519,10 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        external_id = calculator_utils.person_external_id_to_include(person)
+        for pipeline_type in INCLUDED_PIPELINES:
+            external_id = calculator_utils.person_external_id_to_include(pipeline_type, person)
 
-        self.assertEqual(external_id, person_external_id.external_id)
+            self.assertEqual(external_id, person_external_id.external_id)
 
     def test_person_external_id_to_include_no_results(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -533,9 +537,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        external_id = calculator_utils.person_external_id_to_include(person)
-
-        self.assertIsNone(external_id)
+        for pipeline_type in INCLUDED_PIPELINES:
+            external_id = calculator_utils.person_external_id_to_include(pipeline_type, person)
+            self.assertIsNone(external_id)
 
     def test_person_external_id_to_include_multiple(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -556,7 +560,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id_exclude, person_external_id_include]
 
-        external_id = calculator_utils.person_external_id_to_include(person)
+        external_id = calculator_utils.person_external_id_to_include(INCLUDED_PIPELINES[0], person)
 
         self.assertEqual(external_id, person_external_id_include.external_id)
 

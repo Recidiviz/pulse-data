@@ -32,8 +32,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
     augmented_combo_list, last_day_of_month, relevant_metric_periods, \
-    person_external_id_to_include, augment_combination, include_in_monthly_metrics, \
-    get_calculation_month_lower_bound_date
+    augment_combination, include_in_monthly_metrics, \
+    get_calculation_month_lower_bound_date, characteristics_with_person_id_fields
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.supervision.metrics import \
@@ -298,22 +298,16 @@ def characteristic_combinations(person: StatePerson,
     else:
         all_combinations = for_characteristics(characteristics)
 
+    characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'supervision')
+
     if with_revocation_analysis_dimensions:
-        # Person external id is added to a characteristics combination
-        # dictionary that has all fields set. We only want person-level
-        # output that has all possible fields set.
-        person_external_id = person_external_id_to_include(person)
+        # Only include violation history descriptions on person-level metrics
+        if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
+                and supervision_time_bucket.violation_history_description:
+            characteristics_with_person_details['violation_history_description'] = \
+                supervision_time_bucket.violation_history_description
 
-        if person_external_id is not None:
-            characteristics['person_external_id'] = person_external_id
-
-            # Only include violation history descriptions on person-level
-            # metrics
-            if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
-                    and supervision_time_bucket.violation_history_description:
-                characteristics['violation_history_description'] = supervision_time_bucket.violation_history_description
-
-            all_combinations.append(characteristics)
+    all_combinations.append(characteristics_with_person_details)
 
     return all_combinations
 
@@ -350,15 +344,14 @@ def map_metric_combinations(
         combo['metric_type'] = metric_type.value
 
         if combo.get('person_external_id') is not None and \
-                metric_type != SupervisionMetricType.REVOCATION_ANALYSIS:
-            # Only output person-level metrics for the revocation analysis
-            # metrics
+                metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+            # Don't output person-level metrics for the revocation violation type analysis metrics
             continue
 
         if include_in_monthly_metrics(
                 supervision_time_bucket.year, supervision_time_bucket.month, calculation_month_lower_bound):
             metrics.extend(combination_supervision_monthly_metrics(
-                combo, supervision_time_bucket, metric_period_end_date,
+                combo, supervision_time_bucket,
                 all_supervision_time_buckets, metric_type))
 
         metrics.extend(combination_supervision_metric_period_metrics(
@@ -429,7 +422,6 @@ def get_revocation_violation_type_analysis_metrics(
 def combination_supervision_monthly_metrics(
         combo: Dict[str, Any],
         supervision_time_bucket: SupervisionTimeBucket,
-        metric_period_end_date: date,
         all_supervision_time_buckets: List[SupervisionTimeBucket],
         metric_type: SupervisionMetricType) -> List[Tuple[Dict[str, Any], int]]:
     """Returns all unique supervision metrics for the given time bucket and combination for the month of the bucket.
@@ -482,10 +474,8 @@ def combination_supervision_monthly_metrics(
             # this termination, don't include it in any of the metrics.
             return metrics
 
-    if metric_type != SupervisionMetricType.REVOCATION_ANALYSIS or combo.get('person_external_id') is None:
-        # If this is a revocation analysis metric, only include it if it's not a person-level metric
-        for event_combo in event_based_same_bucket_combos:
-            metrics.append((event_combo, event_combo_value))
+    for event_combo in event_based_same_bucket_combos:
+        metrics.append((event_combo, event_combo_value))
 
     # Create the person-based combos for the base metric period of the month of the bucket
     person_based_same_bucket_combos = augmented_combo_list(
@@ -530,18 +520,13 @@ def combination_supervision_monthly_metrics(
         ]
     elif metric_type in (SupervisionMetricType.REVOCATION_ANALYSIS,
                          SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
-        # If this is a person-level metric, only include it if it falls in the 1-month metric period
-        if combo.get('person_external_id') is None or (
-                supervision_time_bucket.year == metric_period_end_date.year and
-                supervision_time_bucket.month == metric_period_end_date.month):
-            # Get all other revocation supervision buckets for the same month as
-            # this one
-            buckets_in_period = [
-                bucket for bucket in all_supervision_time_buckets
-                if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
-                and bucket.year == bucket_year and
-                bucket.month == bucket_month
-            ]
+        # Get all other revocation supervision buckets for the same month as this one
+        buckets_in_period = [
+            bucket for bucket in all_supervision_time_buckets
+            if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
+            and bucket.year == bucket_year and
+            bucket.month == bucket_month
+        ]
 
     if buckets_in_period and include_supervision_in_count(
             combo,
