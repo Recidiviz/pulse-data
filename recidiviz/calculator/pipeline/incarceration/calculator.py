@@ -33,7 +33,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
 from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
     last_day_of_month, relevant_metric_periods, augmented_combo_list, get_calculation_month_lower_bound_date, \
-    include_in_monthly_metrics, first_day_of_month
+    include_in_monthly_metrics, first_day_of_month, characteristics_with_person_id_fields
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -178,10 +178,16 @@ def characteristic_combinations(person: StatePerson,
         else:
             ethnicities = []
 
-        return for_characteristics_races_ethnicities(
-            races, ethnicities, characteristics)
+        all_combinations = for_characteristics_races_ethnicities(races, ethnicities, characteristics)
+    else:
+        all_combinations = for_characteristics(characteristics)
 
-    return for_characteristics(characteristics)
+    characteristics_with_person_details = characteristics_with_person_id_fields(
+        characteristics, person, 'incarceration')
+
+    all_combinations.append(characteristics_with_person_details)
+
+    return all_combinations
 
 
 def map_metric_combinations(
