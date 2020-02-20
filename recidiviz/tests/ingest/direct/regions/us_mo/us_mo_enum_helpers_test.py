@@ -80,6 +80,27 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, reason)
 
+    def test_parse_supervision_admission_reason_rank_investigative_status(self):
+        # Status meanings and mappings, in relative order:
+        #   - PSI Additional Charge -> TRANSFER_WITHIN_STATE
+        #   - New Court Probation -> COURT_SENTENCE (higher priority)
+        input_statuses = '25I5000 15I1000'
+
+        reason = supervision_period_admission_reason_mapper(input_statuses)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, reason)
+
+        # Status meanings and mappings, in relative order:
+        #   - PSI Additional Charge -> TRANSFER_WITHIN_STATE
+        #   - Release to Probation -> CONDITIONAL_RELEASE (higher priority)
+        input_statuses = '25I5000 40O9010'
+
+        reason = supervision_period_admission_reason_mapper(input_statuses)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE, reason)
+
+        input_statuses = '25I5000'  # PSI Additional Charge -> TRANSFER_WITHIN_STATE
+        reason = supervision_period_admission_reason_mapper(input_statuses)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE, reason)
+
     def test_parse_supervision_admission_reason_two_statuses_same_rank(self):
         # Status meanings and mappings, in relative order:
         #   - Court Probation Reinstated -> COURT_SENTENCE

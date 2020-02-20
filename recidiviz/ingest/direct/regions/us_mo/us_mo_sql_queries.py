@@ -805,6 +805,51 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
             BW$SCD IS NOT NULL
             AND BW$SCD != ''
     ),
+    non_inv_start_status_codes AS (
+        SELECT
+            BW$DOC,
+            BW$CYC,
+            BW$SY,
+            BW$SSO,
+            BW$SCD,
+            ROW_NUMBER() OVER (PARTITION BY BW$DOC, BW$CYC ORDER BY BW$SY, BW$SCD) AS START_STATUS_RANK
+        FROM status_bw
+        WHERE (
+            (
+                BW$SCD LIKE '%I%' -- Start statuses (I = IN)
+                AND BW$SCD NOT LIKE '05I5%' -- Invesigation start statuses
+                AND BW$SCD NOT LIKE '25I5%' -- Investigation - Additional Charge statuses
+                AND BW$SCD NOT LIKE '35I5%' -- Investigation Revisit statuses
+            ) OR
+            BW$SCD IN (
+                '10L6000', -- New CC Fed/State (Papers Only)
+                '20L6000', -- CC Fed/State (Papers Only)-AC
+                '30L6000'  -- CC Fed/State(Papers Only)-Revt
+            )
+            OR (
+                BW$SCD IN (
+                    -- (In very old cases in the 1980s, this is used as the first code to indicate entering probation)
+                    '40O9010'  -- Release to Probation
+                )
+                AND BW$SSO = 1
+            )
+
+        )  AND BW$SCD NOT IN (
+            '15I3000', -- New PreTrial Bond Supervision
+            '25I3000', -- PreTrial Bond Supv-Addl Charge
+            '35I3000'  -- PreTrial Bond Supv-Revisit
+        )
+    ),
+    first_non_inv_start_status_code AS (
+        SELECT
+            BW$DOC AS DOC,
+            BW$CYC AS CYC,
+            BW$SSO AS SSO,
+            BW$SCD AS SCD,
+            BW$SY AS STATUS_CODE_CHG_DT
+        FROM non_inv_start_status_codes
+        WHERE START_STATUS_RANK = 1
+    ),
     supv_period_partition_statuses AS (
         SELECT
             BW$DOC AS DOC,
@@ -822,6 +867,8 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
                 '65N9500'
             )
         )
+        UNION
+        (SELECT * FROM first_non_inv_start_status_code)
     ),
     all_supv_period_critical_dates AS (
         SELECT
@@ -922,24 +969,35 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
          */
         WHERE start_date.DATE_TYPE != '3-CLOSE'
     ),
+    non_investigation_supv_period_spans AS (
+        SELECT supv_period_spans.*
+        FROM
+            first_non_inv_start_status_code
+        JOIN
+            supv_period_spans
+        ON
+            first_non_inv_start_status_code.DOC = supv_period_spans.DOC AND
+            first_non_inv_start_status_code.CYC = supv_period_spans.CYC AND
+            first_non_inv_start_status_code.STATUS_CODE_CHG_DT <= supv_period_spans.SUPV_PERIOD_BEG_DT
+    ),
     basic_supervision_periods AS (
         SELECT
-            supv_period_spans.DOC,
-            supv_period_spans.CYC,
-            supv_period_spans.FIELD_ASSIGNMENT_SEQ_NUM,
-            supv_period_spans.START_STATUS_SEQ_NUM,
+            non_investigation_supv_period_spans.DOC,
+            non_investigation_supv_period_spans.CYC,
+            non_investigation_supv_period_spans.FIELD_ASSIGNMENT_SEQ_NUM,
+            non_investigation_supv_period_spans.START_STATUS_SEQ_NUM,
             SUPV_PERIOD_BEG_DT,
             SUPV_PERIOD_END_DT,
             CE$PLN AS LOCATION_ACRONYM,
             CE$PON AS SUPV_OFFICER_ID
         FROM
-            supv_period_spans
+            non_investigation_supv_period_spans
         LEFT OUTER JOIN
             field_assignments_with_valid_region
         ON
-            supv_period_spans.DOC = field_assignments_with_valid_region.DOC AND
-            supv_period_spans.CYC = field_assignments_with_valid_region.CYC AND
-            supv_period_spans.FIELD_ASSIGNMENT_SEQ_NUM =
+            non_investigation_supv_period_spans.DOC = field_assignments_with_valid_region.DOC AND
+            non_investigation_supv_period_spans.CYC = field_assignments_with_valid_region.CYC AND
+            non_investigation_supv_period_spans.FIELD_ASSIGNMENT_SEQ_NUM =
                 field_assignments_with_valid_region.FIELD_ASSIGNMENT_SEQ_NUM
     ),
     {OFFICER_ROLE_SPANS_FRAGMENT},

@@ -16,7 +16,7 @@
 # =============================================================================
 """US_MO specific enum helper methods."""
 import re
-from typing import Dict, Callable, Optional, List
+from typing import Dict, Callable, Optional, List, Set
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
@@ -53,6 +53,41 @@ PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES: List[str] = [
     '50N3065',  # CR Update - CRC
 ]
 
+INVESTIGATION_START_STATUSES: Set[str] = {
+    # All 05I5* Investigation start statuses
+    '05I5000',  # New Pre-Sentence Investigation
+    '05I5100',  # New Community Corr Court Ref
+    '05I5200',  # New Interstate Compact-Invest
+    '05I5210',  # IS Comp-Reporting Instr Given
+    '05I5220',  # IS Comp-Invest-Unsup/Priv Prob
+    '05I5230',  # IS Comp-Rept Ins-Unsup/Priv PB
+    '05I5300',  # New Exec Clemency-Invest
+    '05I5400',  # New Bond Investigation
+    '05I5500',  # New Diversion Investigation
+    '05I5600',  # New Sentencing Assessment
+
+    # All 25I5* Investigation Additional Charge statuses
+    '25I5000',  # PSI-Addl Charge
+    '25I5100',  # Comm Corr Crt Ref-Addl Charge
+    '25I5200',  # IS Compact-Invest-Addl Charge
+    '25I5210',  # IS Comp-Rep Instr Giv-Addl Chg
+    '25I5220',  # IS Comp-Inv-Unsup/Priv PB-AC
+    '25I5230',  # IS Comp-Rep Ins-Uns/Priv PB-AC
+    '25I5300',  # Exec Clemency-Invest-Addl Chg
+    '25I5400',  # Bond Investigation-Addl Charge
+    '25I5500',  # Diversion Invest-Addl Charge
+
+    # All 35I5* Investigation Additional Charge statuses
+    '35I5000',  # PSI-Revisit
+    '35I5100',  # Comm Corr Crt Ref-Revisit
+    '35I5200',  # IS Compact-Invest-Revisit
+    '35I5210',  # IS Comp-Rep Instr Giv-Revisit
+    '35I5220',  # IS Comp-Inv-Unsup/Priv PB-Rev
+    '35I5230',  # IS Comp-Rep Ins-Uns/Prv PB-Rev
+    '35I5400',  # Bond Investigation-Revisit
+    '35I5500',  # Diversion Invest-Revisit
+    '35I5600',  # Sentencing Assessment-Revisit
+}
 
 SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriodTerminationReason, List[str]] = {
     StateSupervisionPeriodTerminationReason.ABSCONSION: [
@@ -357,6 +392,14 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriod
         '15I1200',  # New Court Parole
         '15I2000',  # New Diversion Supervision
         '15I3000',  # New PreTrial Bond Supervision
+
+        # These statuses are occasionally the only status present to indicate that someone has left a period of
+        # investigation. They show up rarely (100ish times a year) and a minority (25%ish) of the time they
+        # actually show up in the middle of someone's supervision term, after they have long-ago left investigation.
+        # Since the majority of the time it's correct to classify these as COURT_SENTENCE, we leave these here.
+        '10L6000',  # New CC Fed/State (Papers Only)
+        '20L6000',  # CC Fed/State (Papers Only)-AC
+        '30L6000'   # CC Fed/State(Papers Only)-Revt
     ],
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: [
         '65I1099',  # Supervision Reinstated
@@ -366,6 +409,13 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriod
     ],
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: [
         '65N9500',  # Offender re-engaged - from TAK026 BW$SCD
+    ],
+    StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE: [
+        # Since a) we rank INVESTIGATION_START_STATUSES as being the lowest priority status to parse and b) we filter
+        # out all portions of supervision periods that happen before an initial investigation is over, if we pick one of
+        # these statuses as the primary status, it means a new investigation happened to open up on the same day as a
+        # person transferred POs and we want to still count that as a transfer.
+        *INVESTIGATION_START_STATUSES
     ]
 }
 
@@ -395,9 +445,17 @@ def supervision_period_admission_reason_mapper(label: str) -> Optional[StateSupe
         period admissions, we pick statuses that have the pattern X5I* (e.g. '15I1000'), since those statuses are
         field (5) IN (I) statuses. In the absence if one of those statuses, we get our info from other statuses.
         """
-        if re.match(TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX, status):
-            return 0
-        return 1
+        if status not in INVESTIGATION_START_STATUSES:
+            if re.match(TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX, status):
+                return 0
+
+            return 1
+
+        # Since we filter out all portions of supervision periods that happen before an initial investigation is over,
+        # if we find a period that starts with one of these statuses, it means a new investigation happened to open up
+        # on the same day as a person transferred POs. We generally want to ignore this case and just treat it as a
+        # transfer unless there are other statuses that give us more info.
+        return 2
 
     sorted_statuses = sorted(statuses, key=lambda status: _status_rank_str(status, status_rank))
 
