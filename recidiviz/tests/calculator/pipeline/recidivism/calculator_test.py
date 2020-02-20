@@ -373,15 +373,21 @@ def test_stay_length_bucket():
 def test_augmented_combo_list_methodologies():
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
-    person_combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', MetricMethodologyType.PERSON, 8)
+    event = ReleaseEvent(
+        state_code='CA',
+        original_admission_date=date.today(),
+        release_date=date.today(),
+        release_facility=None,
+        county_of_residence=None
+    )
+
+    person_combo_list = calculator.augmented_combo_list(base_combo, event, MetricMethodologyType.PERSON, 8)
 
     for combo in person_combo_list:
         assert combo['methodology'] == MetricMethodologyType.PERSON
         assert combo['follow_up_period'] == 8
 
-    event_combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', MetricMethodologyType.EVENT, 8)
+    event_combo_list = calculator.augmented_combo_list(base_combo, event, MetricMethodologyType.EVENT, 8)
 
     for combo in event_combo_list:
         assert combo['methodology'] == MetricMethodologyType.EVENT
@@ -389,12 +395,19 @@ def test_augmented_combo_list_methodologies():
 
 
 def test_augmented_combo_list_return_info():
-    """Tests that all return_type and from_supervision_type values are being
-    covered."""
+    """Tests that all return_type and from_supervision_type values are being covered."""
     base_combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
 
+    event = ReleaseEvent(
+        state_code='CA',
+        original_admission_date=date.today(),
+        release_date=date.today(),
+        release_facility=None,
+        county_of_residence=None
+    )
+
     combo_list = calculator.augmented_combo_list(
-        base_combo, 'CA', MetricMethodologyType.PERSON, 8)
+        base_combo, event, MetricMethodologyType.PERSON, 8)
 
     parameter_list = {}
 
@@ -420,6 +433,39 @@ def test_augmented_combo_list_return_info():
 
     for value in parameter_list.values():
         assert value
+
+
+def test_augmented_combo_list_person_level():
+    """Tests that only one dictionary with the relevant return_type and from_supervision_type values are being
+    returned."""
+    base_combo = {'age': '<25', 'race': 'black', 'gender': 'female', 'person_id': 12345}
+
+    event = RecidivismReleaseEvent(
+        state_code='CA',
+        original_admission_date=date.today(),
+        release_date=date.today(),
+        release_facility=None,
+        county_of_residence=None,
+        return_type=ReincarcerationReturnType.REVOCATION,
+        from_supervision_type=ReincarcerationReturnFromSupervisionType.PAROLE,
+        source_violation_type=StateSupervisionViolationType.MISDEMEANOR
+    )
+
+    combo_list = calculator.augmented_combo_list(base_combo, event, MetricMethodologyType.PERSON, None)
+
+    parameter_list = {
+        'state_code': 'CA',
+        'methodology': MetricMethodologyType.PERSON,
+        'return_type': ReincarcerationReturnType.REVOCATION,
+        'from_supervision_type': ReincarcerationReturnFromSupervisionType.PAROLE,
+        'source_violation_type': StateSupervisionViolationType.MISDEMEANOR
+    }
+
+    assert len(combo_list) == 1
+
+    for combo in combo_list:
+        for parameter, value in parameter_list.items():
+            assert value == combo.get(parameter)
 
 
 def test_recidivism_value_for_metric():
@@ -625,17 +671,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         # and both.
         return current_possible_metrics + 3
 
-    def expected_metric_combos_count(
-            self,
-            person: StatePerson,
-            release_events_by_cohort: Dict[int, List[ReleaseEvent]],
-            inclusions: Dict[str, bool]) -> int:
-        """Calculates the expected number of characteristic combinations given
-        the person, the release events, and the dimensions that should be
-        included in the explosion of feature combinations."""
-        demographic_metric_combos = \
-            expected_metric_count_for_person_recidivism(
-                person, inclusions)
+    def expected_metric_combos_count(self, person: StatePerson, release_events_by_cohort: Dict[int, List[ReleaseEvent]],
+                                     inclusions: Dict[str, bool]) -> int:
+        """Calculates the expected number of characteristic combinations given the person, the release events, and the
+        dimensions that should be included in the explosion of feature combinations."""
+        demographic_metric_combos = expected_metric_count_for_person_recidivism(person, inclusions)
 
         all_release_events = [
             re
@@ -648,22 +688,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             isinstance(re, RecidivismReleaseEvent)
         ]
 
-        recidivism_rate_metrics = (
-            self.RETURN_TYPE_METRIC_COMBOS *
-            len(FOLLOW_UP_PERIODS) *
-            len(all_release_events)
-        )
+        recidivism_rate_metrics = (self.RETURN_TYPE_METRIC_COMBOS * len(FOLLOW_UP_PERIODS) * len(all_release_events))
 
-        recidivism_count_metrics = (
-            self.RETURN_TYPE_METRIC_COMBOS *
-            len(recidivism_release_events)
-        )
+        recidivism_count_metrics = (self.RETURN_TYPE_METRIC_COMBOS * len(recidivism_release_events))
 
-        release_event_relevant_combo_counts = \
-            sum(self.relevant_combos_count_for_recidivism_release_event(re)
-                for re in recidivism_release_events)
-        at_liberty_metrics = \
-            release_event_relevant_combo_counts * self.LIBERTY_TIME_WINDOWS
+        release_event_relevant_combo_counts = sum(self.relevant_combos_count_for_recidivism_release_event(re)
+                                                  for re in recidivism_release_events)
+        at_liberty_metrics = release_event_relevant_combo_counts * self.LIBERTY_TIME_WINDOWS
 
         expected_combos_count = \
             demographic_metric_combos * self.RECIDIVISM_METHODOLOGIES * (
@@ -671,35 +702,15 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 recidivism_count_metrics +
                 at_liberty_metrics
             )
-        return expected_combos_count
 
-    def expected_count_metric_combos_count(
-            self,
-            person: StatePerson,
-            release_events_by_cohort: Dict[int, List[ReleaseEvent]],
-            inclusions: Dict[str, bool]) -> int:
-        """Returns the expected number of metrics of only the metric_type
-        'count'."""
-        demographic_metric_combos = \
-            expected_metric_count_for_person_recidivism(
-                person, inclusions)
+        # Person-level count metrics
+        expected_combos_count += (len(recidivism_release_events) * self.RECIDIVISM_METHODOLOGIES)
 
-        recidivism_release_events = [
-            re
-            for re_list in release_events_by_cohort.values()
-            for re in re_list if isinstance(re, RecidivismReleaseEvent)
-        ]
+        # Person-level liberty metrics
+        expected_combos_count += (len(recidivism_release_events) *
+                                  self.LIBERTY_TIME_WINDOWS *
+                                  self.RECIDIVISM_METHODOLOGIES)
 
-        recidivism_count_metrics = (
-            self.RETURN_TYPE_METRIC_COMBOS *
-            self.RECIDIVISM_COUNT_WINDOWS *
-            len(recidivism_release_events)
-        )
-
-        expected_combos_count = \
-            demographic_metric_combos * self.RECIDIVISM_METHODOLOGIES * (
-                recidivism_count_metrics
-            )
         return expected_combos_count
 
     @freeze_time('2100-01-01')
@@ -751,8 +762,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 assert value == 1
 
     def test_map_recidivism_combinations_multiple_in_period(self):
-        """Tests the map_recidivism_combinations function where there are
-        multiple instances of recidivism within a follow-up period."""
+        """Tests the map_recidivism_combinations function where there are multiple instances of recidivism within a
+        follow-up period."""
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -799,14 +810,23 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #       * (46 combinations of methodology/return type/supervision type
         #           + 23 more instances) * 5 periods = 44160 metrics
         #
+        #   Person-level metrics: (1 count window + 2 liberty windows) * 2 methodologies = 6
+        #
         # For the second event:
         #   64 combinations * 46 combos * 10 periods +
         #   64 combos * 1 count window * 46 combos of methodology etc. +
         #   64 * 2 liberty windows * 4 combos of methodology etc.
         #   = 32896 metrics
+        #
+        # Person-level metrics: (1 count window + 2 liberty windows) * 2 methodologies = 6
 
         # Multiplied by 2 to include the county of residence field
-        assert len(recidivism_combinations) == (18176 + 22080 + 32896) * 2
+        expected_count = (18176 + 22080 + 32896) * 2
+
+        expected_count += (6 + 6)
+
+        # Multiplied by 2 to include the county of residence field
+        assert len(recidivism_combinations) == expected_count
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.RATE and \
@@ -1343,6 +1363,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #
         #   Count + liberty windows: 64 * 1 count windows * 46 combos +
         #       64 * 2 liberty windows * 4 combos = 3456
+        #   Person-level metrics: (1 count window + 2 liberty windows) * 2 methodologies = 6
         #
         # For the second event:
         #   64 combinations * 46 combos * 1 period +
@@ -1350,12 +1371,22 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #   64 * 2 liberty windows * 2 event-based combos +
         #   64 * 1 liberty window (month) * 2 person-based combos = 6272
         #
+        # Person-level metrics: (1 count window * 2 methodologies + 2 liberty event-based windows +
+        # 1 person-based month window) = 5
+        #
         # For the relevant metric_period_months count metrics:
         # (6 event-based + 4 person-based) * 64 combinations * 23 combos = 14720
+        #
+        # Relevant metric_period_months person-level count metrics:
+        # (6 event-based + 4 person-based) = 10
 
         # Multiplied by 2 to include the county of residence field
-        assert len(recidivism_combinations) == \
-                (14720 + 8832 + 3456 + 6272 + 14720) * 2
+        expected_count = (14720 + 8832 + 3456 + 6272 + 14720) * 2
+
+        # Adding person-level metric counts
+        expected_count += (6 + 5 + 10)
+
+        assert len(recidivism_combinations) == expected_count
 
         for combo, value in recidivism_combinations:
             if combo['metric_type'] == MetricType.COUNT:
@@ -1443,6 +1474,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #
         #   Count + liberty windows: 64 * 1 count window * 46 combos +
         #       64 * 2 liberty windows * 4 combos = 3456
+        #   Person-level metrics: (1 count window + 2 liberty windows) * 2 methodologies = 6
         #
         # For the second event:
         #   64 combinations * 46 combos * 10 periods +
@@ -1450,17 +1482,16 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #   64 * 0 person-based-combos +
         #   64 * 2 liberty windows * 2 event-based-combos +
         #   64 * 0 person-based-combos = 31168 metrics
+        #
+        # Person-level metrics: (1 event-based count window + 2 liberty event-based windows) = 3
 
         # Multiplied by 2 to include the county of residence field
-        assert len(recidivism_combinations) == \
-               (14720 + 22080 + 3456 + 31168) * 2
+        expected_count = (14720 + 22080 + 3456 + 31168) * 2
 
-        num_liberty_metrics = 0
-        num_person_year_liberty_metrics = 0
-        num_event_year_liberty_metrics = 0
-        num_person_month_liberty_metrics = 0
-        num_event_month_liberty_metrics = 0
-        num_march_month_liberty_metrics = 0
+        # Adding person-level metric counts
+        expected_count += (6 + 3)
+
+        assert len(recidivism_combinations) == expected_count
 
         for combo, value in recidivism_combinations:
             if combo['metric_type'] == MetricType.COUNT:
@@ -1473,39 +1504,26 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 else:
                     assert value == 0
             elif combo['metric_type'] == MetricType.LIBERTY:
-                num_liberty_metrics += 1
 
                 assert combo['start_date'].year == 1914
                 if combo['start_date'].month == 3:
-                    num_march_month_liberty_metrics += 1
                     # March month bucket
                     assert combo['start_date'] == date(1914, 3, 1)
                     assert combo['end_date'] == date(1914, 3, 31)
 
                     if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
-                        num_event_month_liberty_metrics += 1
                     else:
                         assert value == days_at_liberty_1
-                        num_person_month_liberty_metrics += 1
                 else:
                     if combo['methodology'] == MetricMethodologyType.EVENT:
                         assert value in (days_at_liberty_1, days_at_liberty_2)
-                        num_event_year_liberty_metrics += 1
                     else:
                         assert value == days_at_liberty_1
-                        num_person_year_liberty_metrics += 1
 
                     # Year bucket
                     assert combo['start_date'] == date(1914, 1, 1)
                     assert combo['end_date'] == date(1914, 12, 31)
-
-        assert num_liberty_metrics == 1536
-        assert num_person_year_liberty_metrics == 256
-        assert num_event_year_liberty_metrics == 512
-        assert num_person_month_liberty_metrics == 256
-        assert num_event_month_liberty_metrics == 512
-        assert num_march_month_liberty_metrics == 768
 
 
 def expected_metric_count_for_person_recidivism(
@@ -1549,8 +1567,11 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, release_event, ALL_INCLUSIONS_DICT)
 
-        expected_metric_count = expected_metric_count_for_person_recidivism(
-            person, ALL_INCLUSIONS_DICT)
+        expected_metric_count = expected_metric_count_for_person_recidivism(person, ALL_INCLUSIONS_DICT)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
     def test_characteristic_combinations_exclude_age(self):
@@ -1585,6 +1606,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1622,6 +1647,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1658,6 +1687,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
             person, release_event, inclusions)
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1695,6 +1728,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1732,6 +1769,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1769,6 +1810,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1808,6 +1853,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         for combo in combinations:
@@ -1852,9 +1901,14 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         expected_metric_count = expected_metric_count_for_person_recidivism(
             person, inclusions)
+
+        # Add 1 for the person-level metric
+        expected_metric_count += 1
+
         self.assertEqual(expected_metric_count, len(combinations))
 
         # County of residence always populated
         self.assertCountEqual([{},
-                               {'county_of_residence': _COUNTY_OF_RESIDENCE}],
+                               {'county_of_residence': _COUNTY_OF_RESIDENCE},
+                               {'county_of_residence': 'county', 'person_id': 12345}],
                               combinations)

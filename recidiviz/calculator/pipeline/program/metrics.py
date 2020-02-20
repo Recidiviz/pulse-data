@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
@@ -36,7 +36,7 @@ class ProgramMetricType(Enum):
 
 
 @attr.s
-class ProgramMetric(RecidivizMetric):
+class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     """Models a single program metric.
 
     Contains all of the identifying characteristics of the metric, including

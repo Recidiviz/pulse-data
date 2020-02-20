@@ -902,8 +902,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, ALL_INCLUSIONS_DICT)
 
-        # 64 combinations of demographics
-        assert len(combinations) == 64
+        # 64 combinations of demographics + 1 person-level metric
+        assert len(combinations) == 65
 
     def test_characteristic_combinations_no_facility(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -930,8 +930,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, ALL_INCLUSIONS_DICT)
 
-        # 32 combinations of demographics
-        assert len(combinations) == 32
+        # 32 combinations of demographics + 1 person-level metric
+        assert len(combinations) == 33
 
     def test_characteristic_combinations_no_county(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -958,8 +958,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, ALL_INCLUSIONS_DICT)
 
-        # 32 combinations of demographics
-        assert len(combinations) == 32
+        # 32 combinations of demographics + 1 person-level metric
+        assert len(combinations) == 33
 
 
 def demographic_metric_combos_count_for_person_incarceration(
@@ -988,16 +988,13 @@ def expected_metric_combos_count(
         num_relevant_periods_admissions: int = 0,
         num_relevant_periods_releases: int = 0,
         with_methodologies: bool = True) -> int:
-    """Calculates the expected number of characteristic combinations given
-    the person, the incarceration events, and the dimensions that should
-    be included in the explosion of feature combinations."""
+    """Calculates the expected number of characteristic combinations given the person, the incarceration events, and
+    the dimensions that should be included in the explosion of feature combinations."""
 
-    demographic_metric_combos = \
-        demographic_metric_combos_count_for_person_incarceration(
-            person, inclusions)
+    demographic_metric_combos = demographic_metric_combos_count_for_person_incarceration(
+        person, inclusions)
 
-    # Some test cases above use a different call that doesn't take methodology
-    # into account as a dimension
+    # Some test cases above use a different call that doesn't take methodology into account as a dimension
     methodology_multiplier = 1
     if with_methodologies:
         methodology_multiplier *= CALCULATION_METHODOLOGIES
@@ -1009,83 +1006,76 @@ def expected_metric_combos_count(
         if isinstance(event, IncarcerationStayEvent)
     ]
 
+    num_stay_events = len(stay_events)
     num_duplicated_stay_months = 0
     stay_months: Set[Tuple[int, int]] = set()
 
     for stay_event in stay_events:
-        if (stay_event.event_date.year,
-                stay_event.event_date.month) in stay_months:
+        if (stay_event.event_date.year, stay_event.event_date.month) in stay_months:
             num_duplicated_stay_months += 1
 
-        stay_months.add((stay_event.event_date.year,
-                         stay_event.event_date.month))
+        stay_months.add((stay_event.event_date.year, stay_event.event_date.month))
 
     admission_events = [
         event for event in incarceration_events
         if isinstance(event, IncarcerationAdmissionEvent)
     ]
 
+    num_admission_events = len(admission_events)
     num_duplicated_admission_months = 0
     admission_months: Set[Tuple[int, int]] = set()
 
     for admission_event in admission_events:
-        if (admission_event.event_date.year,
-                admission_event.event_date.month) in admission_months:
+        if (admission_event.event_date.year, admission_event.event_date.month) in admission_months:
             num_duplicated_admission_months += 1
 
-        admission_months.add((admission_event.event_date.year,
-                              admission_event.event_date.month))
+        admission_months.add((admission_event.event_date.year, admission_event.event_date.month))
 
     release_events = [
         event for event in incarceration_events
         if isinstance(event, IncarcerationReleaseEvent)
     ]
 
+    num_release_events = len(release_events)
     num_duplicated_release_months = 0
     release_months: Set[Tuple[int, int]] = set()
 
     for release_event in release_events:
-        if (release_event.event_date.year,
-                release_event.event_date.month) in release_months:
+        if (release_event.event_date.year, release_event.event_date.month) in release_months:
             num_duplicated_release_months += 1
 
-        release_months.add((release_event.event_date.year,
-                            release_event.event_date.month))
+        release_months.add((release_event.event_date.year, release_event.event_date.month))
 
-    incarceration_event_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_incarceration_events
+    incarceration_event_combos = demographic_metric_combos * methodology_multiplier * num_incarceration_events
 
     if num_relevant_periods_admissions > 0:
-        incarceration_event_combos += \
-            demographic_metric_combos * \
-            (len(admission_events) - num_duplicated_admission_months) * \
-            num_relevant_periods_admissions
+        incarceration_event_combos += (demographic_metric_combos *
+                                       (len(admission_events) - num_duplicated_admission_months) *
+                                       num_relevant_periods_admissions)
 
     if num_relevant_periods_releases > 0:
-        incarceration_event_combos += \
-            demographic_metric_combos * \
-            (len(release_events) - num_duplicated_release_months) * \
-            num_relevant_periods_releases
+        incarceration_event_combos += (demographic_metric_combos *
+                                       (len(release_events) - num_duplicated_release_months) *
+                                       num_relevant_periods_releases)
 
-    duplicated_admission_combos = int(
-        demographic_metric_combos *
-        num_duplicated_admission_months
-    )
+    duplicated_admission_combos = int(demographic_metric_combos * num_duplicated_admission_months)
 
-    duplicated_release_combos = int(
-        demographic_metric_combos *
-        num_duplicated_release_months
-    )
+    duplicated_release_combos = int(demographic_metric_combos * num_duplicated_release_months)
 
-    duplicated_stay_combos = int(
-        demographic_metric_combos *
-        num_duplicated_stay_months
-    )
+    duplicated_stay_combos = int(demographic_metric_combos * num_duplicated_stay_months)
 
-    incarceration_event_combos -= \
-        (duplicated_admission_combos +
-         duplicated_release_combos +
-         duplicated_stay_combos)
+    incarceration_event_combos -= (duplicated_admission_combos +
+                                   duplicated_release_combos +
+                                   duplicated_stay_combos)
+
+    incarceration_event_combos += (num_admission_events +
+                                   (num_admission_events -
+                                    num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
+
+    incarceration_event_combos += (num_stay_events + (num_stay_events - num_duplicated_stay_months))
+
+    incarceration_event_combos += (num_release_events +
+                                   (num_release_events -
+                                    num_duplicated_release_months)*(num_relevant_periods_releases + 1))
 
     return incarceration_event_combos

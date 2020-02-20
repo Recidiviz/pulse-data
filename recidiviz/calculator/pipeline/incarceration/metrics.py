@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
@@ -37,7 +37,7 @@ class IncarcerationMetricType(Enum):
 
 
 @attr.s
-class IncarcerationMetric(RecidivizMetric):
+class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     """Models a single incarceration metric.
 
     Contains all of the identifying characteristics of the metric, including

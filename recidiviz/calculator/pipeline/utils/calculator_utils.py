@@ -38,7 +38,12 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StatePerson
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
 PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
-    'US_MO': ['US_MO_DOC']
+    'incarceration': {
+        'US_MO': ['US_MO_DOC']
+    },
+    'supervision': {
+        'US_MO': ['US_MO_DOC']
+    },
 }
 
 DECISION_SEVERITY_ORDER = [
@@ -383,19 +388,20 @@ def augmented_combo_list(combo: Dict[str, Any],
     return combos
 
 
-def person_external_id_to_include(person: StatePerson) -> Optional[str]:
-    """Finds an external_id on the person that should be included in
-    calculations for person-level metrics."""
+def person_external_id_to_include(pipeline: str, person: StatePerson) -> Optional[str]:
+    """Finds an external_id on the person that should be included in calculations for person-level metrics in the
+    given pipeline."""
     external_ids = person.external_ids
 
-    for external_id in external_ids:
-        if external_id.state_code in PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.keys():
-            id_types_to_include = \
-                PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(external_id.state_code)
+    values_for_pipeline = PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
 
-            if id_types_to_include and external_id.id_type in \
-                    id_types_to_include:
-                return external_id.external_id
+    if values_for_pipeline:
+        for external_id in external_ids:
+            if external_id.state_code in values_for_pipeline.keys():
+                id_types_to_include = values_for_pipeline.get(external_id.state_code)
+
+                if id_types_to_include and external_id.id_type in id_types_to_include:
+                    return external_id.external_id
 
     return None
 
@@ -421,3 +427,23 @@ def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, 
         if calculation_month_limit != -1 else None
 
     return calculation_month_lower_bound
+
+
+def characteristics_with_person_id_fields(characteristics: Dict[str, Any], person: StatePerson, pipeline: str) -> \
+        Dict[str, Any]:
+    """Returns an updated characteristics dictionary with the person's person_id and, if applicable, a
+    person_external_id."""
+    updated_characteristics = characteristics.copy()
+
+    # person_id and person_external_id is added to a characteristics combination dictionary that has all fields set. We
+    # only want person-level output that has all possible fields set.
+    person_id = person.person_id
+
+    updated_characteristics['person_id'] = person_id
+
+    person_external_id = person_external_id_to_include(pipeline, person)
+
+    if person_external_id is not None:
+        updated_characteristics['person_external_id'] = person_external_id
+
+    return updated_characteristics
