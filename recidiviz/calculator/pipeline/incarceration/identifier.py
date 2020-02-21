@@ -196,6 +196,7 @@ def admission_event_for_period(
     admission_date = incarceration_period.admission_date
     admission_reason = incarceration_period.admission_reason
     incarceration_type = incarceration_period.incarceration_type
+    specialized_purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 
     if admission_date and admission_reason and \
             incarceration_type == StateIncarcerationType.STATE_PRISON:
@@ -204,6 +205,7 @@ def admission_event_for_period(
             event_date=admission_date,
             facility=incarceration_period.facility,
             admission_reason=admission_reason,
+            specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
             county_of_residence=county_of_residence,
         )
 

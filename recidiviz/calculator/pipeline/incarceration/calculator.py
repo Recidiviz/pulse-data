@@ -150,6 +150,18 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics: Dict[str, Any] = {}
 
+    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        if incarceration_event.admission_reason:
+            characteristics['admission_reason'] = incarceration_event.admission_reason
+
+        if incarceration_event.specialized_purpose_for_incarceration:
+            characteristics['specialized_purpose_for_incarceration'] = \
+                incarceration_event.specialized_purpose_for_incarceration
+
+    if isinstance(incarceration_event, IncarcerationReleaseEvent):
+        if incarceration_event.release_reason:
+            characteristics['release_reason'] = incarceration_event.release_reason
+
     # Always include facility as a dimension
     if incarceration_event.facility:
         characteristics['facility'] = incarceration_event.facility
@@ -224,13 +236,6 @@ def map_metric_combinations(
 
     for combo in characteristic_combos:
         combo['metric_type'] = metric_type.value
-
-        if metric_type == IncarcerationMetricType.ADMISSION and \
-                isinstance(incarceration_event, IncarcerationAdmissionEvent):
-            combo['admission_reason'] = incarceration_event.admission_reason
-        elif metric_type == IncarcerationMetricType.RELEASE and \
-                isinstance(incarceration_event, IncarcerationReleaseEvent):
-            combo['release_reason'] = incarceration_event.release_reason
 
         if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
                                       calculation_month_lower_bound):
