@@ -64,7 +64,9 @@ JOB_MONITOR_QUEUE_CONFIG = queue_pb2.Queue(
         max_concurrent_dispatches=1,
     ),
     retry_config=queue_pb2.RetryConfig(
-        max_attempts=1,
+        min_backoff=duration_pb2.Duration(seconds=5),
+        max_backoff=duration_pb2.Duration(seconds=120),
+        max_attempts=5,
     )
 )
 
