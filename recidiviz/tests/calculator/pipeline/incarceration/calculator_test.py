@@ -32,7 +32,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason
+    StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import \
@@ -127,6 +127,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2000, 3, 12),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationReleaseEvent(
                 state_code='CA',
@@ -174,12 +176,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2000, 3, 12),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.NEW_ADMISSION
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
                 event_date=date(2000, 3, 17),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.NEW_ADMISSION
             )
         ]
 
@@ -467,6 +471,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             event_date=date(2000, 3, 12),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
         )
 
         incarceration_events = [incarceration_event]
@@ -972,12 +978,6 @@ def demographic_metric_combos_count_for_person_incarceration(
         person, inclusions
     )
 
-    # Facility is always included
-    total_metric_combos *= 2
-
-    # County_of_residence is always included
-    total_metric_combos *= 2
-
     return total_metric_combos
 
 
@@ -999,8 +999,6 @@ def expected_metric_combos_count(
     if with_methodologies:
         methodology_multiplier *= CALCULATION_METHODOLOGIES
 
-    num_incarceration_events = len(incarceration_events)
-
     stay_events = [
         event for event in incarceration_events
         if isinstance(event, IncarcerationStayEvent)
@@ -1015,6 +1013,19 @@ def expected_metric_combos_count(
             num_duplicated_stay_months += 1
 
         stay_months.add((stay_event.event_date.year, stay_event.event_date.month))
+
+    stay_dimension_multiplier = 1
+    if stay_events:
+        first_stay_event = stay_events[0]
+
+        release_dimensions = [
+            'facility',
+            'county_of_residence'
+        ]
+
+        for dimension in release_dimensions:
+            if getattr(first_stay_event, dimension) is not None:
+                stay_dimension_multiplier *= 2
 
     admission_events = [
         event for event in incarceration_events
@@ -1031,6 +1042,21 @@ def expected_metric_combos_count(
 
         admission_months.add((admission_event.event_date.year, admission_event.event_date.month))
 
+    admission_dimension_multiplier = 1
+    if admission_events:
+        first_admission_event = admission_events[0]
+
+        admission_dimensions = [
+            'facility',
+            'county_of_residence',
+            'admission_reason',
+            'specialized_purpose_for_incarceration'
+        ]
+
+        for dimension in admission_dimensions:
+            if getattr(first_admission_event, dimension) is not None:
+                admission_dimension_multiplier *= 2
+
     release_events = [
         event for event in incarceration_events
         if isinstance(event, IncarcerationReleaseEvent)
@@ -1046,36 +1072,58 @@ def expected_metric_combos_count(
 
         release_months.add((release_event.event_date.year, release_event.event_date.month))
 
-    incarceration_event_combos = demographic_metric_combos * methodology_multiplier * num_incarceration_events
+    release_dimension_multiplier = 1
+    if release_events:
+        first_release_event = release_events[0]
+
+        release_dimensions = [
+            'facility',
+            'county_of_residence',
+            'release_reason'
+        ]
+
+        for dimension in release_dimensions:
+            if getattr(first_release_event, dimension) is not None:
+                release_dimension_multiplier *= 2
+
+    admission_combos = (demographic_metric_combos * methodology_multiplier *
+                        num_admission_events * admission_dimension_multiplier)
+    stay_combos = (demographic_metric_combos * methodology_multiplier *
+                   num_stay_events * stay_dimension_multiplier)
+    release_combos = (demographic_metric_combos * methodology_multiplier *
+                      num_release_events * release_dimension_multiplier)
 
     if num_relevant_periods_admissions > 0:
-        incarceration_event_combos += (demographic_metric_combos *
-                                       (len(admission_events) - num_duplicated_admission_months) *
-                                       num_relevant_periods_admissions)
+        admission_combos += (demographic_metric_combos *
+                             (len(admission_events) - num_duplicated_admission_months) *
+                             num_relevant_periods_admissions * admission_dimension_multiplier)
 
     if num_relevant_periods_releases > 0:
-        incarceration_event_combos += (demographic_metric_combos *
-                                       (len(release_events) - num_duplicated_release_months) *
-                                       num_relevant_periods_releases)
+        release_combos += (demographic_metric_combos *
+                           (len(release_events) - num_duplicated_release_months) *
+                           num_relevant_periods_releases * release_dimension_multiplier)
 
-    duplicated_admission_combos = int(demographic_metric_combos * num_duplicated_admission_months)
+    duplicated_admission_combos = int(demographic_metric_combos * num_duplicated_admission_months
+                                      * admission_dimension_multiplier)
 
-    duplicated_release_combos = int(demographic_metric_combos * num_duplicated_release_months)
+    duplicated_release_combos = int(demographic_metric_combos * num_duplicated_release_months *
+                                    release_dimension_multiplier)
 
-    duplicated_stay_combos = int(demographic_metric_combos * num_duplicated_stay_months)
+    duplicated_stay_combos = int(demographic_metric_combos * num_duplicated_stay_months *
+                                 stay_dimension_multiplier)
 
-    incarceration_event_combos -= (duplicated_admission_combos +
-                                   duplicated_release_combos +
-                                   duplicated_stay_combos)
+    admission_combos -= duplicated_admission_combos
+    stay_combos -= duplicated_stay_combos
+    release_combos -= duplicated_release_combos
 
-    incarceration_event_combos += (num_admission_events +
-                                   (num_admission_events -
-                                    num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
+    admission_combos += (num_admission_events +
+                         (num_admission_events -
+                          num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
 
-    incarceration_event_combos += (num_stay_events + (num_stay_events - num_duplicated_stay_months))
+    stay_combos += (num_stay_events + (num_stay_events - num_duplicated_stay_months))
 
-    incarceration_event_combos += (num_release_events +
-                                   (num_release_events -
-                                    num_duplicated_release_months)*(num_relevant_periods_releases + 1))
+    release_combos += (num_release_events +
+                       (num_release_events -
+                        num_duplicated_release_months)*(num_relevant_periods_releases + 1))
 
-    return incarceration_event_combos
+    return admission_combos + stay_combos + release_combos
