@@ -34,7 +34,7 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
-    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseRevocationType, \
@@ -984,7 +984,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
-    def test_populate_data_tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
+    def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
 
         po_E123 = StateAgent(
             agent_type='PROBATION/PAROLE UNIT SPV',
@@ -1008,6 +1008,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_date='19930701',
             termination_reason='40I1050,45O1010',
             supervision_site='14',
+            supervision_level='ISP',
             supervising_officer=po_E123
         )
         sp_110035_19890901_4_0 = StateSupervisionPeriod(
@@ -1037,6 +1038,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason='65L9100',
             supervision_site='14',
             supervising_officer=po_E123,
+            supervision_level='ITC',
             state_supervision_case_type_entries=[
                 StateSupervisionCaseTypeEntry(
                     case_type='DSO'
@@ -1055,6 +1057,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason='65N9500',
             supervision_site='14',
             supervising_officer=po_E123,
+            supervision_level='ITC',
             state_supervision_case_type_entries=[
                 StateSupervisionCaseTypeEntry(
                     case_type='DSO'
@@ -1072,6 +1075,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason='99O2010',
             supervision_site='14',
             supervising_officer=po_E123,
+            supervision_level='ITC',
             state_supervision_case_type_entries=[
                 StateSupervisionCaseTypeEntry(
                     case_type='DSO'
@@ -1145,6 +1149,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='40O1010',
             supervision_site='17',
             supervising_officer=po_E234,
+            supervision_level='IAP',
             state_supervision_case_type_entries=[
                 StateSupervisionCaseTypeEntry(
                     case_type='DSO'
@@ -1158,6 +1163,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='15I1000',
             supervision_site='17',
             supervising_officer=po_E234,
+            supervision_level='III',
             state_supervision_case_type_entries=[
                 StateSupervisionCaseTypeEntry(
                     case_type='DOM'
@@ -1271,7 +1277,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
-        self.run_parse_file_test(expected, 'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods')
+        self.run_parse_file_test(
+            expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods')
 
     def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
@@ -2777,7 +2784,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ################################################################
-        # TAK034_TAK026_APFX90_APFX91 SUPERVISION PERIODS
+        # TAK034_TAK026_TAK039_APFX90_APFX91 SUPERVISION PERIODS
         ################################################################
 
         # Arrange
@@ -2824,10 +2831,12 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_reason_raw_text='40I1050,45O1010',
             supervision_site='14',
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='ISP',
             person=person_110035,
             supervision_sentences=[placeholder_sss_110035_19890901],
             supervising_officer=agent_123
-        )
+            )
         sp_110035_19890901_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-19890901-4-0',
@@ -3000,9 +3009,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_site='17',
             supervising_officer=agent_234,
             person=person_910324,
+            supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
+            supervision_level_raw_text='IAP',
             incarceration_sentences=[sis_910324_19890825_1],
             supervision_sentences=[sss_910324_19890825_1]
-        )
+            )
         ct_910324_19890825_2_0_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
             case_type_raw_text='DSO',
@@ -3050,8 +3061,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_site='17',
             supervising_officer=agent_234,
             person=person_624624,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='III',
             supervision_sentences=[placeholder_sss_624624_19890617_1],
-        )
+            )
         ct_624624_19890617_1_0_dom = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text='DOM',
@@ -3102,9 +3115,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='65L9100',
             supervision_site='14',
             supervising_officer=agent_123,
+            supervision_level=StateSupervisionLevel.INCARCERATED,
+            supervision_level_raw_text='ITC',
             person=person_110035,
             supervision_sentences=[sss_110035_20040712_1]
-        )
+            )
         ct_110035_20040712_1_0_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
             case_type_raw_text='DSO',
@@ -3133,9 +3148,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='65N9500',
             supervision_site='14',
             supervising_officer=agent_123,
+            supervision_level=StateSupervisionLevel.INCARCERATED,
+            supervision_level_raw_text='ITC',
             person=person_110035,
             supervision_sentences=[sss_110035_20040712_1]
-        )
+            )
         ct_110035_20040712_1_8_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
             case_type_raw_text='DSO',
@@ -3164,9 +3181,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='99O2010',
             supervision_site='14',
             supervising_officer=agent_123,
+            supervision_level=StateSupervisionLevel.INCARCERATED,
+            supervision_level_raw_text='ITC',
             person=person_110035,
             supervision_sentences=[sss_110035_20040712_1]
-        )
+            )
         ct_110035_20040712_1_9_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
             case_type_raw_text='DSO',
@@ -3200,10 +3219,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename(
-            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods.csv')
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         ##############################################################
         # TAK028_TAK076_TAK042_TAK024 VIOLATION REPORTS

@@ -40,7 +40,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -114,7 +114,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_probation',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-        'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
+        'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
         'tak028_tak042_tak076_tak024_violation_reports',
         'tak291_tak292_tak024_citations',
     ]
@@ -126,7 +126,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': 'BU',
-        'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
+        'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
     }
@@ -167,6 +167,43 @@ class UsMoController(CsvGcsfsDirectIngestController):
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
+        StateSupervisionLevel.INTERNAL_UNKNOWN: [
+            'CPP',  # Residential Community Placement (treatment)
+            'EMP',  # Electronic Monitoring
+            'ESC',  # Absconder
+            'IAP',  # Initial Assessment Phase
+            'NSV',  # Not Under Supervision (case closed by court/board but still open at district level)
+
+            # The following codes are no longer used according to MO, but may appear in historical records
+            'ENH',  # Enhanced
+            'MIN',  # Minimum
+            'MSC',  # Automated Minimum
+            'NOI',  # No Contract Monitoring Level I
+            'NII',  # No Contract Monitoring Level II
+            'PSI',  # Pre Sentence Investigation
+            'REG',  # Regular Supervision
+            'RTF',  # Residential Treatment facility
+            'VCT',  # Residential Violator Center
+        ],
+        StateSupervisionLevel.MINIMUM: [
+            'OOI',  # Low Risk (low risk on ORAS)
+        ],
+        StateSupervisionLevel.MEDIUM: [
+            'OII',  # Moderate Risk (moderate/low or moderate on ORAS)
+        ],
+        StateSupervisionLevel.HIGH: [
+            'III',  # High Risk (high risk on ORAS)
+        ],
+        StateSupervisionLevel.MAXIMUM: [
+            'ISP',  # Intensive Supervision (specialized programming + very high risk on ORAS)
+        ],
+        StateSupervisionLevel.INCARCERATED: [
+            'ITC',  # Institutional Treatment Center
+            'JAL',  # Incarceration/Jail
+            'PRS',  # Incarceration/Prison
+            'SHK',  # 120 Day Incarceration
+        ],
+
         StateChargeClassificationType.INFRACTION: ['L'],  # Local/ordinance
 
         StateSupervisionType.EXTERNAL_UNKNOWN: [
@@ -708,7 +745,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 incarceration_period_row_posthooks,
-            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods': [
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': [
                 self._gen_clear_magical_date_value(
                     'termination_date',
                     SUPERVISION_PERIOD_RELEASE_DATE,
@@ -749,7 +786,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_period_id_coords,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._generate_incarceration_period_id_coords,
-            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods':
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods':
                 self._generate_supervision_period_id_coords,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._generate_supervision_violation_id_coords_for_reports,
@@ -766,7 +803,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._incarceration_sentence_ancestor_chain_override,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 self._supervision_sentence_ancestor_chain_override,
-            'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods':
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods':
                 self._sentence_group_ancestor_chain_override,
             'tak028_tak042_tak076_tak024_violation_reports':
                 self._supervision_violation_report_ancestor_chain_override,
@@ -817,7 +854,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak022_tak024_tak025_tak026_offender_sentence_probation',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
                 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-                'tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
+                'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
                 'tak028_tak042_tak076_tak024_violation_reports',
                 'tak291_tak292_tak024_citations',
         ]:
