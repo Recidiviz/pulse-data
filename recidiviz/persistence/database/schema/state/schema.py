@@ -2064,6 +2064,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     external_id = Column(String(255), index=True)
     response_type = Column(state_supervision_violation_response_type)
     response_type_raw_text = Column(String(255))
+    response_subtype = Column(String(255))
     response_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     decision = Column(state_supervision_violation_response_decision)
