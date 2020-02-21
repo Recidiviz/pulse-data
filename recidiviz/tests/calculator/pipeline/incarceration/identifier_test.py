@@ -36,7 +36,7 @@ from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
-    StateIncarcerationPeriodReleaseReason as ReleaseReason
+    StateIncarcerationPeriodReleaseReason as ReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -598,6 +598,32 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 incarceration_period, _COUNTY_OF_RESIDENCE)
 
             self.assertIsNotNone(admission_event)
+
+    def test_admission_event_for_period_specialized_pfi(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        admission_event = identifier.admission_event_for_period(
+            incarceration_period, _COUNTY_OF_RESIDENCE)
+
+        self.assertEqual(IncarcerationAdmissionEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.admission_date,
+            facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            admission_reason=incarceration_period.admission_reason,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        ), admission_event)
 
     def test_admission_event_for_period_county_jail(self):
         incarceration_period = \
