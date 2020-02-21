@@ -246,10 +246,13 @@ state_supervision_period_admission_reason = Enum(
 
 state_supervision_level = Enum(
     enum_strings.external_unknown,
+    enum_strings.internal_unknown,
     enum_strings.present_without_info,
     state_enum_strings.state_supervision_period_supervision_level_minimum,
     state_enum_strings.state_supervision_period_supervision_level_medium,
+    state_enum_strings.state_supervision_period_supervision_level_high,
     state_enum_strings.state_supervision_period_supervision_level_maximum,
+    state_enum_strings.state_supervision_period_supervision_level_incarcerated,
     state_enum_strings.state_supervision_period_supervision_level_diversion,
     state_enum_strings.state_supervision_period_supervision_level_interstate_compact,
     name='state_supervision_level')

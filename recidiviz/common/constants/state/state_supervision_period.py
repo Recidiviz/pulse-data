@@ -71,10 +71,13 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
     MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
+    HIGH = state_enum_strings.state_supervision_period_supervision_level_high
     MAXIMUM = state_enum_strings.state_supervision_period_supervision_level_maximum
+    INCARCERATED = state_enum_strings.state_supervision_period_supervision_level_incarcerated
     DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
     INTERSTATE_COMPACT = state_enum_strings.state_supervision_period_supervision_level_interstate_compact
 
@@ -138,11 +141,14 @@ _STATE_SUPERVISION_STATUS_MAP = {
 
 _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     'EXTERNAL UNKNOWN': StateSupervisionLevel.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateSupervisionLevel.INTERNAL_UNKNOWN,
     'PRESENT WITHOUT INFO': StateSupervisionLevel.PRESENT_WITHOUT_INFO,
+    'INCARCERATED': StateSupervisionLevel.INCARCERATED,
     'MINIMUM': StateSupervisionLevel.MINIMUM,
     'MIN': StateSupervisionLevel.MINIMUM,
     'MEDIUM': StateSupervisionLevel.MEDIUM,
     'MED': StateSupervisionLevel.MEDIUM,
+    'HIGH': StateSupervisionLevel.HIGH,
     'MAXIMUM': StateSupervisionLevel.MAXIMUM,
     'MAX': StateSupervisionLevel.MAXIMUM,
     'DIVERSION': StateSupervisionLevel.DIVERSION,
