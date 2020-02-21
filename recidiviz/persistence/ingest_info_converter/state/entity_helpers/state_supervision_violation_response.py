@@ -56,6 +56,7 @@ def copy_fields_to_builder(
     # enum values
     new.response_type = enum_mappings.get(StateSupervisionViolationResponseType)
     new.response_type_raw_text = fn(normalize, 'response_type', proto)
+    new.response_subtype = fn(normalize, 'response_subtype', proto)
     new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
     new.decision_raw_text = fn(normalize, 'decision', proto)
     new.revocation_type = \

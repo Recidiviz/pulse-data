@@ -3,6 +3,7 @@ key_mappings:
 
 child_key_mappings:
   BY$VE: state_supervision_violation_response.response_date
+  BY$VRT: state_supervision_violation_response.response_subtype
 
 ancestor_keys:
   BY$DOC: state_person.state_person_id
@@ -15,7 +16,6 @@ keys_to_ignore:
   - BY$VTY  # Violation Types - Handled manually in the controller
   - BY$VOR  # Violation Report Recommendations - Handled manually in the controller
   - BY$VWI  # Unused - Violation warrant flag
-  - BY$VRT  # Unused - Violation Report Type
   - BY$VSI  # Unused - Advised of Statements
   - BY$VPH  # Unused - Preliminary hearing
   - BY$VBG  # Unused - Given booklet

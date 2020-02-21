@@ -16,9 +16,8 @@
 # ============================================================================
 """Domain logic entities used in the persistence layer for state data.
 
-Note: These classes mirror the SQL Alchemy ORM objects but are kept separate.
-This allows these persistence layer objects additional flexibility that the SQL
-Alchemy ORM objects can't provide.
+Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. This allows these persistence layer
+objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
 from typing import Optional, List
@@ -123,8 +122,8 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     # TODO(1905): Not optional in schema
     id_type: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     person_external_id_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -141,8 +140,8 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     # TODO(1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(default=None)
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     person_alias_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -157,8 +156,8 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     race: Optional[Race] = attr.ib()
     race_raw_text: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     person_race_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -173,8 +172,8 @@ class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     ethnicity: Optional[Ethnicity] = attr.ib()
     ethnicity_raw_text: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     person_ethnicity_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -201,8 +200,8 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # NOTE: This may change over time - we track these changes in history tables
     residency_status: Optional[ResidencyStatus] = attr.ib(default=None)
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     person_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -215,9 +214,8 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     sentence_groups: List['StateSentenceGroup'] = attr.ib(factory=list)
     supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
 
-    # NOTE: Eventually we might have a relationship to objects holding
-    # pre-sentence information so we can track encounters with the justice
-    # system that don't result in sentences.
+    # NOTE: Eventually we might have a relationship to objects holding pre-sentence information so we can track
+    # encounters with the justice system that don't result in sentences.
 
 
 @attr.s(eq=False)
@@ -245,8 +243,8 @@ class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     bond_agent: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     bond_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -275,9 +273,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
     # County where the court case took place
     county_code: Optional[str] = attr.ib()
-    # Area of jurisdictional coverage of the court which tried the case, may be
-    # the same as the county, the entire state, or some jurisdiction out of
-    # the state.
+    # Area of jurisdictional coverage of the court which tried the case, may be the same as the county, the entire
+    # state, or some jurisdiction out of the state.
     judicial_district_code: Optional[str] = attr.ib()
 
     #   - What
@@ -286,8 +283,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |judge| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     court_case_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -332,8 +329,8 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     charging_entity: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     charge_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -341,10 +338,8 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     court_case: Optional['StateCourtCase'] = attr.ib(default=None)
     bond: Optional['StateBond'] = attr.ib(default=None)
 
-    incarceration_sentences: List['StateIncarcerationSentence'] = \
-        attr.ib(factory=list)
-    supervision_sentences: List['StateSupervisionSentence'] = \
-        attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
     fines: List['StateFine'] = attr.ib(factory=list)
 
 
@@ -376,31 +371,25 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |conducting_agent| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     assessment_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
 
-    # Only optional when hydrated in the data converter, before we have written
-    # this entity to the persistence layer
+    # Only optional when hydrated in the data converter, before we have written this entity to the persistence layer
     person: Optional['StatePerson'] = attr.ib(default=None)
-    incarceration_period: Optional['StateIncarcerationPeriod'] = \
-        attr.ib(default=None)
-    supervision_period: Optional['StateSupervisionPeriod'] = \
-        attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = attr.ib(default=None)
+    supervision_period: Optional['StateSupervisionPeriod'] = attr.ib(default=None)
     conducting_agent: Optional['StateAgent'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
 class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """
-    Models a group of related sentences, which may be served consecutively or
-    concurrently.
-    """
+    """Models a group of related sentences, which may be served consecutively or concurrently."""
     # Status
-    # TODO(1698): Look at Measures for Justice doc for methodology on how to
-    #  calculate an aggregate sentence status from multiple sentence statuses.
+    # TODO(1698): Look at Measures for Justice doc for methodology on how to calculate an aggregate sentence status
+    #  from multiple sentence statuses.
     # This will be a composite of all the linked individual statuses
     status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -419,10 +408,11 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     county_code: Optional[str] = attr.ib()
 
     #   - What
-    # See |supervision_sentences|, |incarceration_sentences|, and |fines| in
-    # entity relationships below for more of the What.
-    # Total length periods, either rolled up from individual sentences
-    # or directly reported from the ingested source data
+    # See |supervision_sentences|, |incarceration_sentences|, and |fines| in entity relationships below for more of the
+    # What.
+
+    # Total length periods, either rolled up from individual sentences or directly reported from the ingested
+    # source data
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
 
@@ -433,29 +423,22 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     sentence_group_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(
-        factory=list)
-    incarceration_sentences: List['StateIncarcerationSentence'] = \
-        attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
     fines: List['StateFine'] = attr.ib(factory=list)
     # TODO(1698): Add information about the time relationship between individual
     #  sentences (i.e. consecutive vs concurrent).
 
 
 @attr.s(eq=False)
-class StateSupervisionSentence(ExternalIdEntity,
-                               BuildableAttr,
-                               DefaultableAttr):
-    """
-    Models a sentence for a supervisory period associated with one or more
-    Charges against a StatePerson.
-    """
+class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models a sentence for a supervisory period associated with one or more Charges against a StatePerson."""
     # Status
     status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -488,8 +471,8 @@ class StateSupervisionSentence(ExternalIdEntity,
 
     #   - Who
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_sentence_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -497,22 +480,15 @@ class StateSupervisionSentence(ExternalIdEntity,
     sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
 
-    # NOTE: A person might have an incarceration period associated with a
-    # supervision sentence if they violate the terms of the sentence and are
-    # sent back to prison.
-    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(
-        factory=list)
+    # NOTE: A person might have an incarceration period associated with a supervision sentence if they violate the
+    # terms of the sentence and are sent back to prison.
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
-class StateIncarcerationSentence(ExternalIdEntity,
-                                 BuildableAttr,
-                                 DefaultableAttr):
-    """
-    Models a sentence for prison/jail time associated with one or more Charges
-    against a StatePerson.
-    """
+class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models a sentence for prison/jail time associated with one or more Charges against a StatePerson."""
     # Status
     status: StateSentenceStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -557,8 +533,8 @@ class StateIncarcerationSentence(ExternalIdEntity,
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     incarceration_sentence_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -566,17 +542,13 @@ class StateIncarcerationSentence(ExternalIdEntity,
     sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
     charges: List['StateCharge'] = attr.ib(factory=list)
 
-    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(
-        factory=list)
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
 class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """
-    Models a fine that a StatePerson is sentenced to pay in association with a
-    StateCharge.
-    """
+    """Models a fine that a StatePerson is sentenced to pay in association with a StateCharge."""
     # Status
     status: StateFineStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -599,8 +571,8 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     fine_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -610,12 +582,9 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
-class StateIncarcerationPeriod(ExternalIdEntity,
-                               BuildableAttr,
-                               DefaultableAttr):
-    """
-    Models an uninterrupted period of time that a StatePerson is incarcerated at
-    a single facility as a result of a particular sentence.
+class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models an uninterrupted period of time that a StatePerson is incarcerated at a single facility as a result of a
+    particular sentence.
     """
 
     # Status
@@ -640,61 +609,48 @@ class StateIncarcerationPeriod(ExternalIdEntity,
     housing_unit: Optional[str] = attr.ib()
 
     #   - What
-    facility_security_level: \
-        Optional[StateIncarcerationFacilitySecurityLevel] = attr.ib()
+    facility_security_level: Optional[StateIncarcerationFacilitySecurityLevel] = attr.ib()
     facility_security_level_raw_text: Optional[str] = attr.ib()
 
-    admission_reason: \
-        Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib()
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib()
     admission_reason_raw_text: Optional[str] = attr.ib()
 
-    projected_release_reason: \
-        Optional[StateIncarcerationPeriodReleaseReason] = attr.ib()
+    projected_release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib()
     projected_release_reason_raw_text: Optional[str] = attr.ib()
 
-    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = \
-        attr.ib()
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib()
     release_reason_raw_text: Optional[str] = attr.ib()
 
-    specialized_purpose_for_incarceration:\
-        Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
+    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
     specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib()
 
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     incarceration_period_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
 
     # NOTE: An incarceration period might count towards multiple sentences
-    incarceration_sentences: List['StateIncarcerationSentence'] = \
-        attr.ib(factory=list)
-    supervision_sentences: List['StateSupervisionSentence'] = \
-        attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
 
-    incarceration_incidents: List['StateIncarcerationIncident'] = \
-        attr.ib(factory=list)
+    incarceration_incidents: List['StateIncarcerationIncident'] = attr.ib(factory=list)
     parole_decisions: List['StateParoleDecision'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
     program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
 
-    # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION,
-    # this is the object with info about the violation/hearing that resulted in
-    # the revocation
-    source_supervision_violation_response: \
-        Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
+    # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION, this is the object with info about the
+    # violation/hearing that resulted in the revocation
+    source_supervision_violation_response: Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
 class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """
-    Models a distinct period of time that a StatePerson is under supervision as
-    a result of a particular sentence.
-    """
+    """Models a distinct period of time that a StatePerson is under supervision as a result of a particular sentence."""
     # Status
     status: StateSupervisionPeriodStatus = attr.ib()  # non-nullable
     status_raw_text: Optional[str] = attr.ib()
@@ -716,12 +672,10 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_site: Optional[str] = attr.ib()
 
     #   - What
-    admission_reason: \
-        Optional[StateSupervisionPeriodAdmissionReason] = attr.ib()
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib()
     admission_reason_raw_text: Optional[str] = attr.ib()
 
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = \
-        attr.ib()
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib()
     termination_reason_raw_text: Optional[str] = attr.ib()
 
     supervision_level: Optional[StateSupervisionLevel] = attr.ib()
@@ -734,8 +688,8 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_period_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -744,15 +698,11 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
 
     # NOTE: A supervision period might count towards multiple sentences
-    incarceration_sentences: List['StateIncarcerationSentence'] = \
-        attr.ib(factory=list)
-    supervision_sentences: List['StateSupervisionSentence'] = \
-        attr.ib(factory=list)
-    supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(
-        factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
+    supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
-    case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(
-        factory=list)
+    case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
@@ -765,20 +715,17 @@ class StateSupervisionCaseTypeEntry(Entity, BuildableAttr, DefaultableAttr):
     case_type: Optional[StateSupervisionCaseType] = attr.ib()
     case_type_raw_text: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_case_type_entry_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_period: Optional['StateSupervisionPeriod'] = \
-        attr.ib(default=None)
+    supervision_period: Optional['StateSupervisionPeriod'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
-class StateIncarcerationIncident(ExternalIdEntity,
-                                 BuildableAttr,
-                                 DefaultableAttr):
+class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a documented incident for a StatePerson while incarcerated."""
     # Status
     # N/A
@@ -802,24 +749,20 @@ class StateIncarcerationIncident(ExternalIdEntity,
     #   - Who
     # See |responding_officer| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     incarceration_incident_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     responding_officer: Optional['StateAgent'] = attr.ib(default=None)
-    incarceration_period: Optional['StateIncarcerationPeriod'] = \
-        attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = attr.ib(default=None)
 
-    incarceration_incident_outcomes: List['StateIncarcerationIncidentOutcome'] \
-        = attr.ib(factory=list)
+    incarceration_incident_outcomes: List['StateIncarcerationIncidentOutcome'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
-class StateIncarcerationIncidentOutcome(ExternalIdEntity,
-                                        BuildableAttr,
-                                        DefaultableAttr):
+class StateIncarcerationIncidentOutcome(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Type
     outcome_type: Optional[StateIncarcerationIncidentOutcomeType] = attr.ib()
     outcome_type_raw_text: Optional[str] = attr.ib()
@@ -838,14 +781,13 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity,
     #   - Who
     # See |person| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     incarceration_incident_outcome_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    incarceration_incident: Optional['StateIncarcerationIncident'] = \
-        attr.ib(default=None)
+    incarceration_incident: Optional['StateIncarcerationIncident'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
@@ -859,8 +801,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable
-    # The county where the decision was made, if different from the county where
-    # this person is incarcerated.
+    # The county where the decision was made, if different from the county where this person is incarcerated.
     county_code: Optional[str] = attr.ib()
 
     #   - What
@@ -872,45 +813,37 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |decision_agents| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     parole_decision_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    incarceration_period: Optional['StateIncarcerationPeriod'] = \
-        attr.ib(default=None)
+    incarceration_period: Optional['StateIncarcerationPeriod'] = attr.ib(default=None)
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolationTypeEntry(Entity,
-                                         BuildableAttr,
-                                         DefaultableAttr):
-    """Models a violation type associated with a particular
-    StateSupervisionViolation.
-    """
+class StateSupervisionViolationTypeEntry(Entity, BuildableAttr, DefaultableAttr):
+    """Models a violation type associated with a particular StateSupervisionViolation."""
     # Attributes
     state_code: str = attr.ib()  # non-nullable
     violation_type: Optional[StateSupervisionViolationType] = attr.ib()
     violation_type_raw_text: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_violation_type_entry_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_violation: Optional['StateSupervisionViolation'] = \
-        attr.ib(default=None)
+    supervision_violation: Optional['StateSupervisionViolation'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolatedConditionEntry(Entity,
-                                             BuildableAttr,
-                                             DefaultableAttr):
-    """Models a condition applied to a supervision sentence, whose violation
-    may be recorded in a StateSupervisionViolation.
+class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableAttr):
+    """Models a condition applied to a supervision sentence, whose violation may be recorded in a
+    StateSupervisionViolation.
     """
     # Attributes
     state_code: str = attr.ib()  # non-nullable
@@ -918,25 +851,21 @@ class StateSupervisionViolatedConditionEntry(Entity,
     # A string code corresponding to the condition - region specific.
     condition: str = attr.ib()  # non-nullable
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
-    supervision_violated_condition_entry_id: Optional[int] = \
-        attr.ib(default=None)
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
+    supervision_violated_condition_entry_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
 
-    supervision_violation: Optional['StateSupervisionViolation'] = \
-        attr.ib(default=None)
+    supervision_violation: Optional['StateSupervisionViolation'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolation(ExternalIdEntity,
-                                BuildableAttr,
-                                DefaultableAttr):
+class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
-    Models a recorded instance where a StatePerson has violated one or more of
-    the conditions of their StateSupervisionSentence.
+    Models a recorded instance where a StatePerson has violated one or more of the conditions of their
+    StateSupervisionSentence.
     """
     # Status
     # N/A
@@ -951,8 +880,7 @@ class StateSupervisionViolation(ExternalIdEntity,
     violation_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    # State that recorded this violation, not necessarily where the violation
-    # took place
+    # State that recorded this violation, not necessarily where the violation took place
     state_code: str = attr.ib()  # non-nullable
 
     #   - What
@@ -965,65 +893,50 @@ class StateSupervisionViolation(ExternalIdEntity,
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_violation_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_periods: List['StateSupervisionPeriod'] = \
-        attr.ib(factory=list)
-    supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = \
-        attr.ib(factory=list)
-    supervision_violated_conditions: \
-        List['StateSupervisionViolatedConditionEntry'] = attr.ib(factory=list)
-    supervision_violation_responses: \
-        List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+    supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = attr.ib(factory=list)
+    supervision_violated_conditions: List['StateSupervisionViolatedConditionEntry'] = attr.ib(factory=list)
+    supervision_violation_responses: List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolationResponseDecisionEntry(Entity,
-                                                     BuildableAttr,
-                                                     DefaultableAttr):
-    """Models the type of decision resulting from a response to a
-    StateSupervisionViolation.
-    """
+class StateSupervisionViolationResponseDecisionEntry(Entity, BuildableAttr, DefaultableAttr):
+    """Models the type of decision resulting from a response to a StateSupervisionViolation."""
     # Attributes
     state_code: str = attr.ib()  # non-nullable
 
-    decision: Optional[StateSupervisionViolationResponseDecision] = \
-        attr.ib()
+    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
 
     # Only nonnull if one of the decisions is REVOCATION
-    revocation_type: \
-        Optional[StateSupervisionViolationResponseRevocationType] = \
-        attr.ib()
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
     revocation_type_raw_text: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
-    supervision_violation_response_decision_entry_id: Optional[int] = \
-        attr.ib(default=None)
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
+    supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_violation_response: \
-        Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
+    supervision_violation_response: Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolationResponse(ExternalIdEntity,
-                                        BuildableAttr,
-                                        DefaultableAttr):
+class StateSupervisionViolationResponse(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a response to a StateSupervisionViolation"""
     # Status
     # N/A
 
     # Type
-    response_type: Optional[StateSupervisionViolationResponseType] = \
-        attr.ib()
+    response_type: Optional[StateSupervisionViolationResponseType] = attr.ib()
     response_type_raw_text: Optional[str] = attr.ib()
+    response_subtype: Optional[str] = attr.ib()
 
     # Attributes
     #   - When
@@ -1034,36 +947,29 @@ class StateSupervisionViolationResponse(ExternalIdEntity,
 
     #   - What
     # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    decision: Optional[StateSupervisionViolationResponseDecision] = \
-        attr.ib()
+    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
 
     # Only nonnull if one of the decisions is REVOCATION
     # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    revocation_type: \
-        Optional[StateSupervisionViolationResponseRevocationType] = \
-        attr.ib()
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
     revocation_type_raw_text: Optional[str] = attr.ib()
     is_draft: Optional[bool] = attr.ib()
 
     #   - Who
     # See SupervisionViolationResponders below
-    deciding_body_type: \
-        Optional[StateSupervisionViolationResponseDecidingBodyType] \
-        = attr.ib()
+    deciding_body_type: Optional[StateSupervisionViolationResponseDecidingBodyType] = attr.ib()
     deciding_body_type_raw_text: Optional[str] = attr.ib()
     # See also |decision_agents| below
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     supervision_violation_response_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_violation: Optional['StateSupervisionViolation'] = \
-        attr.ib(default=None)
-    supervision_violation_response_decisions: \
-        List['StateSupervisionViolationResponseDecisionEntry'] = \
+    supervision_violation: Optional['StateSupervisionViolation'] = attr.ib(default=None)
+    supervision_violation_response_decisions: List['StateSupervisionViolationResponseDecisionEntry'] = \
         attr.ib(factory=list)
     decision_agents: List['StateAgent'] = attr.ib(factory=list)
 
@@ -1082,8 +988,8 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - What
     full_name: Optional[str] = attr.ib()
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     agent_id: Optional[int] = attr.ib(default=None)
 
 
@@ -1091,8 +997,7 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an person's assignment to a particular program."""
     # Status
-    participation_status: StateProgramAssignmentParticipationStatus = \
-        attr.ib()  # non-nullable
+    participation_status: StateProgramAssignmentParticipationStatus = attr.ib()  # non-nullable
     participation_status_raw_text: Optional[str] = attr.ib()
 
     # Attributes
@@ -1107,22 +1012,19 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - What
     program_id: Optional[str] = attr.ib()
     program_location_id: Optional[str] = attr.ib()
-    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = \
-        attr.ib()
+    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = attr.ib()
     discharge_reason_raw_text: Optional[str] = attr.ib()
     referral_metadata: Optional[str] = attr.ib()
 
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before
-    # we have written this entity to the persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
     program_assignment_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     referring_agent: Optional['StateAgent'] = attr.ib(default=None)
-    incarceration_periods: List['StateIncarcerationPeriod'] = \
-        attr.ib(factory=list)
-    supervision_periods: List['StateSupervisionPeriod'] = \
-        attr.ib(factory=list)
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
