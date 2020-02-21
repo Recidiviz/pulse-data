@@ -40,6 +40,7 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         # Arrange
         ingest_response = ingest_info_pb2.StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
+            response_subtype='SUBTYPE',
             decision='REVOCATION',
             revocation_type='REINCARCERATION',
             deciding_body_type='PAROLE_BOARD',
@@ -56,18 +57,15 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         result = response_builder.build()
 
         # Assert
-        expected_result = entities.StateSupervisionViolationResponse(
-            response_type=
-            StateSupervisionViolationResponseType.PERMANENT_DECISION,
+        expected_result = entities.StateSupervisionViolationResponse.new_with_defaults(
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text='PERMANENT_DECISION',
-            decision=
-            StateSupervisionViolationResponseDecision.REVOCATION,
+            response_subtype='SUBTYPE',
+            decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
-            revocation_type=
-            StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             revocation_type_raw_text='REINCARCERATION',
-            deciding_body_type=
-            StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text='PAROLE_BOARD',
             external_id='RESPONSE_ID',
             response_date=date(year=2111, month=1, day=2),

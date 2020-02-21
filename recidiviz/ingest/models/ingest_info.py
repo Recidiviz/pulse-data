@@ -40,8 +40,7 @@ PLURALS = {'person': 'people', 'booking': 'bookings', 'charge': 'charges',
            'state_incarceration_incident': 'state_incarceration_incidents',
            'state_parole_decision': 'state_parole_decisions',
            'state_supervision_violation': 'state_supervision_violations',
-           'state_supervision_violation_response':
-               'state_supervision_violation_responses'
+           'state_supervision_violation_response': 'state_supervision_violation_responses'
            }
 
 
@@ -116,15 +115,12 @@ class IngestInfo(IngestObject):
             return self.state_people[-1]
         return None
 
-    def get_state_person_by_id(self, state_person_id) \
-            -> Optional['StatePerson']:
-        return next((sp for sp in self.state_people
-                     if sp.state_person_id == state_person_id), None)
+    def get_state_person_by_id(self, state_person_id) -> Optional['StatePerson']:
+        return next((sp for sp in self.state_people if sp.state_person_id == state_person_id), None)
 
     def prune(self) -> 'IngestInfo':
         self.people = [person.prune() for person in self.people if person]
-        self.state_people = [person.prune() for person
-                             in self.state_people if person]
+        self.state_people = [person.prune() for person in self.state_people if person]
         return self
 
     def sort(self):
@@ -140,38 +136,31 @@ class IngestInfo(IngestObject):
         return [person for person in self.people if predicate(person)]
 
     def get_all_bookings(self, predicate=lambda _: True) -> List['Booking']:
-        return [booking for person in self.get_all_people()
-                for booking in person.bookings if predicate(booking)]
+        return [booking for person in self.get_all_people() for booking in person.bookings if predicate(booking)]
 
     def get_all_arrests(self, predicate=lambda _: True) -> List['Arrest']:
         return [booking.arrest for booking in self.get_all_bookings()
                 if booking.arrest is not None and predicate(booking.arrest)]
 
     def get_all_charges(self, predicate=lambda _: True) -> List['Charge']:
-        return [charge for booking in self.get_all_bookings()
-                for charge in booking.charges if predicate(charge)]
+        return [charge for booking in self.get_all_bookings() for charge in booking.charges if predicate(charge)]
 
     def get_all_holds(self, predicate=lambda _: True) -> List['Hold']:
-        return [hold for booking in self.get_all_bookings()
-                for hold in booking.holds if predicate(hold)]
+        return [hold for booking in self.get_all_bookings() for hold in booking.holds if predicate(hold)]
 
     def get_all_bonds(self, predicate=lambda _: True) -> List['Bond']:
-        return [charge.bond for charge in self.get_all_charges()
-                if charge.bond is not None and predicate(charge.bond)]
+        return [charge.bond for charge in self.get_all_charges() if charge.bond is not None and predicate(charge.bond)]
 
     def get_all_sentences(self, predicate=lambda _: True) -> List['Sentence']:
         return [charge.sentence for charge in self.get_all_charges()
                 if charge.sentence is not None and predicate(charge.sentence)]
 
-    def get_all_state_people(self, predicate=lambda _: True) \
-            -> List['StatePerson']:
+    def get_all_state_people(self, predicate=lambda _: True) -> List['StatePerson']:
         return [person for person in self.state_people if predicate(person)]
 
 
 class Person(IngestObject):
-    """Class for information about a person.
-    Referenced from IngestInfo.
-    """
+    """Class for information about a person. Referenced from IngestInfo."""
 
     def __init__(
             self, person_id=None, full_name=None, surname=None,
@@ -212,8 +201,7 @@ class Person(IngestObject):
                     None)
 
     def prune(self) -> 'Person':
-        self.bookings = [booking.prune() for booking
-                         in self.bookings if booking]
+        self.bookings = [booking.prune() for booking in self.bookings if booking]
         return self
 
     def sort(self):
@@ -223,9 +211,7 @@ class Person(IngestObject):
 
 
 class Booking(IngestObject):
-    """Class for information about a booking.
-    Referenced from Person.
-    """
+    """Class for information about a booking. Referenced from Person."""
 
     def __init__(
             self, booking_id=None, admission_date=None,
@@ -271,8 +257,7 @@ class Booking(IngestObject):
         return None
 
     def get_charge_by_id(self, charge_id) -> Optional['Charge']:
-        return next((c for c in self.charges if c.charge_id == charge_id),
-                    None)
+        return next((c for c in self.charges if c.charge_id == charge_id), None)
 
     def get_recent_hold(self) -> Optional['Hold']:
         if self.holds:
@@ -280,15 +265,13 @@ class Booking(IngestObject):
         return None
 
     def get_hold_by_id(self, hold_id) -> Optional['Hold']:
-        return next((h for h in self.holds if h.hold_id == hold_id),
-                    None)
+        return next((h for h in self.holds if h.hold_id == hold_id), None)
 
     def get_recent_arrest(self) -> Optional['Arrest']:
         return self.arrest
 
     def get_arrest_by_id(self, arrest_id) -> Optional['Arrest']:
-        return self.arrest if self.arrest and \
-            self.arrest.arrest_id == arrest_id else None
+        return self.arrest if self.arrest and self.arrest.arrest_id == arrest_id else None
 
     def prune(self) -> 'Booking':
         self.charges = [charge.prune() for charge in self.charges if charge]
@@ -303,9 +286,7 @@ class Booking(IngestObject):
 
 
 class Arrest(IngestObject):
-    """Class for information about an arrest.
-    Referenced from Booking.
-    """
+    """Class for information about an arrest. Referenced from Booking."""
 
     def __init__(
             self, arrest_id=None, arrest_date=None, location=None,
@@ -322,9 +303,7 @@ class Arrest(IngestObject):
 
 
 class Charge(IngestObject):
-    """Class for information about a charge.
-    Referenced from Booking.
-    """
+    """Class for information about a charge. Referenced from Booking."""
 
     def __init__(
             self, charge_id=None, offense_date=None, statute=None,
@@ -370,8 +349,7 @@ class Charge(IngestObject):
         return self.bond
 
     def get_bond_by_id(self, bond_id) -> Optional['Bond']:
-        return self.bond if self.bond and self.bond.bond_id == bond_id \
-            else None
+        return self.bond if self.bond and self.bond.bond_id == bond_id else None
 
     def get_recent_sentence(self) -> Optional['Sentence']:
         return self.sentence
@@ -385,16 +363,13 @@ class Charge(IngestObject):
 
 
 class Hold(IngestObject):
-    """Class for information about a hold.
-    Referenced from Booking.
+    """Class for information about a hold. Referenced from Booking.
 
-    Holds will default to the jurisdiction_name "UNSPECIFIED", since we may
-    only know that a booking has a hold. Then booking.create_hold() will create
-    a hold that doesn't get pruned later.
+    Holds will default to the jurisdiction_name "UNSPECIFIED", since we may only know that a booking has a hold. Then
+    booking.create_hold() will create a hold that doesn't get pruned later.
     """
 
-    def __init__(self, hold_id=None, jurisdiction_name='UNSPECIFIED',
-                 status=None):
+    def __init__(self, hold_id=None, jurisdiction_name='UNSPECIFIED', status=None):
         self.hold_id: Optional[str] = hold_id
         self.jurisdiction_name: Optional[str] = jurisdiction_name
         self.status: Optional[str] = status
@@ -404,13 +379,9 @@ class Hold(IngestObject):
 
 
 class Bond(IngestObject):
-    """Class for information about a bond.
-    Referenced from Charge.
-    """
+    """Class for information about a bond. Referenced from Charge."""
 
-    def __init__(
-            self, bond_id=None, amount=None, bond_type=None, status=None,
-            bond_agent=None):
+    def __init__(self, bond_id=None, amount=None, bond_type=None, status=None, bond_agent=None):
         self.bond_id: Optional[str] = bond_id
         self.amount: Optional[str] = amount
         self.bond_type: Optional[str] = bond_type
@@ -422,16 +393,12 @@ class Bond(IngestObject):
 
 
 class Sentence(IngestObject):
-    """Class for information about a sentence.
-    Referenced from Charge.
-    """
+    """Class for information about a sentence. Referenced from Charge."""
 
     def __init__(
-            self, sentence_id=None, date_imposed=None, status=None,
-            sentencing_region=None, min_length=None, max_length=None,
-            is_life=None, is_probation=None, is_suspended=None,
-            fine_dollars=None, parole_possible=None,
-            post_release_supervision_length=None, completion_date=None,
+            self, sentence_id=None, date_imposed=None, status=None, sentencing_region=None, min_length=None,
+            max_length=None, is_life=None, is_probation=None, is_suspended=None, fine_dollars=None,
+            parole_possible=None, post_release_supervision_length=None, completion_date=None,
             projected_completion_date=None, sentence_relationships=None):
         self.sentence_id: Optional[str] = sentence_id
         self.date_imposed: Optional[str] = date_imposed
@@ -445,14 +412,11 @@ class Sentence(IngestObject):
         self.fine_dollars: Optional[str] = fine_dollars
         self.parole_possible: Optional[str] = parole_possible
         self.completion_date: Optional[str] = completion_date
-        self.projected_completion_date: Optional[str] = \
-            projected_completion_date
+        self.projected_completion_date: Optional[str] = projected_completion_date
 
-        self.post_release_supervision_length: Optional[str] = \
-            post_release_supervision_length
+        self.post_release_supervision_length: Optional[str] = post_release_supervision_length
 
-        self.sentence_relationships: List[SentenceRelationship] = \
-            sentence_relationships or []
+        self.sentence_relationships: List[SentenceRelationship] = sentence_relationships or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'sentence_relationships', name, value)
@@ -460,19 +424,15 @@ class Sentence(IngestObject):
     def create_sentence_relationship(
             self, other_sentence, relationship_type) -> 'SentenceRelationship':
         relationship = SentenceRelationship(
-            sentence_a=self, sentence_b=other_sentence,
-            relationship_type=relationship_type)
+            sentence_a=self, sentence_b=other_sentence, relationship_type=relationship_type)
         self.sentence_relationships.append(relationship)
         return relationship
 
 
-# TODO(1145): add logic to convert to SentenceRelationship proto (and also add
-# normalization logic to remove duplicates where A->B and B->A relationships
-# are both provided)
+# TODO(1145): add logic to convert to SentenceRelationship proto (and also add normalization logic to remove duplicates
+#  where A->B and B->A relationship are both provided)
 class SentenceRelationship(IngestObject):
-    """Class for information about the relationship between two sentences.
-    Referenced from Sentence.
-    """
+    """Class for information about the relationship between two sentences. Referenced from Sentence."""
 
     def __init__(
             self, sentence_relationship_id=None, sentence_a=None,
@@ -487,18 +447,13 @@ class SentenceRelationship(IngestObject):
 
 
 class StatePerson(IngestObject):
-    """Class for information about a person at the state level.
-    Referenced from IngestInfo.
-    """
+    """Class for information about a person at the state level. Referenced from IngestInfo."""
 
     def __init__(
-            self, state_person_id=None, full_name=None, surname=None,
-            given_names=None, middle_names=None, name_suffix=None,
-            birthdate=None, gender=None, age=None, current_address=None,
-            residency_status=None, state_person_races=None,
-            state_person_ethnicities=None, state_aliases=None,
-            state_person_external_ids=None, state_assessments=None,
-            state_sentence_groups=None, state_program_assignments=None,
+            self, state_person_id=None, full_name=None, surname=None, given_names=None, middle_names=None,
+            name_suffix=None, birthdate=None, gender=None, age=None, current_address=None, residency_status=None,
+            state_person_races=None, state_person_ethnicities=None, state_aliases=None, state_person_external_ids=None,
+            state_assessments=None, state_sentence_groups=None, state_program_assignments=None,
             supervising_officer=None):
         self.state_person_id: Optional[str] = state_person_id
         self.full_name: Optional[str] = full_name
@@ -512,18 +467,13 @@ class StatePerson(IngestObject):
         self.current_address: Optional[str] = current_address
         self.residency_status: Optional[str] = residency_status
 
-        self.state_person_races: List[StatePersonRace] = \
-            state_person_races or []
-        self.state_person_ethnicities: List[StatePersonEthnicity] = \
-            state_person_ethnicities or []
+        self.state_person_races: List[StatePersonRace] = state_person_races or []
+        self.state_person_ethnicities: List[StatePersonEthnicity] = state_person_ethnicities or []
         self.state_aliases: List[StateAlias] = state_aliases or []
-        self.state_person_external_ids: List[StatePersonExternalId] = \
-            state_person_external_ids or []
+        self.state_person_external_ids: List[StatePersonExternalId] = state_person_external_ids or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
-        self.state_sentence_groups: List[StateSentenceGroup] = \
-            state_sentence_groups or []
-        self.state_program_assignments: List[StateProgramAssignment] = \
-            state_program_assignments or []
+        self.state_sentence_groups: List[StateSentenceGroup] = state_sentence_groups or []
+        self.state_program_assignments: List[StateProgramAssignment] = state_program_assignments or []
         self.supervising_officer: Optional[StateAgent] = supervising_officer
 
     def __setattr__(self, name, value):
@@ -544,8 +494,7 @@ class StatePerson(IngestObject):
         self.state_aliases.append(alias)
         return alias
 
-    def create_state_person_external_id(self, **kwargs) \
-            -> 'StatePersonExternalId':
+    def create_state_person_external_id(self, **kwargs) -> 'StatePersonExternalId':
         external_id = StatePersonExternalId(**kwargs)
         self.state_person_external_ids.append(external_id)
         return external_id
@@ -570,49 +519,35 @@ class StatePerson(IngestObject):
         self.supervising_officer = StateAgent(**kwargs)
         return self.supervising_officer
 
-    def get_state_person_race_by_id(self, state_person_race_id) \
-            -> Optional['StatePersonRace']:
-        return next((spr for spr in self.state_person_races
-                     if spr.state_person_race_id == state_person_race_id), None)
+    def get_state_person_race_by_id(self, state_person_race_id) -> Optional['StatePersonRace']:
+        return next((spr for spr in self.state_person_races if spr.state_person_race_id == state_person_race_id), None)
 
-    def get_state_person_ethnicity_by_id(self, state_person_ethnicity_id) \
-            -> Optional['StatePersonEthnicity']:
-        return next(
-            (spe for spe in self.state_person_ethnicities
-             if spe.state_person_ethnicity_id == state_person_ethnicity_id),
-            None)
-
-    def get_state_alias_by_id(self, state_alias_id) \
-            -> Optional['StateAlias']:
-        return next((sa for sa in self.state_aliases
-                     if sa.state_alias_id == state_alias_id), None)
-
-    def get_state_person_external_id_by_id(self, state_person_external_id_id) \
-            -> Optional['StatePersonExternalId']:
-        return next((eid for eid in self.state_person_external_ids
-                     if eid.state_person_external_id_id ==
-                     state_person_external_id_id), None)
-
-    def get_state_assessment_by_id(self, state_assessment_id) \
-            -> Optional['StateAssessment']:
-        return next((sa for sa in self.state_assessments
-                     if sa.state_assessment_id == state_assessment_id), None)
-
-    def get_state_program_assignment_by_id(self, state_program_assignment_id) \
-            -> Optional['StateProgramAssignment']:
-        return next((pa for pa in self.state_program_assignments
-                     if pa.state_program_assignment_id ==
-                     state_program_assignment_id),
+    def get_state_person_ethnicity_by_id(self, state_person_ethnicity_id) -> Optional['StatePersonEthnicity']:
+        return next((spe for spe in self.state_person_ethnicities
+                     if spe.state_person_ethnicity_id == state_person_ethnicity_id),
                     None)
 
-    def get_state_sentence_group_by_id(self, sentence_group_id) \
-            -> Optional['StateSentenceGroup']:
-        return next((sg for sg in self.state_sentence_groups
-                     if sg.state_sentence_group_id == sentence_group_id), None)
+    def get_state_alias_by_id(self, state_alias_id) -> Optional['StateAlias']:
+        return next((sa for sa in self.state_aliases if sa.state_alias_id == state_alias_id), None)
+
+    def get_state_person_external_id_by_id(self, state_person_external_id_id) -> Optional['StatePersonExternalId']:
+        return next((eid for eid in self.state_person_external_ids
+                     if eid.state_person_external_id_id == state_person_external_id_id),
+                    None)
+
+    def get_state_assessment_by_id(self, state_assessment_id) -> Optional['StateAssessment']:
+        return next((sa for sa in self.state_assessments if sa.state_assessment_id == state_assessment_id), None)
+
+    def get_state_program_assignment_by_id(self, state_program_assignment_id) -> Optional['StateProgramAssignment']:
+        return next((pa for pa in self.state_program_assignments
+                     if pa.state_program_assignment_id == state_program_assignment_id),
+                    None)
+
+    def get_state_sentence_group_by_id(self, sentence_group_id) -> Optional['StateSentenceGroup']:
+        return next((sg for sg in self.state_sentence_groups if sg.state_sentence_group_id == sentence_group_id), None)
 
     def prune(self) -> 'StatePerson':
-        self.state_sentence_groups = [sg.prune() for sg
-                                      in self.state_sentence_groups if sg]
+        self.state_sentence_groups = [sg.prune() for sg in self.state_sentence_groups if sg]
         if not self.supervising_officer:
             self.supervising_officer = None
         return self
@@ -631,14 +566,10 @@ class StatePerson(IngestObject):
 
 
 class StatePersonExternalId(IngestObject):
-    """Class for information about one of a StatePerson's external ids.
-    Referenced from StatePerson.
-    """
+    """Class for information about one of a StatePerson's external ids. Referenced from StatePerson."""
 
-    def __init__(self, state_person_external_id_id=None,
-                 id_type=None, state_code=None):
-        self.state_person_external_id_id: Optional[str] = \
-            state_person_external_id_id
+    def __init__(self, state_person_external_id_id=None, id_type=None, state_code=None):
+        self.state_person_external_id_id: Optional[str] = state_person_external_id_id
         self.id_type: Optional[str] = id_type
         self.state_code: Optional[str] = state_code
 
@@ -647,13 +578,10 @@ class StatePersonExternalId(IngestObject):
 
 
 class StateAlias(IngestObject):
-    """Class for information about an alias.
-    Referenced from StatePerson.
-    """
+    """Class for information about an alias. Referenced from StatePerson."""
 
-    def __init__(self, state_alias_id=None, state_code=None, full_name=None,
-                 surname=None, given_names=None, middle_names=None,
-                 name_suffix=None, alias_type=None):
+    def __init__(self, state_alias_id=None, state_code=None, full_name=None, surname=None, given_names=None,
+                 middle_names=None, name_suffix=None, alias_type=None):
         self.state_alias_id: Optional[str] = state_alias_id
         self.state_code: Optional[str] = state_code
         self.full_name: Optional[str] = full_name
@@ -668,9 +596,7 @@ class StateAlias(IngestObject):
 
 
 class StatePersonRace(IngestObject):
-    """Class for information about a state person's race.
-    Referenced from StatePerson.
-    """
+    """Class for information about a state person's race. Referenced from StatePerson."""
 
     def __init__(self, state_person_race_id=None, race=None, state_code=None):
         self.state_person_race_id: Optional[str] = state_person_race_id
@@ -682,14 +608,11 @@ class StatePersonRace(IngestObject):
 
 
 class StatePersonEthnicity(IngestObject):
-    """Class for information about a state person's ethnicity.
-    Referenced from StatePerson.
-    """
+    """Class for information about a state person's ethnicity. Referenced from StatePerson."""
 
     def __init__(self, state_person_ethnicity_id=None, ethnicity=None,
                  state_code=None):
-        self.state_person_ethnicity_id: Optional[str] = \
-            state_person_ethnicity_id
+        self.state_person_ethnicity_id: Optional[str] = state_person_ethnicity_id
         self.ethnicity: Optional[str] = ethnicity
         self.state_code: Optional[str] = state_code
 
@@ -698,14 +621,11 @@ class StatePersonEthnicity(IngestObject):
 
 
 class StateAssessment(IngestObject):
-    """Class for information about an assessment.
-    Referenced from StatePerson.
-    """
+    """Class for information about an assessment. Referenced from StatePerson."""
 
-    def __init__(self, state_assessment_id=None, assessment_class=None,
-                 assessment_type=None, assessment_date=None, state_code=None,
-                 assessment_score=None, assessment_level=None,
-                 assessment_metadata=None, conducting_agent=None):
+    def __init__(self, state_assessment_id=None, assessment_class=None, assessment_type=None, assessment_date=None,
+                 state_code=None, assessment_score=None, assessment_level=None, assessment_metadata=None,
+                 conducting_agent=None):
         self.state_assessment_id: Optional[str] = state_assessment_id
         self.assessment_class: Optional[str] = assessment_class
         self.assessment_type: Optional[str] = assessment_type
@@ -731,14 +651,10 @@ class StateAssessment(IngestObject):
 
 
 class StateSentenceGroup(IngestObject):
-    """Class for information about a group of related sentences.
-    Referenced from StatePerson.
-    """
+    """Class for information about a group of related sentences. Referenced from StatePerson."""
 
-    def __init__(self, state_sentence_group_id=None, status=None,
-                 date_imposed=None, state_code=None, county_code=None,
-                 min_length=None, max_length=None, is_life=None,
-                 state_supervision_sentences=None,
+    def __init__(self, state_sentence_group_id=None, status=None, date_imposed=None, state_code=None, county_code=None,
+                 min_length=None, max_length=None, is_life=None, state_supervision_sentences=None,
                  state_incarceration_sentences=None, state_fines=None):
         self.state_sentence_group_id: Optional[str] = state_sentence_group_id
         self.status: Optional[str] = status
@@ -750,23 +666,19 @@ class StateSentenceGroup(IngestObject):
         # TODO(2668): Delete this from SentenceGroup
         self.is_life: Optional[str] = is_life
 
-        self.state_supervision_sentences: List[StateSupervisionSentence] = \
-            state_supervision_sentences or []
-        self.state_incarceration_sentences: List[StateIncarcerationSentence] = \
-            state_incarceration_sentences or []
+        self.state_supervision_sentences: List[StateSupervisionSentence] = state_supervision_sentences or []
+        self.state_incarceration_sentences: List[StateIncarcerationSentence] = state_incarceration_sentences or []
         self.state_fines: List[StateFine] = state_fines or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_fines', name, value)
 
-    def create_state_supervision_sentence(self, **kwargs) \
-            -> 'StateSupervisionSentence':
+    def create_state_supervision_sentence(self, **kwargs) -> 'StateSupervisionSentence':
         supervision_sentence = StateSupervisionSentence(**kwargs)
         self.state_supervision_sentences.append(supervision_sentence)
         return supervision_sentence
 
-    def create_state_incarceration_sentence(self, **kwargs) \
-            -> 'StateIncarcerationSentence':
+    def create_state_incarceration_sentence(self, **kwargs) -> 'StateIncarcerationSentence':
         incarceration_sentence = StateIncarcerationSentence(**kwargs)
         self.state_incarceration_sentences.append(incarceration_sentence)
         return incarceration_sentence
@@ -776,26 +688,21 @@ class StateSentenceGroup(IngestObject):
         self.state_fines.append(fine)
         return fine
 
-    def get_state_supervision_sentence_by_id(self,
-                                             supervision_sentence_id) \
-            -> Optional['StateSupervisionSentence']:
+    def get_state_supervision_sentence_by_id(self, supervision_sentence_id) -> Optional['StateSupervisionSentence']:
         return next((ss for ss in self.state_supervision_sentences
-                     if ss.state_supervision_sentence_id
-                     == supervision_sentence_id), None)
+                     if ss.state_supervision_sentence_id == supervision_sentence_id),
+                    None)
 
-    def get_state_incarceration_sentence_by_id(self,
-                                               incarceration_sentence_id) \
+    def get_state_incarceration_sentence_by_id(self, incarceration_sentence_id) \
             -> Optional['StateIncarcerationSentence']:
         return next((ins for ins in self.state_incarceration_sentences
-                     if ins.state_incarceration_sentence_id
-                     == incarceration_sentence_id), None)
+                     if ins.state_incarceration_sentence_id == incarceration_sentence_id),
+                    None)
 
     def prune(self) -> 'StateSentenceGroup':
-        self.state_supervision_sentences = \
-            [ss.prune() for ss in self.state_supervision_sentences if ss]
+        self.state_supervision_sentences = [ss.prune() for ss in self.state_supervision_sentences if ss]
 
-        self.state_incarceration_sentences = \
-            [ins.prune() for ins in self.state_incarceration_sentences if ins]
+        self.state_incarceration_sentences = [ins.prune() for ins in self.state_incarceration_sentences if ins]
 
         self.state_fines = [fine.prune() for fine in self.state_fines if fine]
 
@@ -814,25 +721,18 @@ class StateSentenceGroup(IngestObject):
 
 
 class StateSupervisionSentence(IngestObject):
-    """Class for information about a sentence to supervision.
-    Referenced from SentenceGroup.
-    """
+    """Class for information about a sentence to supervision. Referenced from SentenceGroup."""
 
-    def __init__(self, state_supervision_sentence_id=None, status=None,
-                 supervision_type=None, date_imposed=None, start_date=None,
-                 projected_completion_date=None, completion_date=None,
-                 state_code=None, county_code=None, min_length=None,
-                 max_length=None, state_charges=None,
-                 state_incarceration_periods=None,
-                 state_supervision_periods=None):
-        self.state_supervision_sentence_id: Optional[str] = \
-            state_supervision_sentence_id
+    def __init__(self, state_supervision_sentence_id=None, status=None, supervision_type=None, date_imposed=None,
+                 start_date=None, projected_completion_date=None, completion_date=None, state_code=None,
+                 county_code=None, min_length=None, max_length=None, state_charges=None,
+                 state_incarceration_periods=None, state_supervision_periods=None):
+        self.state_supervision_sentence_id: Optional[str] = state_supervision_sentence_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
         self.date_imposed: Optional[str] = date_imposed
         self.start_date: Optional[str] = start_date
-        self.projected_completion_date: Optional[str] = \
-            projected_completion_date
+        self.projected_completion_date: Optional[str] = projected_completion_date
         self.completion_date: Optional[str] = completion_date
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
@@ -840,10 +740,8 @@ class StateSupervisionSentence(IngestObject):
         self.max_length: Optional[str] = max_length
 
         self.state_charges: List[StateCharge] = state_charges or []
-        self.state_incarceration_periods: List[StateIncarcerationPeriod] = \
-            state_incarceration_periods or []
-        self.state_supervision_periods: List[StateSupervisionPeriod] = \
-            state_supervision_periods or []
+        self.state_incarceration_periods: List[StateIncarcerationPeriod] = state_incarceration_periods or []
+        self.state_supervision_periods: List[StateSupervisionPeriod] = state_supervision_periods or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_supervision_periods', name, value)
@@ -853,43 +751,36 @@ class StateSupervisionSentence(IngestObject):
         self.state_charges.append(charge)
         return charge
 
-    def create_state_incarceration_period(self, **kwargs) \
-            -> 'StateIncarcerationPeriod':
+    def create_state_incarceration_period(self, **kwargs) -> 'StateIncarcerationPeriod':
         incarceration_period = StateIncarcerationPeriod(**kwargs)
         self.state_incarceration_periods.append(incarceration_period)
         return incarceration_period
 
-    def create_state_supervision_period(self, **kwargs) \
-            -> 'StateSupervisionPeriod':
+    def create_state_supervision_period(self, **kwargs) -> 'StateSupervisionPeriod':
         supervision_period = StateSupervisionPeriod(**kwargs)
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
-    def get_state_charge_by_id(self, state_charge_id) \
-            -> Optional['StateCharge']:
+    def get_state_charge_by_id(self, state_charge_id) -> Optional['StateCharge']:
         return next((sc for sc in self.state_charges
                      if sc.state_charge_id == state_charge_id), None)
 
-    def get_state_incarceration_period_by_id(self, incarceration_period_id) \
-            -> Optional['StateIncarcerationPeriod']:
+    def get_state_incarceration_period_by_id(self, incarceration_period_id) -> Optional['StateIncarcerationPeriod']:
         return next((ip for ip in self.state_incarceration_periods
-                     if ip.state_incarceration_period_id
-                     == incarceration_period_id), None)
+                     if ip.state_incarceration_period_id == incarceration_period_id),
+                    None)
 
-    def get_state_supervision_period_by_id(self, state_supervision_period_id) \
-            -> Optional['StateSupervisionPeriod']:
+    def get_state_supervision_period_by_id(self, state_supervision_period_id) -> Optional['StateSupervisionPeriod']:
         return next((sc for sc in self.state_supervision_periods
-                     if sc.state_supervision_period_id ==
-                     state_supervision_period_id), None)
+                     if sc.state_supervision_period_id == state_supervision_period_id),
+                    None)
 
     def prune(self) -> 'StateSupervisionSentence':
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
 
-        self.state_incarceration_periods = \
-            [ip.prune() for ip in self.state_incarceration_periods if ip]
+        self.state_incarceration_periods = [ip.prune() for ip in self.state_incarceration_periods if ip]
 
-        self.state_supervision_periods = \
-            [sp.prune() for sp in self.state_supervision_periods if sp]
+        self.state_supervision_periods = [sp.prune() for sp in self.state_supervision_periods if sp]
 
         return self
 
@@ -906,30 +797,21 @@ class StateSupervisionSentence(IngestObject):
 
 
 class StateIncarcerationSentence(IngestObject):
-    """Class for information about a sentence to incarceration.
-    Referenced from SentenceGroup.
-    """
+    """Class for information about a sentence to incarceration. Referenced from SentenceGroup."""
 
-    def __init__(self, state_incarceration_sentence_id=None, status=None,
-                 incarceration_type=None, date_imposed=None, start_date=None,
-                 projected_min_release_date=None,
-                 projected_max_release_date=None, completion_date=None,
-                 parole_eligibility_date=None, state_code=None,
-                 county_code=None, min_length=None, max_length=None,
-                 is_life=None, is_capital_punishment=None, parole_possible=None,
-                 initial_time_served=None, good_time=None, earned_time=None,
-                 state_charges=None, state_incarceration_periods=None,
-                 state_supervision_periods=None):
-        self.state_incarceration_sentence_id: Optional[str] = \
-            state_incarceration_sentence_id
+    def __init__(self, state_incarceration_sentence_id=None, status=None, incarceration_type=None, date_imposed=None,
+                 start_date=None, projected_min_release_date=None, projected_max_release_date=None,
+                 completion_date=None, parole_eligibility_date=None, state_code=None, county_code=None, min_length=None,
+                 max_length=None, is_life=None, is_capital_punishment=None, parole_possible=None,
+                 initial_time_served=None, good_time=None, earned_time=None, state_charges=None,
+                 state_incarceration_periods=None, state_supervision_periods=None):
+        self.state_incarceration_sentence_id: Optional[str] = state_incarceration_sentence_id
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
         self.date_imposed: Optional[str] = date_imposed
         self.start_date: Optional[str] = start_date
-        self.projected_min_release_date: Optional[str] = \
-            projected_min_release_date
-        self.projected_max_release_date: Optional[str] = \
-            projected_max_release_date
+        self.projected_min_release_date: Optional[str] = projected_min_release_date
+        self.projected_max_release_date: Optional[str] = projected_max_release_date
         self.completion_date: Optional[str] = completion_date
         self.parole_eligibility_date: Optional[str] = parole_eligibility_date
         self.state_code: Optional[str] = state_code
@@ -944,10 +826,8 @@ class StateIncarcerationSentence(IngestObject):
         self.earned_time: Optional[str] = earned_time
 
         self.state_charges: List[StateCharge] = state_charges or []
-        self.state_incarceration_periods: List[StateIncarcerationPeriod] = \
-            state_incarceration_periods or []
-        self.state_supervision_periods: List[StateSupervisionPeriod] = \
-            state_supervision_periods or []
+        self.state_incarceration_periods: List[StateIncarcerationPeriod] = state_incarceration_periods or []
+        self.state_supervision_periods: List[StateSupervisionPeriod] = state_supervision_periods or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_supervision_periods', name, value)
@@ -957,43 +837,35 @@ class StateIncarcerationSentence(IngestObject):
         self.state_charges.append(state_charge)
         return state_charge
 
-    def create_state_incarceration_period(self, **kwargs) \
-            -> 'StateIncarcerationPeriod':
+    def create_state_incarceration_period(self, **kwargs) -> 'StateIncarcerationPeriod':
         incarceration_period = StateIncarcerationPeriod(**kwargs)
         self.state_incarceration_periods.append(incarceration_period)
         return incarceration_period
 
-    def create_state_supervision_period(self, **kwargs) \
-            -> 'StateSupervisionPeriod':
+    def create_state_supervision_period(self, **kwargs) -> 'StateSupervisionPeriod':
         supervision_period = StateSupervisionPeriod(**kwargs)
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
-    def get_state_charge_by_id(self, state_charge_id) \
-            -> Optional['StateCharge']:
-        return next((sc for sc in self.state_charges
-                     if sc.state_charge_id == state_charge_id), None)
+    def get_state_charge_by_id(self, state_charge_id) -> Optional['StateCharge']:
+        return next((sc for sc in self.state_charges if sc.state_charge_id == state_charge_id), None)
 
-    def get_state_incarceration_period_by_id(self, incarceration_period_id) \
-            -> Optional['StateIncarcerationPeriod']:
+    def get_state_incarceration_period_by_id(self, incarceration_period_id) -> Optional['StateIncarcerationPeriod']:
         return next((ip for ip in self.state_incarceration_periods
-                     if ip.state_incarceration_period_id
-                     == incarceration_period_id), None)
+                     if ip.state_incarceration_period_id == incarceration_period_id),
+                    None)
 
-    def get_state_supervision_period_by_id(self, supervision_period_id) \
-            -> Optional['StateSupervisionPeriod']:
+    def get_state_supervision_period_by_id(self, supervision_period_id) -> Optional['StateSupervisionPeriod']:
         return next((sp for sp in self.state_supervision_periods
-                     if sp.state_supervision_period_id
-                     == supervision_period_id), None)
+                     if sp.state_supervision_period_id == supervision_period_id),
+                    None)
 
     def prune(self) -> 'StateIncarcerationSentence':
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
 
-        self.state_incarceration_periods = \
-            [ip.prune() for ip in self.state_incarceration_periods if ip]
+        self.state_incarceration_periods = [ip.prune() for ip in self.state_incarceration_periods if ip]
 
-        self.state_supervision_periods = \
-            [sp.prune() for sp in self.state_supervision_periods if sp]
+        self.state_supervision_periods = [sp.prune() for sp in self.state_supervision_periods if sp]
 
         return self
 
@@ -1010,13 +882,10 @@ class StateIncarcerationSentence(IngestObject):
 
 
 class StateFine(IngestObject):
-    """Class for information about a fine associated with a sentence.
-    Referenced from SentenceGroup.
-    """
+    """Class for information about a fine associated with a sentence. Referenced from SentenceGroup."""
 
-    def __init__(self, state_fine_id=None, status=None, date_paid=None,
-                 state_code=None, county_code=None, fine_dollars=None,
-                 state_charges=None):
+    def __init__(self, state_fine_id=None, status=None, date_paid=None, state_code=None, county_code=None,
+                 fine_dollars=None, state_charges=None):
         self.state_fine_id: Optional[str] = state_fine_id
         self.status: Optional[str] = status
         self.date_paid: Optional[str] = date_paid
@@ -1043,16 +912,12 @@ class StateFine(IngestObject):
 
 
 class StateCharge(IngestObject):
-    """Class for information about a charge.
-    Referenced from IncarcerationSentence, SupervisionSentence, and Fine.
-    """
+    """Class for information about a charge. Referenced from IncarcerationSentence, SupervisionSentence, and Fine."""
 
-    def __init__(self, state_charge_id=None, status=None, offense_date=None,
-                 date_charged=None, state_code=None, county_code=None,
-                 ncic_code=None, statute=None, description=None, attempted=None,
-                 classification_type=None, classification_subtype=None,
-                 counts=None, charge_notes=None, is_controlling=None,
-                 charging_entity=None, state_court_case=None, state_bond=None):
+    def __init__(self, state_charge_id=None, status=None, offense_date=None, date_charged=None, state_code=None,
+                 county_code=None, ncic_code=None, statute=None, description=None, attempted=None,
+                 classification_type=None, classification_subtype=None, counts=None, charge_notes=None,
+                 is_controlling=None, charging_entity=None, state_court_case=None, state_bond=None):
         self.state_charge_id: Optional[str] = state_charge_id
         self.status: Optional[str] = status
         self.offense_date: Optional[str] = offense_date
@@ -1064,8 +929,7 @@ class StateCharge(IngestObject):
         self.description: Optional[str] = description
         self.attempted: Optional[str] = attempted
         self.classification_type: Optional[str] = classification_type
-        self.classification_subtype: Optional[str] = \
-            classification_subtype
+        self.classification_subtype: Optional[str] = classification_subtype
         self.counts: Optional[str] = counts
         self.charge_notes: Optional[str] = charge_notes
         self.is_controlling: Optional[str] = is_controlling
@@ -1087,10 +951,8 @@ class StateCharge(IngestObject):
         self.state_bond = bond
         return self.state_bond
 
-    def get_state_court_case_by_id(self, court_case_id) \
-            -> Optional['StateCourtCase']:
-        if self.state_court_case and \
-                self.state_court_case.state_court_case_id == court_case_id:
+    def get_state_court_case_by_id(self, court_case_id) -> Optional['StateCourtCase']:
+        if self.state_court_case and self.state_court_case.state_court_case_id == court_case_id:
             return self.state_court_case
         return None
 
@@ -1103,13 +965,11 @@ class StateCharge(IngestObject):
 
 
 class StateCourtCase(IngestObject):
-    """Class for information about a court case.
-    Referenced from StateCharge.
+    """Class for information about a court case. Referenced from StateCharge.
     """
 
-    def __init__(self, state_court_case_id=None, status=None, court_type=None,
-                 date_convicted=None, next_court_date=None, state_code=None,
-                 county_code=None, judicial_district_code=None,
+    def __init__(self, state_court_case_id=None, status=None, court_type=None, date_convicted=None,
+                 next_court_date=None, state_code=None, county_code=None, judicial_district_code=None,
                  court_fee_dollars=None, judge=None):
         self.state_court_case_id: Optional[str] = state_court_case_id
         self.status: Optional[str] = status
@@ -1158,23 +1018,17 @@ class StateBond(IngestObject):
 
 
 class StateIncarcerationPeriod(IngestObject):
-    """Class for information about a period of incarceration.
-    Referenced from IncarcerationSentence and SupervisionSentence.
+    """Class for information about a period of incarceration. Referenced from IncarcerationSentence and
+    SupervisionSentence.
     """
 
-    def __init__(self, state_incarceration_period_id=None, status=None,
-                 incarceration_type=None, admission_date=None,
-                 release_date=None, state_code=None, county_code=None,
-                 facility=None, housing_unit=None, facility_security_level=None,
-                 admission_reason=None, projected_release_reason=None,
-                 release_reason=None,
-                 specialized_purpose_for_incarceration=None,
-                 state_incarceration_incidents=None,
-                 state_parole_decisions=None, state_assessments=None,
-                 state_program_assignments=None,
+    def __init__(self, state_incarceration_period_id=None, status=None, incarceration_type=None, admission_date=None,
+                 release_date=None, state_code=None, county_code=None, facility=None, housing_unit=None,
+                 facility_security_level=None, admission_reason=None, projected_release_reason=None,
+                 release_reason=None, specialized_purpose_for_incarceration=None, state_incarceration_incidents=None,
+                 state_parole_decisions=None, state_assessments=None, state_program_assignments=None,
                  source_supervision_violation_response=None):
-        self.state_incarceration_period_id: Optional[str] = \
-            state_incarceration_period_id
+        self.state_incarceration_period_id: Optional[str] = state_incarceration_period_id
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
         self.admission_date: Optional[str] = admission_date
@@ -1187,27 +1041,20 @@ class StateIncarcerationPeriod(IngestObject):
         self.admission_reason: Optional[str] = admission_reason
         self.projected_release_reason: Optional[str] = projected_release_reason
         self.release_reason: Optional[str] = release_reason
-        self.specialized_purpose_for_incarceration: Optional[str] = \
-            specialized_purpose_for_incarceration
+        self.specialized_purpose_for_incarceration: Optional[str] = specialized_purpose_for_incarceration
 
-        self.state_incarceration_incidents: List[StateIncarcerationIncident] = \
-            state_incarceration_incidents or []
-        self.state_parole_decisions: List[StateParoleDecision] = \
-            state_parole_decisions or []
+        self.state_incarceration_incidents: List[StateIncarcerationIncident] = state_incarceration_incidents or []
+        self.state_parole_decisions: List[StateParoleDecision] = state_parole_decisions or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
-        self.state_program_assignments: List[StateProgramAssignment] = \
-            state_program_assignments or []
+        self.state_program_assignments: List[StateProgramAssignment] = state_program_assignments or []
 
-        self.source_supervision_violation_response: \
-            Optional[StateSupervisionViolationResponse] = \
+        self.source_supervision_violation_response: Optional[StateSupervisionViolationResponse] = \
             source_supervision_violation_response or None
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'source_supervision_violation_response',
-                           name, value)
+        restricted_setattr(self, 'source_supervision_violation_response', name, value)
 
-    def create_state_incarceration_incident(self, **kwargs) \
-            -> 'StateIncarcerationIncident':
+    def create_state_incarceration_incident(self, **kwargs) -> 'StateIncarcerationIncident':
         incarceration_incident = StateIncarcerationIncident(**kwargs)
         self.state_incarceration_incidents.append(incarceration_incident)
         return incarceration_incident
@@ -1228,29 +1075,21 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_program_assignments.append(program_assignment)
         return program_assignment
 
-    def create_state_supervision_violation_response(self, **kwargs) \
-            -> 'StateSupervisionViolationResponse':
-        self.source_supervision_violation_response = \
-            StateSupervisionViolationResponse(**kwargs)
+    def create_state_supervision_violation_response(self, **kwargs) -> 'StateSupervisionViolationResponse':
+        self.source_supervision_violation_response = StateSupervisionViolationResponse(**kwargs)
         return self.source_supervision_violation_response
 
     def get_state_incarceration_incident_by_id(
-            self, state_incarceration_incident_id) \
-            -> Optional['StateIncarcerationIncident']:
+            self, state_incarceration_incident_id) -> Optional['StateIncarcerationIncident']:
         return next((ii for ii in self.state_incarceration_incidents
-                     if ii.state_incarceration_incident_id
-                     == state_incarceration_incident_id), None)
+                     if ii.state_incarceration_incident_id == state_incarceration_incident_id),
+                    None)
 
     def prune(self) -> 'StateIncarcerationPeriod':
-        self.state_incarceration_incidents = \
-            [ii for ii in self.state_incarceration_incidents if ii]
-
-        self.state_parole_decisions = \
-            [pd for pd in self.state_parole_decisions if pd]
-
+        self.state_incarceration_incidents = [ii for ii in self.state_incarceration_incidents if ii]
+        self.state_parole_decisions = [pd for pd in self.state_parole_decisions if pd]
         self.state_assessments = [a for a in self.state_assessments if a]
-        self.state_program_assignments = [
-            p.prune() for p in self.state_program_assignments if p]
+        self.state_program_assignments = [p.prune() for p in self.state_program_assignments if p]
 
         return self
 
@@ -1262,21 +1101,16 @@ class StateIncarcerationPeriod(IngestObject):
 
 
 class StateSupervisionPeriod(IngestObject):
-    """Class for information about a period of supervision.
-    Referenced from IncarcerationSentence and SupervisionSentence.
+    """Class for information about a period of supervision. Referenced from IncarcerationSentence and
+    SupervisionSentence.
     """
 
-    def __init__(self, state_supervision_period_id=None, status=None,
-                 supervision_type=None, start_date=None,
-                 termination_date=None, state_code=None, county_code=None,
-                 supervision_site=None, admission_reason=None,
-                 termination_reason=None, supervision_level=None,
-                 conditions=None, supervising_officer=None,
-                 state_supervision_violation_entries=None,
-                 state_assessments=None, state_program_assignments=None,
+    def __init__(self, state_supervision_period_id=None, status=None, supervision_type=None, start_date=None,
+                 termination_date=None, state_code=None, county_code=None, supervision_site=None, admission_reason=None,
+                 termination_reason=None, supervision_level=None, conditions=None, supervising_officer=None,
+                 state_supervision_violation_entries=None, state_assessments=None, state_program_assignments=None,
                  state_supervision_case_type_entries=None):
-        self.state_supervision_period_id: Optional[str] = \
-            state_supervision_period_id
+        self.state_supervision_period_id: Optional[str] = state_supervision_period_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
         self.start_date: Optional[str] = start_date
@@ -1290,14 +1124,11 @@ class StateSupervisionPeriod(IngestObject):
         self.conditions: List[str] = conditions or []
 
         self.supervising_officer: Optional[StateAgent] = supervising_officer
-        self.state_supervision_violation_entries: \
-            List[StateSupervisionViolation] = \
+        self.state_supervision_violation_entries: List[StateSupervisionViolation] = \
             state_supervision_violation_entries or []
         self.state_assessments: List[StateAssessment] = state_assessments or []
-        self.state_program_assignments: List[StateProgramAssignment] = \
-            state_program_assignments or []
-        self.state_supervision_case_type_entries: \
-            List[StateSupervisionCaseTypeEntry] = \
+        self.state_program_assignments: List[StateProgramAssignment] = state_program_assignments or []
+        self.state_supervision_case_type_entries: List[StateSupervisionCaseTypeEntry] = \
             state_supervision_case_type_entries or []
 
     def __setattr__(self, name, value):
@@ -1307,8 +1138,7 @@ class StateSupervisionPeriod(IngestObject):
         self.supervising_officer = StateAgent(**kwargs)
         return self.supervising_officer
 
-    def create_state_supervision_violation(self, **kwargs) \
-            -> 'StateSupervisionViolation':
+    def create_state_supervision_violation(self, **kwargs) -> 'StateSupervisionViolation':
         supervision_violation = StateSupervisionViolation(**kwargs)
         self.state_supervision_violation_entries.append(supervision_violation)
         return supervision_violation
@@ -1318,36 +1148,30 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments.append(assessment)
         return assessment
 
-    def create_state_program_assignment(
-            self, **kwargs) -> 'StateProgramAssignment':
+    def create_state_program_assignment(self, **kwargs) -> 'StateProgramAssignment':
         program_assignment = StateProgramAssignment(**kwargs)
         self.state_program_assignments.append(program_assignment)
         return program_assignment
 
-    def create_state_supervision_case_type_entry(self, **kwargs) \
-            -> 'StateSupervisionCaseTypeEntry':
+    def create_state_supervision_case_type_entry(self, **kwargs) -> 'StateSupervisionCaseTypeEntry':
         case_type = StateSupervisionCaseTypeEntry(**kwargs)
         self.state_supervision_case_type_entries.append(case_type)
         return case_type
 
-    def get_state_supervision_violation_by_id(
-            self, state_supervision_violation_id
-    ) -> Optional['StateSupervisionViolation']:
+    def get_state_supervision_violation_by_id(self, state_supervision_violation_id)\
+            -> Optional['StateSupervisionViolation']:
         return next((sc for sc in self.state_supervision_violation_entries
-                     if sc.state_supervision_violation_id ==
-                     state_supervision_violation_id), None)
+                     if sc.state_supervision_violation_id == state_supervision_violation_id),
+                    None)
 
     def prune(self) -> 'StateSupervisionPeriod':
         if not self.supervising_officer:
             self.supervising_officer = None
 
-        self.state_supervision_violation_entries = \
-            [sv for sv in self.state_supervision_violation_entries if sv]
+        self.state_supervision_violation_entries = [sv for sv in self.state_supervision_violation_entries if sv]
         self.state_assessments = [a for a in self.state_assessments if a]
-        self.state_program_assignments = [
-            p.prune() for p in self.state_program_assignments if p]
-        self.state_supervision_case_type_entries = [
-            c for c in self.state_supervision_case_type_entries if c]
+        self.state_program_assignments = [p.prune() for p in self.state_program_assignments if p]
+        self.state_supervision_case_type_entries = [c for c in self.state_supervision_case_type_entries if c]
 
         return self
 
@@ -1359,15 +1183,9 @@ class StateSupervisionPeriod(IngestObject):
 
 
 class StateSupervisionCaseTypeEntry(IngestObject):
-    """Class for information about a supervision case type. Referenced from
-    SupervisionPeriod.
-    """
-    def __init__(self,
-                 state_supervision_case_type_entry_id=None,
-                 case_type=None,
-                 state_code=None):
-        self.state_supervision_case_type_entry_id = \
-            state_supervision_case_type_entry_id
+    """Class for information about a supervision case type. Referenced from SupervisionPeriod."""
+    def __init__(self, state_supervision_case_type_entry_id=None, case_type=None, state_code=None):
+        self.state_supervision_case_type_entry_id = state_supervision_case_type_entry_id
         self.case_type = case_type
         self.state_code = state_code
 
@@ -1376,17 +1194,12 @@ class StateSupervisionCaseTypeEntry(IngestObject):
 
 
 class StateIncarcerationIncident(IngestObject):
-    """Class for information about an incident during incarceration.
-    Referenced from IncarcerationPeriod.
-    """
+    """Class for information about an incident during incarceration. Referenced from IncarcerationPeriod."""
 
-    def __init__(self, state_incarceration_incident_id=None, incident_type=None,
-                 incident_date=None, state_code=None, facility=None,
-                 location_within_facility=None, incident_details=None,
-                 responding_officer=None,
+    def __init__(self, state_incarceration_incident_id=None, incident_type=None, incident_date=None, state_code=None,
+                 facility=None, location_within_facility=None, incident_details=None, responding_officer=None,
                  state_incarceration_incident_outcomes=None):
-        self.state_incarceration_incident_id: Optional[str] = \
-            state_incarceration_incident_id
+        self.state_incarceration_incident_id: Optional[str] = state_incarceration_incident_id
         self.incident_type: Optional[str] = incident_type
         self.incident_date: Optional[str] = incident_date
         self.state_code: Optional[str] = state_code
@@ -1395,8 +1208,7 @@ class StateIncarcerationIncident(IngestObject):
         self.incident_details: Optional[str] = incident_details
 
         self.responding_officer: Optional[StateAgent] = responding_officer
-        self.state_incarceration_incident_outcomes: \
-            List[StateIncarcerationIncidentOutcome] = \
+        self.state_incarceration_incident_outcomes: List[StateIncarcerationIncidentOutcome] = \
             state_incarceration_incident_outcomes or []
 
     def __setattr__(self, name, value):
@@ -1406,24 +1218,21 @@ class StateIncarcerationIncident(IngestObject):
         self.responding_officer = StateAgent(**kwargs)
         return self.responding_officer
 
-    def create_state_incarceration_incident_outcome(
-            self, **kwargs) -> 'StateIncarcerationIncidentOutcome':
+    def create_state_incarceration_incident_outcome(self, **kwargs) -> 'StateIncarcerationIncidentOutcome':
         outcome = StateIncarcerationIncidentOutcome(**kwargs)
         self.state_incarceration_incident_outcomes.append(outcome)
         return outcome
 
-    def get_state_incarceration_incident_outcome_by_id(
-            self, state_incarceration_incident_outcome_id
-    ) -> Optional['StateIncarcerationIncidentOutcome']:
+    def get_state_incarceration_incident_outcome_by_id(self, state_incarceration_incident_outcome_id) \
+            -> Optional['StateIncarcerationIncidentOutcome']:
         return next((iio for iio in self.state_incarceration_incident_outcomes
-                     if iio.state_incarceration_incident_outcome_id ==
-                     state_incarceration_incident_outcome_id), None)
+                     if iio.state_incarceration_incident_outcome_id == state_incarceration_incident_outcome_id),
+                    None)
 
     def prune(self) -> 'StateIncarcerationIncident':
         if not self.responding_officer:
             self.responding_officer = None
-        self.state_incarceration_incident_outcomes = \
-            [iio for iio in self.state_incarceration_incident_outcomes if iio]
+        self.state_incarceration_incident_outcomes = [iio for iio in self.state_incarceration_incident_outcomes if iio]
         return self
 
     def sort(self):
@@ -1431,15 +1240,11 @@ class StateIncarcerationIncident(IngestObject):
 
 
 class StateIncarcerationIncidentOutcome(IngestObject):
-    """Class for information about a incarceration incident outcome.
-    Referenced from StateIncarcerationIncident.
-    """
+    """Class for information about a incarceration incident outcome. Referenced from StateIncarcerationIncident."""
 
-    def __init__(self, state_incarceration_incident_outcome_id=None,
-                 outcome_type=None, date_effective=None, state_code=None,
-                 outcome_description=None, punishment_length_days=None):
-        self.state_incarceration_incident_outcome_id: Optional[str] = \
-            state_incarceration_incident_outcome_id
+    def __init__(self, state_incarceration_incident_outcome_id=None, outcome_type=None, date_effective=None,
+                 state_code=None, outcome_description=None, punishment_length_days=None):
+        self.state_incarceration_incident_outcome_id: Optional[str] = state_incarceration_incident_outcome_id
         self.outcome_type: Optional[str] = outcome_type
         self.date_effective: Optional[str] = date_effective
         self.state_code: Optional[str] = state_code
@@ -1451,19 +1256,14 @@ class StateIncarcerationIncidentOutcome(IngestObject):
 
 
 class StateParoleDecision(IngestObject):
-    """Class for information about a parole decision.
-    Referenced from IncarcerationPeriod.
-    """
+    """Class for information about a parole decision. Referenced from IncarcerationPeriod."""
 
-    def __init__(self, state_parole_decision_id=None, decision_date=None,
-                 corrective_action_deadline=None, state_code=None,
-                 county_code=None, decision_outcome=None,
-                 decision_reasoning=None, corrective_action=None,
-                 decision_agents=None):
+    def __init__(self, state_parole_decision_id=None, decision_date=None, corrective_action_deadline=None,
+                 state_code=None, county_code=None, decision_outcome=None, decision_reasoning=None,
+                 corrective_action=None, decision_agents=None):
         self.state_parole_decision_id: Optional[str] = state_parole_decision_id
         self.decision_date: Optional[str] = decision_date
-        self.corrective_action_deadline: Optional[str] = \
-            corrective_action_deadline
+        self.corrective_action_deadline: Optional[str] = corrective_action_deadline
         self.state_code: Optional[str] = state_code
         self.county_code: Optional[str] = county_code
         self.decision_outcome: Optional[str] = decision_outcome
@@ -1491,10 +1291,8 @@ class StateParoleDecision(IngestObject):
 class StateSupervisionViolationTypeEntry(IngestObject):
     """Class for type information about a violation during supervision."""
 
-    def __init__(self, state_supervision_violation_type_entry_id=None,
-                 violation_type=None, state_code=None):
-        self.state_supervision_violation_type_entry_id: Optional[str] = \
-            state_supervision_violation_type_entry_id
+    def __init__(self, state_supervision_violation_type_entry_id=None, violation_type=None, state_code=None):
+        self.state_supervision_violation_type_entry_id: Optional[str] = state_supervision_violation_type_entry_id
         self.violation_type: Optional[str] = violation_type
         self.state_code: Optional[str] = state_code
 
@@ -1505,8 +1303,7 @@ class StateSupervisionViolationTypeEntry(IngestObject):
 class StateSupervisionViolatedConditionEntry(IngestObject):
     """Class for information about a condition on a person's supervision."""
 
-    def __init__(self, state_supervision_violated_condition_entry_id=None,
-                 condition=None, state_code=None):
+    def __init__(self, state_supervision_violated_condition_entry_id=None, condition=None, state_code=None):
         self.state_supervision_violated_condition_entry_id: Optional[str] = \
             state_supervision_violated_condition_entry_id
         self.condition: Optional[str] = condition
@@ -1517,18 +1314,12 @@ class StateSupervisionViolatedConditionEntry(IngestObject):
 
 
 class StateSupervisionViolation(IngestObject):
-    """Class for information about a supervision violation.
-    Referenced from SupervisionViolation.
-    """
+    """Class for information about a supervision violation. Referenced from SupervisionViolation."""
 
-    def __init__(self, state_supervision_violation_id=None, violation_type=None,
-                 violation_date=None, state_code=None, is_violent=None,
-                 violated_conditions=None,
-                 state_supervision_violation_types=None,
-                 state_supervision_violated_conditions=None,
-                 state_supervision_violation_responses=None):
-        self.state_supervision_violation_id: Optional[str] = \
-            state_supervision_violation_id
+    def __init__(self, state_supervision_violation_id=None, violation_type=None, violation_date=None, state_code=None,
+                 is_violent=None, violated_conditions=None, state_supervision_violation_types=None,
+                 state_supervision_violated_conditions=None, state_supervision_violation_responses=None):
+        self.state_supervision_violation_id: Optional[str] = state_supervision_violation_id
 
         # TODO(2668): DEPRECATED - Delete this when we delete the column
         self.violation_type: Optional[str] = violation_type
@@ -1538,62 +1329,51 @@ class StateSupervisionViolation(IngestObject):
 
         # TODO(2668): DEPRECATED - Delete this when we delete the column
         self.violated_conditions: Optional[str] = violated_conditions
-        self.state_supervision_violation_types: \
-            List[StateSupervisionViolationTypeEntry] = \
+        self.state_supervision_violation_types: List[StateSupervisionViolationTypeEntry] = \
             state_supervision_violation_types or []
-        self.state_supervision_violated_conditions: \
-            List[StateSupervisionViolatedConditionEntry] = \
+        self.state_supervision_violated_conditions: List[StateSupervisionViolatedConditionEntry] = \
             state_supervision_violated_conditions or []
-        self.state_supervision_violation_responses: \
-            List[StateSupervisionViolationResponse] = \
+        self.state_supervision_violation_responses: List[StateSupervisionViolationResponse] = \
             state_supervision_violation_responses or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_supervision_violation_responses',
-                           name, value)
+        restricted_setattr(self, 'state_supervision_violation_responses', name, value)
 
-    def create_state_supervision_violation_type_entry(self, **kwargs) \
-            -> 'StateSupervisionViolationTypeEntry':
+    def create_state_supervision_violation_type_entry(self, **kwargs) -> 'StateSupervisionViolationTypeEntry':
         violation_type = StateSupervisionViolationTypeEntry(**kwargs)
         self.state_supervision_violation_types.append(violation_type)
         return violation_type
 
-    def get_state_supervision_violation_type_entry_by_id(
-            self, state_supervision_violation_type_entry_id
-    ) -> Optional['StateSupervisionViolationTypeEntry']:
+    def get_state_supervision_violation_type_entry_by_id(self, state_supervision_violation_type_entry_id) \
+            -> Optional['StateSupervisionViolationTypeEntry']:
         return next((svt for svt in self.state_supervision_violation_types
-                     if svt.state_supervision_violation_type_entry_id ==
-                     state_supervision_violation_type_entry_id), None)
+                     if svt.state_supervision_violation_type_entry_id == state_supervision_violation_type_entry_id),
+                    None)
 
-    def create_state_supervision_violated_condition_entry(self, **kwargs) \
-            -> 'StateSupervisionViolatedConditionEntry':
+    def create_state_supervision_violated_condition_entry(self, **kwargs) -> 'StateSupervisionViolatedConditionEntry':
         condition = StateSupervisionViolatedConditionEntry(**kwargs)
         self.state_supervision_violated_conditions.append(condition)
         return condition
 
-    def get_state_supervision_violated_condition_entry_by_id(
-            self, state_supervision_violated_condition_entry_id
-    ) -> Optional['StateSupervisionViolatedConditionEntry']:
+    def get_state_supervision_violated_condition_entry_by_id(self, state_supervision_violated_condition_entry_id) \
+            -> Optional['StateSupervisionViolatedConditionEntry']:
         return next((svc for svc in self.state_supervision_violated_conditions
                      if svc.state_supervision_violated_condition_entry_id ==
                      state_supervision_violated_condition_entry_id), None)
 
-    def create_state_supervision_violation_response(self, **kwargs) \
-            -> 'StateSupervisionViolationResponse':
+    def create_state_supervision_violation_response(self, **kwargs) -> 'StateSupervisionViolationResponse':
         violation_response = StateSupervisionViolationResponse(**kwargs)
         self.state_supervision_violation_responses.append(violation_response)
         return violation_response
 
-    def get_state_supervision_violation_response_by_id(
-            self, state_supervision_violation_response_id
-    ) -> Optional['StateSupervisionViolationResponse']:
+    def get_state_supervision_violation_response_by_id(self, state_supervision_violation_response_id)\
+            -> Optional['StateSupervisionViolationResponse']:
         return next((vr for vr in self.state_supervision_violation_responses
-                     if vr.state_supervision_violation_response_id ==
-                     state_supervision_violation_response_id), None)
+                     if vr.state_supervision_violation_response_id == state_supervision_violation_response_id),
+                    None)
 
     def prune(self) -> 'StateSupervisionViolation':
-        self.state_supervision_violation_responses = \
-            [vr for vr in self.state_supervision_violation_responses if vr]
+        self.state_supervision_violation_responses = [vr for vr in self.state_supervision_violation_responses if vr]
 
         return self
 
@@ -1604,12 +1384,9 @@ class StateSupervisionViolation(IngestObject):
 class StateSupervisionViolationResponseDecisionEntry(IngestObject):
     """Class for information about a condition on a person's supervision."""
 
-    def __init__(
-            self,
-            state_supervision_violation_response_decision_entry_id=None,
-            decision=None, revocation_type=None, state_code=None):
-        self.state_supervision_violation_response_decision_entry_id: \
-            Optional[str] = \
+    def __init__(self, state_supervision_violation_response_decision_entry_id=None, decision=None, revocation_type=None,
+                 state_code=None):
+        self.state_supervision_violation_response_decision_entry_id: Optional[str] = \
             state_supervision_violation_response_decision_entry_id
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
@@ -1620,46 +1397,40 @@ class StateSupervisionViolationResponseDecisionEntry(IngestObject):
 
 
 class StateSupervisionViolationResponse(IngestObject):
-    """Class for information about a supervision violation response.
-    Referenced from StateSupervisionViolationResponse.
+    """Class for information about a supervision violation response. Referenced from
+    StateSupervisionViolationResponse.
     """
 
-    def __init__(self, state_supervision_violation_response_id=None,
-                 response_type=None, response_date=None, state_code=None,
-                 decision=None, revocation_type=None, deciding_body_type=None,
-                 is_draft=None, supervision_violation_response_decisions=None,
-                 decision_agents=None):
-        self.state_supervision_violation_response_id: Optional[str] = \
-            state_supervision_violation_response_id
+    def __init__(self, state_supervision_violation_response_id=None, response_type=None, response_subtype=None,
+                 response_date=None, state_code=None, decision=None, revocation_type=None, deciding_body_type=None,
+                 is_draft=None, supervision_violation_response_decisions=None, decision_agents=None):
+        self.state_supervision_violation_response_id: Optional[str] = state_supervision_violation_response_id
         self.response_type: Optional[str] = response_type
+        self.response_subtype: Optional[str] = response_subtype
         self.response_date: Optional[str] = response_date
         self.state_code: Optional[str] = state_code
         self.decision: Optional[str] = decision
         self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
         self.is_draft: Optional[str] = is_draft
-        self.state_supervision_violation_response_decisions: \
-            List[StateSupervisionViolationResponseDecisionEntry] = \
+        self.state_supervision_violation_response_decisions: List[StateSupervisionViolationResponseDecisionEntry] = \
             supervision_violation_response_decisions or []
         self.decision_agents: List[StateAgent] = decision_agents or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'decision_agents', name, value)
 
-    def create_state_supervision_violation_response_decision_entry(
-            self,
-            **kwargs
-    ) -> 'StateSupervisionViolationResponseDecisionEntry':
+    def create_state_supervision_violation_response_decision_entry(self, **kwargs) \
+            -> 'StateSupervisionViolationResponseDecisionEntry':
         decision = StateSupervisionViolationResponseDecisionEntry(**kwargs)
         self.state_supervision_violation_response_decisions.append(decision)
         return decision
 
     def get_state_supervision_violation_response_decision_entry_by_id(
-            self, state_supervision_violation_response_decision_entry_id
-    ) -> Optional['StateSupervisionViolationResponseDecisionEntry']:
+            self, state_supervision_violation_response_decision_entry_id) \
+            -> Optional['StateSupervisionViolationResponseDecisionEntry']:
         matching_svrdts = (
-            svrdt
-            for svrdt in self.state_supervision_violation_response_decisions
+            svrdt for svrdt in self.state_supervision_violation_response_decisions
             if svrdt.state_supervision_violation_response_decision_entry_id
             == state_supervision_violation_response_decision_entry_id)
 
@@ -1679,13 +1450,12 @@ class StateSupervisionViolationResponse(IngestObject):
 
 
 class StateAgent(IngestObject):
-    """Class for information about some agent working within the justice system.
-    Referenced from several state-level entities.
+    """Class for information about some agent working within the justice system. Referenced from several state-level
+    entities.
     """
 
-    def __init__(self, state_agent_id=None, agent_type=None, state_code=None,
-                 full_name=None, surname=None, given_names=None,
-                 middle_names=None, name_suffix=None):
+    def __init__(self, state_agent_id=None, agent_type=None, state_code=None, full_name=None, surname=None,
+                 given_names=None, middle_names=None, name_suffix=None):
         self.state_agent_id: Optional[str] = state_agent_id
         self.agent_type: Optional[str] = agent_type
         self.state_code: Optional[str] = state_code
@@ -1700,25 +1470,14 @@ class StateAgent(IngestObject):
 
 
 class StateProgramAssignment(IngestObject):
-    """Class for information about a program assignment.
-    Referenced from StatePerson, StateIncarcerationPeriod,
-    and StateSupervisionPeriod.
+    """Class for information about a program assignment. Referenced from StatePerson, StateIncarcerationPeriod, and
+    StateSupervisionPeriod.
     """
 
-    def __init__(self,
-                 state_program_assignment_id=None,
-                 participation_status=None,
-                 referral_date=None,
-                 start_date=None,
-                 discharge_date=None,
-                 state_code=None,
-                 program_id=None,
-                 program_location_id=None,
-                 discharge_reason=None,
-                 referral_metadata=None,
-                 referring_agent=None):
-        self.state_program_assignment_id: Optional[str] = \
-            state_program_assignment_id
+    def __init__(self, state_program_assignment_id=None, participation_status=None, referral_date=None, start_date=None,
+                 discharge_date=None, state_code=None, program_id=None, program_location_id=None, discharge_reason=None,
+                 referral_metadata=None, referring_agent=None):
+        self.state_program_assignment_id: Optional[str] = state_program_assignment_id
         self.participation_status: Optional[str] = participation_status
         self.referral_date: Optional[str] = referral_date
         self.start_date: Optional[str] = start_date
@@ -1763,8 +1522,7 @@ def _without_exclusions(obj, exclude=None):
 def to_bool(obj, exclude=None):
     if exclude is None:
         exclude = []
-    return any(any(v) if isinstance(v, list) else v
-               for k, v in obj.__dict__.items() if k not in exclude)
+    return any(any(v) if isinstance(v, list) else v for k, v in obj.__dict__.items() if k not in exclude)
 
 
 def to_string(obj, exclude=None):
