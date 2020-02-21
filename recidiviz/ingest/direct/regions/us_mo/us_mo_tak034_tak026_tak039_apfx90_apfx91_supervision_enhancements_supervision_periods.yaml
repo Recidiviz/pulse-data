@@ -4,6 +4,7 @@ key_mappings:
   LOCATION_ACRONYM: state_supervision_period.supervision_site
   START_STATUS_CODE_LIST: state_supervision_period.admission_reason
   END_STATUS_CODE_LIST: state_supervision_period.termination_reason
+  SUP_TYPE: state_supervision_period.supervision_level
 # Primary key overridden in controller, with the format: DOC-CYC-FIELD_ASSIGNMENT_SEQ_NUM-START_STATUS_SEQ_NUM
 
 ancestor_keys:

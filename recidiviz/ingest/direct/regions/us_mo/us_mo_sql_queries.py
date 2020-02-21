@@ -559,7 +559,7 @@ TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     ORDER BY BT$DOC, BT$CYC, BT$SEO, F1$SQN;
     """
 
-TAK158_TAK024_TAK026_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
+TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     f"""
     -- tak158_tak024_tak026_incarceration_period_from_supervision_sentence
 
@@ -1099,6 +1099,70 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
 	        FNAME,
 	        MINTL
     ),
+    supervision_type_assessments AS (
+		SELECT
+			DN$DOC,
+		    DN$CYC,
+		    DN$NSN AS SUP_TYPE_SCORE_SEQ_NUM,
+		    DN$RC AS SUP_TYPE_SCORE_REPORT_DATE,
+		    DN$PST AS SUP_TYPE
+		 FROM LBAKRDTA.TAK039
+		 WHERE DN$PST IS NOT NULL AND DN$PST != ''
+	 ),
+	supervision_type_with_seq_num AS (
+		SELECT
+			supervision_type_assessments.*,
+		    ROW_NUMBER() OVER (PARTITION BY DN$DOC, DN$CYC
+		    				   ORDER BY SUP_TYPE_SCORE_REPORT_DATE, SUP_TYPE_SCORE_SEQ_NUM) AS SYNTHETIC_SEQ_NUM
+		FROM supervision_type_assessments
+	),
+	supervision_type_spans AS (
+		SELECT
+			first.DN$DOC,
+			first.DN$CYC,
+			first.SUP_TYPE_SCORE_SEQ_NUM,
+			first.SYNTHETIC_SEQ_NUM,
+			first.SUP_TYPE_SCORE_REPORT_DATE AS START_DATE,
+			next.SUP_TYPE_SCORE_REPORT_DATE AS END_DATE,
+			first.SUP_TYPE
+		FROM
+			supervision_type_with_seq_num first
+		LEFT JOIN
+			supervision_type_with_seq_num next
+		ON
+			first.DN$DOC = next.DN$DOC
+			AND first.DN$CYC = next.DN$CYC
+			AND first.SYNTHETIC_SEQ_NUM = next.SYNTHETIC_SEQ_NUM - 1
+	),
+	periods_with_officer_case_type_and_supervision_type_info AS (
+		-- Select the most recent supervision type that overlaps with the supervision period
+		SELECT
+			*
+		FROM (
+    		SELECT
+	    		periods_with_officer_and_case_type_info.*,
+	     		SUP_TYPE,
+	    		ROW_NUMBER() OVER (
+                    PARTITION BY DOC, CYC, FIELD_ASSIGNMENT_SEQ_NUM, START_STATUS_SEQ_NUM
+                    ORDER BY SYNTHETIC_SEQ_NUM DESC
+                ) AS supervision_type_recency_rank
+	    	FROM
+	    		periods_with_officer_and_case_type_info
+	     	LEFT JOIN
+	    		supervision_type_spans
+	    	ON
+	    		-- Joins with any supervision type info for this DOC/CYC that overlaps at
+                -- all with this period
+	    		periods_with_officer_and_case_type_info.DOC = supervision_type_spans.DN$DOC
+	    		AND periods_with_officer_and_case_type_info.CYC = supervision_type_spans.DN$CYC
+	    		AND (periods_with_officer_and_case_type_info.SUPV_PERIOD_END_DT >= supervision_type_spans.START_DATE
+	    			 OR periods_with_officer_and_case_type_info.SUPV_PERIOD_END_DT = 0)
+	    	 	AND (periods_with_officer_and_case_type_info.SUPV_PERIOD_BEG_DT < supervision_type_spans.END_DATE
+	    	 		 OR supervision_type_spans.END_DATE IS NULL)
+	    	)
+	    WHERE
+	    	supervision_type_recency_rank = 1
+    ),
     statuses_on_days AS (
         SELECT
             BW$DOC AS DOC,
@@ -1110,37 +1174,38 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
         GROUP BY BW$DOC, BW$CYC, BW$SY
     )
     SELECT
-        periods_with_officer_and_case_type_info.DOC,
-        periods_with_officer_and_case_type_info.CYC,
-        periods_with_officer_and_case_type_info.FIELD_ASSIGNMENT_SEQ_NUM,
-        periods_with_officer_and_case_type_info.START_STATUS_SEQ_NUM,
-        periods_with_officer_and_case_type_info.SUPV_PERIOD_BEG_DT,
+        periods_with_officer_case_type_and_supervision_type_info.DOC,
+        periods_with_officer_case_type_and_supervision_type_info.CYC,
+        periods_with_officer_case_type_and_supervision_type_info.FIELD_ASSIGNMENT_SEQ_NUM,
+        periods_with_officer_case_type_and_supervision_type_info.START_STATUS_SEQ_NUM,
+        periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_BEG_DT,
         start_statuses.STATUS_CODE_LIST AS START_STATUS_CODE_LIST,
-        periods_with_officer_and_case_type_info.SUPV_PERIOD_END_DT,
+        periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_END_DT,
         end_statuses.STATUS_CODE_LIST AS END_STATUS_CODE_LIST,
-        periods_with_officer_and_case_type_info.LOCATION_ACRONYM,
-        periods_with_officer_and_case_type_info.CASE_TYPE_LIST,
-        periods_with_officer_and_case_type_info.BDGNO,
-        periods_with_officer_and_case_type_info.CLSTTL,
-        periods_with_officer_and_case_type_info.DEPCLS,
-        periods_with_officer_and_case_type_info.LNAME,
-        periods_with_officer_and_case_type_info.FNAME,
-        periods_with_officer_and_case_type_info.MINTL
+        periods_with_officer_case_type_and_supervision_type_info.LOCATION_ACRONYM,
+        periods_with_officer_case_type_and_supervision_type_info.CASE_TYPE_LIST,
+        periods_with_officer_case_type_and_supervision_type_info.BDGNO,
+        periods_with_officer_case_type_and_supervision_type_info.CLSTTL,
+        periods_with_officer_case_type_and_supervision_type_info.DEPCLS,
+        periods_with_officer_case_type_and_supervision_type_info.LNAME,
+        periods_with_officer_case_type_and_supervision_type_info.FNAME,
+        periods_with_officer_case_type_and_supervision_type_info.MINTL,
+        periods_with_officer_case_type_and_supervision_type_info.SUP_TYPE
     FROM
-        periods_with_officer_and_case_type_info
+        periods_with_officer_case_type_and_supervision_type_info
     LEFT OUTER JOIN
         statuses_on_days start_statuses
     ON
-        periods_with_officer_and_case_type_info.DOC =  start_statuses.DOC AND
-        periods_with_officer_and_case_type_info.CYC =  start_statuses.CYC AND
-        periods_with_officer_and_case_type_info.SUPV_PERIOD_BEG_DT =
+        periods_with_officer_case_type_and_supervision_type_info.DOC =  start_statuses.DOC AND
+        periods_with_officer_case_type_and_supervision_type_info.CYC =  start_statuses.CYC AND
+        periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_BEG_DT =
             start_statuses.STATUSES_DATE
     LEFT OUTER JOIN
         statuses_on_days end_statuses
     ON
-        periods_with_officer_and_case_type_info.DOC =  end_statuses.DOC AND
-        periods_with_officer_and_case_type_info.CYC =  end_statuses.CYC AND
-        periods_with_officer_and_case_type_info.SUPV_PERIOD_END_DT =
+        periods_with_officer_case_type_and_supervision_type_info.DOC =  end_statuses.DOC AND
+        periods_with_officer_case_type_and_supervision_type_info.CYC =  end_statuses.CYC AND
+        periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_END_DT =
             end_statuses.STATUSES_DATE
     ORDER BY DOC, CYC;
     """
@@ -1378,8 +1443,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
          TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE),
         ('tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-         TAK158_TAK024_TAK026_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE),
-        ('tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods',
+         TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE),
+        ('tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
          TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS),
         ('tak028_tak042_tak076_tak024_violation_reports', TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS),
         ('tak291_tak292_tak024_citations', TAK291_TAK292_TAK024_CITATIONS)

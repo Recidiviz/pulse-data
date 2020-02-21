@@ -16,19 +16,16 @@
 # =============================================================================
 
 """
-Strings used as underlying representation of enum values for state-specific
-application and database code.
+Strings used as underlying representation of enum values for state-specific application and database code.
 
-NOTE: Changing ANY STRING VALUE in this file will require a database migration.
-The Python values pointing to the strings can be renamed without issue.
+NOTE: Changing ANY STRING VALUE in this file will require a database migration. The Python values pointing to the
+strings can be renamed without issue.
 
-SQLAlchemy represents SQL enums as strings, and uses the string representation
-to pass values to the database. This means any change to the string values
-requires a database migration. Therefore in order to keep the code as flexible
-as possible, the string values should never be used directly. Storing the
-strings in this file and only referring to them by their values here allows
-us to structure the application layer code any way we want, while only
-requiring the database to be updated when an enum value is created or removed.
+SQLAlchemy represents SQL enums as strings, and uses the string representation to pass values to the database. This
+means any change to the string values requires a database migration. Therefore in order to keep the code as flexible
+as possible, the string values should never be used directly. Storing the strings in this file and only referring to
+them by their values here allows us to structure the application layer code any way we want, while only requiring the
+database to be updated when an enum value is created or removed.
 """
 
 # state_agent.py
@@ -49,10 +46,8 @@ state_assessment_type_lsir = 'LSIR'
 # TODO(2668): Deprecated - Delete this enum value from our schema.
 state_assessment_type_oras = 'ORAS'
 state_assessment_type_oras_community_supervision = 'ORAS_COMMUNITY_SUPERVISION'
-state_assessment_type_oras_community_supervision_screening = \
-    'ORAS_COMMUNITY_SUPERVISION_SCREENING'
-state_assessment_type_oras_misdemeanor_assessment = \
-    'ORAS_MISDEMEANOR_ASSESSMENT'
+state_assessment_type_oras_community_supervision_screening = 'ORAS_COMMUNITY_SUPERVISION_SCREENING'
+state_assessment_type_oras_misdemeanor_assessment = 'ORAS_MISDEMEANOR_ASSESSMENT'
 state_assessment_type_oras_misdemeanor_screening = 'ORAS_MISDEMEANOR_SCREENING'
 state_assessment_type_oras_pre_trial = 'ORAS_PRE_TRIAL'
 state_assessment_type_oras_prison_screening = 'ORAS_PRISON_SCREENING'
@@ -102,8 +97,7 @@ state_incarceration_incident_type_violence = 'VIOLENCE'
 
 state_incarceration_incident_outcome_disciplinary_labor = 'DISCIPLINARY_LABOR'
 state_incarceration_incident_outcome_dismissed = 'DISMISSED'
-state_incarceration_incident_outcome_external_prosecution = \
-    'EXTERNAL_PROSECUTION'
+state_incarceration_incident_outcome_external_prosecution = 'EXTERNAL_PROSECUTION'
 state_incarceration_incident_outcome_financial_penalty = 'FINANCIAL_PENALTY'
 state_incarceration_incident_outcome_good_time_loss = 'GOOD_TIME_LOSS'
 state_incarceration_incident_outcome_miscellaneous = 'MISCELLANEOUS'
@@ -121,37 +115,26 @@ state_incarceration_facility_security_level_maximum = 'MAXIMUM'
 state_incarceration_facility_security_level_medium = 'MEDIUM'
 state_incarceration_facility_security_level_minimum = 'MINIMUM'
 
-state_incarceration_period_admission_reason_admitted_in_error = \
-    'ADMITTED_IN_ERROR'
+state_incarceration_period_admission_reason_admitted_in_error = 'ADMITTED_IN_ERROR'
 state_incarceration_period_admission_reason_new_admission = 'NEW_ADMISSION'
-state_incarceration_period_admission_reason_parole_revocation = \
-    'PAROLE_REVOCATION'
-state_incarceration_period_admission_reason_probation_revocation = \
-    'PROBATION_REVOCATION'
-state_incarceration_period_admission_reason_dual_revocation = \
-    'DUAL_REVOCATION'
-state_incarceration_period_admission_reason_return_from_court = \
-    'RETURN_FROM_COURT'
-state_incarceration_period_admission_reason_return_from_erroneous_release = \
-    'RETURN_FROM_ERRONEOUS_RELEASE'
-state_incarceration_period_admission_reason_return_from_escape = \
-    'RETURN_FROM_ESCAPE'
-state_incarceration_period_admission_reason_temporary_custody = \
-    'TEMPORARY_CUSTODY'
+state_incarceration_period_admission_reason_parole_revocation = 'PAROLE_REVOCATION'
+state_incarceration_period_admission_reason_probation_revocation = 'PROBATION_REVOCATION'
+state_incarceration_period_admission_reason_dual_revocation = 'DUAL_REVOCATION'
+state_incarceration_period_admission_reason_return_from_court = 'RETURN_FROM_COURT'
+state_incarceration_period_admission_reason_return_from_erroneous_release = 'RETURN_FROM_ERRONEOUS_RELEASE'
+state_incarceration_period_admission_reason_return_from_escape = 'RETURN_FROM_ESCAPE'
+state_incarceration_period_admission_reason_temporary_custody = 'TEMPORARY_CUSTODY'
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
 
 state_incarceration_period_release_reason_commuted = 'COMMUTED'
 state_incarceration_period_release_reason_compassionate = 'COMPASSIONATE'
-state_incarceration_period_release_reason_conditional_release = \
-    'CONDITIONAL_RELEASE'
+state_incarceration_period_release_reason_conditional_release = 'CONDITIONAL_RELEASE'
 state_incarceration_period_release_reason_court_order = 'COURT_ORDER'
 state_incarceration_period_release_reason_death = 'DEATH'
 state_incarceration_period_release_reason_escape = 'ESCAPE'
 state_incarceration_period_release_reason_execution = 'EXECUTION'
-state_incarceration_period_release_reason_released_from_temporary_custody = \
-    'RELEASED_FROM_TEMPORARY_CUSTODY'
-state_incarceration_period_release_reason_released_in_error = \
-    'RELEASED_IN_ERROR'
+state_incarceration_period_release_reason_released_from_temporary_custody = 'RELEASED_FROM_TEMPORARY_CUSTODY'
+state_incarceration_period_release_reason_released_in_error = 'RELEASED_IN_ERROR'
 state_incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'
 state_incarceration_period_release_reason_transfer = 'TRANSFER'
 
@@ -186,38 +169,31 @@ state_supervision_period_supervision_type_probation = 'PROBATION'
 state_supervision_period_supervision_type_dual = 'DUAL'
 
 state_supervision_period_admission_reason_absconsion = 'ABSCONSION'
-state_supervision_period_admission_reason_conditional_release = \
-    'CONDITIONAL_RELEASE'
+state_supervision_period_admission_reason_conditional_release = 'CONDITIONAL_RELEASE'
 state_supervision_period_admission_reason_court_sentence = 'COURT_SENTENCE'
-state_supervision_period_admission_reason_transfer_out_of_state = \
-    'TRANSFER_OUT_OF_STATE'
-state_supervision_period_admission_reason_transfer_within_state = \
-    'TRANSFER_WITHIN_STATE'
-state_supervision_period_admission_reason_return_from_absconsion = \
-    'RETURN_FROM_ABSCONSION'
-state_supervision_period_admission_reason_return_from_suspension = \
-    'RETURN_FROM_SUSPENSION'
+state_supervision_period_admission_reason_transfer_out_of_state = 'TRANSFER_OUT_OF_STATE'
+state_supervision_period_admission_reason_transfer_within_state = 'TRANSFER_WITHIN_STATE'
+state_supervision_period_admission_reason_return_from_absconsion = 'RETURN_FROM_ABSCONSION'
+state_supervision_period_admission_reason_return_from_suspension = 'RETURN_FROM_SUSPENSION'
 
 state_supervision_period_status_terminated = 'TERMINATED'
 state_supervision_period_status_under_supervision = 'UNDER_SUPERVISION'
 
 state_supervision_period_supervision_level_minimum = 'MINIMUM'
 state_supervision_period_supervision_level_medium = 'MEDIUM'
+state_supervision_period_supervision_level_high = 'HIGH'
 state_supervision_period_supervision_level_maximum = 'MAXIMUM'
+state_supervision_period_supervision_level_incarcerated = 'INCARCERATED'
 state_supervision_period_supervision_level_diversion = 'DIVERSION'
-state_supervision_period_supervision_level_interstate_compact = \
-    'INTERSTATE_COMPACT'
+state_supervision_period_supervision_level_interstate_compact = 'INTERSTATE_COMPACT'
 
 state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
 state_supervision_period_termination_reason_death = 'DEATH'
 state_supervision_period_termination_reason_discharge = 'DISCHARGE'
 state_supervision_period_termination_reason_expiration = 'EXPIRATION'
-state_supervision_period_termination_reason_transfer_out_of_state = \
-    'TRANSFER_OUT_OF_STATE'
-state_supervision_period_termination_reason_transfer_within_state = \
-    'TRANSFER_WITHIN_STATE'
-state_supervision_period_termination_reason_return_from_absconsion = \
-    'RETURN_FROM_ABSCONSION'
+state_supervision_period_termination_reason_transfer_out_of_state = 'TRANSFER_OUT_OF_STATE'
+state_supervision_period_termination_reason_transfer_within_state = 'TRANSFER_WITHIN_STATE'
+state_supervision_period_termination_reason_return_from_absconsion = 'RETURN_FROM_ABSCONSION'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
@@ -238,32 +214,24 @@ state_supervision_violation_type_technical = 'TECHNICAL'
 # state_supervision_violation_response.py
 state_supervision_violation_response_type_citation = 'CITATION'
 state_supervision_violation_response_type_violation_report = 'VIOLATION_REPORT'
-state_supervision_violation_response_type_permanent_decision = \
-    'PERMANENT_DECISION'
+state_supervision_violation_response_type_permanent_decision = 'PERMANENT_DECISION'
 
 state_supervision_violation_response_decision_continuance = 'CONTINUANCE'
 state_supervision_violation_response_decision_delayed_action = 'DELAYED_ACTION'
 state_supervision_violation_response_decision_extension = 'EXTENSION'
 state_supervision_violation_response_decision_revocation = 'REVOCATION'
-state_supervision_violation_response_decision_privileges_revoked = \
-    'PRIVILEGES_REVOKED'
-state_supervision_violation_response_decision_service_termination = \
-    'SERVICE_TERMINATION'
+state_supervision_violation_response_decision_privileges_revoked = 'PRIVILEGES_REVOKED'
+state_supervision_violation_response_decision_service_termination = 'SERVICE_TERMINATION'
 state_supervision_violation_response_decision_suspension = 'SUSPENSION'
 
-state_supervision_violation_response_revocation_type_reincarceration = \
-    'REINCARCERATION'
-state_supervision_violation_response_revocation_type_return_to_supervision = \
-    'RETURN_TO_SUPERVISION'
-state_supervision_violation_response_revocation_type_shock_incarceration = \
-    'SHOCK_INCARCERATION'
-state_supervision_violation_response_revocation_type_treatment_in_prison = \
-    'TREATMENT_IN_PRISON'
+state_supervision_violation_response_revocation_type_reincarceration = 'REINCARCERATION'
+state_supervision_violation_response_revocation_type_return_to_supervision = 'RETURN_TO_SUPERVISION'
+state_supervision_violation_response_revocation_type_shock_incarceration = 'SHOCK_INCARCERATION'
+state_supervision_violation_response_revocation_type_treatment_in_prison = 'TREATMENT_IN_PRISON'
 
 state_supervision_violation_response_deciding_body_type_court = 'COURT'
 state_supervision_violation_response_deciding_body_parole_board = 'PAROLE_BOARD'
-state_supervision_violation_response_deciding_body_type_supervision_officer = \
-    'SUPERVISION_OFFICER'
+state_supervision_violation_response_deciding_body_type_supervision_officer = 'SUPERVISION_OFFICER'
 
 # state_program_assignment.py
 state_program_assignment_participation_status_denied = 'DENIED'
@@ -272,8 +240,7 @@ state_program_assignment_participation_status_in_progress = 'IN_PROGRESS'
 state_program_assignment_participation_status_pending = 'PENDING'
 
 state_program_assignment_discharge_reason_absconded = 'ABSCONDED'
-state_program_assignment_discharge_reason_adverse_termination = \
-    'ADVERSE_TERMINATION'
+state_program_assignment_discharge_reason_adverse_termination = 'ADVERSE_TERMINATION'
 state_program_assignment_discharge_reason_completed = 'COMPLETED'
 state_program_assignment_discharge_reason_moved = 'MOVED'
 state_program_assignment_discharge_reason_opted_out = 'OPTED_OUT'
@@ -281,7 +248,5 @@ state_program_assignment_discharge_reason_program_transfer = 'PROGRAM_TRANSFER'
 state_program_assignment_discharge_reason_reincarcerated = 'REINCARCERATED'
 
 # state_specialized_purpose_for_incarceration
-state_specialized_purpose_for_incarceration_shock_incarceration = \
-    'SHOCK_INCARCERATION'
-state_specialized_purpose_for_incarceration_treatment_in_prison = \
-    'TREATMENT_IN_PRISON'
+state_specialized_purpose_for_incarceration_shock_incarceration = 'SHOCK_INCARCERATION'
+state_specialized_purpose_for_incarceration_treatment_in_prison = 'TREATMENT_IN_PRISON'
