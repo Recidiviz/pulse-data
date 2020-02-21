@@ -22,16 +22,15 @@ import attr
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 
 
 @attr.s(frozen=True)
 class IncarcerationEvent(BuildableAttr):
     """Models details related to an incarceration event.
 
-    Describes a date on which a person interacted with incarceration.
-    This includes the information pertaining to the interaction
-    that we will want to track when calculating incarceration metrics."""
+    Describes a date on which a person interacted with incarceration. This includes the information pertaining to the
+    interaction that we will want to track when calculating incarceration metrics."""
 
     # The state where the incarceration took place
     state_code: str = attr.ib()
@@ -48,25 +47,23 @@ class IncarcerationEvent(BuildableAttr):
 
 @attr.s(frozen=True)
 class IncarcerationStayEvent(IncarcerationEvent):
-    """Models an IncarcerationEvent where a person spent time incarcerated
-    during the given day."""
+    """Models an IncarcerationEvent where a person spent time incarcerated during the given day."""
 
 
 @attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):
-    """Models an IncarcerationEvent where a person was admitted to
-    incarceration for any reason."""
+    """Models an IncarcerationEvent where a person was admitted to incarceration for any reason."""
 
     # Admission reason
-    admission_reason:\
-        StateIncarcerationPeriodAdmissionReason = attr.ib(default=None)
+    admission_reason: StateIncarcerationPeriodAdmissionReason = attr.ib(default=None)
+
+    # Specialized purpose for incarceration
+    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)
 class IncarcerationReleaseEvent(IncarcerationEvent):
-    """Models an IncarcerationEvent where a person was released from
-    incarceration for any reason."""
+    """Models an IncarcerationEvent where a person was released from incarceration for any reason."""
 
     # Release reason
-    release_reason:\
-        StateIncarcerationPeriodReleaseReason = attr.ib(default=None)
+    release_reason: StateIncarcerationPeriodReleaseReason = attr.ib(default=None)
