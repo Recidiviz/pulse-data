@@ -662,10 +662,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         vr_110035_19890901_5 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
-            response_date='19940609',
             decision='REVOCATION',
             revocation_type='S',
-            deciding_body_type='PAROLE_BOARD'
         )
 
         vr_110035_20010414_2 = StateSupervisionViolationResponse(
@@ -731,7 +729,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_incarceration_period_id='110035-20010414-2-0',
             status='NOT_IN_CUSTODY',
             admission_date='20010420',
-            admission_reason='40I2000',
+            admission_reason='40I2000,50N1010',
             release_date='20121102',
             release_reason='IT-BP',
             specialized_purpose_for_incarceration='S',
@@ -2441,7 +2439,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             status_raw_text='NOT_IN_CUSTODY',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=1994, month=6, day=9),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             admission_reason_raw_text='40I1060,40I2000',
             release_date=datetime.date(year=1995, month=2, day=6),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -2454,13 +2452,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text='PERMANENT_DECISION',
-            response_date=datetime.date(year=1994, month=6, day=9),
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             revocation_type_raw_text='S',
-            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text='PAROLE_BOARD',
             person=person_110035,
         )
         ip_110035_19890901_5_0.source_supervision_violation_response = vr_110035_19890901_5
@@ -2478,8 +2473,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             status_raw_text='NOT_IN_CUSTODY',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=datetime.date(year=2001, month=4, day=20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='40I2000',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+            admission_reason_raw_text='40I2000,50N1010',
             release_date=datetime.date(year=2012, month=11, day=2),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text='IT-BP',
@@ -3222,7 +3217,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people, debug=True)
+        self.assert_expected_db_people(expected_people)
 
         ##############################################################
         # TAK028_TAK076_TAK042_TAK024 VIOLATION REPORTS
