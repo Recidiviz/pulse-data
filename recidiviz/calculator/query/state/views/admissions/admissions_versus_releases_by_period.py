@@ -51,7 +51,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         SUM(count) as admission_count
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
         AND age_bucket IS NULL
@@ -71,7 +71,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         SUM(count) as release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
         AND age_bucket IS NULL
@@ -93,7 +93,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
         UNNEST([1,3,6,12,36]) AS metric_period_months
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
         AND age_bucket IS NULL

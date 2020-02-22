@@ -69,7 +69,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
             metric_period_months
           FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
           JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-            USING (state_code, job_id)
+            USING (state_code, job_id, year, month, metric_period_months)
           WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND assessment_score_bucket IS NULL
@@ -95,7 +95,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND admission_reason = 'NEW_ADMISSION'

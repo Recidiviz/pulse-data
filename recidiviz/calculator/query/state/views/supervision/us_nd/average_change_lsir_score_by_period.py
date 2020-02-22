@@ -47,7 +47,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
       IFNULL(supervising_district_external_id, 'ALL') as district
     FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`
     JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id)
+      USING (state_code, job_id, year, month, metric_period_months)
     WHERE methodology = 'PERSON'
       AND assessment_score_bucket IS NULL
       AND assessment_type = 'LSIR'
