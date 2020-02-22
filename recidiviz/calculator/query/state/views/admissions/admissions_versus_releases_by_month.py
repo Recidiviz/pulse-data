@@ -47,7 +47,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         SUM(count) AS admission_count
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND facility IS NULL
@@ -66,7 +66,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         SUM(count) AS release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND facility IS NULL
@@ -88,7 +88,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         count AS month_end_population
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND metric_period_months = 1
         AND facility IS NULL

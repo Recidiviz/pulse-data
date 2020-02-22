@@ -46,7 +46,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
         IFNULL(supervising_district_external_id, 'ALL') as district 
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND metric_period_months = 1
         AND month IS NOT NULL

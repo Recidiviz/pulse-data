@@ -52,7 +52,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id 
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND metric_period_months = 1
@@ -73,7 +73,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id  
       FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND metric_period_months = 1
