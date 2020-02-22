@@ -1311,7 +1311,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         if ip_admission_reason_enum in {
                 StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         }:
             return ip_admission_reason_enum
         return None

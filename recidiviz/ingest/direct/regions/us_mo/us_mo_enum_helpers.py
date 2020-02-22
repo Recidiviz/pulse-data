@@ -506,27 +506,42 @@ def incarceration_period_admission_reason_mapper(label: str) -> Optional[StateIn
     """Maps |label|, a space delimited list of statuses from TAK026, to the most relevant
     IncarcerationPeriodAdmissionReason, when possible.
 
-    If multiple type of statuses are found, we first look for a non-null parole revocation status, then probation
-    revocation status, then new admission status, and finally temporary custody statuses.
+    If multiple type of statuses are found, we first look for a non-null revocation statuses, then new admission status,
+    and finally temporary custody statuses.
     """
     start_statuses = sorted_list_from_str(label, ' ')
-    # TODO(2647): If both probation and parole statuses, return DUAL
+
+    is_probation_revocation = False
+    is_parole_revocation = False
+    is_new_admission = False
+    is_temporary_custody = False
     for status in start_statuses:
         if status.startswith((
                 '40I1',  # Parole Revocation
                 '40I3',  # Conditional Release Return (Parole Revocation)
         )) or status in PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES:
-            return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+            is_parole_revocation = True
         if status.startswith(
                 '40I2'  # Probation Revocation
         ):
-            return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+            is_probation_revocation = True
         if status.startswith(
                 '10I1'  # New Court Commitment (New Admission)
         ):
-            return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+            is_new_admission = True
         if status == '40I0050':
-            return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            is_temporary_custody = True
+
+    if is_probation_revocation and is_parole_revocation:
+        return StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
+    if is_parole_revocation:
+        return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+    if is_probation_revocation:
+        return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+    if is_new_admission:
+        return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+    if is_temporary_custody:
+        return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
 
     # No default here, bc we keep track of the IP-IX statuses whenever
     return None
