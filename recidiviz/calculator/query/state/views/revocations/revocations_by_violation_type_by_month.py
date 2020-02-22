@@ -49,7 +49,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
             IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id)
+          USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND assessment_score_bucket IS NULL
@@ -74,7 +74,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
             IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id
         FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id)
+          USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND assessment_score_bucket IS NULL

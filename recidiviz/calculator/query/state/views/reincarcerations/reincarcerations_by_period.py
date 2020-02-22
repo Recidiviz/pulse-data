@@ -43,7 +43,7 @@ REINCARCERATIONS_BY_PERIOD_QUERY = \
         sum(count) as total_admissions
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
         AND age_bucket IS NULL
@@ -63,7 +63,7 @@ REINCARCERATIONS_BY_PERIOD_QUERY = \
         returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND age_bucket IS NULL
         AND stay_length_bucket IS NULL

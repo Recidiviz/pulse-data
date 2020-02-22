@@ -55,7 +55,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY = \
         age_bucket
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND assessment_score_bucket IS NULL
@@ -78,7 +78,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY = \
         age_bucket
       FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id)
+        USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND program_id IS NULL
