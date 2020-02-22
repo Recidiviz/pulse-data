@@ -37,42 +37,52 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = \
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
     """
     /*{description}*/
-    SELECT metric_type, state_code, job_id FROM
-    (SELECT *, row_number() OVER (PARTITION BY state_code, metric_type ORDER BY job_id DESC) AS recency_rank FROM
-    ((SELECT job_id, state_code, 'RECIDIVISM_COUNT' as metric_type FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'RECIDIVISM_LIBERTY' as metric_type FROM `{project_id}.{metrics_dataset}.recidivism_liberty_metrics` 
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'RECIDIVISM_RATE' as metric_type FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`  
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'INCARCERATION_ADMISSION' as metric_type FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`   
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'INCARCERATION_POPULATION' as metric_type FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`    
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'INCARCERATION_RELEASE' as metric_type FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`     
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'SUPERVISION_ASSESSMENT_CHANGE' as metric_type FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`      
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'SUPERVISION_POPULATION' as metric_type FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`       
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'SUPERVISION_REVOCATION' as metric_type FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`        
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'SUPERVISION_SUCCESS' as metric_type FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`         
-    GROUP BY job_id, state_code)
-    UNION ALL
-    (SELECT job_id, state_code, 'PROGRAM_REFERRAL' as metric_type FROM `{project_id}.{metrics_dataset}.program_referral_metrics`          
-    GROUP BY job_id, state_code)))
+    SELECT metric_type, state_code, year, month, metric_period_months, job_id
+    FROM (
+        SELECT *, row_number() OVER (PARTITION BY state_code, year, month, metric_period_months, metric_type ORDER BY job_id DESC) AS recency_rank
+        FROM (
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'RECIDIVISM_COUNT' as metric_type
+            FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, 'RECIDIVISM_LIBERTY' as metric_type
+            FROM `{project_id}.{metrics_dataset}.recidivism_liberty_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, 'RECIDIVISM_RATE' as metric_type
+            FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_ADMISSION' as metric_type
+            FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_POPULATION' as metric_type
+            FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_RELEASE' as metric_type
+            FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_ASSESSMENT_CHANGE' as metric_type
+            FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_POPULATION' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION_ANALYSIS' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION_VIOLATION' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_SUCCESS' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_REFERRAL' as metric_type
+            FROM `{project_id}.{metrics_dataset}.program_referral_metrics`)
+        )
+    )
     WHERE recency_rank = 1
-    ORDER BY metric_type, state_code
+    ORDER BY metric_type, state_code, year, month, metric_period_months
     """.format(
         description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
         project_id=PROJECT_ID,
