@@ -92,6 +92,7 @@ class ProgramReferralMetric(ProgramMetric):
     # Optional characteristics
 
     # Supervision Type
+    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Assessment score of the people this metric describes
