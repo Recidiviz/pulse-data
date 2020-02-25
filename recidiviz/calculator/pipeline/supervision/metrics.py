@@ -28,7 +28,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -119,6 +119,12 @@ class SupervisionPopulationMetric(SupervisionMetric):
 
     # The number of violation responses leading up to the revocation
     response_count: Optional[int] = attr.ib(default=None)
+
+    # Level of supervision
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    # Raw text of the level of supervision
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionPopulationMetric']:
