@@ -16,7 +16,7 @@ state_code=$9
 region=us-west1
 
 if [ x"$project" == x -o x"$bucket" == x -o x"$pipeline" == x -o x"$job_name" == x -o x"$input" == x -o x"$output" == x -o x"$reference_input" == x ]; then
-    echo "usage: $0 <project> <bucket> <pipeline> <job_name> <input> <output>"
+    echo "usage: $0 <project> <bucket> <pipeline> <job_name> <input> <output> <reference_input>"
     exit 1
 fi
 
