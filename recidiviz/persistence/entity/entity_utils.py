@@ -503,6 +503,7 @@ def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
 
 
 def print_entity_trees(entities_list: Sequence[CoreEntity],
+                       print_tree_structure_only: bool = False,
                        python_id_to_fake_id: Dict[int, int] = None):
     """Recursively prints out all objects in the trees below the given list of
     entities. Each time we encounter a new object, we assign a new fake id (an
@@ -521,22 +522,23 @@ def print_entity_trees(entities_list: Sequence[CoreEntity],
         _sort_based_on_flat_fields(entities_list)
 
     for entity in entities_list:
-        print_entity_tree(entity, python_id_to_fake_id=python_id_to_fake_id)
+        print_entity_tree(entity,
+                          python_id_to_fake_id=python_id_to_fake_id,
+                          print_tree_structure_only=print_tree_structure_only)
 
 
 def print_entity_tree(entity: CoreEntity,
+                      print_tree_structure_only: bool = False,
                       indent: int = 0,
                       python_id_to_fake_id: Dict[int, int] = None):
-    """Recursively prints out all objects in the tree below the given entity.
-    Each time we encounter a new object, we assign a new fake id (an
-    auto-incrementing count) and print that with the object.
+    """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
+    assign a new fake id (an auto-incrementing count) and print that with the object.
 
-    This means that two entity trees with the exact same shape/flat fields will
-    print out the exact same string, making it much easier to debug edge-related
-    issues in Diffchecker, etc.
+    This means that two entity trees with the exact same shape/flat fields will print out the exact same string, making
+    it much easier to debug edge-related issues in Diffchecker, etc.
 
-    Note: this function sorts any list fields in the provided entity IN PLACE
-    (should not matter for any equality checks we generally do).
+    Note: this function sorts any list fields in the provided entity IN PLACE (should not matter for any equality checks
+    we generally do).
     """
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
@@ -545,14 +547,12 @@ def print_entity_tree(entity: CoreEntity,
     _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent)
 
     indent = indent + 2
-    for field in get_all_core_entity_field_names(entity,
-                                                 EntityFieldType.FLAT_FIELD):
-        val = entity.get_field(field)
-        _print_indented(f'{field}: {str(val)}', indent)
+    for field in get_all_core_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
+        if field == 'external_id' or not print_tree_structure_only:
+            val = entity.get_field(field)
+            _print_indented(f'{field}: {str(val)}', indent)
 
-    for child_field in \
-            get_all_core_entity_field_names(entity,
-                                            EntityFieldType.FORWARD_EDGE):
+    for child_field in get_all_core_entity_field_names(entity, EntityFieldType.FORWARD_EDGE):
         child = entity.get_field(child_field)
 
         if child is not None:
@@ -562,34 +562,30 @@ def print_entity_tree(entity: CoreEntity,
                 else:
                     _print_indented(f'{child_field}: [', indent)
                     for c in child:
-                        print_entity_tree(c, indent + 2, python_id_to_fake_id)
+                        print_entity_tree(c, print_tree_structure_only, indent + 2, python_id_to_fake_id)
                     _print_indented(f']', indent)
 
             else:
                 _print_indented(f'{child_field}:', indent)
-                print_entity_tree(child, indent + 2, python_id_to_fake_id)
+                print_entity_tree(child, print_tree_structure_only, indent + 2, python_id_to_fake_id)
         else:
             _print_indented(f'{child_field}: None', indent)
 
-    for child_field in \
-            get_all_core_entity_field_names(entity, EntityFieldType.BACK_EDGE):
+    for child_field in get_all_core_entity_field_names(entity, EntityFieldType.BACK_EDGE):
         child = entity.get_field(child_field)
         if child:
             if isinstance(child, list):
                 first_child = next(iter(child))
-                unique = {id(child) for c in child}
-                len_str = f'{len(child)}' \
-                    if len(unique) == len(child) \
-                    else f'{len(child)} - ONLY {len(unique)} UNIQUE!'
+                unique = {id(c) for c in child}
+                len_str = f'{len(child)}' if len(unique) == len(child) else f'{len(child)} - ONLY {len(unique)} UNIQUE!'
 
                 id_str = _obj_id_str(first_child, python_id_to_fake_id)
-                _print_indented(
-                    f'{child_field} ({len_str}): '
-                    f'[{id_str}, ...] - backedge', indent)
+                ellipsis_str = ', ...' if len(child) > 1 else ''
+
+                _print_indented(f'{child_field} ({len_str}): [{id_str}{ellipsis_str}] - backedge', indent)
             else:
                 id_str = _obj_id_str(child, python_id_to_fake_id)
-                _print_indented(
-                    f'{child_field}: {id_str} - backedge', indent)
+                _print_indented(f'{child_field}: {id_str} - backedge', indent)
         else:
             _print_indented(f'{child_field}: None - backedge', indent)
 

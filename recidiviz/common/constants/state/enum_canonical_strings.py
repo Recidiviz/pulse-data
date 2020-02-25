@@ -154,6 +154,7 @@ state_sentence_status_commuted = 'COMMUTED'
 state_sentence_status_completed = 'COMPLETED'
 state_sentence_status_serving = 'SERVING'
 state_sentence_status_suspended = 'SUSPENDED'
+state_sentence_status_revoked = 'REVOKED'
 
 # state_supervision.py
 state_supervision_type_civil_commitment = 'CIVIL_COMMITMENT'
