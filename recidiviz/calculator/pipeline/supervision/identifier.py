@@ -298,7 +298,9 @@ def find_time_buckets_for_supervision_period(
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                     response_count=violation_history.response_count,
                     supervising_officer_external_id=supervising_officer_external_id,
-                    supervising_district_external_id=supervising_district_external_id
+                    supervising_district_external_id=supervising_district_external_id,
+                    supervision_level=supervision_period.supervision_level,
+                    supervision_level_raw_text=supervision_period.supervision_level_raw_text
                 )
             )
 
@@ -486,7 +488,10 @@ def _get_supervision_time_bucket(
             violation_history_description=violation_history.violation_history_description,
             violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
             supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-            supervising_district_external_id=revocation_details.supervising_district_external_id)
+            supervising_district_external_id=revocation_details.supervising_district_external_id,
+            supervision_level=supervision_period.supervision_level,
+            supervision_level_raw_text=supervision_period.supervision_level_raw_text
+        )
 
     if (bucket_year, bucket_month) not in months_of_incarceration:
         # They weren't incarcerated for this month and there was no revocation
@@ -515,7 +520,9 @@ def _get_supervision_time_bucket(
             most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
             response_count=violation_history.response_count,
             supervising_officer_external_id=supervising_officer_external_id,
-            supervising_district_external_id=supervising_district_external_id
+            supervising_district_external_id=supervising_district_external_id,
+            supervision_level=supervision_period.supervision_level,
+            supervision_level_raw_text=supervision_period.supervision_level_raw_text
         )
 
     return None
@@ -790,7 +797,8 @@ def add_missing_revocation_returns(
                     violation_history_description=violation_history.violation_history_description,
                     violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                     supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-                    supervising_district_external_id=revocation_details.supervising_district_external_id)
+                    supervising_district_external_id=revocation_details.supervising_district_external_id
+                )
 
                 revocation_month_accounted_for = False
                 for existing_supervision_bucket in supervision_time_buckets:

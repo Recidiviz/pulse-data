@@ -38,9 +38,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType as ViolationType, \
     StateSupervisionViolationType
@@ -94,11 +92,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL)
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -308,7 +312,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 most_severe_violation_type=ViolationType.FELONY,
                 most_severe_violation_type_subtype='SUBTYPE',
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=10)
+                response_count=10,
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='MIN'
+            )
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -321,6 +328,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
+        assert all(combo.get('supervision_level_raw_text') is not None for combo, value in supervision_combinations
+                   if combo.get('person_id') is not None
+                   and combo_has_enum_value_for_key(combo, 'metric_type', SupervisionMetricType.POPULATION))
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_success(self):
@@ -351,11 +361,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL)
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -398,11 +414,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL)
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            )
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2501,7 +2523,8 @@ def expected_metric_combos_count(
             'most_severe_violation_type_subtype',
             'response_count',
             'supervising_officer_external_id',
-            'supervising_district_external_id'
+            'supervising_district_external_id',
+            'supervision_level'
         ]
 
         for dimension in population_dimensions:

@@ -40,7 +40,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason, \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus, StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodStatus, StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, \
+    StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -101,7 +102,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_date=date(2018, 5, 19),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
             )
 
         supervision_sentence = \
@@ -158,7 +161,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=4,
@@ -167,7 +173,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5,
@@ -176,7 +185,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
@@ -1827,7 +1839,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_date=date(2018, 5, 19),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
             )
 
         supervision_sentence = \
@@ -1882,7 +1896,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=4,
@@ -1890,7 +1907,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5,
@@ -1898,7 +1918,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=assessment.assessment_score,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text='M'
+            ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
