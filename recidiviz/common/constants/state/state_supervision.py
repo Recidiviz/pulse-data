@@ -26,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL_COMMITMENT = \
         state_enum_strings.state_supervision_type_civil_commitment
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     HALFWAY_HOUSE = state_enum_strings.state_supervision_type_halfway_house
     PAROLE = state_enum_strings.state_supervision_type_parole
@@ -44,6 +45,7 @@ _SUPERVISION_TYPE_MAP = {
     'CC': StateSupervisionType.CIVIL_COMMITMENT,
     'CCC': StateSupervisionType.CIVIL_COMMITMENT,
     'EXTERNAL UNKNOWN': StateSupervisionType.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateSupervisionType.INTERNAL_UNKNOWN,
     'HALFWAY HOUSE': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY HOME': StateSupervisionType.HALFWAY_HOUSE,
     'HALFWAY': StateSupervisionType.HALFWAY_HOUSE,

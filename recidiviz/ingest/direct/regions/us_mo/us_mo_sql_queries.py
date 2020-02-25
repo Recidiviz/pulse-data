@@ -31,15 +31,21 @@ from typing import List, Tuple, Optional
 
 lower_bound_update_date = 0
 
-NON_INVESTIGATION_PROBATION_SENTENCES = \
+NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
     """
-    non_investigation_prob_sentences_bu AS (
+    non_investigation_supervision_sentences_bu AS (
         -- Chooses only probation sentences that are non-investigation (not INV)
         SELECT *
         FROM LBAKRDTA.TAK024 sentence_prob_bu
         WHERE BU$PBT != 'INV'
-    )
+    )"""
+
+DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = \
     """
+    distinct_supervision_sentence_ids AS (
+        SELECT DISTINCT BU$DOC, BU$CYC, BU$SEO, BU$FSO
+        FROM non_investigation_supervision_sentences_bu
+    )"""
 
 TAK001_OFFENDER_IDENTIFICATION_QUERY = \
     f"""
@@ -181,127 +187,314 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION = \
     ORDER BY BS$DOC, BS$CYC, BS$SEO;
     """
 
-TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
+SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
+    """
+    classified_status_bw AS (
+        /* Helper to classify statuses in ways that will help us figure out the types of their associated supervision
+        sentences */
+        SELECT
+            classified_status_bw.*,
+            CASE WHEN IS_PROBATION_REVOCATION = 1 THEN BW$SY ELSE NULL END AS PROBATION_REVOCATION_DATE,
+            CASE WHEN IS_PROBATION_REVOCATION = 1 THEN BW$SCD ELSE NULL END AS PROBATION_REVOCATION_SCD
+        FROM (
+            SELECT
+                BW$DOC, BW$CYC, BW$SCD, BW$SY, BW$SSO, BW$DCR, BW$DLU,
+                CASE WHEN BW$SCD IN (
+                    -- These statuses, when associated with a sentence, are strong indicators that that sentence is a
+                    -- parole sentence.
+                   '15I1200',  -- New Court Parole
+                   '25I1200',  -- Court Parole-Addl Charge
+                   '35I1200',  -- Court Parole-Revisit
+                   '35I4100'   -- IS Compact-Parole-Revisit
+                ) THEN BW$SCD ELSE NULL END AS PRIMARY_PAROLE_SCD,
+                CASE WHEN BW$SCD IN (
+                    -- These statuses, when associated with a sentence, are weak indicators that that sentence is a
+                    -- parole sentence. We will mark a sentence as type PAROLE only if no probation statuses are
+                    -- present.
+                   '40O1010',  -- Parole Release
+                   '40O1015',  -- Parolee Released From CRC
+                   '40O1020',  -- Parole To Custody/Detainer
+                   '40O1025',  -- Medical Parole Release
+                   '40O1030',  -- Parole Re-Release
+                   '40O1040',  -- Parole Return Rescinded
+                   '40O1060',  -- Parolee Re-Rel From Inst Pgm
+                   '40O1065',  -- Parolee Rel From Inst Pgm-New
+                   '40O1080'  -- Parolee Released from Inst
+                ) THEN BW$SCD ELSE NULL END AS SECONDARY_PAROLE_SCD,
+                CASE WHEN BW$SCD IN (
+                    -- These statuses, when associated with a sentence, are strong indicators that that sentence is a
+                    -- probation sentence.
+
+                    -- These statuses indicate the start of a new probation sentence
+                   '15I1000',  -- New Court Probation
+                   '15I2000',  -- New Diversion Supervision
+                   '25I1000',  -- Court Probation-Addl Charge
+                   '25I2000',  -- Diversion Supv-Addl Charge
+                   '35I1000',  -- Court Probation-Revisit
+                   '35I2000',  -- Diversion Supv-Revisit
+                   '35I4000',  -- IS Compact-Prob-Revisit
+
+                   -- Sometimes the revocation status is the only status associated with a sentence that explicitly
+                   -- calls out the type
+                   '40I2000', -- Prob Rev-Technical
+                   '40I2005', -- Prob Rev-New Felony Conv
+                   '40I2010', -- Prob Rev-New Misd Conv
+                   '40I2015', -- Prob Rev-Felony Law Viol
+                   '40I2020', -- Prob Rev-Misd Law Viol
+                   '45O2000', -- Prob Rev-Technical
+                   '45O2005', -- Prob Rev-New Felony Conv
+                   '45O2010', -- Prob Rev-New Misd Conv
+                   '45O2015', -- Prob Rev-Felony Law Viol
+                   '45O2020', -- Prob Rev-Misd Law Viol
+
+                   -- These are sometimes the only statuses you see if someone starts a "probation" sentence with a
+                   -- treatment or shock incarceration stint.
+                   '40N9010', -- Probation Assigned to DAI
+                   '40O9010',  -- Release to Probation
+                   '40O9020',  -- Release to Prob-Custody/Detain
+                   '40O9030',  -- Statutory Probation Release
+                   '40O9040',  -- Stat Prob Rel-Custody/Detainer
+                   '40O9060',  -- Release to Prob-Treatment Ctr
+                   '40O9070',  -- Petition Probation Release
+                   '40O9080',  -- Petition Prob Rel-Cust/Detain
+
+                   -- Sometimes there's no mention of probation until the completion status, if you complete probation,
+                   -- the sentence was probably probation the whole time
+                   '95O1000', -- Court Probation Completion
+                   '95O1001', -- Court Probation ECC Completion
+                   '99O1000', -- Court Probation Discharge
+                   '99O1001' -- Court Probation ECC Discharge
+                ) THEN BW$SCD ELSE NULL END AS PRIMARY_PROBATION_SCD,
+                CASE WHEN BW$SCD IN (
+                    -- These statuses, when associated with a sentence, are weak indicators that that sentence is a
+                    -- probation sentence. We will mark a sentence as type PROBATION only if no parole statuses are
+                    -- present.
+
+                   -- This is a general status for being released to the field, but generally seems to show up with
+                   -- probation statuses.
+                   '40O7000' -- Rel to Field-DAI Other Sent
+                ) THEN BW$SCD ELSE NULL END AS SECONDARY_PROBATION_SCD,
+                CASE WHEN BW$SCD IN (
+                    '45O2000',  -- Prob Rev-Technical
+                    '45O2005',  -- Prob Rev-New Felony Conv
+                    '45O2015',  -- Prob Rev-Felony Law Viol
+                    '45O2010',  -- Prob Rev-New Misd Conv
+                    '45O2020'   -- Prob Rev-Misd Law Viol
+                ) THEN 1 ELSE 0 END AS IS_PROBATION_REVOCATION
+            FROM LBAKRDTA.TAK026 status_bw
+        ) classified_status_bw
+    ),
+    supervision_sentence_status_xref_bv AS (
+        /* Associates each status with a particular sentence, filtering for statuses associated with supervision
+        sentences */
+        SELECT
+            BV$DOC, BV$CYC, BV$SEO, BV$FSO, BV$DCR, BV$DLU, BW$SCD, BW$SY, BW$SSO, BW$DCR, BW$DLU,
+            PRIMARY_PAROLE_SCD,
+            SECONDARY_PAROLE_SCD,
+            PRIMARY_PROBATION_SCD,
+            SECONDARY_PROBATION_SCD,
+            IS_PROBATION_REVOCATION,
+            PROBATION_REVOCATION_DATE,
+            PROBATION_REVOCATION_SCD
+        FROM
+            LBAKRDTA.TAK025 status_xref_bv
+        LEFT OUTER JOIN
+            classified_status_bw
+        ON
+            status_xref_bv.BV$DOC = classified_status_bw.BW$DOC AND
+            status_xref_bv.BV$CYC = classified_status_bw.BW$CYC AND
+            status_xref_bv.BV$SSO = classified_status_bw.BW$SSO
+        WHERE BV$FSO > 0
+    )"""
+
+# Required that you also use DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT and SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT
+# in your query
+SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT = \
+    """
+    collapsed_sentence_status_type_classification AS (
+       SELECT
+          BV$DOC, BV$CYC, BV$SEO,
+          MIN(PRIMARY_PAROLE_SCD) AS PRIMARY_PAROLE_SCD,
+          MIN(SECONDARY_PAROLE_SCD) AS SECONDARY_PAROLE_SCD,
+          MIN(PRIMARY_PROBATION_SCD) AS PRIMARY_PROBATION_SCD,
+          MIN(SECONDARY_PROBATION_SCD) AS SECONDARY_PROBATION_SCD,
+          MAX(PROBATION_REVOCATION_DATE) AS PROBATION_REVOCATION_DATE,
+          MAX(PROBATION_REVOCATION_SCD) AS PROBATION_REVOCATION_SCD
+       FROM supervision_sentence_status_xref_bv
+       GROUP BY BV$DOC, BV$CYC, BV$SEO
+    ),
+    supervision_sentence_type_classifier AS (
+        /* Helper for finding the type of a supervision sentence based on the existence of certain statuses */
+        SELECT
+            BU$DOC, BU$CYC, BU$SEO,
+            CASE
+                WHEN
+                    PRIMARY_PAROLE_SCD IS NULL AND (
+                        PRIMARY_PROBATION_SCD IS NOT NULL OR
+                        SECONDARY_PROBATION_SCD IS NOT NULL
+                    )
+                THEN 'PROBATION'
+                WHEN
+                    PRIMARY_PROBATION_SCD IS NULL AND (
+                        PRIMARY_PAROLE_SCD IS NOT NULL OR
+                        SECONDARY_PAROLE_SCD IS NOT NULL
+                    )
+                 THEN 'PAROLE'
+                ELSE 'UNKNOWN'
+            END AS SENTENCE_TYPE,
+            PRIMARY_PAROLE_SCD,
+            SECONDARY_PAROLE_SCD,
+            PRIMARY_PROBATION_SCD,
+            SECONDARY_PROBATION_SCD,
+            PROBATION_REVOCATION_DATE,
+            PROBATION_REVOCATION_SCD
+        FROM
+            distinct_supervision_sentence_ids
+        LEFT OUTER JOIN
+            collapsed_sentence_status_type_classification
+        ON
+            distinct_supervision_sentence_ids.BU$DOC = collapsed_sentence_status_type_classification.BV$DOC AND
+            distinct_supervision_sentence_ids.BU$CYC = collapsed_sentence_status_type_classification.BV$CYC AND
+            distinct_supervision_sentence_ids.BU$SEO = collapsed_sentence_status_type_classification.BV$SEO
+    )"""
+
+SUPERVISION_SENTENCE_STATUS_MAX_UPDATE_DATES_FRAGMENT = \
+    """
+    sentence_max_status_update_dates AS (
+        /* Get the max create/update dates for all the status info for a given
+          sentence. If any status changes for a given sentence, we want to
+          re-ingest max status info for that sentence */
+        SELECT
+            BV$DOC, BV$CYC, BV$SEO,
+            MAX(COALESCE(BV$DCR, 0)) AS MAX_BV_DCR,
+            MAX(COALESCE(BV$DLU, 0)) AS MAX_BV_DLU,
+            MAX(COALESCE(BW$DCR, 0)) AS MAX_BW_DCR,
+            MAX(COALESCE(BW$DLU, 0)) AS MAX_BW_DLU
+        FROM
+            supervision_sentence_status_xref_bv
+        GROUP BY BV$DOC, BV$CYC, BV$SEO
+    )"""
+
+FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT = \
+    """
+    full_supervision_sentence_info AS (
+        SELECT sentence_bs.*, non_investigation_supervision_sentences_bu.*
+        FROM
+            LBAKRDTA.TAK022 sentence_bs
+        JOIN
+            non_investigation_supervision_sentences_bu
+        ON
+            sentence_bs.BS$DOC = non_investigation_supervision_sentences_bu.BU$DOC AND
+            sentence_bs.BS$CYC = non_investigation_supervision_sentences_bu.BU$CYC AND
+            sentence_bs.BS$SEO = non_investigation_supervision_sentences_bu.BU$SEO
+    )"""
+
+
+TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
     f"""
-    -- tak022_tak024_tak025_tak026_offender_sentence_probation
+    -- tak022_tak024_tak025_tak026_offender_sentence_supervision
 
     WITH
-	{NON_INVESTIGATION_PROBATION_SENTENCES},
-    full_prob_sentence_info AS (
-    	SELECT *
-    	FROM
-    		LBAKRDTA.TAK022 sentence_bs
-	    JOIN
-	        non_investigation_prob_sentences_bu
-	    ON
-	        sentence_bs.BS$DOC = non_investigation_prob_sentences_bu.BU$DOC AND
-	        sentence_bs.BS$CYC = non_investigation_prob_sentences_bu.BU$CYC AND
-	        sentence_bs.BS$SEO = non_investigation_prob_sentences_bu.BU$SEO
-    ),
-    distinct_prob_sentence_ids AS (
-		SELECT DISTINCT BS$DOC, BS$CYC, BS$SEO, BU$FSO
-      	FROM full_prob_sentence_info
-    ),
-    sentence_status_xref AS (
-        /* Join all statuses with their associated sentences, create a recency
-           rank for every status among all statuses for that sentence.*/
+    {SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT},
+    {SUPERVISION_SENTENCE_STATUS_MAX_UPDATE_DATES_FRAGMENT},
+    {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
+    {DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT},
+    {SUPERVISION_SENTENCE_TYPE_CLASSIFIER_FRAGMENT},
+    {FULL_SUPERVISION_SENTENCE_INFO_FRAGMENT},
+    supervision_sentence_status_xref_with_types AS (
         SELECT
-        	BS$DOC, BS$CYC, BS$SEO, BU$FSO,
-            status_xref_bv.*,
-            status_bw.*,
+            supervision_sentence_status_xref_bv.BV$DOC,
+            supervision_sentence_status_xref_bv.BV$CYC,
+            supervision_sentence_status_xref_bv.BV$SEO,
+            supervision_sentence_status_xref_bv.BV$FSO,
+            supervision_sentence_status_xref_bv.BW$SCD,
+            supervision_sentence_status_xref_bv.BW$SY,
+            supervision_sentence_status_xref_bv.BW$SSO,
+            supervision_sentence_type_classifier.SENTENCE_TYPE,
+            CASE
+                WHEN SENTENCE_TYPE = 'PROBATION' AND IS_PROBATION_REVOCATION = 1 THEN 1
+                ELSE 0
+            END AS IS_PROBATION_REVOCATION
+        FROM
+            supervision_sentence_status_xref_bv
+        JOIN
+            supervision_sentence_type_classifier
+        ON
+            supervision_sentence_status_xref_bv.BV$DOC = supervision_sentence_type_classifier.BU$DOC AND
+            supervision_sentence_status_xref_bv.BV$CYC = supervision_sentence_type_classifier.BU$CYC AND
+            supervision_sentence_status_xref_bv.BV$SEO = supervision_sentence_type_classifier.BU$SEO
+            AND (SENTENCE_TYPE != 'PROBATION' OR
+                 supervision_sentence_type_classifier.PROBATION_REVOCATION_DATE IS NULL OR
+                 supervision_sentence_status_xref_bv.BW$SY <=
+                 supervision_sentence_type_classifier.PROBATION_REVOCATION_DATE)
+    ),
+    ranked_supervision_sentence_status_xref AS (
+        SELECT
+            supervision_sentence_status_xref_with_types.*,
             ROW_NUMBER() OVER (
-                PARTITION BY BS$DOC, BS$CYC, BS$SEO
+                PARTITION BY BV$DOC, BV$CYC, BV$SEO
                 ORDER BY
                     BW$SY DESC,
-                    -- If multiple statuses are on the same day, pick the larger
+                    -- If there is a probation revocation status on a day, this is the
+                    -- most important piece of information
+                    IS_PROBATION_REVOCATION DESC,
+                    -- Otherwise, if multiple statuses are on the same day, pick the larger
                     -- status code, alphabetically, giving preference to close (9*)
                     -- statuses
                     BW$SCD DESC,
                     -- If there are multiple field sequence numbers (FSO) with
                     -- the same status update on the same day, pick the largest
                     -- FSO.
-                    BU$FSO DESC
-            ) AS RECENCY_RANK_WITHIN_SENTENCE
+                    BV$FSO DESC
+            ) AS SUPERVISION_SENTENCE_STATUS_RECENCY_RANK
         FROM
-        	distinct_prob_sentence_ids
-        LEFT OUTER JOIN
-            LBAKRDTA.TAK025 status_xref_bv
-        ON
-            status_xref_bv.BV$DOC = distinct_prob_sentence_ids.BS$DOC AND
-            status_xref_bv.BV$CYC = distinct_prob_sentence_ids.BS$CYC AND
-            status_xref_bv.BV$SEO = distinct_prob_sentence_ids.BS$SEO AND
-            -- Note: if a status is associated with an incarceration part of
-            -- this sentence (FSO=0), we still associated that status with this
-            -- FSO, since often a final status update for the incarceration
-            -- portion of the sentence also marks the end of the supervision
-            -- portion of the sentence.
-            (status_xref_bv.BV$FSO = distinct_prob_sentence_ids.BU$FSO OR
-             status_xref_bv.BV$FSO = 0)
-        LEFT OUTER JOIN
-            LBAKRDTA.TAK026 status_bw
-        ON
-            status_xref_bv.BV$DOC = status_bw.BW$DOC AND
-            status_xref_bv.BV$CYC = status_bw.BW$CYC AND
-            status_xref_bv.BV$SSO = status_bw.BW$SSO
+            supervision_sentence_status_xref_with_types
     ),
-    sentence_max_status_update_dates AS (
-        /* Get the max create/update dates for all the status info for a given
-          sentence. If any status changes for a given sentence, we want to
-          re-ingest max status info for that sentence */
-    	SELECT
-    		BS$DOC, BS$CYC, BS$SEO,
-    		MAX(COALESCE(BV$DCR, 0)) AS MAX_BV_DCR,
-    		MAX(COALESCE(BV$DLU, 0)) AS MAX_BV_DLU,
-    		MAX(COALESCE(BW$DCR, 0)) AS MAX_BW_DCR,
-    		MAX(COALESCE(BW$DLU, 0)) AS MAX_BW_DLU
-    	FROM
-    		sentence_status_xref
-    	GROUP BY BS$DOC, BS$CYC, BS$SEO
-    ),
-    most_recent_status_by_sentence AS (
-        /* Select the most recent status for a given sentence, with max
-           create/update info. */
+    most_recent_fso_and_status_for_sentence AS (
+        /* Join all statuses with their associated sentences, pick the FSO row with the most recent status */
         SELECT
-        	sentence_status_xref.BS$DOC,
-        	sentence_status_xref.BS$CYC,
-        	sentence_status_xref.BS$SEO,
-        	sentence_status_xref.BU$FSO,
-        	sentence_status_xref.BW$SSO AS MOST_RECENT_SENTENCE_STATUS_SSO,
-        	sentence_status_xref.BW$SCD AS MOST_RECENT_SENTENCE_STATUS_SCD,
-        	sentence_status_xref.BW$SY AS MOST_RECENT_SENTENCE_STATUS_DATE,
-           	sentence_max_status_update_dates.MAX_BV_DCR,
-    		sentence_max_status_update_dates.MAX_BV_DLU,
-    		sentence_max_status_update_dates.MAX_BW_DCR,
-    		sentence_max_status_update_dates.MAX_BW_DLU
+            BU$DOC, BU$CYC, BU$SEO,
+            ranked_supervision_sentence_status_xref.SENTENCE_TYPE,
+            ranked_supervision_sentence_status_xref.BV$FSO AS MOST_RECENT_SUPERVISION_FSO,
+            ranked_supervision_sentence_status_xref.BW$SSO AS MOST_RECENT_SENTENCE_STATUS_SSO,
+            ranked_supervision_sentence_status_xref.BW$SCD AS MOST_RECENT_SENTENCE_STATUS_SCD,
+            ranked_supervision_sentence_status_xref.BW$SY AS MOST_RECENT_SENTENCE_STATUS_DATE
         FROM
-        	sentence_status_xref
+            distinct_supervision_sentence_ids
         LEFT OUTER JOIN
-        	sentence_max_status_update_dates
-	    ON
-	        sentence_status_xref.BS$DOC = sentence_max_status_update_dates.BS$DOC AND
-	        sentence_status_xref.BS$CYC = sentence_max_status_update_dates.BS$CYC AND
-	        sentence_status_xref.BS$SEO = sentence_max_status_update_dates.BS$SEO
-
-        WHERE RECENCY_RANK_WITHIN_SENTENCE = 1
+            ranked_supervision_sentence_status_xref
+        ON
+            ranked_supervision_sentence_status_xref.BV$DOC = distinct_supervision_sentence_ids.BU$DOC AND
+            ranked_supervision_sentence_status_xref.BV$CYC = distinct_supervision_sentence_ids.BU$CYC AND
+            ranked_supervision_sentence_status_xref.BV$SEO = distinct_supervision_sentence_ids.BU$SEO AND
+            ranked_supervision_sentence_status_xref.BV$FSO = distinct_supervision_sentence_ids.BU$FSO
+        WHERE SUPERVISION_SENTENCE_STATUS_RECENCY_RANK = 1
     )
     SELECT
-        full_prob_sentence_info.*,
-        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SSO,
-        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
-        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_DATE,
-        most_recent_status_by_sentence.MAX_BV_DCR,
-        most_recent_status_by_sentence.MAX_BV_DLU,
-        most_recent_status_by_sentence.MAX_BW_DCR,
-        most_recent_status_by_sentence.MAX_BW_DLU
+        full_supervision_sentence_info.*,
+        most_recent_fso_and_status_for_sentence.SENTENCE_TYPE,
+        most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SSO,
+        most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
+        most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_DATE,
+        sentence_max_status_update_dates.MAX_BV_DCR,
+        sentence_max_status_update_dates.MAX_BV_DLU,
+        sentence_max_status_update_dates.MAX_BW_DCR,
+        sentence_max_status_update_dates.MAX_BW_DLU
     FROM
-        full_prob_sentence_info
+        full_supervision_sentence_info
     JOIN
-        most_recent_status_by_sentence
+        most_recent_fso_and_status_for_sentence
     ON
-        full_prob_sentence_info.BS$DOC = most_recent_status_by_sentence.BS$DOC AND
-        full_prob_sentence_info.BS$CYC = most_recent_status_by_sentence.BS$CYC AND
-        full_prob_sentence_info.BS$SEO = most_recent_status_by_sentence.BS$SEO AND
-        full_prob_sentence_info.BU$FSO = most_recent_status_by_sentence.BU$FSO
+       full_supervision_sentence_info.BS$DOC = most_recent_fso_and_status_for_sentence.BU$DOC AND
+       full_supervision_sentence_info.BS$CYC = most_recent_fso_and_status_for_sentence.BU$CYC AND
+       full_supervision_sentence_info.BS$SEO = most_recent_fso_and_status_for_sentence.BU$SEO AND
+       full_supervision_sentence_info.BU$FSO = most_recent_fso_and_status_for_sentence.MOST_RECENT_SUPERVISION_FSO
+    LEFT OUTER JOIN
+        sentence_max_status_update_dates
+    ON
+       full_supervision_sentence_info.BS$DOC = sentence_max_status_update_dates.BV$DOC AND
+       full_supervision_sentence_info.BS$CYC = sentence_max_status_update_dates.BV$CYC AND
+       full_supervision_sentence_info.BS$SEO = sentence_max_status_update_dates.BV$SEO
     WHERE
         MAX(COALESCE(BS$DLU, 0),
             COALESCE(BS$DCR, 0),
@@ -312,10 +505,9 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION = \
             COALESCE(MAX_BW_DCR, 0),
             COALESCE(MAX_BW_DCR, 0)) >= {lower_bound_update_date}
      ORDER BY
-        full_prob_sentence_info.BS$DOC,
-        full_prob_sentence_info.BS$CYC,
-        full_prob_sentence_info.BS$SEO;
-    """
+           full_supervision_sentence_info.BS$DOC,
+           full_supervision_sentence_info.BS$CYC,
+           full_supervision_sentence_info.BS$SEO;"""
 
 # TODO(2649) - Finalize the list of Board holdover related releases below and
 #  create enum mappings.
@@ -564,7 +756,7 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     -- tak158_tak024_tak026_incarceration_period_from_supervision_sentence
 
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
-    {NON_INVESTIGATION_PROBATION_SENTENCES},
+    {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
     {STATUSES_BY_SENTENCE_AND_DATE_FRAGMENT},
     incarceration_subcycle_from_supervision_sentence AS (
         SELECT
@@ -574,7 +766,7 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
             body_status_f1.*
         FROM (
             SELECT BU$DOC, BU$CYC, BU$SEO
-            FROM non_investigation_prob_sentences_bu
+            FROM non_investigation_supervision_sentences_bu
             GROUP BY BU$DOC, BU$CYC, BU$SEO
         ) non_investigation_probation_sentence_ids
         LEFT OUTER JOIN
@@ -1240,7 +1432,7 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     -- tak028_tak042_tak076_tak024_violation_reports
 
     WITH
-    {NON_INVESTIGATION_PROBATION_SENTENCES},
+    {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
     {OFFICERS_WITH_MOST_RECENT_ROLE_FRAGMENT},
     conditions_violated_cf AS (
     -- An updated version of TAK042 that only has one row per citation.
@@ -1279,14 +1471,14 @@ TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
             FROM
                 LBAKRDTA.TAK076 sentence_xref_cz
             LEFT JOIN
-                non_investigation_prob_sentences_bu
+                non_investigation_supervision_sentences_bu
             ON
-                sentence_xref_cz.CZ$DOC = non_investigation_prob_sentences_bu.BU$DOC
-                AND sentence_xref_cz.CZ$CYC = non_investigation_prob_sentences_bu.BU$CYC
-                AND sentence_xref_cz.CZ$SEO = non_investigation_prob_sentences_bu.BU$SEO
-                AND sentence_xref_cz.CZ$FSO = non_investigation_prob_sentences_bu.BU$FSO
+                sentence_xref_cz.CZ$DOC = non_investigation_supervision_sentences_bu.BU$DOC
+                AND sentence_xref_cz.CZ$CYC = non_investigation_supervision_sentences_bu.BU$CYC
+                AND sentence_xref_cz.CZ$SEO = non_investigation_supervision_sentences_bu.BU$SEO
+                AND sentence_xref_cz.CZ$FSO = non_investigation_supervision_sentences_bu.BU$FSO
             WHERE sentence_xref_cz.CZ$FSO = 0 OR
-                non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
+                non_investigation_supervision_sentences_bu.BU$DOC IS NOT NULL
         ) sentence_xref_with_probation_info_cz_bu
     ),
     finally_formed_violations_e6 AS(
@@ -1337,7 +1529,7 @@ TAK291_TAK292_TAK024_CITATIONS = \
     -- tak291_tak292_tak024_citations
 
     WITH
-    {NON_INVESTIGATION_PROBATION_SENTENCES},
+    {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
     valid_sentences_js AS (
     -- Only keeps rows in TAK291 which refer to either
     -- IncarcerationSentences or non-INV SupervisionSentences
@@ -1355,14 +1547,14 @@ TAK291_TAK292_TAK024_CITATIONS = \
             FROM
                 LBAKRDTA.TAK291 sentence_xref_js
             LEFT JOIN
-                non_investigation_prob_sentences_bu
+                non_investigation_supervision_sentences_bu
             ON
-                sentence_xref_js.JS$DOC = non_investigation_prob_sentences_bu.BU$DOC
-                AND sentence_xref_js.JS$CYC = non_investigation_prob_sentences_bu.BU$CYC
-                AND sentence_xref_js.JS$SEO = non_investigation_prob_sentences_bu.BU$SEO
-                AND sentence_xref_js.JS$FSO = non_investigation_prob_sentences_bu.BU$FSO
+                sentence_xref_js.JS$DOC = non_investigation_supervision_sentences_bu.BU$DOC
+                AND sentence_xref_js.JS$CYC = non_investigation_supervision_sentences_bu.BU$CYC
+                AND sentence_xref_js.JS$SEO = non_investigation_supervision_sentences_bu.BU$SEO
+                AND sentence_xref_js.JS$FSO = non_investigation_supervision_sentences_bu.BU$FSO
             WHERE sentence_xref_js.JS$FSO = 0 OR
-                non_investigation_prob_sentences_bu.BU$DOC IS NOT NULL
+                non_investigation_supervision_sentences_bu.BU$DOC IS NOT NULL
         ) sentence_xref_with_probation_info_js_bu
     ),
     citations_with_multiple_violations_jt AS (
@@ -1438,8 +1630,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ('tak040_offender_cycles', TAK040_OFFENDER_CYCLES),
         ('tak022_tak023_tak025_tak026_offender_sentence_institution',
          TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_INSTITUTION),
-        ('tak022_tak024_tak025_tak026_offender_sentence_probation',
-         TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_PROBATION),
+        ('tak022_tak024_tak025_tak026_offender_sentence_supervision',
+         TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION),
         ('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
          TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE),
         ('tak158_tak024_tak026_incarceration_period_from_supervision_sentence',

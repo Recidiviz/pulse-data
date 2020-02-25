@@ -77,7 +77,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
     ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID, \
     SUPERVISION_SENTENCE_START_DATE, MOST_RECENT_SENTENCE_STATUS_DATE, \
-    SUPERVISION_PERIOD_RELEASE_DATE
+    SUPERVISION_PERIOD_RELEASE_DATE, SUPERVISION_SENTENCE_TYPE
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import supervision_period_admission_reason_mapper, \
     supervision_period_termination_reason_mapper, PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES, \
     incarceration_period_admission_reason_mapper, supervising_officer_mapper
@@ -111,7 +111,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'oras_assessments_weekly',
         'tak040_offender_cycles',
         'tak022_tak023_tak025_tak026_offender_sentence_institution',
-        'tak022_tak024_tak025_tak026_offender_sentence_probation',
+        'tak022_tak024_tak025_tak026_offender_sentence_supervision',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
         'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
@@ -123,12 +123,20 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak001_offender_identification': 'EK',
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
-        'tak022_tak024_tak025_tak026_offender_sentence_probation': 'BS',
+        'tak022_tak024_tak025_tak026_offender_sentence_supervision': 'BS',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence': 'BU',
         'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
+    }
+
+    REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
+        '45O2000',  # Prob Rev - Technical
+        '45O2005',  # Prob Rev - New Felony Conv
+        '45O2015',  # Prob Rev - Felony Law Viol
+        '45O2010',  # Prob Rev - New Misd Conv
+        '45O2020'   # Prob Rev - Misd Law Viol
     }
 
     SUSPENDED_SENTENCE_STATUS_CODES = {
@@ -150,7 +158,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     # TODO(2604): Figure out if we should do anything special with these
     SENTENCE_MAGICAL_DATES = [
-        '0', '20000000', '88888888', '99999999'
+        '0', '20000000', '66666666', '88888888', '99999999'
     ]
     PERIOD_MAGICAL_DATES = [
         '0', '99999999'
@@ -206,37 +214,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         StateChargeClassificationType.INFRACTION: ['L'],  # Local/ordinance
 
-        StateSupervisionType.EXTERNAL_UNKNOWN: [
-            # Codes originating from F1$CTC - Case Type Current
-            'XX',  # Unknown (Not Associated)
+        StateSupervisionType.INTERNAL_UNKNOWN: [
+            'UNKNOWN'
         ],
         StateSupervisionType.PAROLE: [
-            # Codes originating from F1$CTC - Case Type Current
-            'BP',   # Board Parole
-            'CR',   # Conditional Release
-            'IN',   # Inmate
-            'IP',   # Interstate Parole
-            'NA',   # New Admission
+            'PAROLE',
         ],
         StateSupervisionType.PROBATION: [
-            # Sentence-related codes originating from F1$CTC - Case Type Current
-            'BND',  # Bond Supervision (no longer used)
-            'CPR',  # Court Parole (a form of probation)
-            'DFP',  # Deferred Prosecution
-            'IPB',  # Interstate Compact Probation
-            'IPR',  # Interstate Compact Probation
-            'SES',  # Suspended Execution of Sentence (Probation)
-            'SIS',  # Suspended Imposition of Sentence (Probation)
-
-            # Period-related codes originating from F1$CTC - Case Type Current
-            'DV',   # Diversion
-            'IC',   # Interstate Probation
-            'PB',   # Former Probation Case
-            'FC',   # Felony Court Case
-            'LC',   # Local/Ordinance Court Case
-            'MC',   # Misdemeanor Court Case
-            'UC',   # Unknown Court Case
-            ' C',   # Court Case Check Type
+            'PROBATION'
         ],
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
             'XX',  # Unknown (Not Associated)
@@ -711,7 +696,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self.tak022_tak023_set_parole_eligibility_date,
                 self.set_charge_id_from_sentence_id,
             ],
-            'tak022_tak024_tak025_tak026_offender_sentence_probation': [
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision': [
                 gen_normalize_county_codes_posthook(self.region.region_code,
                                                     CHARGE_COUNTY_CODE,
                                                     StateCharge),
@@ -780,7 +765,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_assessment_id_coords,
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
                 self._generate_incarceration_sentence_id_coords,
-            'tak022_tak024_tak025_tak026_offender_sentence_probation':
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision':
                 self._generate_supervision_sentence_id_coords,
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._generate_incarceration_period_id_coords,
@@ -797,7 +782,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
                 self._sentence_group_ancestor_chain_override,
-            'tak022_tak024_tak025_tak026_offender_sentence_probation':
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision':
                 self._sentence_group_ancestor_chain_override,
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 self._incarceration_sentence_ancestor_chain_override,
@@ -851,7 +836,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         if file_tag in [
                 'oras_assessments_weekly',
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',
-                'tak022_tak024_tak025_tak026_offender_sentence_probation',
+                'tak022_tak024_tak025_tak026_offender_sentence_supervision',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
                 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
                 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
@@ -1170,49 +1155,57 @@ class UsMoController(CsvGcsfsDirectIngestController):
             middle_names=middle_names,
             surname=surname)
 
-    @classmethod
     def _set_completion_date_if_necessary(
-            cls,
+            self,
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
 
-        sentence_completed_flag = row[SENTENCE_COMPLETED_FLAG]
-        if sentence_completed_flag == 'Y':
-            completion_date = row[MOST_RECENT_SENTENCE_STATUS_DATE]
-            for obj in extracted_objects:
-                if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
+        completion_date = row[MOST_RECENT_SENTENCE_STATUS_DATE]
+        for obj in extracted_objects:
+            if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
+                if obj.status in (
+                        StateSentenceStatus.COMMUTED.value,
+                        StateSentenceStatus.COMPLETED.value,
+                        StateSentenceStatus.REVOKED.value
+                ):
                     obj.__setattr__('completion_date', completion_date)
 
-    @classmethod
-    def _set_sentence_status(cls,
+    def _set_sentence_status(self,
                              _file_tag: str,
                              row: Dict[str, str],
                              extracted_objects: List[IngestObject],
                              _cache: IngestObjectCache):
 
-        status_enum_str = cls._sentence_status_enum_str_from_row(row)
+        status_enum_str = self._sentence_status_enum_str_from_row(row)
         for obj in extracted_objects:
             if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
                 obj.__setattr__('status', status_enum_str)
 
-    @classmethod
-    def _sentence_status_enum_str_from_row(cls, row: Dict[str, str]) -> str:
+    def _sentence_status_enum_str_from_row(self, row: Dict[str, str]) -> str:
+        raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
         sentence_completed_flag = row[SENTENCE_COMPLETED_FLAG]
+        supervision_sentence_type = row.get(SUPERVISION_SENTENCE_TYPE, None)
+
+        is_probation_sentence = \
+            supervision_sentence_type and \
+            self.get_enum_overrides().parse(supervision_sentence_type,
+                                            StateSupervisionType) == StateSupervisionType.PROBATION
+
+        if is_probation_sentence and raw_status_str in self.REVOKED_PROBATION_SENTENCE_STATUS_CODES:
+            return StateSentenceStatus.REVOKED.value
 
         if sentence_completed_flag == 'Y':
             return StateSentenceStatus.COMPLETED.value
-
-        raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
 
         # TODO(2806): This might be a bad way to determine if a sentence is
         #  suspended since there could be, in theory, statuses that come between
         #  the suspension status and the actual status that means the probation
         #  has been reinstated (like a a random warrant status)
-        if raw_status_str in cls.SUSPENDED_SENTENCE_STATUS_CODES:
+        if raw_status_str in self.SUSPENDED_SENTENCE_STATUS_CODES:
             return StateSentenceStatus.SUSPENDED.value
-        if raw_status_str in cls.COMMUTED_SENTENCE_STATUS_CODES:
+        if raw_status_str in self.COMMUTED_SENTENCE_STATUS_CODES:
             return StateSentenceStatus.COMMUTED.value
 
         if sentence_completed_flag == 'N':

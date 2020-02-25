@@ -542,7 +542,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution')
 
-    def test_populate_data_tak022_tak023_offender_sentence_probation(self):
+    def test_populate_data_tak022_tak024_tak025_tak026_offender_sentence_supervision(self):
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='910324',
                         state_person_external_ids=[
@@ -556,8 +556,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 state_supervision_sentences=[
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='910324-19890825-1',
-                                        status='COMPLETED',
-                                        supervision_type='SES',
+                                        status='REVOKED',
+                                        supervision_type='PROBATION',
                                         start_date='19870126',
                                         projected_completion_date='19920125',
                                         completion_date='19890811',
@@ -576,7 +576,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='910324-19890825-2',
                                         status='COMPLETED',
-                                        supervision_type='CPR',
+                                        supervision_type='PROBATION',
                                         start_date='19870416',
                                         projected_completion_date='19880206',
                                         completion_date='19880222',
@@ -604,7 +604,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='310261-19890821-1',
                                         status='COMPLETED',
-                                        supervision_type='IPB',
+                                        supervision_type='PROBATION',
                                         projected_completion_date='19801006',
                                         completion_date='19790607',
                                         county_code='OUT_OF_STATE',
@@ -631,7 +631,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='110035-20040712-1',
                                         status='COMPLETED',
-                                        supervision_type='SES',
+                                        supervision_type='PROBATION',
                                         start_date='20040201',
                                         projected_completion_date='20080120',
                                         completion_date='20080119',
@@ -643,13 +643,51 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='2399',
                                                 description='BURG&STEAL',
                                                 classification_type='F')]
+                                    ),
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id='110035-20040712-3',
+                                        status='COMPLETED',
+                                        supervision_type='UNKNOWN',
+                                        start_date='20040201',
+                                        completion_date='20061010',
+                                        county_code='US_MO_GREENE',
+                                        max_length='2436835',
+                                        state_charges=[
+                                            StateCharge(
+                                                state_charge_id='110035-20040712-3',
+                                                ncic_code='1399',
+                                                statute='1310099',
+                                                description='ASSAULT OF A LAW ENFORCEMENT OFFICER',
+                                                classification_type='F',
+                                                classification_subtype='A')]
+                                    )
+                                ]
+                            ),
+                            StateSentenceGroup(
+                                state_sentence_group_id='110035-20081010',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id='110035-20081010-1',
+                                        status='COMPLETED',
+                                        supervision_type='PAROLE',
+                                        start_date='20081101',
+                                        projected_completion_date='20100113',
+                                        completion_date='20100213',
+                                        county_code='OUT_OF_STATE',
+                                        max_length='0Y 0M 0D',
+                                        state_charges=[
+                                            StateCharge(
+                                                state_charge_id='110035-20081010-1',
+                                                ncic_code='3532',
+                                                offense_date='20070701',
+                                                county_code='OUT_OF_STATE',
+                                                description='POSSESSION OF COCAINE  (SHAWNEE CO 00CR1806)')]
                                     )
                                 ]
                             )
                         ]),
         ])
-
-        self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_probation')
+        self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision')
 
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
@@ -2253,10 +2291,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sss_910324_19890825_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='910324-19890825-1',
-            status=StateSentenceStatus.COMPLETED,
-            status_raw_text='COMPLETED',
+            status=StateSentenceStatus.REVOKED,
+            status_raw_text='REVOKED',
             supervision_type=StateSupervisionType.PROBATION,
-            supervision_type_raw_text='SES',
+            supervision_type_raw_text='PROBATION',
             start_date=datetime.date(year=1987, month=1, day=26),
             projected_completion_date=datetime.date(year=1992, month=1, day=25),
             completion_date=datetime.date(year=1989, month=8, day=11),
@@ -2284,7 +2322,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.COMPLETED,
             status_raw_text='COMPLETED',
             supervision_type=StateSupervisionType.PROBATION,
-            supervision_type_raw_text='CPR',
+            supervision_type_raw_text='PROBATION',
             start_date=datetime.date(year=1987, month=4, day=16),
             projected_completion_date=datetime.date(year=1988, month=2, day=6),
             completion_date=datetime.date(year=1988, month=2, day=22),
@@ -2314,7 +2352,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.COMPLETED,
             status_raw_text='COMPLETED',
             supervision_type=StateSupervisionType.PROBATION,
-            supervision_type_raw_text='IPB',
+            supervision_type_raw_text='PROBATION',
             projected_completion_date=datetime.date(year=1980, month=10, day=6),
             completion_date=datetime.date(year=1979, month=6, day=7),
             county_code='OUT_OF_STATE',
@@ -2349,7 +2387,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.COMPLETED,
             status_raw_text='COMPLETED',
             supervision_type=StateSupervisionType.PROBATION,
-            supervision_type_raw_text='SES',
+            supervision_type_raw_text='PROBATION',
             start_date=datetime.date(year=2004, month=2, day=1),
             projected_completion_date=datetime.date(year=2008, month=1, day=20),
             completion_date=datetime.date(year=2008, month=1, day=19),
@@ -2373,8 +2411,77 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sss_110035_20040712_1.charges = [charge_110035_ss_1]
 
+        sss_110035_20040712_3 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='110035-20040712-3',
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text='COMPLETED',
+            supervision_type=StateSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type_raw_text='UNKNOWN',
+            start_date=datetime.date(year=2004, month=2, day=1),
+            completion_date=datetime.date(year=2006, month=10, day=10),
+            county_code='US_MO_GREENE',
+            max_length_days=2436835,
+            person=person_110035,
+            sentence_group=sg_110035_20040712,
+        )
+        sg_110035_20040712.supervision_sentences.append(sss_110035_20040712_3)
+
+        charge_110035_ss_3 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='110035-20040712-3',
+            ncic_code='1399',
+            statute='1310099',
+            description='ASSAULT OF A LAW ENFORCEMENT OFFICER',
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text='F',
+            classification_subtype='A',
+            supervision_sentences=[sss_110035_20040712_3],
+            person=person_110035,
+        )
+        sss_110035_20040712_3.charges = [charge_110035_ss_3]
+
+        sg_110035_20081010 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='110035-20081010',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_110035
+        )
+        person_110035.sentence_groups.append(sg_110035_20081010)
+
+        sss_110035_20081010_1 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='110035-20081010-1',
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text='COMPLETED',
+            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type_raw_text='PAROLE',
+            start_date=datetime.date(year=2008, month=11, day=1),
+            projected_completion_date=datetime.date(year=2010, month=1, day=13),
+            completion_date=datetime.date(year=2010, month=2, day=13),
+            county_code='OUT_OF_STATE',
+            max_length_days=0,
+            person=person_110035,
+            sentence_group=sg_110035_20081010,
+        )
+        sg_110035_20081010.supervision_sentences.append(sss_110035_20081010_1)
+
+        charge_110035_20081010_1 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id='110035-20081010-1',
+            ncic_code='3532',
+            county_code='OUT_OF_STATE',
+            description='POSSESSION OF COCAINE (SHAWNEE CO 00CR1806)',
+            offense_date=datetime.date(year=2007, month=7, day=1),
+            supervision_sentences=[sss_110035_20081010_1],
+            person=person_110035,
+        )
+        sss_110035_20081010_1.charges = [charge_110035_20081010_1]
+
         # Act
-        self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_probation.csv')
+        self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_supervision.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3113,7 +3220,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text='ITC',
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1]
+            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_0_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
@@ -3146,7 +3253,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text='ITC',
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1]
+            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_8_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
@@ -3179,7 +3286,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.INCARCERATED,
             supervision_level_raw_text='ITC',
             person=person_110035,
-            supervision_sentences=[sss_110035_20040712_1]
+            supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_9_dso = entities.StateSupervisionCaseTypeEntry(
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
@@ -3198,6 +3305,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20040712_1_9.case_type_entries.extend([ct_110035_20040712_1_9_dso, ct_110035_20040712_1_9_dvs])
 
         sss_110035_20040712_1.supervision_periods.extend([
+            sp_110035_20040712_1_0,
+            sp_110035_20040712_1_8,
+            sp_110035_20040712_1_9
+        ])
+        sss_110035_20040712_3.supervision_periods.extend([
             sp_110035_20040712_1_0,
             sp_110035_20040712_1_8,
             sp_110035_20040712_1_9
