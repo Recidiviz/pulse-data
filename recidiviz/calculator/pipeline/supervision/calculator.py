@@ -205,6 +205,10 @@ def characteristic_combinations(person: StatePerson,
     """
     characteristics: Dict[str, Any] = {}
 
+    no_revocation_dimensions = (not with_revocation_dimensions
+                                and not with_revocation_analysis_dimensions
+                                and not with_revocation_violation_type_analysis_dimensions)
+
     # Set Population violation dimensions if revocation analysis flags are false
     # TODO(2850): clean up this logic
     if (not with_revocation_dimensions and not with_revocation_analysis_dimensions
@@ -238,7 +242,7 @@ def characteristic_combinations(person: StatePerson,
             if with_revocation_analysis_dimensions:
                 if supervision_time_bucket.most_severe_response_decision:
                     characteristics['most_severe_response_decision'] = \
-                characteristics['most_severe_response_decision'] = supervision_time_bucket.most_severe_response_decision
+                        supervision_time_bucket.most_severe_response_decision
 
             if supervision_time_bucket.response_count is not None:
                 characteristics['response_count'] = supervision_time_bucket.response_count
@@ -251,6 +255,9 @@ def characteristic_combinations(person: StatePerson,
         characteristics['supervision_type'] = supervision_time_bucket.supervision_type
     if supervision_time_bucket.case_type:
         characteristics['case_type'] = supervision_time_bucket.case_type
+
+    if no_revocation_dimensions and supervision_time_bucket.supervision_level:
+        characteristics['supervision_level'] = supervision_time_bucket.supervision_level
 
     # TODO(2853): Figure out more robust solution for not assessed people. Here we don't set assessment_type when
     # someone is not assessed. This only works as desired because BQ doesn't rely on assessment_type at all.
@@ -299,6 +306,10 @@ def characteristic_combinations(person: StatePerson,
         all_combinations = for_characteristics(characteristics)
 
     characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'supervision')
+
+    if no_revocation_dimensions and supervision_time_bucket.supervision_level_raw_text:
+        characteristics_with_person_details['supervision_level_raw_text'] = \
+            supervision_time_bucket.supervision_level_raw_text
 
     if with_revocation_analysis_dimensions:
         # Only include violation history descriptions on person-level metrics

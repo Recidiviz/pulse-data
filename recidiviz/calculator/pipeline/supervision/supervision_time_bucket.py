@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -51,6 +51,12 @@ class SupervisionTimeBucket(BuildableAttr):
 
     # The type of supervision the person was on on the last day of the time bucket
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
+    # Level of supervision
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    # Raw text of the level of supervision
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
