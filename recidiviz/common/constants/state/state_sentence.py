@@ -28,6 +28,8 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMPLETED = state_enum_strings.state_sentence_status_completed
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    # Set when someone is on probation and that probation sentence is revoked / turned into incarceration
+    REVOKED = state_enum_strings.state_sentence_status_revoked
     SERVING = state_enum_strings.state_sentence_status_serving
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
 
@@ -44,6 +46,7 @@ _STATE_SENTENCE_STATUS_MAP = {
     'COMPLETED': StateSentenceStatus.COMPLETED,
     'EXTERNAL UNKNOWN': StateSentenceStatus.EXTERNAL_UNKNOWN,
     'PRESENT WITHOUT INFO': StateSentenceStatus.PRESENT_WITHOUT_INFO,
+    'REVOKED': StateSentenceStatus.REVOKED,
     'SERVING': StateSentenceStatus.SERVING,
     'SUSPENDED': StateSentenceStatus.SUSPENDED,
 }

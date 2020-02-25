@@ -112,10 +112,12 @@ state_sentence_status = Enum(
     enum_strings.present_without_info,
     state_enum_strings.state_sentence_status_serving,
     state_enum_strings.state_sentence_status_suspended,
+    state_enum_strings.state_sentence_status_revoked,
     name='state_sentence_status')
 
 state_supervision_type = Enum(
     state_enum_strings.state_supervision_type_civil_commitment,
+    enum_strings.internal_unknown,
     enum_strings.external_unknown,
     state_enum_strings.state_supervision_type_halfway_house,
     state_enum_strings.state_supervision_type_parole,
