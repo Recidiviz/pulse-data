@@ -50,6 +50,7 @@ class ProgramReferralEvent(ProgramEvent):
     """Models a ProgramEvent where a the person was referred to a program."""
 
     # The type of supervision the person was on
+    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Most recent assessment score at the time of referral

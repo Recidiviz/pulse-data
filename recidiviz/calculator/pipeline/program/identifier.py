@@ -155,6 +155,7 @@ def referrals_for_supervision_periods(
     the referral."""
 
     program_referrals: List[ProgramReferralEvent] = []
+    # TODO(2891): Update this logic to mirror how the supervision pipeline handles supervision type inference
     supervision_types_represented: Set[Optional[StateSupervisionType]] = set()
 
     if supervision_periods:
