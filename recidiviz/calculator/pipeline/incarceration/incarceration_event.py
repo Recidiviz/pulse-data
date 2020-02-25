@@ -49,6 +49,10 @@ class IncarcerationEvent(BuildableAttr):
 class IncarcerationStayEvent(IncarcerationEvent):
     """Models an IncarcerationEvent where a person spent time incarcerated during the given day."""
 
+    # The most serious offense statute connected to the sentence group of the incarceration period from which
+    # this stay event is derived
+    most_serious_offense_statute: Optional[str] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):

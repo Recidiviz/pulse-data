@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import \
     ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -48,7 +49,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.persistence.entity.state.entities import \
     Gender, Race, ResidencyStatus, Ethnicity, StatePerson, \
-    StateIncarcerationPeriod
+    StateIncarcerationPeriod, StateIncarcerationSentence, StateSentenceGroup, StateCharge
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import \
@@ -62,6 +63,7 @@ ALL_INCLUSIONS_DICT = {
         'race': True,
         'ethnicity': True,
     }
+
 
 class TestIncarcerationPipeline(unittest.TestCase):
     """Tests the entire incarceration pipeline."""
@@ -100,6 +102,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
+        sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=111,
+            person_id=fake_person_id
+        )
+
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -116,7 +123,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+
         )
 
         first_reincarceration = schema.StateIncarcerationPeriod(
@@ -152,18 +160,68 @@ class TestIncarcerationPipeline(unittest.TestCase):
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id)
 
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=1111,
+            sentence_group_id=sentence_group.sentence_group_id,
+            incarceration_periods=[
+                initial_incarceration,
+                first_reincarceration,
+                subsequent_reincarceration
+            ],
+            person_id=fake_person_id
+        )
+
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=123,
+            person_id=fake_person_id
+        )
+
+        sentence_group.incarceration_sentences = [incarceration_sentence]
+
+        sentence_group_data = [
+            normalized_database_base_dict(sentence_group)
+        ]
+
+        incarceration_sentence_data = [
+            normalized_database_base_dict(incarceration_sentence)
+        ]
+
+        supervision_sentence_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
         incarceration_periods_data = [
             normalized_database_base_dict(initial_incarceration),
             normalized_database_base_dict(first_reincarceration),
             normalized_database_base_dict(subsequent_reincarceration)
         ]
 
+        state_incarceration_sentence_incarceration_period_association = [
+            {
+                'incarceration_period_id': initial_incarceration.incarceration_period_id,
+                'incarceration_sentence_id': incarceration_sentence.incarceration_sentence_id,
+            },
+            {
+                'incarceration_period_id': first_reincarceration.incarceration_period_id,
+                'incarceration_sentence_id': incarceration_sentence.incarceration_sentence_id,
+            },
+            {
+                'incarceration_period_id': subsequent_reincarceration.incarceration_period_id,
+                'incarceration_sentence_id': incarceration_sentence.incarceration_sentence_id,
+            },
+        ]
+
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
-            schema.StateIncarcerationPeriod.__tablename__:
-                incarceration_periods_data,
+            schema.StateSentenceGroup.__tablename__: sentence_group_data,
+            schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
+            schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
+            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.state_incarceration_sentence_incarceration_period_association_table.name:
+                state_incarceration_sentence_incarceration_period_association,
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}]
         }
 
         test_pipeline = TestPipeline()
@@ -179,25 +237,59 @@ class TestIncarcerationPipeline(unittest.TestCase):
                        unifying_id_field='person_id',
                        build_related_entities=True))
 
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (test_pipeline
-                                 | 'Load IncarcerationPeriods' >>
+        # Get StateSentenceGroups
+        sentence_groups = (test_pipeline
+                           | 'Load StateSentencegroups' >>
+                           extractor_utils.BuildRootEntity(
+                               dataset=None,
+                               data_dict=data_dict,
+                               root_schema_class=
+                               schema.StateSentenceGroup,
+                               root_entity_class=
+                               entities.StateSentenceGroup,
+                               unifying_id_field='person_id',
+                               build_related_entities=True))
+
+        # Get StateIncarcerationSentences
+        incarceration_sentences = (test_pipeline | 'Load StateIncarcerationSentences' >>
+                                   extractor_utils.BuildRootEntity(
+                                       dataset=None,
+                                       data_dict=data_dict,
+                                       root_schema_class=schema.StateIncarcerationSentence,
+                                       root_entity_class=entities.StateIncarcerationSentence,
+                                       unifying_id_field='person_id',
+                                       build_related_entities=True
+                                   ))
+
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline | 'Load StateSupervisionSentences' >>
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
+                                     root_schema_class=schema.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field='person_id',
-                                     build_related_entities=True))
+                                     build_related_entities=True
+                                 ))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = (
+        sentences_and_sentence_groups = (
+            {'sentence_groups': sentence_groups,
+             'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences}
+            | 'Group sentences to sentence groups' >>
+            beam.CoGroupByKey()
+        )
+
+        sentence_groups_with_hydrated_sentences = (
+            sentences_and_sentence_groups | 'Set hydrated sentences on sentence groups' >>
+            beam.ParDo(SetSentencesOnSentenceGroup())
+        )
+
+        # Group each StatePerson with their related entities
+        person_and_sentence_groups = (
             {'person': persons,
-             'incarceration_periods':
-                 incarceration_periods}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
+             'sentence_groups': sentence_groups_with_hydrated_sentences}
+            | 'Group StatePerson to SentenceGroups' >>
             beam.CoGroupByKey()
         )
 
@@ -213,8 +305,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
             | "Convert to KV" >>
             beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
+
         person_events = (
-            person_and_incarceration_periods |
+            person_and_sentence_groups |
             'Classify Incarceration Events' >>
             beam.ParDo(
                 pipeline.ClassifyIncarcerationEvents(),
@@ -260,6 +353,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
         persons_data = [normalized_database_base_dict(fake_person_1),
                         normalized_database_base_dict(fake_person_2)]
 
+        sentence_group = schema.StateSentenceGroup(
+            sentence_group_id=111,
+            person_id=fake_person_id_1
+        )
+
         incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -278,14 +376,52 @@ class TestIncarcerationPipeline(unittest.TestCase):
             SENTENCE_SERVED,
             person_id=fake_person_id_1)
 
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=1111,
+            sentence_group_id=sentence_group.sentence_group_id,
+            incarceration_periods=[incarceration_period],
+            person_id=fake_person_id_1
+        )
+
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=123,
+            person_id=fake_person_id_1
+        )
+
+        sentence_group.incarceration_sentences = [incarceration_sentence]
+
+        sentence_group_data = [
+            normalized_database_base_dict(sentence_group)
+        ]
+
+        incarceration_sentence_data = [
+            normalized_database_base_dict(incarceration_sentence)
+        ]
+
+        supervision_sentence_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
         incarceration_periods_data = [
             normalized_database_base_dict(incarceration_period)
         ]
 
+        state_incarceration_sentence_incarceration_period_association = [
+            {
+                'incarceration_period_id': incarceration_period.incarceration_period_id,
+                'incarceration_sentence_id': incarceration_sentence.incarceration_sentence_id,
+            },
+        ]
+
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
-            schema.StateIncarcerationPeriod.__tablename__:
-                incarceration_periods_data,
+            schema.StateSentenceGroup.__tablename__: sentence_group_data,
+            schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
+            schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
+            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.state_incarceration_sentence_incarceration_period_association_table.name:
+                state_incarceration_sentence_incarceration_period_association,
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}]
         }
 
         test_pipeline = TestPipeline()
@@ -301,25 +437,59 @@ class TestIncarcerationPipeline(unittest.TestCase):
                        unifying_id_field='person_id',
                        build_related_entities=True))
 
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (test_pipeline
-                                 | 'Load IncarcerationPeriods' >>
+        # Get StateSentenceGroups
+        sentence_groups = (test_pipeline
+                           | 'Load StateSentencegroups' >>
+                           extractor_utils.BuildRootEntity(
+                               dataset=None,
+                               data_dict=data_dict,
+                               root_schema_class=
+                               schema.StateSentenceGroup,
+                               root_entity_class=
+                               entities.StateSentenceGroup,
+                               unifying_id_field='person_id',
+                               build_related_entities=True))
+
+        # Get StateIncarcerationSentences
+        incarceration_sentences = (test_pipeline | 'Load StateIncarcerationSentences' >>
+                                   extractor_utils.BuildRootEntity(
+                                       dataset=None,
+                                       data_dict=data_dict,
+                                       root_schema_class=schema.StateIncarcerationSentence,
+                                       root_entity_class=entities.StateIncarcerationSentence,
+                                       unifying_id_field='person_id',
+                                       build_related_entities=True
+                                   ))
+
+        # Get StateSupervisionSentences
+        supervision_sentences = (test_pipeline | 'Load StateSupervisionSentences' >>
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
+                                     root_schema_class=schema.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field='person_id',
-                                     build_related_entities=True))
+                                     build_related_entities=True
+                                 ))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = (
+        sentences_and_sentence_groups = (
+            {'sentence_groups': sentence_groups,
+             'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences}
+            | 'Group sentences to sentence groups' >>
+            beam.CoGroupByKey()
+        )
+
+        sentence_groups_with_hydrated_sentences = (
+            sentences_and_sentence_groups | 'Set hydrated sentences on sentence groups' >>
+            beam.ParDo(SetSentencesOnSentenceGroup())
+        )
+
+        # Group each StatePerson with their related entities
+        person_and_sentence_groups = (
             {'person': persons,
-             'incarceration_periods':
-                 incarceration_periods}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
+             'sentence_groups': sentence_groups_with_hydrated_sentences}
+            | 'Group StatePerson to SentenceGroups' >>
             beam.CoGroupByKey()
         )
 
@@ -327,11 +497,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         # StateIncarcerationPeriods
         fake_person_id_to_county_query_result = [
             {'person_id': fake_person_id_1,
-             'county_of_residence': _COUNTY_OF_RESIDENCE},
-            {'person_id': fake_person_id_2,
-             'county_of_residence': _COUNTY_OF_RESIDENCE},
-        ]
-
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
         person_id_to_county_kv = (
             test_pipeline
             | "Read person id to county associations from BigQuery" >>
@@ -339,11 +505,13 @@ class TestIncarcerationPipeline(unittest.TestCase):
             | "Convert to KV" >>
             beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
+
         person_events = (
-            person_and_incarceration_periods |
+            person_and_sentence_groups |
             'Classify Incarceration Events' >>
-            beam.ParDo(pipeline.ClassifyIncarcerationEvents(),
-                       AsDict(person_id_to_county_kv)))
+            beam.ParDo(
+                pipeline.ClassifyIncarcerationEvents(),
+                AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -391,9 +559,30 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.
             SENTENCE_SERVED)
 
-        person_periods = {'person': [fake_person],
-                          'incarceration_periods':
-                              [incarceration_period]}
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    ncic_code='5699',
+                    statute='CIVIL RIGHTS',
+                    offense_date=date(2009, 1, 9)
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=123,
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
+
+        person_entities = {'person': [fake_person],
+                           'sentence_groups': [sentence_group]}
+
         fake_person_id_to_county_query_result = [
             {'person_id': fake_person_id,
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
@@ -404,7 +593,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=
                 last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute='CIVIL RIGHTS'
             ),
             IncarcerationAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -436,8 +626,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Incarceration Events' >>
                   beam.ParDo(
                       pipeline.ClassifyIncarcerationEvents(),
@@ -448,23 +637,20 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyIncarcerationEvents_NoIncarceration(self):
-        """Tests the ClassifyIncarcerationEvents DoFn when the person has no
-        incarceration periods."""
+    def testClassifyIncarcerationEvents_NoSentenceGroups(self):
+        """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
         fake_person = StatePerson.new_with_defaults(
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         person_periods = {'person': [fake_person],
-                          'incarceration_periods':
-                              []}
+                          'sentence_groups': []}
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([(fake_person.person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person.person_id, person_periods)])
                   | 'Identify Incarceration Events' >>
                   beam.ParDo(
                       pipeline.ClassifyIncarcerationEvents(), {})

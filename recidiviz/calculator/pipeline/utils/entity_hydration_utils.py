@@ -21,6 +21,7 @@ from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
 
 
@@ -135,6 +136,70 @@ class SetViolationOnViolationsResponse(beam.DoFn):
                             break
 
                 yield (person_id, violation_response)
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(beam.typehints.Tuple[int, entities.StateSentenceGroup])
+class SetSentencesOnSentenceGroup(beam.DoFn):
+    """Sets a hydrated StateIncarcerationSentences and StateSupervisionSentences onto the corresponding
+    StateSentenceGroups."""
+
+    def process(self, element, *args, **kwargs):
+        """For the incarceration sentences, supervision sentences, and sentence groups of
+        a given person, sets the hydrated sentences onto the corresponding sentence groups.
+
+        Args:
+            element: a tuple containing person_id and a dictionary of the person's StateIncarcerationSentences,
+                StateSupervisionSentences, and StateSentenceGroups
+
+        Yields:
+            For each sentence group, a tuple containing the person_id and the hydrated sentence group
+        """
+        person_id, person_entities = element
+
+        # Get the StateIncarcerationSentences in a list
+        incarceration_sentences = list(person_entities['incarceration_sentences'])
+
+        # Get the StateSupervisionSentences in a list
+        supervision_sentences = list(person_entities['supervision_sentences'])
+
+        # Ge the StateSentenceGroups in a list
+        sentence_groups = list(person_entities['sentence_groups'])
+
+        if sentence_groups:
+            for sentence_group in sentence_groups:
+                if sentence_group.incarceration_sentences:
+                    incarceration_sentence_ids = get_ids(sentence_group.incarceration_sentences)
+
+                    if incarceration_sentences:
+                        sentence_group_incarceration_sentences = [
+                            inc_sent for inc_sent in incarceration_sentences
+                            if inc_sent.incarceration_sentence_id in incarceration_sentence_ids
+                        ]
+
+                        sentence_group.incarceration_sentences = sentence_group_incarceration_sentences
+
+                        for incarceration_sentence in incarceration_sentences:
+                            incarceration_sentence.sentence_group = sentence_group
+
+                if sentence_group.supervision_sentences:
+                    supervision_sentence_ids = get_ids(sentence_group.supervision_sentences)
+
+                    if supervision_sentences:
+                        sentence_group_supervision_sentences = [
+                            sup_sent for sup_sent in supervision_sentences
+                            if sup_sent.supervision_sentence_id in supervision_sentence_ids
+                        ]
+
+                        sentence_group.supervision_sentences = sentence_group_supervision_sentences
+
+                        for supervision_sentence in supervision_sentences:
+                            supervision_sentence.sentence_group = sentence_group
+
+                yield person_id, sentence_group
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

@@ -47,7 +47,7 @@ ALL_INCLUSIONS_DICT = {
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 _COUNTY_OF_RESIDENCE = 'county'
-
+_STATUTE = 'XXXX'
 
 class TestMapIncarcerationCombinations(unittest.TestCase):
     """Tests the map_incarceration_combinations function."""
@@ -120,7 +120,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2000, 3, 31),
                 facility='SAN QUENTIN',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -150,8 +151,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_admissions_same_month(self):
@@ -271,13 +271,15 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
             )
         ]
 
@@ -318,13 +320,15 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 18',
                 county_of_residence=_COUNTY_OF_RESIDENCE
+
             )
         ]
 
@@ -877,6 +881,63 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                    in incarceration_combinations)
         for combo, _ in incarceration_combinations:
             assert combo.get('year') == 2007
+
+    @freeze_time('1900-01-01')
+    def test_map_incarceration_combinations_includes_statute_output(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_events = [
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 3, 31),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
+            ),
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 4, 30),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
+            ),
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 5, 31),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute=_STATUTE
+            )
+        ]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            inclusions=ALL_INCLUSIONS_DICT,
+            calculation_month_limit=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, incarceration_events, ALL_INCLUSIONS_DICT)
+
+        self.assertEqual(expected_combinations_count,
+                         len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
+        assert all(combo.get('most_serious_offense_statute') is not None
+                   for combo, value in incarceration_combinations if combo.get('person_id') is not None)
 
 
 class TestCharacteristicCombinations(unittest.TestCase):
