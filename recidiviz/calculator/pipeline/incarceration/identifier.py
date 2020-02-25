@@ -30,11 +30,11 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge
 
 
 def find_incarceration_events(
-        incarceration_periods: List[StateIncarcerationPeriod],
+        sentence_groups: List[StateSentenceGroup],
         county_of_residence: Optional[str]) -> \
         List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
@@ -49,21 +49,20 @@ def find_incarceration_events(
     Returns:
         A list of IncarcerationEvents for the person.
     """
-
     incarceration_events: List[IncarcerationEvent] = []
 
-    collapsed_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods)
+    incarceration_periods = get_incarceration_periods_from_sentence_groups(sentence_groups)
+
+    collapsed_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
     incarceration_periods = \
         prepare_incarceration_periods_for_calculations(incarceration_periods,
                                                        collapse_transfers=False)
 
     for incarceration_period in incarceration_periods:
-        incarceration_stay_events = \
-            find_end_of_month_state_prison_stays(
-                incarceration_period, county_of_residence
-            )
+        incarceration_stay_events = find_end_of_month_state_prison_stays(
+            incarceration_period, county_of_residence
+        )
 
         if incarceration_stay_events:
             incarceration_events.extend(incarceration_stay_events)
@@ -93,17 +92,13 @@ def find_incarceration_events(
     return incarceration_events
 
 
-def find_end_of_month_state_prison_stays(
-        incarceration_period: StateIncarcerationPeriod,
-        county_of_residence: Optional[str]) -> \
-        List[IncarcerationEvent]:
-    """Finds months for which this person was incarcerated in a state prison
-    on the last day of the month.
+def find_end_of_month_state_prison_stays(incarceration_period: StateIncarcerationPeriod,
+                                         county_of_residence: Optional[str]) -> List[IncarcerationEvent]:
+    """Finds months for which this person was incarcerated in a state prison on the last day of the month.
     """
     incarceration_stay_events: List[IncarcerationEvent] = []
 
-    if incarceration_period.incarceration_type != \
-            StateIncarcerationType.STATE_PRISON:
+    if incarceration_period.incarceration_type != StateIncarcerationType.STATE_PRISON:
         return incarceration_stay_events
 
     admission_date = incarceration_period.admission_date
@@ -118,18 +113,69 @@ def find_end_of_month_state_prison_stays(
     end_of_month = last_day_of_month(admission_date)
 
     while end_of_month <= release_date:
+        most_serious_offense_statute = find_most_serious_prior_offense_statute_in_sentence_group(
+            incarceration_period, end_of_month)
+
         incarceration_stay_events.append(
             IncarcerationStayEvent(
                 state_code=incarceration_period.state_code,
                 event_date=end_of_month,
                 facility=incarceration_period.facility,
-                county_of_residence=county_of_residence
+                county_of_residence=county_of_residence,
+                most_serious_offense_statute=most_serious_offense_statute
             )
         )
 
         end_of_month = last_day_of_month(end_of_month + relativedelta(days=1))
 
     return incarceration_stay_events
+
+
+def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_period, cutoff_date) -> Optional[str]:
+    """Finds the most serious offense that occurred prior to the cutoff date and is within the same sentence groups
+    that are connected to the incarceration period.
+
+    StateCharges have an optional `ncic_code` field that contains the identifying NCIC code for the offense, as well as
+    a `statute` field that describes the offense. NCIC codes decrease in severity as the code increases. E.g. '1010' is
+    a more serious offense than '5599'. Therefore, this returns the statute associated with the lowest ranked NCIC code
+    attached to the charges in the sentence groups that this incarceration period is attached to. Although most NCIC
+    codes are usually numbers, some may contain characters such as the letter 'A', so the codes are sorted
+    alphabetically.
+    """
+    sentence_groups = [
+        incarceration_sentence.sentence_group for incarceration_sentence in incarceration_period.incarceration_sentences
+        if incarceration_sentence.sentence_group
+    ]
+
+    sentence_groups.extend([
+        supervision_sentence.sentence_group for supervision_sentence in incarceration_period.supervision_sentences
+        if supervision_sentence.sentence_group
+    ])
+
+    charges_in_sentence_group: List[StateCharge] = []
+
+    for sentence_group in sentence_groups:
+        if sentence_group.incarceration_sentences:
+            for incarceration_sentence in sentence_group.incarceration_sentences:
+                if incarceration_sentence.charges:
+                    charges_in_sentence_group.extend(incarceration_sentence.charges)
+
+        if sentence_group.supervision_sentences:
+            for supervision_sentence in sentence_group.supervision_sentences:
+                if supervision_sentence.charges:
+                    charges_in_sentence_group.extend(supervision_sentence.charges)
+
+    relevant_charges: List[StateCharge] = []
+
+    if charges_in_sentence_group:
+        for charge in charges_in_sentence_group:
+            if charge.ncic_code and charge.offense_date and charge.offense_date < cutoff_date:
+                relevant_charges.append(charge)
+
+        relevant_charges.sort(key=lambda b: b.ncic_code)
+        return relevant_charges[0].statute
+
+    return None
 
 
 def de_duplicated_admissions(incarceration_periods:
@@ -234,3 +280,44 @@ def release_event_for_period(
         )
 
     return None
+
+
+def get_incarceration_periods_from_sentence_groups(sentence_groups: List[StateSentenceGroup]) -> \
+        List[StateIncarcerationPeriod]:
+    """Returns a list of unique StateIncarcerationPeriods hanging off of the StateSentenceGroups."""
+    incarceration_periods: List[StateIncarcerationPeriod] = []
+
+    incarceration_period_ids: Set[int] = set()
+
+    for sentence_group in sentence_groups:
+        incarceration_sentences = sentence_group.incarceration_sentences
+
+        for incarceration_sentence in incarceration_sentences:
+            if incarceration_sentence.incarceration_periods:
+                for incarceration_period in incarceration_sentence.incarceration_periods:
+                    # TODO(2888): Remove this once these bi-directional relationships are hydrated properly
+                    # Setting this manually because this direction of hydration doesn't happen in the hydration steps
+                    incarceration_period.incarceration_sentences.append(incarceration_sentence)
+
+                    # This is to silence mypy warnings - the incarceration_period_id will always be set
+                    if incarceration_period.incarceration_period_id and \
+                            incarceration_period.incarceration_period_id not in incarceration_period_ids:
+                        incarceration_periods.append(incarceration_period)
+                        incarceration_period_ids.add(incarceration_period.incarceration_period_id)
+
+        supervision_sentences = sentence_group.supervision_sentences
+
+        for supervision_sentence in supervision_sentences:
+            if supervision_sentence.incarceration_periods:
+                for incarceration_period in supervision_sentence.incarceration_periods:
+                    # TODO(2888): Remove this once these bi-directional relationships are hydrated properly
+                    # Setting this manually because this direction of hydration doesn't happen in the hydration steps
+                    incarceration_period.supervision_sentences.append(supervision_sentence)
+
+                    # This is to silence mypy warnings - the incarceration_period_id will always be set
+                    if incarceration_period.incarceration_period_id and \
+                            incarceration_period.incarceration_period_id not in incarceration_period_ids:
+                        incarceration_periods.append(incarceration_period)
+                        incarceration_period_ids.add(incarceration_period.incarceration_period_id)
+
+    return incarceration_periods

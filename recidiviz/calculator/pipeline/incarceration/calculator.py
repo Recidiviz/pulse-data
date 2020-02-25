@@ -197,6 +197,11 @@ def characteristic_combinations(person: StatePerson,
     characteristics_with_person_details = characteristics_with_person_id_fields(
         characteristics, person, 'incarceration')
 
+    if isinstance(incarceration_event, IncarcerationStayEvent):
+        if incarceration_event.most_serious_offense_statute:
+            characteristics_with_person_details['most_serious_offense_statute'] = \
+                incarceration_event.most_serious_offense_statute
+
     all_combinations.append(characteristics_with_person_details)
 
     return all_combinations

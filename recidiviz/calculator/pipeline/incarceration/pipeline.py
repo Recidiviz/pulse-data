@@ -75,6 +75,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType as MetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -110,22 +111,21 @@ class ClassifyIncarcerationEvents(beam.DoFn):
     # pylint: disable=arguments-differ
     def process(self, element, person_id_to_county):
         """Identifies instances of admission and release from incarceration."""
-        _, person_incarceration_periods = element
+        _, person_entities = element
 
-        # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = list(person_incarceration_periods['incarceration_periods'])
+        # Get the StateSentenceGroups as a list
+        sentence_groups = list(person_entities['sentence_groups'])
 
         # Get the StatePerson
-        person = one(person_incarceration_periods['person'])
+        person = one(person_entities['person'])
 
         # Get the person's county of residence, if present
         person_id_to_county_fields = person_id_to_county.get(person.person_id, None)
         county_of_residence = person_id_to_county_fields.get('county_of_residence', None) \
             if person_id_to_county_fields else None
 
-        # Find the IncarcerationEvent from the StateProgramAssignments
-        incarceration_events = identifier.find_incarceration_events(
-            incarceration_periods, county_of_residence)
+        # Find the IncarcerationEvents
+        incarceration_events = identifier.find_incarceration_events(sentence_groups, county_of_residence)
 
         if not incarceration_events:
             logging.info("No valid incarceration events for person with id: %d. Excluding them from the "
@@ -477,7 +477,7 @@ def run(argv=None):
 
     with beam.Pipeline(argv=pipeline_args) as p:
         # Get StatePersons
-        persons = (p | 'Load Persons' >>
+        persons = (p | 'Load StatePersons' >>
                    BuildRootEntity(dataset=query_dataset,
                                    data_dict=None,
                                    root_schema_class=schema.StatePerson,
@@ -485,24 +485,58 @@ def run(argv=None):
                                    unifying_id_field='person_id',
                                    build_related_entities=True))
 
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (p | 'Load IncarcerationPeriods' >>
+        # Get StateSentenceGroups
+        sentence_groups = (p | 'Load StateSentenceGroups' >>
+                           BuildRootEntity(
+                               dataset=query_dataset,
+                               data_dict=None,
+                               root_schema_class=schema.StateSentenceGroup,
+                               root_entity_class=entities.StateSentenceGroup,
+                               unifying_id_field='person_id',
+                               build_related_entities=True
+                           ))
+
+        # Get StateIncarcerationSentences
+        incarceration_sentences = (p | 'Load StateIncarcerationSentences' >>
+                                   BuildRootEntity(
+                                       dataset=query_dataset,
+                                       data_dict=None,
+                                       root_schema_class=schema.StateIncarcerationSentence,
+                                       root_entity_class=entities.StateIncarcerationSentence,
+                                       unifying_id_field='person_id',
+                                       build_related_entities=True
+                                   ))
+
+        # Get StateSupervisionSentences
+        supervision_sentences = (p | 'Load StateSupervisionSentences' >>
                                  BuildRootEntity(
                                      dataset=query_dataset,
                                      data_dict=None,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
+                                     root_schema_class=schema.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field='person_id',
-                                     build_related_entities=False))
+                                     build_related_entities=True
+                                 ))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = (
+        sentences_and_sentence_groups = (
+            {'sentence_groups': sentence_groups,
+             'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences}
+            | 'Group sentences to sentence groups' >>
+            beam.CoGroupByKey()
+        )
+
+        # Set hydrated sentences on the corresponding sentence groups
+        sentence_groups_with_hydrated_sentences = (
+            sentences_and_sentence_groups | 'Set hydrated sentences on sentence groups' >>
+            beam.ParDo(SetSentencesOnSentenceGroup())
+        )
+
+        # Group each StatePerson with their related entities
+        person_and_sentence_groups = (
             {'person': persons,
-             'incarceration_periods':
-                 incarceration_periods}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
+             'sentence_groups': sentence_groups_with_hydrated_sentences}
+            | 'Group StatePerson to SentenceGroups' >>
             beam.CoGroupByKey()
         )
 
@@ -520,7 +554,7 @@ def run(argv=None):
         )
 
         # Identify IncarcerationEvents events from the StatePerson's StateIncarcerationPeriods
-        person_events = (person_and_incarceration_periods | 'Classify Incarceration Events' >>
+        person_events = (person_and_sentence_groups | 'Classify Incarceration Events' >>
                          beam.ParDo(ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
 
         # Get dimensions to include and methodologies to use
