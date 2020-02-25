@@ -161,6 +161,10 @@ def get_month_supervision_type(
         # If there is a supervision sentence with no type set, assume probation
         return StateSupervisionPeriodSupervisionType.PROBATION
 
+    if StateSupervisionType.INTERNAL_UNKNOWN in supervision_sentence_types:
+        # TODO(2647): Make sure this test case is covered
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
     raise ValueError(f'Unexpected supervision_sentence_types {supervision_sentence_types}.')
 
 
