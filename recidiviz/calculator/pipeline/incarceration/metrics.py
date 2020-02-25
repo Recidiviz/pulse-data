@@ -88,6 +88,12 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Population count
     count: int = attr.ib(default=None)
 
+    # Optional characteristics
+
+    # The most serious offense statute connected to the sentence group of the incarceration period from which
+    # this stay event is derived
+    most_serious_offense_statute: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationPopulationMetric']:

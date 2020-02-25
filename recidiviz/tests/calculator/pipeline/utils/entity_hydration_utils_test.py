@@ -34,7 +34,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
-    StateSupervisionViolationTypeEntry
+    StateSupervisionViolationTypeEntry, StateIncarcerationSentence, StateCharge, StateSupervisionSentence, \
+    StateSentenceGroup
 
 
 class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
@@ -211,5 +212,141 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
                   )
 
         assert_that(output, equal_to([(12345, expected_violation_response)]))
+
+        test_pipeline.run()
+
+
+class TestSetSentencesOnSentenceGroup(unittest.TestCase):
+    """Tests the SetSentencesOnSentenceGroup DoFn."""
+    def testSetSentencesOnSentenceGroup(self):
+        """Tests that the hydrated StateIncarcerationSentences and StateSupervisionSentences are set on the
+        StateSentenceGroup."""
+
+        incarceration_sentence_id = 123
+        supervision_sentence_id = 456
+
+        hydrated_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_id,
+            start_date=date(2000, 1, 1),
+            charges=[StateCharge.new_with_defaults(
+                ncic_code='1234'
+            )],
+            incarceration_periods=[
+                StateIncarcerationPeriod.new_with_defaults(
+                    admission_date=date(2000, 3, 2)
+                )
+            ]
+        )
+
+        hydrated_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=supervision_sentence_id,
+            start_date=date(2000, 1, 1),
+            charges=[StateCharge.new_with_defaults(
+                ncic_code='1234'
+            )],
+            incarceration_periods=[
+                StateIncarcerationPeriod.new_with_defaults(
+                    admission_date=date(2000, 3, 2)
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[
+                StateIncarcerationSentence.new_with_defaults(
+                    incarceration_sentence_id=incarceration_sentence_id
+                )
+            ],
+            supervision_sentences=[
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=supervision_sentence_id
+                )
+            ]
+        )
+
+        person_and_entities = (
+            {'incarceration_sentences': [hydrated_incarceration_sentence],
+             'supervision_sentences': [hydrated_supervision_sentence],
+             'sentence_groups': [sentence_group]
+             }
+        )
+
+        hydrated_incarceration_sentence_with_group = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_id,
+            start_date=date(2000, 1, 1),
+            charges=[StateCharge.new_with_defaults(
+                ncic_code='1234'
+            )],
+            incarceration_periods=[
+                StateIncarcerationPeriod.new_with_defaults(
+                    admission_date=date(2000, 3, 2)
+                )
+            ]
+        )
+
+        hydrated_supervision_sentence_with_group = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=supervision_sentence_id,
+            start_date=date(2000, 1, 1),
+            charges=[StateCharge.new_with_defaults(
+                ncic_code='1234'
+            )],
+            incarceration_periods=[
+                StateIncarcerationPeriod.new_with_defaults(
+                    admission_date=date(2000, 3, 2)
+                )
+            ]
+        )
+
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[hydrated_incarceration_sentence_with_group],
+            supervision_sentences=[hydrated_supervision_sentence_with_group]
+        )
+
+        hydrated_incarceration_sentence_with_group.sentence_group = expected_sentence_group
+        hydrated_supervision_sentence_with_group.sentence_group = expected_sentence_group
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(12345, person_and_entities)])
+                  | 'Set Incarceration and Supervision Sentences on SentenceGroups' >>
+                  beam.ParDo(
+                      entity_hydration_utils.SetSentencesOnSentenceGroup())
+                  )
+
+        assert_that(output, equal_to([(12345, expected_sentence_group)]))
+
+        test_pipeline.run()
+
+    def testSetSentencesOnSentenceGroup_NoSentences(self):
+        """Tests that the hydrated StateIncarcerationSentences and StateSupervisionSentences are set on the
+        StateSentenceGroup."""
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[],
+            supervision_sentences=[]
+        )
+
+        person_and_entities = (
+            {'incarceration_sentences': [],
+             'supervision_sentences': [],
+             'sentence_groups': [sentence_group]
+             }
+        )
+
+        expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[],
+            supervision_sentences=[]
+        )
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(12345, person_and_entities)])
+                  | 'Set Incarceration and Supervision Sentences on SentenceGroups' >>
+                  beam.ParDo(
+                      entity_hydration_utils.SetSentencesOnSentenceGroup())
+                  )
+
+        assert_that(output, equal_to([(12345, expected_sentence_group)]))
 
         test_pipeline.run()
