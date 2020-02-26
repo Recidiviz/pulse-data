@@ -19,12 +19,12 @@
 import collections
 from http import HTTPStatus
 from itertools import chain
+import json
 import unittest
 from unittest import mock
 
 import flask
 from google.cloud import bigquery
-from jsonpickle import json
 
 from recidiviz.calculator.query import export_manager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType

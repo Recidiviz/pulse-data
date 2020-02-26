@@ -16,11 +16,11 @@
 # =============================================================================
 """Tests for dataflow_monitor_manager.py."""
 from http import HTTPStatus
+import json
 import unittest
 from unittest import mock
 
 import flask
-from jsonpickle import json
 
 from recidiviz.calculator.pipeline.utils import dataflow_monitor_manager
 

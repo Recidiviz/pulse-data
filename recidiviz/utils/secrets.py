@@ -20,64 +20,59 @@
 import logging
 from typing import Dict
 
-from google.cloud import datastore
-from recidiviz.utils import environment
+from google.cloud import exceptions
+from google.cloud import secretmanager_v1beta1 as secretmanager
+from recidiviz.utils import environment, metadata
 
-_ds = None
+
+__sm = None
 
 
-def ds():
-    global _ds
-    if not _ds:
-        _ds = environment.get_datastore_client()
-    return _ds
+def _sm():
+    global __sm
+    if not __sm:
+        __sm = secretmanager.SecretManagerServiceClient()
+    return __sm
 
 
 @environment.test_only
-def clear_ds():
-    global _ds
-    _ds = None
+def clear_sm():
+    global __sm
+    __sm = None
 
-SECRET_KIND = 'Secret'
+
 CACHED_SECRETS: Dict[str, str] = {}
 
-# TODO(1831): Move secrets to files in GCSFS buckets and read from there
-#  instead so we can more flexibly configure ACLs on different secrets.
-def get_secret(name):
-    """Retrieve secret from local cache or datastore
 
-    Helper function for scrapers to get secrets. First checks local cache, if
-    not found will pull from datastore and populate local cache.
+def get_secret(secret_id):
+    """Retrieve secret from local cache or the Secret Manager.
 
-    Args:
-        name: Name of the secret to retrieve
+    A helper function for processes to retrieve secrets. First checks a local cache: if not found, this will pull from
+    the secret from the Secret Manager API and populate the local cache.
 
-    Returns:
-        Secret value if found otherwise None
+    Returns None if the secret could not be found.
     """
-    value = CACHED_SECRETS.get(name)
+    secret_value = CACHED_SECRETS.get(secret_id)
+    if secret_value:
+        return secret_value
 
-    if not value:
-        query = ds().query(kind=SECRET_KIND)
-        query.add_filter('name', '=', name)
-        result = next(iter(query.fetch()), None)
+    project_id = metadata.project_id()
+    secret_name = _sm().secret_version_path(project_id, secret_id, 'latest')
 
-        if result:
-            value = str(result['value'])
-            CACHED_SECRETS[name] = value
+    try:
+        response = _sm().access_secret_version(secret_name)
+    except exceptions.NotFound:
+        logging.error("Couldn't locate secret: [%s].", secret_id)
+        return None
+    except Exception:
+        logging.error("Couldn't successfully connect to secret manager to retrieve secret: [%s].",
+                      secret_id, exc_info=True)
+        return None
 
-        else:
-            logging.error("Couldn't retrieve env var: [%s].", name)
+    if not response or not response.payload or not response.payload.data:
+        logging.error("Couldn't retrieve secret: [%s].", secret_id)
+        return None
 
-    return value
-
-@environment.local_only
-def clear_secrets():
-    query = ds().query(kind=SECRET_KIND)
-    ds().delete_multi(secret.key for secret in query.fetch())
-
-@environment.local_only
-def set_secret(name, value):
-    secret = datastore.Entity(key=ds().key(SECRET_KIND, name))
-    secret.update({'name': name, 'value': value})
-    ds().put(secret)
+    secret_value = response.payload.data.decode('UTF-8')
+    CACHED_SECRETS[secret_id] = secret_value
+    return secret_value

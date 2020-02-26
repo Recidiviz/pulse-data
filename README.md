@@ -32,7 +32,7 @@ The Recidiviz data system is provided as open source software - for transparency
 help jump-start similar projects in other spaces, and to ensure continuity if Recidiviz itself ever becomes inactive.
 
 If you plan to fork the project for work in the criminal justice space (to ingest from the same systems we are, or similar),
-we ask that you first [contact us](mailto:team@recidiviz.com) for a quick consultation. We work carefully to ensure
+we ask that you first [contact us](mailto:team@recidiviz.org) for a quick consultation. We work carefully to ensure
 that our ingest activities don't disrupt other users' experiences with the public data services we read, but if
 multiple ingest processes are running against the same systems, without knowing about one another, it may place excessive
 strain on them and impact the services those systems provide.
@@ -221,7 +221,7 @@ Individual tests can be run via `pytest filename.py`. To run all tests, go to th
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
-A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install cloud-pusub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
+A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install pubsub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
 
 ```bash
 $ pytest recidiviz --with-emulator
