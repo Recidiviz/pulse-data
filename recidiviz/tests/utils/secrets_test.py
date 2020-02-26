@@ -17,66 +17,74 @@
 
 # pylint: disable=unused-import,wrong-import-order
 
-"""Tests for utils/environment.py."""
+"""Tests for utils/secrets.py."""
+from unittest.mock import patch
 
-
-import pytest
+from google.cloud import exceptions
+from google.cloud.secretmanager_v1beta1.proto import service_pb2
+from google.cloud.secretmanager_v1beta1.types import SecretPayload
+from mock import Mock
 
 from recidiviz.utils import secrets
 
 
-@pytest.mark.usefixtures("emulator")
 class TestSecrets:
     """Tests for the secrets module."""
 
     def teardown_method(self, _test_method):
-        secrets.clear_secrets()
+        secrets.clear_sm()
         secrets.CACHED_SECRETS.clear()
 
     def test_get_in_cache(self):
-        write_to_local('top_track', 'Olson')
-
-        actual = secrets.get_secret('top_track')
-        assert actual == 'Olson'
-
-    def test_get_in_datastore(self):
-        secrets.set_secret('top_track', 'An Eagle In Your Mind')
+        write_to_local('top_track', 'An Eagle In Your Mind')
 
         actual = secrets.get_secret('top_track')
         assert actual == 'An Eagle In Your Mind'
 
-    def test_get_in_neither_with_different_cahce_and_datastore(self):
-        write_to_local('top_track', 'Wildlife Analysis')
-        write_to_local('solid_track', 'Telephasic Workshop')
+    @patch('recidiviz.utils.metadata.project_id')
+    def test_get_not_in_cache(self, mock_project_id):
+        mock_project_id.return_value = 'test-project'
+        payload = SecretPayload(data=bytes('Olson'.encode('UTF-8')))
 
-        actual = secrets.get_secret('other_track')
-        assert actual is None
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=payload)
+        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
+            actual = secrets.get_secret('top_track')
+            assert actual == 'Olson'
 
-    def test_get_in_datastore_with_different_cache(self):
-        write_to_local('top_track', 'Wildlife Analysis')
-        secrets.set_secret('solid_track', 'Kaini Industries')
+    @patch('recidiviz.utils.metadata.project_id')
+    def test_get_not_in_cache_not_found(self, mock_project_id):
+        mock_project_id.return_value = 'test-project'
 
-        actual = secrets.get_secret('solid_track')
-        assert actual == 'Kaini Industries'
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.side_effect = exceptions.NotFound('Could not find it')
+        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
+            actual = secrets.get_secret('top_track')
+            assert actual is None
 
-    def test_get_in_neither(self):
-        actual = secrets.get_secret('top_track')
-        assert actual is None
+    @patch('recidiviz.utils.metadata.project_id')
+    def test_get_not_in_cache_error(self, mock_project_id):
+        mock_project_id.return_value = 'test-project'
 
-    def test_set_overwrite(self):
-        secrets.set_secret('top_track', 'An Eagle In Your Mind')
-        secrets.set_secret('top_track', 'Kaini Industries')
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.side_effect = Exception('Something bad happened')
+        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
+            actual = secrets.get_secret('top_track')
+            assert actual is None
 
-        assert secrets.get_secret('top_track') == 'Kaini Industries'
+    @patch('recidiviz.utils.metadata.project_id')
+    def test_get_not_in_cache_bad_payload(self, mock_project_id):
+        mock_project_id.return_value = 'test-project'
 
-    def test_clear(self):
-        secrets.set_secret('top_track', 'An Eagle In Your Mind')
-        secrets.set_secret('solid_track', 'Kaini Industries')
-
-        secrets.clear_secrets()
-
-        assert secrets.get_secret('top_track') is None
-        assert secrets.get_secret('solid_track') is None
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=None)
+        with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
+            actual = secrets.get_secret('top_track')
+            assert actual is None
 
 
 def write_to_local(name, value):

@@ -15,6 +15,7 @@ coveralls = "*"
 apache-beam = {extras = ["gcp", "test"], version = "==2.13.0"}
 freezegun = "*"
 ipdb = "*"
+nose = "*"
 
 [packages]
 callee = "*"
@@ -70,6 +71,7 @@ yq = "*"
 oauth2client = "==3.0.0"
 google-cloud-storage = "*"
 progress="*"
+google-cloud-secret-manager = "*"
 
 [requires]
 python_version = "3.7"

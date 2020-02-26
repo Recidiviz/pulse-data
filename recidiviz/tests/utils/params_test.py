@@ -17,19 +17,20 @@
 
 """Tests for utils/params.py."""
 import unittest
+from typing import Dict
 
 from werkzeug.datastructures import MultiDict
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import params
 
 
-PARAMS = MultiDict([('region', 'us_mo'),
-                    ('scrape_type', constants.ScrapeType.BACKGROUND),
-                    ('region', 'us_wa'),
-                    ('false_bool_param', 'False'),
-                    ('true_bool_param', 'true'),
-                    ('malformed_bool_param', 'asdf'),
-                    ('empty_bool_param', '')])
+PARAMS: Dict = MultiDict([('region', 'us_mo'),
+                          ('scrape_type', constants.ScrapeType.BACKGROUND),
+                          ('region', 'us_wa'),
+                          ('false_bool_param', 'False'),
+                          ('true_bool_param', 'true'),
+                          ('malformed_bool_param', 'asdf'),
+                          ('empty_bool_param', '')])
 
 
 class TestParams(unittest.TestCase):

@@ -28,7 +28,7 @@ import yaml
 
 import recidiviz
 from recidiviz.ingest.scrape import sessions
-from recidiviz.utils import secrets, pubsub_helper
+from recidiviz.utils import pubsub_helper
 
 
 def pytest_configure():
@@ -59,7 +59,6 @@ def emulator(request):
     # running as they also impact ndb/testbed behavior
     prior_environs = _write_emulator_environs()
     sessions.clear_ds()
-    secrets.clear_ds()
     pubsub_helper.clear_publisher()
     pubsub_helper.clear_subscriber()
 
@@ -69,7 +68,6 @@ def emulator(request):
 
         _restore_environs(prior_environs)
         sessions.clear_ds()
-        secrets.clear_ds()
         pubsub_helper.clear_publisher()
         pubsub_helper.clear_subscriber()
 

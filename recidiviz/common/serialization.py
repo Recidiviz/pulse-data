@@ -32,6 +32,7 @@ def serializable_to_datetime(date_str: str) -> datetime.datetime:
     return datetime.datetime.fromisoformat(date_str)
 
 
+# pylint:disable=unnecessary-lambda
 def attr_to_json_dict(attr_obj: attr.Attribute) -> Dict[str, Any]:
     """Converts an attr-defined object to a JSON dict. The resulting dict should
     be unstructured using |attr_from_json_dict| below, which uses the __module__
@@ -40,7 +41,7 @@ def attr_to_json_dict(attr_obj: attr.Attribute) -> Dict[str, Any]:
     converter = cattr.Converter()
     converter.register_unstructure_hook(
         datetime.datetime,
-        lambda d, _: datetime_to_serializable(d))
+        lambda d: datetime_to_serializable(d))
     attr_dict = cattr.unstructure(attr_obj)
     attr_dict['__classname__'] = attr_obj.__class__.__name__
     attr_dict['__module__'] = attr_obj.__module__

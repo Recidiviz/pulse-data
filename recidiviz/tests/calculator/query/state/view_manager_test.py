@@ -67,6 +67,7 @@ class ViewManagerTest(unittest.TestCase):
         # we have initialized the database engine for that schema in setUp. In
         # production code, server db engines are initialized globally as part of
         # startup, so this will generally not be an issue.
+        # pylint: disable=import-outside-toplevel
         from recidiviz.calculator.query.state import view_manager
 
         view_manager.create_dataset_and_update_views(
