@@ -9,7 +9,6 @@ child_key_mappings:
   TA_TYPE: state_supervision_period.termination_reason
   TB_CTY: state_supervision_period.county_code
   JUDGE: state_agent.full_name
-  REV_NOFF_YN: state_supervision_violation.violation_type
   REV_DATE: state_supervision_violation_response.response_date
   RevoDispo: state_supervision_violation_response.revocation_type
 
@@ -21,8 +20,8 @@ primary_key:
 
 keys_to_ignore:
   - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
-  - SENT_YY               # Handled manually within us_nd_scraper
-  - SENT_MM               # Handled manually within us_nd_scraper
+  - SENT_YY               # Handled manually within us_nd_controller
+  - SENT_MM               # Handled manually within us_nd_controller
   - TD_PUB_AST            # TODO(1866) Do we want to track qualitative attrs?
   - TE_EMPLOY
   - TF_RESPNSE
@@ -32,12 +31,13 @@ keys_to_ignore:
   - TJ_INCOME
   - TK_LAST_GR
   - TL_LIV_ARR
-  - NEW_OFF               # Handled manually within us_nd_scraper
-  - NEW_OFF2              # Handled manually within us_nd_scraper
-  - NEW_OFF3              # Handled manually within us_nd_scraper
-  - REV_ABSC_YN           # Handled manually within us_nd_scraper
-  - REV_TECH_YN           # Handled manually within us_nd_scraper
-  - TERMINATING_OFFICER   # Handled manually within us_nd_scraper
+  - NEW_OFF               # Handled manually within us_nd_controller
+  - NEW_OFF2              # Handled manually within us_nd_controller
+  - NEW_OFF3              # Handled manually within us_nd_controller
+  - REV_NOFF_YN           # Handled manually within us_nd_controller
+  - REV_ABSC_YN           # Handled manually within us_nd_controller
+  - REV_TECH_YN           # Handled manually within us_nd_controller
+  - TERMINATING_OFFICER   # Handled manually within us_nd_controller
   - LAST_UPDATE           # No apparent use for these at the moment
   - INACTIVEDATE          # No longer in use within source
   - RECORDCRDATE          # No apparent use for these at the moment
