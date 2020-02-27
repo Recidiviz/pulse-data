@@ -69,7 +69,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     VIOLATION_KEY_SEQ, CITATION_ID_PREFIX, CITATION_KEY_SEQ, DOC_ID, CYCLE_ID, \
     SENTENCE_KEY_SEQ, FIELD_KEY_SEQ, \
     SUPERVISION_SENTENCE_LENGTH_MONTHS, SUPERVISION_SENTENCE_LENGTH_DAYS, \
-    PERIOD_OPEN_CODE, INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
+    INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
     INCARCERATION_SENTENCE_PROJECTED_MAX_DATE, \
     SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
@@ -87,7 +87,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import \
     gen_map_ymd_counts_to_max_length_field_posthook, \
     gen_set_is_life_sentence_hook, \
     gen_convert_person_ids_to_external_id_objects, \
-    gen_set_field_as_concatenated_values_hook, _concatenate_col_values
+    gen_set_field_as_concatenated_values_hook
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StatePersonExternalId, StateSentenceGroup, StateCharge, \
@@ -223,214 +223,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionType.PROBATION: [
             'PROBATION'
         ],
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
-            'XX',  # Unknown (Not Associated)
-            'XX-BP',
-            'XX-CR',
-            'XX-IW',
-            'XX-PB',
-            'XX-PR',
-            'XX-XX',
-        ],
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-            # TODO(2663): Once we do a stage rerun with changes from #2754,
-            #  check to see if any of these TAK158 statuses still even end up
-            #  as raw text and remove from overrides if not.
-            'IB-BP',
-            'IB-CR',
-            'IB-CT',
-            'IB-IB',
-            'IB-IS',
-            'IB-IW',
-            'IB-PB',
-            'IB-PR',
-            'IB-RF',
-            'NA',  # New Admission
-            'NA-C',
-            'NA-BH',
-            'NA-BP',
-            'NA-CR',
-            'NA-CT',
-            'NA-DV',
-            'NA-EM',
-            'NA-FC',
-            'NA-IB',
-            'NA-IC',
-            'NA-IE',
-            'NA-IN',
-            'NA-IP',
-            'NA-IS',
-            'NA-IW',
-            'NA-MC',
-            'NA-NA',
-            'NA-RF',
-            'NA-UC',
-            'NA-XX',
-            'TR',  # Other State
-            'TR-BP',
-            'TR-IW',
-            # All New Court Commitment (10I1*) statuses from TAK026
-            '10I1000',  # New Court Comm-Institution
-            '10I1010',  # New Court Comm-120 Day
-            '10I1020',  # New Court Comm-Long Term Treat
-            '10I1030',  # New Court Comm-Reg Dis Prog
-            '10I1040',  # New Court Comm-120 Day Treat
-            '10I1050',  # New Court Commit-SOAU
-            '10I1060',  # New Court Commit-MH 120 Day
-        ],
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
-            'IE-IE',  # Institutional Escape
-            'IW-IE',  # Institutional Walkaway
-            'IW-IW',
-        ],
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
-            # These statuses start periods that come directly after board hold
-            # periods.
-            *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
-            # TODO(2663): Once we do a stage rerun with changes from #2754,
-            #  check to see if any of these TAK158 statuses still even end up
-            #  as raw text and remove from overrides if not.
-            'FB-BP',
-            'FB-CR',
-            'FF-BP',
-            'FF-CR',
-            'FM-BP',
-            'FM-CR',
-            'FN-BP',
-            'FN-CR',
-            'FT-BP',
-            'FT-CR',
-            # All Parole Revocation (40I1*) statuses from TAK026
-            '40I1010',  # Parole Ret-Tech Viol
-            '40I1020',  # Parole Ret-New Felony-Viol
-            '40I1021',  # Parole Ret-No Violation
-            '40I1025',  # Medical Parole Ret - Rescinded
-            '40I1040',  # Parole Ret-OTST Decision Pend
-            '40I1050',  # Parole Viol-Felony Law Viol
-            '40I1055',  # Parole Viol-Misd Law Viol
-            '40I1060',  # Parole Ret-Treatment Center
-            '40I1070',  # Parole Return-Work Release
-            # All Conditional Release Return (40I3*) statuses from TAK026
-            '40I3010',  # CR Ret-Tech Viol
-            '40I3020',  # CR Ret-New Felony-Viol
-            '40I3021',  # CR Ret-No Violation
-            '40I3040',  # CR Ret-OTST Decision Pend
-            '40I3050',  # CR Viol-Felony Law Viol
-            '40I3055',  # CR Viol-Misd Law Viol
-            '40I3060',  # CR Ret-Treatment Center
-            '40I3070',  # CR Return-Work Release
-        ],
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
-            # TODO(2663): Once we do a stage rerun with changes from #2754,
-            #  check to see if any of these TAK158 statuses still even end up
-            #  as raw text and remove from overrides if not.
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FB-EM',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FB-IE',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FB-IW',
-            'FB-PB',
-            'FB-PR',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FB-RF',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FF-EM',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FF-IE',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FF-IW',
-            'FF-PB',
-            'FF-PR',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FF-RF',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FM-IW',
-            'FM-PB',
-            'FM-PR',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FM-RF',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FN-IE',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FN-IW',
-            'FN-PB',
-            'FN-PR',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FT-EM',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FT-IE',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FT-IW',
-            'FT-PB',
-            'FT-PR',
-            # TODO(2663): Set this accurately and don't assume PROBATION
-            'FT-RF',
-            'NA-PB',   # New Admission - Probation Revocation
-            'NA-PR',   # New Admission - Probation Revocation Return
-            # All Probation Revocation (40I2*) statuses from TAK026
-            '40I2000',  # Prob Rev-Technical
-            '40I2005',  # Prob Rev-New Felony Conv
-            '40I2010',  # Prob Rev-New Misd Conv
-            '40I2015',  # Prob Rev-Felony Law Viol
-            '40I2020',  # Prob Rev-Misd Law Viol
-            '40I2025',  # Prob Rev-Tech-Long Term Treat
-            '40I2030',  # Prob Rev-New Felon-Lng Trm Trt
-            '40I2035',  # Prob Rev-New Misd-Lng Term Trt
-            '40I2040',  # Prob Rev-Felony Law-Lng Tm Trt
-            '40I2045',  # Prob Rev-Misd Law-Lng Trm Trt
-            '40I2050',  # Prob Rev-Technical-120Day
-            '40I2055',  # Prob Rev-New Felony-120Day
-            '40I2060',  # Prob Rev-New Misd-120Day
-            '40I2065',  # Prob Rev-Felony Law-120Day
-            '40I2070',  # Prob Rev-Misd Law Viol-120Day
-            '40I2075',  # Prob Rev-Tech-Reg Disc Program
-            '40I2080',  # Prob Rev-New Fel Conv-Reg Dis
-            '40I2085',  # Prob Rev-New Mis Conv-Reg Disc
-            '40I2090',  # Prob Rev-Fel Law Vio-Reg Disc
-            '40I2095',  # Prob Rev-Misd Law Vio-Reg Disc
-            '40I2100',  # Prob Rev-Tech-120 Day Treat
-            '40I2105',  # Prob Rev-New Felon-120 Day Trt
-            '40I2110',  # Prob Rev-New Misd-120 Day Trt
-            '40I2115',  # Prob Rev-Fel Law-120 Day Treat
-            '40I2120',  # Prob Rev-Mis Law-120 Day Treat
-            '40I2130',  # Prob Rev-Tech-SOAU
-            '40I2135',  # Prob Rev-New Felony-SOAU
-            '40I2145',  # Prob Rev-Felony Law-SOAU
-            '40I2150',  # Prob Rev-Misdemeanor Law-SOAU
-            '40I2160',  # Prob Rev-Tech-MH 120 Day
-            '40I2300',  # Prob Rev Ret-Technical
-            '40I2305',  # Prob Rev Ret-New Felony Conv
-            '40I2310',  # Prob Rev Ret-New Misd Conv
-            '40I2315',  # Prob Rev Ret-Felony Law Viol
-            '40I2320',  # Prob Rev Ret-Misd Law Viol
-            '40I2325',  # Prob Rev Ret-Tech-Lng Term Trt
-            '40I2330',  # Prob Rev Ret-New Fel-Lg Tm Trt
-            '40I2335',  # Prob Rev Ret-New Mis-Lg Tm Trt
-            '40I2340',  # Prob Rev Ret-Fel Law-Lg Tm Trt
-            '40I2345',  # Prob Rev Ret-Mis Law-Lg Tm Trt
-            '40I2350',  # Prob Rev Ret-Technical-120 Day
-            '40I2355',  # Prob Rev Ret-New Fel-120 Day
-            '40I2365',  # Prob Rev Ret-Fel Law-120 Day
-            '40I2370',  # Prob Rev Ret-Mis Law-120 Day
-            '40I2375',  # Prob Rev Ret-Tech-Reg Disc Pgm
-            '40I2380',  # Prob Rev Ret-New Fel-Reg Disc
-            '40I2390',  # Prob Rev Ret-Fel Law-Reg Disc
-            '40I2400',  # Prob Rev Ret-Tech-120-Day Trt
-            '40I2405',  # Prob Rev Ret-New Fel-120-D Trt
-            '40I2410',  # Prob Rev Ret-New Mis-120-D Trt
-            '40I2415',  # Prob Rev Ret-Fel Law-120-D Trt
-            '40I2420',  # Prob Rev Ret-Mis Law-120-D Trt
-            '40I2430',  # Prob Rev Ret-Technical-SOAU
-            '40I2435',  # Prob Rev Ret-New Fel-SOAU
-            '40I2450',  # Prob Rev Ret-Mis Law-SOAU
-        ],
-        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: [
-            'IB-BH',  # Institutional Administrative - Board Hold
-            # All Board Holdover incarceration admission statuses (40I0*)
-            '40I0050',  # Board Holdover
-        ],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'BP-FF',  # Board Parole
             'BP-FM',
             'BP-FT',
@@ -450,6 +244,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'RT-BH',  # Board Return
         ],
         StateIncarcerationPeriodReleaseReason.COURT_ORDER: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'IB-EI',  # Institutional Administrative
             'IB-ER',
             'IB-IB',
@@ -460,24 +255,29 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'OR-OR',  # Off Records; Suspension
         ],
         StateIncarcerationPeriodReleaseReason.DEATH: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'DE-DE',  # Death
             'DE-XX',
         ],
         StateIncarcerationPeriodReleaseReason.ESCAPE: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'IE-IE',  # Institutional Escape
             'IE-XX',
             'IW-IW',  # Institutional Walkaway
             'IW-XX',
         ],
         StateIncarcerationPeriodReleaseReason.EXECUTION: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'DE-EX',  # Execution
         ],
         StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'XX-XX',  # Unknown (Not Associated)
             '??-??',  # Code Unknown
             '??-XX',
         ],
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             # These statuses indicate an end to a period of temporary hold since
             # it has now been determined that the person has had their parole
             # revoked. With the exception of a few rare cases, these
@@ -486,6 +286,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
+            # TODO(2898) - Use TAK026 statuses to populate release reason
             'DC-DC',  # Discharge
             'DC-DO',  # Inst. Converted-Inactive
             'DC-XX',  # Discharge - Unknown
@@ -642,7 +443,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._gen_clear_magical_date_value(
                 'release_date', PERIOD_RELEASE_DATE, self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod),
             self._set_incarceration_period_status,
-            self._override_incarceration_period_admission_reason_if_necessary,
             gen_set_field_as_concatenated_values_hook(
                 StateIncarcerationPeriod, 'release_reason', [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
             self._create_source_violation_response,
@@ -1246,22 +1046,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                             obj.__setattr__(field_name, None)
 
         return _clear_magical_date_values
-
-    def _override_incarceration_period_admission_reason_if_necessary(
-            self,
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                admission_reason = obj.admission_reason
-                if admission_reason is None:
-                    logging.warning('Unexpected empty admission reason on incarceration period')
-                    continue
-                if not self.get_enum_overrides().parse(admission_reason, StateIncarcerationPeriodAdmissionReason):
-                    field_value = _concatenate_col_values(row, [PERIOD_OPEN_CODE, PERIOD_CLOSE_CODE_SUBTYPE])
-                    obj.admission_reason = field_value
 
     def _create_source_violation_response(self,
                                           _file_tag: str,

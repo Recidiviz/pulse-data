@@ -670,22 +670,18 @@ INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
     )
     """
 
-STATUSES_BY_SENTENCE_AND_DATE_FRAGMENT = \
+STATUSES_BY_DATE_FRAGMENT = \
     """
     all_scd_codes_by_date AS (
-        -- All SCD status codes grouped by DOC, CYC, SEO and SY (Date).
-        -- Note about joining this with TAK158 (body status): Because we're
-        -- grouping by SEO, we're excluding any statuses that are not associated
-        -- with the sentence arbitrarily picked by the body status table.
+        -- All SCD status codes grouped by DOC, CYC, and SY (Date).
         SELECT
-            BV$DOC,
-            BV$CYC,
-            BV$SEO,
+            BW$DOC,
+            BW$CYC,
             BW$SY AS STATUS_DATE,
             LISTAGG(BW$SCD, ',') AS STATUS_CODES
         FROM
-            statuses_by_sentence
-        GROUP BY BV$DOC, BV$CYC, BV$SEO, BW$SY
+            status_bw
+        GROUP BY BW$DOC, BW$CYC, BW$SY
     )
     """
 
@@ -696,7 +692,7 @@ TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     f"""
     -- tak158_tak023_tak026_incarceration_period_from_incarceration_sentence
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
-    {STATUSES_BY_SENTENCE_AND_DATE_FRAGMENT},
+    {STATUSES_BY_DATE_FRAGMENT},
     incarceration_subcycle_from_incarceration_sentence AS (
         SELECT
             sentence_inst_ids.BT$DOC,
@@ -737,16 +733,14 @@ TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
     LEFT OUTER JOIN
         all_scd_codes_by_date start_codes
     ON
-        incarceration_periods_from_incarceration_sentence.F1$DOC = start_codes.BV$DOC AND
-        incarceration_periods_from_incarceration_sentence.F1$CYC = start_codes.BV$CYC AND
-        incarceration_periods_from_incarceration_sentence.F1$SEO = start_codes.BV$SEO AND
+        incarceration_periods_from_incarceration_sentence.F1$DOC = start_codes.BW$DOC AND
+        incarceration_periods_from_incarceration_sentence.F1$CYC = start_codes.BW$CYC AND
         incarceration_periods_from_incarceration_sentence.SUB_SUBCYCLE_START_DT = start_codes.STATUS_DATE
     LEFT OUTER JOIN
         all_scd_codes_by_date end_codes
     ON
-        incarceration_periods_from_incarceration_sentence.F1$DOC = end_codes.BV$DOC AND
-        incarceration_periods_from_incarceration_sentence.F1$CYC = end_codes.BV$CYC AND
-        incarceration_periods_from_incarceration_sentence.F1$SEO = end_codes.BV$SEO AND
+        incarceration_periods_from_incarceration_sentence.F1$DOC = end_codes.BW$DOC AND
+        incarceration_periods_from_incarceration_sentence.F1$CYC = end_codes.BW$CYC AND
         incarceration_periods_from_incarceration_sentence.SUB_SUBCYCLE_END_DT = end_codes.STATUS_DATE
     ORDER BY BT$DOC, BT$CYC, BT$SEO, F1$SQN;
     """
@@ -757,7 +751,7 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
 
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
     {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
-    {STATUSES_BY_SENTENCE_AND_DATE_FRAGMENT},
+    {STATUSES_BY_DATE_FRAGMENT},
     incarceration_subcycle_from_supervision_sentence AS (
         SELECT
             non_investigation_probation_sentence_ids.BU$DOC,
@@ -797,16 +791,14 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     LEFT OUTER JOIN
         all_scd_codes_by_date start_codes
     ON
-        incarceration_periods_from_supervision_sentence.F1$DOC = start_codes.BV$DOC AND
-        incarceration_periods_from_supervision_sentence.F1$CYC = start_codes.BV$CYC AND
-        incarceration_periods_from_supervision_sentence.F1$SEO = start_codes.BV$SEO AND
+        incarceration_periods_from_supervision_sentence.F1$DOC = start_codes.BW$DOC AND
+        incarceration_periods_from_supervision_sentence.F1$CYC = start_codes.BW$CYC AND
         incarceration_periods_from_supervision_sentence.SUB_SUBCYCLE_START_DT = start_codes.STATUS_DATE
     LEFT OUTER JOIN
         all_scd_codes_by_date end_codes
     ON
-        incarceration_periods_from_supervision_sentence.F1$DOC = end_codes.BV$DOC AND
-        incarceration_periods_from_supervision_sentence.F1$CYC = end_codes.BV$CYC AND
-        incarceration_periods_from_supervision_sentence.F1$SEO = end_codes.BV$SEO AND
+        incarceration_periods_from_supervision_sentence.F1$DOC = end_codes.BW$DOC AND
+        incarceration_periods_from_supervision_sentence.F1$CYC = end_codes.BW$CYC AND
         incarceration_periods_from_supervision_sentence.SUB_SUBCYCLE_END_DT = end_codes.STATUS_DATE
     ORDER BY BU$DOC, BU$CYC, BU$SEO, F1$SQN;
     """

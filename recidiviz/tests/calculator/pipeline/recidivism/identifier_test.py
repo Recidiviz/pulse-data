@@ -513,7 +513,8 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
         AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
-        AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION
+        AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: ReincarcerationReturnType.NEW_ADMISSION
     }
 
 
@@ -539,7 +540,8 @@ SHOULD_INCLUDE_WITH_RETURN_TYPE: \
      ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: {},
      ReleaseReason.RELEASED_IN_ERROR: {},
      ReleaseReason.SENTENCE_SERVED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.TRANSFER: {}}
+     ReleaseReason.TRANSFER: {},
+     ReleaseReason.TRANSFERRED_OUT_OF_STATE: {}}
 
 
 class TestShouldIncludeInReleaseCohort(unittest.TestCase):
@@ -626,7 +628,8 @@ class TestGetReturnType(unittest.TestCase):
                                         AdmissionReason.EXTERNAL_UNKNOWN,
                                         AdmissionReason.INTERNAL_UNKNOWN,
                                         AdmissionReason.NEW_ADMISSION,
-                                        AdmissionReason.TRANSFER):
+                                        AdmissionReason.TRANSFER,
+                                        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE):
                     assert return_type == \
                         ReincarcerationReturnType.NEW_ADMISSION
                 elif admission_reason in (AdmissionReason.PAROLE_REVOCATION,
@@ -747,7 +750,8 @@ class TestGetFromSupervisionType(unittest.TestCase):
                                         AdmissionReason.EXTERNAL_UNKNOWN,
                                         AdmissionReason.INTERNAL_UNKNOWN,
                                         AdmissionReason.NEW_ADMISSION,
-                                        AdmissionReason.TRANSFER]:
+                                        AdmissionReason.TRANSFER,
+                                        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
                     assert not from_supervision_type
                 elif admission_reason in [AdmissionReason.PAROLE_REVOCATION,
                                           AdmissionReason.PROBATION_REVOCATION,

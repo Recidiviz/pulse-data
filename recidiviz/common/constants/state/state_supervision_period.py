@@ -23,7 +23,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-# TODO(2647): Update supervision period objects in schema to use this type
+# TODO(2891): Update supervision period objects in schema to use this type
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     """Enum that denotes what type of supervision someone is serving at a moment in time."""
     # If the person is serving both probation and parole at the same time, this may be modeled with just one supervision

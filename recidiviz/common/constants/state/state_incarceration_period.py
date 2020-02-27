@@ -60,6 +60,8 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
     RETURN_FROM_ESCAPE = state_enum_strings.state_incarceration_period_admission_reason_return_from_escape
     TEMPORARY_CUSTODY = state_enum_strings.state_incarceration_period_admission_reason_temporary_custody
     TRANSFER = state_enum_strings.state_incarceration_period_admission_reason_transfer
+    TRANSFERRED_FROM_OUT_OF_STATE = \
+        state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state
 
     @staticmethod
     def _get_default_map():
@@ -84,6 +86,7 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     RELEASED_IN_ERROR = state_enum_strings.state_incarceration_period_release_reason_released_in_error
     SENTENCE_SERVED = state_enum_strings.state_incarceration_period_release_reason_sentence_served
     TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
+    TRANSFERRED_OUT_OF_STATE = state_enum_strings.state_incarceration_period_release_reason_transferred_out_of_state
 
     @staticmethod
     def _get_default_map():
@@ -148,7 +151,8 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'RETURN FROM MEDICAL': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'TEMPORARY CUSTODY': StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-    'TRANSFER': StateIncarcerationPeriodAdmissionReason.TRANSFER
+    'TRANSFER': StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    'TRANSFERRED FROM OUT OF STATE': StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
 }
 
 _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
@@ -196,6 +200,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'MEDICAL': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRANSFER': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRN': StateIncarcerationPeriodReleaseReason.TRANSFER,
+    'TRANSFERRED OUT OF STATE': StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE,
 }
 
 _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {

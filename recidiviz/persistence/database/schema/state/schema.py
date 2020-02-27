@@ -209,6 +209,7 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_return_from_escape,
     state_enum_strings.state_incarceration_period_admission_reason_temporary_custody,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
+    state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state,
     name='state_incarceration_period_admission_reason')
 
 state_incarceration_period_release_reason = Enum(
@@ -224,6 +225,7 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_released_in_error,
     state_enum_strings.state_incarceration_period_release_reason_sentence_served,
     state_enum_strings.state_incarceration_period_release_reason_transfer,
+    state_enum_strings.state_incarceration_period_release_reason_transferred_out_of_state,
     name='state_incarceration_period_release_reason'
 )
 
