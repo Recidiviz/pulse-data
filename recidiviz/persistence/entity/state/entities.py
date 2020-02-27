@@ -444,6 +444,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
+    # TODO(2891): Make this of type StateSupervisionSentenceType (new type)
     supervision_type: Optional[StateSupervisionType] = attr.ib()
     supervision_type_raw_text: Optional[str] = attr.ib()
 

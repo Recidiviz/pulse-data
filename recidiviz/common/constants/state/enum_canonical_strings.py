@@ -125,6 +125,7 @@ state_incarceration_period_admission_reason_return_from_erroneous_release = 'RET
 state_incarceration_period_admission_reason_return_from_escape = 'RETURN_FROM_ESCAPE'
 state_incarceration_period_admission_reason_temporary_custody = 'TEMPORARY_CUSTODY'
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
+state_incarceration_period_admission_reason_transferred_from_out_of_state = 'TRANSFERRED_FROM_OUT_OF_STATE'
 
 state_incarceration_period_release_reason_commuted = 'COMMUTED'
 state_incarceration_period_release_reason_compassionate = 'COMPASSIONATE'
@@ -137,6 +138,7 @@ state_incarceration_period_release_reason_released_from_temporary_custody = 'REL
 state_incarceration_period_release_reason_released_in_error = 'RELEASED_IN_ERROR'
 state_incarceration_period_release_reason_sentence_served = 'SENTENCE_SERVED'
 state_incarceration_period_release_reason_transfer = 'TRANSFER'
+state_incarceration_period_release_reason_transferred_out_of_state = 'TRANSFERRED_OUT_OF_STATE'
 
 # state_parole_decision.py
 state_parole_decision_parole_denied = 'PAROLE_DENIED'

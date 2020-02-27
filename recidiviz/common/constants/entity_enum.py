@@ -85,8 +85,7 @@ class EntityEnumMeta(EnumMeta):
                 return inst
         return None
 
-    def _parse_to_enum(cls, label: str, enum_overrides: 'EnumOverrides') \
-            -> Optional['EntityEnum']:
+    def _parse_to_enum(cls, label: str, enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
         """Attempts to parse |label| using the default map of |cls| and the
         provided |override_map|. Ignores punctuation by treating punctuation as
         a separator, e.g. `(N/A)` will map to the same value as `N A`."""
@@ -94,7 +93,15 @@ class EntityEnumMeta(EnumMeta):
         if enum_overrides.should_ignore(label, cls):
             return None
 
-        overridden_value = enum_overrides.parse(label, cls)
+        try:
+            overridden_value = enum_overrides.parse(label, cls)
+        except Exception as e:
+            if isinstance(e, EnumParsingError):
+                raise e
+
+            # If a mapper throws another type of error, convert it to an enum parsing error
+            raise EnumParsingError(cls, label)
+
         if overridden_value is not None:
             return overridden_value
 

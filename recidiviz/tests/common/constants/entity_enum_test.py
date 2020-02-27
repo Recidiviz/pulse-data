@@ -17,6 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 import unittest
+from typing import Optional
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -103,3 +104,16 @@ class EntityEnumTest(unittest.TestCase):
     def testParseFromCanonicalString_Lowercase(self):
         with self.assertRaises(EnumParsingError):
             FakeEntityEnum.parse_from_canonical_string('strawberry')
+
+    def testMapperErrorsCaughtAndThrownAsEntityMatchingError(self):
+
+        def very_bad_mapper_that_asserts(_raw_text: str) -> Optional[FakeEntityEnum]:
+            raise ValueError('Something bad happened!')
+
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add_mapper(very_bad_mapper_that_asserts, FakeEntityEnum)
+
+        overrides = overrides_builder.build()
+
+        with self.assertRaises(EnumParsingError):
+            FakeEntityEnum.parse('A STRING TO PARSE', overrides)
