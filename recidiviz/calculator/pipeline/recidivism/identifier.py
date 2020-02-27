@@ -202,7 +202,7 @@ def for_last_incarceration_period(
         # If the person was released from this incarceration period but was not
         # meant to be released, do not include them in the release cohort.
         return None
-    if release_reason == ReleaseReason.TRANSFER:
+    if release_reason in (ReleaseReason.TRANSFER, ReleaseReason.TRANSFERRED_OUT_OF_STATE):
         # If the person was released from this incarceration period because they
         # were transferred elsewhere, do not include them in the release cohort.
         return None
@@ -349,6 +349,9 @@ def should_include_in_release_cohort(
         # If the person was released from this incarceration period because they
         # were transferred elsewhere, do not include them in the release cohort.
         return False
+    if release_reason == ReleaseReason.TRANSFERRED_OUT_OF_STATE:
+        # Releases where the person has been transferred out of state don't really count as true releases.
+        return False
     if release_reason == ReleaseReason.COURT_ORDER:
         # If the person was released from this incarceration period due to a
         # court order, do not include them in the release cohort.
@@ -383,9 +386,7 @@ def should_include_in_release_cohort(
                      f" {release_reason}.")
 
 
-def get_return_type(
-        reincarceration_admission_reason: AdmissionReason) -> \
-        ReincarcerationReturnType:
+def get_return_type(reincarceration_admission_reason: AdmissionReason) -> ReincarcerationReturnType:
     """Returns the return type for the reincarceration admission reason."""
 
     if reincarceration_admission_reason == AdmissionReason.ADMITTED_IN_ERROR:
@@ -402,43 +403,34 @@ def get_return_type(
         return ReincarcerationReturnType.REVOCATION
     if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
         return ReincarcerationReturnType.REVOCATION
-    if reincarceration_admission_reason == AdmissionReason.TRANSFER:
-        # This should be a rare case, but we are considering this a type of
-        # new admission recidivism because this person became reincarcerated at
-        # some point after being released, and this is the most likely return
-        # type in most cases in the absence of further information."
+    if reincarceration_admission_reason == AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE:
         return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason in (
-            AdmissionReason.RETURN_FROM_ESCAPE,
-            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
-        # This should never happen. Should have been filtered by
-        # should_include_in_release_cohort function. Throw error.
-        raise ValueError("should_include_in_release_cohort is not effectively"
-                         " filtering. Found unexpected admission_reason of:"
-                         f" {reincarceration_admission_reason}")
-    if reincarceration_admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
-        # This should never happen. Should have been filtered by
-        # validate_sort_and_collapse_incarceration_periods function. Throw error
-        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
-                         "not effectively filtering. Found unexpected "
-                         "admission_reason of: "
-                         f"{reincarceration_admission_reason}")
+    if reincarceration_admission_reason == AdmissionReason.TRANSFER:
+        # This should be a rare case, but we are considering this a type of new admission recidivism because this person
+        # became reincarcerated at some point after being released, and this is the most likely return type in most
+        # cases in the absence of further information.
+        return ReincarcerationReturnType.NEW_ADMISSION
+    if reincarceration_admission_reason in (AdmissionReason.RETURN_FROM_ESCAPE,
+                                            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+                                            AdmissionReason.TEMPORARY_CUSTODY):
+        # This should never happen. Should have been filtered by should_include_in_release_cohort function. Throw error.
+        raise ValueError(f"should_include_in_release_cohort is not effectively filtering. Found unexpected "
+                         f"admission_reason of: {reincarceration_admission_reason}")
 
-    raise ValueError("Enum case not handled for "
-                     "StateIncarcerationPeriodAdmissionReason of type:"
+    raise ValueError(f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of type:"
                      f" {reincarceration_admission_reason}.")
 
 
 def get_from_supervision_type(
-        reincarceration_admission_reason: AdmissionReason) \
-        -> Optional[ReincarcerationReturnFromSupervisionType]:
+        reincarceration_admission_reason: AdmissionReason) -> Optional[ReincarcerationReturnFromSupervisionType]:
     """If the person returned from supervision, returns the type."""
 
     if reincarceration_admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                             AdmissionReason.EXTERNAL_UNKNOWN,
                                             AdmissionReason.INTERNAL_UNKNOWN,
                                             AdmissionReason.NEW_ADMISSION,
-                                            AdmissionReason.TRANSFER]:
+                                            AdmissionReason.TRANSFER,
+                                            AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
         return None
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PAROLE
@@ -447,24 +439,14 @@ def get_from_supervision_type(
         return ReincarcerationReturnFromSupervisionType.PAROLE
     if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
         return ReincarcerationReturnFromSupervisionType.PROBATION
-    if reincarceration_admission_reason in (
-            AdmissionReason.RETURN_FROM_ESCAPE,
-            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
-        # This should never happen. Should have been filtered by
-        # should_include_in_release_cohort function. Throw error.
-        raise ValueError("should_include_in_release_cohort is not effectively"
-                         " filtering. Found unexpected admission_reason of:"
-                         f" {reincarceration_admission_reason}")
-    if reincarceration_admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
-        # This should never happen. Should have been filtered by
-        # validate_sort_and_collapse_incarceration_periods function. Throw error
-        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
-                         "not effectively filtering. Found unexpected "
-                         "admission_reason of: "
-                         f"{reincarceration_admission_reason}")
+    if reincarceration_admission_reason in (AdmissionReason.RETURN_FROM_ESCAPE,
+                                            AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+                                            AdmissionReason.TEMPORARY_CUSTODY):
+        # This should never happen. Should have been filtered by should_include_in_release_cohort function. Throw error.
+        raise ValueError(f"should_include_in_release_cohort is not effectively filtering. Found unexpected "
+                         f"admission_reason of {reincarceration_admission_reason}")
 
-    raise ValueError("Enum case not handled for "
-                     "StateIncarcerationPeriodAdmissionReason of type:"
+    raise ValueError("Enum case not handled for StateIncarcerationPeriodAdmissionReason of type:"
                      f" {reincarceration_admission_reason}.")
 
 

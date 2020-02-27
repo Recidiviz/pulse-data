@@ -18,12 +18,15 @@
 
 import unittest
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import supervision_period_admission_reason_mapper, \
-    supervision_period_termination_reason_mapper, supervising_officer_mapper
-
+    supervision_period_termination_reason_mapper, supervising_officer_mapper, \
+    incarceration_period_admission_reason_mapper, STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS, \
+    rank_incarceration_period_admission_reason_status_str
+from recidiviz.tests.ingest import fixtures
 
 _STATE_CODE_UPPER = 'US_MO'
 
@@ -175,6 +178,33 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         # REVOCATION is chosen as the termination reason because statuses are evaluated alphabetically when they tie in
         # rank
         self.assertEqual(StateSupervisionPeriodTerminationReason.REVOCATION, reason)
+
+    def test_parse_does_not_return_internal_unknown_for_tak026_incarceration_in_statuses(self):
+        """Loops over a file with every single combination of TAK026 incarceration in statuses (*0I*) that are present
+        on cycles that started after 2000 and ensures we have a mapping for those statuses.
+        """
+        fixture_path = fixtures.as_filepath('tak026_incarceration_admission_status_combos.txt')
+        with open(fixture_path, 'r') as f:
+            while True:
+                status_list_str = f.readline().strip()
+                if not status_list_str:
+                    break
+
+                admission_reason = incarceration_period_admission_reason_mapper(status_list_str)
+                self.assertIsNotNone(admission_reason)
+                self.assertIsInstance(admission_reason, StateIncarcerationPeriodAdmissionReason)
+                self.assertNotEqual(admission_reason, StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+                                    f'No mapping for [{status_list_str}]')
+
+    def test_parse_incarceration_admission_reason_statuses_have_rank(self):
+        for status_str in STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS:
+            self.assertIsNotNone(rank_incarceration_period_admission_reason_status_str(status_str),
+                                 f'No rank defined for status [{status_str}]')
+
+    def test_parse_incarceration_admission_reason_no_mapped_admission_statuse(self):
+        status_list_str = '90O1050 25I1000'
+        admission_reason = incarceration_period_admission_reason_mapper(status_list_str)
+        self.assertEqual(admission_reason, StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN)
 
     def test_supervising_officer_mapper_po_roles(self):
         """Tests that all PO job titles for MO are properly classified."""
