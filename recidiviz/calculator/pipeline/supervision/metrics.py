@@ -48,7 +48,7 @@ class SupervisionMetricType(Enum):
 
 
 @attr.s
-class SupervisionMetric(RecidivizMetric, PersonLevelMetric):
+class SupervisionMetric(RecidivizMetric):
     """Models a single supervision metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for
@@ -96,7 +96,7 @@ class SupervisionMetric(RecidivizMetric, PersonLevelMetric):
 
 
 @attr.s
-class SupervisionPopulationMetric(SupervisionMetric):
+class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision population counts."""
     # Required characteristics
 
@@ -143,7 +143,7 @@ class SupervisionPopulationMetric(SupervisionMetric):
 
 
 @attr.s
-class SupervisionRevocationMetric(SupervisionMetric):
+class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision revocation counts."""
     # Required characteristics
 
@@ -182,7 +182,7 @@ class SupervisionRevocationMetric(SupervisionMetric):
 
 
 @attr.s
-class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric):
+class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric):
     """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
 
     # The most severe violation type leading up to the revocation
@@ -260,7 +260,7 @@ class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionRevocationMetr
 
 
 @attr.s
-class SupervisionSuccessMetric(SupervisionMetric):
+class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision success and failure counts."""
     # Required characteristics
 
@@ -286,7 +286,7 @@ class SupervisionSuccessMetric(SupervisionMetric):
 
 
 @attr.s
-class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric):
+class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains counts of supervision
     that have been terminated, the reason for the termination, and the
     average change in assessment score between the last assessment and the
