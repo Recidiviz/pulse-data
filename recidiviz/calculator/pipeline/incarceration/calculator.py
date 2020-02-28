@@ -106,8 +106,7 @@ def map_incarceration_combinations(person: StatePerson,
                     periods_and_events[period] = [incarceration_event]
 
     for incarceration_event in incarceration_events:
-        characteristic_combos = characteristic_combinations(
-            person, incarceration_event, inclusions)
+        characteristic_combos = characteristic_combinations(person, incarceration_event, inclusions)
 
         metric_type = METRIC_TYPES.get(type(incarceration_event))
         if not metric_type:
@@ -150,6 +149,7 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics: Dict[str, Any] = {}
 
+    # Add characteristics that will be used to generate dictionaries with unique combinations.
     if isinstance(incarceration_event, IncarcerationAdmissionEvent):
         if incarceration_event.admission_reason:
             characteristics['admission_reason'] = incarceration_event.admission_reason
@@ -161,6 +161,10 @@ def characteristic_combinations(person: StatePerson,
     if isinstance(incarceration_event, IncarcerationReleaseEvent):
         if incarceration_event.release_reason:
             characteristics['release_reason'] = incarceration_event.release_reason
+
+    if isinstance(incarceration_event, IncarcerationStayEvent):
+        if incarceration_event.admission_reason:
+            characteristics['admission_reason'] = incarceration_event.admission_reason
 
     # Always include facility as a dimension
     if incarceration_event.facility:
@@ -194,6 +198,20 @@ def characteristic_combinations(person: StatePerson,
     else:
         all_combinations = for_characteristics(characteristics)
 
+    characteristics_with_person_details = add_person_level_characteristics(
+        person, incarceration_event, characteristics)
+
+    all_combinations.append(characteristics_with_person_details)
+
+    return all_combinations
+
+
+def add_person_level_characteristics(person, incarceration_event, characteristics):
+    """Given |characteristics|, adds new characteristics that do not matter for aggregation and are only important for
+    person-level metrics. These characteristics therefore are NOT used to generate the dictionaries with unique
+    combinations, but are simply add-ons to those dictionaries.
+    """
+
     characteristics_with_person_details = characteristics_with_person_id_fields(
         characteristics, person, 'incarceration')
 
@@ -201,10 +219,14 @@ def characteristic_combinations(person: StatePerson,
         if incarceration_event.most_serious_offense_statute:
             characteristics_with_person_details['most_serious_offense_statute'] = \
                 incarceration_event.most_serious_offense_statute
-
-    all_combinations.append(characteristics_with_person_details)
-
-    return all_combinations
+        if incarceration_event.admission_reason_raw_text:
+            characteristics_with_person_details['admission_reason_raw_text'] = \
+                incarceration_event.admission_reason_raw_text
+    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        if incarceration_event.admission_reason_raw_text:
+            characteristics_with_person_details['admission_reason_raw_text'] = \
+                incarceration_event.admission_reason_raw_text
+    return characteristics_with_person_details
 
 
 def map_metric_combinations(

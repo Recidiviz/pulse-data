@@ -32,7 +32,8 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration
+    StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration, \
+    StateIncarcerationPeriodAdmissionReason
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import \
@@ -49,6 +50,7 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 _COUNTY_OF_RESIDENCE = 'county'
 _STATUTE = 'XXXX'
 
+
 class TestMapIncarcerationCombinations(unittest.TestCase):
     """Tests the map_incarceration_combinations function."""
 
@@ -56,23 +58,20 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
     # relevant metric periods
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='CA', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text='NEW_ADMISSION',
             event_date=date(2000, 3, 12),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
@@ -87,13 +86,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
         for combo, _ in incarceration_combinations:
             assert combo.get('year') == 2000
@@ -117,11 +113,13 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [
             IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='NEW_ADMISSION',
                 state_code='CA',
                 event_date=date(2000, 3, 31),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -129,6 +127,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationReleaseEvent(
@@ -146,27 +145,20 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_admissions_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='CA', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
@@ -194,28 +186,20 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_releases_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='CA', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
@@ -241,28 +225,20 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_stays_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='CA', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
@@ -272,14 +248,18 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
             )
         ]
 
@@ -293,19 +273,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_stays_same_month_facility(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
         person.races = [race]
 
@@ -321,13 +296,17 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 18',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='PAROLE_REVOCATION',
 
             )
         ]
@@ -339,13 +318,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, incarceration_events, ALL_INCLUSIONS_DICT)
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_multiple_stays(self):
@@ -1060,10 +1036,7 @@ def expected_metric_combos_count(
     if with_methodologies:
         methodology_multiplier *= CALCULATION_METHODOLOGIES
 
-    stay_events = [
-        event for event in incarceration_events
-        if isinstance(event, IncarcerationStayEvent)
-    ]
+    stay_events = [event for event in incarceration_events if isinstance(event, IncarcerationStayEvent)]
 
     num_stay_events = len(stay_events)
     num_duplicated_stay_months = 0
@@ -1079,19 +1052,17 @@ def expected_metric_combos_count(
     if stay_events:
         first_stay_event = stay_events[0]
 
-        release_dimensions = [
+        stay_dimensions = [
             'facility',
-            'county_of_residence'
+            'county_of_residence',
+            'admission_reason',
         ]
 
-        for dimension in release_dimensions:
+        for dimension in stay_dimensions:
             if getattr(first_stay_event, dimension) is not None:
                 stay_dimension_multiplier *= 2
 
-    admission_events = [
-        event for event in incarceration_events
-        if isinstance(event, IncarcerationAdmissionEvent)
-    ]
+    admission_events = [event for event in incarceration_events if isinstance(event, IncarcerationAdmissionEvent)]
 
     num_admission_events = len(admission_events)
     num_duplicated_admission_months = 0
@@ -1111,17 +1082,14 @@ def expected_metric_combos_count(
             'facility',
             'county_of_residence',
             'admission_reason',
-            'specialized_purpose_for_incarceration'
+            'specialized_purpose_for_incarceration',
         ]
 
         for dimension in admission_dimensions:
             if getattr(first_admission_event, dimension) is not None:
                 admission_dimension_multiplier *= 2
 
-    release_events = [
-        event for event in incarceration_events
-        if isinstance(event, IncarcerationReleaseEvent)
-    ]
+    release_events = [event for event in incarceration_events if isinstance(event, IncarcerationReleaseEvent)]
 
     num_release_events = len(release_events)
     num_duplicated_release_months = 0
@@ -1184,7 +1152,6 @@ def expected_metric_combos_count(
     stay_combos += (num_stay_events + (num_stay_events - num_duplicated_stay_months))
 
     release_combos += (num_release_events +
-                       (num_release_events -
-                        num_duplicated_release_months)*(num_relevant_periods_releases + 1))
+                       (num_release_events - num_duplicated_release_months)*(num_relevant_periods_releases + 1))
 
     return admission_combos + stay_combos + release_combos
