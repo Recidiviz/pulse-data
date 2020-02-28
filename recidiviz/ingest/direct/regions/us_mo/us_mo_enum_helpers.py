@@ -72,7 +72,6 @@ RETURN_POST_REMAND_STATUS_CODES: List[str] = [
 
 BOND_RETURN_STATUS_CODES: List[str] = [
     #  When is someone released on bond after they have already been committed then is returned
-    #  TODO(2647): Ask MO when/why this happens
     '60I4010',  # Inmate Bond Return
 ]
 
@@ -182,13 +181,6 @@ PROBATION_REVOCATION_RETURN_STATUSES: List[str] = [
     '40I2430',  # Prob Rev Ret-Technical-SOAU
     '40I2435',  # Prob Rev Ret-New Fel-SOAU
     '40I2450',  # Prob Rev Ret-Mis Law-SOAU
-
-    #  All Probation returns for shock/treatment (40I70*)
-    # TODO(2666): These are not technically revocation, revist once we think more broadly about how to handle returns vs
-    #   revocations
-    '40I7000',  # Field Supv to DAI-Oth Sentence
-    '40I7001',  # Field Supv to DAI-Same Sentence
-    '40I7010',  # Prob Adm-Shock Incarceration
 ]
 
 LEGACY_PROBATION_REENTRY_STATUS_CODES: List[str] = [
@@ -227,20 +219,18 @@ MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
     '20I1050',  # Court Comm-SOAU-Addl Charge
     '20I1060',  # Court Comm-MH 120 Day-Addl Chg
 
-    #  This seems to be treated like a New Admission (NA) in TAK158, though it always follows a
-    #  15I1000 (New Court Probation)
-    #  TODO(2647): Ask MO whether this should be a revocation or not
+    #  All Probation returns for shock/treatment (40I70*)
+    # TODO(2666): These are not technically revocation, revist once we think more broadly about how to handle returns vs
+    #   revocations
+    #  Note: These seem to be treated like a New Admission (NA) in TAK158, though they always follow a 15I1000 (New
+    #  Court Probation) or other new admission reason.
+    '40I7000',  # Field Supv to DAI-Oth Sentence
+    '40I7001',  # Field Supv to DAI-Same Sentence
+    '40I7010',  # Prob Adm-Shock Incarceration
     '40I7020',  # Prob Adm-Ct Order Det Sanction
     '40I7030',  # Prob Adm-Mental Health 120 Day
     '40I7060',  # Prob Adm-Post Conv-Trt Pgm
     '40I7065',  # Prob Adm-Post Conv-RDP
-]
-
-PROBATION_RETURN_NO_REVOCATION_STATUS_CODES: List[str] = [
-    #  This seems to be treated like a New Admission (NA) in TAK158, though it always follows a
-    #  10L6000/20L6000/20L6000 (New CC Fed/State (Papers Only)), which is a supervision new admission
-    #  TODO(2647): Ask MO why they count this as NEW ADMISSION in MO
-    '40I6000',  # CC Fed/State (Offender Rec)
 ]
 
 BOARD_HOLDOVER_ENTRY_STATUS_CODES: List[str] = [
@@ -275,6 +265,11 @@ RETURN_FROM_ERRONEOUS_RELEASE_STATUS_CODES: List[str] = [
 ]
 
 INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES: List[str] = [
+    #  This always follows a 10L6000/20L6000/20L6000 (New CC Fed/State (Papers Only)), which means the person was being
+    #  held in another federal / out of state facility but this is the first time they are transferred into an MO
+    #  facility.
+    '40I6000',  # CC Fed/State (Offender Rec)
+
     '70I3010',  # MO Inmate-Interstate Return
     '70I3020',  # Federal Transfer Return
 ]
@@ -630,10 +625,13 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriod
         '15I2000',  # New Diversion Supervision
         '15I3000',  # New PreTrial Bond Supervision
 
-        # These statuses are occasionally the only status present to indicate that someone has left a period of
-        # investigation. They show up rarely (100ish times a year) and a minority (25%ish) of the time they
-        # actually show up in the middle of someone's supervision term, after they have long-ago left investigation.
-        # Since the majority of the time it's correct to classify these as COURT_SENTENCE, we leave these here.
+        # These statuses are relatively rare (100ish instances cumulatively per year) and happen when someone has been
+        # charged with an MO crime, but has been committed to a federal facility or a prison in a different state. The
+        # person is only actually committed to a MO facility when we see a 40I6000 status. When this shows up on the
+        # admission date of a supervision period, it's likely because the person has been assigned to a PO for
+        # accounting purposes.
+        # TODO(2905): Write a query to figure out the spans of time someone is under CC Fed/State incarceration and
+        #  generate incarceration periods for that time so we don't count these people erroneously as under supervision.
         '10L6000',  # New CC Fed/State (Papers Only)
         '20L6000',  # CC Fed/State (Papers Only)-AC
         '30L6000'   # CC Fed/State(Papers Only)-Revt
@@ -756,7 +754,6 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPe
         *PROBATION_REVOCATION_RETURN_STATUSES,
         *LEGACY_PROBATION_REENTRY_STATUS_CODES,
         *MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES,
-        *PROBATION_RETURN_NO_REVOCATION_STATUS_CODES,
     ],
     StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: [
         *BOARD_HOLDOVER_ENTRY_STATUS_CODES
@@ -801,8 +798,7 @@ def rank_incarceration_period_admission_reason_status_str(status_str: str) -> Op
         # These are the main NEW_ADMISSION statuses
         return 1
 
-    if (status_str in MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES
-            or status_str in PROBATION_RETURN_NO_REVOCATION_STATUS_CODES):
+    if status_str in MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES:
         # These are codes that count as a PROBATION_REVOCATION when there are no other new admission or revocation
         # statuses present.
         return 2

@@ -277,7 +277,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             '??-XX',
         ],
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
             # These statuses indicate an end to a period of temporary hold since
             # it has now been determined that the person has had their parole
             # revoked. With the exception of a few rare cases, these
