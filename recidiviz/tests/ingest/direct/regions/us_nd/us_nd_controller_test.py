@@ -1193,7 +1193,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         metadata_12345 = json.dumps({
             "domain_criminal_history": 7, "domain_education_employment": 7, "domain_financial": 1,
             "domain_family_marital": 2, "domain_accommodation": 0, "domain_leisure_recreation": 2,
-            "domain_companions": 3, "domain_alcohol_drug_problems": 0, "domain_emotional_personal": 2,
+            "domain_companions": 3, "domain_alcohol_drug_problems": 5, "domain_emotional_personal": 2,
             "domain_attitudes_orientation": 1,
             "question_18": 0, "question_19": 0, "question_20": 0, "question_21": 1, "question_23": 3, "question_24": 1,
             "question_25": 1, "question_27": 3, "question_31": 1, "question_39": 2, "question_40": 1, "question_51": 2,
@@ -1203,7 +1203,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         metadata_12346 = json.dumps({
             "domain_criminal_history": 6, "domain_education_employment": 8, "domain_financial": 1,
             "domain_family_marital": 2, "domain_accommodation": 0, "domain_leisure_recreation": 2,
-            "domain_companions": 2, "domain_alcohol_drug_problems": 0, "domain_emotional_personal": 0,
+            "domain_companions": 2, "domain_alcohol_drug_problems": 1, "domain_emotional_personal": 0,
             "domain_attitudes_orientation": 2, "question_18": 0, "question_19": 0, "question_20": 0,
             "question_21": 0, "question_23": 2, "question_24": 2, "question_25": 0, "question_27": 2, "question_31": 0,
             "question_39": 2, "question_40": 3, "question_51": 2, "question_52": 2
@@ -1212,7 +1212,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         metadata_55555 = json.dumps({
             "domain_criminal_history": 6, "domain_education_employment": 10, "domain_financial": 2,
             "domain_family_marital": 3, "domain_accommodation": 0, "domain_leisure_recreation": 2,
-            "domain_companions": 2, "domain_alcohol_drug_problems": 0, "domain_emotional_personal": 0,
+            "domain_companions": 2, "domain_alcohol_drug_problems": 8, "domain_emotional_personal": 0,
             "domain_attitudes_orientation": 0, "question_18": 0, "question_19": 0, "question_20": 0,
             "question_21": 0, "question_23": 2, "question_24": 0, "question_25": 0, "question_27": 2, "question_31": 1,
             "question_39": 1, "question_40": 0, "question_51": 3, "question_52": 3
@@ -1228,13 +1228,13 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                             assessment_class='RISK',
                                             assessment_type='LSIR',
                                             assessment_date='7/14/16',
-                                            assessment_score='25',
+                                            assessment_score='30',
                                             assessment_metadata=metadata_12345),
                             StateAssessment(state_assessment_id='12346',
                                             assessment_class='RISK',
                                             assessment_type='LSIR',
                                             assessment_date='1/13/17',
-                                            assessment_score='23',
+                                            assessment_score='24',
                                             assessment_metadata=metadata_12346),
                         ]),
             StatePerson(state_person_id='241896',
@@ -1246,7 +1246,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                             assessment_class='RISK',
                                             assessment_type='LSIR',
                                             assessment_date='12/10/18',
-                                            assessment_score='25',
+                                            assessment_score='33',
                                             assessment_metadata=metadata_55555),
                         ])
         ])
@@ -2953,7 +2953,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 7, "DOMAIN_EDUCATION_EMPLOYMENT": 7,
             "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 5,
             "DOMAIN_EMOTIONAL_PERSONAL": 2, "DOMAIN_ATTITUDES_ORIENTATION": 1,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 1, "QUESTION_23": 3, "QUESTION_24": 1,
@@ -2966,7 +2966,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 8,
             "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 1,
             "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 2,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 2,
@@ -2979,7 +2979,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 10,
             "DOMAIN_FINANCIAL": 2, "DOMAIN_FAMILY_MARITAL": 3,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 8,
             "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 0,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 0,
@@ -2996,7 +2996,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2016, month=7, day=14),
-            assessment_score=25,
+            assessment_score=30,
             assessment_metadata=metadata_12345,
             person=person_1
         )
@@ -3008,7 +3008,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2017, month=1, day=13),
-            assessment_score=23,
+            assessment_score=24,
             assessment_metadata=metadata_12346,
             person=person_1
         )
@@ -3023,7 +3023,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2018, month=12, day=10),
-            assessment_score=25,
+            assessment_score=33,
             assessment_metadata=metadata_55555,
             person=person_2
         )
@@ -3116,7 +3116,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 7, "DOMAIN_EDUCATION_EMPLOYMENT": 7,
             "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 3, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 5,
             "DOMAIN_EMOTIONAL_PERSONAL": 2, "DOMAIN_ATTITUDES_ORIENTATION": 1,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 1, "QUESTION_23": 3, "QUESTION_24": 1,
@@ -3129,7 +3129,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 8,
             "DOMAIN_FINANCIAL": 1, "DOMAIN_FAMILY_MARITAL": 2,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 1,
             "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 2,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 2,
@@ -3142,7 +3142,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             "DOMAIN_CRIMINAL_HISTORY": 6, "DOMAIN_EDUCATION_EMPLOYMENT": 10,
             "DOMAIN_FINANCIAL": 2, "DOMAIN_FAMILY_MARITAL": 3,
             "DOMAIN_ACCOMMODATION": 0, "DOMAIN_LEISURE_RECREATION": 2,
-            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 0,
+            "DOMAIN_COMPANIONS": 2, "DOMAIN_ALCOHOL_DRUG_PROBLEMS": 8,
             "DOMAIN_EMOTIONAL_PERSONAL": 0, "DOMAIN_ATTITUDES_ORIENTATION": 0,
             "QUESTION_18": 0, "QUESTION_19": 0, "QUESTION_20": 0,
             "QUESTION_21": 0, "QUESTION_23": 2, "QUESTION_24": 0,
@@ -3159,7 +3159,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2016, month=7, day=14),
-            assessment_score=25,
+            assessment_score=30,
             assessment_metadata=metadata_12345,
             person=person_1_dup
         )
@@ -3171,7 +3171,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2017, month=1, day=13),
-            assessment_score=23,
+            assessment_score=24,
             assessment_metadata=metadata_12346,
             person=person_1_dup
         )
@@ -3191,7 +3191,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type=StateAssessmentType.LSIR,
             assessment_type_raw_text='LSIR',
             assessment_date=datetime.date(year=2018, month=12, day=10),
-            assessment_score=25,
+            assessment_score=33,
             assessment_metadata=metadata_55555,
             person=person_2_dup
         )
