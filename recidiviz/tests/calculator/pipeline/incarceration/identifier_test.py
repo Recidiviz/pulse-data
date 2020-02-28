@@ -58,6 +58,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
                 release_date=date(2009, 1, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
@@ -76,29 +77,27 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_sentences=[incarceration_sentence]
         )
 
-#         incarceration_period.incarceration_sentences = [incarceration_sentence]
         incarceration_sentence.sentence_group = sentence_group
 
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(4, len(incarceration_events))
-
-        self.assertEqual([
+        self.assertCountEqual([
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
                 state_code=incarceration_period.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period.admission_date),
+                event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
                 state_code=incarceration_period.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period.admission_date +
-                    relativedelta(months=1)),
+                event_date=last_day_of_month(incarceration_period.admission_date + relativedelta(months=1)),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='9999'
@@ -108,7 +107,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=AdmissionReason.NEW_ADMISSION
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -167,31 +167,30 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(5, len(incarceration_events))
+        # self.assertEqual(5, len(incarceration_events))
+        self.maxDiff = None
 
-        self.assertEqual([
+        self.assertCountEqual([
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.NEW_ADMISSION,
                 state_code=incarceration_period_1.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period_1.admission_date),
+                event_date=last_day_of_month(incarceration_period_1.admission_date),
                 facility=incarceration_period_1.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.TRANSFER,
                 state_code=incarceration_period_2.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period_1.admission_date +
-                    relativedelta(months=1)),
+                event_date=last_day_of_month(incarceration_period_1.admission_date + relativedelta(months=1)),
                 facility=incarceration_period_2.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.TRANSFER,
                 state_code=incarceration_period_2.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period_1.admission_date +
-                    relativedelta(months=2)),
+                event_date=last_day_of_month(incarceration_period_1.admission_date + relativedelta(months=2)),
                 facility=incarceration_period_2.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='9999'
@@ -213,17 +212,16 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         ], incarceration_events)
 
     def test_find_incarceration_events_multiple_sentences(self):
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                facility='PRISON3',
-                admission_date=date(2008, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2009, 1, 4),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='PRISON3',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 1, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             incarceration_sentences=[
@@ -242,21 +240,18 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
 
-        self.assertEqual(4, len(incarceration_events))
-
-        self.assertEqual([
+        self.assertCountEqual([
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.NEW_ADMISSION,
                 state_code=incarceration_period.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period.admission_date),
+                event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationStayEvent(
+                admission_reason=AdmissionReason.NEW_ADMISSION,
                 state_code=incarceration_period.state_code,
-                event_date=last_day_of_month(
-                    incarceration_period.admission_date +
-                    relativedelta(months=1)),
+                event_date=last_day_of_month(incarceration_period.admission_date + relativedelta(months=1)),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
@@ -1136,12 +1131,12 @@ def expected_incarceration_stay_events(
     if incarceration_period.admission_date:
         for month in months_incarcerated_eom_range:
             event = IncarcerationStayEvent(
+                admission_reason=incarceration_period.admission_reason,
+                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
                 state_code=incarceration_period.state_code,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                event_date=last_day_of_month(
-                    incarceration_period.admission_date +
-                    relativedelta(months=month))
+                event_date=last_day_of_month(incarceration_period.admission_date + relativedelta(months=month))
             )
 
             expected_incarceration_events.append(event)

@@ -49,8 +49,7 @@ from recidiviz.persistence.entity.state.entities import \
 
 def find_release_events_by_cohort_year(
         incarceration_periods: List[StateIncarcerationPeriod],
-        county_of_residence: Optional[str]) \
-        -> Dict[int, List[ReleaseEvent]]:
+        county_of_residence: Optional[str]) -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
 
     Transforms each StateIncarcerationPeriod from which the person has been
@@ -81,8 +80,15 @@ def find_release_events_by_cohort_year(
     """
     release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
-    incarceration_periods = \
-        prepare_incarceration_periods_for_calculations(incarceration_periods)
+    if not incarceration_periods:
+        return release_events
+
+    # These incarceration periods have been collapsed, temporary holds dropped where necessary, statuses moved where
+    # necessary. In the case of this metric, we want to keep the revocation admission at the actual date of the
+    # revocation, even if there are leading temporary holds.
+
+    # TODO(2647): Default `collapse_temporary_custody_periods_with_revocation` to True unless in US_ND
+    incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code

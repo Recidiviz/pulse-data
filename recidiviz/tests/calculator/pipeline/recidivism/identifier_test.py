@@ -86,28 +86,33 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_periods,
                 _COUNTY_OF_RESIDENCE)
 
-        assert len(release_events_by_cohort) == 2
+        self.assertEqual(2, len(release_events_by_cohort))
 
-        assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
-            state_code='TX',
-            original_admission_date=initial_incarceration_period.admission_date,
-            release_date=initial_incarceration_period.release_date,
-            release_facility=None,
-            reincarceration_date=first_reincarceration_period.admission_date,
-            reincarceration_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION)]
+        self.assertCountEqual(
+            [RecidivismReleaseEvent(
+                state_code='TX',
+                original_admission_date=initial_incarceration_period.admission_date,
+                release_date=initial_incarceration_period.release_date,
+                release_facility=None,
+                reincarceration_date=first_reincarceration_period.admission_date,
+                reincarceration_facility=None,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                return_type=ReincarcerationReturnType.NEW_ADMISSION)],
+            release_events_by_cohort[2010])
 
-        assert release_events_by_cohort[2014] == [RecidivismReleaseEvent(
-            state_code='TX',
-            original_admission_date=first_reincarceration_period.admission_date,
-            release_date=first_reincarceration_period.release_date,
-            release_facility=None,
-            reincarceration_date=subsequent_reincarceration_period.
-            admission_date,
-            reincarceration_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
-            return_type=ReincarcerationReturnType.NEW_ADMISSION)]
+        self.assertCountEqual(
+            [RecidivismReleaseEvent(
+                state_code='TX',
+                original_admission_date=first_reincarceration_period.admission_date,
+                release_date=first_reincarceration_period.release_date,
+                release_facility=None,
+                reincarceration_date=subsequent_reincarceration_period.admission_date,
+                reincarceration_facility=None,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                return_type=ReincarcerationReturnType.NEW_ADMISSION)]
+            ,
+            release_events_by_cohort[2014]
+        )
 
     def test_find_release_events_by_cohort_year_no_incarcerations_at_all(self):
         """Tests the find_release_events_by_cohort_year function when the person

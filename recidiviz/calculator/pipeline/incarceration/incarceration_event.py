@@ -30,7 +30,8 @@ class IncarcerationEvent(BuildableAttr):
     """Models details related to an incarceration event.
 
     Describes a date on which a person interacted with incarceration. This includes the information pertaining to the
-    interaction that we will want to track when calculating incarceration metrics."""
+    interaction that we will want to track when calculating incarceration metrics.
+    """
 
     # The state where the incarceration took place
     state_code: str = attr.ib()
@@ -53,13 +54,24 @@ class IncarcerationStayEvent(IncarcerationEvent):
     # this stay event is derived
     most_serious_offense_statute: Optional[str] = attr.ib(default=None)
 
+    # Admission reason for the incarceration period that overlaps with relevant day.
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+
+    # Admission reason raw text
+    admission_reason_raw_text: Optional[str] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):
     """Models an IncarcerationEvent where a person was admitted to incarceration for any reason."""
 
-    # Admission reason
+    # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
+    # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
+    # subsequent admission period, if present.
     admission_reason: StateIncarcerationPeriodAdmissionReason = attr.ib(default=None)
+
+    # Admission reason raw text
+    admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
