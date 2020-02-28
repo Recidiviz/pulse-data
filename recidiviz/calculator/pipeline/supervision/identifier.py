@@ -133,6 +133,7 @@ def find_supervision_time_buckets(
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
+    # TODO(2647): Default `collapse_temporary_custody_periods_with_revocation` to True unless in US_ND
     incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
     incarceration_periods.sort(key=lambda b: b.admission_date)

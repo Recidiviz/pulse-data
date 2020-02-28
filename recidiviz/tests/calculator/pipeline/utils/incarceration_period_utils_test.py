@@ -21,10 +21,14 @@
 import unittest
 from datetime import date
 
+import attr
+
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
-    drop_placeholder_temporary_and_missing_status_periods, \
+    drop_placeholder_periods, \
     validate_admission_data, validate_release_data, \
-    prepare_incarceration_periods_for_calculations
+    prepare_incarceration_periods_for_calculations, drop_temporary_custody_periods, drop_non_prison_periods, \
+    collapse_temporary_custody_and_revocation_periods
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -49,29 +53,12 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
             incarceration_period_id=1)]
 
         validated_incarceration_periods = \
-            drop_placeholder_temporary_and_missing_status_periods(
+            drop_placeholder_periods(
                 incarceration_periods)
 
         self.assertEqual([], validated_incarceration_periods)
 
-    def test_drop_placeholder_temporary_and_missing_status_periods_temporary(self):
-        incarceration_periods = [StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-        )]
-
-        validated_incarceration_periods = \
-            drop_placeholder_temporary_and_missing_status_periods(
-                incarceration_periods)
-
-        self.assertEqual([], validated_incarceration_periods)
-
-    def test_drop_placeholder_temporary_and_missing_status_periods_multiple_temporary(self):
+    def test_drop_temporary_custody_periods(self):
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -79,9 +66,7 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
             admission_date=date(2008, 11, 20),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-        )
-
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
         temporary_custody_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -89,45 +74,26 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
             admission_date=date(2008, 12, 20),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2008, 12, 24),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-        )
-
-        incarceration_periods = [temporary_custody_1, temporary_custody_2]
-
-        validated_incarceration_periods = \
-            drop_placeholder_temporary_and_missing_status_periods(
-                incarceration_periods)
-
-        self.assertEqual([], validated_incarceration_periods)
-
-    def test_drop_placeholder_temporary_and_missing_status_periods_no_status(
-            self):
-        incarceration_periods = [StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            state_code='TX',
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED
-        )]
-
-        validated_incarceration_periods = \
-            drop_placeholder_temporary_and_missing_status_periods(
-                incarceration_periods)
-
-        self.assertEqual([], validated_incarceration_periods)
-
-    def test_drop_placeholder_temporary_and_missing_status_periods_some_valid(
-            self):
-        temporary_custody = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-        )
+            admission_date=date(2016, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2017, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_periods = [temporary_custody_1, temporary_custody_2, valid_incarceration_period]
+
+        validated_incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
+
+        self.assertEqual([valid_incarceration_period], validated_incarceration_periods)
+
+    def test_drop_placeholder_periods(self):
+        placeholder_custody = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            state_code='TX')
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -138,14 +104,38 @@ class TestDropPlaceholderTemporaryAndMissingStatusPeriods(unittest.TestCase):
             release_date=date(2017, 12, 4),
             release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        incarceration_periods = [temporary_custody, valid_incarceration_period]
+        incarceration_periods = [placeholder_custody, valid_incarceration_period]
 
-        validated_incarceration_periods = \
-            drop_placeholder_temporary_and_missing_status_periods(
-                incarceration_periods)
+        validated_incarceration_periods = drop_placeholder_periods(incarceration_periods)
 
-        self.assertEqual([valid_incarceration_period],
-                         validated_incarceration_periods)
+        self.assertEqual([valid_incarceration_period], validated_incarceration_periods)
+
+    def test_drop_non_prison_periods(self):
+        jail_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2017, 11, 20),
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2016, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            release_date=date(2017, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [jail_incarceration_period, valid_incarceration_period]
+
+        validated_incarceration_periods = drop_non_prison_periods(incarceration_periods)
+
+        self.assertEqual([valid_incarceration_period], validated_incarceration_periods)
 
 
 class TestValidateAdmissionData(unittest.TestCase):
@@ -346,7 +336,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  first_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 1
 
@@ -390,7 +380,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  first_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 2
 
@@ -447,7 +437,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  third_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 1
 
@@ -514,7 +504,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  third_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 3
 
@@ -537,7 +527,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         incarceration periods."""
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods([])
+            utils.collapse_incarceration_period_transfers([])
 
         assert not collapsed_incarceration_periods
 
@@ -558,7 +548,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         incarceration_periods = [only_incarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert collapsed_incarceration_periods == incarceration_periods
 
@@ -580,7 +570,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         incarceration_periods = [only_incarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert collapsed_incarceration_periods == incarceration_periods
 
@@ -634,7 +624,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  second_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 3
 
@@ -689,7 +679,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                                  second_reincarceration_period]
 
         collapsed_incarceration_periods = \
-            utils.collapse_incarceration_periods(incarceration_periods)
+            utils.collapse_incarceration_period_transfers(incarceration_periods)
 
         assert len(collapsed_incarceration_periods) == 2
 
@@ -708,9 +698,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
 
 
 class TestCombineIncarcerationPeriods(unittest.TestCase):
-    """Tests for combine_incarceration_periods function."""
+    """Tests for collapse_incarceration_period_transfers function."""
 
-    def test_combine_incarceration_periods(self):
+    def test_combineIncarcerationPeriods(self):
         """Tests for combining two incarceration periods connected by a
         transfer."""
 
@@ -742,10 +732,8 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             release_date=date(2012, 12, 10),
             release_reason=ReleaseReason.CONDITIONAL_RELEASE)
 
-        combined_incarceration_period = \
-            utils.combine_incarceration_periods(
-                start_incarceration_period, end_incarceration_period
-            )
+        combined_incarceration_period = utils.combine_incarceration_periods(
+            start_incarceration_period, end_incarceration_period)
 
         assert combined_incarceration_period == \
             StateIncarcerationPeriod.new_with_defaults(
@@ -765,6 +753,156 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
                 release_reason=end_incarceration_period.release_reason
 
             )
+
+    def test_combineIncarcerationPeriods_overwriteAdmissionReason(self):
+        """Tests for combining two incarceration periods connected by a transfer."""
+
+        start_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Green',
+            housing_unit='House19',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
+            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Jones',
+            housing_unit='HouseUnit3',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            admission_date=date(2010, 12, 4),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2012, 12, 10),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        combined_incarceration_period = utils.combine_incarceration_periods(
+            start_incarceration_period, end_incarceration_period, overwrite_admission_reason=True)
+
+        expected_combined_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=start_incarceration_period.incarceration_period_id,
+            status=end_incarceration_period.status,
+            state_code=start_incarceration_period.state_code,
+            facility=end_incarceration_period.facility,
+            housing_unit=end_incarceration_period.housing_unit,
+            facility_security_level=end_incarceration_period.facility_security_level,
+            projected_release_reason=end_incarceration_period.projected_release_reason,
+            admission_date=start_incarceration_period.admission_date,
+            admission_reason=end_incarceration_period.admission_reason,
+            release_date=end_incarceration_period.release_date,
+            release_reason=end_incarceration_period.release_reason)
+        self.assertEqual(expected_combined_period, combined_incarceration_period)
+
+
+class TestCollapseTemporaryCustodyAndRevocationPeriods(unittest.TestCase):
+    """Tests for collapse_temporary_custody_and_revocation_periods function."""
+
+    def test_collapseTemporaryCustodyAndRevocationPeriods(self):
+        # Arrange
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2011, 1, 1),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2011, 2, 1),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2011, 2, 1),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2011, 3, 1),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2012, 1, 1),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2012, 2, 1),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2012, 3, 1),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2012, 4, 1),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2013, 1, 1),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2013, 2, 1),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        incarceration_period_6 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2013, 2, 1),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2013, 3, 1),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+        incarceration_periods = [
+            incarceration_period,
+            incarceration_period_2,
+            incarceration_period_3,
+            incarceration_period_4,
+            incarceration_period_5,
+            incarceration_period_6
+        ]
+
+        expected_incarceration_period_merged = attr.evolve(
+            incarceration_period,
+            admission_reason=incarceration_period_2.admission_reason,
+            release_date=incarceration_period_2.release_date,
+            release_reason=incarceration_period_2.release_reason)
+        expected_incarceration_period_3 = attr.evolve(incarceration_period_3)
+        expected_incarceration_period_4 = attr.evolve(incarceration_period_4)
+        expected_incarceration_period_5 = attr.evolve(incarceration_period_5)
+        expected_incarceration_period_6 = attr.evolve(incarceration_period_6)
+
+        expected_incarceration_periods = [
+            expected_incarceration_period_merged,
+            expected_incarceration_period_3,
+            expected_incarceration_period_4,
+            expected_incarceration_period_5,
+            expected_incarceration_period_6
+        ]
+
+        # Act
+        collapsed_periods = collapse_temporary_custody_and_revocation_periods(incarceration_periods)
+
+        # Assert
+        self.assertCountEqual(expected_incarceration_periods, collapsed_periods)
+
+    def test_collapseTemporaryCustodyAndRevocationPeriods_noTempCustodyPreceedingRevocation(self):
+        # Arrange
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2011, 1, 1),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2011, 2, 1),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code='TX',
+            admission_date=date(2011, 2, 1),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2011, 3, 1),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+        incarceration_periods = [incarceration_period, incarceration_period_2]
+
+        expected_incarceration_period = attr.evolve(incarceration_period)
+        expected_incarceration_period_2 = attr.evolve(incarceration_period_2)
+
+        expected_incarceration_periods = [expected_incarceration_period, expected_incarceration_period_2]
+
+        # Act
+        collapsed_periods = collapse_temporary_custody_and_revocation_periods(incarceration_periods)
+
+        # Assert
+        self.assertCountEqual(expected_incarceration_periods, collapsed_periods)
 
 
 class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):

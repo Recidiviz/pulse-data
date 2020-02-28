@@ -553,11 +553,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code='TX',
             facility='PRISON XX',
             admission_date=date(2010, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             incarceration_sentence_id=123,
@@ -580,18 +578,17 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         incarceration_period.incarceration_sentences = [incarceration_sentence]
 
-        person_entities = {'person': [fake_person],
-                           'sentence_groups': [sentence_group]}
+        person_entities = {'person': [fake_person], 'sentence_groups': [sentence_group]}
 
         fake_person_id_to_county_query_result = [
-            {'person_id': fake_person_id,
-             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+            {'person_id': fake_person_id, 'county_of_residence': _COUNTY_OF_RESIDENCE}]
 
         incarceration_events = [
             IncarcerationStayEvent(
+                admission_reason=incarceration_period.admission_reason,
+                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
                 state_code=incarceration_period.state_code,
-                event_date=
-                last_day_of_month(incarceration_period.admission_date),
+                event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_statute='CIVIL RIGHTS'
@@ -601,7 +598,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=incarceration_period.admission_reason
+                admission_reason=incarceration_period.admission_reason,
+                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -612,8 +610,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             )
         ]
 
-        correct_output = [
-            (fake_person, incarceration_events)]
+        correct_output = [(fake_person, incarceration_events)]
 
         test_pipeline = TestPipeline()
 
@@ -621,17 +618,13 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             test_pipeline
             | "Read person id to county associations from BigQuery" >>
             beam.Create(fake_person_id_to_county_query_result)
-            | "Convert to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+            | "Convert to KV" >> beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
-                  | 'Identify Incarceration Events' >>
-                  beam.ParDo(
-                      pipeline.ClassifyIncarcerationEvents(),
-                      AsDict(person_id_to_county_kv))
-                  )
+                  | 'Identify Incarceration Events' >> beam.ParDo(
+                      pipeline.ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
 
         assert_that(output, equal_to(correct_output))
 
