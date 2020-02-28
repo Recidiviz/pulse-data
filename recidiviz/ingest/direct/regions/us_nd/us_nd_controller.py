@@ -389,13 +389,15 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                   extracted_objects: List[IngestObject],
                                   _cache: IngestObjectCache):
         """For rich LSIR historical data from Docstars, manually process individual domain and question values."""
+        # Cast the LSIR keys to lower case to avoid casing inconsistencies
+        lower_case_row = {key.lower(): value for key, value in row.items()}
         domain_labels = ['CHtotal', 'EETotal', 'FnclTotal', 'FMTotal', 'AccomTotal', 'LRTotal', 'Cptotal', 'Adtotal',
                          'EPTotal', 'AOTotal']
-        total_score, domain_scores = _get_lsir_domain_scores_and_sum(row, domain_labels)
+        total_score, domain_scores = _get_lsir_domain_scores_and_sum(lower_case_row, domain_labels)
 
         question_labels = ['Q18value', 'Q19value', 'Q20value', 'Q21value', 'Q23Value', 'Q24Value', 'Q25Value',
                            'Q27Value', 'Q31Value', 'Q39Value', 'Q40Value', 'Q51value', 'Q52Value']
-        question_scores = _get_lsir_question_scores(row, question_labels)
+        question_scores = _get_lsir_question_scores(lower_case_row, question_labels)
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
@@ -916,14 +918,13 @@ _LSIR_DOMAINS: Dict[str, str] = {
 
 
 def _get_lsir_domain_score(row: Dict[str, str], domain: str) -> int:
-    domain_score = row.get(domain, '0')
+    domain_score = row.get(domain.lower(), '0')
     if domain_score.strip():
         return int(domain_score)
     return 0
 
 
-def _get_lsir_domain_scores_and_sum(
-        row: Dict[str, str], domains: List[str]) -> Tuple[int, Dict[str, int]]:
+def _get_lsir_domain_scores_and_sum(row: Dict[str, str], domains: List[str]) -> Tuple[int, Dict[str, int]]:
     total_score = 0
     domain_scores = {}
 
@@ -955,7 +956,7 @@ _LSIR_QUESTIONS: Dict[str, str] = {
 
 
 def _get_lsir_question_score(row: Dict[str, str], question: str) -> int:
-    question_score = row.get(question, '0')
+    question_score = row.get(question.lower(), '0')
     if question_score.strip():
         return int(question_score)
     return 0
