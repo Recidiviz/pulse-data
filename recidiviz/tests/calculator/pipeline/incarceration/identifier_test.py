@@ -1073,6 +1073,49 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
 
         self.assertEqual(most_serious_statute, '1111')
 
+    def test_find_most_serious_prior_offense_statute_in_sentence_group_charges_no_ncic(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2009, 1, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2010, 12, 11),
+                    statute='9999'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    statute='1111'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    statute='3333'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_period.incarceration_sentences = sentence_group.incarceration_sentences
+        incarceration_sentence.sentence_group = sentence_group
+
+        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
+            incarceration_period, date(2008, 12, 31))
+
+        self.assertIsNone(most_serious_statute)
+
     def test_find_most_serious_prior_offense_statute_in_sentence_group_includes_chars(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(

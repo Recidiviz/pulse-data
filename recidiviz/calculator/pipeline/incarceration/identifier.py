@@ -206,8 +206,9 @@ def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_peri
             if charge.ncic_code and charge.offense_date and charge.offense_date < cutoff_date:
                 relevant_charges.append(charge)
 
-        relevant_charges.sort(key=lambda b: b.ncic_code)
-        return relevant_charges[0].statute
+        if relevant_charges:
+            relevant_charges.sort(key=lambda b: b.ncic_code)
+            return relevant_charges[0].statute
 
     return None
 
