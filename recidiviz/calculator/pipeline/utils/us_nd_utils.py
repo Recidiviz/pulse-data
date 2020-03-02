@@ -24,26 +24,19 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-def set_missing_admission_data(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        List[StateIncarcerationPeriod]:
-    """Sets missing admission data on incarceration period inputs according to
-    logic specific to North Dakota data.
+def set_missing_admission_data(incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
+    """Sets missing admission data on incarceration period inputs according to logic specific to North Dakota data.
 
-    In the ND data, there are over 1,000 incarceration periods with empty
-    admission dates and reasons that follow a release for a transfer. These
-    incarceration periods have valid release data, so we know that this
-    individual was transferred back into a facility at some point. For every
-    incarceration period where this is the case, this function sets the
-    admission date to the date of the transfer out, and the admission reason to
-    be a transfer back in.
+    In the ND data, there are over 1,000 incarceration periods with empty admission dates and reasons that follow a
+    release for a transfer. These incarceration periods have valid release data, so we know that this individual was
+    transferred back into a facility at some point. For every incarceration period where this is the case, this
+    function sets the admission date to the date of the transfer out, and the admission reason to be a transfer back in.
     """
     filtered_incarceration_periods: List[StateIncarcerationPeriod] = []
 
     # Remove placeholder incarceration periods and any without an external_id
     for incarceration_period in incarceration_periods:
-        if not is_placeholder(incarceration_period) and \
-                incarceration_period.external_id is not None:
+        if not is_placeholder(incarceration_period) and incarceration_period.external_id is not None:
             filtered_incarceration_periods.append(incarceration_period)
 
     updated_incarceration_periods: List[StateIncarcerationPeriod] = []
@@ -51,20 +44,13 @@ def set_missing_admission_data(
     if filtered_incarceration_periods:
         filtered_incarceration_periods.sort(key=lambda b: b.external_id)
 
-        for index, incarceration_period in \
-                enumerate(filtered_incarceration_periods):
-            if not incarceration_period.admission_date and \
-                    not incarceration_period.admission_reason and index > 0:
-                previous_incarceration_period = \
-                    filtered_incarceration_periods[index - 1]
-                if previous_incarceration_period.release_reason == \
-                        StateIncarcerationPeriodReleaseReason.TRANSFER and \
-                        previous_incarceration_period.release_date \
-                        is not None:
-                    incarceration_period.admission_reason = \
-                        StateIncarcerationPeriodAdmissionReason.TRANSFER
-                    incarceration_period.admission_date = \
-                        previous_incarceration_period.release_date
+        for index, incarceration_period in enumerate(filtered_incarceration_periods):
+            if not incarceration_period.admission_date and not incarceration_period.admission_reason and index > 0:
+                previous_incarceration_period = filtered_incarceration_periods[index - 1]
+                if previous_incarceration_period.release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER \
+                        and previous_incarceration_period.release_date is not None:
+                    incarceration_period.admission_reason = StateIncarcerationPeriodAdmissionReason.TRANSFER
+                    incarceration_period.admission_date = previous_incarceration_period.release_date
 
             updated_incarceration_periods.append(incarceration_period)
 

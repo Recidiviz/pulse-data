@@ -52,31 +52,26 @@ def find_release_events_by_cohort_year(
         county_of_residence: Optional[str]) -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
 
-    Transforms each StateIncarcerationPeriod from which the person has been
-    released into a mapping from its release cohort to the details of the event.
-    The release cohort is an integer for the year, e.g. 2006. The event details
-    are a ReleaseEvent object, which can represent events of both recidivism and
-    non-recidivism. That is, each StateIncarcerationPeriod is transformed into a
-    recidivism event unless it is the most recent period of incarceration and
-    they are still incarcerated, or it is connected to a subsequent
-    StateIncarcerationPeriod by a transfer.
+    Transforms each StateIncarcerationPeriod from which the person has been released into a mapping from its release
+    cohort to the details of the event. The release cohort is an integer for the year, e.g. 2006. The event details
+    are a ReleaseEvent object, which can represent events of both recidivism and non-recidivism. That is, each
+    StateIncarcerationPeriod is transformed into a recidivism event unless it is the most recent period of
+    incarceration and they are still incarcerated, or it is connected to a subsequent StateIncarcerationPeriod by a
+    transfer.
 
-    Example output for someone who went to prison in 2006, was released in 2008,
-    went back in 2010, was released in 2012, and never returned:
+    Example output for someone who went to prison in 2006, was released in 2008, went back in 2010, was released in
+    2012, and never returned:
     {
       2008: [RecidivismReleaseEvent(original_admission_date="2006-04-05", ...)],
-      2012: [NonRecidivismReleaseEvent(original_admission_date="2010-09-17",
-                ...)]
+      2012: [NonRecidivismReleaseEvent(original_admission_date="2010-09-17", ...)]
     }
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
-        county_of_residence: the county that the incarcerated person lives in
-            (prior to incarceration).
+        county_of_residence: the county that the incarcerated person lives in (prior to incarceration).
 
     Returns:
-        A dictionary mapping release cohorts to a list of ReleaseEvents
-            for the given person in that cohort.
+        A dictionary mapping release cohorts to a list of ReleaseEvents for the given person in that cohort.
     """
     release_events: Dict[int, List[ReleaseEvent]] = defaultdict(list)
 
@@ -86,9 +81,8 @@ def find_release_events_by_cohort_year(
     # These incarceration periods have been collapsed, temporary holds dropped where necessary, statuses moved where
     # necessary. In the case of this metric, we want to keep the revocation admission at the actual date of the
     # revocation, even if there are leading temporary holds.
-
-    # TODO(2647): Default `collapse_temporary_custody_periods_with_revocation` to True unless in US_ND
-    incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
+    incarceration_periods = prepare_incarceration_periods_for_calculations(
+        incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code
@@ -103,34 +97,23 @@ def find_release_events_by_cohort_year(
         # Admission data and status have been validated already
         if admission_date and status:
             if index == len(incarceration_periods) - 1:
-                event = for_last_incarceration_period(state_code,
-                                                      admission_date,
-                                                      status,
-                                                      release_date,
-                                                      release_reason,
-                                                      release_facility,
-                                                      county_of_residence)
+                event = for_last_incarceration_period(
+                    state_code, admission_date, status, release_date, release_reason, release_facility,
+                    county_of_residence)
             else:
-                reincarceration_period = \
-                    incarceration_periods[index + 1]
+                reincarceration_period = incarceration_periods[index + 1]
                 reincarceration_date = reincarceration_period.admission_date
                 reincarceration_facility = reincarceration_period.facility
-                reincarceration_admission_reason = \
-                    reincarceration_period.admission_reason
+                reincarceration_admission_reason = reincarceration_period.admission_reason
 
-                if reincarceration_admission_reason in \
-                        [AdmissionReason.PROBATION_REVOCATION,
-                         AdmissionReason.PAROLE_REVOCATION]:
-                    source_supervision_violation_response = \
-                        reincarceration_period. \
-                        source_supervision_violation_response
+                if reincarceration_admission_reason in [
+                        AdmissionReason.PROBATION_REVOCATION, AdmissionReason.PAROLE_REVOCATION]:
+                    source_supervision_violation_response = reincarceration_period.source_supervision_violation_response
                 else:
                     source_supervision_violation_response = None
 
                 # These fields have been validated already
-                if release_date and release_reason and \
-                        reincarceration_date and \
-                        reincarceration_admission_reason:
+                if release_date and release_reason and reincarceration_date and reincarceration_admission_reason:
 
                     event = for_intermediate_incarceration_period(
                         state_code=state_code,
@@ -141,10 +124,8 @@ def find_release_events_by_cohort_year(
                         county_of_residence=county_of_residence,
                         reincarceration_date=reincarceration_date,
                         reincarceration_facility=reincarceration_facility,
-                        reincarceration_admission_reason=
-                        reincarceration_admission_reason,
-                        source_supervision_violation_response=
-                        source_supervision_violation_response)
+                        reincarceration_admission_reason=reincarceration_admission_reason,
+                        source_supervision_violation_response=source_supervision_violation_response)
 
         if event:
             if release_date:
@@ -289,10 +270,8 @@ def for_intermediate_incarceration_period(
         return None
 
     return_type = get_return_type(reincarceration_admission_reason)
-    from_supervision_type = \
-        get_from_supervision_type(reincarceration_admission_reason)
-    source_violation_type = \
-        get_source_violation_type(source_supervision_violation_response)
+    from_supervision_type = get_from_supervision_type(reincarceration_admission_reason)
+    source_violation_type = get_source_violation_type(source_supervision_violation_response)
 
     # This is a new admission recidivism event. Return it.
     return RecidivismReleaseEvent(

@@ -48,6 +48,165 @@ _COUNTY_OF_RESIDENCE = 'county'
 class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
 
+    def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self):
+        """Tests that with state code US_ND, temporary custody periods are dropped before finding all incarceration
+        events.
+        """
+        temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id='1',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            facility='PRISON',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text='ADMISSION',
+            release_date=date(2008, 12, 20),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id='2',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            facility='PRISON',
+            admission_date=date(2008, 12, 20),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text='Revocation',
+            release_date=date(2009, 1, 20),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[temp_custody_period, revocation_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    ncic_code='0901',
+                    statute='9999'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(incarceration_sentences=[incarceration_sentence])
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
+
+        self.assertCountEqual([
+            IncarcerationStayEvent(
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+                state_code=revocation_period.state_code,
+                event_date=last_day_of_month(revocation_period.admission_date),
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute='9999'
+            ),
+            IncarcerationAdmissionEvent(
+                state_code=revocation_period.state_code,
+                event_date=revocation_period.admission_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=revocation_period.state_code,
+                event_date=revocation_period.release_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=revocation_period.release_reason
+            )
+        ], incarceration_events)
+
+    def testFindIncarcerationEvents_tempCustodyFollowedByRevocation(self):
+        """Tests that when a temporary custody period is followed by a revocation period, we collapse the two when
+        generating IncarcerationAdmissionEvents, but do not when creating IncarcerationStayEvents.
+        """
+        temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id='1',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='PRISON',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text='Temporary Custody',
+            release_date=date(2008, 12, 20),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id='2',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='PRISON',
+            admission_date=date(2008, 12, 20),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text='Revocation',
+            release_date=date(2009, 1, 20),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_periods=[temp_custody_period, revocation_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    ncic_code='0901',
+                    statute='9999'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(incarceration_sentences=[incarceration_sentence])
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
+
+        self.assertCountEqual([
+            IncarcerationStayEvent(
+                admission_reason=temp_custody_period.admission_reason,
+                admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
+                state_code=temp_custody_period.state_code,
+                event_date=last_day_of_month(temp_custody_period.admission_date),
+                facility=temp_custody_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute='9999'
+            ),
+            IncarcerationStayEvent(
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+                state_code=revocation_period.state_code,
+                event_date=last_day_of_month(revocation_period.admission_date),
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_statute='9999'
+            ),
+            IncarcerationAdmissionEvent(
+                state_code=temp_custody_period.state_code,
+                event_date=temp_custody_period.admission_date,
+                facility=temp_custody_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=revocation_period.admission_reason,
+                admission_reason_raw_text=revocation_period.admission_reason_raw_text,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=revocation_period.state_code,
+                event_date=revocation_period.release_date,
+                facility=revocation_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=revocation_period.release_reason
+            )
+        ], incarceration_events)
+
     def test_find_incarceration_events(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
