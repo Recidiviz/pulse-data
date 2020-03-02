@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationReturnFromSupervisionType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -45,6 +46,120 @@ _COUNTY_OF_RESIDENCE = 'county'
 class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests for the find_release_events_by_cohort_year function."""
 
+    def testFindReleaseEventsByCohortYear_usNd_ignoreTemporaryCustody(self):
+        """Tests the find_release_events_by_cohort_year function for US_ND where temporary custody periods are
+        completely ignored. In this test case the person did recidivate.
+        """
+
+        initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id='1',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        temporary_custody_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            external_id='2',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2011, 4, 5),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2014, 4, 14),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+
+        revocation_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            external_id='3',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2014, 4, 14),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION)
+
+        incarceration_periods = [
+            initial_incarceration_period, temporary_custody_reincarceration, revocation_incarceration_period]
+
+        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
+            incarceration_periods, _COUNTY_OF_RESIDENCE)
+
+        self.assertEqual(1, len(release_events_by_cohort))
+
+        self.assertCountEqual(
+            [RecidivismReleaseEvent(
+                state_code='US_ND',
+                original_admission_date=initial_incarceration_period.admission_date,
+                release_date=initial_incarceration_period.release_date,
+                release_facility=None,
+                reincarceration_date=revocation_incarceration_period.admission_date,
+                reincarceration_facility=None,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                from_supervision_type=ReincarcerationReturnFromSupervisionType.PROBATION,
+                return_type=ReincarcerationReturnType.REVOCATION)],
+            release_events_by_cohort[2010])
+
+    def testFindReleaseEventsByCohortYear_collapseTemporaryCustodyAndRevocation(self):
+        """Tests the find_release_events_by_cohort_year function where a temporary custody incarceration period
+        is followed by a revocation period. In this test case the person did recidivate.
+        """
+
+        initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id='1',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        temporary_custody_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            external_id='2',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2011, 4, 5),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2014, 4, 14),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+
+        revocation_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            external_id='3',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2014, 4, 14),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION)
+
+        incarceration_periods = [
+            initial_incarceration_period, temporary_custody_reincarceration, revocation_incarceration_period]
+
+        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
+            incarceration_periods, _COUNTY_OF_RESIDENCE)
+
+        self.assertEqual(1, len(release_events_by_cohort))
+
+        self.assertCountEqual(
+            [RecidivismReleaseEvent(
+                state_code='TX',
+                original_admission_date=initial_incarceration_period.admission_date,
+                release_date=initial_incarceration_period.release_date,
+                release_facility=None,
+                reincarceration_date=temporary_custody_reincarceration.admission_date,
+                reincarceration_facility=None,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                from_supervision_type=ReincarcerationReturnFromSupervisionType.PROBATION,
+                return_type=ReincarcerationReturnType.REVOCATION)],
+            release_events_by_cohort[2010])
+
     def test_find_release_events_by_cohort_year(self):
         """Tests the find_release_events_by_cohort_year function path where the
         person did recidivate."""
@@ -52,6 +167,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -62,6 +178,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
@@ -72,6 +189,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         subsequent_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=3333,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2017, 1, 4),
@@ -130,6 +248,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='TX',
                 admission_date=date(2000, 1, 9),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
@@ -159,6 +278,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         only_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -178,6 +298,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         only_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2000, 1, 9),
@@ -208,6 +329,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -218,6 +340,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
@@ -264,6 +387,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -274,6 +398,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
@@ -320,6 +445,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -330,6 +456,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
@@ -374,6 +501,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -384,6 +512,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
@@ -429,6 +558,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -439,6 +569,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2010, 12, 4),
@@ -472,6 +603,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2008, 11, 20),
@@ -482,6 +614,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
                 admission_date=date(2011, 4, 5),
