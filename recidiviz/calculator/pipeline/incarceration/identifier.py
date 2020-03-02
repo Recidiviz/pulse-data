@@ -60,14 +60,12 @@ def find_incarceration_events(
     incarceration_events.extend(
         find_all_end_of_month_state_prison_stay_events(state_code, incarceration_periods, county_of_residence))
 
-    incarceration_events.extend(
-        find_all_admission_release_events(state_code, incarceration_periods, county_of_residence))
+    incarceration_events.extend(find_all_admission_release_events(incarceration_periods, county_of_residence))
 
     return incarceration_events
 
 
 def find_all_admission_release_events(
-        _state_code: str,
         original_incarceration_periods: List[StateIncarcerationPeriod],
         county_of_residence: Optional[str],
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
@@ -76,25 +74,21 @@ def find_all_admission_release_events(
     """
     incarceration_events: List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]] = []
 
-    # TODO(2647): Default collapse_temporary_custody_periods_with_revocation to True except in US_ND.
-    incarceration_periods = prepare_incarceration_periods_for_calculations(original_incarceration_periods)
+    incarceration_periods = prepare_incarceration_periods_for_calculations(
+        original_incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
 
     de_duplicated_incarceration_admissions = de_duplicated_admissions(incarceration_periods)
 
     for incarceration_period in de_duplicated_incarceration_admissions:
-        admission_event = admission_event_for_period(
-            incarceration_period, county_of_residence)
+        admission_event = admission_event_for_period(incarceration_period, county_of_residence)
 
         if admission_event:
             incarceration_events.append(admission_event)
 
-    de_duplicated_incarceration_releases = de_duplicated_releases(
-        incarceration_periods
-    )
+    de_duplicated_incarceration_releases = de_duplicated_releases(incarceration_periods)
 
     for incarceration_period in de_duplicated_incarceration_releases:
-        release_event = release_event_for_period(
-            incarceration_period, county_of_residence)
+        release_event = release_event_for_period(incarceration_period, county_of_residence)
 
         if release_event:
             incarceration_events.append(release_event)

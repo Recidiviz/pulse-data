@@ -51,6 +51,7 @@ from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
@@ -547,16 +548,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='US_MO',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
@@ -567,19 +566,16 @@ class TestSupervisionPipeline(unittest.TestCase):
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code='US_MO',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id)
 
         # This probation supervision period ended in a revocation
@@ -622,8 +618,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_violation_response_id=fake_svr_id,
             state_code='us_ca',
             person_id=fake_person_id,
-            revocation_type=
-            StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=fake_violation_id
         )
 
@@ -658,16 +653,14 @@ class TestSupervisionPipeline(unittest.TestCase):
         # This incarceration period was due to a probation revocation
         revocation_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_MO',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            PROBATION_REVOCATION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id,
             source_supervision_violation_response_id=fake_svr_id)
@@ -2069,16 +2062,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='US_MO',
             admission_date=date(2015, 5, 30),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2018, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
-            source_supervision_violation_response=
-            source_supervision_violation_response)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            source_supervision_violation_response=source_supervision_violation_response)
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
