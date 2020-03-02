@@ -47,6 +47,7 @@ from recidiviz.calculator.pipeline.recidivism.pipeline import \
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
@@ -105,53 +106,45 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id
         )
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id)
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id)
 
@@ -340,16 +333,14 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.
@@ -358,54 +349,46 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         first_reincarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             person_id=fake_person_id_1)
 
         subsequent_reincarceration_1 = \
             schema.StateIncarcerationPeriod(
                 incarceration_period_id=3333,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='CA',
                 county_code='124',
                 facility='San Quentin',
-                facility_security_level=StateIncarcerationFacilitySecurityLevel.
-                MAXIMUM,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.
-                NEW_ADMISSION,
-                projected_release_reason=StateIncarcerationPeriodReleaseReason.
-                CONDITIONAL_RELEASE,
+                facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 admission_date=date(2017, 1, 4),
                 person_id=fake_person_id_1)
 
         initial_incarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=4444,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2004, 12, 20),
             release_date=date(2010, 6, 3),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             person_id=fake_person_id_2)
 
         supervision_violation_response = \
@@ -429,20 +412,17 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='CA',
             county_code='124',
             facility='San Quentin',
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.
-            MAXIMUM,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            PAROLE_REVOCATION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.
-            CONDITIONAL_RELEASE,
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             source_supervision_violation_response_id=
             supervision_violation_response.supervision_violation_response_id,
             person_id=fake_person_id_2)
@@ -450,16 +430,14 @@ class TestRecidivismPipeline(unittest.TestCase):
         subsequent_reincarceration_2 = \
             schema.StateIncarcerationPeriod(
                 incarceration_period_id=6666,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='CA',
                 county_code='124',
                 facility='San Quentin',
-                facility_security_level=StateIncarcerationFacilitySecurityLevel.
-                MAXIMUM,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.
-                NEW_ADMISSION,
-                projected_release_reason=StateIncarcerationPeriodReleaseReason.
-                CONDITIONAL_RELEASE,
+                facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
                 admission_date=date(2018, 3, 9),
                 person_id=fake_person_id_2)
 
@@ -653,33 +631,31 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code='TX',
             admission_date=date(2011, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
             admission_date=date(2017, 1, 4),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [
@@ -750,13 +726,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         only_incarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX', admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods':
@@ -848,33 +823,31 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 1, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2010, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 10, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
             admission_date=date(2017, 1, 4),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         person_incarceration_periods = {'person': [fake_person],
@@ -944,33 +917,31 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='TX',
             admission_date=date(2011, 4, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=StateIncarcerationPeriodReleaseReason.
-            SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='TX',
             admission_date=date(2017, 1, 4),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.
-            NEW_ADMISSION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
 
         person_incarceration_periods = {'person': [fake_person],
                                         'incarceration_periods': [

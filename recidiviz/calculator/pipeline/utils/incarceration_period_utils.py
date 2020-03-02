@@ -31,32 +31,13 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
-from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
 
 
 def drop_placeholder_periods(
         incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods that are placeholders. Returns the valid incarceration periods."""
     return [ip for ip in incarceration_periods if not is_placeholder(ip)]
-
-
-def drop_temporary_custody_periods(
-        incarceration_periods: List[StateIncarcerationPeriod]
-) -> List[StateIncarcerationPeriod]:
-    """Removes any incarceration periods that denote an admission to a temporary custody.
-
-    Returns the filtered incarceration periods.
-    """
-
-    return [ip for ip in incarceration_periods if ip.admission_reason != AdmissionReason.TEMPORARY_CUSTODY]
-
-
-def drop_non_prison_periods(incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
-    """Removes any incarceration periods where the incarceration type isn't STATE_PRISON.
-
-    Returns the filtered incarceration periods.
-    """
-    return [ip for ip in incarceration_periods if ip.incarceration_type == StateIncarcerationType.STATE_PRISON]
 
 
 def validate_admission_data(
@@ -68,12 +49,10 @@ def validate_admission_data(
     Returns the valid incarceration periods.
     """
 
-    if incarceration_periods and \
-            incarceration_periods[0].state_code == 'US_ND':
+    if incarceration_periods and incarceration_periods[0].state_code == 'US_ND':
         # If these are North Dakota incarceration periods, send to the
         # state-specific ND data validation function
-        incarceration_periods = \
-            us_nd_utils.set_missing_admission_data(incarceration_periods)
+        incarceration_periods = us_nd_utils.set_missing_admission_data(incarceration_periods)
 
     validated_incarceration_periods: List[StateIncarcerationPeriod] = []
 
@@ -212,9 +191,7 @@ def collapse_temporary_custody_and_revocation_periods(
                     AdmissionReason.PAROLE_REVOCATION,
                     AdmissionReason.PROBATION_REVOCATION]:
             merged_period = combine_incarceration_periods(
-                previous_period,
-                incarceration_period,
-                overwrite_admission_reason=True)
+                previous_period, incarceration_period, overwrite_admission_reason=True)
             collapsed_ips.append(merged_period)
             previous_period = None
         else:
@@ -251,6 +228,7 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
 
     if overwrite_admission_reason:
         collapsed_incarceration_period.admission_reason = end.admission_reason
+        collapsed_incarceration_period.admission_reason_raw_text = end.admission_reason_raw_text
 
     collapsed_incarceration_period.status = end.status
     collapsed_incarceration_period.release_date = end.release_date
@@ -290,16 +268,50 @@ def _filter_incarceration_periods_for_calculations(
     """Returns a filtered subset of the provided |incarceration_periods| list so that all remaining periods have the
     the fields necessary for calculations.
     """
+    if not incarceration_periods:
+        return []
+
     filtered_incarceration_periods = drop_placeholder_periods(incarceration_periods)
 
-    # TODO(2647): Default to dropping periods that aren't STATE_PRISON. Only US_ND should drop all temporary
-    #  custody periods.
-    filtered_incarceration_periods = drop_temporary_custody_periods(filtered_incarceration_periods)
+    filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(filtered_incarceration_periods)
 
     filtered_incarceration_periods = validate_admission_data(filtered_incarceration_periods)
 
     filtered_incarceration_periods = validate_release_data(filtered_incarceration_periods)
     return filtered_incarceration_periods
+
+
+def drop_periods_not_under_state_custodial_authority(incarceration_periods: List[StateIncarcerationPeriod]) \
+        -> List[StateIncarcerationPeriod]:
+    """Returns a filtered subset of the provided |incarceration_periods| where all periods that are not under state
+    custodial authority are filtered out.
+    """
+    # TODO(2912): Use `custodial_authority` to determine this insted, when that field exists on incarceration periods.
+    state_code = get_single_state_code(incarceration_periods)
+    if state_code == 'US_ND':
+        filtered_incarceration_periods = _drop_temporary_custody_periods(incarceration_periods)
+    else:
+        filtered_incarceration_periods = _drop_non_prison_periods(incarceration_periods)
+    return filtered_incarceration_periods
+
+
+def _drop_temporary_custody_periods(
+        incarceration_periods: List[StateIncarcerationPeriod]
+) -> List[StateIncarcerationPeriod]:
+    """Removes any incarceration periods that denote an admission to a temporary custody.
+
+    Returns the filtered incarceration periods.
+    """
+
+    return [ip for ip in incarceration_periods if ip.admission_reason != AdmissionReason.TEMPORARY_CUSTODY]
+
+
+def _drop_non_prison_periods(incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
+    """Removes any incarceration periods where the incarceration type isn't STATE_PRISON.
+
+    Returns the filtered incarceration periods.
+    """
+    return [ip for ip in incarceration_periods if ip.incarceration_type == StateIncarcerationType.STATE_PRISON]
 
 
 def _collapse_incarceration_periods_for_calculations(
