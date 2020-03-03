@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodStatus, is_revocation_admission
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -106,8 +106,7 @@ def find_release_events_by_cohort_year(
                 reincarceration_facility = reincarceration_period.facility
                 reincarceration_admission_reason = reincarceration_period.admission_reason
 
-                if reincarceration_admission_reason in [
-                        AdmissionReason.PROBATION_REVOCATION, AdmissionReason.PAROLE_REVOCATION]:
+                if is_revocation_admission(reincarceration_admission_reason):
                     source_supervision_violation_response = reincarceration_period.source_supervision_violation_response
                 else:
                     source_supervision_violation_response = None
@@ -382,11 +381,7 @@ def get_return_type(reincarceration_admission_reason: AdmissionReason) -> Reinca
         return ReincarcerationReturnType.NEW_ADMISSION
     if reincarceration_admission_reason == AdmissionReason.NEW_ADMISSION:
         return ReincarcerationReturnType.NEW_ADMISSION
-    if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
-        return ReincarcerationReturnType.REVOCATION
-    if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
-        return ReincarcerationReturnType.REVOCATION
-    if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
+    if is_revocation_admission(reincarceration_admission_reason):
         return ReincarcerationReturnType.REVOCATION
     if reincarceration_admission_reason == AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE:
         return ReincarcerationReturnType.NEW_ADMISSION

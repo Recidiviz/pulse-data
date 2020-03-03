@@ -36,8 +36,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
     include_in_monthly_metrics, first_day_of_month, characteristics_with_person_id_fields
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -447,11 +446,7 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
     elif isinstance(incarceration_event, IncarcerationAdmissionEvent):
         revocation_events_in_period = [
             event for event in all_events_in_period
-            if isinstance(event, IncarcerationAdmissionEvent) and
-            event.admission_reason in (
-                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION)
+            if isinstance(event, IncarcerationAdmissionEvent) and is_revocation_admission(event.admission_reason)
         ]
 
         revocation_events_in_period.sort(key=lambda b: b.event_date)

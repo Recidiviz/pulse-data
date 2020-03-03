@@ -25,8 +25,6 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
@@ -299,32 +297,6 @@ def default_merge_flat_fields(
         old_entity.set_field(child_field_name, new_entity.get_field(child_field_name))
 
     return old_entity
-
-
-def admitted_for_revocation(ip: schema.StateIncarcerationPeriod) -> bool:
-    """Determines if the provided |ip| began because of a revocation."""
-    if not ip.admission_reason:
-        return False
-    revocation_types = [
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value,
-        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION.value]
-    non_revocation_types = [
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR.value,
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN.value,
-        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN.value,
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE.value,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE.value,
-        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value,
-        StateIncarcerationPeriodAdmissionReason.TRANSFER.value,
-        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE.value]
-    if ip.admission_reason in revocation_types:
-        return True
-    if ip.admission_reason in non_revocation_types:
-        return False
-    raise EntityMatchingError(f"Unexpected StateIncarcerationPeriodAdmissionReason {ip.admission_reason}.",
-                              ip.get_entity_name())
 
 
 def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
