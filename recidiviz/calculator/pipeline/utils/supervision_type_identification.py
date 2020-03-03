@@ -63,8 +63,10 @@ def _get_pre_incarceration_supervision_type_from_incarceration_period(
 
     if incarceration_period.admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                                  AdmissionReason.EXTERNAL_UNKNOWN,
+                                                 AdmissionReason.INTERNAL_UNKNOWN,
                                                  AdmissionReason.NEW_ADMISSION,
                                                  AdmissionReason.TRANSFER,
+                                                 AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
                                                  AdmissionReason.RETURN_FROM_ESCAPE,
                                                  AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE]:
         return None
