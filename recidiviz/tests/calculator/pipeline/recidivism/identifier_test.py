@@ -793,15 +793,9 @@ class TestGetReturnType(unittest.TestCase):
                         valid_admission_reason]
 
     def test_get_return_type_invalid(self):
-        """Tests the get_return_type function with an invalid admission
-        reason."""
-        with pytest.raises(ValueError) as e:
-
+        """Tests the get_return_type function with an invalid admission reason."""
+        with pytest.raises(ValueError):
             _ = identifier.get_return_type('INVALID')
-
-        assert str(e.value) == (f"Enum case not handled for "
-                                f"StateIncarcerationPeriodAdmissionReason of"
-                                f" type: INVALID.")
 
 
 class TestForLastIncarcerationPeriod(unittest.TestCase):

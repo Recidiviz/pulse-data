@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateIncarcerationPeriod."""
+from typing import Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -102,6 +103,31 @@ class StateSpecializedPurposeForIncarceration(EntityEnum,
     @staticmethod
     def _get_default_map():
         return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
+
+
+def is_revocation_admission(admission_reason: Optional[StateIncarcerationPeriodAdmissionReason]) -> bool:
+    """Determines if the provided admission_reason is a type of revocation admission."""
+    if not admission_reason:
+        return False
+    revocation_types = [
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION]
+    non_revocation_types = [
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]
+    if admission_reason in revocation_types:
+        return True
+    if admission_reason in non_revocation_types:
+        return False
+    raise ValueError(f"Unexpected StateIncarcerationPeriodAdmissionReason {admission_reason}.")
 
 
 _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {

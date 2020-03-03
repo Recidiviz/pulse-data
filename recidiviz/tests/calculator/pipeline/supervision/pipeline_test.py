@@ -2125,6 +2125,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
             ),
+            SupervisionTerminationBucket(
+                supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'
+            ),
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=5,
@@ -2143,16 +2153,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id='10',
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
-            ),
-            SupervisionTerminationBucket(
-                supervision_period.state_code,
-                year=supervision_period.termination_date.year,
-                month=supervision_period.termination_date.month,
-                supervision_type=supervision_period_supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                termination_reason=supervision_period.termination_reason,
-                supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
             )
         ]
 

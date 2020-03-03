@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, is_revocation_admission
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import is_placeholder, \
@@ -33,7 +33,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     default_merge_flat_fields, add_child_to_entity, remove_child_from_entity, \
-    get_all_entities_of_cls, revoked_to_prison, admitted_for_revocation
+    get_all_entities_of_cls, revoked_to_prison
 from recidiviz.persistence.errors import EntityMatchingError
 
 
@@ -58,8 +58,10 @@ def associate_revocation_svrs_with_ips(
         revocation_ips: List[schema.StateIncarcerationPeriod] = []
         for ip in ips:
             ip = cast(schema.StateIncarcerationPeriod, ip)
-            if admitted_for_revocation(ip) and ip.admission_date:
-                revocation_ips.append(ip)
+            admission_reason = StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(ip.admission_reason)
+            if isinstance(admission_reason, StateIncarcerationPeriodAdmissionReason):
+                if is_revocation_admission(admission_reason) and ip.admission_date:
+                    revocation_ips.append(ip)
 
         if not revocation_svrs or not revocation_ips:
             continue
