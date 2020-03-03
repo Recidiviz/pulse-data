@@ -26,7 +26,7 @@ from more_itertools import one
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason
+    StateIncarcerationPeriodAdmissionReason, is_revocation_admission
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -44,7 +44,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     _is_match, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, \
     get_root_entity_cls, get_total_entities_of_cls, \
-    admitted_for_revocation, \
     revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
     get_all_entity_trees_of_cls, default_merge_flat_fields, \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
@@ -454,7 +453,10 @@ class TestStateMatchingUtils(TestCase):
         period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             period.admission_reason = admission_reason.value
-            admitted_for_revocation(period)
+            is_revocation_admission(
+                StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(period.admission_reason))
+
+        is_revocation_admission(StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None))
 
     def test_completeEnumSet_revokedToPrison(self):
         svr = schema.StateSupervisionViolationResponse()
