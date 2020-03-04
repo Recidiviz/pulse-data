@@ -482,40 +482,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN, supervision_type)
 
-    # TODO(2647): Remove this test once start_dates are set on US_ND supervision sentences
-    def test_get_month_supervision_type_no_dates_on_sentence_us_nd(self):
-        any_date_in_month = date(2018, 4, 13)
-
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id='sp1',
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='US_ND',
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=None
-            )
-
-        supervision_sentence = \
-            StateSupervisionSentence.new_with_defaults(
-                state_code='US_ND',
-                supervision_sentence_id=111,
-                external_id='ss1',
-                supervision_type=StateSupervisionType.PAROLE,
-                status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[supervision_period]
-            )
-
-        supervision_sentences = [supervision_sentence]
-        incarceration_sentences = []
-
-        supervision_type = get_month_supervision_type(
-            any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
-
-        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
-
     def test_get_month_supervision_type_completed_on_end_of_month(self):
         any_date_in_month = date(2018, 4, 13)
 
