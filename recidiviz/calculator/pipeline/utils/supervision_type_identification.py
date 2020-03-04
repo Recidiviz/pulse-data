@@ -16,7 +16,7 @@
 # =============================================================================
 """Helpers for determining supervision types at different points in time."""
 import datetime
-from typing import Optional, Set, List, Dict
+from typing import Optional, Set, List, Dict, Union
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -25,11 +25,10 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.entity_utils import is_placeholder, get_ids
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
-    StateSupervisionSentence
-
-# TODO(2647): Write unit tests for the public helpers in this file
+    StateSupervisionSentence, StateIncarcerationSentence
 
 
+# TODO(2647): Write full coverage unit tests for this function
 def get_pre_incarceration_supervision_type(
         state_code: str,
         incarceration_period: StateIncarcerationPeriod) -> Optional[StateSupervisionPeriodSupervisionType]:
@@ -89,13 +88,13 @@ def _get_pre_incarceration_supervision_type_from_incarceration_period(
                      f"{incarceration_period.admission_reason}.")
 
 
-# TODO(2855): Bring in StateIncarcerationSentences for better supervision type classification
-# TODO(2647): Refactor this into a helper function that accepts an arbitrary lookback window, then use that helper here
-#  (calculate # days to beginning of month) and in _get_pre_incarceration_supervision_type_on_date.
+# TODO(2647): Refactor this into a helper function that accepts arbitrary start and end dates, then uses that helper
+#  here and in _get_pre_incarceration_supervision_type_on_date.
 def get_month_supervision_type(
         any_date_in_month: datetime.date,
-        supervision_period: StateSupervisionPeriod,
-        supervision_sentences: List[StateSupervisionSentence]
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: StateSupervisionPeriod
 ) -> StateSupervisionPeriodSupervisionType:
     """Supervision type can change over time even if the period does not change. This function calculates the
     supervision type that a given supervision period represents during the month that |any_date_in_month| falls in. We
@@ -108,9 +107,6 @@ def get_month_supervision_type(
     supervision_period: (StateSupervisionPeriod) The supervision period we want to associate a supervision type with
     supervision_sentences: (List[StateSupervisionSentence]) All supervision sentences for a given person.
     """
-
-    end_of_month = last_day_of_month(any_date_in_month)
-
     if not supervision_period.supervision_period_id:
         raise ValueError('All objects should have database ids.')
 
@@ -118,39 +114,31 @@ def get_month_supervision_type(
         raise ValueError('Do not expect placeholder periods!')
 
     # Find sentences that are attached to the period and overlap with the month
-    valid_attached_supervision_sentences: Dict[int, StateSupervisionSentence] = {}
-    for supervision_sentence in supervision_sentences:
-        sentence_supervision_period_ids = get_ids(supervision_sentence.supervision_periods)
+    valid_attached_supervision_sentences = _valid_attached_sentences_in_month(
+        any_date_in_month, supervision_sentences, supervision_period)
 
-        completion_date_end_of_month: Optional[datetime.date] = \
-            last_day_of_month(supervision_sentence.completion_date) if supervision_sentence.completion_date else None
-
-        if (supervision_period.supervision_period_id in sentence_supervision_period_ids
-                and (completion_date_end_of_month is None or completion_date_end_of_month >= end_of_month)):
-
-            if not supervision_sentence.supervision_sentence_id:
-                raise ValueError('All objects should have database ids.')
-
-            valid_attached_supervision_sentences[supervision_sentence.supervision_sentence_id] = supervision_sentence
+    valid_attached_incarceration_sentences = _valid_attached_sentences_in_month(
+        any_date_in_month, incarceration_sentences, supervision_period
+    )
 
     # Get all the sentence types from the valid sentences
-    supervision_sentence_types: Set[Optional[StateSupervisionType]] = set()
+    supervision_types: Set[Optional[StateSupervisionType]] = set()
     for supervision_sentence in valid_attached_supervision_sentences.values():
-        supervision_sentence_types.add(supervision_sentence.supervision_type)
+        if isinstance(supervision_sentence, StateSupervisionSentence) and supervision_sentence.supervision_type:
+            supervision_types.add(supervision_sentence.supervision_type)
 
-    if not supervision_sentence_types:
-        # Assume these are hanging off of StateIncarcerationSentences
-        # TODO(2855): Bring in StateIncarcerationSentences for better supervision type classification
-        return StateSupervisionPeriodSupervisionType.PAROLE
+    # If it's hanging off of any StateIncarcerationSentences, assume this is a parole period
+    if valid_attached_incarceration_sentences:
+        supervision_types.add(StateSupervisionType.PAROLE)
 
-    if (StateSupervisionType.PROBATION in supervision_sentence_types
-            and StateSupervisionType.PAROLE in supervision_sentence_types):
+    if (StateSupervisionType.PROBATION in supervision_types
+            and StateSupervisionType.PAROLE in supervision_types):
         return StateSupervisionPeriodSupervisionType.DUAL
-    if StateSupervisionType.PROBATION in supervision_sentence_types:
+    if StateSupervisionType.PROBATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.PROBATION
-    if StateSupervisionType.PAROLE in supervision_sentence_types:
+    if StateSupervisionType.PAROLE in supervision_types:
         return StateSupervisionPeriodSupervisionType.PAROLE
-    if supervision_sentence_types.intersection(
+    if supervision_types.intersection(
             {StateSupervisionType.PRE_CONFINEMENT,
              StateSupervisionType.POST_CONFINEMENT,
              StateSupervisionType.HALFWAY_HOUSE,
@@ -158,16 +146,68 @@ def get_month_supervision_type(
         # These are all types that should be deprecated, but for now, just assume probation - the numbers in ND are very
         # small for these.
         return StateSupervisionPeriodSupervisionType.PROBATION
+    if StateSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
+        return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
 
-    if None in supervision_sentence_types:
-        # If there is a supervision sentence with no type set, assume probation
-        return StateSupervisionPeriodSupervisionType.PROBATION
-
-    if StateSupervisionType.INTERNAL_UNKNOWN in supervision_sentence_types:
-        # TODO(2647): Make sure this test case is covered
+    if not supervision_types or StateSupervisionType.INTERNAL_UNKNOWN in supervision_types:
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
-    raise ValueError(f'Unexpected supervision_sentence_types {supervision_sentence_types}.')
+    raise ValueError(f'Unexpected supervision_types {supervision_types}.')
+
+
+def _valid_attached_sentences_in_month(
+        any_date_in_month: datetime.date,
+        sentences: Union[List[StateIncarcerationSentence], List[StateSupervisionSentence]],
+        supervision_period: StateSupervisionPeriod) -> \
+        Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]]:
+    """This function returns valid sentences that were active during the month that |any_date_in_month| falls in. This
+    identifies which sentences are attached to the supervision_period, are not placeholders, and overlap with any day
+    in the month of |any_date_in_month|.
+    """
+    valid_attached_sentences: Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]] = {}
+
+    valid_sentences = _filter_invalid_sentences(sentences)
+
+    end_of_month = last_day_of_month(any_date_in_month)
+
+    for sentence in valid_sentences:
+        sentence_supervision_period_ids = get_ids(sentence.supervision_periods)
+
+        # TODO(2647): Don't allow null start_date at this point once US_ND supervision sentences have start_dates
+        # Assume a valid sentence started before this month if there's no start date on it
+        sentence_start_date = sentence.start_date if sentence.start_date else datetime.date.min
+        completion_date_end_of_month: Optional[datetime.date] = last_day_of_month(
+            sentence.completion_date) if sentence.completion_date else None
+
+        if (supervision_period.supervision_period_id in sentence_supervision_period_ids
+                and sentence_start_date <= end_of_month
+                and (completion_date_end_of_month is None
+                     or completion_date_end_of_month >= end_of_month)):
+            if not sentence.get_id():
+                raise ValueError('All objects should have database ids.')
+
+            sentence_id = sentence.get_id()
+            valid_attached_sentences[sentence_id] = sentence
+
+    return valid_attached_sentences
+
+
+def _filter_invalid_sentences(sentences: Union[List[StateIncarcerationSentence], List[StateSupervisionSentence]]) -> \
+        List[Union[StateIncarcerationSentence, StateSupervisionSentence]]:
+    """Drops any sentences that are placeholders or has a null start_date field."""
+
+    # TODO(2647): Remove this once start_date is set on US_ND supervision sentences
+    ignore_null_start_dates_for_state_codes = ['US_ND']
+
+    valid_sentences = [
+        sentence for sentence in sentences
+        # Remove placeholder sentences
+        if not is_placeholder(sentence)
+        # Assert the start_date is set, that it's an acceptable state-specific inclusion of a null start_date,
+        and (sentence.start_date or sentence.state_code in ignore_null_start_dates_for_state_codes)
+    ]
+
+    return valid_sentences
 
 
 # TODO(2647): Update this function to take in supervision sentences so we can determine which sentences overlap with

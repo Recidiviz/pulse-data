@@ -485,6 +485,7 @@ def combination_supervision_monthly_metrics(
             # this termination, don't include it in any of the metrics.
             return metrics
 
+    # TODO(2913): Exclude combos with a supervision_type of DUAL from event-based counts
     for event_combo in event_based_same_bucket_combos:
         metrics.append((event_combo, event_combo_value))
 
