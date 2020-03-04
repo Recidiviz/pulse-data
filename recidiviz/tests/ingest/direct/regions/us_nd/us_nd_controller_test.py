@@ -1023,6 +1023,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='117109',
                                         supervision_type='Parole',
+                                        start_date='1/1/2013',
                                         projected_completion_date='3/3/2013',
                                         completion_date='2/2/2013',
                                         max_length='59d',
@@ -1040,6 +1041,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='117110',
                                         supervision_type='Parole',
+                                        start_date='7/17/2014',
                                         projected_completion_date='10/6/2014',
                                         max_length='92d',
                                         state_supervision_periods=[
@@ -1061,6 +1063,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='117111',
                                         supervision_type='Parole',
+                                        start_date='7/17/2014',
                                         projected_completion_date='8/7/2015',
                                         completion_date='12/8/2014',
                                         max_length='580d',
@@ -1087,6 +1090,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='140408',
                                         supervision_type='Suspended',
+                                        start_date='3/24/2017',
                                         projected_completion_date='3/23/2019',
                                         completion_date='2/27/2018',
                                         state_supervision_periods=[supervision_period_140408],
@@ -1102,6 +1106,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='147777',
                                         supervision_type='Suspended',
+                                        start_date='3/24/2013',
                                         projected_completion_date='3/23/2015',
                                         completion_date='2/27/2016',
                                         state_supervision_periods=[supervision_period_147777],
@@ -2479,6 +2484,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             external_id='117109',
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
+            start_date=datetime.date(year=2013, month=1, day=1),
             projected_completion_date=datetime.date(year=2013, month=3, day=3),
             completion_date=datetime.date(year=2013, month=2, day=2),
             max_length_days=59,
@@ -2506,6 +2512,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             external_id='117110',
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
+            start_date=datetime.date(year=2014, month=7, day=17),
             projected_completion_date=datetime.date(year=2014, month=10, day=6),
             max_length_days=92, state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2543,6 +2550,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             external_id='117111',
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
+            start_date=datetime.date(year=2014, month=7, day=17),
             projected_completion_date=datetime.date(year=2015, month=8, day=7),
             completion_date=datetime.date(year=2014, month=12, day=8),
             max_length_days=580, state_code=_STATE_CODE,
@@ -2618,6 +2626,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             external_id='140408',
             supervision_type=StateSupervisionType.PROBATION,
             supervision_type_raw_text='SUSPENDED',
+            start_date=datetime.date(year=2017, month=3, day=24),
             projected_completion_date=datetime.date(year=2019, month=3, day=23),
             completion_date=datetime.date(year=2018, month=2, day=27),
             state_code=_STATE_CODE,
@@ -2680,6 +2689,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             external_id='147777',
             supervision_type=StateSupervisionType.PROBATION,
             supervision_type_raw_text='SUSPENDED',
+            start_date=datetime.date(year=2013, month=3, day=24),
             projected_completion_date=datetime.date(year=2015, month=3, day=23),
             completion_date=datetime.date(year=2016, month=2, day=27),
             state_code=_STATE_CODE,
