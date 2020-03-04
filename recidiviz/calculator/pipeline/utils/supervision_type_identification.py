@@ -16,9 +16,10 @@
 # =============================================================================
 """Helpers for determining supervision types at different points in time."""
 import datetime
+import logging
 from typing import Optional, Set, List, Dict, Union
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -154,6 +155,25 @@ def get_month_supervision_type(
 
     raise ValueError(f'Unexpected supervision_types {supervision_types}.')
 
+def _get_attached_sentences_by_db_id(
+        sentences: Union[List[StateIncarcerationSentence], List[StateSupervisionSentence]],
+        supervision_period: StateSupervisionPeriod
+) -> Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]]:
+    """Returns sentences that are attached to the given period, in a map indexed by the sentence primary key id."""
+    attached_sentences_by_db_id: Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]] = {}
+
+    for sentence in sentences:
+        if not sentence.get_id():
+            raise ValueError('All objects should have database ids.')
+
+        sentence_supervision_period_ids = get_ids(sentence.supervision_periods)
+
+        if supervision_period.supervision_period_id in sentence_supervision_period_ids:
+            sentence_id = sentence.get_id()
+            attached_sentences_by_db_id[sentence_id] = sentence
+
+    return attached_sentences_by_db_id
+
 
 def _valid_attached_sentences_in_month(
         any_date_in_month: datetime.date,
@@ -164,50 +184,43 @@ def _valid_attached_sentences_in_month(
     identifies which sentences are attached to the supervision_period, are not placeholders, and overlap with any day
     in the month of |any_date_in_month|.
     """
-    valid_attached_sentences: Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]] = {}
+    attached_sentences_by_db_id = _get_attached_sentences_by_db_id(sentences, supervision_period)
 
-    valid_sentences = _filter_invalid_sentences(sentences)
-
+    start_of_month = first_day_of_month(any_date_in_month)
     end_of_month = last_day_of_month(any_date_in_month)
 
-    for sentence in valid_sentences:
-        sentence_supervision_period_ids = get_ids(sentence.supervision_periods)
+    valid_attached_sentences: Dict[int, Union[StateIncarcerationSentence, StateSupervisionSentence]] = {}
+    for sentence_id, sentence in attached_sentences_by_db_id.items():
+        has_missing_fields = _sentence_has_missing_fields(sentence)
 
-        # TODO(2647): Don't allow null start_date at this point once US_ND supervision sentences have start_dates
-        # Assume a valid sentence started before this month if there's no start date on it
-        sentence_start_date = sentence.start_date if sentence.start_date else datetime.date.min
-        completion_date_end_of_month: Optional[datetime.date] = last_day_of_month(
-            sentence.completion_date) if sentence.completion_date else None
+        if has_missing_fields:
+            continue
 
-        if (supervision_period.supervision_period_id in sentence_supervision_period_ids
-                and sentence_start_date <= end_of_month
-                and (completion_date_end_of_month is None
-                     or completion_date_end_of_month >= end_of_month)):
-            if not sentence.get_id():
-                raise ValueError('All objects should have database ids.')
+        if not sentence.start_date:
+            raise ValueError(
+                f"Expected non-null start date on sentence [{sentence.external_id}] for state [{sentence.state_code}]")
 
-            sentence_id = sentence.get_id()
+        if (sentence.start_date <= end_of_month
+                and (sentence.completion_date is None
+                     or sentence.completion_date >= start_of_month)):
             valid_attached_sentences[sentence_id] = sentence
 
     return valid_attached_sentences
 
 
-def _filter_invalid_sentences(sentences: Union[List[StateIncarcerationSentence], List[StateSupervisionSentence]]) -> \
-        List[Union[StateIncarcerationSentence, StateSupervisionSentence]]:
-    """Drops any sentences that are placeholders or has a null start_date field."""
+def _sentence_has_missing_fields(
+        sentence: Union[StateIncarcerationSentence, StateSupervisionSentence]) -> bool:
+    """Returns true for any sentences that are placeholders or have a null start_date field."""
 
-    # TODO(2647): Remove this once start_date is set on US_ND supervision sentences
-    ignore_null_start_dates_for_state_codes = ['US_ND']
+    if is_placeholder(sentence):
+        return True
 
-    valid_sentences = [
-        sentence for sentence in sentences
-        # Remove placeholder sentences
-        if not is_placeholder(sentence)
-        # Assert the start_date is set, that it's an acceptable state-specific inclusion of a null start_date,
-        and (sentence.start_date or sentence.state_code in ignore_null_start_dates_for_state_codes)
-    ]
+    if not sentence.start_date:
+        logging.error("Non-placeholder sentence [%s] for state [%s] has no start date - ignoring.",
+                      sentence.external_id, sentence.state_code)
+        return True
 
-    return valid_sentences
+    return False
 
 
 # TODO(2647): Update this function to take in supervision sentences so we can determine which sentences overlap with
