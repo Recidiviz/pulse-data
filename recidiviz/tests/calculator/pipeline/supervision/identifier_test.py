@@ -57,7 +57,7 @@ from recidiviz.persistence.entity.state.entities import \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionViolationTypeEntry, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
-    StateAssessment, StateSupervisionCaseTypeEntry, StateSupervisionViolatedConditionEntry
+    StateAssessment, StateSupervisionCaseTypeEntry, StateSupervisionViolatedConditionEntry, StateIncarcerationSentence
 
 DEFAULT_SSVR_AGENT_ASSOCIATIONS = {
     999: {
@@ -117,6 +117,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 state_code='US_ND',
                 status=StateSentenceStatus.COMPLETED,
@@ -139,10 +140,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = [assessment]
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -225,8 +230,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period]
             )
 
@@ -236,10 +243,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         assessments = []
 
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -355,8 +366,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period,
                                      second_supervision_period]
             )
@@ -367,10 +380,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -478,8 +495,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period,
                                      second_supervision_period]
             )
@@ -490,10 +509,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -591,6 +614,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -605,10 +629,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -683,7 +711,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_findSupervisionTimeBuckets_usNd_ignoreTemporaryCustodyPeriod(self):
         """Tests the find_supervision_time_buckets function for state code US_ND to ensure that temporary
         custody periods are ignored."""
-
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -721,11 +748,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period]
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_sentences = []
         supervision_periods = [first_supervision_period]
         incarceration_periods = [temporary_custody_period,
                                  revocation_period]
@@ -733,9 +763,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         violation_responses = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
-            violation_responses,
+            supervision_sentences, incarceration_sentences,
+            supervision_periods, incarceration_periods,
+            assessments, violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
@@ -812,18 +842,24 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id='ss',
             status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_periods=[first_supervision_period]
         )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_sentences = []
         supervision_periods = [first_supervision_period]
         incarceration_periods = [temporary_custody_period, revocation_period]
         assessments = []
         violation_responses = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods, incarceration_periods, assessments, violation_responses,
+            supervision_sentences, incarceration_sentences,
+            supervision_periods, incarceration_periods,
+            assessments, violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS, DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -905,8 +941,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period,
                                      second_supervision_period]
             )
@@ -918,10 +956,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1042,7 +1084,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period]
             )
 
@@ -1052,10 +1097,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1144,6 +1193,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -1158,10 +1208,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1263,8 +1317,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period]
             )
 
@@ -1273,10 +1329,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1361,8 +1421,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period]
             )
 
@@ -1371,10 +1433,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1463,8 +1529,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period]
             )
 
@@ -1473,10 +1541,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1553,8 +1625,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2015, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period]
             )
 
@@ -1563,10 +1637,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1657,6 +1735,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -1670,10 +1749,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1785,6 +1868,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -1795,6 +1879,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=222,
+                start_date=date(2017, 1, 1),
                 external_id='ss2',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -1810,10 +1895,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                  second_incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1924,8 +2013,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[supervision_period,
                                      supervision_period_placeholder]
             )
@@ -1935,10 +2026,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = [incarceration_period]
         assessments = []
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -1999,7 +2094,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 state_code='US_UT',
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 projected_completion_date=date(2018, 5, 19),
                 supervision_periods=[supervision_period]
             )
@@ -2015,11 +2113,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = []
         assessments = [assessment]
-
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
+            incarceration_sentences,
             supervision_periods,
             incarceration_periods,
             assessments,
@@ -2055,6 +2154,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 state_code='US_MO',
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -2075,9 +2175,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = [assessment]
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
+            incarceration_sentences,
             supervision_periods,
             incarceration_periods,
             assessments,
@@ -2164,8 +2266,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 completion_date=date(2018, 12, 19),
                 projected_completion_date=date(2018, 5, 19),
                 supervision_periods=[supervision_period]
@@ -2184,10 +2288,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = [assessment]
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -2266,10 +2374,20 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
                 projected_completion_date=date(2018, 5, 19),
                 supervision_periods=[]
             )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id='is1',
+            start_date=date(2017, 1, 1),
+            supervision_periods=[supervision_period]
+        )
 
         assessment = StateAssessment.new_with_defaults(
             state_code='US_CA',
@@ -2284,10 +2402,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = [assessment]
         violation_responses = []
+        incarceration_sentences = [incarceration_sentence]
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -2333,7 +2455,184 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-    def test_find_supervision_time_buckets_infer_supervision_type_parole_no_sentences(self):
+    def test_find_supervision_time_buckets_infer_supervision_type_dual(self):
+        """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
+        but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
+        sentence, so the inferred type should be DUAL."""
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                case_type_entries=[
+                    StateSupervisionCaseTypeEntry.new_with_defaults(
+                        state_code='US_ND',
+                        case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
+                    )
+                ],
+                state_code='US_ND',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=None
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period],
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id='is1',
+            start_date=date(2017, 1, 1),
+            supervision_periods=[supervision_period]
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 10)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods = []
+        assessments = [assessment]
+        violation_responses = []
+        incarceration_sentences = [incarceration_sentence]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 12)
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                termination_reason=supervision_period.termination_reason
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                termination_reason=supervision_period.termination_reason
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                termination_reason=supervision_period.termination_reason
+            ),
+        ])
+
+
+    def test_find_supervision_time_buckets_infer_supervision_type_internal_unknown_no_sentences(self):
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -2366,10 +2665,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods = []
         assessments = [assessment]
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences, supervision_periods,
-            incarceration_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
             violation_responses,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -2381,7 +2684,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=3,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
@@ -2390,7 +2693,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=4,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
@@ -2399,7 +2702,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 most_severe_violation_type_subtype='UNSET',
                 assessment_score=assessment.assessment_score,
@@ -2409,7 +2712,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason
             )
@@ -2442,6 +2745,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -2449,11 +2753,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessments = []
-
         violation_reports = []
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             [supervision_sentence],
+            incarceration_sentences,
             [supervision_period],
             [incarceration_period],
             assessments,
@@ -2530,11 +2835,20 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_reason=AdmissionReason.PAROLE_REVOCATION
             )
 
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id='is1',
+            start_date=date(2018, 1, 1),
+            incarceration_periods=[first_incarceration_period, second_incarceration_period],
+            supervision_periods=[supervision_period]
+        )
+
         assessments = []
         violation_reports = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             [],
+            [incarceration_sentence],
             [supervision_period],
             [first_incarceration_period, second_incarceration_period],
             assessments,
@@ -2631,6 +2945,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -2643,6 +2958,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             [supervision_sentence],
+            [],
             [supervision_period],
             [first_incarceration_period, second_incarceration_period],
             assessments,
@@ -2791,6 +3107,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -2800,9 +3117,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         assessments = [assessment]
         violation_reports = [violation_report]
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             [supervision_sentence],
+            incarceration_sentences,
             [supervision_period],
             [incarceration_period],
             assessments,
@@ -2947,6 +3266,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -2956,9 +3276,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         assessments = [assessment]
         violation_responses = [violation_report, source_supervision_violation_response]
+        incarceration_sentences = []
 
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             [supervision_sentence],
+            incarceration_sentences,
             [supervision_period],
             [incarceration_period],
             assessments,
@@ -3054,6 +3376,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3071,10 +3394,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3145,6 +3473,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3160,12 +3489,16 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
             [incarceration_period])
 
         assessments = []
-
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3218,6 +3551,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3235,10 +3569,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3290,6 +3629,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2003, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.SERVING,
@@ -3306,10 +3646,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3369,6 +3714,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3383,13 +3729,14 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         months_of_incarceration = identifier._identify_months_fully_incarcerated(
             [incarceration_period])
 
+        incarceration_sentences = []
         assessments = []
-
         violation_reports = []
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                [supervision_sentence], incarceration_sentences,
+                supervision_period, indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3435,6 +3782,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.SERVING,
@@ -3450,10 +3798,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3515,6 +3868,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3532,10 +3886,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3601,6 +3960,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2007, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3618,10 +3978,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3700,6 +4065,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2000, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3717,10 +4083,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = []
 
         violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3820,6 +4191,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 status=StateSentenceStatus.COMPLETED,
@@ -3837,10 +4209,14 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         assessments = [assessment_1, assessment_2]
 
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                [supervision_sentence],
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -3923,6 +4299,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 supervision_type=StateSupervisionType.PROBATION,
                 completion_date=date(2018, 3, 19),
@@ -3938,12 +4315,15 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
             [])
 
         assessments = [assessment]
-
         violation_responses = []
+        incarceration_sentences = []
 
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
-                [supervision_sentence], supervision_period, indexed_incarceration_periods,
+                [supervision_sentence],
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
                 months_of_incarceration,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -4211,6 +4591,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4219,8 +4600,12 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         projected_completion_buckets = identifier.classify_supervision_success(
-            [supervision_sentence],
+            supervision_sentences,
+            incarceration_sentences,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4256,6 +4641,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4264,8 +4650,12 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         projected_completion_buckets = identifier.classify_supervision_success(
-            [supervision_sentence],
+            supervision_sentences,
+            incarceration_sentences,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4314,6 +4704,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4323,8 +4714,12 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                                      second_supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         projected_completion_buckets = identifier.classify_supervision_success(
-            [supervision_sentence],
+            supervision_sentences,
+            incarceration_sentences,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4373,6 +4768,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4384,6 +4780,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss2',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4392,8 +4789,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_periods=[second_supervision_period]
             )
 
+        incarceration_sentences = []
+
         projected_completion_buckets = identifier.classify_supervision_success(
             [first_supervision_sentence, second_supervision_sentence],
+            incarceration_sentences,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4451,6 +4851,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
@@ -4462,6 +4863,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss2',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4470,8 +4872,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_periods=[second_supervision_period]
             )
 
+        incarceration_sentences = []
+
         projected_completion_buckets = identifier.classify_supervision_success(
             [first_supervision_sentence, second_supervision_sentence],
+            incarceration_sentences,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4516,6 +4921,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
                 projected_completion_date=date(2018, 12, 25),
@@ -4532,8 +4939,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             }
         }
 
+        incarceration_sentences = []
+
         projected_completion_buckets = identifier.classify_supervision_success(
             [supervision_sentence],
+            incarceration_sentences,
             supervision_period_agent_association
         )
 
@@ -4571,6 +4981,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PAROLE,
                 projected_completion_date=date(2018, 12, 25),
@@ -4587,8 +4999,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             }
         }
 
+        incarceration_sentences = []
+
         projected_completion_buckets = identifier.classify_supervision_success(
             [supervision_sentence],
+            incarceration_sentences,
             supervision_period_agent_association
         )
 
@@ -4649,6 +5064,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4663,8 +5079,15 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 [supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         termination_bucket = identifier.find_supervision_termination_bucket(
-            [supervision_sentence], supervision_period, indexed_supervision_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            indexed_supervision_periods,
+            assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4704,6 +5127,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4718,8 +5142,15 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 [supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         termination_bucket = identifier.find_supervision_termination_bucket(
-            [supervision_sentence], supervision_period, indexed_supervision_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            indexed_supervision_periods,
+            assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4762,6 +5193,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4776,8 +5208,15 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 [supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         termination_bucket = identifier.find_supervision_termination_bucket(
-            [supervision_sentence], supervision_period, indexed_supervision_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            indexed_supervision_periods,
+            assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4811,6 +5250,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4824,8 +5264,15 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 [supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         termination_bucket = identifier.find_supervision_termination_bucket(
-            [supervision_sentence], supervision_period, indexed_supervision_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            indexed_supervision_periods,
+            assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4886,6 +5333,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
                 external_id='ss1',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
@@ -4905,8 +5353,15 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 [first_supervision_period, second_supervision_period]
             )
 
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
         termination_bucket = identifier.find_supervision_termination_bucket(
-            [supervision_sentence], first_supervision_period, indexed_supervision_periods, assessments,
+            supervision_sentences,
+            incarceration_sentences,
+            first_supervision_period,
+            indexed_supervision_periods,
+            assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 

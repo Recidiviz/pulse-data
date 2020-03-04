@@ -229,30 +229,34 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
             state_code = kwargs.get('state_code')
             logging.info("Limiting calculations to state: %s", state_code)
 
-        _, person_periods = element
+        _, person_entities = element
 
         # Get the StateSupervisionSentences as a list
-        supervision_sentences = list(person_periods['supervision_sentences'])
+        supervision_sentences = list(person_entities['supervision_sentences'])
+
+        # Get the StateIncarcerationSentences as a list
+        incarceration_sentences = list(person_entities['incarceration_sentences'])
 
         # Get the StateSupervisionPeriods as a list
-        supervision_periods = list(person_periods['supervision_periods'])
+        supervision_periods = list(person_entities['supervision_periods'])
 
         # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = list(person_periods['incarceration_periods'])
+        incarceration_periods = list(person_entities['incarceration_periods'])
 
         # Get the StateAssessments as a list
-        assessments = list(person_periods['assessments'])
+        assessments = list(person_entities['assessments'])
 
         # Get the StateSupervisionViolationResponses as a list
-        violation_responses = list(person_periods['violation_responses'])
+        violation_responses = list(person_entities['violation_responses'])
 
         # Get the StatePerson
-        person = one(person_periods['person'])
+        person = one(person_entities['person'])
 
         # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
         supervision_time_buckets = identifier.find_supervision_time_buckets(
             supervision_sentences,
+            incarceration_sentences,
             supervision_periods,
             incarceration_periods,
             assessments,
@@ -630,6 +634,16 @@ def run(argv=None):
             build_related_entities=True
         ))
 
+        # Get StateIncarcerationSentences
+        incarceration_sentences = (p | 'Load IncarcerationSentences' >> BuildRootEntity(
+            dataset=input_dataset,
+            data_dict=None,
+            root_schema_class=schema.StateIncarcerationSentence,
+            root_entity_class=entities.StateIncarcerationSentence,
+            unifying_id_field='person_id',
+            build_related_entities=True
+        ))
+
         # Get StateSupervisionPeriods
         supervision_periods = (p | 'Load SupervisionPeriods' >> BuildRootEntity(
             dataset=input_dataset,
@@ -724,6 +738,7 @@ def run(argv=None):
                  incarceration_periods_with_source_violations,
              'supervision_periods': supervision_periods,
              'supervision_sentences': supervision_sentences,
+             'incarceration_sentences': incarceration_sentences,
              'violation_responses': violation_responses_with_hydrated_violations
              }
             | 'Group StatePerson to all entities' >>

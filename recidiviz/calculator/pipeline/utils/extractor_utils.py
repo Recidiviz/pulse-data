@@ -695,7 +695,7 @@ class _CreatePCollectionFromDict(beam.PTransform):
                     | f"Load {self._field}" >>
                     beam.Create(entity_data))
 
-        raise ValueError("No valid data source passed to the pipeline.")
+        raise ValueError(f"No valid data source passed to the pipeline for table: {self._field}")
 
 
 def _get_value_from_element(element: Dict[str, Any], field: str) -> Any:
