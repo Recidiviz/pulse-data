@@ -333,7 +333,7 @@ class TestBuildRootEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No valid data source passed to the pipeline."
+        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
     def testBuildRootEntity_InvalidClasses(self):
         """Tests the BuildRootEntity PTransform when the |root_schema_class|
@@ -626,7 +626,7 @@ class TestExtractEntity(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No valid data source passed to the pipeline."
+        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
@@ -1480,7 +1480,7 @@ class TestCreatePCollectionFromDict(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No valid data source passed to the pipeline."
+        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
     def testCreatePCollectionFromDict_InvalidField(self):
         field = 'a'
@@ -1496,7 +1496,7 @@ class TestCreatePCollectionFromDict(unittest.TestCase):
 
             test_pipeline.run()
 
-        assert str(e.value) == "No valid data source passed to the pipeline."
+        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
 
 class ExtractAssertMatchers:

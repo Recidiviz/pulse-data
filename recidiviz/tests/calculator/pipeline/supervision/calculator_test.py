@@ -767,6 +767,57 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
+    @freeze_time('1900-01-01')
+    def test_map_supervision_combinations_overlapping_months_types_dual(self):
+        """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
+        simultaneously in a given month, but the supervisions are of different types."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            duplicated_months_different_supervision_types=True
+        )
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
+
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods(self):
         person = StatePerson.new_with_defaults(person_id=12345,
