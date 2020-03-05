@@ -64,7 +64,8 @@ def test_reincarcerations():
     release_events = {2018: [first_event], 2022: [second_event]}
 
     expected_reincarcerations = {reincarceration_date:
-                                 {'return_type': first_event.return_type,
+                                 {'release_date': first_event.release_date,
+                                  'return_type': first_event.return_type,
                                   'from_supervision_type':
                                   first_event.from_supervision_type,
                                   'source_violation_type': None}}
@@ -688,6 +689,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             isinstance(re, RecidivismReleaseEvent)
         ]
 
+        num_events_with_multiple_releases_in_year = 0
+        for _, events in release_events_by_cohort.items():
+            if len(events) > 1:
+                num_events_with_multiple_releases_in_year += (len(events) - 1)
+
         recidivism_rate_metrics = (self.RETURN_TYPE_METRIC_COMBOS * len(FOLLOW_UP_PERIODS) * len(all_release_events))
 
         recidivism_count_metrics = (self.RETURN_TYPE_METRIC_COMBOS * len(recidivism_release_events))
@@ -702,6 +708,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 recidivism_count_metrics +
                 at_liberty_metrics
             )
+
+        # Duplicated person-based combos for duplicate releases in the same year
+        expected_combos_count -= (
+            self.RETURN_TYPE_METRIC_COMBOS * len(FOLLOW_UP_PERIODS) * num_events_with_multiple_releases_in_year *
+            demographic_metric_combos
+        )
 
         # Person-level count metrics
         expected_combos_count += (len(recidivism_release_events) * self.RECIDIVISM_METHODOLOGIES)
@@ -842,6 +854,56 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 self.assertEqual(1, value)
 
+    def test_map_recidivism_combinations_multiple_releases_in_year(self):
+        """Tests the map_recidivism_combinations function where there are multiple releases in the same year."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.BLACK)
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1908: [
+                RecidivismReleaseEvent(
+                    'CA', date(1905, 7, 19), date(1908, 1, 19), 'Hudson',
+                    _COUNTY_OF_RESIDENCE,
+                    date(1908, 5, 12), 'Upstate',
+                    ReincarcerationReturnType.NEW_ADMISSION),
+                NonRecidivismReleaseEvent(
+                    'CA', date(1908, 5, 12), date(1908, 8, 19), 'Upstate',
+                    _COUNTY_OF_RESIDENCE)
+            ],
+        }
+
+        days_at_liberty_1 = (date(1908, 5, 12) - date(1908, 1, 19)).days
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort, ALL_INCLUSIONS_DICT)
+
+        expected_count = self.expected_metric_combos_count(person, release_events_by_cohort, ALL_INCLUSIONS_DICT)
+
+        self.assertEqual(expected_count, len(recidivism_combinations))
+
+        for combination, value in recidivism_combinations:
+            if combination.get('return_type') == ReincarcerationReturnType.REVOCATION:
+                self.assertEqual(0, value)
+            elif combination.get('metric_type') == MetricType.LIBERTY:
+                if combination.get('start_date') < date(1909, 1, 1):
+                    self.assertEqual(days_at_liberty_1, value)
+            elif combination.get('metric_type') != MetricType.RATE \
+                    or combination.get('methodology') == MetricMethodologyType.PERSON:
+                if value == 0:
+                    print(combination)
+                self.assertEqual(1, value)
+
     def test_map_recidivism_combinations_no_recidivism(self):
         """Tests the map_recidivism_combinations function where there is no
         recidivism."""
@@ -893,7 +955,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         release_events_by_cohort = {
-            2008: [RecidivismReleaseEvent(
+            1998: [RecidivismReleaseEvent(
                 'CA', date(1995, 7, 19), date(1998, 9, 19), 'Hudson',
                 _COUNTY_OF_RESIDENCE,
                 date(2008, 10, 12), 'Upstate',
