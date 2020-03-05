@@ -117,7 +117,7 @@ def map_recidivism_combinations(person: StatePerson,
 
             rate_metrics = map_recidivism_rate_combinations(
                 characteristic_combos_rates, release_cohort, event,
-                all_reincarcerations)
+                release_events, all_reincarcerations)
 
             metrics.extend(rate_metrics)
 
@@ -142,6 +142,7 @@ def map_recidivism_rate_combinations(
         characteristic_combos: List[Dict[str, Any]],
         release_cohort,
         event: ReleaseEvent,
+        all_release_events: Dict[int, List[ReleaseEvent]],
         all_reincarcerations: Dict[date, Dict[str, Any]]) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given event and characteristic combinations to a variety of
@@ -153,6 +154,8 @@ def map_recidivism_rate_combinations(
         release_cohort: The year the person was released from the previous
             period of incarceration.
         event: the recidivism event from which the combination was derived
+        all_release_events: A dictionary mapping release cohorts to a list of
+            ReleaseEvents for the given StatePerson.
         all_reincarcerations: dictionary where the keys are all dates of
             reincarceration for the person's ReleaseEvents, and the values
             are a dictionary containing return type and from supervision type
@@ -179,7 +182,7 @@ def map_recidivism_rate_combinations(
             combo['release_cohort'] = release_cohort
 
             metrics.extend(combination_rate_metrics(
-                combo, event, all_reincarcerations,
+                combo, event, all_release_events, all_reincarcerations,
                 earliest_recidivism_period, relevant_periods))
 
     return metrics
@@ -302,7 +305,8 @@ def reincarcerations(release_events: Dict[int, List[ReleaseEvent]]) \
         for event in events:
             if isinstance(event, RecidivismReleaseEvent):
                 reincarcerations_dict[event.reincarceration_date] = \
-                    {'return_type': event.return_type,
+                    {'release_date': event.release_date,
+                     'return_type': event.return_type,
                      'from_supervision_type': event.from_supervision_type,
                      'source_violation_type': event.source_violation_type}
 
@@ -607,7 +611,25 @@ def characteristic_combinations(person: StatePerson,
     return all_combinations
 
 
-def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
+def sorted_releases_in_year(release_date: date, all_release_events: Dict[int, List[ReleaseEvent]]) -> \
+        List[ReleaseEvent]:
+    """Returns the releases in a given year, sorted by release date."""
+    year_of_release = release_date.year
+
+    releases_in_year = all_release_events.get(year_of_release)
+
+    if not releases_in_year:
+        raise ValueError(f"Release year {year_of_release} should be present in release_events: {all_release_events}. "
+                         f"Identifier code is not correctly classifying all release events by release cohort year.")
+
+    releases_in_year.sort(key=lambda b: b.release_date)
+
+    return releases_in_year
+
+
+def combination_rate_metrics(combo: Dict[str, Any],
+                             event: ReleaseEvent,
+                             all_release_events: Dict[int, List[ReleaseEvent]],
                              all_reincarcerations: Dict[date, Dict[str, Any]],
                              earliest_recidivism_period: Optional[int],
                              relevant_periods: List[int]) -> List[Tuple[Dict[str, Any], int]]:
@@ -620,6 +642,7 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
     Args:
         combo: a characteristic combination to convert into metrics
         event: the release event from which the combination was derived
+        all_release_events: A dictionary mapping release cohorts to a list of ReleaseEvents for the given StatePerson.
         all_reincarcerations: dictionary where the keys are all dates of reincarceration for the person's ReleaseEvents,
             and the values are a dictionary containing return type and from supervision type information
         earliest_recidivism_period: the earliest follow-up period under which recidivism occurred
@@ -631,6 +654,15 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
     """
     metrics = []
 
+    releases_in_year = sorted_releases_in_year(event.release_date, all_release_events)
+
+    # There will always be at least one release in this list that represents the current release event.
+    # `sorted_releases_in_year` should fail if that is not the case.
+    if not releases_in_year:
+        raise ValueError("Function `sorted_releases_in_year` should not be returning empty lists.")
+
+    is_first_release_in_year = (id(event) == id(releases_in_year[0]))
+
     for period in relevant_periods:
         person_based_combos = augmented_combo_list(combo, event, MetricMethodologyType.PERSON, period)
 
@@ -638,12 +670,13 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
 
         # If they didn't recidivate at all or not yet for this period (or they didn't recidivate until 10 years had
         # passed), assign 0 for both event- and person-based measurement.
-        if isinstance(event, NonRecidivismReleaseEvent) \
-                or not earliest_recidivism_period \
+        if isinstance(event, NonRecidivismReleaseEvent) or not earliest_recidivism_period \
                 or period < earliest_recidivism_period:
 
-            for person_combo in person_based_combos:
-                metrics.append((person_combo, 0))
+            if is_first_release_in_year:
+                # Only count the first release in a year for person-based metrics
+                for person_combo in person_based_combos:
+                    metrics.append((person_combo, 0))
 
             for event_combo in event_based_combos:
                 metrics.append((event_combo, 0))
@@ -652,11 +685,13 @@ def combination_rate_metrics(combo: Dict[str, Any], event: ReleaseEvent,
         # may be counted as an instance of recidivism for event-based measurement. For person-based measurement, only
         # one instance may be counted.
         elif isinstance(event, RecidivismReleaseEvent):
-            for person_combo in person_based_combos:
-                metrics.append((person_combo, recidivism_value_for_metric(
-                    person_combo, event.return_type,
-                    event.from_supervision_type,
-                    event.source_violation_type)))
+            if is_first_release_in_year:
+                # Only count the first release in a year for person-based metrics
+                for person_combo in person_based_combos:
+                    metrics.append((person_combo, recidivism_value_for_metric(
+                        person_combo, event.return_type,
+                        event.from_supervision_type,
+                        event.source_violation_type)))
 
             end_of_follow_up_period = event.release_date + relativedelta(years=period)
 
