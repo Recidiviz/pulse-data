@@ -2544,7 +2544,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_time_buckets[0], ALL_INCLUSIONS_DICT))
+            fake_person, supervision_time_buckets[0], ALL_INCLUSIONS_DICT, SupervisionMetricType.POPULATION))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -2597,7 +2597,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         num_combinations_revocation = len(
             calculator.characteristic_combinations(
                 fake_person, supervision_months[0], ALL_INCLUSIONS_DICT,
-                with_revocation_dimensions=True))
+                SupervisionMetricType.REVOCATION))
         assert num_combinations_revocation > 0
 
         # Multiply by the number of months and by 2 (to account for methodology)
@@ -2611,7 +2611,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for population count
         num_combinations_population = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT))
+                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT, SupervisionMetricType.POPULATION))
         assert num_combinations_population > 0
 
         # Multiply by the number of months and by 2 (to account for methodology)
