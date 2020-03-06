@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     identify_most_severe_violation_type_and_subtype
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
-    prepare_incarceration_periods_for_calculations
+    prepare_incarceration_periods_for_calculations, drop_temporary_custody_periods
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, is_revocation_admission
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -78,11 +78,7 @@ def find_release_events_by_cohort_year(
     if not incarceration_periods:
         return release_events
 
-    # These incarceration periods have been collapsed, temporary holds dropped where necessary, statuses moved where
-    # necessary. In the case of this metric, we want to keep the revocation admission at the actual date of the
-    # revocation, even if there are leading temporary holds.
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
+    incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(incarceration_periods)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code
@@ -132,6 +128,19 @@ def find_release_events_by_cohort_year(
                 release_events[release_cohort].append(event)
 
     return release_events
+
+
+def prepare_incarceration_periods_for_recidivism_calculations(incarceration_periods: List[StateIncarcerationPeriod])\
+        -> List[StateIncarcerationPeriod]:
+    """Returns a filtered list of the provided |incarceration_periods| to be used for recidivism calculation."""
+
+    incarceration_periods = prepare_incarceration_periods_for_calculations(
+        incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
+
+    # TODO(2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states
+    #  that may have temporary custody periods at this point (currently just US_MO).
+    incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
+    return incarceration_periods
 
 
 def for_last_incarceration_period(
@@ -263,8 +272,7 @@ def for_intermediate_incarceration_period(
         A ReleaseEvent.
     """
 
-    if not should_include_in_release_cohort(release_reason,
-                                            reincarceration_admission_reason):
+    if not should_include_in_release_cohort(release_reason, reincarceration_admission_reason):
         # Don't include this release in the release cohort
         return None
 
@@ -300,10 +308,8 @@ def should_include_in_release_cohort(
     if release_reason == ReleaseReason.ESCAPE:
         # If this escape is followed by a reincarceration_admission_reason that
         # is not RETURN_FROM_ESCAPE, log this unexpected situation.
-        if reincarceration_admission_reason != \
-                AdmissionReason.RETURN_FROM_ESCAPE:
-            logging.info("%s following a release for ESCAPE.",
-                         reincarceration_admission_reason)
+        if reincarceration_admission_reason != AdmissionReason.RETURN_FROM_ESCAPE:
+            logging.info("%s following a release for ESCAPE.", reincarceration_admission_reason)
 
         # If the person was released from this incarceration period because they
         # escaped, do not include them in the release cohort.
@@ -315,8 +321,7 @@ def should_include_in_release_cohort(
                          "not effectively filtering. Found unexpected "
                          f"release_reason of: {release_reason}")
     if release_reason == ReleaseReason.RELEASED_IN_ERROR:
-        if reincarceration_admission_reason != \
-                AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+        if reincarceration_admission_reason != AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
             logging.info("%s following an erroneous release.",
                          reincarceration_admission_reason)
         # If the person was released from this incarceration period due to an
