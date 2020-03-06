@@ -82,8 +82,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             admission_date=date(2014, 4, 14),
             admission_reason=AdmissionReason.PROBATION_REVOCATION)
 
+        temporary_custody_reincarceration_standalone = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=4444,
+            external_id='4',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2019, 4, 5),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2019, 4, 14),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+
         incarceration_periods = [
-            initial_incarceration_period, temporary_custody_reincarceration, revocation_incarceration_period]
+            initial_incarceration_period,
+            temporary_custody_reincarceration,
+            revocation_incarceration_period,
+            temporary_custody_reincarceration_standalone]
 
         release_events_by_cohort = identifier.find_release_events_by_cohort_year(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
@@ -139,8 +153,22 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             admission_date=date(2014, 4, 14),
             admission_reason=AdmissionReason.PROBATION_REVOCATION)
 
+        temporary_custody_reincarceration_standalone = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=4444,
+            external_id='4',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2019, 4, 5),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2019, 4, 14),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+
         incarceration_periods = [
-            initial_incarceration_period, temporary_custody_reincarceration, revocation_incarceration_period]
+            initial_incarceration_period,
+            temporary_custody_reincarceration,
+            revocation_incarceration_period,
+            temporary_custody_reincarceration_standalone]
 
         release_events_by_cohort = identifier.find_release_events_by_cohort_year(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
