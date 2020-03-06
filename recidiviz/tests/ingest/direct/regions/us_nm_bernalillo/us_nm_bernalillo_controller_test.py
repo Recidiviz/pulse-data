@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the direct ingest parser.py."""
 import datetime
+import pytest
 from typing import Type
 
 from mock import patch, Mock
@@ -24,6 +25,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
+from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.ingest.direct.regions.us_nm_bernalillo.\
     us_nm_bernalillo_controller import UsNmBernalilloController
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
@@ -151,6 +153,44 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
         )
 
         self.validate_ingest(ingest_info, expected_info, metadata)
+
+    def testParseColFail(self):
+        expected_info = IngestInfo(
+            people=[
+                Person(
+                    person_id='100041685',
+                    gender='M',
+                    age='41',
+                    race='AMERICAN INDIAN',
+                    bookings=[Booking(
+                        booking_id='130877687',
+                        admission_date='02/27/2020 14:51',
+                        custody_status='IN CUSTODY',
+                        facility='BERNALILLO COUNTY METRO DETENTION CENTER',
+                        arrest=Arrest(
+                            agency='/BSO',
+                        ),
+                        charges=[
+                            Charge(
+                                offense_date='02/27/2020',
+                                name='FAIL TO COMPLY',
+                                case_number='D202CR201802134',
+                            ),
+                            Charge(
+                                offense_date='02/27/2020',
+                                name='AGGRAVATED DWI-3',
+                                case_number='D202CR201802134',
+                            ),
+                        ]
+                    )]
+                ),
+            ]
+        )
+
+        with pytest.raises(DirectIngestError) as e:
+            self.run_parse_file_test(expected_info,
+                                     'MDC_VERA_20200303_02')
+        assert str(e.value) == "Found more columns than expected in charge row"
 
     def test_run_full_ingest_all_files(self):
         # pylint:disable=protected-access
