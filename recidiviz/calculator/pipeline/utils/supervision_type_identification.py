@@ -119,14 +119,19 @@ def get_month_supervision_type(
         any_date_in_month, supervision_sentences, supervision_period)
 
     valid_attached_incarceration_sentences = _valid_attached_sentences_in_month(
-        any_date_in_month, incarceration_sentences, supervision_period
-    )
+        any_date_in_month, incarceration_sentences, supervision_period)
 
     # Get all the sentence types from the valid sentences
     supervision_types: Set[Optional[StateSupervisionType]] = set()
     for supervision_sentence in valid_attached_supervision_sentences.values():
-        if isinstance(supervision_sentence, StateSupervisionSentence) and supervision_sentence.supervision_type:
+        if not isinstance(supervision_sentence, StateSupervisionSentence):
+            continue
+        if supervision_sentence.supervision_type:
             supervision_types.add(supervision_sentence.supervision_type)
+        else:
+            logging.warning('Unexpectedly found supervision_sentence [%d] without supervision_type. Defaulting to '
+                            'StateSupervisionType.PROBATION', supervision_sentence.supervision_sentence_id)
+            supervision_types.add(StateSupervisionType.PROBATION)
 
     # If it's hanging off of any StateIncarcerationSentences, assume this is a parole period
     if valid_attached_incarceration_sentences:
@@ -154,6 +159,7 @@ def get_month_supervision_type(
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
     raise ValueError(f'Unexpected supervision_types {supervision_types}.')
+
 
 def _get_attached_sentences_by_db_id(
         sentences: Union[List[StateIncarcerationSentence], List[StateSupervisionSentence]],
