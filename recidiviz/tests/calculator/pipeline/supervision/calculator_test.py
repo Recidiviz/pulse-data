@@ -1957,7 +1957,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, ALL_INCLUSIONS_DICT)
+            person, supervision_time_bucket, ALL_INCLUSIONS_DICT, metric_type=SupervisionMetricType.POPULATION)
 
         # 64 combinations of demographics and supervision type + 1 person-level metric
         self.assertEqual(len(combinations), 65)
@@ -1990,7 +1990,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, inclusions)
+            person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
         # 128 combinations of demographics, supervision type, and response count + 1 person-level metric
         self.assertEqual(len(combinations), 129)
@@ -2027,7 +2027,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, inclusions)
+            person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
         # 256 combinations of demographics, supervision type, and violations
         self.assertEqual(len(combinations), 257)
@@ -2063,7 +2063,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, inclusions)
+            person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
         # 128 combinations of demographics, supervision type, violation type, and response count
         self.assertEqual(len(combinations), 129)
@@ -2098,7 +2098,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, inclusions)
+            person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
         # 64 combinations of demographics, supervision type, and response count
         self.assertEqual(len(combinations), 65)
@@ -2134,7 +2134,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         }
 
         combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, inclusions)
+            person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
         # 32 combinations of demographics, supervision type, and response count
         self.assertEqual(len(combinations), 33)
@@ -2166,7 +2166,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
-            with_revocation_dimensions=True)
+            metric_type=SupervisionMetricType.REVOCATION)
 
         expected_combinations_count = expected_metric_combos_count(
             person, [supervision_time_bucket], ALL_INCLUSIONS_DICT,
@@ -2178,7 +2178,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count, len(combinations))
 
-    def test_characteristic_combinations_revocation_with_types_disabled(self):
+    def test_characteristic_combinations_revocation_for_population_metric(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -2201,7 +2201,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
-            with_revocation_dimensions=False)
+            metric_type=SupervisionMetricType.POPULATION)
 
         expected_combinations_count = expected_metric_combos_count(
             person, [supervision_time_bucket], ALL_INCLUSIONS_DICT,
@@ -2236,7 +2236,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
-            with_revocation_dimensions=True)
+            metric_type=SupervisionMetricType.REVOCATION)
 
         expected_combinations_count = expected_metric_combos_count(
             person, [supervision_time_bucket], ALL_INCLUSIONS_DICT,
@@ -2273,7 +2273,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
-            with_revocation_dimensions=True)
+            metric_type=SupervisionMetricType.REVOCATION)
 
         expected_combinations_count = expected_metric_combos_count(
             person, [supervision_time_bucket], ALL_INCLUSIONS_DICT,
@@ -2308,7 +2308,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
-            with_revocation_dimensions=True)
+            metric_type=SupervisionMetricType.REVOCATION)
 
         # 32 combinations of: 4 demographic dimensions + supervision type
         expected_combinations_count = expected_metric_combos_count(
@@ -2465,9 +2465,6 @@ def demographic_metric_combos_count_for_person_supervision(
 
     total_metric_combos = demographic_metric_combos_count_for_person(person, demographic_inclusions)
 
-    # Supervision type is always included
-    total_metric_combos *= 2
-
     return total_metric_combos
 
 
@@ -2488,9 +2485,6 @@ def expected_metric_combos_count(
 
     combos_for_person = \
         demographic_metric_combos_count_for_person_supervision(person, inclusions)
-
-    # assessment_score_bucket always filled out.
-    combos_for_person *= 2
 
     # Some test cases above use a different call that doesn't take methodology into account as a dimension
     methodology_multiplier = 1
@@ -2563,11 +2557,14 @@ def expected_metric_combos_count(
         if month is not None:
             revocation_months.add((year, month))
 
+    # Calculates how many dimensions are included in the dimensional explosion by seeing which fields are set on the
+    # buckets that populate the characteristic dictionary that gets exploded
     population_dimension_multiplier = 1
     if population_buckets:
         first_population_bucket = population_buckets[0]
 
         population_dimensions = [
+            'supervision_type',
             'case_type',
             'assessment_type',
             'most_severe_violation_type',
@@ -2580,7 +2577,13 @@ def expected_metric_combos_count(
 
         for dimension in population_dimensions:
             if getattr(first_population_bucket, dimension) is not None:
+                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2 (one
+                # set of combinations where that dimension is included, and one where it is not)
                 population_dimension_multiplier *= 2
+
+        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
+        # is always included in the dimensional explosion
+        population_dimension_multiplier *= 2
 
     supervision_population_combos = (combos_for_person * methodology_multiplier * num_population_buckets
                                      * population_dimension_multiplier)
@@ -2602,6 +2605,7 @@ def expected_metric_combos_count(
         first_revocation_bucket = revocation_buckets[0]
 
         revocation_dimensions = [
+            'supervision_type',
             'case_type',
             'revocation_type',
             'source_violation_type',
@@ -2611,8 +2615,14 @@ def expected_metric_combos_count(
         ]
 
         for dimension in revocation_dimensions:
-            if getattr(first_revocation_bucket, dimension):
+            if getattr(first_revocation_bucket, dimension) is not None:
+                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2 (one
+                # set of combinations where that dimension is included, and one where it is not)
                 revocation_dimension_multiplier *= 2
+
+        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
+        # is always included in the dimensional explosion
+        revocation_dimension_multiplier *= 2
 
     supervision_revocation_combos = (combos_for_person * methodology_multiplier * num_revocation_buckets
                                      * revocation_dimension_multiplier)
@@ -2646,12 +2656,22 @@ def expected_metric_combos_count(
 
         if first_revocation_bucket.violation_type_frequency_counter:
             violation_type_analysis_dimensions = [
+                'supervision_type',
+                'case_type',
+                'supervision_level',
+                'assessment_type',
                 'most_severe_violation_type',
             ]
 
             for dimension in violation_type_analysis_dimensions:
-                if getattr(first_revocation_bucket, dimension):
+                if getattr(first_revocation_bucket, dimension) is not None:
+                    # Every dimension that is set on the bucket increases the number of combinations by a factor of 2
+                    # (one set of combinations where that dimension is included, and one where it is not)
                     revocation_violation_type_analysis_dimension_multiplier *= 2
+
+            # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
+            # is always included in the dimensional explosion
+            revocation_violation_type_analysis_dimension_multiplier *= 2
 
             if first_revocation_bucket.response_count is not None:
                 revocation_violation_type_analysis_dimension_multiplier *= 2
@@ -2673,6 +2693,8 @@ def expected_metric_combos_count(
         first_projected_completion_bucket = projected_completion_buckets[0]
 
         projected_completion_dimensions = [
+            'supervision_type',
+            'supervision_level',
             'case_type',
             'supervising_officer_external_id',
             'supervising_district_external_id'
@@ -2706,15 +2728,23 @@ def expected_metric_combos_count(
 
         termination_dimensions = [
             'case_type',
+            'supervision_type',
             'termination_reason',
             'assessment_type',
             'supervising_officer_external_id',
-            'supervising_district_external_id'
+            'supervising_district_external_id',
+            'supervision_level'
         ]
 
         for dimension in termination_dimensions:
             if getattr(first_termination_bucket, dimension):
+                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2
+                # (one set of combinations where that dimension is included, and one where it is not)
                 termination_dimension_multiplier *= 2
+
+        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
+        # is always included in the dimensional explosion
+        termination_dimension_multiplier *= 2
 
     num_termination_buckets = len(termination_buckets)
 
