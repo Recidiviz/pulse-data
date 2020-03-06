@@ -168,7 +168,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
 
-    def test_get_month_supervision_type_parole_no_type_set_on_supervision_sentence(self):
+    def test_get_month_supervision_type_incarceration_sentence_and_no_type_set_on_supervision_sentence(self):
         any_date_in_month = date(2018, 4, 13)
 
         supervision_period = \
@@ -208,9 +208,9 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_type = get_month_supervision_type(
             any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
 
-        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)
+        self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, supervision_type)
 
-    def test_get_month_supervision_type_probation_no_type_set_on_supervision_sentence(self):
+    def test_get_month_supervision_type_no_type_set_on_supervision_sentence(self):
         any_date_in_month = date(2018, 4, 13)
 
         supervision_period = \
@@ -242,7 +242,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_type = get_month_supervision_type(
             any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
 
-        self.assertEqual(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN, supervision_type)
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PROBATION, supervision_type)
 
     def test_get_month_supervision_type_internal_unknown_on_supervision_sentence(self):
         any_date_in_month = date(2018, 4, 13)
