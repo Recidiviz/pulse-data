@@ -143,9 +143,15 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
                 for charge_row in charges:
                     try:
                         (_, case_number, charge_date, charge_status,
-                         charge_names, _) = re.sub(
+                         charge_names, *last) = re.sub(
                              r'(<>)\1+', '<>', replace_html_tags(
                                  charge_row, '<>')).split('<>')
+                        if len(last) > 1:
+                            raise DirectIngestError(
+                                msg="Found more columns than expected in "
+                                "charge row",
+                                error_type=DirectIngestErrorType.PARSE_ERROR)
+
                     except ValueError as e:
                         if len(charge_html) == 255 or len(charge_html) == 254:
                             continue
