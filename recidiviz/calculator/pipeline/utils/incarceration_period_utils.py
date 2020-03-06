@@ -289,15 +289,14 @@ def drop_periods_not_under_state_custodial_authority(incarceration_periods: List
     # TODO(2912): Use `custodial_authority` to determine this insted, when that field exists on incarceration periods.
     state_code = get_single_state_code(incarceration_periods)
     if state_code == 'US_ND':
-        filtered_incarceration_periods = _drop_temporary_custody_periods(incarceration_periods)
+        filtered_incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
     else:
         filtered_incarceration_periods = _drop_non_prison_periods(incarceration_periods)
     return filtered_incarceration_periods
 
 
-def _drop_temporary_custody_periods(
-        incarceration_periods: List[StateIncarcerationPeriod]
-) -> List[StateIncarcerationPeriod]:
+def drop_temporary_custody_periods(incarceration_periods: List[StateIncarcerationPeriod])\
+        -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods that denote an admission to a temporary custody.
 
     Returns the filtered incarceration periods.
