@@ -48,6 +48,7 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
         expected_result = entities.StateSupervisionCaseTypeEntry(
             state_code='STATE',
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-            case_type_raw_text='DOMESTIC_VIOLENCE')
+            case_type_raw_text='DOMESTIC_VIOLENCE',
+            external_id='ENTRY_ID')
 
         self.assertEqual(result, expected_result)

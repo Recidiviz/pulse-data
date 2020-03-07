@@ -29,6 +29,7 @@ from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_N
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType, \
     StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -54,7 +55,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, StateSentenceGroup, 
     StateIncarcerationPeriod, StatePersonRace, StatePersonExternalId, StateAssessment, StatePersonEthnicity, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
     StateIncarcerationIncident, StateIncarcerationIncidentOutcome, StateProgramAssignment, \
-    StateSupervisionViolationTypeEntry
+    StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -902,7 +903,16 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                        middle_names='P',
                                        alias_type='GIVEN_NAME')
                         ],
-                        supervising_officer=StateAgent(state_agent_id='74', agent_type='SUPERVISION_OFFICER')),
+                        supervising_officer=StateAgent(state_agent_id='74', agent_type='SUPERVISION_OFFICER'),
+                        state_sentence_groups=[
+                            StateSentenceGroup(state_supervision_sentences=[
+                                StateSupervisionSentence(state_supervision_periods=[
+                                    StateSupervisionPeriod(state_supervision_case_type_entries=[
+                                        StateSupervisionCaseTypeEntry(case_type='0',
+                                                                      state_supervision_case_type_entry_id='241896')])
+                                ])
+                            ])
+                        ]),
             StatePerson(state_person_id='92237',
                         surname='Hopkins',
                         given_names='Jon',
@@ -921,7 +931,16 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                         state_aliases=[
                             StateAlias(surname='Hopkins', given_names='Jon', alias_type='GIVEN_NAME')
                         ],
-                        supervising_officer=StateAgent(state_agent_id='40', agent_type='SUPERVISION_OFFICER')),
+                        supervising_officer=StateAgent(state_agent_id='40', agent_type='SUPERVISION_OFFICER'),
+                        state_sentence_groups=[
+                            StateSentenceGroup(state_supervision_sentences=[
+                                StateSupervisionSentence(state_supervision_periods=[
+                                    StateSupervisionPeriod(state_supervision_case_type_entries=[
+                                        StateSupervisionCaseTypeEntry(case_type='0',
+                                                                      state_supervision_case_type_entry_id='92237')])
+                                ])
+                            ])
+                        ]),
             StatePerson(state_person_id='92307',
                         surname='Sandison',
                         given_names='Mike',
@@ -935,7 +954,16 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                         state_aliases=[
                             StateAlias(surname='Sandison', given_names='Mike', alias_type='GIVEN_NAME')
                         ],
-                        supervising_officer=StateAgent(state_agent_id='70', agent_type='SUPERVISION_OFFICER')),
+                        supervising_officer=StateAgent(state_agent_id='70', agent_type='SUPERVISION_OFFICER'),
+                        state_sentence_groups=[
+                            StateSentenceGroup(state_supervision_sentences=[
+                                StateSupervisionSentence(state_supervision_periods=[
+                                    StateSupervisionPeriod(state_supervision_case_type_entries=[
+                                        StateSupervisionCaseTypeEntry(case_type='-1',
+                                                                      state_supervision_case_type_entry_id='92307')])
+                                ])
+                            ])
+                        ])
         ])
 
         self.run_parse_file_test(expected, 'docstars_offenders')
@@ -2390,6 +2418,34 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.current_address = '123 2ND ST N, FARGO, ND, 58102'
         person_1.residency_status = ResidencyStatus.PERMANENT
         person_1.supervising_officer = agent_40
+        person_1_sentence_group_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_1
+        )
+        person_1_supervision_sentence_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=person_1_sentence_group_placeholder,
+            person=person_1)
+        person_1_supervision_period_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[person_1_supervision_sentence_placeholder],
+            person=person_1
+        )
+        person_1_case_type = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            case_type_raw_text='0',
+            supervision_period=person_1_supervision_period_placeholder,
+            person=person_1,
+            external_id='92237'
+        )
+        person_1_supervision_period_placeholder.case_type_entries = [person_1_case_type]
+        person_1_supervision_sentence_placeholder.supervision_periods = [person_1_supervision_period_placeholder]
+        person_1_sentence_group_placeholder.supervision_sentences = [person_1_supervision_sentence_placeholder]
+        person_1.sentence_groups.append(person_1_sentence_group_placeholder)
 
         person_2_supervising_officer = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.SUPERVISION_OFFICER,
@@ -2420,6 +2476,33 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.gender_raw_text = '2'
         person_2.residency_status = ResidencyStatus.PERMANENT
         person_2.supervising_officer = person_2_supervising_officer
+        person_2_sentence_group_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2)
+        person_2_supervision_sentence_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=person_2_sentence_group_placeholder,
+            person=person_2)
+        person_2_supervision_period_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[person_2_supervision_sentence_placeholder],
+            person=person_2
+        )
+        person_2_case_type = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            case_type_raw_text='0',
+            supervision_period=person_2_supervision_period_placeholder,
+            person=person_2,
+            external_id='241896'
+        )
+        person_2_supervision_period_placeholder.case_type_entries = [person_2_case_type]
+        person_2_supervision_sentence_placeholder.supervision_periods = [person_2_supervision_period_placeholder]
+        person_2_sentence_group_placeholder.supervision_sentences = [person_2_supervision_sentence_placeholder]
+        person_2.sentence_groups.append(person_2_sentence_group_placeholder)
 
         person_6 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "MIKE", "surname": "SANDISON"}',
@@ -2452,6 +2535,34 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_6.external_ids = [person_6_external_id]
         person_6.ethnicities = [person_6_ethnicity]
         person_6.supervising_officer = person_6_supervising_officer
+        person_6_sentence_group_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_6)
+        person_6_supervision_sentence_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=person_6_sentence_group_placeholder,
+            person=person_6)
+        person_6_supervision_period_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[person_6_supervision_sentence_placeholder],
+            person=person_6
+        )
+        person_6_case_type = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='-1',
+            supervision_period=person_6_supervision_period_placeholder,
+            person=person_6,
+            external_id='92307'
+        )
+        person_6_supervision_period_placeholder.case_type_entries = [person_6_case_type]
+        person_6_supervision_sentence_placeholder.supervision_periods = [person_6_supervision_period_placeholder]
+        person_6_sentence_group_placeholder.supervision_sentences = [person_6_supervision_sentence_placeholder]
+        person_6.sentence_groups = [person_6_sentence_group_placeholder]
+
         expected_people.append(person_6)
 
         # Act

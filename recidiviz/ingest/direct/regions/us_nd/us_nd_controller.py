@@ -29,6 +29,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, Ethn
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -61,7 +62,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, State
     StateSentenceGroup, StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, StateCharge, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncidentOutcome, \
     StateIncarcerationIncident, StateSupervisionSentence, StateCourtCase, StateSupervisionPeriod, \
-    StateProgramAssignment, StatePersonEthnicity, StateSupervisionViolationTypeEntry
+    StateProgramAssignment, StatePersonEthnicity, StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -128,7 +129,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._enrich_addresses,
                 self._enrich_sorac_assessments,
                 copy_name_to_alias,
-                self._add_supervising_officer
+                self._add_supervising_officer,
+                self._add_case_type_external_id
             ],
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
@@ -268,6 +270,19 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     state_agent_id=supervising_officer_id,
                     agent_type=StateAgentType.SUPERVISION_OFFICER.value)
                 create_if_not_exists(agent_to_create, extracted_object, 'supervising_officer')
+
+    @staticmethod
+    def _add_case_type_external_id(_file_tag: str,
+                                   row: Dict[str, str],
+                                   extracted_objects: List[IngestObject],
+                                   _cache: IngestObjectCache):
+        """Adds the person external_id to the extracted supervision case type."""
+        external_id = row.get('SID')
+        if not external_id:
+            raise ValueError(f"File [{_file_tag}] is missing an SID external id")
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateSupervisionCaseTypeEntry):
+                extracted_object.state_supervision_case_type_entry_id = external_id
 
     @staticmethod
     def _rationalize_race_and_ethnicity(_file_tag: str,
@@ -797,7 +812,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10'],
             StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
 
-            StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator']
+            StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
+
+            StateSupervisionCaseType.GENERAL: ['0'],
+            StateSupervisionCaseType.SEX_OFFENDER: ['-1']
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {

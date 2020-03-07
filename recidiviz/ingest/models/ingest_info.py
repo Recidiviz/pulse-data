@@ -1164,6 +1164,12 @@ class StateSupervisionPeriod(IngestObject):
                      if sc.state_supervision_violation_id == state_supervision_violation_id),
                     None)
 
+    def get_state_supervision_case_type_entry_by_id(self, state_supervision_case_type_entry_id)\
+            -> Optional['StateSupervisionCaseTypeEntry']:
+        return next((cte for cte in self.state_supervision_case_type_entries
+                     if cte.state_supervision_case_type_entry_id == state_supervision_case_type_entry_id),
+                    None)
+
     def prune(self) -> 'StateSupervisionPeriod':
         if not self.supervising_officer:
             self.supervising_officer = None

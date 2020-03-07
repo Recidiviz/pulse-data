@@ -22,6 +22,7 @@ from mock import create_autospec
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -38,7 +39,7 @@ from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateIncarcerationSentence, \
     StateSupervisionSentence, StateSupervisionViolationResponse, \
     StateSupervisionViolation, StateSupervisionPeriod, StateSentenceGroup, \
-    StateAgent
+    StateAgent, StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     import generate_person, generate_external_id, \
@@ -46,7 +47,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     generate_sentence_group, \
     generate_incarceration_period, \
     generate_supervision_period, \
-    generate_supervision_sentence, generate_agent
+    generate_supervision_sentence, generate_agent, generate_supervision_case_type_entry
 from recidiviz.tests.persistence.entity_matching.state.\
     base_state_entity_matcher_test import BaseStateEntityMatcherTest
 from recidiviz.utils.regions import Region
@@ -1240,5 +1241,68 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session)
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_matchPersons_mergeIngestedAndDbSupervisionCaseTypeEntries(self):
+        db_person = generate_person(person_id=_ID)
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            state_code=_US_ND,
+            id_type=_ID_TYPE)
+        db_supervision_case_type_entry = generate_supervision_case_type_entry(
+            person=db_person,
+            case_type=StateSupervisionCaseType.GENERAL.value,
+            state_code=_US_ND,
+            external_id=_EXTERNAL_ID)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_US_ND,
+            case_type_entries=[db_supervision_case_type_entry])
+        db_supervision_sentence = generate_supervision_sentence(
+            person=db_person,
+            supervision_periods=[db_supervision_period])
+        db_sentence_group = generate_sentence_group(person=db_person, supervision_sentences=[db_supervision_sentence])
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+        self._commit_to_db(db_person)
+
+        external_id = attr.evolve(self.to_entity(db_external_id), person_external_id_id=None)
+        person = StatePerson.new_with_defaults(external_ids=[external_id])
+        new_case_type = StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_US_ND,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            external_id=_EXTERNAL_ID
+        )
+        supervision_period = attr.evolve(self.to_entity(db_supervision_period),
+                                         case_type_entries=[new_case_type],
+                                         supervision_period_id=None)
+        supervision_sentence = attr.evolve(self.to_entity(db_supervision_sentence),
+                                           supervision_periods=[supervision_period],
+                                           supervision_sentence_id=None)
+        sentence_group = attr.evolve(self.to_entity(db_sentence_group),
+                                     supervision_sentences=[supervision_sentence],
+                                     sentence_group_id=None)
+        person.sentence_groups = [sentence_group]
+
+        expected_supervision_case_type = attr.evolve(new_case_type)
+        expected_supervision_period = attr.evolve(self.to_entity(db_supervision_period),
+                                                  case_type_entries=[expected_supervision_case_type])
+        expected_supervision_sentence = attr.evolve(self.to_entity(db_supervision_sentence),
+                                                    supervision_periods=[expected_supervision_period])
+        expected_sentence_group = attr.evolve(self.to_entity(db_sentence_group),
+                                              supervision_sentences=[expected_supervision_sentence])
+        expected_external_id = self.to_entity(db_external_id)
+        expected_person = attr.evolve(self.to_entity(db_person),
+                                      external_ids=[expected_external_id],
+                                      sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(session, _US_ND, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session, debug=True)
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
