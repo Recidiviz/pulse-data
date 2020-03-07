@@ -126,6 +126,8 @@ _HIERARCHY_MAP: Dict[
                                       'state_supervision_sentence',
                                       'fine'}),
                 'state_charge', 'state_court_case'),
+            'state_supervision_case_type_entry': ('state_person', 'state_sentence_group', 'state_supervision_sentence',
+                                                  'state_supervision_period',)
         }
 
 
