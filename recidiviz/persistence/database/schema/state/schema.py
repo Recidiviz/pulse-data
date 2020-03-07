@@ -1568,6 +1568,8 @@ class StateSupervisionCaseTypeEntry(
 
     person = relationship('StatePerson', uselist=False)
 
+    external_id = Column(String(255), index=True)
+
 
 # TODO: Update historical column names here -- or downgrade and upgrade?
 class StateSupervisionCaseTypeEntryHistory(

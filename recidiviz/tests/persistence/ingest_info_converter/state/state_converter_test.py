@@ -576,6 +576,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                             case_type_raw_text='DOMESTIC_VIOLENCE',
                             state_code='US_ND',
+                            external_id='CASE_TYPE_ID'
                         )
                     ]
                 )
