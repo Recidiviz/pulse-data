@@ -12,6 +12,7 @@ child_key_mappings:
   RACE: state_person_race.race
   SORAC_SCORE: state_assessment.assessment_level
   ITAGROOT_ID: state_person_external_id.state_person_external_id_id
+  SEXOFF: state_supervision_case_type_entry.case_type
 
 primary_key:
   SID: state_person.state_person_id
@@ -38,7 +39,6 @@ keys_to_ignore:
   - SITEID                # TODO(2232): Ingest this and use site id to track site of supervision
   - ABSDATE               # No longer in use within source
   - ABSCONDER
-  - SEXOFF
   - GOODTIMEDATE
   - C_MARITAL             # TODO(1866) Do we want to track qualitative attrs?
   - D_DEP

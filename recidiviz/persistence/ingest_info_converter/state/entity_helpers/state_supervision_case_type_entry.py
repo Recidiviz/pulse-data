@@ -24,7 +24,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info import StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
+    fn, parse_region_code_with_override, parse_external_id
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
     import EnumMappings
 
@@ -47,5 +47,8 @@ def convert(
         proto, 'state_code', metadata)
     new.case_type = enum_mappings.get(StateSupervisionCaseType)
     new.case_type_raw_text = fn(normalize, 'case_type', proto)
+
+    # 1-to-1 mappings
+    new.external_id = fn(parse_external_id, 'state_supervision_case_type_entry_id', proto)
 
     return new.build()
