@@ -42,6 +42,7 @@ def get_pre_incarceration_supervision_type(
             reincarcerated.
     """
 
+    # TODO(2932): Don't rely only on the incarceration period in ND
     # TODO(2647): Move US_MO to use sentence and date-based determination once it's implemented
     if state_code in ('US_MO', 'US_ND'):
         return _get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
