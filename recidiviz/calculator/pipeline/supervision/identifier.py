@@ -443,6 +443,7 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
     supervising_officer_external_id = None
     supervising_district_external_id = None
 
+    # TODO(2939): Decide precedence strategy for choosing supervising_officer_external_id in US_ND
     if supervision_period and supervision_period_to_agent_associations:
         supervising_officer_external_id, supervising_district_external_id = \
             _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
@@ -639,8 +640,8 @@ def index_incarceration_periods_by_admission_month(
 
 
 def find_revocation_return_buckets(
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
+        _supervision_sentences: List[StateSupervisionSentence],
+        _incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_time_buckets: List[SupervisionTimeBucket],
@@ -671,6 +672,9 @@ def find_revocation_return_buckets(
 
         assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_month, assessments)
 
+        supervision_type = get_pre_incarceration_supervision_type(incarceration_period.state_code,
+                                                                  incarceration_period)
+
         relevant_pre_incarceration_supervision_periods = \
             _get_relevant_pre_revocation_incarceration_supervision_periods(admission_date, supervision_periods)
 
@@ -680,9 +684,6 @@ def find_revocation_return_buckets(
                 revocation_details = _get_revocation_details(
                     incarceration_period, supervision_period,
                     ssvr_agent_associations, supervision_period_to_agent_associations)
-
-                supervision_period_supervision_type = get_month_supervision_type(
-                    admission_date, supervision_sentences, incarceration_sentences, supervision_period)
 
                 case_type = _identify_most_severe_case_type(supervision_period)
                 supervision_level = supervision_period.supervision_level
@@ -695,7 +696,7 @@ def find_revocation_return_buckets(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
                     month=admission_month,
-                    supervision_type=supervision_period_supervision_type,
+                    supervision_type=supervision_type,
                     case_type=case_type,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
@@ -720,9 +721,6 @@ def find_revocation_return_buckets(
             # RevocationReturnSupervisionTimeBucket with as many details as possible about this revocation
             revocation_details = _get_revocation_details(
                 incarceration_period, None, ssvr_agent_associations, None)
-
-            supervision_type = get_pre_incarceration_supervision_type(incarceration_period.state_code,
-                                                                      incarceration_period)
 
             # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
             case_type = StateSupervisionCaseType.GENERAL
