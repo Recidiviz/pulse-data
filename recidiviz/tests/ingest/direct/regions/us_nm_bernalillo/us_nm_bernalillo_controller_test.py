@@ -81,11 +81,15 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
                                 offense_date='02/27/2020',
                                 name='FAIL TO COMPLY',
                                 case_number='D202CR201802134',
+                                bond=Bond(amount='0',
+                                          bond_type='HOLD')
                             ),
                             Charge(
                                 offense_date='02/27/2020',
                                 name='AGGRAVATED DWI-3',
                                 case_number='D202CR201802134',
+                                bond=Bond(amount='0',
+                                          bond_type='HOLD')
                             ),
                         ]
                     )]
@@ -108,11 +112,17 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
                                 offense_date='01/07/2019',
                                 name='GRAND JURY INDICTMENT',
                                 case_number='D202CR2019000032',
+                                bond=Bond(amount='0',
+                                          bond_type='CONCURRENT',
+                                          status='Active')
                             ),
                             Charge(
                                 offense_date='01/07/2019',
                                 name='AGG BATTERY W/DEADLY WEAPON',
                                 case_number='D202CR2019000032',
+                                bond=Bond(amount='0',
+                                          bond_type='CONCURRENT',
+                                          status='Active')
                             ),
                         ]
                     )]
@@ -137,7 +147,49 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
                             ),
                         ]
                     )]
-                )
+                ),
+                Person(
+                    person_id='100265416',
+                    gender='M',
+                    age='35',
+                    race='WHITE',
+                    bookings=[Booking(
+                        booking_id='130877955',
+                        admission_date='03/02/2020 18:54',
+                        custody_status='IN CUSTODY',
+                        facility='BERNALILLO COUNTY METRO DETENTION CENTER',
+                        arrest=Arrest(
+                            agency='/APD',
+                        ),
+                        charges=[
+                            Charge(
+                                bond=Bond(amount='0',
+                                          bond_type='RELEASE ON RECOG')
+                            ),
+                        ]
+                    )]
+                ),
+                Person(
+                    person_id='100265417',
+                    gender='M',
+                    age='35',
+                    race='WHITE',
+                    bookings=[Booking(
+                        booking_id='130877956',
+                        admission_date='03/02/2020 18:54',
+                        custody_status='IN CUSTODY',
+                        facility='BERNALILLO COUNTY METRO DETENTION CENTER',
+                        arrest=Arrest(
+                            agency='/APD',
+                        ),
+                        charges=[
+                            Charge(
+                                bond=Bond(amount='0',
+                                          bond_type='THIRD PARTY')
+                            ),
+                        ]
+                    )]
+                ),
             ]
         )
 
