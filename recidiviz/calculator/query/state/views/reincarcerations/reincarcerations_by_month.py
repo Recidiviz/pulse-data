@@ -49,6 +49,11 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND specialized_purpose_for_incarceration IS NULL
+        AND admission_reason IS NULL
+        AND admission_reason_raw_text IS NULL
         AND month IS NOT NULL
         AND metric_period_months = 1
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL -3 YEAR))
@@ -71,6 +76,8 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
         AND release_facility IS NULL
         AND return_type IS NULL
         AND from_supervision_type IS NULL
