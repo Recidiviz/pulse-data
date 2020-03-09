@@ -63,6 +63,14 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND most_severe_violation_type IS NULL
+        AND most_severe_violation_type_subtype IS NULL
+        AND response_count IS NULL
+        AND case_type IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND supervision_level IS NULL
+        AND supervision_level_raw_text IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
         AND job.metric_type = 'SUPERVISION_POPULATION'
     ) pop
@@ -85,6 +93,8 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
         AND job.metric_type = 'PROGRAM_REFERRAL'
     ) ref
