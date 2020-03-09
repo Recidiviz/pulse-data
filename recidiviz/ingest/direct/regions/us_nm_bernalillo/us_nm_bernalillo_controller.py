@@ -138,6 +138,9 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
             charge = booking.charges[0]
             if charge.name:
                 charge_html = charge.name
+
+                bond = charge.bond
+
                 booking.charges = []
                 charges = charge_html.split('<TR>')[1:]
                 for charge_row in charges:
@@ -163,12 +166,18 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
                         booking.create_charge(
                             name=charge_name,
                             offense_date=charge_date,
-                            case_number=case_number)
+                            case_number=case_number,
+                            bond=bond
+                        )
 
     def get_enum_overrides(self):
         overrides_builder = super().get_enum_overrides().to_builder()
 
+        overrides_builder.ignore('CONCURRENT', BondType)
+        overrides_builder.add('HOLD', BondType.DENIED)
         overrides_builder.add('MEXICAN', Ethnicity.HISPANIC, Race)
+        overrides_builder.add('RELEASE ON RECOG', BondType.NOT_REQUIRED)
+        overrides_builder.ignore('THIRD PARTY', BondType)
         overrides_builder.add('TO BE SET BY JUDGE', BondStatus.PENDING,
                               BondType)
 
