@@ -55,6 +55,9 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
       AND race IS NULL
       AND ethnicity IS NULL
       AND gender IS NULL
+      AND case_type IS NULL
+      AND person_id IS NULL
+      AND person_external_id IS NULL
       AND supervising_officer_external_id IS NULL
       AND termination_reason IS NULL
       AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))

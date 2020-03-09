@@ -58,6 +58,11 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND specialized_purpose_for_incarceration IS NULL
+        AND admission_reason IS NULL
+        AND admission_reason_raw_text IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
@@ -73,11 +78,14 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
+        AND release_reason IS NULL
         AND facility IS NULL
         AND age_bucket IS NULL
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'INCARCERATION_RELEASE'
@@ -100,6 +108,11 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND most_serious_offense_statute IS NULL
+        AND admission_reason IS NULL
+        AND admission_reason_raw_text IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -4 YEAR))
         AND job.metric_type = 'INCARCERATION_POPULATION'
         AND year = (EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 

@@ -46,6 +46,8 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
       AND race IS NULL
       AND ethnicity IS NULL
       AND gender IS NULL
+      AND person_id IS NULL
+      AND person_external_id IS NULL
       AND release_facility IS NULL
       AND return_type IS NULL
       AND from_supervision_type IS NULL

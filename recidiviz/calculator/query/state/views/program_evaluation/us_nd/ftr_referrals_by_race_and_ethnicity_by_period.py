@@ -65,6 +65,14 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY = \
         AND race is NOT NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND most_severe_violation_type IS NULL
+        AND most_severe_violation_type_subtype IS NULL
+        AND response_count IS NULL
+        AND case_type IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND supervision_level IS NULL
+        AND supervision_level_raw_text IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_POPULATION'
@@ -89,6 +97,14 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY = \
         AND race is NULL
         AND ethnicity IS NOT NULL
         AND gender IS NULL
+        AND most_severe_violation_type IS NULL
+        AND most_severe_violation_type_subtype IS NULL
+        AND response_count IS NULL
+        AND case_type IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND supervision_level IS NULL
+        AND supervision_level_raw_text IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_POPULATION'
@@ -113,6 +129,8 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY = \
         AND race is NOT NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'PROGRAM_REFERRAL'
@@ -138,6 +156,8 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY = \
         AND race is NULL
         AND ethnicity IS NOT NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'PROGRAM_REFERRAL'
