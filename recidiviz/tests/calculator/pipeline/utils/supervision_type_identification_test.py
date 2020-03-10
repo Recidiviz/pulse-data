@@ -24,7 +24,8 @@ from datetime import date
 
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_month_supervision_type, get_pre_incarceration_supervision_type, _get_most_relevant_supervision_type, \
-    _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences
+    _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences, \
+    get_supervision_period_supervision_type_from_sentence
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -929,3 +930,25 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
     def test_getMostRelevantSupervisionType_dualIfProbationAndParole(self):
         types = {StateSupervisionPeriodSupervisionType.PROBATION, StateSupervisionPeriodSupervisionType.PAROLE}
         self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, _get_most_relevant_supervision_type(types))
+
+
+class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
+    def test_get_supervision_period_supervision_type_from_sentence(self):
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111
+        )
+
+        for supervision_type in StateSupervisionType:
+            supervision_sentence.supervision_type = supervision_type
+
+            # Assert this doesn't fail for all possible supervision types
+            _ = get_supervision_period_supervision_type_from_sentence(supervision_sentence)
+
+    def test_get_supervision_period_supervision_type_from_sentence_incarceration_sentence(self):
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=111
+        )
+
+        supervision_type = get_supervision_period_supervision_type_from_sentence(incarceration_sentence)
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, supervision_type)

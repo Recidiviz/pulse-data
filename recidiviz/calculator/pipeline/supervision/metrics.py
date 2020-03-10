@@ -67,6 +67,8 @@ class SupervisionMetric(RecidivizMetric):
     # The number of months this metric describes, starting with the month of the metric and going back in time.
     metric_period_months: Optional[int] = attr.ib(default=None)
 
+    # TODO(2891): Consider moving this out of the base class, and making the supervision type specific to each
+    #   metric type
     # Supervision Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
