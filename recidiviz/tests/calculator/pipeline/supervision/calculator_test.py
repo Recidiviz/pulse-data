@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for supervision/calculator.py."""
-# pylint: disable=unused-import,wrong-import-order
+# pylint: disable=unused-import,wrong-import-order,protected-access
 import unittest
 from datetime import date
 from typing import Dict, List, Tuple, Set
@@ -1748,6 +1748,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value in supervision_combinations)
         assert all(_combination.get('violation_count_type') is not None
                    for _combination, value in supervision_combinations)
+        assert all(_combination.get('person_id') is None for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_population(self):
@@ -2848,3 +2849,22 @@ def expected_metric_combos_count(
             return int(supervision_population_combos)
 
     return 0
+
+
+class TestIncludeDimensionsFunctions(unittest.TestCase):
+    """Tests the various functions that determine which dimensions should be included for the given metric."""
+
+    def test_include_assessment_dimensions_for_metric(self):
+        for metric in SupervisionMetricType:
+            # Assert this does not fail for all possible metric types
+            _ = calculator._include_assessment_dimensions_for_metric(metric)
+
+    def test_include_person_level_dimensions_for_metric(self):
+        for metric in SupervisionMetricType:
+            # Assert this does not fail for all possible metric types
+            _ = calculator._include_person_level_dimensions_for_metric(metric)
+
+    def test_include_revocation_dimensions_for_metric(self):
+        for metric in SupervisionMetricType:
+            # Assert this does not fail for all possible metric types
+            _ = calculator._include_revocation_dimensions_for_metric(metric)
