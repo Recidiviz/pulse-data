@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, Pe
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 
 
 class IncarcerationMetricType(Enum):
@@ -100,6 +101,9 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Admission reason raw text
     admission_reason_raw_text: str = attr.ib(default=None)
 
+    # Supervision type at the time of admission, if any.
+    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationPopulationMetric']:
@@ -136,6 +140,9 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+
+    # Supervision type at the time of admission, if any.
+    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \

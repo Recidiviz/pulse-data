@@ -23,6 +23,7 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 
 
 @attr.s(frozen=True)
@@ -60,6 +61,9 @@ class IncarcerationStayEvent(IncarcerationEvent):
     # Admission reason raw text
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
+    # Supervision type at the time of admission, if any.
+    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):
@@ -75,6 +79,9 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+
+    # Supervision type at the time of admission, if any.
+    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)
