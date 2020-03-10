@@ -47,6 +47,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import \
     Gender, Race, ResidencyStatus, Ethnicity, StatePerson, \
     StateIncarcerationPeriod, StateIncarcerationSentence, StateSentenceGroup, StateCharge
@@ -553,7 +554,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             state_code='TX',
             facility='PRISON XX',
             admission_date=date(2010, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
@@ -587,6 +588,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             IncarcerationStayEvent(
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 state_code=incarceration_period.state_code,
                 event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
@@ -600,6 +602,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,

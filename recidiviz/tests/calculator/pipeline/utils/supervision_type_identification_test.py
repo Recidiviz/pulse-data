@@ -21,10 +21,10 @@
 import unittest
 from datetime import date
 
-import pytest
 
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
-    _get_pre_incarceration_supervision_type_from_incarceration_period, get_month_supervision_type
+    get_month_supervision_type, get_pre_incarceration_supervision_type, _get_most_relevant_supervision_type, \
+    _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -32,29 +32,6 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionPeriodStatus, StateSupervisionPeriodTerminationReason
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, StateSupervisionSentence, StateIncarcerationSentence
-
-
-class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
-
-    def test_get_pre_incarceration_supervision_type_complete(self):
-        for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-                admission_reason=admission_reason)
-            expected_type = None
-            if admission_reason == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
-                expected_type = StateSupervisionPeriodSupervisionType.PROBATION
-            elif admission_reason == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
-                expected_type = StateSupervisionPeriodSupervisionType.PAROLE
-            elif admission_reason == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION:
-                expected_type = StateSupervisionPeriodSupervisionType.DUAL
-
-            if admission_reason == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
-                with pytest.raises(ValueError):
-                    _get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
-            else:
-                self.assertEqual(expected_type,
-                                 _get_pre_incarceration_supervision_type_from_incarceration_period(
-                                     incarceration_period))
 
 
 class TestGetMonthSupervisionType(unittest.TestCase):
@@ -689,3 +666,266 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN, supervision_type)
+
+
+class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
+    """Tests get_pre_incarceration_supervision_type."""
+
+    def test_getPreIncarcerationSupervisionType_typeBasedOnAdmissionReason(self):
+        for admission_reason in StateIncarcerationPeriodAdmissionReason:
+            incarceration_period = StateIncarcerationPeriod.new_with_defaults(admission_reason=admission_reason)
+            expected_type = None
+            if admission_reason == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
+                expected_type = StateSupervisionPeriodSupervisionType.PROBATION
+            elif admission_reason == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
+                expected_type = StateSupervisionPeriodSupervisionType.PAROLE
+            elif admission_reason == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION:
+                expected_type = StateSupervisionPeriodSupervisionType.DUAL
+            self.assertEqual(expected_type, get_pre_incarceration_supervision_type([], [], incarceration_period, []))
+
+    def test_usMo_getPreIncarcerationSupervisionType(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=date(2018, 3, 5))
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            external_id='sp1',
+            start_date=date(2016, 3, 1),
+            termination_date=date(2018, 3, 1),
+            state_code='US_MO')
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            external_id='sp2',
+            start_date=date(2016, 3, 1),
+            termination_date=date(2018, 3, 1),
+            state_code='US_MO')
+
+        supervision_sentence_prob = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 4),
+            status=StateSentenceStatus.COMPLETED,
+            projected_completion_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_periods=[supervision_period])
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 4),
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period_2])
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL,
+                         get_pre_incarceration_supervision_type(
+                             [incarceration_sentence],
+                             [supervision_sentence_prob],
+                             incarceration_period,
+                             [supervision_period, supervision_period_2]))
+
+    def test_usMo_getPreIncarcerationSupervisionType_ignoreOutOfDateSentences(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=date(2018, 3, 5))
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            external_id='sp1',
+            start_date=date(2016, 3, 1),
+            termination_date=date(2018, 3, 1),
+            state_code='US_MO')
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            external_id='sp2',
+            start_date=date(2016, 3, 1),
+            termination_date=date(2018, 3, 1),
+            state_code='US_MO')
+
+        supervision_sentence_prob = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 4),
+            status=StateSentenceStatus.COMPLETED,
+            projected_completion_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_periods=[supervision_period])
+        old_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2017, 2, 1),
+            completion_date=date(2017, 3, 4),
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period_2])
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PROBATION,
+                         get_pre_incarceration_supervision_type(
+                             [old_incarceration_sentence],
+                             [supervision_sentence_prob],
+                             incarceration_period,
+                             [supervision_period, supervision_period_2]))
+
+    def test_usMo_getPreIncarcerationSupervisionType_useAdmissionDate(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=date(2018, 3, 5))
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=date(2018, 1, 1),
+            external_id='sp1',
+            state_code='US_MO')
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            start_date=date(2018, 1, 1),
+            external_id='sp2',
+            state_code='US_MO')
+
+        supervision_sentence_prob = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 6),
+            status=StateSentenceStatus.COMPLETED,
+            projected_completion_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_periods=[supervision_period])
+        invalid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 4),
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period_2])
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PROBATION,
+                         get_pre_incarceration_supervision_type(
+                             [invalid_incarceration_sentence],
+                             [supervision_sentence_prob],
+                             incarceration_period,
+                             [supervision_period, supervision_period_2]))
+
+    def test_usMo_getPreIncarcerationSupervisionType_noSupervisionPeriod(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=date(2018, 3, 5))
+
+        supervision_sentence_prob = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 6),
+            status=StateSentenceStatus.COMPLETED,
+            projected_completion_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION)
+        invalid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='US_MO',
+            start_date=date(2018, 2, 1),
+            completion_date=date(2018, 3, 4),
+            status=StateSentenceStatus.COMPLETED)
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
+                         get_pre_incarceration_supervision_type(
+                             [invalid_incarceration_sentence],
+                             [supervision_sentence_prob],
+                             incarceration_period,
+                             []))
+
+    def test_getSentencesOverlappingWithDate(self):
+        target_date = date(2018, 7, 20)
+        valid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 1),
+            completion_date=date(2018, 7, 30))
+        valid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 1),
+            completion_date=date(2018, 7, 20))
+        invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 21),
+            completion_date=date(2018, 8, 20))
+
+        self.assertEqual([valid_incarceration_sentence, valid_incarceration_sentence_2],
+                         _get_sentences_overlapping_with_date(target_date, [valid_incarceration_sentence,
+                                                                            valid_incarceration_sentence_2,
+                                                                            invalid_incarceration_sentence_2]))
+
+    def test_getValidAttachedSentences(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(supervision_period_id=1)
+        valid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 1),
+            supervision_periods=[supervision_period])
+
+        invalid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            supervision_periods=[supervision_period])
+        invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            start_date=date(2018, 7, 1),
+            external_id='is1')
+        sentences = [valid_incarceration_sentence, invalid_incarceration_sentence, invalid_incarceration_sentence_2]
+
+        self.assertEqual([valid_incarceration_sentence],
+                         _get_valid_attached_sentences(sentences, supervision_period))
+
+    def test_getSentencesOverlappingWithDates(self):
+
+        start_date = date(2018, 7, 20)
+        end_date = date(2018, 7, 31)
+        valid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 1),
+            completion_date=date(2018, 7, 30))
+        valid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 7, 1),
+            completion_date=date(2018, 7, 20))
+        invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=1,
+            external_id='is1',
+            start_date=date(2018, 8, 21),
+            completion_date=date(2018, 8, 20))
+
+        self.assertEqual([valid_incarceration_sentence, valid_incarceration_sentence_2],
+                         _get_sentences_overlapping_with_dates(start_date, end_date,
+                                                               [valid_incarceration_sentence,
+                                                                valid_incarceration_sentence_2,
+                                                                invalid_incarceration_sentence_2]))
+
+    def test_getMostRelevantSupervisionType_allEnums(self):
+        for supervision_type in StateSupervisionPeriodSupervisionType:
+            types = {supervision_type}
+            self.assertEqual(supervision_type, _get_most_relevant_supervision_type(types))
+
+    def test_getMostRelevantSupervisionType_chooseDualIfExists(self):
+        for supervision_type in StateSupervisionPeriodSupervisionType:
+            types = {StateSupervisionPeriodSupervisionType.DUAL, supervision_type}
+            self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, _get_most_relevant_supervision_type(types))
+
+    def test_getMostRelevantSupervisionType_dualIfProbationAndParole(self):
+        types = {StateSupervisionPeriodSupervisionType.PROBATION, StateSupervisionPeriodSupervisionType.PAROLE}
+        self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, _get_most_relevant_supervision_type(types))

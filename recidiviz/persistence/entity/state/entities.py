@@ -20,7 +20,7 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. Th
 objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
-from typing import Optional, List
+from typing import Optional, List, TypeVar
 
 import datetime
 import attr
@@ -90,6 +90,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseType
 
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+
+# **** Entity Types for convenience *****:
+SentenceType = TypeVar('SentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
+PeriodType = TypeVar('PeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
 
 
 # **** Entity ordering template *****:
