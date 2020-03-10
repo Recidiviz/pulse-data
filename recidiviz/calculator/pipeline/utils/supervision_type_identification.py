@@ -28,6 +28,13 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder, get_ids
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionSentence, StateIncarcerationSentence, SentenceType
 
+SUPERVISION_TYPE_PRECEDENCE_ORDER = [
+    StateSupervisionPeriodSupervisionType.PROBATION,
+    StateSupervisionPeriodSupervisionType.PAROLE,
+    StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
+    StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+]
+
 
 # TODO(2647): Write full coverage unit tests for this function
 def get_pre_incarceration_supervision_type(
@@ -167,7 +174,7 @@ def _get_pre_incarceration_supervision_type_from_incarceration_period(
 
     if incarceration_period.admission_reason == AdmissionReason.TEMPORARY_CUSTODY:
         logging.warning('Unexpected - attempting to get supervision type from temporary custody incarceration period '
-                        '[%d].', incarceration_period.incarceration_period_id)
+                        '[%s].', incarceration_period.incarceration_period_id)
         return None
 
     raise ValueError(f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: "
@@ -219,45 +226,60 @@ def _get_supervision_type_from_sentences(
     """Based on the provided |incarceration_sentences| and |supervision_sentences| determines and returns a
     supervision type.
     """
-
     # Get all the sentence types from the valid sentences
-    supervision_types: Set[Optional[StateSupervisionType]] = set()
+    supervision_types: Set[Optional[StateSupervisionPeriodSupervisionType]] = set()
     for supervision_sentence in supervision_sentences:
         if not isinstance(supervision_sentence, StateSupervisionSentence):
             continue
 
         if supervision_sentence.supervision_type:
-            supervision_types.add(supervision_sentence.supervision_type)
+            supervision_types.add(get_supervision_period_supervision_type_from_sentence(supervision_sentence))
         else:
-            logging.warning('Unexpectedly found supervision_sentence [%d] without supervision_type. Defaulting to '
-                            'StateSupervisionType.PROBATION', supervision_sentence.supervision_sentence_id)
-            supervision_types.add(StateSupervisionType.PROBATION)
+            logging.warning('Unexpectedly found supervision_sentence [%s] without supervision_type. Defaulting to '
+                            'PROBATION', supervision_sentence.supervision_sentence_id)
+            supervision_types.add(StateSupervisionPeriodSupervisionType.PROBATION)
 
-    # If it's hanging off of any StateIncarcerationSentences, assume this is a parole period
-    if incarceration_sentences:
-        supervision_types.add(StateSupervisionType.PAROLE)
+    for incarceration_sentence in incarceration_sentences:
+        supervision_types.add(get_supervision_period_supervision_type_from_sentence(incarceration_sentence))
 
-    if StateSupervisionType.PROBATION in supervision_types and StateSupervisionType.PAROLE in supervision_types:
+    if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types \
+            and StateSupervisionPeriodSupervisionType.PAROLE in supervision_types:
         return StateSupervisionPeriodSupervisionType.DUAL
-    if StateSupervisionType.PROBATION in supervision_types:
-        return StateSupervisionPeriodSupervisionType.PROBATION
-    if StateSupervisionType.PAROLE in supervision_types:
+
+    # Return the supervision type that takes highest precedence
+    return next((supervision_type for supervision_type in SUPERVISION_TYPE_PRECEDENCE_ORDER
+                 if supervision_type in supervision_types), StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+
+
+def get_supervision_period_supervision_type_from_sentence(sentence: SentenceType) -> \
+        StateSupervisionPeriodSupervisionType:
+    """Classifies the StateSupervisionPeriodSupervisionType that should correspond to the supervision_type of the given
+    sentence. This is a mapping of StateSupervisionType to StateSupervisionPeriodSupervisionType for
+    StateSupervisionSentences. For StateIncarcerationSentences, assumes the supervision_type is PAROLE."""
+    if isinstance(sentence, StateIncarcerationSentence):
+        # Assume supervision types from StateIncarcerationSentences are of type PAROLE
         return StateSupervisionPeriodSupervisionType.PAROLE
-    if supervision_types.intersection({
+
+    if sentence.supervision_type == StateSupervisionType.PROBATION:
+        return StateSupervisionPeriodSupervisionType.PROBATION
+    if sentence.supervision_type == StateSupervisionType.PAROLE:
+        return StateSupervisionPeriodSupervisionType.PAROLE
+    if sentence.supervision_type in (
             StateSupervisionType.PRE_CONFINEMENT,
             StateSupervisionType.POST_CONFINEMENT,
             StateSupervisionType.HALFWAY_HOUSE,
-            StateSupervisionType.CIVIL_COMMITMENT}):
+            StateSupervisionType.CIVIL_COMMITMENT):
         # These are all types that should be deprecated, but for now, just assume probation - the numbers in ND are very
         # small for these.
         return StateSupervisionPeriodSupervisionType.PROBATION
-    if StateSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
+    if sentence.supervision_type == StateSupervisionType.EXTERNAL_UNKNOWN:
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
 
-    if not supervision_types or StateSupervisionType.INTERNAL_UNKNOWN in supervision_types:
+    if not sentence.supervision_type or \
+            sentence.supervision_type == StateSupervisionType.INTERNAL_UNKNOWN:
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
-    raise ValueError(f'Unexpected supervision_types {supervision_types}.')
+    raise ValueError(f'Unexpected supervision_type {sentence.supervision_type}.')
 
 
 def _get_valid_attached_sentences(
