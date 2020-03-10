@@ -441,11 +441,6 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
     supervising_officer_external_id = None
     supervising_district_external_id = None
 
-    # TODO(2939): Decide precedence strategy for choosing supervising_officer_external_id in US_ND
-    if supervision_period and supervision_period_to_agent_associations:
-        supervising_officer_external_id, supervising_district_external_id = \
-            _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
-
     source_violation_response = incarceration_period.source_supervision_violation_response
 
     if source_violation_response:
@@ -461,16 +456,22 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
         if source_violation:
             source_violation_type, _ = identify_most_severe_violation_type_and_subtype([source_violation])
 
-        if supervising_officer_external_id is None:
-            supervision_violation_response_id = source_violation_response.supervision_violation_response_id
+        supervision_violation_response_id = source_violation_response.supervision_violation_response_id
 
-            if supervision_violation_response_id:
-                agent_info = ssvr_agent_associations.get(supervision_violation_response_id)
+        if supervision_violation_response_id:
+            agent_info = ssvr_agent_associations.get(supervision_violation_response_id)
 
-                if agent_info is not None:
-                    supervising_officer_external_id = agent_info.get('agent_external_id')
-                    supervising_district_external_id = agent_info.get('district_external_id') \
-                        if supervising_district_external_id is None else supervising_district_external_id
+            if agent_info is not None:
+                supervising_officer_external_id = agent_info.get('agent_external_id')
+                supervising_district_external_id = agent_info.get('district_external_id')
+
+    if not supervising_officer_external_id:
+        # For some states, if there's no officer information coming from the source_supervision_violation_response,
+        # default to the officer information on the overlapping supervision period
+        if incarceration_period.state_code == 'US_MO' \
+                and supervision_period and supervision_period_to_agent_associations:
+            supervising_officer_external_id, supervising_district_external_id = \
+                _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
     if revocation_type is None:
         # If the revocation type is not set, assume this is a reincarceration
