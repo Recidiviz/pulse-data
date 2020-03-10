@@ -152,7 +152,8 @@ def characteristic_combinations(person: StatePerson,
     if isinstance(incarceration_event, IncarcerationAdmissionEvent):
         if incarceration_event.admission_reason:
             characteristics['admission_reason'] = incarceration_event.admission_reason
-
+        if incarceration_event.supervision_type_at_admission:
+            characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
         if incarceration_event.specialized_purpose_for_incarceration:
             characteristics['specialized_purpose_for_incarceration'] = \
                 incarceration_event.specialized_purpose_for_incarceration
@@ -164,6 +165,8 @@ def characteristic_combinations(person: StatePerson,
     if isinstance(incarceration_event, IncarcerationStayEvent):
         if incarceration_event.admission_reason:
             characteristics['admission_reason'] = incarceration_event.admission_reason
+        if incarceration_event.supervision_type_at_admission:
+            characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
 
     # Always include facility as a dimension
     if incarceration_event.facility:
