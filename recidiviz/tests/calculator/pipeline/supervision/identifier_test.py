@@ -62,8 +62,8 @@ from recidiviz.persistence.entity.state.entities import \
 DEFAULT_SSVR_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
-        'agent_external_id': 'XXX',
-        'district_external_id': 'X',
+        'agent_external_id': 'ZZZ',
+        'district_external_id': 'Z',
         'supervision_violation_response_id': 999
     }
 }
@@ -1464,13 +1464,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 incarceration_period_id=111,
                 external_id='ip1',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='US_ND',
                 admission_date=date(2018, 6, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=_DEFAULT_SSVR_ID
+                )
             )
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -1541,8 +1546,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
                 most_severe_violation_type_subtype='UNSET',
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='X',
+                supervising_officer_external_id='ZZZ',
+                supervising_district_external_id='Z',
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
         ])
 
@@ -1568,9 +1573,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 incarceration_period_id=111,
                 external_id='ip1',
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='US_ND',
                 admission_date=date(2018, 6, 3),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=_DEFAULT_SSVR_ID
+                )
             )
 
         supervision_sentence = \
@@ -1645,8 +1654,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 most_severe_violation_type_subtype='UNSET',
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='X',
+                supervising_officer_external_id='ZZZ',
+                supervising_district_external_id='Z',
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
         ])
 
@@ -1674,7 +1683,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2019, 1, 5),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    supervision_violation_response_id=_DEFAULT_SSVR_ID
+                )
             )
 
         supervision_sentence = \
@@ -1754,8 +1766,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 most_severe_violation_type_subtype='UNSET',
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='X'
+                supervising_officer_external_id='ZZZ',
+                supervising_district_external_id='Z'
             )
         ])
 
@@ -3434,8 +3446,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_count=1,
                 violation_history_description='1fel;1tech',
                 violation_type_frequency_counter=[['FELONY']],
-                supervising_officer_external_id=r'XXX',
-                supervising_district_external_id='X'),
+                supervising_officer_external_id=r'ZZZ',
+                supervising_district_external_id='Z'),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
@@ -3591,8 +3603,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_count=1,
                 violation_history_description='1subs',
                 violation_type_frequency_counter=[['DRG']],
-                supervising_officer_external_id=r'XXX',
-                supervising_district_external_id='X'),
+                supervising_officer_external_id=r'ZZZ',
+                supervising_district_external_id='Z'),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
@@ -6057,13 +6069,47 @@ class TestGetRevocationDetails(unittest.TestCase):
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             supervising_district_external_id=supervision_period.supervision_site,
+                             supervising_district_external_id=DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
+                                 supervision_period.supervision_period_id).get('district_external_id'),
                              supervising_officer_external_id=
-                             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                             DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
 
-    def test_get_revocation_details_no_supervision_site(self):
+    def test_get_revocation_details_no_ssvr(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_XX',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_site='DISTRICT 999'
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id='ip1',
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2018, 5, 25),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            source_supervision_violation_response=None
+        )
+
+        revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
+                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+                                                                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
+
+        self.assertEqual(revocation_details,
+                         identifier.RevocationDetails(
+                             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                             source_violation_type=None,
+                             supervising_district_external_id=None,
+                             supervising_officer_external_id=None,
+                         ))
+
+    def test_get_revocation_details_no_ssvr_us_mo(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -6071,43 +6117,17 @@ class TestGetRevocationDetails(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionType.PROBATION,
-            supervision_site=None
-        )
-
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code='US_MO',
-            violation_date=date(2018, 4, 20),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    violation_type=StateSupervisionViolationType.MISDEMEANOR
-                )
-            ]
-        )
-
-        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_date=date(2018, 4, 23),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                )
-            ],
-            supervision_violation=supervision_violation
+            supervision_site='DISTRICT 999'
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id='ip1',
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='US_ND',
+            state_code='US_MO',
             admission_date=date(2018, 5, 25),
             admission_reason=AdmissionReason.PROBATION_REVOCATION,
-            source_supervision_violation_response=source_supervision_violation_response
+            source_supervision_violation_response=None
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
@@ -6116,26 +6136,15 @@ class TestGetRevocationDetails(unittest.TestCase):
 
         self.assertEqual(revocation_details,
                          identifier.RevocationDetails(
-                             revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                             source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             supervising_district_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                                 supervision_period.supervision_period_id).get('district_external_id'),
+                             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+                             source_violation_type=None,
+                             supervising_district_external_id=supervision_period.supervision_site,
                              supervising_officer_external_id=
                              DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
 
-    def test_get_revocation_details_no_agent_on_supervision_period(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='US_MO',
-            start_date=date(2018, 3, 5),
-            termination_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionType.PROBATION,
-            supervision_site='DISTRICT 19218'
-        )
-
+    def test_get_revocation_details_no_supervision_period_us_mo(self):
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code='US_MO',
@@ -6148,7 +6157,7 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            supervision_violation_response_id=000,
             response_date=date(2018, 4, 23),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -6166,59 +6175,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             incarceration_period_id=111,
             external_id='ip1',
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='US_ND',
-            admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
-            source_supervision_violation_response=source_supervision_violation_response
-        )
-
-        revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
-                                                                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
-
-        self.assertEqual(revocation_details,
-                         identifier.RevocationDetails(
-                             revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                             source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             supervising_district_external_id='DISTRICT 19218',
-                             supervising_officer_external_id=
-                             DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
-                                 source_supervision_violation_response.supervision_violation_response_id).get(
-                                     'agent_external_id'),
-                         ))
-
-    def test_get_revocation_details_no_supervision_period(self):
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
             state_code='US_MO',
-            violation_date=date(2018, 4, 20),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    violation_type=StateSupervisionViolationType.MISDEMEANOR
-                )
-            ]
-        )
-
-        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_date=date(2018, 4, 23),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                )
-            ],
-            supervision_violation=supervision_violation
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id='ip1',
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='US_ND',
             admission_date=date(2018, 5, 25),
             admission_reason=AdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=source_supervision_violation_response
@@ -6232,13 +6189,8 @@ class TestGetRevocationDetails(unittest.TestCase):
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             supervising_district_external_id=DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
-                                 source_supervision_violation_response.supervision_violation_response_id).get(
-                                     'district_external_id'),
-                             supervising_officer_external_id=
-                             DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
-                                 source_supervision_violation_response.supervision_violation_response_id).get(
-                                     'agent_external_id'),
+                             supervising_district_external_id=None,
+                             supervising_officer_external_id=None,
                          ))
 
     def test_get_revocation_details_no_revocation_type(self):
@@ -6289,9 +6241,10 @@ class TestGetRevocationDetails(unittest.TestCase):
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             supervising_district_external_id=supervision_period.supervision_site,
+                             supervising_district_external_id=DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
+                                 supervision_period.supervision_period_id).get('district_external_id'),
                              supervising_officer_external_id=
-                             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                             DEFAULT_SSVR_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
 
