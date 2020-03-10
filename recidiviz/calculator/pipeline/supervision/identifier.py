@@ -36,7 +36,8 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import \
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
-    get_month_supervision_type, get_pre_incarceration_supervision_type
+    get_month_supervision_type, get_pre_incarceration_supervision_type, \
+    get_supervision_period_supervision_type_from_sentence
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -149,7 +150,6 @@ def find_supervision_time_buckets(
     months_fully_incarcerated = _identify_months_fully_incarcerated(incarceration_periods)
 
     projected_supervision_completion_buckets = classify_supervision_success(supervision_sentences,
-                                                                            incarceration_sentences,
                                                                             supervision_period_to_agent_associations)
 
     supervision_time_buckets.extend(projected_supervision_completion_buckets)
@@ -765,14 +765,14 @@ def find_revocation_return_buckets(
 
 
 def classify_supervision_success(supervision_sentences: List[StateSupervisionSentence],
-                                 incarceration_sentences: List[StateIncarcerationSentence],
                                  supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
                                  ) -> List[ProjectedSupervisionCompletionBucket]:
     """This classifies whether supervision projected to end in a given month was completed successfully.
 
-    For supervision sentences with a projected_completion_date, where that date is before or on today's date, looks at
-    all supervision periods that have terminated and finds the one with the latest termination date. From that
-    supervision period, classifies the termination as either successful or not successful.
+    For supervision sentences with a projected_completion_date, where that date is before or on today's date,
+    and the supervision sentence has a set completion_date, looks at all supervision periods that have terminated and
+    finds the one with the latest termination date. From that supervision period, classifies the termination as either
+    successful or not successful.
     """
     projected_completion_buckets: List[ProjectedSupervisionCompletionBucket] = []
 
@@ -791,14 +791,16 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
                         latest_supervision_period = supervision_period
 
             if latest_supervision_period:
+                supervision_type = get_supervision_period_supervision_type_from_sentence(supervision_sentence)
+
                 completion_bucket = _get_projected_completion_bucket_from_supervision_period(
                     projected_completion_date,
-                    supervision_sentences,
-                    incarceration_sentences,
+                    supervision_type,
                     latest_supervision_period,
                     supervision_period_to_agent_associations
                 )
-                if completion_bucket.supervision_type is not None:
+
+                if completion_bucket:
                     projected_completion_buckets.append(completion_bucket)
 
     return projected_completion_buckets
@@ -806,25 +808,21 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
 
 def _get_projected_completion_bucket_from_supervision_period(
         projected_completion_date: date,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_type: StateSupervisionPeriodSupervisionType,
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
-) -> ProjectedSupervisionCompletionBucket:
+) -> Optional[ProjectedSupervisionCompletionBucket]:
 
-    supervision_success = supervision_period.termination_reason in \
-                          [StateSupervisionPeriodTerminationReason.DISCHARGE,
-                           StateSupervisionPeriodTerminationReason.EXPIRATION]
+    if not _include_termination_in_success_metric(supervision_period.termination_reason):
+        return None
+
+    supervision_success = supervision_period.termination_reason in (StateSupervisionPeriodTerminationReason.DISCHARGE,
+                                                                    StateSupervisionPeriodTerminationReason.EXPIRATION)
 
     supervising_officer_external_id, supervising_district_external_id = \
         _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
     case_type = _identify_most_severe_case_type(supervision_period)
-
-    supervision_type = get_month_supervision_type(projected_completion_date,
-                                                  supervision_sentences,
-                                                  incarceration_sentences,
-                                                  supervision_period)
 
     return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
@@ -836,6 +834,17 @@ def _get_projected_completion_bucket_from_supervision_period(
         supervising_officer_external_id=supervising_officer_external_id,
         supervising_district_external_id=supervising_district_external_id
     )
+
+
+def _include_termination_in_success_metric(_termination_reason: Optional[StateSupervisionPeriodTerminationReason]):
+    # TODO(2940): Exclude terminations that ended with the following termination_reasons:
+    #   StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN
+    #   StateSupervisionPeriodTerminationReason.DEATH,
+    #   StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+    #   StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+    #   StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+
+    return True
 
 
 def _get_supervising_officer_and_district(

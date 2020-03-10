@@ -49,6 +49,8 @@ class SupervisionTimeBucket(BuildableAttr):
     # Month for when the person was on supervision
     month: int = attr.ib()
 
+    # TODO(2891): Consider moving this out of the base class, and making the supervision type specific to each
+    #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
