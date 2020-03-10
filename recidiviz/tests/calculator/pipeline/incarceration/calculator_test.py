@@ -34,6 +34,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration, \
     StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import \
@@ -72,6 +73,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             state_code='CA',
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text='NEW_ADMISSION',
+            supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
             event_date=date(2000, 3, 12),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
@@ -113,8 +115,9 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
         incarceration_events = [
             IncarcerationStayEvent(
-                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
                 state_code='CA',
                 event_date=date(2000, 3, 31),
                 facility='SAN QUENTIN',
@@ -127,6 +130,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
                 admission_reason_raw_text='PAROLE_REVOCATION',
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
@@ -1056,6 +1060,7 @@ def expected_metric_combos_count(
             'facility',
             'county_of_residence',
             'admission_reason',
+            'supervision_type_at_admission',
         ]
 
         for dimension in stay_dimensions:
@@ -1083,6 +1088,7 @@ def expected_metric_combos_count(
             'county_of_residence',
             'admission_reason',
             'specialized_purpose_for_incarceration',
+            'supervision_type_at_admission',
         ]
 
         for dimension in admission_dimensions:

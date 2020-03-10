@@ -33,6 +33,8 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     identify_most_severe_response_decision, first_day_of_month
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
+    _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_month_supervision_type, get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_case_type import \
@@ -59,10 +61,6 @@ from recidiviz.persistence.entity.state.entities import \
 # The number of months for the window of time prior to a revocation return in which violations and violation responses
 # should be considered when producing metrics related to a person's violation history leading up to the revocation
 VIOLATION_HISTORY_WINDOW_MONTHS = 12
-
-# The number of months for the window of time prior to a revocation return in which we look for a terminated supervision
-# period to attribute the revocation to
-SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 12
 
 
 REVOCATION_TYPE_SEVERITY_ORDER = [
@@ -640,8 +638,8 @@ def index_incarceration_periods_by_admission_month(
 
 
 def find_revocation_return_buckets(
-        _supervision_sentences: List[StateSupervisionSentence],
-        _incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_time_buckets: List[SupervisionTimeBucket],
@@ -672,11 +670,8 @@ def find_revocation_return_buckets(
 
         assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_month, assessments)
 
-        supervision_type = get_pre_incarceration_supervision_type(incarceration_period.state_code,
-                                                                  incarceration_period)
-
         relevant_pre_incarceration_supervision_periods = \
-            _get_relevant_pre_revocation_incarceration_supervision_periods(admission_date, supervision_periods)
+            _get_relevant_supervision_periods_before_admission_date(admission_date, supervision_periods)
 
         if relevant_pre_incarceration_supervision_periods:
             # Add a RevocationReturnSupervisionTimeBucket for each overlapping supervision period
@@ -684,6 +679,9 @@ def find_revocation_return_buckets(
                 revocation_details = _get_revocation_details(
                     incarceration_period, supervision_period,
                     ssvr_agent_associations, supervision_period_to_agent_associations)
+
+                supervision_type_at_admission = get_pre_incarceration_supervision_type(
+                    incarceration_sentences, supervision_sentences, incarceration_period, [supervision_period])
 
                 case_type = _identify_most_severe_case_type(supervision_period)
                 supervision_level = supervision_period.supervision_level
@@ -696,7 +694,7 @@ def find_revocation_return_buckets(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
                     month=admission_month,
-                    supervision_type=supervision_type,
+                    supervision_type=supervision_type_at_admission,
                     case_type=case_type,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
@@ -722,6 +720,9 @@ def find_revocation_return_buckets(
             revocation_details = _get_revocation_details(
                 incarceration_period, None, ssvr_agent_associations, None)
 
+            supervision_type_at_admission = get_pre_incarceration_supervision_type(
+                incarceration_sentences, supervision_sentences, incarceration_period, [])
+
             # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
             case_type = StateSupervisionCaseType.GENERAL
 
@@ -733,12 +734,12 @@ def find_revocation_return_buckets(
             # Get details about the violation and response history leading up to the revocation
             violation_history = get_violation_and_response_history(admission_date, violation_responses)
 
-            if supervision_type is not None:
+            if supervision_type_at_admission is not None:
                 revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
                     month=admission_month,
-                    supervision_type=supervision_type,
+                    supervision_type=supervision_type_at_admission,
                     case_type=case_type,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
@@ -940,61 +941,6 @@ def _identify_most_severe_case_type(supervision_period: StateSupervisionPeriod) 
 
     return next((case_type for case_type in CASE_TYPE_SEVERITY_ORDER
                  if case_type in case_types), StateSupervisionCaseType.GENERAL)
-
-
-def _find_last_supervision_period_terminated_before_date(
-        upper_bound_date: date, supervision_periods: List[StateSupervisionPeriod]) -> \
-        Optional[StateSupervisionPeriod]:
-    """Looks for the supervision period that ended most recently before the upper_bound_date, within the
-    month window defined by SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT.
-
-    If no terminated supervision period is found before the upper_bound_date, returns None.
-    """
-    termination_date_cutoff = upper_bound_date - relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
-
-    previous_periods = [
-        supervision_period for supervision_period in supervision_periods
-        if supervision_period.start_date is not None and supervision_period.termination_date is not None
-        and supervision_period.termination_date >= termination_date_cutoff
-        and supervision_period.start_date <= supervision_period.termination_date <= upper_bound_date
-    ]
-
-    if previous_periods:
-        previous_periods.sort(key=lambda b: b.termination_date)
-        return previous_periods[-1]
-
-    return None
-
-
-def _get_relevant_pre_revocation_incarceration_supervision_periods(
-        admission_date: date, supervision_periods: List[StateSupervisionPeriod]) -> List[StateSupervisionPeriod]:
-    """Returns the relevant supervision periods preceding a revocation admission to incarceration."""
-    relevant_periods = _supervision_periods_overlapping_with_date(admission_date, supervision_periods)
-
-    if not relevant_periods:
-        # If there are no overlapping supervision periods, but they had a revocation admission, then they
-        # were probably on supervision at some time before this admission. Find the most recently terminated
-        # supervision period that was probably the one that was revoked.
-        most_recent_supervision_period = \
-            _find_last_supervision_period_terminated_before_date(admission_date, supervision_periods)
-
-        if most_recent_supervision_period:
-            relevant_periods.append(most_recent_supervision_period)
-
-    return relevant_periods
-
-
-def _supervision_periods_overlapping_with_date(intersection_date: date,
-                                               supervision_periods: List[StateSupervisionPeriod]) -> \
-        List[StateSupervisionPeriod]:
-    """Returns the supervision periods that overlap with the intersection_date."""
-    overlapping_periods = [
-        supervision_period for supervision_period in supervision_periods
-        if supervision_period.start_date is not None and supervision_period.start_date <= intersection_date and
-        (supervision_period.termination_date is None or intersection_date <= supervision_period.termination_date)
-    ]
-
-    return overlapping_periods
 
 
 def _expand_dual_supervision_buckets(supervision_time_buckets: List[SupervisionTimeBucket]) -> \
