@@ -15,17 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for copying all files in production storage for a region to state
-storage for a region. Should be used when we want to rerun ingest for a state
-in staging.
+Script for copying all files in production storage for a region to state storage for a region. Should be used when we
+want to rerun ingest for a state in staging.
 
-When run in dry-run mode (the default), will only log copies, but will not
-execute them.
+When run in dry-run mode (the default), will only log copies, but will not execute them.
 
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.copy_state_files_from_prod_to_staging_storage \
-    --region us_nd --dry-run True
+    --region us_nd --start-date-bound 2019-08-12 --end-date-bound 2019-08-17 --dry-run True
 """
 import argparse
 import datetime
@@ -41,33 +39,26 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_cp
+from recidiviz.tools.utils import is_date_str, is_between_date_strs_inclusive
 from recidiviz.utils.params import str_to_bool
 
 
 class CopyFilesFromProdToStagingController:
-    """Class with functionality to copy files between prod and staging storage.
-    """
+    """Class with functionality to copy files between prod and staging storage."""
 
-    def __init__(self,
-                 region_code: str,
-                 dry_run: bool):
-        self.prod_storage_bucket = \
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code,
-                SystemLevel.STATE,
-                project_id='recidiviz-123')
-        self.staging_storage_bucket = \
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code,
-                SystemLevel.STATE,
-                project_id='recidiviz-staging')
+    def __init__(self, region_code: str, start_date_bound: Optional[str], end_date_bound: Optional[str], dry_run: bool):
+        self.prod_storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
+            region_code, SystemLevel.STATE, project_id='recidiviz-123')
+        self.staging_storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
+            region_code, SystemLevel.STATE, project_id='recidiviz-staging')
         self.dry_run = dry_run
+        self.start_date_bound = start_date_bound
+        self.end_date_bound = end_date_bound
 
-        self.log_output_path = \
-            os.path.join(os.path.dirname(__file__),
-                         f'copy_prod_to_staging_result_{region_code}_'
-                         f'dry_run_{dry_run}'
-                         f'_{datetime.datetime.now().isoformat()}.txt')
+        self.log_output_path = os.path.join(
+            os.path.dirname(__file__),
+            f'copy_prod_to_staging_result_{region_code}_start_bound_{self.start_date_bound}_end_bound_'
+            f'{self.end_date_bound}_dry_run_{dry_run}_{datetime.datetime.now().isoformat()}.txt')
         self.mutex = threading.Lock()
         self.copy_list: List[Tuple[str, str]] = []
         self.copy_progress: Optional[Bar] = None
@@ -116,19 +107,19 @@ class CopyFilesFromProdToStagingController:
         subdirs_to_copy = []
         for subdir in subdirs:
             if not subdir.endswith('/'):
-                logging.info("Path [%s] is in unexpected format, skipping",
-                             subdir)
+                logging.info("Path [%s] is in unexpected format, skipping", subdir)
                 continue
 
             subdir_name = os.path.basename(os.path.normpath(subdir))
-            try:
-                datetime.date.fromisoformat(subdir_name)
-            except ValueError:
-                logging.info("Path [%s] is in unexpected format, skipping",
-                             subdir)
+            if not is_date_str(subdir_name):
                 continue
 
-            subdirs_to_copy.append(subdir_name)
+            if is_between_date_strs_inclusive(
+                    upper_bound_date=self.end_date_bound,
+                    lower_bound_date=self.start_date_bound,
+                    date_of_interest=subdir_name):
+                subdirs_to_copy.append(subdir_name)
+
         return subdirs_to_copy
 
     def _write_copies_to_log_file(self):
@@ -139,8 +130,7 @@ class CopyFilesFromProdToStagingController:
             else:
                 template = "Copied {} -> {}\n"
 
-            f.writelines(template.format(original_path, new_path)
-                         for original_path, new_path in self.copy_list)
+            f.writelines(template.format(original_path, new_path) for original_path, new_path in self.copy_list)
 
     def _copy_files_for_date(self, date_str: str):
 
@@ -154,11 +144,8 @@ class CopyFilesFromProdToStagingController:
             if self.copy_progress:
                 self.copy_progress.next()
 
-    def _execute_copy(self,
-                      subdirs_to_copy: List[str]) -> None:
-        self.copy_progress = \
-            Bar(f"Copying files from subdirectories...",
-                max=len(subdirs_to_copy))
+    def _execute_copy(self, subdirs_to_copy: List[str]) -> None:
+        self.copy_progress = Bar(f"Copying files from subdirectories...", max=len(subdirs_to_copy))
 
         thread_pool = ThreadPool(processes=12)
         thread_pool.map(self._copy_files_for_date, subdirs_to_copy)
@@ -169,18 +156,28 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--region', required=True,
-                        help='E.g. \'us_nd\'')
+    parser.add_argument('--region', required=True, help='E.g. \'us_nd\'')
+
     parser.add_argument('--dry-run', default=True, type=str_to_bool,
-                        help='Runs copy in dry-run mode, only prints the file '
-                             'copies it would do.')
+                        help='Runs copy in dry-run mode, only prints the file copies it would do.')
+
+    parser.add_argument('--start-date-bound',
+                        help='The lower bound date to start from, inclusive. For partial copying of ingested files. '
+                             'E.g. 2019-09-23.')
+
+    parser.add_argument('--end-date-bound',
+                        help='The upper bound date to end at, inclusive. For partial copying of ingested files. '
+                             'E.g. 2019-09-23.')
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
-    CopyFilesFromProdToStagingController(region_code=args.region,
-                                         dry_run=args.dry_run).run()
+    CopyFilesFromProdToStagingController(
+        region_code=args.region,
+        start_date_bound=args.start_date_bound,
+        end_date_bound=args.end_date_bound,
+        dry_run=args.dry_run).run()
 
 
 if __name__ == '__main__':
