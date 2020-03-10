@@ -60,6 +60,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY = \
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
         AND assessment_score_bucket IS NOT NULL
+        AND assessment_score_bucket != 'NOT_ASSESSED'
         AND assessment_type IS NULL
         AND supervising_officer_external_id IS NULL
         AND age_bucket IS NULL
@@ -92,6 +93,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY = \
         AND month IS NOT NULL
         AND program_id IS NULL
         AND assessment_score_bucket IS NOT NULL
+        AND assessment_score_bucket != 'NOT_ASSESSED'
         AND assessment_type IS NULL
         AND supervising_officer_external_id IS NULL
         AND age_bucket IS NULL
