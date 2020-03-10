@@ -1455,7 +1455,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='US_ND',
                 start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
+                termination_date=date(2018, 5, 26),
                 supervision_type=StateSupervisionType.PROBATION
             )
 
