@@ -203,6 +203,7 @@ def characteristic_combinations(person: StatePerson,
 
     include_revocation_dimensions = _include_revocation_dimensions_for_metric(metric_type)
     include_assessment_dimensions = _include_assessment_dimensions_for_metric(metric_type)
+    include_person_level_dimensions = _include_person_level_dimensions_for_metric(metric_type)
 
     if (metric_type == SupervisionMetricType.POPULATION
             and isinstance(supervision_time_bucket, (RevocationReturnSupervisionTimeBucket,
@@ -300,21 +301,22 @@ def characteristic_combinations(person: StatePerson,
     else:
         all_combinations = for_characteristics(characteristics)
 
-    characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'supervision')
+    if include_person_level_dimensions:
+        characteristics_with_person_details = characteristics_with_person_id_fields(
+            characteristics, person, 'supervision')
 
-    if not include_revocation_dimensions and supervision_time_bucket.supervision_level_raw_text:
-        characteristics_with_person_details['supervision_level_raw_text'] = \
-            supervision_time_bucket.supervision_level_raw_text
+        if not include_revocation_dimensions and supervision_time_bucket.supervision_level_raw_text:
+            characteristics_with_person_details['supervision_level_raw_text'] = \
+                supervision_time_bucket.supervision_level_raw_text
 
-    if metric_type in [SupervisionMetricType.REVOCATION_ANALYSIS,
-                       SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS]:
-        # Only include violation history descriptions on person-level metrics
-        if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
-                and supervision_time_bucket.violation_history_description:
-            characteristics_with_person_details['violation_history_description'] = \
-                supervision_time_bucket.violation_history_description
+        if metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
+            # Only include violation history descriptions on person-level metrics
+            if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
+                    and supervision_time_bucket.violation_history_description:
+                characteristics_with_person_details['violation_history_description'] = \
+                    supervision_time_bucket.violation_history_description
 
-    all_combinations.append(characteristics_with_person_details)
+        all_combinations.append(characteristics_with_person_details)
 
     return all_combinations
 
@@ -349,11 +351,6 @@ def map_metric_combinations(
 
     for combo in characteristic_combos:
         combo['metric_type'] = metric_type.value
-
-        if combo.get('person_external_id') is not None and \
-                metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
-            # Don't output person-level metrics for the revocation violation type analysis metrics
-            continue
 
         if include_in_monthly_metrics(
                 supervision_time_bucket.year, supervision_time_bucket.month, calculation_month_lower_bound):
@@ -802,6 +799,23 @@ def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType
         return True
 
     if metric_type == SupervisionMetricType.SUCCESS:
+        return False
+
+    raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
+
+
+def _include_person_level_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
+    """Returns whether person-level dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            SupervisionMetricType.REVOCATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.ASSESSMENT_CHANGE,
+            SupervisionMetricType.SUCCESS
+    ):
+        return True
+
+    if metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
         return False
 
     raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
