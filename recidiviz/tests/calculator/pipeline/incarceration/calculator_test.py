@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent,\
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration import calculator
+from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
@@ -472,13 +473,12 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person, incarceration_events, ALL_INCLUSIONS_DICT,
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        self.assertEqual(expected_combinations_count,
-                         len(incarceration_combinations))
-        assert all(value == 1 for _combination, value
-                   in incarceration_combinations)
-
+        self.assertEqual(expected_combinations_count, len(incarceration_combinations))
+        assert all(value == 1 for _combination, value in incarceration_combinations)
         for combo, _ in incarceration_combinations:
             assert combo.get('year') == 2000
+            if combo.get('person_id') is not None:
+                assert combo.get('admission_date') is not None
 
     @freeze_time('2010-10-20')
     def test_map_incarceration_combinations_release_relevant_periods(self):
@@ -947,7 +947,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, incarceration_event, ALL_INCLUSIONS_DICT)
+            person, incarceration_event, ALL_INCLUSIONS_DICT, IncarcerationMetricType.ADMISSION)
 
         # 64 combinations of demographics + 1 person-level metric
         assert len(combinations) == 65
@@ -975,7 +975,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, incarceration_event, ALL_INCLUSIONS_DICT)
+            person, incarceration_event, ALL_INCLUSIONS_DICT, IncarcerationMetricType.POPULATION)
 
         # 32 combinations of demographics + 1 person-level metric
         assert len(combinations) == 33
@@ -1003,7 +1003,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, incarceration_event, ALL_INCLUSIONS_DICT)
+            person, incarceration_event, ALL_INCLUSIONS_DICT, IncarcerationMetricType.RELEASE)
 
         # 32 combinations of demographics + 1 person-level metric
         assert len(combinations) == 33

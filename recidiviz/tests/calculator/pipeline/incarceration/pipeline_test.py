@@ -689,7 +689,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, incarceration_events[0], ALL_INCLUSIONS_DICT))
+            fake_person, incarceration_events[0], ALL_INCLUSIONS_DICT, IncarcerationMetricType.POPULATION))
         assert num_combinations > 0
 
         expected_metric_count = num_combinations * 2
