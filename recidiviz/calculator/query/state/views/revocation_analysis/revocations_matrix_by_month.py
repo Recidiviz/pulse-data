@@ -43,9 +43,9 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
           state_code, year, month, 
           IFNULL(violation_type, 'NO_VIOLATIONS') as violation_type, 
           reported_violations, 
-          SUM(CASE WHEN reported_violations > 0 AND violation_type IS NULL 
-                   THEN total_revocations - IFNULL(response_with_violations, 0)
-                   ELSE total_revocations END) as total_revocations, 
+          CASE WHEN reported_violations > 0 AND violation_type IS NULL
+               THEN total_revocations - IFNULL(response_with_violations, 0)
+               ELSE total_revocations END as total_revocations,
           supervision_type, 
           charge_category, 
           district 
@@ -56,10 +56,10 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
                   THEN most_severe_violation_type_subtype 
                   ELSE most_severe_violation_type END as violation_type, 
             IF(response_count > 8, 8, response_count) as reported_violations,
-            count as total_revocations, 
             supervision_type, 
             IFNULL(case_type, 'ALL') AS charge_category,
-            IFNULL(supervising_district_external_id, 'ALL') as district
+            IFNULL(supervising_district_external_id, 'ALL') as district,
+            SUM(count) as total_revocations
           FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
           JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
             USING (state_code, job_id, year, month, metric_period_months)
@@ -80,9 +80,12 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
             AND race IS NULL
             AND ethnicity IS NULL
             AND gender IS NULL
+            AND person_id IS NULL
             AND person_external_id IS NULL
             AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
             AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
+          GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, charge_category,
+            district
         )
         LEFT JOIN (
           SELECT
@@ -113,13 +116,13 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
             AND race IS NULL
             AND ethnicity IS NULL
             AND gender IS NULL
+            AND person_id IS NULL
             AND person_external_id IS NULL
             AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL - 3 YEAR))
             AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-          GROUP BY 1,2,3,4,5,6,7
+          GROUP BY state_code, year, month, reported_violations, supervision_type, charge_category, district
         ) revocation_response_with_violation
         USING (state_code, year, month, reported_violations, supervision_type, charge_category, district)
-        GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, charge_category, district
     )
     -- Only include rows that have revocations
     WHERE total_revocations > 0

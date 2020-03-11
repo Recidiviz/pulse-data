@@ -38,13 +38,14 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION = """
 REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
     """
     /*{description}*/
+    SELECT * FROM (
     SELECT
       state_code,
       district,
       supervision_type,
-      SUM(CASE WHEN reported_violations > 0 AND violation_type IS NULL
-               THEN total_population - IFNULL(response_with_violations, 0)
-               ELSE total_population END) as total_population,
+      CASE WHEN reported_violations > 0 AND violation_type IS NULL
+           THEN total_population - IFNULL(response_with_violations, 0)
+           ELSE total_population END as total_population,
       charge_category,
       IFNULL(violation_type, 'NO_VIOLATIONS') as violation_type,
       reported_violations,
@@ -54,18 +55,17 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
         state_code,
         supervising_district_external_id as district,
         supervision_type,
-        count as total_population,
         IFNULL(case_type, 'ALL') as charge_category,
         CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE'
              THEN most_severe_violation_type_subtype
              ELSE most_severe_violation_type END AS violation_type,
         IF(response_count > 8, 8, response_count) AS reported_violations,
-        metric_period_months
+        metric_period_months,
+        SUM(count) as total_population
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
         AND supervision_type IS NOT NULL
         AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
         AND most_severe_violation_type_subtype IS NOT NULL
@@ -78,11 +78,17 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
+        AND person_external_id IS NULL
+        AND supervision_level IS NULL
+        AND supervision_level_raw_text IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_POPULATION'
-      )
-      LEFT JOIN (
+      GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
+        metric_period_months
+    )
+    LEFT JOIN (
         SELECT
           state_code,
           supervising_district_external_id as district,
@@ -94,8 +100,7 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
           USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-          AND month IS NOT NULL
+        WHERE methodology = 'PERSON'
           AND supervision_type IS NOT NULL
           AND response_count IS NOT NULL
           AND most_severe_violation_type IS NOT NULL
@@ -108,14 +113,21 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
           AND race IS NULL
           AND ethnicity IS NULL
           AND gender IS NULL
+          AND person_id IS NULL
+          AND person_external_id IS NULL
+          AND supervision_level IS NULL
+          AND supervision_level_raw_text IS NULL
           AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
           AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
           AND job.metric_type = 'SUPERVISION_POPULATION'
-      GROUP BY 1,2,3,4,5,6
+        GROUP BY state_code, reported_violations, supervision_type, charge_category, district, metric_period_months
     ) supervision_responses_with_violations
     USING (state_code, district, supervision_type, charge_category, reported_violations, metric_period_months)
-    GROUP BY state_code, district, supervision_type, charge_category, violation_type, reported_violations, metric_period_months
-    ORDER BY state_code, metric_period_months, district, supervision_type, reported_violations, charge_category
+    WHERE supervision_type IN ('PAROLE', 'PROBATION')
+    )
+    -- Do not include rows for NO_VIOLATIONS where there are actually no cases with NO_VIOLATIONS
+    WHERE total_population > 0
+    ORDER BY state_code, metric_period_months, district, supervision_type, reported_violations, charge_category, violation_type
     """.format(
         description=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
         project_id=PROJECT_ID,
