@@ -77,13 +77,14 @@ REVOCATIONS_MATRIX_CELLS_QUERY = \
         AND race IS NULL
         AND ethnicity IS NULL
         AND gender IS NULL
+        AND person_id IS NULL
         AND person_external_id IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
     )
     GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
-    ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type
+    ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type, charge_category
     """.format(
         description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
         project_id=PROJECT_ID,
