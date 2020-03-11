@@ -63,6 +63,8 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND specialized_purpose_for_incarceration IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
+        AND admission_date IS NULL
+        AND supervision_type_at_admission IS NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
@@ -113,6 +115,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND most_serious_offense_statute IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
+        AND supervision_type_at_admission IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -4 YEAR))
         AND job.metric_type = 'INCARCERATION_POPULATION'
         AND year = (EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 

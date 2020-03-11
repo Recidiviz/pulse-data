@@ -60,6 +60,8 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         AND specialized_purpose_for_incarceration IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
+        AND admission_date IS NULL
+        AND supervision_type_at_admission IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
       GROUP BY state_code, year, month, county_of_residence
@@ -109,6 +111,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         AND most_serious_offense_statute IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
+        AND supervision_type_at_admission IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL - 4 YEAR))
         AND job.metric_type = 'INCARCERATION_POPULATION'
     ) inc_pop
