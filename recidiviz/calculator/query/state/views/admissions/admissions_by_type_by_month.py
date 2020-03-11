@@ -109,6 +109,8 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY = \
         AND person_external_id IS NULL
         AND specialized_purpose_for_incarceration IS NULL
         AND admission_reason_raw_text IS NULL
+        AND admission_date IS NULL
+        AND supervision_type_at_admission IS NULL
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
         AND job.metric_type = 'INCARCERATION_ADMISSION'
       GROUP BY state_code, year, month
