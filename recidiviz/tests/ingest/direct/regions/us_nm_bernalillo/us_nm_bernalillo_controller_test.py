@@ -16,12 +16,13 @@
 # =============================================================================
 """Tests for the direct ingest parser.py."""
 import datetime
-import pytest
 from typing import Type
 
 from mock import patch, Mock
+import pytest
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common.constants.bond import BondType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
@@ -29,7 +30,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.ingest.direct.regions.us_nm_bernalillo.\
     us_nm_bernalillo_controller import UsNmBernalilloController
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
-    Hold, Person, IngestInfo
+    Person, IngestInfo
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, process_task_queues
@@ -205,6 +206,71 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
         )
 
         self.validate_ingest(ingest_info, expected_info, metadata)
+
+    def testBondTypes(self):
+        bond_types = [
+            '10% CASH/SURETY',
+            '10% TO COURT',
+            '10% TO COURT',
+            '20% BOND',
+            '50% TO COURT',
+            'AMENDED REMAND ORDER',
+            'AMENDED RETAKE ORDER',
+            'APPEAL BOND',
+            'APPEARANCE BOND',
+            'ASDP',
+            'BOND  -  10%',
+            'CANCELLED',
+            'CASH ONLY',
+            'CASH/SURETY',
+            'CLEARED BY COURTS',
+            'CONCURRENT',
+            'CONSECUTIVE',
+            'COURT ORDER RELEASE',
+            'CREDIT TIME SERVED',
+            'DISMISSED',
+            'DWI SCHOOL',
+            'GRAND JURY INDICTMENT',
+            'HOLD',
+            'NO BOND',
+            'NO BOND REQUIRED',
+            'NOLLIE PROSEQUI',
+            'NO PROBABLE CAUSE',
+            'OR',
+            'OTHER',
+            'PETTY LARCENY SCHOOL',
+            'PROBATION',
+            'PROCESS AND RELEASE',
+            'PROGRAM',
+            'QUASHED',
+            'REINSTATE',
+            'RELEASED TO FEDS',
+            'RELEASE ON RECOG',
+            'RELEASE PENDING',
+            'REMAND ORDER',
+            'RETAKE ORDER',
+            'SCHOOL RELEASE',
+            'SENTENCED',
+            'SIGNATURE BOND',
+            'SURETY BOND',
+            'SUSPENDED',
+            'TEN DAY RULING',
+            'THIRD PARTY',
+            "TIME SERVE FOR PC'S ONLY",
+            'TIME TO PAY',
+            'TO BE SET BY JUDGE',
+            'TRANFER OVER TO',
+            'TRANSFER/OTHER FACILITY',
+            'TREATMENT RELEASE',
+            'UNKNOWN',
+            'UNSECURED BOND',
+            'WORK RELEASE',
+            'WORK SEARCH',
+        ]
+
+        for bond_type in bond_types:
+            self.assertTrue(BondType.can_parse(
+                bond_type, self.controller.get_enum_overrides()))
 
     def testParseColFail(self):
         expected_info = IngestInfo(
