@@ -105,12 +105,13 @@ def map_incarceration_combinations(person: StatePerson,
                     periods_and_events[period] = [incarceration_event]
 
     for incarceration_event in incarceration_events:
-        characteristic_combos = characteristic_combinations(person, incarceration_event, inclusions)
 
         metric_type = METRIC_TYPES.get(type(incarceration_event))
         if not metric_type:
             raise ValueError(
                 'No metric type mapped to incarceration event of type {}'.format(type(incarceration_event)))
+
+        characteristic_combos = characteristic_combinations(person, incarceration_event, inclusions, metric_type)
 
         metrics.extend(map_metric_combinations(
             characteristic_combos, incarceration_event,
@@ -123,7 +124,8 @@ def map_incarceration_combinations(person: StatePerson,
 
 def characteristic_combinations(person: StatePerson,
                                 incarceration_event: IncarcerationEvent,
-                                inclusions: Dict[str, bool]) -> \
+                                inclusions: Dict[str, bool],
+                                metric_type: IncarcerationMetricType) -> \
         List[Dict[str, Any]]:
     """Calculates all incarceration metric combinations.
 
@@ -141,6 +143,8 @@ def characteristic_combinations(person: StatePerson,
                 - gender
                 - race
             Where the values are boolean flags indicating whether to include the dimension in the calculations.
+        metric_type: The IncarcerationMetricType that determines which fields should be added to the characteristics
+            dictionary
 
     Returns:
         A list of dictionaries containing all unique combinations of characteristics.
@@ -202,6 +206,9 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics_with_person_details = add_person_level_characteristics(
         person, incarceration_event, characteristics)
+
+    if metric_type == IncarcerationMetricType.ADMISSION:
+        characteristics_with_person_details['admission_date'] = incarceration_event.event_date
 
     all_combinations.append(characteristics_with_person_details)
 
