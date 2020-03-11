@@ -54,6 +54,8 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         AND specialized_purpose_for_incarceration IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
+        AND admission_date IS NULL
+        AND supervision_type_at_admission IS NULL
         AND month IS NOT NULL
         AND metric_period_months = 1
         AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL -3 YEAR))
