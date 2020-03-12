@@ -116,14 +116,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL
         AND supervision_type_at_admission IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -4 YEAR))
         AND job.metric_type = 'INCARCERATION_POPULATION'
-        AND year = (EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 
-                            - CAST(FLOOR(metric_period_months/12) AS INT64) 
-                            - CAST(EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific')) - metric_period_months < 1 AS INT64))
-        AND month = (MOD(EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific')) 
-                              - metric_period_months - 1 
-                              + CAST(EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific')) - metric_period_months < 1 AS INT64)*12, 12) + 1)
+        AND year = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL metric_period_months MONTH))
+        AND month = EXTRACT(MONTH FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL metric_period_months MONTH))
     ) inc_pop
     USING (state_code, district, metric_period_months)
     ORDER BY state_code, metric_period_months, district

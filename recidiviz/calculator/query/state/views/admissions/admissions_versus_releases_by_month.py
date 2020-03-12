@@ -92,11 +92,13 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
     FULL OUTER JOIN (
       SELECT
         state_code,
-        -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
-        year + CAST(FLOOR(month / 12) AS INT64) AS year, MOD(month, 12) + 1 AS month,
+        EXTRACT(YEAR FROM incarceration_month_end_date) AS year,
+        EXTRACT(MONTH FROM incarceration_month_end_date) AS month,
         IFNULL(county_of_residence, 'ALL') AS district,
         count AS month_end_population
-      FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
+      FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
+        -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
+        UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date
       JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
