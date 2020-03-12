@@ -23,10 +23,16 @@ from recidiviz.calculator.query.state.views.supervision.supervision_termination_
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.supervision.us_nd.average_change_lsir_score_by_period import \
     AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_month import \
+    CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_officer_by_period import \
+    CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW
 
 SUPERVISION_VIEWS = [
     AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW,
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW,
+    CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW,
+    CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW,
     SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW,
     SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW,
 ]
