@@ -2902,7 +2902,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         ])
 
-
     def test_find_supervision_time_buckets_infer_supervision_type_internal_unknown_no_sentences(self):
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
@@ -5332,6 +5331,75 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
         ], projected_completion_buckets)
 
+    def test_classify_supervision_success_exclude_termination_reason_death(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_ND',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 12, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DEATH,
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PAROLE,
+                projected_completion_date=date(2018, 12, 25),
+                completion_date=date(2018, 12, 25),
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            supervision_sentences,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
+
+    def test_classify_supervision_success_exclude_no_completion_date(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_ND',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 12, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.SUSPENSION,
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PAROLE,
+                projected_completion_date=date(2018, 12, 25),
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            supervision_sentences,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
+
 
 class TestFindSupervisionTerminationBucket(unittest.TestCase):
     """Tests the find_supervision_termination_bucket function."""
@@ -6350,3 +6418,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
         self.assertEqual([['ABSCONDED', 'FELONY', 'WEA'], ['MISDEMEANOR', 'DRG', 'EMP']],
                          violation_type_frequency_counter)
+
+
+class TestIncludeTerminationInSuccessMetric(unittest.TestCase):
+    def test_include_termination_in_success_metric(self):
+        for termination_reason in StateSupervisionPeriodTerminationReason:
+            _ = identifier._include_termination_in_success_metric(termination_reason)
