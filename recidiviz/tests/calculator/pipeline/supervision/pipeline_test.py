@@ -152,6 +152,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id
@@ -162,6 +163,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             state_code='US_ND',
             supervision_periods=[supervision_period],
             projected_completion_date=date(2016, 12, 31),
+            completion_date=date(2016, 12, 29),
             person_id=fake_person_id
         )
 
@@ -982,6 +984,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=116412, state_code='US_ND',
                                                                supervision_periods=[supervision_period],
+                                                               completion_date=date(2017, 2, 6),
                                                                projected_completion_date=date(2017, 7, 24),
                                                                person_id=fake_person_id)
 
@@ -1376,6 +1379,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             county_code='124',
             start_date=date(2016, 3, 14),
             termination_date=date(2016, 12, 29),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id_1
         )
