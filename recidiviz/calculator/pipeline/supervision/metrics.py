@@ -221,7 +221,7 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
 
 
 @attr.s
-class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionRevocationMetric):
+class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric):
     """Subclass of SupervisionRevocationMetric that contains information for
     analysis of the frequency of violation types reported leading up to revocation."""
 
@@ -230,6 +230,21 @@ class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionRevocationMetr
 
     # The violation type or subtype
     violation_count_type: str = attr.ib(default=None)
+
+    # Optional characteristics
+
+    # Assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
+    # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
+    # metric describes
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
+
+    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
+    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 
     # The most severe violation type leading up to the revocation
     most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)

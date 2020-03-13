@@ -1749,6 +1749,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(_combination.get('violation_count_type') is not None
                    for _combination, value in supervision_combinations)
         assert all(_combination.get('person_id') is None for _combination, value in supervision_combinations)
+        assert all('person_id' not in _combination.keys() for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_population(self):
