@@ -31,7 +31,8 @@ REQUIRED_PACKAGES = [
     'cattrs',
     'dateparser',
     'Flask',
-    'google-api-python-client',
+    # TODO(2973): Resolve dependency conflict to remove this version constraint
+    'google-api-python-client<=1.7.11',
     'google-cloud-monitoring',
     'more-itertools',
     'oauth2client',
