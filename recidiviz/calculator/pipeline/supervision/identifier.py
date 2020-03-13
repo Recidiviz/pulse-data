@@ -780,7 +780,9 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
     for supervision_sentence in supervision_sentences:
         projected_completion_date = supervision_sentence.projected_completion_date
 
-        if projected_completion_date and projected_completion_date <= date.today():
+        # Only include sentences that were supposed to end by now and have ended
+        if (projected_completion_date and projected_completion_date <= date.today()
+                and supervision_sentence.completion_date):
             latest_termination_date = None
             latest_supervision_period = None
 
@@ -825,6 +827,8 @@ def _get_projected_completion_bucket_from_supervision_period(
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
+    # TODO(2975): Note that this metric measures success by projected completion month. Update or expand this
+    #  metric to capture the success of early termination as well
     return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
         year=projected_completion_date.year,
@@ -837,15 +841,38 @@ def _get_projected_completion_bucket_from_supervision_period(
     )
 
 
-def _include_termination_in_success_metric(_termination_reason: Optional[StateSupervisionPeriodTerminationReason]):
-    # TODO(2940): Exclude terminations that ended with the following termination_reasons:
-    #   StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN
-    #   StateSupervisionPeriodTerminationReason.DEATH,
-    #   StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
-    #   StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
-    #   StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+def _include_termination_in_success_metric(termination_reason: Optional[StateSupervisionPeriodTerminationReason]):
+    """Determines whether the given termination of supervision should be included in a supervision success metric."""
+    # If this is the last supervision period termination status, there is some kind of data error and we cannot
+    # determine whether this sentence ended successfully - exclude these entirely
+    if not termination_reason or termination_reason in (
+            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
+            StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+            StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+            StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+    ):
+        return False
 
-    return True
+    # If this is the last supervision period termination status, then the supervision sentence ended in some sort of
+    # truncated, not-necessarily successful manner unrelated to a failure on supervision - exclude these entirely
+    if termination_reason in (
+            StateSupervisionPeriodTerminationReason.DEATH,
+            StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            StateSupervisionPeriodTerminationReason.SUSPENSION
+    ):
+        return False
+
+    if termination_reason in (
+            # Successful terminations
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            StateSupervisionPeriodTerminationReason.EXPIRATION,
+            # Unsuccessful terminations
+            StateSupervisionPeriodTerminationReason.ABSCONSION,
+            StateSupervisionPeriodTerminationReason.REVOCATION
+    ):
+        return True
+
+    raise ValueError(f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}")
 
 
 def _get_supervising_officer_and_district(
