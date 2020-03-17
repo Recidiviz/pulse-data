@@ -102,6 +102,17 @@ def validate_release_data(
                          "period with id: %d",
                          incarceration_period.incarceration_period_id)
             continue
+
+        if not incarceration_period.release_date and \
+                (incarceration_period.release_reason or incarceration_period.release_reason_raw_text):
+            # TODO(2981): Update MO ingest to pull in status date of last TAK026 status to use when the release date is
+            #  99999999. This should eliminate the 600ish instances of this we're seeing.
+            logging.warning("No release_date for incarceration period (%d) with nonnull release_reason (%s) or "
+                            "release_reason_raw_text (%s)",
+                            incarceration_period.incarceration_period_id,
+                            incarceration_period.release_reason,
+                            incarceration_period.release_reason_raw_text)
+            continue
         if incarceration_period.release_date is not None and \
                 incarceration_period.release_date > date.today():
             # If the person has not been released yet, remove the release
