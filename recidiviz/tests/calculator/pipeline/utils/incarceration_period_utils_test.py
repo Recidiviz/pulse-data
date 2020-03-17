@@ -300,6 +300,37 @@ class TestValidateReleaseData(unittest.TestCase):
         self.assertEqual([valid_incarceration_period],
                          valid_incarceration_periods)
 
+    def test_validate_release_data_release_reason_but_no_date(self):
+        """Tests that we drop periods with release reasons but no release date."""
+        has_both_release_reason_and_raw_text = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=None,
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text='XX-XX'
+        )
+
+        has_raw_text_only = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_reason_raw_text='XX-XX'
+        )
+
+        input_incarceration_periods = [has_both_release_reason_and_raw_text, has_raw_text_only]
+
+        valid_incarceration_periods = validate_release_data(
+            input_incarceration_periods
+        )
+
+        self.assertEqual([],
+                         valid_incarceration_periods)
+
 
 class TestCollapseIncarcerationPeriods(unittest.TestCase):
     """Tests the collapse_incarceration_periods function."""
