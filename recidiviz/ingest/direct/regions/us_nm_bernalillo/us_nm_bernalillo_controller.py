@@ -198,6 +198,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         overrides_builder.ignore('DWI SCHOOL', BondType)
         overrides_builder.ignore('GRAND JURY INDICTMENT', BondType)
         overrides_builder.add('HOLD', BondType.DENIED)
+        overrides_builder.add('INITIATED', BondStatus.PENDING)
         overrides_builder.add('INITIATED', BondStatus.PENDING, BondType)
         overrides_builder.add('NO BOND', BondType.DENIED)
         overrides_builder.add('NO BOND REQUIRED', BondType.NOT_REQUIRED)
