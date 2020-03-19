@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, AverageFnResult
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -1152,9 +1152,11 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
 
-        value = {'total_releases': 10,
-                 'recidivated_releases': 7,
-                 'recidivism_rate': .7}
+        value = AverageFnResult(
+            input_count=10,
+            sum_of_inputs=7,
+            average_of_inputs=0.7
+        )
 
         test_pipeline = TestPipeline()
 
@@ -1192,9 +1194,11 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
 
-        value = {'total_releases': 0,
-                 'recidivated_releases': 0,
-                 'recidivism_rate': float('NaN')}
+        value = AverageFnResult(
+            input_count=0,
+            sum_of_inputs=0,
+            average_of_inputs=float('NaN')
+        )
 
         test_pipeline = TestPipeline()
 
@@ -1229,8 +1233,11 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
 
-        value = {'returns': 10,
-                 'avg_liberty': 300}
+        value = AverageFnResult(
+            input_count=10,
+            sum_of_inputs=3000,
+            average_of_inputs=300
+        )
 
         test_pipeline = TestPipeline()
 
@@ -1242,13 +1249,10 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(metric_key, value)])
                   | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(pipeline.
-                             ProduceReincarcerationRecidivismMetric(),
-                             **all_pipeline_options)
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
                   )
 
-        assert_that(output, AssertMatchers.
-                    validate_recidivism_liberty_metric(300))
+        assert_that(output, AssertMatchers.validate_recidivism_liberty_metric(300))
 
         test_pipeline.run()
 
@@ -1267,8 +1271,11 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
                                 sort_keys=True)
 
-        value = {'returns': 0,
-                 'avg_liberty': float('NaN')}
+        value = AverageFnResult(
+            input_count=0,
+            sum_of_inputs=0,
+            average_of_inputs=float('NaN')
+        )
 
         test_pipeline = TestPipeline()
 
@@ -1280,9 +1287,7 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(metric_key, value)])
                   | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(pipeline.
-                             ProduceReincarcerationRecidivismMetric(),
-                             **all_pipeline_options)
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
                   )
 
         assert_that(output, equal_to([]))
@@ -1299,9 +1304,11 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
 
         metric_key = json.dumps({})
 
-        value = {'total_releases': [10],
-                 'recidivated_releases': [7],
-                 'recidivism_rate': [0.7]}
+        value = AverageFnResult(
+            input_count=20,
+            sum_of_inputs=10,
+            average_of_inputs=0.5
+        )
 
         test_pipeline = TestPipeline()
 
@@ -1314,9 +1321,8 @@ class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(metric_key, value)])
                   | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismMetric(),
-                      **all_pipeline_options))
+                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
+                  )
 
         assert_that(output, equal_to([]))
 

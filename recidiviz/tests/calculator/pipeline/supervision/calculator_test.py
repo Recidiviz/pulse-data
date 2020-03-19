@@ -57,6 +57,7 @@ ALL_INCLUSIONS_DICT = {
         'ethnicity': True,
         SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
         SupervisionMetricType.SUCCESS.value: True,
+        SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: True,
         SupervisionMetricType.REVOCATION.value: True,
         SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
         SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
@@ -355,6 +356,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=998,
                 supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
@@ -382,7 +385,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
+        assert all(value == 1 for _combination, value in supervision_combinations
+                   if not combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+        assert all(value == 998 for _combination, value in supervision_combinations
+                   if combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_unsuccessful(self):
@@ -408,6 +416,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
+                incarcerated_during_sentence=True,
                 supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
@@ -441,6 +450,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 0 for _combination, value
                    in supervision_combinations if
                    combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS))
+        assert all(not combo_has_enum_value_for_key(
+            _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   for _combination, _ in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_mixed_success(self):
@@ -465,6 +477,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO', year=2018, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
+                incarcerated_during_sentence=True,
                 supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
@@ -472,6 +485,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO', year=2018, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=199,
                 supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
@@ -489,28 +504,29 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True
+            duplicated_months_different_supervision_types=True,
+            duplicated_months_mixed_success=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations if not
-                   combo_has_enum_value_for_key(
-                       _combination, 'metric_type',
-                       SupervisionMetricType.SUCCESS) or
-                   combo_has_enum_value_for_key(
-                       _combination, 'supervision_type',
-                       StateSupervisionPeriodSupervisionType.PROBATION))
+        assert all(value == 1 for _combination, value in supervision_combinations
+                   if not combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   and (not combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS)
+                        or combo_has_enum_value_for_key(_combination, 'supervision_type',
+                                                        StateSupervisionPeriodSupervisionType.PROBATION)))
         assert all(value == 0 for _combination, value
                    in supervision_combinations if
-                   combo_has_enum_value_for_key(
-                       _combination, 'metric_type',
-                       SupervisionMetricType.SUCCESS) and not
-                   combo_has_enum_value_for_key(
-                       _combination, 'supervision_type',
-                       StateSupervisionPeriodSupervisionType.PROBATION) and not
-                   _combination.get('supervision_type') is None
-                   )
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS) and not
+                   combo_has_enum_value_for_key(_combination, 'supervision_type',
+                                                StateSupervisionPeriodSupervisionType.PROBATION) and not
+                   _combination.get('supervision_type') is None)
+        assert all(not combo_has_enum_value_for_key(_combination, 'metric_type',
+                                                    SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   for _combination, value in supervision_combinations
+                   if _combination.get('supervision_type' is None
+                                       or _combination.get('supervision_type') ==
+                                       StateSupervisionPeriodSupervisionType.PROBATION))
 
     @freeze_time('2020-02-01')
     def test_map_supervision_combinations_supervision_with_district_officer(self):
@@ -970,7 +986,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_duplicate_success(self):
+    def test_map_supervision_combinations_relevant_periods_duplicate_month_mixed_success(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -991,14 +1007,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 year=2010,
                 month=1,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=190
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO',
                 year=2010,
                 month=1,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=False
+                successful_completion=False,
+                incarcerated_during_sentence=False,
+                sentence_days_served=195
             )
         ]
 
@@ -1008,14 +1028,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
+            duplicated_months_mixed_success=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(not value for _combination, value
-                   in supervision_combinations
-                   if _combination.get('methodology') ==
-                   MetricMethodologyType.PERSON)
+        assert all(not value for _combination, value in supervision_combinations
+                   if _combination.get('methodology') == MetricMethodologyType.PERSON)
+        assert all(_combination.get('methodology') == MetricMethodologyType.EVENT
+                   and value == 190
+                   for _combination, value in supervision_combinations
+                   if combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
@@ -1167,7 +1191,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 year=2010,
                 month=1,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=234
             )
         ]
 
@@ -1185,16 +1211,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations
-                   if not
-                   combo_has_enum_value_for_key(
-                       _combination,
-                       'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
+                   if not combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE)
+                   and not combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
         assert all(value == -3 for _combination, value
                    in supervision_combinations
-                   if
-                   combo_has_enum_value_for_key(
-                       _combination,
-                       'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
+                   if combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
+        assert all(value == 234 for _combination, value
+                   in supervision_combinations
+                   if combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_bucket(self):
@@ -1376,7 +1404,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2018, month=3, supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True, supervising_officer_external_id='officer45',
+                successful_completion=True, incarcerated_during_sentence=False,
+                sentence_days_served=398,
+                supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
             termination_bucket,
@@ -1393,6 +1423,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
             SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
@@ -1467,6 +1498,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
             SupervisionMetricType.SUCCESS.value: True,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
@@ -1492,6 +1524,78 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 _combination, 'metric_type',
                 SupervisionMetricType.SUCCESS)
             for _combination, value in supervision_combinations)
+
+    @freeze_time('1900-01-01')
+    def test_map_supervision_combinations_only_successful_sentence_length(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        termination_bucket = SupervisionTerminationBucket(
+            state_code='US_MO',
+            year=2000,
+            month=1,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            assessment_score=11,
+            assessment_type=StateAssessmentType.LSIR,
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            assessment_score_change=-9
+        )
+
+        supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket(
+                state_code='US_MO', year=2018, month=3, supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                successful_completion=True, incarcerated_during_sentence=False,
+                sentence_days_served=500,
+                supervising_officer_external_id='officer45', supervising_district_external_id='district5'
+            ),
+            termination_bucket,
+            NonRevocationReturnSupervisionTimeBucket(
+                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION),
+            NonRevocationReturnSupervisionTimeBucket(
+                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE)
+        ]
+
+        inclusions_dict = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
+            SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: True,
+            SupervisionMetricType.REVOCATION.value: False,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
+            SupervisionMetricType.POPULATION.value: False
+        }
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            include_all_metrics=False,
+            metric_to_include=SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+        )
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 500 for _combination, value in supervision_combinations)
+        assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
+                                                SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   for _combination, value in supervision_combinations)
 
     @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_revocation(self):
@@ -1544,6 +1648,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
             SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: True,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
@@ -1627,6 +1732,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
             SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
@@ -1722,6 +1828,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
             SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
@@ -1799,6 +1906,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             'ethnicity': True,
             SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
             SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: False,
             SupervisionMetricType.REVOCATION.value: False,
             SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
@@ -1932,6 +2040,68 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         self.assertEqual(0, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
+
+    @freeze_time('1900-01-01')
+    def test_map_supervision_combinations_only_successful_sentence_length_duplicate_month_longer_sentence(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            ProjectedSupervisionCompletionBucket(
+                state_code='US_MO', year=2018, month=3, supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                successful_completion=True, incarcerated_during_sentence=False,
+                sentence_days_served=500,
+                supervising_officer_external_id='officer45', supervising_district_external_id='district5'
+            ),
+            ProjectedSupervisionCompletionBucket(
+                state_code='US_MO', year=2018, month=3, supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                successful_completion=True, incarcerated_during_sentence=False,
+                sentence_days_served=501,
+                supervising_officer_external_id='officer45', supervising_district_external_id='district5'
+            )
+        ]
+
+        inclusions_dict = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: False,
+            SupervisionMetricType.SUCCESS.value: False,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: True,
+            SupervisionMetricType.REVOCATION.value: False,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: False,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: False,
+            SupervisionMetricType.POPULATION.value: False
+        }
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
+            include_all_metrics=False,
+            metric_to_include=SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+        )
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 501 for _combination, value in supervision_combinations
+                   if _combination.get('methodology') == MetricMethodologyType.PERSON)
+        assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
+                                                SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   for _combination, value in supervision_combinations)
 
 
 class TestCharacteristicCombinations(unittest.TestCase):
@@ -2447,6 +2617,28 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         self.assertTrue(include_second_bucket)
 
+    def test_include_supervision_in_count_test_all_metrics(self):
+        """Tests that the revocation bucket is included and the non-revocation bucket is not."""
+        for metric_type in SupervisionMetricType:
+            combo = {
+                'metric_type': metric_type
+            }
+
+            if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+                bucket = ProjectedSupervisionCompletionBucket(
+                    'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
+                    successful_completion=True, incarcerated_during_sentence=False, sentence_days_served=100)
+
+                # Assert that this does not raise an error
+                _ = calculator.include_supervision_in_count(combo, bucket, [bucket], metric_type)
+            else:
+                non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
+                    'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE)
+
+                # Assert that this does not raise an error
+                _ = calculator.include_supervision_in_count(
+                    combo, non_revocation_bucket, [non_revocation_bucket], metric_type)
+
 
 def demographic_metric_combos_count_for_person_supervision(
         person: StatePerson,
@@ -2479,6 +2671,7 @@ def expected_metric_combos_count(
         include_all_metrics: bool = True,
         metric_to_include: SupervisionMetricType = None,
         duplicated_months_different_supervision_types: bool = False,
+        duplicated_months_mixed_success: bool = False,
         num_relevant_periods: int = 0,
         include_revocation_analysis: bool = False,
         include_revocation_violation_type_analysis_dimensions: bool = False) -> int:
@@ -2495,6 +2688,13 @@ def expected_metric_combos_count(
 
     projected_completion_buckets = [
         bucket for bucket in supervision_time_buckets if isinstance(bucket, ProjectedSupervisionCompletionBucket)
+    ]
+
+    successful_completion_sentence_length_buckets = [
+        bucket for bucket in projected_completion_buckets
+        if bucket.sentence_days_served is not None
+        and bucket.successful_completion
+        and not bucket.incarcerated_during_sentence
     ]
 
     population_buckets = [
@@ -2527,6 +2727,17 @@ def expected_metric_combos_count(
             completion_months.add((projected_completion_bucket.year, projected_completion_bucket.month))
 
     num_projected_completion_buckets = len(projected_completion_buckets)
+
+    num_duplicated_projected_completion_sentence_length_months = 0
+    completion_sentence_length_months: Set[Tuple[int, int]] = set()
+
+    for completion_sentence_bucket in successful_completion_sentence_length_buckets:
+        if (completion_sentence_bucket.year, completion_sentence_bucket.month) in completion_sentence_length_months:
+            num_duplicated_projected_completion_sentence_length_months += 1
+        if completion_sentence_bucket.month:
+            completion_sentence_length_months.add((completion_sentence_bucket.year, completion_sentence_bucket.month))
+
+    num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
 
     # Calculate total combos for supervision population
     num_population_buckets = len(population_buckets)
@@ -2723,6 +2934,35 @@ def expected_metric_combos_count(
     # projected completion months
     supervision_success_combos -= duplicated_success_combos
 
+    supervision_successful_sentence_length_combos = (combos_for_person * methodology_multiplier
+                                                     * num_projected_completion_sentence_length_buckets *
+                                                     projected_completion_dimension_multiplier)
+
+    # Successful sentence length metrics removed in person-based de-duplication that don't specify supervision type
+    duplicated_successful_sentence_length_combos = int(combos_for_person
+                                                       * num_duplicated_projected_completion_sentence_length_months
+                                                       * projected_completion_dimension_multiplier)
+
+    if duplicated_months_different_supervision_types and not duplicated_months_mixed_success:
+        # If the duplicated months have different supervision types, then don't remove the supervision-type-specific
+        # combos
+        duplicated_successful_sentence_length_combos = int(duplicated_successful_sentence_length_combos / 2)
+
+    # If the duplicated months have a mix of failure and successful supervision, and the duplicated months are not
+    # of different supervision types, then we will not have any person-based successful sentence length combos
+    exclude_all_person_based_successful_sentence_length_combos = (
+        duplicated_months_mixed_success and not duplicated_months_different_supervision_types
+        and num_projected_completion_buckets == 2
+    )
+
+    if exclude_all_person_based_successful_sentence_length_combos:
+        # Remove all person-based combos
+        supervision_successful_sentence_length_combos = int(supervision_successful_sentence_length_combos / 2)
+
+    # Remove the combos that don't specify supervision type for the duplicated projected completion successful
+    # supervision months
+    supervision_successful_sentence_length_combos -= duplicated_successful_sentence_length_combos
+
     # Calculate total combos for supervision termination
     termination_dimension_multiplier = 1
     if termination_buckets:
@@ -2791,6 +3031,14 @@ def expected_metric_combos_count(
                                        * (num_projected_completion_buckets - num_duplicated_projected_completion_months)
                                        * projected_completion_dimension_multiplier * num_relevant_periods)
 
+        if not exclude_all_person_based_successful_sentence_length_combos:
+            # Successful sentence length combos
+            supervision_successful_sentence_length_combos += (
+                combos_for_person
+                * (num_projected_completion_sentence_length_buckets -
+                   num_duplicated_projected_completion_sentence_length_months)
+                * projected_completion_dimension_multiplier * num_relevant_periods)
+
         # Termination combos
         supervision_termination_combos += (combos_for_person
                                            * (len(termination_buckets) - num_duplicated_termination_buckets)
@@ -2814,6 +3062,18 @@ def expected_metric_combos_count(
                                        (num_projected_completion_buckets -
                                         duplication_multiplier*num_duplicated_projected_completion_months)*(
                                             num_relevant_periods + 1))
+
+    if supervision_successful_sentence_length_combos > 0:
+        if exclude_all_person_based_successful_sentence_length_combos:
+            # Only add event-based counts for each successful completion bucket
+            supervision_successful_sentence_length_combos += len(successful_completion_sentence_length_buckets)
+        else:
+            supervision_successful_sentence_length_combos += (
+                num_projected_completion_sentence_length_buckets +
+                (num_projected_completion_sentence_length_buckets -
+                 duplication_multiplier * num_duplicated_projected_completion_sentence_length_months) *
+                (num_relevant_periods + 1))
+
     if supervision_termination_combos > 0:
         supervision_termination_combos += (num_termination_buckets +
                                            (num_termination_buckets -
@@ -2825,12 +3085,22 @@ def expected_metric_combos_count(
                                                     duplication_multiplier*num_duplicated_revocation_buckets)*(
                                                         num_relevant_periods + 1))
 
+    if duplicated_months_mixed_success and duplicated_months_different_supervision_types:
+        # If the duplicated months are of mixed success and the duplicated months are of different supervision types,
+        # then that means we want to exclude all of the person-based metrics that don't specify supervision type
+        # because successful sentence length metrics that don't specify supervision type will not include this person
+        # for this month
+        supervision_successful_sentence_length_combos -= int(combos_for_person
+                                                             * num_projected_completion_sentence_length_buckets *
+                                                             (projected_completion_dimension_multiplier / 2))
+
     # Pick which one is relevant for the test case: some tests above use a different call that only looks at combos for
     # either population or revocation, but not both
     if include_all_metrics:
         return int(supervision_population_combos +
                    supervision_revocation_combos +
                    supervision_success_combos +
+                   supervision_successful_sentence_length_combos +
                    supervision_termination_combos +
                    supervision_revocation_analysis_combos +
                    revocation_violation_type_analysis_combos)
@@ -2840,6 +3110,8 @@ def expected_metric_combos_count(
             return int(supervision_termination_combos)
         if metric_to_include == SupervisionMetricType.SUCCESS:
             return int(supervision_success_combos)
+        if metric_to_include == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+            return int(supervision_successful_sentence_length_combos)
         if metric_to_include == SupervisionMetricType.REVOCATION:
             return int(supervision_revocation_combos)
         if metric_to_include == SupervisionMetricType.REVOCATION_ANALYSIS:

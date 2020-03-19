@@ -76,8 +76,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
-    RecidivismRateFn, RecidivismLibertyFn, ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, AverageFn, ConvertDictToKVTuple, AverageFnResult
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
@@ -137,12 +136,12 @@ class GetRecidivismMetrics(beam.PTransform):
         # Calculate the recidivism rate values for the metrics combined by key
         rates_with_values = (recidivism_metric_combinations.rates
                              | 'Calculate recidivism rate values' >>
-                             beam.CombinePerKey(RecidivismRateFn()))
+                             beam.CombinePerKey(AverageFn()))
 
         # Calculate the recidivism liberty values for metrics combined by key
         liberties_with_values = (recidivism_metric_combinations.liberties
                                  | 'Calculate time at liberty values' >>
-                                 beam.CombinePerKey(RecidivismLibertyFn()))
+                                 beam.CombinePerKey(AverageFn()))
 
         # Produce the ReincarcerationRecidivismCountMetrics
         counts_metrics = (counts_with_sums
@@ -352,7 +351,7 @@ class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, Dict[str, int]],
+@with_input_types(beam.typehints.Tuple[str, AverageFnResult],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -398,39 +397,31 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (metric_key, value) = element
+        (metric_key, result) = element
 
-        if value is None:
-            # Due to how the pipeline arrives at this function, this should be
-            # impossible.
-            raise ValueError("No value associated with this metric key.")
+        if result is None:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("No result associated with this metric key.")
 
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
         if metric_type == MetricType.RATE.value:
-            # For rate metrics, the value is a dictionary storing the data
-            # necessary for recidivism rate metrics
+            dict_metric_key['total_releases'] = result.input_count
+            dict_metric_key['recidivated_releases'] = result.sum_of_inputs
+            dict_metric_key['recidivism_rate'] = result.average_of_inputs
 
-            dict_metric_key['total_releases'] = value.get('total_releases')
-            dict_metric_key['recidivated_releases'] = \
-                value.get('recidivated_releases')
-            dict_metric_key['recidivism_rate'] = value.get('recidivism_rate')
-
-            recidivism_metric = \
-                ReincarcerationRecidivismRateMetric. \
-                build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
+            recidivism_metric = ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.LIBERTY.value:
-            dict_metric_key['returns'] = value.get('returns')
-            dict_metric_key['avg_liberty'] = value.get('avg_liberty')
+            dict_metric_key['returns'] = result.input_count
+            dict_metric_key['avg_liberty'] = result.average_of_inputs
 
-            recidivism_metric = ReincarcerationRecidivismLibertyMetric. \
-                build_from_metric_key_group(dict_metric_key, pipeline_job_id)
+            recidivism_metric = ReincarcerationRecidivismLibertyMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
             return
 
         if recidivism_metric:

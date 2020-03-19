@@ -135,6 +135,12 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
     # Whether or not the supervision was completed successfully
     successful_completion: bool = attr.ib(default=True)
 
+    # Whether or not there were any incarceration admissions during the sentence
+    incarcerated_during_sentence: bool = attr.ib(default=True)
+
+    # Length of time served on the supervision sentence, in days
+    sentence_days_served: int = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class SupervisionTerminationBucket(SupervisionTimeBucket):

@@ -45,6 +45,7 @@ class SupervisionMetricType(Enum):
     REVOCATION_ANALYSIS = 'REVOCATION_ANALYSIS'
     REVOCATION_VIOLATION_TYPE_ANALYSIS = 'REVOCATION_VIOLATION_TYPE_ANALYSIS'
     SUCCESS = 'SUCCESS'
+    SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUCCESSFUL_SENTENCE_DAYS_SERVED'
 
 
 @attr.s
@@ -298,6 +299,36 @@ class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(SupervisionSuccessMetric, SupervisionSuccessMetric.build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLevelMetric):
+    """Subclass of SupervisionMetric that contains the average number of days served for successful supervision
+    sentences with projected completion dates in the month of the metric, where the person did not spend any time
+    incarcerated in the duration of the sentence."""
+    # Required characteristics
+
+    # Number of successful completions with projected completion dates in the metric month
+    successful_completion_count: int = attr.ib(default=None)
+
+    # Average days served among the successfully completed sentences
+    average_days_served: float = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
+            Optional['SuccessfulSupervisionSentenceDaysServedMetric']:
+        """Builds a SuccessfulSupervisionSentenceDaysServedMetric object from the given arguments."""
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SuccessfulSupervisionSentenceDaysServedMetric,
+                                  SuccessfulSupervisionSentenceDaysServedMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
