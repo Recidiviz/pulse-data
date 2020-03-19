@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_month_supervision_type, get_pre_incarceration_supervision_type, \
     get_supervision_period_supervision_type_from_sentence
+from recidiviz.calculator.pipeline.utils.us_mo_utils import _normalize_violations_on_responses_us_mo
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -470,6 +471,7 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
     if not supervising_officer_external_id:
         # For some states, if there's no officer information coming from the source_supervision_violation_response,
         # default to the officer information on the overlapping supervision period
+        # TODO(2995): Formalize state-specific calc logic
         if incarceration_period.state_code == 'US_MO' \
                 and supervision_period and supervision_period_to_agent_associations:
             supervising_officer_external_id, supervising_district_external_id = \
@@ -515,9 +517,17 @@ def get_violation_and_response_history(
     ]
 
     violations_in_window: List[StateSupervisionViolation] = []
-
+    updated_responses: List[StateSupervisionViolationResponse] = []
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
+
     for response in responses_in_window:
+        # TODO(2995): Formalize state-specific calc logic
+        if response.state_code == 'US_MO':
+            updated_responses.append(_normalize_violations_on_responses_us_mo(response))
+        else:
+            updated_responses.append(response)
+
+    for response in updated_responses:
         if response.supervision_violation:
             violations_in_window.append(response.supervision_violation)
 
