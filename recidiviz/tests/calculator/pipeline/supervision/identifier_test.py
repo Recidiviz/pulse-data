@@ -807,7 +807,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function to ensure temporary custody and revocation periods are
         correctly collapsed.
         """
-
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -5965,6 +5964,151 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(violation_history.violation_history_description, '1fel;1absc;1tech')
         self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY', 'ABSCONDED']])
 
+    def test_get_violation_and_response_history_date_before_cutoff(self):
+        supervision_violation_old = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2005, 1, 3),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR
+                )
+            ]
+        )
+
+        supervision_violation_response_old = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2005, 1, 7),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation_old
+        )
+
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2009, 1, 3),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.FELONY
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.ABSCONDED
+                )
+            ]
+        )
+
+        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 1, 7),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response_old, supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.FELONY, violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual(violation_history.violation_history_description, '1fel;1absc;1tech')
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY', 'ABSCONDED']])
+
+    def test_get_violation_and_response_history_date_in_cutoff(self):
+        """The `old` response and violation fall within a year of the last violation response before the revocation,
+        but not within a year of the revocation date. Test that the `old` response is included in the response
+        history."""
+        supervision_violation_old = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2008, 12, 7),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.FELONY
+                )
+            ]
+        )
+
+        supervision_violation_response_old = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2008, 12, 7),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                )
+            ],
+            supervision_violation=supervision_violation_old
+        )
+
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2009, 12, 1),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                )
+            ]
+        )
+
+        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 12, 1),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        revocation_date = date(2009, 12, 31)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response_old, supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.FELONY, violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(2, violation_history.response_count)
+        self.assertEqual(violation_history.violation_history_description, '1fel;1tech')
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY'], ['TECHNICAL_NO_CONDITIONS']])
+
     def test_get_violation_and_response_history_with_subtype(self):
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
@@ -6378,6 +6522,115 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(1, violation_history.response_count)
         self.assertEqual('1tech', violation_history.violation_history_description)
         self.assertEqual([['LAW']], violation_history.violation_type_frequency_counter)
+
+
+class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
+    """Test the get_responses_in_window_before_revocation function."""
+    def test_get_responses_in_window_before_revocation(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 3, 1)
+            )
+        ]
+
+        revocation_date = date(2001, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_revocation(
+            revocation_date, violation_responses)
+
+        self.assertEqual(violation_responses, responses_in_window)
+
+    def test_get_responses_in_window_before_revocation_exclude_before_window(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ]
+
+        revocation_date = date(2010, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_revocation(
+            revocation_date, violation_responses)
+
+        self.assertEqual([
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1)
+            )
+        ], responses_in_window)
+
+    def test_get_responses_in_window_before_revocation_none_before_revocation(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ]
+
+        revocation_date = date(1900, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_revocation(
+            revocation_date, violation_responses)
+
+        self.assertEqual([], responses_in_window)
+
+    def test_get_responses_in_window_before_revocation_exclude_permanent_decision(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=date(2000, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ]
+
+        revocation_date = date(2000, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_revocation(
+            revocation_date, violation_responses)
+
+        self.assertCountEqual([
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ], responses_in_window)
 
 
 class TestIdentifyMostSevereRevocationType(unittest.TestCase):
