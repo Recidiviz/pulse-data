@@ -48,7 +48,7 @@ def validate_admission_data(
 
     Returns the valid incarceration periods.
     """
-
+    # TODO(2995): Formalize state-specific calc logic
     if incarceration_periods and incarceration_periods[0].state_code == 'US_ND':
         # If these are North Dakota incarceration periods, send to the
         # state-specific ND data validation function
@@ -299,6 +299,7 @@ def drop_periods_not_under_state_custodial_authority(incarceration_periods: List
     """
     # TODO(2912): Use `custodial_authority` to determine this insted, when that field exists on incarceration periods.
     state_code = get_single_state_code(incarceration_periods)
+    # TODO(2995): Formalize state-specific calc logic
     if state_code == 'US_ND':
         filtered_incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
     else:

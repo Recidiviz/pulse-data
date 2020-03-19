@@ -19,29 +19,26 @@ from collections import defaultdict, OrderedDict
 from typing import List, Optional, Dict, Any
 
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolation
+from recidiviz.common.constants.state.state_supervision_violation_response import StateSupervisionViolationResponseType
+from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, StateSupervisionViolationResponse, \
+    StateSupervisionViolationTypeEntry
 
-_SUBSTANCE_ABUSE_SUBTYPE_STR = 'SUBSTANCE_ABUSE'
+_SUBSTANCE_ABUSE_CONDITION_STR = 'DRG'
+_LAW_CONDITION_STR = 'LAW'
 
-_ORDERED_VIOLATION_TYPES_AND_SUBTYPES: List[Any] = [
-    StateSupervisionViolationType.FELONY,
-    StateSupervisionViolationType.MISDEMEANOR,
-    StateSupervisionViolationType.ABSCONDED,
-    StateSupervisionViolationType.MUNICIPAL,
-    StateSupervisionViolationType.ESCAPED,
-    _SUBSTANCE_ABUSE_SUBTYPE_STR,
-    StateSupervisionViolationType.TECHNICAL
-]
+_SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
+_LAW_CITATION_SUBTYPE_STR: str = 'LAW_CITATION'
 
-_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_MAP: Dict[Any, str] = {
-    StateSupervisionViolationType.FELONY: 'fel',
-    StateSupervisionViolationType.MISDEMEANOR: 'misd',
-    StateSupervisionViolationType.ABSCONDED: 'absc',
-    StateSupervisionViolationType.MUNICIPAL: 'muni',
-    StateSupervisionViolationType.ESCAPED: 'esc',
-    StateSupervisionViolationType.TECHNICAL: 'tech',
-    _SUBSTANCE_ABUSE_SUBTYPE_STR: 'subs',
-}
+_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP = OrderedDict([
+    (StateSupervisionViolationType.FELONY.value, 'fel'),
+    (StateSupervisionViolationType.MISDEMEANOR.value, 'misd'),
+    (StateSupervisionViolationType.ABSCONDED.value, 'absc'),
+    (StateSupervisionViolationType.MUNICIPAL.value, 'muni'),
+    (_LAW_CITATION_SUBTYPE_STR, 'law_cit'),
+    (StateSupervisionViolationType.ESCAPED.value, 'esc'),
+    (_SUBSTANCE_ABUSE_SUBTYPE_STR, 'subs'),
+    (StateSupervisionViolationType.TECHNICAL.value, 'tech')
+])
 
 
 def identify_violation_subtype(violation_type: StateSupervisionViolationType,
@@ -55,7 +52,9 @@ def identify_violation_subtype(violation_type: StateSupervisionViolationType,
 
     for violation in technical_violations:
         for condition in violation.supervision_violated_conditions:
-            if condition.condition == 'DRG':
+            if condition.condition == _LAW_CITATION_SUBTYPE_STR:
+                return _LAW_CITATION_SUBTYPE_STR
+            if condition.condition == _SUBSTANCE_ABUSE_CONDITION_STR:
                 return _SUBSTANCE_ABUSE_SUBTYPE_STR
     return None
 
@@ -90,15 +89,46 @@ def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisi
                 continue
             subtype = identify_violation_subtype(violation_type, [violation])
 
-            to_increment = subtype if subtype and all_technicals else violation_type
+            to_increment = subtype if subtype and all_technicals else violation_type.value
             type_and_subtype_counts[to_increment] += 1
 
     # Convert to string shorthand
     ranked_shorthand_counts: Dict[str, int] = OrderedDict()
-    for violation_type_or_subtype in _ORDERED_VIOLATION_TYPES_AND_SUBTYPES:
+    for violation_type_or_subtype in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP.keys():
         violation_count = type_and_subtype_counts[violation_type_or_subtype]
-        shorthand = _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_MAP[violation_type_or_subtype]
+        shorthand = _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP[violation_type_or_subtype]
         if violation_count:
             ranked_shorthand_counts[shorthand] = violation_count
 
     return ranked_shorthand_counts
+
+
+def _normalize_violations_on_responses_us_mo(response: StateSupervisionViolationResponse) -> \
+        StateSupervisionViolationResponse:
+    """For responses that are not of type CITATION or don't have an associated violation, does nothing. Responses of
+    type CITATION do not have violation types on their violations, so the violation types and conditions violated on
+    these violations are updated."""
+    if not response.state_code or response.state_code.upper() != 'US_MO':
+        raise ValueError(f"Calling state-specific US_MO helper function for a response from {response.state_code}")
+
+    # Citations in US_MO don't have violation types on them. However, we want to classify them as TECHNICAL.
+    # If this is a CITATION and there's a violation on it, add TECHNICAL to the list of violation types.
+    if response.response_type == StateSupervisionViolationResponseType.CITATION and response.supervision_violation:
+        supervision_violation = response.supervision_violation
+
+        if not supervision_violation.supervision_violation_types:
+            supervision_violation.supervision_violation_types.append(
+                StateSupervisionViolationTypeEntry(
+                    state_code=response.state_code,
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                    violation_type_raw_text=None
+                )
+            )
+
+        # Update citations that list the _LAW_CONDITION_STR as a condition to instead list _LAW_CITATION_SUBTYPE_STR
+        # so we can track law citations independently from other violations with LAW conditions on them
+        for condition_entry in supervision_violation.supervision_violated_conditions:
+            if condition_entry.condition == _LAW_CONDITION_STR:
+                condition_entry.condition = _LAW_CITATION_SUBTYPE_STR
+
+    return response

@@ -18,13 +18,17 @@
 import unittest
 from collections import OrderedDict
 
+import pytest
+
 from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violation_subtype
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.us_mo_utils import get_ranked_violation_type_and_subtype_counts, \
-    _ORDERED_VIOLATION_TYPES_AND_SUBTYPES, _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_MAP
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP, _LAW_CITATION_SUBTYPE_STR, \
+    _normalize_violations_on_responses_us_mo
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import StateSupervisionViolationResponseType
 from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, \
-    StateSupervisionViolatedConditionEntry, StateSupervisionViolationTypeEntry
+    StateSupervisionViolatedConditionEntry, StateSupervisionViolationTypeEntry, StateSupervisionViolationResponse
 
 _STATE_CODE = 'US_MO'
 
@@ -59,7 +63,7 @@ class TestUsMoUtils(unittest.TestCase):
         subtype = identify_violation_subtype(StateSupervisionViolationType.FELONY, violations)
         self.assertIsNone(subtype)
 
-    def test_identifyViolationSubtype_technical(self):
+    def test_identifyViolationSubtype_technical_drg(self):
         # Arrange
         violations = [
             StateSupervisionViolation.new_with_defaults(
@@ -87,6 +91,35 @@ class TestUsMoUtils(unittest.TestCase):
 
         # Assert
         self.assertEqual('SUBSTANCE_ABUSE', subtype)
+
+    def test_identifyViolationSubtype_technical_law_citation(self):
+        # Arrange
+        violations = [
+            StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE,
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL)
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition=_LAW_CITATION_SUBTYPE_STR)
+                ]
+            ),
+            StateSupervisionViolation.new_with_defaults(
+                state_code=_STATE_CODE,
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.FELONY)
+                ]
+            )
+        ]
+
+        # Act
+        subtype = identify_violation_subtype(StateSupervisionViolationType.TECHNICAL, violations)
+
+        # Assert
+        self.assertEqual(_LAW_CITATION_SUBTYPE_STR, subtype)
 
     def test_identifyViolationSubtype_technicalNoSubtype(self):
         # Arrange
@@ -170,10 +203,113 @@ class TestUsMoUtils(unittest.TestCase):
         ])
         self.assertEqual(expected_counts, ordered_counts)
 
-    def test_orderedViolationTypesAndSubtypes_isComplete(self):
+    def test_violationTypeAndSubtypeShorthandMap_isComplete(self):
         for violation_type in StateSupervisionViolationType:
-            self.assertTrue(violation_type in _ORDERED_VIOLATION_TYPES_AND_SUBTYPES)
+            self.assertTrue(violation_type.value in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP.keys())
 
-    def test_violationTypeAndSUbtypeShorthandMap_isComplete(self):
-        for violation_type in _ORDERED_VIOLATION_TYPES_AND_SUBTYPES:
-            self.assertTrue(violation_type in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_MAP)
+    def test_handle_citation_violations_us_mo(self):
+        # Arrange
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                state_code='US_MO',
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                supervision_violation=supervision_violation
+            )
+
+        # Act
+        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+
+        # Assert
+        self.assertEqual(supervision_violation.supervision_violation_types, [
+            StateSupervisionViolationTypeEntry(
+                state_code='US_MO',
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text=None
+            )
+        ])
+        self.assertEqual(supervision_violation.supervision_violated_conditions, [
+            StateSupervisionViolatedConditionEntry.new_with_defaults(condition=_LAW_CITATION_SUBTYPE_STR),
+        ])
+
+    def test_handle_citation_violations_us_mo_no_conditions(self):
+        # Arrange
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                state_code='US_MO'
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                supervision_violation=supervision_violation
+            )
+
+        # Act
+        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+
+        # Assert
+        self.assertEqual([
+            StateSupervisionViolationTypeEntry(
+                state_code='US_MO',
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text=None
+            )
+        ], supervision_violation.supervision_violation_types)
+        self.assertEqual([], supervision_violation.supervision_violated_conditions)
+
+    def test_handle_citation_violations_violation_report_us_mo(self):
+        # Arrange
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                state_code='US_MO',
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                supervision_violation=supervision_violation
+            )
+
+        # Act
+        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+
+        # Assert
+        self.assertEqual(supervision_violation.supervision_violation_types, [])
+        self.assertEqual(supervision_violation.supervision_violated_conditions, [
+            StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+        ])
+
+    def test_handle_citation_violations_not_us_mo(self):
+        # Arrange
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                state_code='US_NOT_MO',
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_NOT_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                supervision_violation=supervision_violation
+            )
+
+        # Act and Assert
+        with pytest.raises(ValueError):
+            # This function should only be called for responses from US_MO
+            _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
