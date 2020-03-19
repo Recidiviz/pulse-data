@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for the UsMoController."""
 import datetime
-from typing import Type, List
+from typing import Type
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
@@ -49,11 +49,10 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
-
+from recidiviz.tests.ingest.direct.regions.utils import _populate_person_backedges
 
 _STATE_CODE_UPPER = 'US_MO'
 
@@ -1695,16 +1694,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations')
 
-    @staticmethod
-    def _populate_person_backedges(persons: List[entities.StatePerson]) -> None:
-        for person in persons:
-            children = get_all_entities_from_tree(person)
-            for child in children:
-                if (child is not person
-                        and hasattr(child, 'person')
-                        and getattr(child, 'person', None) is None):
-                    child.set_field('person', person)
-
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
 
@@ -1930,7 +1919,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         expected_people = [person_910324, person_710448, person_310261, person_110035]
 
-        self._populate_person_backedges(expected_people)
+        _populate_person_backedges(expected_people)
 
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification.csv')
