@@ -500,25 +500,14 @@ def get_violation_and_response_history(
         revocation_date: date,
         violation_responses: List[StateSupervisionViolationResponse]
 ) -> ViolationHistory:
-    """Looks at the series of violation responses that preceded a revocation. Selects the violation responses that
-    occurred within VIOLATION_HISTORY_WINDOW_MONTHS months of the revocation return date, and looks at those responses
-    and the corresponding violations. Identifies and returns the most severe violation type that was recorded during
-    the period, the most severe decision on the responses, and the total number of responses during the period.
+    """Identifies and returns the most severe violation type, the most severe decision on the responses, and the total
+    number of responses that were recorded during a window of time preceding a revocation.
     """
-    history_cutoff_date = revocation_date - relativedelta(months=VIOLATION_HISTORY_WINDOW_MONTHS)
-
-    responses_in_window = [
-        response for response in violation_responses
-        if response.response_date is not None
-        and not response.is_draft
-        and response.response_type in (StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                                       StateSupervisionViolationResponseType.CITATION)
-        and history_cutoff_date <= response.response_date <= revocation_date
-    ]
+    responses_in_window = _get_responses_in_window_before_revocation(revocation_date, violation_responses)
 
     violations_in_window: List[StateSupervisionViolation] = []
-    updated_responses: List[StateSupervisionViolationResponse] = []
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
+    updated_responses: List[StateSupervisionViolationResponse] = []
 
     for response in responses_in_window:
         # TODO(2995): Formalize state-specific calc logic
@@ -565,6 +554,46 @@ def get_violation_and_response_history(
         violation_type_frequency_counter)
 
     return violation_history_result
+
+
+def _get_responses_in_window_before_revocation(revocation_date: date,
+                                               violation_responses: List[StateSupervisionViolationResponse]) \
+        -> List[StateSupervisionViolationResponse]:
+    """Looks at the series of violation responses that preceded a revocation. Finds the last violation response that was
+    written before the revocation_date. Then, returns the violation responses that were written within
+    VIOLATION_HISTORY_WINDOW_MONTHS months of the response_date on that last response.
+    """
+    responses_before_revocation = [
+        response for response in violation_responses
+        if response.response_date is not None
+        and not response.is_draft
+        and response.response_type in (StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                                       StateSupervisionViolationResponseType.CITATION)
+        and response.response_date <= revocation_date
+    ]
+
+    if not responses_before_revocation:
+        logging.warning("No recorded responses before the revocation date.")
+        return []
+
+    responses_before_revocation.sort(key=lambda b: b.response_date)
+
+    last_response_before_revocation = responses_before_revocation[-1]
+
+    if not last_response_before_revocation.response_date:
+        # This should never happen, but is here to silence mypy warnings about empty response_dates.
+        raise ValueError("Not effectively filtering out responses without valid response_dates.")
+
+    history_cutoff_date = (last_response_before_revocation.response_date
+                           - relativedelta(months=VIOLATION_HISTORY_WINDOW_MONTHS))
+
+    responses_in_window = [
+        response for response in responses_before_revocation
+        if response.response_date is not None
+        and history_cutoff_date <= response.response_date <= last_response_before_revocation.response_date
+    ]
+
+    return responses_in_window
 
 
 def _get_violation_history_description(violations: List[StateSupervisionViolation]) -> Optional[str]:
