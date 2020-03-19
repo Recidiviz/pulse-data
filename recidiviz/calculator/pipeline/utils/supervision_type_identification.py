@@ -57,6 +57,7 @@ def get_pre_incarceration_supervision_type(
 
     state_code = incarceration_period.state_code
 
+    # TODO(2995): Formalize state-specific calc logic
     if state_code == 'US_MO':
         supervision_type = get_pre_incarceration_supervision_type_from_relevant_supervision_periods(
             incarceration_sentences, supervision_sentences, incarceration_period, supervision_periods)
