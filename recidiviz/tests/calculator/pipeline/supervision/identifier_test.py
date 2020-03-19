@@ -6160,6 +6160,225 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertIsNone(violation_history.violation_history_description)
         self.assertIsNone(violation_history.violation_type_frequency_counter)
 
+    def test_get_violation_and_response_history_us_mo_handle_citations(self):
+        """Tests that US_MO citations with no violation types get TECHNICAL violation types added to them."""
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
+                state_code='US_MO',
+                violation_date=date(2009, 1, 7)
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_date=date(2009, 1, 7),
+                is_draft=False,
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.REVOCATION,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        REINCARCERATION
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.CONTINUANCE,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        SHOCK_INCARCERATION,
+                    )
+                ],
+                supervision_violation=supervision_violation
+            )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.TECHNICAL,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1tech', violation_history.violation_history_description)
+        self.assertEqual([['TECHNICAL_NO_CONDITIONS']], violation_history.violation_type_frequency_counter)
+
+    def test_get_violation_and_response_history_us_mo_handle_law_citations(self):
+        """Tests that a US_MO citation with no violation types and a LAW condition gets a TECHNICAL violation type added
+        to it, a 'LAW_CITATION' condition added, and the violation subtype of LAW_CITATION is set."""
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
+                state_code='US_MO',
+                violation_date=date(2009, 1, 7),
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_date=date(2009, 1, 7),
+                is_draft=False,
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.REVOCATION,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        REINCARCERATION
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.CONTINUANCE,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        SHOCK_INCARCERATION,
+                    )
+                ],
+                supervision_violation=supervision_violation
+            )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.TECHNICAL,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual('LAW_CITATION', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1law_cit', violation_history.violation_history_description)
+        self.assertEqual([['LAW_CITATION']], violation_history.violation_type_frequency_counter)
+
+    def test_get_violation_and_response_history_us_mo_handle_drg_citations(self):
+        """Tests that a US_MO citation with no violation types and a DRG condition gets a TECHNICAL violation type added
+        to it and the violation subtype of SUBSTANCE_ABUSE is returned."""
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
+                state_code='US_MO',
+                violation_date=date(2009, 1, 7),
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='DRG'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.CITATION,
+                response_date=date(2009, 1, 7),
+                is_draft=False,
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.REVOCATION,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        REINCARCERATION
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.CONTINUANCE,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        SHOCK_INCARCERATION,
+                    )
+                ],
+                supervision_violation=supervision_violation
+            )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.TECHNICAL,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual('SUBSTANCE_ABUSE', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1subs', violation_history.violation_history_description)
+        self.assertEqual([['DRG']], violation_history.violation_type_frequency_counter)
+
+    def test_get_violation_and_response_history_us_mo_handle_law_technicals(self):
+        """Tests that a US_MO violation report with a TECHNICAL type and a LAW condition is not treated like a
+        citation with a LAW condition."""
+        supervision_violation = \
+            StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
+                state_code='US_MO',
+                violation_date=date(2009, 1, 7),
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.TECHNICAL),
+                ],
+                supervision_violated_conditions=[
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                ]
+            )
+
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2009, 1, 7),
+                is_draft=False,
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.REVOCATION,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        REINCARCERATION
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.
+                    new_with_defaults(
+                        decision=
+                        StateSupervisionViolationResponseDecision.CONTINUANCE,
+                        revocation_type=
+                        StateSupervisionViolationResponseRevocationType.
+                        SHOCK_INCARCERATION,
+                    )
+                ],
+                supervision_violation=supervision_violation
+            )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = identifier.get_violation_and_response_history(
+            revocation_date, [supervision_violation_response])
+
+        self.assertEqual(StateSupervisionViolationType.TECHNICAL, violation_history.most_severe_violation_type)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1tech', violation_history.violation_history_description)
+        self.assertEqual([['LAW']], violation_history.violation_type_frequency_counter)
+
 
 class TestIdentifyMostSevereRevocationType(unittest.TestCase):
     """Tests the _identify_most_severe_revocation_type function."""
