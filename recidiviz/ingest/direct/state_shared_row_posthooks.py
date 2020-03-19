@@ -74,8 +74,7 @@ def gen_label_single_external_id_hook(external_id_type: str) -> Callable:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
                 if found:
-                    raise ValueError(
-                        'Already found object of type StatePersonExternalId')
+                    raise ValueError('Already found object of type StatePersonExternalId')
 
                 extracted_object.__setattr__('id_type', external_id_type)
                 found = True

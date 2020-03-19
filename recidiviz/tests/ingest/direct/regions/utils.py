@@ -14,25 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Utils for region controller tests."""
 
-"""Strings representing different types of external ids ingested by our system.
+from typing import List
 
-NOTE: Changing ANY STRING VALUE in this file will require a database migration.
-The Python values pointing to the strings can be renamed without issue.
+from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
+from recidiviz.persistence.entity.state import entities
 
-At present, these are specifically for cataloging the kinds of ids ingested into
-the StatePersonExternalId entity. In this context, the id types represent the
-source that actually creates the id in the real world.
-"""
 
-# StatePersonExternalId.id_type
-
-US_ID_DOC = 'US_ID_DOC'
-
-US_MO_DOC = 'US_MO_DOC'
-US_MO_SID = 'US_MO_SID'
-US_MO_FBI = 'US_MO_FBI'
-US_MO_OLN = 'US_MO_OLN'
-
-US_ND_ELITE = 'US_ND_ELITE'
-US_ND_SID = 'US_ND_SID'
+def _populate_person_backedges(persons: List[entities.StatePerson]) -> None:
+    for person in persons:
+        children = get_all_entities_from_tree(person)
+        for child in children:
+            if (child is not person
+                    and hasattr(child, 'person')
+                    and getattr(child, 'person', None) is None):
+                child.set_field('person', person)
