@@ -97,6 +97,24 @@ def map_supervision_combinations(person: StatePerson,
                     supervision_time_buckets, periods_and_buckets, SupervisionMetricType.SUCCESS)
 
                 metrics.extend(supervision_success_metrics)
+
+            if inclusions.get(SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value) \
+                    and supervision_time_bucket.successful_completion \
+                    and not supervision_time_bucket.incarcerated_during_sentence:
+                # Only include successful sentences where the person was not incarcerated during the sentence in this
+                # metric
+                characteristic_combos_successful_sentence_length = characteristic_combinations(
+                    person, supervision_time_bucket, inclusions, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+                )
+
+                successful_sentence_length_metrics = map_metric_combinations(
+                    characteristic_combos_successful_sentence_length, supervision_time_bucket,
+                    metric_period_end_date, calculation_month_lower_bound,
+                    supervision_time_buckets, periods_and_buckets,
+                    SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+
+                metrics.extend(successful_sentence_length_metrics)
+
         elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
             if inclusions.get(SupervisionMetricType.ASSESSMENT_CHANGE.value):
                 characteristic_combos_assessment = characteristic_combinations(
@@ -437,7 +455,6 @@ def combination_supervision_monthly_metrics(
     Args:
         combo: A characteristic combination to convert into metrics
         supervision_time_bucket: The SupervisionTimeBucket from which the combination was derived
-        metric_period_end_date: The day the metric periods end
         all_supervision_time_buckets: All of this person's SupervisionTimeBuckets
         metric_type: The type of metric being tracked by this combo
 
@@ -459,13 +476,24 @@ def combination_supervision_monthly_metrics(
         bucket_year, bucket_month,
         MetricMethodologyType.EVENT, base_metric_period)
 
-    # The default value for all combos is 1
-    event_combo_value = 1
+    event_combo_value = None
 
-    if metric_type == SupervisionMetricType.SUCCESS and \
-            isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-        # Set 1 for successful completion, 0 for unsuccessful completion
-        event_combo_value = 1 if supervision_time_bucket.successful_completion else 0
+    if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
+        if metric_type == SupervisionMetricType.SUCCESS:
+            # Set 1 for successful completion, 0 for unsuccessful completion
+            event_combo_value = 1 if supervision_time_bucket.successful_completion else 0
+        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+            if supervision_time_bucket.sentence_days_served is not None:
+                # Only include this combo if there is a recorded number of days served. Set the value as the number of
+                # days served.
+                event_combo_value = supervision_time_bucket.sentence_days_served
+            else:
+                # If there's no recorded days served on this completion bucket, don't include it in any of the
+                # successful sentence days served metrics.
+                pass
+        else:
+            raise ValueError(f"Unsupported metric type {metric_type} for ProjectedSupervisionCompletionBucket.")
+
     elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE and \
             isinstance(supervision_time_bucket, SupervisionTerminationBucket):
         if supervision_time_bucket.assessment_score_change is not None:
@@ -476,7 +504,14 @@ def combination_supervision_monthly_metrics(
             # The only metric relying on the SupervisionTerminationBuckets is the
             # TerminatedSupervisionAssessmentScoreChangeMetric. So, if there's no recorded assessment score change on
             # this termination, don't include it in any of the metrics.
-            return metrics
+            pass
+    else:
+        # The default value for all combos is 1
+        event_combo_value = 1
+
+    if event_combo_value is None:
+        # If the event_combo_value is not set, then exclude this bucket from all metrics
+        return metrics
 
     # TODO(2913): Exclude combos with a supervision_type of DUAL from event-based counts
     for event_combo in event_based_same_bucket_combos:
@@ -507,7 +542,7 @@ def combination_supervision_monthly_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
-    elif metric_type == SupervisionMetricType.SUCCESS:
+    elif metric_type in (SupervisionMetricType.SUCCESS, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED):
         # Get all other projected completion buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -606,14 +641,13 @@ def combination_supervision_metric_period_metrics(
             elif metric_type in (SupervisionMetricType.REVOCATION,
                                  SupervisionMetricType.REVOCATION_ANALYSIS,
                                  SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
-                # Get all other supervision time buckets for this period that should contribute to a revocation metric
+                # Get all other revocation return time buckets for this period
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
                     if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
                 ]
-            elif metric_type == SupervisionMetricType.SUCCESS:
-                # Get all other supervision time buckets for this period that should contribute to a supervision
-                # success metric
+            elif metric_type in (SupervisionMetricType.SUCCESS, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED):
+                # Get all other projected completion buckets in this period
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
                     if (isinstance(bucket, ProjectedSupervisionCompletionBucket))
@@ -655,6 +689,11 @@ def include_supervision_in_count(combo: Dict[str, Any],
     of type REVOCATION, SUCCESS, or ASSESSMENT_CHANGE, then this bucket is included only if it is the last
     bucket in the period.
 
+    If the metric is of type SUCCESSFUL_SENTENCE_DAYS_SERVED, then a bucket for this month is only included if all
+    supervision sentences that were projected to complete in this period finished successfully and were not
+    overlapped by any incarceration. If this is the case, then this bucket is included only if it is the longest
+    sentence that ended in this time period.
+
     This function assumes that the SupervisionTimeBuckets in all_buckets_in_period are of the same type and that the
     list is sorted in ascending order by year and month.
     """
@@ -690,7 +729,26 @@ def include_supervision_in_count(combo: Dict[str, Any],
 
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
-    return False
+    if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+        # If any supervision sentence that was projected to complete in this period didn't finish successfully
+        # or was overlapped by incarceration, then do not count this month as a successful completion for the
+        # successful sentence days served metric
+        if any(isinstance(b, ProjectedSupervisionCompletionBucket) and (
+                not b.successful_completion or b.incarcerated_during_sentence) for b in relevant_buckets):
+            return False
+
+        sentence_length_buckets = [
+            bucket for bucket in relevant_buckets
+            if isinstance(bucket, ProjectedSupervisionCompletionBucket)
+            and bucket.sentence_days_served is not None
+        ]
+
+        sentence_length_buckets.sort(key=lambda b: b.sentence_days_served)
+
+        # Use only the longest sentence that ended in this time period
+        return id(supervision_time_bucket) == id(sentence_length_buckets[-1])
+
+    raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
 
 
 def _person_combo_value(combo: Dict[str, Any],
@@ -707,6 +765,9 @@ def _person_combo_value(combo: Dict[str, Any],
 
     The value for ASSESSMENT_CHANGE metrics will be the assessment_score_change on the given supervision_time_bucket.
 
+    The value for SUCCESSFUL_SENTENCE_DAYS_SERVED metrics will be the sentence_days_served value on the given
+    supervision_time_bucket.
+
     The value for the SUCCESS metrics is 1 for a successful completion, and 0 for an unsuccessful completion. For any
     combos that do not specify supervision type, the success value on this combo should only be 1 if all
     supervisions ending that month were successful. For any combos that do specify supervision type, the success value
@@ -714,23 +775,25 @@ def _person_combo_value(combo: Dict[str, Any],
     """
     person_combo_value = 1
 
-    if metric_type == SupervisionMetricType.SUCCESS and \
-            isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
+    if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
+        if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+            return supervision_time_bucket.sentence_days_served
 
-        supervision_type_specific_metric = combo.get(
-            'supervision_type') is not None
+        if metric_type == SupervisionMetricType.SUCCESS:
+            supervision_type_specific_metric = combo.get(
+                'supervision_type') is not None
 
-        # If the combination specifies the supervision type, then remove any buckets of other supervision types
-        relevant_buckets = [
-            bucket for bucket in all_buckets_in_period
-            if not (supervision_type_specific_metric and bucket.supervision_type !=
-                    supervision_time_bucket.supervision_type)
-        ]
+            # If the combination specifies the supervision type, then remove any buckets of other supervision types
+            relevant_buckets = [
+                bucket for bucket in all_buckets_in_period
+                if not (supervision_type_specific_metric and bucket.supervision_type !=
+                        supervision_time_bucket.supervision_type)
+            ]
 
-        for completion_bucket in relevant_buckets:
-            if isinstance(completion_bucket, ProjectedSupervisionCompletionBucket) and not \
-                    completion_bucket.successful_completion:
-                person_combo_value = 0
+            for completion_bucket in relevant_buckets:
+                if isinstance(completion_bucket, ProjectedSupervisionCompletionBucket) and not \
+                        completion_bucket.successful_completion:
+                    person_combo_value = 0
     elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE and \
             isinstance(supervision_time_bucket, SupervisionTerminationBucket):
         # This should always evaluate to true at this point
@@ -780,7 +843,8 @@ def _include_revocation_dimensions_for_metric(metric_type: SupervisionMetricType
     if metric_type in (
             SupervisionMetricType.POPULATION,
             SupervisionMetricType.ASSESSMENT_CHANGE,
-            SupervisionMetricType.SUCCESS
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
     ):
         return False
 
@@ -798,7 +862,10 @@ def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType
     ):
         return True
 
-    if metric_type == SupervisionMetricType.SUCCESS:
+    if metric_type in (
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+    ):
         return False
 
     raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
@@ -811,7 +878,8 @@ def _include_person_level_dimensions_for_metric(metric_type: SupervisionMetricTy
             SupervisionMetricType.REVOCATION_ANALYSIS,
             SupervisionMetricType.POPULATION,
             SupervisionMetricType.ASSESSMENT_CHANGE,
-            SupervisionMetricType.SUCCESS
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
     ):
         return True
 

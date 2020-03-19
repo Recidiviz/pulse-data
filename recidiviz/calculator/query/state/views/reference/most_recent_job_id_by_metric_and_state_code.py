@@ -77,6 +77,9 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_SUCCESS' as metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`)
             UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUCCESSFUL_SENTENCE_DAYS_SERVED' as metric_type
+            FROM `{project_id}.{metrics_dataset}.successful_supervision_sentence_days_served_metrics`)
+            UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_REFERRAL' as metric_type
             FROM `{project_id}.{metrics_dataset}.program_referral_metrics`)
         )

@@ -23,11 +23,12 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
 from recidiviz.calculator.pipeline.utils import beam_utils
+from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult
 
 
 class TestBeamUtils(unittest.TestCase):
     """Tests for the beam_utils functions."""
-    def testRecidivismRateFn(self):
+    def testAverageFn(self):
         test_values_dicts = [({'field': 'a'}, 0), ({'field': 'a'}, 0),
                              ({'field': 'a'}, 1),
                              ({'field': 'b'}, 0), ({'field': 'b'}, 1)]
@@ -39,81 +40,38 @@ class TestBeamUtils(unittest.TestCase):
             test_input.append((test_set, value))
 
         correct_output = [
-            (frozenset({('field', 'a')}), {
-                'total_releases': 3,
-                'recidivated_releases': 1,
-                'recidivism_rate': (1.0 / 3)
-            }),
-            (frozenset({('field', 'b')}), {
-                'total_releases': 2,
-                'recidivated_releases': 1,
-                'recidivism_rate': 0.5
-            })
+            (frozenset({('field', 'a')}),
+             AverageFnResult(
+                 input_count=3,
+                 sum_of_inputs=1,
+                 average_of_inputs=(1.0 / 3)
+             )),
+            (frozenset({('field', 'b')}),
+             AverageFnResult(
+                 input_count=2,
+                 sum_of_inputs=1,
+                 average_of_inputs=0.5
+             ))
         ]
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create(test_input)
-                  | 'Test RecidivismRateFn' >>
-                  beam.CombinePerKey(beam_utils.RecidivismRateFn()))
+                  | 'Test AverageFn' >>
+                  beam.CombinePerKey(beam_utils.AverageFn()))
 
         assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
-    def testRecidivismRateFn_EmptyInput(self):
+    def testAverageFn_EmptyInput(self):
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([])
-                  | 'Test RecidivismRateFn' >>
-                  beam.CombinePerKey(beam_utils.RecidivismRateFn()))
-
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-    def testRecidivismLibertyFn(self):
-        test_values_dicts = [({'field': 'a'}, 300), ({'field': 'a'}, 100),
-                             ({'field': 'a'}, 200),
-                             ({'field': 'b'}, 1000), ({'field': 'b'}, 500)]
-
-        test_input = []
-
-        for test_dict, value in test_values_dicts:
-            test_set = frozenset(test_dict.items())
-            test_input.append((test_set, value))
-
-        correct_output = [
-            (frozenset({('field', 'a')}), {
-                'returns': 3,
-                'avg_liberty': 200,
-            }),
-            (frozenset({('field', 'b')}), {
-                'returns': 2,
-                'avg_liberty': 750,
-            })
-        ]
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create(test_input)
-                  | 'Test RecidivismLibertyFn' >>
-                  beam.CombinePerKey(beam_utils.RecidivismLibertyFn()))
-
-        assert_that(output, equal_to(correct_output))
-
-        test_pipeline.run()
-
-    def testRecidivismLibertyFn_NoInput(self):
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create([])
-                  | 'Test RecidivismLibertyFn' >>
-                  beam.CombinePerKey(beam_utils.RecidivismLibertyFn()))
+                  | 'Test AverageFn' >>
+                  beam.CombinePerKey(beam_utils.AverageFn()))
 
         assert_that(output, equal_to([]))
 
