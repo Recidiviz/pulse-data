@@ -163,8 +163,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=2018,
                 month=5,
                 supervision_type=supervision_period_supervision_type,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                successful_completion=True
+                successful_completion=True,
+                incarcerated_during_sentence=False,
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -2468,7 +2470,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ProjectedSupervisionCompletionBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5, supervision_type=supervision_period_supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL, successful_completion=True
+                case_type=StateSupervisionCaseType.GENERAL, successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code, year=2018, month=3,
@@ -2581,7 +2585,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=5,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                successful_completion=True
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -4874,6 +4880,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            [],
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4888,7 +4895,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=supervision_period_supervision_type,
                 successful_completion=True,
-                case_type=StateSupervisionCaseType.GENERAL
+                incarcerated_during_sentence=False,
+                case_type=StateSupervisionCaseType.GENERAL,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -4906,6 +4915,15 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_type=StateSupervisionType.PAROLE
             )
 
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id='ip1',
+            state_code='US_ND',
+            admission_date=date(2018, 6, 1),
+            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2018, 6, 21)
+        )
+
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
@@ -4919,9 +4937,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = [incarceration_period]
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4936,7 +4956,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=supervision_period_supervision_type,
                 successful_completion=False,
-                case_type=StateSupervisionCaseType.GENERAL
+                incarcerated_during_sentence=True,
+                case_type=StateSupervisionCaseType.GENERAL,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -4981,9 +5003,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -4999,6 +5023,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_type=second_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
+                incarcerated_during_sentence=False,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -5054,9 +5080,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [first_supervision_sentence, second_supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5072,7 +5100,10 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=first_supervision_period_supervision_type,
                 successful_completion=True,
-                case_type=StateSupervisionCaseType.GENERAL
+                incarcerated_during_sentence=False,
+                case_type=StateSupervisionCaseType.GENERAL,
+                sentence_days_served=
+                (first_supervision_sentence.completion_date - first_supervision_sentence.start_date).days
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code=second_supervision_period.state_code,
@@ -5081,6 +5112,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_type=second_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
+                incarcerated_during_sentence=False,
+                sentence_days_served=
+                (second_supervision_sentence.completion_date - second_supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -5136,9 +5170,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [first_supervision_sentence, second_supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5154,7 +5190,10 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=first_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                successful_completion=True
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=
+                (first_supervision_sentence.completion_date - first_supervision_sentence.start_date).days
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code=second_supervision_period.state_code,
@@ -5162,7 +5201,10 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=second_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                successful_completion=False
+                successful_completion=False,
+                incarcerated_during_sentence=False,
+                sentence_days_served=
+                (second_supervision_sentence.completion_date - second_supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -5202,9 +5244,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         }
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             supervision_period_agent_association
         )
 
@@ -5220,8 +5264,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
+                incarcerated_during_sentence=False,
                 supervising_officer_external_id='AGENTX',
-                supervising_district_external_id='DISTRICTX'
+                supervising_district_external_id='DISTRICTX',
+                sentence_days_served=
+                (supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -5261,9 +5308,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         }
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             supervision_period_agent_association
         )
         self.assertEqual(1, len(projected_completion_buckets))
@@ -5278,6 +5327,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days,
                 supervising_officer_external_id=None,
                 supervising_district_external_id=None
             )
@@ -5310,9 +5361,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5327,7 +5380,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 month=12,
                 supervision_type=supervision_period_supervision_type,
                 successful_completion=True,
-                case_type=StateSupervisionCaseType.GENERAL
+                incarcerated_during_sentence=False,
+                case_type=StateSupervisionCaseType.GENERAL,
+                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -5358,9 +5413,11 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5392,13 +5449,112 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
+            incarceration_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(0, len(projected_completion_buckets))
+
+    def test_classify_supervision_success_exclude_completion_before_start(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_ND',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 12, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.SUSPENSION,
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                completion_date=date(2016, 10, 3),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PAROLE,
+                projected_completion_date=date(2018, 12, 25),
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_periods = []
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            supervision_sentences,
+            incarceration_periods,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
+
+    def test_classify_supervision_success_was_incarcerated_during_sentence(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_ND',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 12, 19),
+                termination_reason=
+                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PAROLE,
+                completion_date=date(2018, 12, 20),
+                projected_completion_date=date(2018, 12, 25),
+                supervision_periods=[supervision_period]
+            )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            admission_date=date(2017, 6, 1),
+            release_date=date(2017, 10, 5)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_periods = [incarceration_period]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            supervision_sentences,
+            incarceration_periods,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(1, len(projected_completion_buckets))
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+
+        sentence_length = (supervision_sentence.completion_date - supervision_sentence.start_date).days
+
+        self.assertEqual([
+            ProjectedSupervisionCompletionBucket(
+                state_code=supervision_period.state_code,
+                year=2018,
+                month=12,
+                supervision_type=supervision_period_supervision_type,
+                successful_completion=True,
+                incarcerated_during_sentence=True,
+                case_type=StateSupervisionCaseType.GENERAL,
+                sentence_days_served=sentence_length
+            )
+        ], projected_completion_buckets)
 
 
 class TestFindSupervisionTerminationBucket(unittest.TestCase):

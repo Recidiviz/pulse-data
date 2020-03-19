@@ -66,14 +66,13 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     TerminatedSupervisionAssessmentScoreChangeMetric, \
-    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric
+    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
+    SuccessfulSupervisionSentenceDaysServedMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType as MetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
-    SupervisionSuccessFn, ConvertDictToKVTuple,\
-    TerminatedSupervisionAssessmentScoreChange
+from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, ConvertDictToKVTuple, AverageFn
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
@@ -131,6 +130,7 @@ class GetSupervisionMetrics(beam.PTransform):
                            'populations',
                            'revocations',
                            'successes',
+                           'successful_sentence_lengths',
                            'assessment_changes',
                            'revocation_analyses',
                            'revocation_violation_type_analyses'))
@@ -148,13 +148,18 @@ class GetSupervisionMetrics(beam.PTransform):
         # Calculate the supervision success values for the metrics combined by key
         successes_with_sums = (supervision_metric_combinations.successes
                                | 'Calculate the supervision success values' >>
-                               beam.CombinePerKey(SupervisionSuccessFn()))
+                               beam.CombinePerKey(AverageFn()))
+
+        # Calculate the supervision success sentence lengths values for the metrics combined by key
+        average_successful_sentence_lengths = (supervision_metric_combinations.successful_sentence_lengths
+                                               | 'Calculate the average successful sentence lengths ' >>
+                                               beam.CombinePerKey(AverageFn()))
 
         # Calculate the assessment score changes for the metrics combined by key
         assessment_changes_with_averages = (
             supervision_metric_combinations.assessment_changes
             | 'Calculate the assessment score change average values' >>
-            beam.CombinePerKey(TerminatedSupervisionAssessmentScoreChange())
+            beam.CombinePerKey(AverageFn())
         )
 
         # Calculate the revocation analyses count values for metrics combined by key
@@ -173,35 +178,40 @@ class GetSupervisionMetrics(beam.PTransform):
 
         # Produce the SupervisionPopulationMetrics
         population_metrics = (populations_with_sums | 'Produce supervision population metrics' >>
-                              beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+                              beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
 
         # Produce the SupervisionRevocationMetrics
         revocation_metrics = (revocations_with_sums | 'Produce supervision revocation metrics' >>
-                              beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+                              beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
 
         # Produce the SupervisionSuccessMetrics
         success_metrics = (successes_with_sums | 'Produce supervision success metrics' >>
-                           beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+                           beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
+
+        # Produce the SuccessfulSupervisionSentenceLengthMetrics
+        sentence_length_metrics = (average_successful_sentence_lengths | 'Produce successful sentence length metrics' >>
+                                   beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
 
         # Produce the TerminatedSupervisionAssessmentScoreChangeMetrics
         assessment_change_metrics = (assessment_changes_with_averages | 'Produce assessment score change metrics' >>
-                                     beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+                                     beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
 
         # Produce the SupervisionRevocationAnalysisMetrics
         revocation_analysis_metrics = (revocation_analyses_with_sums |
                                        'Produce supervision revocation analysis metrics' >>
-                                       beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+                                       beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
 
         # Produce the SupervisionRevocationViolationTypeAnalysisMetrics
-        revocation_violation_type_analysis_metrics = (revocation_violation_type_analyses_with_sums
-                                                      | 'Produce revocation violation type analysis metrics' >>
-                                                      beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
+        revocation_violation_type_analysis_metrics = (
+            revocation_violation_type_analyses_with_sums
+            | 'Produce revocation violation type analysis metrics' >>
+            beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
 
         # Merge the metric groups
         merged_metrics = ((population_metrics, revocation_metrics,
-                           success_metrics, assessment_change_metrics,
+                           success_metrics, sentence_length_metrics, assessment_change_metrics,
                            revocation_analysis_metrics, revocation_violation_type_analysis_metrics)
-                          | 'Merge population, revocation, success,'
+                          | 'Merge population, revocation, success, sentence length'
                             ' revocation analysis, revocation violation type analysis metrics and'
                             ' assessment change metrics' >>
                           beam.Flatten())
@@ -316,18 +326,22 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
+            output = (json_key, value)
+
             if metric_type == MetricType.POPULATION.value:
-                yield beam.pvalue.TaggedOutput('populations', (json_key, value))
+                yield beam.pvalue.TaggedOutput('populations', output)
             elif metric_type == MetricType.REVOCATION.value:
-                yield beam.pvalue.TaggedOutput('revocations', (json_key, value))
+                yield beam.pvalue.TaggedOutput('revocations', output)
             elif metric_type == MetricType.SUCCESS.value:
-                yield beam.pvalue.TaggedOutput('successes', (json_key, value))
+                yield beam.pvalue.TaggedOutput('successes', output)
+            elif metric_type == MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
+                yield beam.pvalue.TaggedOutput('successful_sentence_lengths', output)
             elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
-                yield beam.pvalue.TaggedOutput('assessment_changes', (json_key, value))
+                yield beam.pvalue.TaggedOutput('assessment_changes', output)
             elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
-                yield beam.pvalue.TaggedOutput('revocation_analyses', (json_key, value))
+                yield beam.pvalue.TaggedOutput('revocation_analyses', output)
             elif metric_type == MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
-                yield beam.pvalue.TaggedOutput('revocation_violation_type_analyses', (json_key, value))
+                yield beam.pvalue.TaggedOutput('revocation_violation_type_analyses', output)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -339,7 +353,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
                                                      'region': str,
                                                      'job_timestamp': str})
 @with_output_types(SupervisionMetric)
-class ProduceSupervisionMetrics(beam.DoFn):
+class ProduceSupervisionMetricsForSumMetrics(beam.DoFn):
     """Produces SupervisionPopulationMetrics and SupervisionRevocationMetrics ready for persistence."""
     def process(self, element, *args, **kwargs):
         pipeline_options = kwargs
@@ -356,40 +370,75 @@ class ProduceSupervisionMetrics(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == MetricType.POPULATION.value:
-            dict_metric_key['count'] = value
+        dict_metric_key['count'] = value
 
+        if metric_type == MetricType.POPULATION.value:
             supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         elif metric_type == MetricType.REVOCATION.value:
-            dict_metric_key['count'] = value
-
             supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.SUCCESS.value:
-            dict_metric_key['successful_completion_count'] = value.get('successful_completion_count')
-            dict_metric_key['projected_completion_count'] = value.get('projected_completion_count')
-
-            supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
-            dict_metric_key['count'] = value.get('count')
-
-            dict_metric_key['average_score_change'] = value.get('average_score_change')
-
-            supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
         elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
-            dict_metric_key['count'] = value
-
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
         elif metric_type == MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
-            dict_metric_key['count'] = value
-
             supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
+        else:
+            logging.error("Unexpected metric of type: %s",
+                          dict_metric_key.get('metric_type'))
+            return
+
+        if supervision_metric:
+            yield supervision_metric
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Tuple[str, Dict[str, int]], **{'runner': str,
+                                                                'project': str,
+                                                                'job_name': str,
+                                                                'region': str,
+                                                                'job_timestamp': str})
+@with_output_types(SupervisionMetric)
+class ProduceSupervisionMetricsForAvgMetrics(beam.DoFn):
+    """Produces SupervisionPopulationMetrics and SupervisionRevocationMetrics ready for persistence."""
+    def process(self, element, *args, **kwargs):
+        pipeline_options = kwargs
+
+        pipeline_job_id = job_id(pipeline_options)
+
+        (metric_key, result) = element
+
+        if result is None:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("No result associated with this metric key.")
+
+        # Convert JSON string to dictionary
+        dict_metric_key = json.loads(metric_key)
+        metric_type = dict_metric_key.get('metric_type')
+
+        if metric_type == MetricType.SUCCESS.value:
+            dict_metric_key['successful_completion_count'] = result.sum_of_inputs
+            dict_metric_key['projected_completion_count'] = result.input_count
+
+            supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
+        elif metric_type == MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
+            dict_metric_key['successful_completion_count'] = result.input_count
+            dict_metric_key['average_days_served'] = result.average_of_inputs
+
+            supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
+        elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
+            dict_metric_key['count'] = result.input_count
+            dict_metric_key['average_score_change'] = result.average_of_inputs
+
+            supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
         else:
@@ -436,6 +485,8 @@ class SupervisionMetricWritableDict(beam.DoFn):
             yield beam.pvalue.TaggedOutput('revocations', element_dict)
         elif isinstance(element, SupervisionSuccessMetric):
             yield beam.pvalue.TaggedOutput('successes', element_dict)
+        elif isinstance(element, SuccessfulSupervisionSentenceDaysServedMetric):
+            yield beam.pvalue.TaggedOutput('successful_sentence_lengths', element_dict)
         elif isinstance(element, TerminatedSupervisionAssessmentScoreChangeMetric):
             yield beam.pvalue.TaggedOutput('assessment_changes', element_dict)
 
@@ -508,7 +559,8 @@ def parse_arguments(argv):
                             MetricType.REVOCATION.value,
                             MetricType.REVOCATION_ANALYSIS.value,
                             MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
-                            MetricType.SUCCESS.value
+                            MetricType.SUCCESS.value,
+                            MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value
                         ],
                         help='The type of metric to calculate.',
                         default='ALL')
@@ -790,7 +842,7 @@ def run(argv=None):
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
                                     'populations', 'revocations', 'successes',
-                                    'assessment_changes', 'revocation_analyses',
+                                    'successful_sentence_lengths', 'assessment_changes', 'revocation_analyses',
                                     'revocation_violation_type_analyses'
                                 )
                             )
@@ -801,6 +853,8 @@ def run(argv=None):
         revocations_table = known_args.output + '.supervision_revocation_metrics'
 
         successes_table = known_args.output + '.supervision_success_metrics'
+
+        successful_sentence_lengths_table = known_args.output + '.successful_supervision_sentence_days_served_metrics'
 
         assessment_changes_table = known_args.output + '.terminated_supervision_assessment_score_change_metrics'
 
@@ -829,6 +883,15 @@ def run(argv=None):
              | f"Write success metrics to BQ table: {successes_table}" >>
              beam.io.WriteToBigQuery(
                  table=successes_table,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.successful_sentence_lengths
+             | f"Write supervision successful sentence length metrics to BQ"
+               f" table: {successful_sentence_lengths_table}" >>
+             beam.io.WriteToBigQuery(
+                 table=successful_sentence_lengths_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
