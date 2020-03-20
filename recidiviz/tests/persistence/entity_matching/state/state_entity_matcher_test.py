@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for state_entity_matcher.py."""
 import datetime
+from typing import List
 
 import attr
 from mock import patch
@@ -44,6 +45,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision, \
     StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StatePersonExternalId, StatePersonRace, StatePersonEthnicity, StatePerson, \
     StateCourtCase, StateCharge, StateFine, StateIncarcerationIncident, \
@@ -52,6 +54,7 @@ from recidiviz.persistence.entity.state.entities import StatePersonAlias, \
     StateSupervisionPeriod, StateSupervisionSentence, \
     StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_matching.state import state_matching_utils
 from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
@@ -92,6 +95,15 @@ _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 
 
+class FakeStateMatchingDelegate(BaseStateMatchingDelegate):
+    def __init__(self, region_code):
+        super().__init__(region_code)
+
+    def read_potential_match_db_persons(
+            self, session: Session, ingested_persons: List[schema.StatePerson]) -> List[schema.StatePerson]:
+        return state_matching_utils.read_persons(session, self.region_code, ingested_persons)
+
+
 class TestStateEntityMatching(BaseStateEntityMatcherTest):
     """Tests for default state entity matching logic."""
 
@@ -105,7 +117,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.addCleanup(self.matching_delegate_patcher.stop)
 
     def _get_base_delegate(self, **_kwargs):
-        return BaseStateMatchingDelegate(_STATE_CODE)
+        return FakeStateMatchingDelegate(_STATE_CODE)
 
     def test_match_newPerson(self):
         # Arrange 1 - Match

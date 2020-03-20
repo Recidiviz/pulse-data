@@ -15,11 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for US_ID specific entity matching overrides."""
+from typing import List, Type
 
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
+from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls
 
 
 class UsIdMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_ID."""
     def __init__(self):
         super().__init__('us_id')
+
+    def read_potential_match_db_persons(
+            self,
+            session: Session,
+            ingested_persons: List[schema.StatePerson]
+    ) -> List[schema.StatePerson]:
+        """Reads and returns all persons from the DB that are needed for entity matching in this state, given the
+        |ingested_persons|.
+        """
+        allowed_root_entity_classes: List[Type[DatabaseEntity]] = [schema.StatePerson]
+        db_persons = read_persons_by_root_entity_cls(
+            session, self.region_code, ingested_persons, allowed_root_entity_classes)
+        return db_persons
