@@ -12,7 +12,7 @@ pylint = "*"
 pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
-apache-beam = {extras = ["gcp", "test"], version = "==2.13.0"}
+apache-beam = {extras = ["gcp", "test"],version = "==2.13.0"}
 freezegun = "*"
 ipdb = "*"
 nose = "*"
@@ -72,6 +72,7 @@ oauth2client = "==3.0.0"
 google-cloud-storage = "*"
 progress="*"
 google-cloud-secret-manager = "*"
+pandas-gbq = "*"
 
 [requires]
 python_version = "3.7"
