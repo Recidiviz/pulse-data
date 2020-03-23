@@ -27,15 +27,12 @@ from recidiviz.persistence.entity.county import entities
 
 
 def validate_county_person(person: entities.Person) -> bool:
-    """Returns True if the person's bookings are valid, and False if an error
-    was logged."""
+    """Returns True if the person's bookings are valid, and False if an error was logged."""
     if _has_malformed_dates(person):
-        logging.error("Booking found with release date before admission "
-                      "date for person: [%s]", person)
+        logging.error("Booking found with release date before admission date for person: [%s]", person)
         return False
     if _has_overlapping_bookings(person):
-        logging.error("Overlapping historical bookings found for person: "
-                      "[%s]", person)
+        logging.error("Overlapping historical bookings found for person: [%s]", person)
         return False
     return True
 
