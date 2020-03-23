@@ -16,30 +16,41 @@
 # =============================================================================
 """Driver script to launch calculation pipeline jobs.
 
-All of the code needed to execute the jobs is in the recidiviz/ package. It
-is organized in this way so that it can be packaged as a Python package and
-later installed in the VM workers executing the job on Dataflow.
+All of the code needed to execute the jobs is in the recidiviz/ package. It is organized in this way so that it can be
+packaged as a Python package and later installed in the VM workers executing the job on Dataflow.
 
-When using DataflowRunner to execute the job, you must specify the path to a
-setup file. The --setup_file option in Dataflow will trigger creating a source
-distribution (as if running python setup.py sdist) and then staging the
-resulting tarball in the staging area. The workers, upon startup, will install
-the tarball.
+When using DataflowRunner to execute the job, you must specify the path to a setup file (defaults to ./setup.py if you
+do not specify). The --setup_file option in Dataflow will trigger creating a source distribution (as if running python
+setup.py sdist) and then staging the resulting tarball in the staging area. The workers, upon startup, will install the
+tarball.
 
-usage: python run_calculation_pipelines.py
+See recidiviz/calculator/pipeline/utils/pipeline_args_utils.py for more details on each of the arguments.
+
+usage: python -m recidiviz.tools.run_calculation_pipelines.py
           --pipeline PIPELINE_TYPE
           --job_name JOB-NAME \
           --project PROJECT \
-          --runner RUNNER \
-          --setup_file ./setup.py \
-          --staging_location gs://YOUR-BUCKET/staging \
-          --temp_location gs://YOUR-BUCKET/tmp \
-          --worker_machine_type n1-standard-4 \
-          --experiments=shuffle_mode=service
-          --region REGION \
-          --no_use_public_ips \
-          --network=default \
-          --subnetwork=https://www.googleapis.com/compute/v1/projects/PROJECT/regions/REGION/subnetworks/default
+          [--setup_file SETUP_FILE] \
+          [--bucket BUCKET] \
+          [--save_as_template] \
+          [--region REGION] \
+          [--runner RUNNER] \
+          [--input INPUT] \
+          [--reference_input REFERENCE_INPUT] \
+          [--include_age INCLUDE_AGE] \
+          [--include_gender INCLUDE_GENDER] \
+          [--include_race INCLUDE_RACE] \
+          [--include_ethnicity INCLUDE_ETHNICITY] \
+          [--methodology METHODOLOGY] \
+          [--output OUTPUT]
+
+          ..and any other pipeline-specific args
+
+Examples:
+    python -m recidiviz.tools.run_calculation_pipelines.py --pipeline incarceration --job_name incarceration-example
+
+    python -m recidiviz.tools.run_calculation_pipelines.py --pipeline incarceration --job_name incarceration-example \
+    --region us-central1 --include_race False --save_as_template --calculation_month_limit 36
 
 You must also include any arguments required by the given pipeline.
 """
@@ -72,64 +83,21 @@ def parse_arguments(argv):
                         help='The type of pipeline that should be run.',
                         required=True)
 
-    parser.add_argument('--job_name',
-                        type=str,
-                        help='Name of the pipeline calculation job.',
-                        required=True)
-
-    parser.add_argument('--project',
-                        type=str,
-                        help='ID of the GCP project.',
-                        required=True)
-
-    parser.add_argument('--setup_file',
-                        type=str,
-                        help='Path to the setup.py file.',
-                        required=False)
-
-    parser.add_argument('--runner',
-                        type=str,
-                        choices=['DirectRunner', 'DataflowRunner'],
-                        default='DirectRunner',
-                        help='The pipeline runner that will parse the program'
-                             ' and construct the pipeline',
-                        required=False)
-
-    parser.add_argument('--staging_location',
-                        type=str,
-                        help='A Cloud Storage path for Cloud Dataflow to stage'
-                             ' code packages needed by workers executing the'
-                             ' job.',
-                        required=False)
-
-    parser.add_argument('--temp_location',
-                        type=str,
-                        help='A Cloud Storage path for Cloud Dataflow to stage'
-                             ' temporary job files created during the execution'
-                             ' of the pipeline.',
-                        required=False)
-
-    parser.add_argument('--worker_machine_type',
-                        type=str,
-                        help='The machine type for all job workers to use. See'
-                             ' available machine types here: https://cloud.google.com/compute/docs/machine-types',
-                        required=False)
-
     return parser.parse_known_args(argv)
 
 
 def run_calculation_pipelines():
     """Runs the pipeline designated by the given --pipeline argument."""
-    known_args, _ = parse_arguments(sys.argv)
+    known_args, remaining_args = parse_arguments(sys.argv)
 
     if known_args.pipeline == 'incarceration':
-        incarceration_pipeline.run()
+        incarceration_pipeline.run(remaining_args)
     if known_args.pipeline == 'recidivism':
-        recidivism_pipeline.run()
+        recidivism_pipeline.run(remaining_args)
     elif known_args.pipeline == 'supervision':
-        supervision_pipeline.run()
+        supervision_pipeline.run(remaining_args)
     elif known_args.pipeline == 'program':
-        program_pipeline.run()
+        program_pipeline.run(remaining_args)
 
 
 if __name__ == '__main__':

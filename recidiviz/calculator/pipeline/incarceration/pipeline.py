@@ -14,38 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Runs the incarceration calculation pipeline.
-
-usage: pipeline.py --output=OUTPUT_LOCATION --project=PROJECT
-                    --input=INPUT_LOCATION  --reference_input=REFERENCE_LOCATION
-                    --methodology=METHODOLOGY
-                    [--include_age] [--include_gender]
-                    [--include_race] [--include_ethnicity]
-                    [--calculation_month_limit]
-
-Example output to GCP storage bucket:
-python -m recidiviz.calculator.incarceration.pipeline
-        --project=recidiviz-project-name
-        --input=recidiviz-project-name.dataset
-        --reference_input=recidiviz-project-name.ref_dataset
-        --output=gs://recidiviz-bucket/output_location
-            --methodology=BOTH
-
-Example output to local file:
-python -m recidiviz.calculator.incarceration.pipeline
-        --project=recidiviz-project-name
-        --input=recidiviz-project-name.dataset
-        --reference_input=recidiviz-project-name.ref_dataset
-        --output=output_file --methodology=PERSON
-
-Example output including race and gender dimensions:
-python -m recidiviz.calculator.incarceration.pipeline
-        --project=recidiviz-project-name
-        --input=recidiviz-project-name.dataset
-        --reference_input=recidiviz-project-name.ref_dataset
-        --output=output_file --methodology=EVENT
-            --include_race=True --include_gender=True
-
+"""Runs the incarceration calculation pipeline. See recidiviz/tools/run_calculation_pipelines.py for details on how to
+run.
 """
 
 from __future__ import absolute_import
@@ -53,6 +23,7 @@ from __future__ import absolute_import
 import argparse
 import json
 import logging
+import sys
 
 from typing import Any, Dict, List, Tuple
 import datetime
@@ -61,7 +32,6 @@ from apache_beam.pvalue import AsDict
 from more_itertools import one
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
@@ -78,6 +48,8 @@ from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
+    get_apache_beam_pipeline_options_from_args
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -356,54 +328,7 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser()
 
     # Parse arguments
-    parser.add_argument('--input',
-                        dest='input',
-                        type=str,
-                        help='BigQuery dataset to query.',
-                        required=True)
-
-    parser.add_argument('--reference_input',
-                        dest='reference_input',
-                        type=str,
-                        help='BigQuery reference dataset to query.',
-                        required=True)
-
-    parser.add_argument('--include_age',
-                        dest='include_age',
-                        type=bool,
-                        help='Include metrics broken down by age.',
-                        default=False)
-
-    parser.add_argument('--include_gender',
-                        dest='include_gender',
-                        type=bool,
-                        help='Include metrics broken down by gender.',
-                        default=False)
-
-    parser.add_argument('--include_race',
-                        dest='include_race',
-                        type=bool,
-                        help='Include metrics broken down by race.',
-                        default=False)
-
-    parser.add_argument('--include_ethnicity',
-                        dest='include_ethnicity',
-                        type=bool,
-                        help='Include metrics broken down by ethnicity.',
-                        default=False)
-
-    parser.add_argument('--methodology',
-                        dest='methodology',
-                        type=str,
-                        choices=['PERSON', 'EVENT', 'BOTH'],
-                        help='PERSON, EVENT, or BOTH',
-                        required=True)
-
-    parser.add_argument('--output',
-                        dest='output',
-                        type=str,
-                        help='Output dataset to write results to.',
-                        required=True)
+    add_shared_pipeline_arguments(parser)
 
     parser.add_argument('--calculation_month_limit',
                         dest='calculation_month_limit',
@@ -454,7 +379,7 @@ def dimensions_and_methodologies(known_args) -> \
     return dimensions, methodologies
 
 
-def run(argv=None):
+def run(argv):
     """Runs the incarceration calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
@@ -464,9 +389,10 @@ def run(argv=None):
     _ = schema.StatePerson()
 
     # Parse command-line arguments
-    known_args, pipeline_args = parse_arguments(argv)
+    known_args, remaining_args = parse_arguments(argv)
 
-    pipeline_options = PipelineOptions(pipeline_args)
+    pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)
+
     pipeline_options.view_as(SetupOptions).save_main_session = True
 
     # Get pipeline job details
@@ -475,7 +401,7 @@ def run(argv=None):
     query_dataset = all_pipeline_options['project'] + '.' + known_args.input
     reference_dataset = all_pipeline_options['project'] + '.' + known_args.reference_input
 
-    with beam.Pipeline(argv=pipeline_args) as p:
+    with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load StatePersons' >>
                    BuildRootEntity(dataset=query_dataset,
@@ -616,4 +542,4 @@ def run(argv=None):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    run()
+    run(sys.argv)
