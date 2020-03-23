@@ -25,6 +25,7 @@ from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 
 MatchObject = TypeVar('MatchObject', CoreEntity, EntityTree)
 
+
 # TODO(2022): Update all utils methods to accept MatchObject types
 def get_only_match(
         ingested_entity_obj: MatchObject,
@@ -47,9 +48,9 @@ def get_only_match(
     matches = get_all_matches(ingested_entity_obj, db_entities, matcher)
     if len(matches) > 1:
         if isinstance(ingested_entity_obj, EntityTree):
-            ingested_entity = ingested_entity_obj.entity
+            ingested_entity: CoreEntity = ingested_entity_obj.entity
             tree_matches = cast(List[EntityTree], matches)
-            matched_entities = [m.entity for m in tree_matches]
+            matched_entities: List[CoreEntity] = [m.entity for m in tree_matches]
         elif isinstance(ingested_entity_obj, CoreEntity):
             ingested_entity = ingested_entity_obj
             matched_entities = matches
@@ -58,8 +59,7 @@ def get_only_match(
 
         all_same = all(m == matched_entities[0] for m in matched_entities)
         if not all_same:
-            raise MatchedMultipleDatabaseEntitiesError(
-                ingested_entity, matched_entities)
+            raise MatchedMultipleDatabaseEntitiesError(ingested_entity, matched_entities)
     return matches[0] if matches else None
 
 

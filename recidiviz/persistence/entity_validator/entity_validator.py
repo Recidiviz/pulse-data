@@ -14,24 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Validates that data in converted Entity objects conforms to data
-assumptions."""
+"""Validates that data in converted Entity objects conforms to data assumptions."""
 
 from typing import List, Tuple, Callable
 
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity_validator.county.county_validator import \
-    validate_county_person
-from recidiviz.persistence.entity_validator.state.state_validator import \
-    validate_state_person
+from recidiviz.persistence.entity_validator.county.county_validator import validate_county_person
+from recidiviz.persistence.entity_validator.state.state_validator import validate_state_person
 
 
-def validate(
-        people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], int]:
-    """Validates a list of EntityPersonType entities and returns the valid
-    people and the number of people with validation errors.
+def validate(people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], int]:
+    """Validates a list of EntityPersonType entities and returns the valid people and the number of people with
+    validation errors.
     """
     data_validation_errors = 0
     validated_people = []
@@ -44,8 +40,7 @@ def validate(
     return validated_people, data_validation_errors
 
 
-def _get_validator(
-        person: EntityPersonType) -> Callable[[EntityPersonType], bool]:
+def _get_validator(person: EntityPersonType) -> Callable[..., bool]:
     if isinstance(person, county_entities.Person):
         return validate_county_person
 
