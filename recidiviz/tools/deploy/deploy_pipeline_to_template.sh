@@ -39,28 +39,12 @@ echo "Deploying $pipeline pipeline to template"
 command="python -m recidiviz.tools.run_calculation_pipelines
     --pipeline $pipeline
     --job_name $job_name
-    --runner DataflowRunner
     --project $project
-    --setup_file ./setup.py
-    --staging_location gs://$bucket/staging
-    --temp_location gs://$bucket/temp
-    --template_location gs://$bucket/templates/$job_name
-    --worker_machine_type n1-standard-4
-    --experiments=shuffle_mode=service
+    --save_as_template
     --region=$region
-    --no_use_public_ips
-    --network=default
-    --subnetwork=https://www.googleapis.com/compute/v1/projects/$project/regions/$region/subnetworks/default
     --input $input
     --reference_input $reference_input
-    --output $output
-    --methodology=BOTH
-    --include_race=True
-    --include_age=True
-    --include_stay_length=True
-    --include_ethnicity=True
-    --include_gender=True
-    --include_release_facility=True"
+    --output $output"
 
 # Append optional arguments if they are not empty
 [[ -z "$metric_type" ]] || command="$command --metric_type $metric_type"
