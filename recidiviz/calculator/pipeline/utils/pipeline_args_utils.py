@@ -67,6 +67,10 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
                         help='Output dataset to write results to.',
                         default='dataflow_metrics')
 
+    parser.add_argument('--person_filter_ids', type=int, nargs='+',
+                        help='An optional list of DB person_id values. When present, the pipeline will only calculate '
+                             'metrics for these people and will not output to BQ.')
+
 
 def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
     """Adds argument configs to the |parser| for pipeline args that get passed through to Apache Beam and may be used to
