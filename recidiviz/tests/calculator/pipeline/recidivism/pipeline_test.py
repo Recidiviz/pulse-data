@@ -47,16 +47,14 @@ from recidiviz.calculator.pipeline.recidivism.pipeline import \
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
+from recidiviz.common.constants.person_characteristics import Ethnicity, ResidencyStatus, Gender, Race
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, \
     StateIncarcerationFacilitySecurityLevel
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state.entities import \
-    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
-    StateSupervisionViolationResponse, StateSupervisionViolation
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
 from recidiviz.tests.persistence.database import database_test_utils
@@ -201,71 +199,68 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        # Get StatePersons
+        # Get entities.StatePersons
         persons = (
             test_pipeline
             | 'Load Persons' >>
             extractor_utils.BuildRootEntity(
                 dataset=None,
                 data_dict=data_dict,
-                root_schema_class=schema.StatePerson,
-                root_entity_class=StatePerson,
-                unifying_id_field='person_id',
+                root_entity_class=entities.StatePerson,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
                 build_related_entities=True))
 
-        # Get StateIncarcerationPeriods
+        # Get entities.StateIncarcerationPeriods
         incarceration_periods = (
             test_pipeline
             | 'Load IncarcerationPeriods' >>
             extractor_utils.BuildRootEntity(
                 dataset=None,
                 data_dict=data_dict,
-                root_schema_class=schema.StateIncarcerationPeriod,
-                root_entity_class=StateIncarcerationPeriod,
-                unifying_id_field='person_id',
+                root_entity_class=entities.StateIncarcerationPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
                 build_related_entities=True))
 
-        # Get StateSupervisionViolationResponses
+        # Get entities.StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
              | 'Load SupervisionViolationResponses' >>
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
-                 root_entity_class=StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
+                 root_entity_class=entities.StateSupervisionViolationResponse,
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
              'violation_responses': supervision_violation_responses}
-            | 'Group StateIncarcerationPeriods to '
-            'StateSupervisionViolationResponses' >>
+            | 'Group entities.StateIncarcerationPeriods to '
+            'entities.StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()
         )
 
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
+        # Set the fully hydrated entities.StateSupervisionViolationResponse entities on
+        # the corresponding entities.StateIncarcerationPeriods
         incarceration_periods_with_source_violations = (
             incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on'
-            'the StateIncarcerationPeriods' >>
+            | 'Set hydrated entities.StateSupervisionViolationResponses on'
+            'the entities.StateIncarcerationPeriods' >>
             beam.ParDo(
                 pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
+        # Group each entities.StatePerson with their entities.StateIncarcerationPeriods
         person_and_incarceration_periods = (
             {'person': persons,
              'incarceration_periods':
                  incarceration_periods_with_source_violations}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            | 'Group entities.StatePerson to entities.StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )
 
-        # Identify ReleaseEvents events from the StatePerson's
-        # StateIncarcerationPeriods
+        # Identify ReleaseEvents events from the entities.StatePerson's
+        # entities.StateIncarcerationPeriods
         fake_person_id_to_county_query_result = [
             {'person_id': fake_person_id,
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
@@ -310,7 +305,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
     def testRecidivismPipeline_WithConditionalReturns(self):
         """Tests the entire RecidivismPipeline with two person and three
-        incarceration periods each. One StatePerson has a return from a
+        incarceration periods each. One entities.StatePerson has a return from a
         technical supervision violation.
         """
 
@@ -472,28 +467,26 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        # Get StatePersons
+        # Get entities.StatePersons
         persons = (
             test_pipeline
             | 'Load Persons' >>
             extractor_utils.BuildRootEntity(
                 dataset=None,
                 data_dict=data_dict,
-                root_schema_class=schema.StatePerson,
-                root_entity_class=StatePerson,
-                unifying_id_field='person_id',
+                root_entity_class=entities.StatePerson,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
                 build_related_entities=True))
 
-        # Get StateIncarcerationPeriods
+        # Get entities.StateIncarcerationPeriods
         incarceration_periods = (
             test_pipeline
             | 'Load IncarcerationPeriods' >>
             extractor_utils.BuildRootEntity(
                 dataset=None,
                 data_dict=data_dict,
-                root_schema_class=schema.StateIncarcerationPeriod,
-                root_entity_class=StateIncarcerationPeriod,
-                unifying_id_field='person_id',
+                root_entity_class=entities.StateIncarcerationPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
                 build_related_entities=True))
 
         # Get StateSupervisionViolations
@@ -503,74 +496,72 @@ class TestRecidivismPipeline(unittest.TestCase):
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolation,
-                 root_entity_class=StateSupervisionViolation,
-                 unifying_id_field='person_id',
+                 root_entity_class=entities.StateSupervisionViolation,
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
-        # Get StateSupervisionViolationResponses
+        # Get entities.StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
              | 'Load SupervisionViolationResponses' >>
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
-                 root_entity_class=StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
+                 root_entity_class=entities.StateSupervisionViolationResponse,
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
-        # Group StateSupervisionViolationResponses and
+        # Group entities.StateSupervisionViolationResponses and
         # StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
             {'violations': supervision_violations,
              'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to '
+             } | 'Group entities.StateSupervisionViolationResponses to '
                  'StateSupervisionViolations' >>
             beam.CoGroupByKey()
         )
 
         # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding StateSupervisionViolationResponses
+        # the corresponding entities.StateSupervisionViolationResponses
         violation_responses_with_hydrated_violations = (
             supervision_violations_and_responses
             | 'Set hydrated StateSupervisionViolations on '
-              'the StateSupervisionViolationResponses' >>
+              'the entities.StateSupervisionViolationResponses' >>
             beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
 
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
+        # Group entities.StateIncarcerationPeriods and entities.StateSupervisionViolationResponses
         # by person_id
         incarceration_periods_and_violation_responses = (
             {'incarceration_periods': incarceration_periods,
              'violation_responses':
                  violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to '
-              'StateSupervisionViolationResponses' >>
+            | 'Group entities.StateIncarcerationPeriods to '
+              'entities.StateSupervisionViolationResponses' >>
             beam.CoGroupByKey()
         )
 
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
+        # Set the fully hydrated entities.StateSupervisionViolationResponse entities on
+        # the corresponding entities.StateIncarcerationPeriods
         incarceration_periods_with_source_violations = (
             incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on'
-            'the StateIncarcerationPeriods' >>
+            | 'Set hydrated entities.StateSupervisionViolationResponses on'
+            'the entities.StateIncarcerationPeriods' >>
             beam.ParDo(
                 pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
+        # Group each entities.StatePerson with their entities.StateIncarcerationPeriods
         person_and_incarceration_periods = (
             {'person': persons,
              'incarceration_periods':
                  incarceration_periods_with_source_violations}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            | 'Group entities.StatePerson to entities.StateIncarcerationPeriods' >>
             beam.CoGroupByKey()
         )
 
-        # Identify ReleaseEvents events from the StatePerson's
-        # StateIncarcerationPeriods
+        # Identify ReleaseEvents events from the entities.StatePerson's
+        # entities.StateIncarcerationPeriods
         fake_person_id_to_county_query_result = [
             {'person_id': fake_person_id_1,
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
@@ -624,12 +615,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -639,7 +630,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -649,7 +640,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        subsequent_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
@@ -719,12 +710,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        only_incarceration = StateIncarcerationPeriod.new_with_defaults(
+        only_incarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -776,7 +767,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -816,12 +807,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -831,7 +822,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2010, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -841,7 +832,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2010, 10, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        subsequent_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
@@ -910,12 +901,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        initial_incarceration = StateIncarcerationPeriod.new_with_defaults(
+        initial_incarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -925,7 +916,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        first_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        first_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -935,7 +926,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        subsequent_reincarceration = StateIncarcerationPeriod.new_with_defaults(
+        subsequent_reincarceration = entities.StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
@@ -1008,7 +999,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline."""
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
@@ -1095,11 +1086,11 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
     def testCalculateRecidivismMetricCombinations_NoResults(self):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
-        when there are no ReleaseEvents associated with the StatePerson."""
+        when there are no ReleaseEvents associated with the entities.StatePerson."""
 
         fake_person_id = 12345
 
-        fake_person = StatePerson.new_with_defaults(
+        fake_person = entities.StatePerson.new_with_defaults(
             person_id=fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
@@ -1119,7 +1110,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
 
     def testCalculateRecidivismMetricCombinations_NoPersonEvents(self):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
-        when there is no StatePerson and no ReleaseEvents."""
+        when there is no entities.StatePerson and no ReleaseEvents."""
 
         person_events = []
 

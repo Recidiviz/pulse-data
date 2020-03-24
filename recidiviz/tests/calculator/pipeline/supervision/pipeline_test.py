@@ -273,9 +273,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateIncarcerationPeriods
@@ -284,11 +283,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
                                      root_entity_class=
                                      entities.StateIncarcerationPeriod,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateSupervisionViolations
@@ -298,9 +295,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolation,
                  root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field='person_id',
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
@@ -311,9 +307,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
                  root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
@@ -323,11 +318,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateSupervisionSentence,
                                      root_entity_class=
                                      entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -336,9 +329,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True))
 
         # Get StateSupervisionPeriods
@@ -347,11 +339,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         # Get StateAssessments
@@ -360,11 +350,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                        extractor_utils.BuildRootEntity(
                            dataset=None,
                            data_dict=data_dict,
-                           root_schema_class=
-                           schema.StateAssessment,
                            root_entity_class=
                            entities.StateAssessment,
-                           unifying_id_field='person_id',
+                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                            build_related_entities=False))
 
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
@@ -692,9 +680,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateIncarcerationPeriods
@@ -703,11 +690,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
                                      root_entity_class=
                                      entities.StateIncarcerationPeriod,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateSupervisionViolations
@@ -717,9 +702,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolation,
                  root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field='person_id',
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
@@ -730,9 +714,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              extractor_utils.BuildRootEntity(
                  dataset=None,
                  data_dict=data_dict,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
                  root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
                  build_related_entities=True
              ))
 
@@ -742,11 +725,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=
-                                     schema.StateSupervisionSentence,
                                      root_entity_class=
                                      entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -755,9 +736,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True))
 
         # Get StateSupervisionPeriods
@@ -766,11 +746,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         # Get StateAssessments
@@ -779,11 +757,9 @@ class TestSupervisionPipeline(unittest.TestCase):
                        extractor_utils.BuildRootEntity(
                            dataset=None,
                            data_dict=data_dict,
-                           root_schema_class=
-                           schema.StateAssessment,
                            root_entity_class=
                            entities.StateAssessment,
-                           unifying_id_field='person_id',
+                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                            build_related_entities=False))
 
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
@@ -1137,27 +1113,24 @@ class TestSupervisionPipeline(unittest.TestCase):
         persons = test_pipeline | 'Load Persons' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StatePerson,
             root_entity_class=entities.StatePerson,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateIncarcerationPeriods
         incarceration_periods = test_pipeline | 'Load IncarcerationPeriods' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateIncarcerationPeriod,
             root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateSupervisionViolations
         supervision_violations = test_pipeline | 'Load SupervisionViolations' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateSupervisionViolation,
             root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateSupervisionViolationResponses
@@ -1165,9 +1138,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                            extractor_utils.BuildRootEntity(
                                                dataset=None,
                                                data_dict=data_dict,
-                                               root_schema_class=schema.StateSupervisionViolationResponse,
                                                root_entity_class=entities.StateSupervisionViolationResponse,
-                                               unifying_id_field='person_id',
+                                               unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                build_related_entities=True))
 
         # Get StateSupervisionSentences
@@ -1175,9 +1147,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=schema.StateSupervisionSentence,
                                      root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -1185,9 +1156,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True))
 
         # Get StateSupervisionPeriods
@@ -1195,20 +1165,17 @@ class TestSupervisionPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         # Get StateAssessments
         assessments = test_pipeline | 'Load Assessments' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateAssessment,
             root_entity_class=entities.StateAssessment,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=False)
 
         # Group StateSupervisionViolationResponses and
@@ -1534,27 +1501,24 @@ class TestSupervisionPipeline(unittest.TestCase):
         persons = test_pipeline | 'Load Persons' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StatePerson,
             root_entity_class=entities.StatePerson,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateIncarcerationPeriods
         incarceration_periods = test_pipeline | 'Load IncarcerationPeriods' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateIncarcerationPeriod,
             root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateSupervisionViolations
         supervision_violations = test_pipeline | 'Load SupervisionViolations' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateSupervisionViolation,
             root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True)
 
         # Get StateSupervisionViolationResponses
@@ -1562,9 +1526,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                            extractor_utils.BuildRootEntity(
                                                dataset=None,
                                                data_dict=data_dict,
-                                               root_schema_class=schema.StateSupervisionViolationResponse,
                                                root_entity_class=entities.StateSupervisionViolationResponse,
-                                               unifying_id_field='person_id',
+                                               unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                build_related_entities=True))
 
         # Get StateSupervisionSentences
@@ -1572,9 +1535,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=schema.StateSupervisionSentence,
                                      root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -1582,9 +1544,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True))
 
         # Get StateSupervisionPeriods
@@ -1592,20 +1553,17 @@ class TestSupervisionPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         # Get StateAssessments
         assessments = test_pipeline | 'Load Assessments' >> extractor_utils.BuildRootEntity(
             dataset=None,
             data_dict=data_dict,
-            root_schema_class=schema.StateAssessment,
             root_entity_class=entities.StateAssessment,
-            unifying_id_field='person_id',
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=False)
 
         # Group StateSupervisionViolationResponses and
