@@ -560,16 +560,19 @@ def run(argv):
     reference_dataset = all_pipeline_options['project'] + '.' + \
                         known_args.reference_input
 
+
+    person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
                    BuildRootEntity(dataset=query_dataset,
                                    data_dict=None,
-                                   root_schema_class=schema.StatePerson,
                                    root_entity_class=entities.StatePerson,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=True))
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   build_related_entities=True,
+                                   unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p
@@ -577,12 +580,11 @@ def run(argv):
                                  BuildRootEntity(
                                      dataset=query_dataset,
                                      data_dict=None,
-                                     root_schema_class=
-                                     schema.StateIncarcerationPeriod,
                                      root_entity_class=
                                      entities.StateIncarcerationPeriod,
-                                     unifying_id_field='person_id',
-                                     build_related_entities=True))
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                     build_related_entities=True,
+                                     unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateSupervisionViolations
         supervision_violations = \
@@ -591,10 +593,10 @@ def run(argv):
              BuildRootEntity(
                  dataset=query_dataset,
                  data_dict=None,
-                 root_schema_class=schema.StateSupervisionViolation,
                  root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field='person_id',
-                 build_related_entities=True
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
+                 build_related_entities=True,
+                 unifying_id_field_filter_set=person_id_filter_set
              ))
 
         # TODO(2769): Don't bring this in as a root entity
@@ -605,10 +607,10 @@ def run(argv):
              BuildRootEntity(
                  dataset=query_dataset,
                  data_dict=None,
-                 root_schema_class=schema.StateSupervisionViolationResponse,
                  root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field='person_id',
-                 build_related_entities=True
+                 unifying_id_field=entities.StatePerson.get_class_id_name(),
+                 build_related_entities=True,
+                 unifying_id_field_filter_set=person_id_filter_set
              ))
 
         # Group StateSupervisionViolationResponses and
@@ -705,6 +707,10 @@ def run(argv):
             recidivism_metrics
             | 'Filter out unwanted metrics' >>
             beam.ParDo(FilterMetrics(), **filter_metrics_kwargs))
+
+        if person_id_filter_set:
+            logging.warning("Non-empty person filter set - returning before writing metrics.")
+            return
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (final_recidivism_metrics

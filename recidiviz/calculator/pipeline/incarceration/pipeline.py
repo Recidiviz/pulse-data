@@ -401,25 +401,27 @@ def run(argv):
     query_dataset = all_pipeline_options['project'] + '.' + known_args.input
     reference_dataset = all_pipeline_options['project'] + '.' + known_args.reference_input
 
+    person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load StatePersons' >>
                    BuildRootEntity(dataset=query_dataset,
                                    data_dict=None,
-                                   root_schema_class=schema.StatePerson,
                                    root_entity_class=entities.StatePerson,
-                                   unifying_id_field='person_id',
-                                   build_related_entities=True))
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   build_related_entities=True,
+                                   unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateSentenceGroups
         sentence_groups = (p | 'Load StateSentenceGroups' >>
                            BuildRootEntity(
                                dataset=query_dataset,
                                data_dict=None,
-                               root_schema_class=schema.StateSentenceGroup,
                                root_entity_class=entities.StateSentenceGroup,
-                               unifying_id_field='person_id',
-                               build_related_entities=True
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               build_related_entities=True,
+                               unifying_id_field_filter_set=person_id_filter_set
                            ))
 
         # Get StateIncarcerationSentences
@@ -427,10 +429,10 @@ def run(argv):
                                    BuildRootEntity(
                                        dataset=query_dataset,
                                        data_dict=None,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
-                                       build_related_entities=True
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                       build_related_entities=True,
+                                       unifying_id_field_filter_set=person_id_filter_set
                                    ))
 
         # Get StateSupervisionSentences
@@ -438,10 +440,10 @@ def run(argv):
                                  BuildRootEntity(
                                      dataset=query_dataset,
                                      data_dict=None,
-                                     root_schema_class=schema.StateSupervisionSentence,
                                      root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
-                                     build_related_entities=True
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                     build_related_entities=True,
+                                     unifying_id_field_filter_set=person_id_filter_set
                                  ))
 
         sentences_and_sentence_groups = (
@@ -502,6 +504,10 @@ def run(argv):
                                      pipeline_options=all_pipeline_options,
                                      inclusions=inclusions,
                                      calculation_month_limit=calculation_month_limit))
+
+        if person_id_filter_set:
+            logging.warning("Non-empty person filter set - returning before writing metrics.")
+            return
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (incarceration_metrics | 'Convert to dict to be written to BQ' >>

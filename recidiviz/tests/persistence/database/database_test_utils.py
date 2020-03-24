@@ -205,7 +205,7 @@ def generate_test_bond(person_id) -> state_schema.StateBond:
     return instance
 
 
-def generate_test_charge(person_id, charge_id, court_case, bond) -> \
+def generate_test_charge(person_id, charge_id, court_case=None, bond=None) -> \
         state_schema.StateCharge:
     instance = state_schema.StateCharge(
         charge_id=charge_id,
@@ -235,7 +235,7 @@ def generate_test_supervision_sentence(
 
 
 def generate_test_incarceration_sentence(
-        person_id, charges, incarceration_periods) \
+        person_id, charges=None, incarceration_periods=None) \
         -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -243,8 +243,8 @@ def generate_test_incarceration_sentence(
         state_code='us_ca',
         person_id=person_id,
         is_capital_punishment=False,
-        charges=charges,
-        incarceration_periods=incarceration_periods,
+        charges=(charges if charges else []),
+        incarceration_periods=(incarceration_periods if incarceration_periods else []),
     )
 
     return instance

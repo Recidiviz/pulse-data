@@ -233,9 +233,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateSentenceGroups
@@ -244,11 +243,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
                            extractor_utils.BuildRootEntity(
                                dataset=None,
                                data_dict=data_dict,
-                               root_schema_class=
-                               schema.StateSentenceGroup,
                                root_entity_class=
                                entities.StateSentenceGroup,
-                               unifying_id_field='person_id',
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
                                build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -256,9 +253,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True
                                    ))
 
@@ -267,9 +263,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=schema.StateSupervisionSentence,
                                      root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True
                                  ))
 
@@ -433,9 +428,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateSentenceGroups
@@ -444,11 +438,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
                            extractor_utils.BuildRootEntity(
                                dataset=None,
                                data_dict=data_dict,
-                               root_schema_class=
-                               schema.StateSentenceGroup,
                                root_entity_class=
                                entities.StateSentenceGroup,
-                               unifying_id_field='person_id',
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
                                build_related_entities=True))
 
         # Get StateIncarcerationSentences
@@ -456,9 +448,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                    extractor_utils.BuildRootEntity(
                                        dataset=None,
                                        data_dict=data_dict,
-                                       root_schema_class=schema.StateIncarcerationSentence,
                                        root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field='person_id',
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True
                                    ))
 
@@ -467,9 +458,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                  extractor_utils.BuildRootEntity(
                                      dataset=None,
                                      data_dict=data_dict,
-                                     root_schema_class=schema.StateSupervisionSentence,
                                      root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field='person_id',
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True
                                  ))
 

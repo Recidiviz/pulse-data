@@ -163,9 +163,8 @@ class TestProgramPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateProgramAssignments
@@ -174,11 +173,9 @@ class TestProgramPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateProgramAssignment,
                                    root_entity_class=entities.
                                    StateProgramAssignment,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=True))
 
         # Get StateAssessments
@@ -187,10 +184,9 @@ class TestProgramPipeline(unittest.TestCase):
                        extractor_utils.BuildRootEntity(
                            dataset=None,
                            data_dict=data_dict,
-                           root_schema_class=schema.StateAssessment,
                            root_entity_class=entities.
                            StateAssessment,
-                           unifying_id_field='person_id',
+                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                            build_related_entities=False))
 
         # Get StateSupervisionPeriods
@@ -199,11 +195,9 @@ class TestProgramPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         supervision_period_to_agent_map = {
@@ -377,9 +371,8 @@ class TestProgramPipeline(unittest.TestCase):
                    extractor_utils.BuildRootEntity(
                        dataset=None,
                        data_dict=data_dict,
-                       root_schema_class=schema.StatePerson,
                        root_entity_class=entities.StatePerson,
-                       unifying_id_field='person_id',
+                       unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateProgramAssignments
@@ -388,11 +381,9 @@ class TestProgramPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=schema.
-                                   StateProgramAssignment,
                                    root_entity_class=entities.
                                    StateProgramAssignment,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=True))
 
         # Get StateAssessments
@@ -401,10 +392,9 @@ class TestProgramPipeline(unittest.TestCase):
                        extractor_utils.BuildRootEntity(
                            dataset=None,
                            data_dict=data_dict,
-                           root_schema_class=schema.StateAssessment,
                            root_entity_class=entities.
                            StateAssessment,
-                           unifying_id_field='person_id',
+                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                            build_related_entities=False))
 
         # Get StateSupervisionPeriods
@@ -413,11 +403,9 @@ class TestProgramPipeline(unittest.TestCase):
                                extractor_utils.BuildRootEntity(
                                    dataset=None,
                                    data_dict=data_dict,
-                                   root_schema_class=
-                                   schema.StateSupervisionPeriod,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
-                                   unifying_id_field='person_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False))
 
         supervision_period_to_agent_map = {
