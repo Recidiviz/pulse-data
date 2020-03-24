@@ -112,6 +112,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         AND gender IS NULL
         AND person_id IS NULL
         AND person_external_id IS NULL
+        AND most_serious_offense_ncic_code IS NULL
         AND most_serious_offense_statute IS NULL
         AND admission_reason IS NULL
         AND admission_reason_raw_text IS NULL

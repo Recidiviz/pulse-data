@@ -176,11 +176,15 @@ def find_end_of_month_state_prison_stays(
     supervision_type_at_admission = get_pre_incarceration_supervision_type(
         incarceration_sentences, supervision_sentences, incarceration_period,
         relevant_pre_incarceration_supervision_periods)
+
+    sentence_group = _get_sentence_group_for_incarceration_period(incarceration_period)
+
     end_of_month = last_day_of_month(admission_date)
 
     while end_of_month <= release_date:
-        most_serious_offense_statute = find_most_serious_prior_offense_statute_in_sentence_group(
-            incarceration_period, end_of_month)
+        most_serious_charge = find_most_serious_prior_charge_in_sentence_group(sentence_group, end_of_month)
+        most_serious_offense_ncic_code = most_serious_charge.ncic_code if most_serious_charge else None
+        most_serious_offense_statute = most_serious_charge.statute if most_serious_charge else None
 
         incarceration_stay_events.append(
             IncarcerationStayEvent(
@@ -188,6 +192,7 @@ def find_end_of_month_state_prison_stays(
                 event_date=end_of_month,
                 facility=incarceration_period.facility,
                 county_of_residence=county_of_residence,
+                most_serious_offense_ncic_code=most_serious_offense_ncic_code,
                 most_serious_offense_statute=most_serious_offense_statute,
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
@@ -200,18 +205,9 @@ def find_end_of_month_state_prison_stays(
     return incarceration_stay_events
 
 
-def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_period: StateIncarcerationPeriod,
-                                                              cutoff_date: date) -> Optional[str]:
-    """Finds the most serious offense that occurred prior to the cutoff date and is within the same sentence groups
-    that are connected to the incarceration period.
-
-    StateCharges have an optional `ncic_code` field that contains the identifying NCIC code for the offense, as well as
-    a `statute` field that describes the offense. NCIC codes decrease in severity as the code increases. E.g. '1010' is
-    a more serious offense than '5599'. Therefore, this returns the statute associated with the lowest ranked NCIC code
-    attached to the charges in the sentence groups that this incarceration period is attached to. Although most NCIC
-    codes are usually numbers, some may contain characters such as the letter 'A', so the codes are sorted
-    alphabetically.
-    """
+def _get_sentence_group_for_incarceration_period(
+        incarceration_period: StateIncarcerationPeriod
+) -> StateSentenceGroup:
     sentence_groups = [
         incarceration_sentence.sentence_group for incarceration_sentence in incarceration_period.incarceration_sentences
         if incarceration_sentence.sentence_group
@@ -222,29 +218,45 @@ def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_peri
         if supervision_sentence.sentence_group
     ])
 
-    charges_in_sentence_group: List[StateCharge] = []
+    sentence_group_ids = {sentence_group.sentence_group_id for sentence_group in sentence_groups}
 
-    for sentence_group in sentence_groups:
-        if sentence_group.incarceration_sentences:
-            for incarceration_sentence in sentence_group.incarceration_sentences:
-                if incarceration_sentence.charges:
-                    charges_in_sentence_group.extend(incarceration_sentence.charges)
+    if len(sentence_group_ids) != 1:
+        raise ValueError(f"Found unexpected number of sentence groups attached to incarceration_period "
+                         f"[{incarceration_period.incarceration_period_id}]. Ids: [{str(sentence_group_ids)}].")
 
-        if sentence_group.supervision_sentences:
-            for supervision_sentence in sentence_group.supervision_sentences:
-                if supervision_sentence.charges:
-                    charges_in_sentence_group.extend(supervision_sentence.charges)
+    return sentence_groups[0]
+
+
+def find_most_serious_prior_charge_in_sentence_group(sentence_group: StateSentenceGroup,
+                                                     sentence_start_upper_bound: date) -> Optional[StateCharge]:
+    """Finds the most serious offense associated with a sentence that started prior to the cutoff date and is within the
+    same sentence group as the incarceration period.
+
+    StateCharges have an optional `ncic_code` field that contains the identifying NCIC code for the offense, as well as
+    a `statute` field that describes the offense. NCIC codes decrease in severity as the code increases. E.g. '1010' is
+    a more serious offense than '5599'. Therefore, this returns the statute associated with the lowest ranked NCIC code
+    attached to the charges in the sentence groups that this incarceration period is attached to. Although most NCIC
+    codes are numbers, some may contain characters such as the letter 'A', so the codes are sorted alphabetically.
+    """
 
     relevant_charges: List[StateCharge] = []
 
-    if charges_in_sentence_group:
-        for charge in charges_in_sentence_group:
-            if charge.ncic_code and charge.offense_date and charge.offense_date < cutoff_date:
-                relevant_charges.append(charge)
+    def is_relevant_charge(sentence_start_date: Optional[date], charge: StateCharge):
+        return charge.ncic_code and sentence_start_date and sentence_start_date < sentence_start_upper_bound
 
-        if relevant_charges:
-            relevant_charges.sort(key=lambda b: b.ncic_code)
-            return relevant_charges[0].statute
+    for incarceration_sentence in sentence_group.incarceration_sentences:
+        relevant_charges_in_sentence = [charge for charge in incarceration_sentence.charges
+                                        if is_relevant_charge(incarceration_sentence.start_date, charge)]
+        relevant_charges.extend(relevant_charges_in_sentence)
+
+    for supervision_sentence in sentence_group.supervision_sentences:
+        relevant_charges_in_sentence = [charge for charge in supervision_sentence.charges
+                                        if is_relevant_charge(supervision_sentence.start_date, charge)]
+        relevant_charges.extend(relevant_charges_in_sentence)
+
+    if relevant_charges:
+        relevant_charges.sort(key=lambda b: b.ncic_code)
+        return relevant_charges[0]
 
     return None
 
