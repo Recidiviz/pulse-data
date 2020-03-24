@@ -803,9 +803,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=first_supervision_period.termination_reason)]
         self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
 
-    def test_findSupervisionTimeBuckets_collapseTemporaryCustodyAndRevocation(self):
+    def test_findSupervisionTimeBuckets_doNotCollapseTemporaryCustodyAndRevocation(self):
         """Tests the find_supervision_time_buckets function to ensure temporary custody and revocation periods are
-        correctly collapsed.
+        not collapsed.
         """
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -873,9 +873,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=first_supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL),
-            RevocationReturnSupervisionTimeBucket(
+            NonRevocationReturnSupervisionTimeBucket(
                 state_code=first_supervision_period.state_code,
                 year=2017, month=4,
+                supervision_type=first_supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL),
+            RevocationReturnSupervisionTimeBucket(
+                state_code=first_supervision_period.state_code,
+                year=2017, month=5,
                 supervision_type=first_supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,

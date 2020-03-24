@@ -140,8 +140,10 @@ def find_supervision_time_buckets(
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
+    # We don't want to collapse temporary custody periods with revocations because we want to use the actual date
+    # of the revocation admission for the revocation buckets
     incarceration_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
+        incarceration_periods, collapse_temporary_custody_periods_with_revocation=False)
 
     incarceration_periods.sort(key=lambda b: b.admission_date)
 
