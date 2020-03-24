@@ -470,3 +470,19 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
         )]
 
         self.assertEqual(result, expected_result)
+
+    def testConvert_MultipleOpenBookings_RaisesValueError(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(
+            ingest_time=_INGEST_TIME)
+
+        ingest_info = IngestInfo()
+        ingest_info.people.add(booking_ids=['BOOKING_ID1', 'BOOKING_ID2'])
+        ingest_info.bookings.add(booking_id='BOOKING_ID1',
+                                 admission_date='3/14/2020')
+        ingest_info.bookings.add(booking_id='BOOKING_ID2',
+                                 admission_date='3/16/2020')
+
+        # Act + Assert
+        with self.assertRaises(ValueError):
+            self._convert_and_throw_on_errors(ingest_info, metadata)

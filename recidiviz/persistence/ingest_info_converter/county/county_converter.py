@@ -68,6 +68,10 @@ class CountyConverter(BaseConverter[entities.Person]):
         converted_bookings = [self._convert_booking(self.bookings[booking_id])
                               for booking_id in ingest_person.booking_ids]
 
+        if len([b for b in converted_bookings if not b.release_date]) > 1:
+            raise ValueError(f"Multiple open bookings for person with person_id"
+                             f" [{ingest_person}]")
+
         # If no bookings were ingested, create booking to house inferred data.
         if not converted_bookings:
             inferred_booking = self._convert_booking(ingest_info_pb2.Booking())
