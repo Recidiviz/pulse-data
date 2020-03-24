@@ -28,7 +28,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
     DEFAULT_INCARCERATION_PIPELINE_ARGS =   \
         Namespace(calculation_month_limit=1, include_age=True, include_ethnicity=True, include_gender=True,
                   include_race=True, input='state', methodology='BOTH', output='dataflow_metrics',
-                  reference_input='dashboard_views')
+                  person_filter_ids=None, reference_input='dashboard_views')
 
     DEFAULT_APACHE_BEAM_OPTIONS_DICT = {
         'runner': 'DataflowRunner',
@@ -105,7 +105,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         expected_incarceration_pipeline_args = \
             Namespace(calculation_month_limit=6, include_age=False, include_ethnicity=False, include_gender=False,
                       include_race=False, input='county', methodology='EVENT', output='dataflow_metrics_2',
-                      reference_input='dashboard_views_2')
+                      person_filter_ids=None, reference_input='dashboard_views_2')
 
         self.assertEqual(incarceration_pipeline_args, expected_incarceration_pipeline_args)
 
@@ -129,3 +129,22 @@ class TestPipelineArgsUtils(unittest.TestCase):
         }
 
         self.assertEqual(pipeline_options.get_all_options(drop_default=True), expected_apache_beam_options_dict)
+
+    def test_incarceration_pipeline_specify_person_id_filters(self):
+        # Arrange
+        argv = ['--job_name', 'incarceration-args-test',
+                '--project', 'recidiviz-staging',
+                '--person_filter_ids', '685253', '12345', '99999',
+                '--setup_file', './setup.py']
+
+        # Act
+        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.parse_arguments(argv)
+        pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+
+        # Assert
+
+        expected_incarceration_pipeline_args = Namespace(**self.DEFAULT_INCARCERATION_PIPELINE_ARGS.__dict__)
+        expected_incarceration_pipeline_args.person_filter_ids = [685253, 12345, 99999]
+
+        self.assertEqual(incarceration_pipeline_args, expected_incarceration_pipeline_args)
+        self.assertEqual(pipeline_options.get_all_options(drop_default=True), self.DEFAULT_APACHE_BEAM_OPTIONS_DICT)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# pylint: disable=unused-import,wrong-import-order
+# pylint: disable=wrong-import-order
 # pylint: disable=protected-access
 
 
@@ -77,9 +77,8 @@ class TestBuildRootEntity(unittest.TestCase):
                   extractor_utils.BuildRootEntity(
                       dataset=None,
                       data_dict=data_dict,
-                      root_schema_class=schema.StatePerson,
                       root_entity_class=entities.StatePerson,
-                      unifying_id_field='person_id',
+                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                       build_related_entities=False))
 
         assert_that(output, equal_to([(12345, fake_person_entity)]))
@@ -199,9 +198,8 @@ class TestBuildRootEntity(unittest.TestCase):
                   extractor_utils.BuildRootEntity(
                       dataset=None,
                       data_dict=data_dict,
-                      root_schema_class=schema.StatePerson,
                       root_entity_class=entities.StatePerson,
-                      unifying_id_field='person_id',
+                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                       build_related_entities=True))
 
         assert_that(output, equal_to([(12345, fake_person_entity)]))
@@ -304,9 +302,8 @@ class TestBuildRootEntity(unittest.TestCase):
                   extractor_utils.BuildRootEntity(
                       dataset=None,
                       data_dict=data_dict,
-                      root_schema_class=schema.StatePerson,
                       root_entity_class=entities.StatePerson,
-                      unifying_id_field='person_id',
+                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                       build_related_entities=False))
 
         assert_that(output, equal_to([(12345, fake_person_entity)]))
@@ -326,84 +323,14 @@ class TestBuildRootEntity(unittest.TestCase):
                  extractor_utils.BuildRootEntity(
                      dataset=None,
                      data_dict={},
-                     root_schema_class=schema.StateIncarcerationSentence,
                      root_entity_class=entities.StateIncarcerationSentence,
-                     unifying_id_field='person_id',
+                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                      build_related_entities=True))
 
             test_pipeline.run()
 
         self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
-    def testBuildRootEntity_InvalidClasses(self):
-        """Tests the BuildRootEntity PTransform when the |root_schema_class|
-        does not match the right |root_entity_class|."""
-
-        supervision_violation = \
-            database_test_utils.generate_test_supervision_violation(123, [])
-
-        supervision_violation_data = \
-            [normalized_database_base_dict(supervision_violation)]
-
-        supervision_violation = remove_relationship_properties(
-            supervision_violation)
-
-        data_dict = {supervision_violation.__tablename__:
-                     supervision_violation_data}
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_schema_class=schema.StateSupervisionViolation,
-                     root_entity_class=entities.StateIncarcerationIncident,
-                     unifying_id_field='person_id',
-                     build_related_entities=True))
-
-            test_pipeline.run()
-
-        assert str(e.value) == "Must send valid, matching schema and entity" \
-                               " classes to BuildRootEntity."
-
-    def testBuildRootEntity_EmptySchemaClass(self):
-        """Tests the BuildRootEntity PTransform when the |root_schema_class|
-        is None."""
-
-        supervision_violation = \
-            database_test_utils.generate_test_supervision_violation(123, [])
-
-        supervision_violation_data = \
-            [normalized_database_base_dict(supervision_violation)]
-
-        supervision_violation = remove_relationship_properties(
-            supervision_violation)
-
-        data_dict = {supervision_violation.__tablename__:
-                     supervision_violation_data}
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_schema_class=None,
-                     root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='person_id',
-                     build_related_entities=True))
-
-            test_pipeline.run()
-
-        assert str(e.value) == "Must send valid, matching schema and entity" \
-                               " classes to BuildRootEntity."
 
     def testBuildRootEntity_EmptyEntityClass(self):
         """Tests the BuildRootEntity PTransform when the |root_entity_class|
@@ -430,15 +357,13 @@ class TestBuildRootEntity(unittest.TestCase):
                  extractor_utils.BuildRootEntity(
                      dataset=None,
                      data_dict=data_dict,
-                     root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=None,
-                     unifying_id_field='person_id',
+                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                      build_related_entities=True))
 
             test_pipeline.run()
 
-        assert str(e.value) == "Must send valid, matching schema and entity" \
-                               " classes to BuildRootEntity."
+        self.assertEqual(str(e.value), 'BuildRootEntity: Expecting root_entity_class to be not None.')
 
     def testBuildRootEntity_InvalidUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the |unifying_id_field|
@@ -465,14 +390,14 @@ class TestBuildRootEntity(unittest.TestCase):
                  extractor_utils.BuildRootEntity(
                      dataset=None,
                      data_dict=data_dict,
-                     root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateSupervisionViolation,
                      unifying_id_field='XX',
                      build_related_entities=True))
 
             test_pipeline.run()
 
-        assert "Invalid unifying_id_field: XX" in str(e.value)
+        self.assertEqual(str(e.value),
+                         'Root entity class [StateSupervisionViolation] does not have unifying id field [XX]')
 
     def testBuildRootEntity_EmptyUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the |unifying_id_field|
@@ -499,7 +424,6 @@ class TestBuildRootEntity(unittest.TestCase):
                  extractor_utils.BuildRootEntity(
                      dataset=None,
                      data_dict=data_dict,
-                     root_schema_class=schema.StateSupervisionViolation,
                      root_entity_class=entities.StateSupervisionViolation,
                      unifying_id_field=None,
                      build_related_entities=True))
@@ -518,6 +442,8 @@ class TestBuildRootEntity(unittest.TestCase):
         'supervision_period_id', but schema.StateSupervisionViolationResponse
         does not have this field. This means you will not be able to properly
         connect this related entity.
+
+        We expect that we do not hydrate StateSupervisionViolationResponses in this case.
         """
 
         supervision_violation_response = database_test_utils. \
@@ -546,21 +472,29 @@ class TestBuildRootEntity(unittest.TestCase):
         with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_schema_class=schema.StateSupervisionViolation,
-                     root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='supervision_period_id',
-                     build_related_entities=True))
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(
+                          dataset=None,
+                          data_dict=data_dict,
+                          root_entity_class=entities.StateSupervisionViolation,
+                          unifying_id_field='supervision_period_id',
+                          build_related_entities=True))
+
+            output_violation_entity = \
+                StateSchemaToEntityConverter().convert(supervision_violation)
+
+            output_violation_entity.supervision_violation_responses = []
+            output_violation_entity.supervision_violation_types = []
+            output_violation_entity.supervision_violated_conditions = []
+
+            assert_that(output, equal_to([
+                (supervision_violation.supervision_period_id,
+                 output_violation_entity)]))
 
             test_pipeline.run()
 
-            mock.assert_called_with("Invalid outer_connection_id_field: %s."
-                                    "Dropping this entity.",
-                                    'supervision_period_id')
+            mock.assert_not_called()
 
 
 class TestExtractEntity(unittest.TestCase):
@@ -587,46 +521,17 @@ class TestExtractEntity(unittest.TestCase):
                   extractor_utils._ExtractEntity(
                       dataset=None,
                       data_dict=data_dict,
-                      table_name=person.__tablename__,
                       entity_class=entity_class,
                       unifying_id_field=
                       entity_class.get_class_id_name(),
-                      root_id_field=None)
+                      parent_id_field=None,
+                      unifying_id_field_filter_set=None)
                   )
 
         assert_that(output, equal_to([
             (output_person_entity.get_id(), output_person_entity)]))
 
         test_pipeline.run()
-
-    def testExtractEntity_InvalidTableName(self):
-        person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, [], None, None, None))
-
-        person_data = [normalized_database_base_dict(person)]
-
-        data_dict = {person.__tablename__: person_data}
-
-        entity_class = entity_utils.get_entity_class_in_module_with_name(
-            entities, 'StatePerson')
-
-        with pytest.raises(ValueError) as e:
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | "Extract StatePerson Entity" >>
-                 extractor_utils._ExtractEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     table_name='INVALID TABLE NAME',
-                     entity_class=entity_class,
-                     unifying_id_field=entity_class.get_class_id_name(),
-                     root_id_field=None)
-                 )
-
-            test_pipeline.run()
-
-        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
@@ -642,22 +547,23 @@ class TestExtractEntity(unittest.TestCase):
         with patch('logging.Logger.warning') as mock:
             test_pipeline = TestPipeline()
 
-            _ = (test_pipeline
-                 | "Extract StatePerson Entity" >>
-                 extractor_utils._ExtractEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     table_name=person.__tablename__,
-                     entity_class=entity_class,
-                     unifying_id_field='XX',
-                     root_id_field='person_id')
-                 )
+            output = (test_pipeline
+                      | "Extract StatePerson Entity" >>
+                      extractor_utils._ExtractEntity(
+                          dataset=None,
+                          data_dict=data_dict,
+                          entity_class=entity_class,
+                          unifying_id_field='XX',
+                          parent_id_field='person_id',
+                          unifying_id_field_filter_set=None)
+                      )
+
+            self.assertIsInstance(output, list)
+            self.assertEqual(output, [])
 
             test_pipeline.run()
 
-            mock.assert_called_with("Invalid outer_connection_id_field: %s."
-                                    "Dropping this entity.",
-                                    'XX')
+            mock.assert_not_called()
 
     def testExtractEntity_InvalidRootIdField(self):
         incarceration_period = remove_relationship_properties(
@@ -677,10 +583,10 @@ class TestExtractEntity(unittest.TestCase):
                  extractor_utils._ExtractEntity(
                      dataset=None,
                      data_dict=data_dict,
-                     table_name=incarceration_period.__tablename__,
                      entity_class=entities.StateIncarcerationPeriod,
-                     unifying_id_field='person_id',
-                     root_id_field='AAA')
+                     unifying_id_field=entities.StatePerson.get_class_id_name(),
+                     parent_id_field='AAA',
+                     unifying_id_field_filter_set=None)
                  )
 
             test_pipeline.run()
@@ -719,9 +625,10 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                              'StateSupervisionPeriod' >>
                            extractor_utils._ExtractRelationshipPropertyEntities(
                                dataset=None, data_dict=data_dict,
-                               root_schema_class=schema.StateSupervisionPeriod,
-                               root_id_field='supervision_period_id',
-                               unifying_id_field='person_id'
+                               parent_schema_class=schema.StateSupervisionPeriod,
+                               parent_id_field='supervision_period_id',
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               unifying_id_field_filter_set=None
                            ))
 
         # Assert it has the property fields we expect
@@ -775,10 +682,11 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                              'StateIncarcerationSentence' >>
                            extractor_utils._ExtractRelationshipPropertyEntities(
                                dataset=None, data_dict=data_dict,
-                               root_schema_class=
+                               parent_schema_class=
                                schema.StateIncarcerationSentence,
-                               root_id_field='incarceration_sentence_id',
-                               unifying_id_field='person_id'
+                               parent_id_field='incarceration_sentence_id',
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               unifying_id_field_filter_set=None
                            ))
 
         # Assert it has the property fields we expect
@@ -800,7 +708,52 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     def testExtractRelationshipPropertyEntities_With1To1(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         is a 1-to-1 relationship to be hydrated (from the point of view of the
-        root schema object)."""
+        root schema object).
+        """
+        court_case = database_test_utils.generate_test_court_case(person_id=123)
+        charge = database_test_utils.generate_test_charge(person_id=123, charge_id=345)
+
+        # 1 to 1 relationship
+        charge.court_case_id = court_case.court_case_id
+
+        data_dict = {
+            charge.__tablename__: normalized_database_base_dict_list([charge]),
+            court_case.__tablename__: normalized_database_base_dict_list([court_case])
+        }
+
+        test_pipeline = TestPipeline()
+
+        properties_dict = (test_pipeline
+                           | 'Extract relationship properties for the '
+                             'IncarcerationIncident' >>
+                           extractor_utils._ExtractRelationshipPropertyEntities(
+                               dataset=None, data_dict=data_dict,
+                               parent_schema_class=schema.StateCharge,
+                               parent_id_field=charge.get_class_id_name(),
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               unifying_id_field_filter_set=None
+                           ))
+
+        # Assert it has the property fields we expect
+        assert len(properties_dict.keys()) == 1
+
+        output_court_case = properties_dict.get('court_case')
+
+        assert_that(
+            output_court_case, ExtractAssertMatchers.
+            validate_extract_relationship_property_entities(
+                outer_connection_id=charge.person_id,
+                inner_connection_id=charge.charge_id,
+                class_type=entities.StateCourtCase),
+            label="Validate state_agent output")
+
+        test_pipeline.run()
+
+    def testExtractRelationshipPropertyEntities_With1To1NoUnifyingId(self):
+        """Tests the ExtractRelationshipPropertyEntities PTransform when there
+        is a 1-to-1 relationship to be hydrated and the child object does not have
+        the unifying id. In this case we expect not to hydrate the child.
+        """
 
         incarceration_incident = \
             database_test_utils.generate_test_incarceration_incident(123, [])
@@ -827,10 +780,10 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                              'IncarcerationIncident' >>
                            extractor_utils._ExtractRelationshipPropertyEntities(
                                dataset=None, data_dict=data_dict,
-                               root_schema_class=
-                               schema.StateIncarcerationIncident,
-                               root_id_field='incarceration_incident_id',
-                               unifying_id_field='person_id'
+                               parent_schema_class=schema.StateIncarcerationIncident,
+                               parent_id_field='incarceration_incident_id',
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               unifying_id_field_filter_set=None
                            ))
 
         # Assert it has the property fields we expect
@@ -838,14 +791,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
         output_responding_officer = properties_dict.get('responding_officer')
 
-        assert_that(
-            output_responding_officer, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=incarceration_incident.person_id,
-                inner_connection_id=incarceration_incident.
-                incarceration_incident_id,
-                class_type=entities.StateAgent),
-            label="Validate state_agent output")
+        self.assertEqual(output_responding_officer, [])
 
         test_pipeline.run()
 
@@ -888,10 +834,11 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                   extractor_utils.
                                   _ExtractRelationshipPropertyEntities(
                                       dataset=None, data_dict=data_dict,
-                                      root_schema_class=
+                                      parent_schema_class=
                                       schema.StateIncarcerationPeriod,
-                                      root_id_field='incarceration_period_id',
-                                      unifying_id_field='person_id'
+                                      parent_id_field='incarceration_period_id',
+                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                      unifying_id_field_filter_set=None
                                   ))
 
         output_supervision_violation_response = \
@@ -951,10 +898,11 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                   extractor_utils.
                                   _ExtractRelationshipPropertyEntities(
                                       dataset=None, data_dict=data_dict,
-                                      root_schema_class=
+                                      parent_schema_class=
                                       schema.StateIncarcerationPeriod,
-                                      root_id_field='incarceration_period_id',
-                                      unifying_id_field='person_id'
+                                      parent_id_field='incarceration_period_id',
+                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                      unifying_id_field_filter_set=None
                                   ))
 
         output_supervision_violation_response = \
@@ -978,6 +926,59 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
     def testExtractEntityWithAssociationTable(self):
         """Tests extracting an entity that requires an association table for
         extraction."""
+
+        charge = database_test_utils.generate_test_charge(person_id=123, charge_id=345)
+        incarceration_sentence = database_test_utils.generate_test_incarceration_sentence(person_id=123)
+
+        incarceration_sentence.charges = [charge]
+
+        # Build association table for many-to-many relationship
+        charge_sentence_association_table = [{
+            'incarceration_sentence_id':
+                incarceration_sentence.incarceration_sentence_id,
+            'charge_id':
+                charge.charge_id
+        }]
+
+        association_table_name = \
+            schema.state_charge_incarceration_sentence_association_table.name
+
+        data_dict = {
+            incarceration_sentence.__tablename__:
+                [normalized_database_base_dict(incarceration_sentence)],
+            charge.__tablename__:
+                [normalized_database_base_dict(charge)],
+            association_table_name:
+                charge_sentence_association_table
+        }
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | 'Extract association table entities' >>
+                  extractor_utils._ExtractEntityWithAssociationTable(
+                      dataset=None, data_dict=data_dict,
+                      entity_class=entities.StateCharge,
+                      parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
+                      entity_id_field=entities.StateCharge.get_class_id_name(),
+                      association_table=association_table_name,
+                      unifying_id_field=entities.StatePerson.get_class_id_name(),
+                      unifying_id_field_filter_set=None
+                  ))
+
+        assert_that(output, ExtractAssertMatchers.
+                    validate_extract_relationship_property_entities(
+                        outer_connection_id=incarceration_sentence.person_id,
+                        inner_connection_id=incarceration_sentence.incarceration_sentence_id,
+                        class_type=entities.StateCharge),
+                    label="Validate StateCharge output")
+
+        test_pipeline.run()
+
+    def testExtractEntityWithAssociationTableNoUnifyingId(self):
+        """Tests extracting an entity that requires an association table for
+        extraction where the associated entity has no unifying id - will return an empty PCollection.
+        """
         parole_decision = database_test_utils.generate_test_parole_decision(123)
 
         agent = schema.StateAgent(
@@ -1016,22 +1017,17 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                   | 'Extract association table entities' >>
                   extractor_utils._ExtractEntityWithAssociationTable(
                       dataset=None, data_dict=data_dict,
-                      table_name=agent.__tablename__,
                       entity_class=entities.StateAgent,
-                      root_id_field=entities.StateParoleDecision.
-                      get_class_id_name(),
-                      associated_id_field=entities.StateAgent.
-                      get_class_id_name(),
+                      parent_id_field=entities.StateParoleDecision.get_class_id_name(),
+                      entity_id_field=entities.StateAgent.get_class_id_name(),
                       association_table=association_table_name,
-                      unifying_id_field='person_id'
+                      unifying_id_field=entities.StatePerson.get_class_id_name(),
+                      unifying_id_field_filter_set=None
                   ))
 
-        assert_that(output, ExtractAssertMatchers.
-                    validate_extract_relationship_property_entities(
-                        outer_connection_id=parole_decision.person_id,
-                        inner_connection_id=parole_decision.parole_decision_id,
-                        class_type=entities.StateAgent),
-                    label="Validate StateAgent output")
+        self.assertEqual(output, [])
+
+        test_pipeline.run()
 
 
 class TestHydrateRootEntity(unittest.TestCase):
@@ -1394,18 +1390,18 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestRepackageUnifyingIdRootIdStructure(unittest.TestCase):
-    """Tests the RepackageUnifyingIdRootIdStructure DoFn."""
+class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
+    """Tests the RepackageUnifyingIdParentIdStructure DoFn."""
 
-    def testRepackageUnifyingIdRootIdStructure(self):
+    def testRepackageUnifyingIdParentIdStructure(self):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 incarceration_sentence_id=444
             )
 
-        element = [(1234, {'unifying_id_related_entity':
+        element = [(1234, {'child_entity_with_unifying_id':
                            [(1234, incarceration_sentence)],
-                           'root_entity_ids': [111, 222]})]
+                           'parent_entity_ids': [111, 222]})]
 
         test_pipeline = TestPipeline()
 
@@ -1414,7 +1410,7 @@ class TestRepackageUnifyingIdRootIdStructure(unittest.TestCase):
             | "Convert to PCollection" >>
             beam.Create(element)
             | "Repackage structure" >>
-            beam.ParDo(extractor_utils._RepackageUnifyingIdRootIdStructure())
+            beam.ParDo(extractor_utils._RepackageUnifyingIParentIdStructure())
         )
 
         assert_that(output, equal_to([(1234, (111, incarceration_sentence)),
@@ -1422,15 +1418,15 @@ class TestRepackageUnifyingIdRootIdStructure(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testRepackageUnifyingIdRootIdStructure_NoRootIds(self):
+    def testRepackageUnifyingIdParentIdStructure_NoRootIds(self):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 incarceration_sentence_id=444
             )
 
-        element = [(999, {'unifying_id_related_entity':
+        element = [(999, {'child_entity_with_unifying_id':
                           [(1234, incarceration_sentence)],
-                          'root_entity_ids': []})]
+                          'parent_entity_ids': []})]
 
         test_pipeline = TestPipeline()
 
@@ -1439,7 +1435,7 @@ class TestRepackageUnifyingIdRootIdStructure(unittest.TestCase):
             | "Convert to PCollection" >>
             beam.Create(element)
             | "Repackage structure" >>
-            beam.ParDo(extractor_utils._RepackageUnifyingIdRootIdStructure())
+            beam.ParDo(extractor_utils._RepackageUnifyingIParentIdStructure())
         )
 
         assert_that(output, equal_to([]))
@@ -1537,13 +1533,19 @@ class ExtractAssertMatchers:
         """
 
         def _validate_extract_relationship_property_entities(output):
+            empty = True
             for item in output:
+                print('VALIDATING')
+                print(item)
+                empty = False
                 first_id, id_entity = item
                 assert first_id == outer_connection_id
 
                 second_id, entity = id_entity
+                print(f'second_id={second_id}, inner_connection_id={inner_connection_id}')
                 assert second_id == inner_connection_id
 
                 assert issubclass(entity.__class__, class_type)
+            assert not empty
 
         return _validate_extract_relationship_property_entities

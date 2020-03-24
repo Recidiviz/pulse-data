@@ -54,8 +54,9 @@ class CoreEntity:
     def get_id(self):
         return getattr(self, self.get_class_id_name())
 
-    def get_entity_name(self):
-        return to_snake_case(self.__class__.__name__)
+    @classmethod
+    def get_entity_name(cls):
+        return to_snake_case(cls.__name__)
 
     def clear_id(self):
         setattr(self, self.get_class_id_name(), None)

@@ -97,8 +97,7 @@ def _is_database_entity_subclass(member) -> bool:
 
 
 @lru_cache(maxsize=None)
-def get_state_database_entity_with_name(class_name: str) -> \
-        Type[DatabaseEntity]:
+def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
     state_table_classes = _get_all_database_entities_in_module(state_schema)
 
     for member in state_table_classes:

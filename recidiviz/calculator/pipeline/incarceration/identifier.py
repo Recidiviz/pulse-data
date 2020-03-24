@@ -200,7 +200,8 @@ def find_end_of_month_state_prison_stays(
     return incarceration_stay_events
 
 
-def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_period, cutoff_date) -> Optional[str]:
+def find_most_serious_prior_offense_statute_in_sentence_group(incarceration_period: StateIncarcerationPeriod,
+                                                              cutoff_date: date) -> Optional[str]:
     """Finds the most serious offense that occurred prior to the cutoff date and is within the same sentence groups
     that are connected to the incarceration period.
 
