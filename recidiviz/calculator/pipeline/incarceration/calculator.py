@@ -226,6 +226,9 @@ def add_person_level_characteristics(person, incarceration_event, characteristic
 
     if isinstance(incarceration_event, IncarcerationStayEvent):
         if incarceration_event.most_serious_offense_statute:
+            characteristics_with_person_details['most_serious_offense_ncic_code'] = \
+                incarceration_event.most_serious_offense_ncic_code
+        if incarceration_event.most_serious_offense_statute:
             characteristics_with_person_details['most_serious_offense_statute'] = \
                 incarceration_event.most_serious_offense_statute
         if incarceration_event.admission_reason_raw_text:

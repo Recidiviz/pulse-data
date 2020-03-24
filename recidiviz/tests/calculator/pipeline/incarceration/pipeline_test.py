@@ -551,10 +551,11 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             incarceration_sentence_id=123,
             incarceration_periods=[incarceration_period],
+            start_date=date(2009, 2, 9),
             charges=[
                 StateCharge.new_with_defaults(
                     ncic_code='5699',
-                    statute='CIVIL RIGHTS',
+                    statute='30A123',
                     offense_date=date(2009, 1, 9)
                 )
             ]
@@ -583,7 +584,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                most_serious_offense_statute='CIVIL RIGHTS'
+                most_serious_offense_ncic_code='5699',
+                most_serious_offense_statute='30A123'
             ),
             IncarcerationAdmissionEvent(
                 state_code=incarceration_period.state_code,
