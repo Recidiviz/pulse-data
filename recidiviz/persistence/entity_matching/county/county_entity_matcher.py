@@ -22,26 +22,26 @@ import logging
 from collections import defaultdict
 from typing import List, Dict, cast, Set, Tuple
 
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter
-)
-from recidiviz.persistence.database.session import Session
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.persistence.database.schema.county import dao
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter
+)
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities
-from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.entity_matching.base_entity_matcher import \
     BaseEntityMatcher, increment_error
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    MatchedEntities
 from recidiviz.persistence.entity_matching.county import county_matching_utils
 from recidiviz.persistence.entity_matching.county.county_matching_utils import \
     is_booking_match, is_hold_match, is_charge_match_with_children, \
     is_charge_match, get_best_match, get_next_available_match, \
     generate_id_from_obj
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    MatchedEntities
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
     get_only_match
 from recidiviz.persistence.errors import MatchedMultipleIngestedEntitiesError, \
@@ -168,6 +168,7 @@ def match_bookings(
     |db_person|, the primary key is updated on the ingested booking and we
     attempt to match all children entities.
     """
+    county_matching_utils.close_multiple_open_bookings(db_person.bookings)
     matched_bookings_by_db_id: Dict[int, entities.Booking] = {}
     for ingested_booking in ingested_person.bookings:
         db_booking: entities.Booking = \

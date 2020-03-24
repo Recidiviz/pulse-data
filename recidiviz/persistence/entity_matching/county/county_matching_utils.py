@@ -21,13 +21,14 @@ from typing import Optional, Sequence, Callable, Iterable, Set, Dict, Any, \
     cast, List
 
 import deepdiff
+from more_itertools import pairwise
 
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity_matching.entity_matching_utils import \
     get_all_matches
-from recidiviz.persistence.errors import PersistenceError
 from recidiviz.persistence.persistence_utils import is_booking_active
 
 _CHARGE_MATCH_FIELDS = {
@@ -106,12 +107,9 @@ def _db_open_booking_matches_ingested_booking(
     db_open_bookings = [b for b in db_entity.bookings if is_booking_active(b)]
     if not db_open_bookings:
         return True
-    if len(db_open_bookings) > 1:
-        raise PersistenceError(
-            "db person {} has more than one open booking".format(
-                db_entity.person_id))
-    return any(db_open_bookings[0].external_id == ingested_booking.external_id
-               for ingested_booking in ingested_entity.bookings)
+    return any(db_open_booking.external_id == ingested_booking.external_id
+               for ingested_booking in ingested_entity.bookings
+               for db_open_booking in db_open_bookings)
 
 
 # '*' catches positional arguments, making our arguments named and required.
@@ -134,9 +132,6 @@ def is_booking_match(
     # ingested booking must have the same admission date to be a match.
     if not db_entity.admission_date_inferred:
         return db_entity.admission_date == ingested_entity.admission_date
-
-    # TODO(612): Determine if we need to match a newly released ingested booking
-    # with an open db booking
     return is_booking_active(db_entity) and is_booking_active(ingested_entity)
 
 
@@ -307,6 +302,18 @@ def get_next_available_match(
                 matcher(db_entity=db_entity, ingested_entity=ingested_entity):
             return db_entity
     return None
+
+
+def close_multiple_open_bookings(bookings: List[entities.Booking]):
+    """
+    Assigns all open |bookings| a release date which is the next booking's
+    admission date by modifying bookings in place.
+    """
+    for b1, b2 in pairwise(sorted(bookings, key=lambda b: b.admission_date)):
+        if not b1.release_date:
+            b1.release_date = b2.admission_date
+            b1.release_date_inferred = True
+            b1.custody_status = CustodyStatus.REMOVED_WITHOUT_INFO
 
 
 def generate_id_from_obj(obj) -> str:

@@ -266,3 +266,14 @@ class TestCountyMatchingUtils(TestCase):
                 sentence_id=_SENTENCE_ID, booking_id=_BOOKING_ID),
             ingested_entity=entities.Sentence.new_with_defaults(
                 sentence_id=_SENTENCE_ID_OTHER)))
+
+    def test_close_multiple_open_bookings(self):
+        db_booking1 = entities.Booking.new_with_defaults(
+            admission_date=_DATE_OTHER
+        )
+        db_booking2 = entities.Booking.new_with_defaults(
+            admission_date=_DATE
+        )
+        county_matching_utils.close_multiple_open_bookings([db_booking1, db_booking2])
+        self.assertTrue(db_booking1.release_date == _DATE)
+        self.assertIsNone(db_booking2.release_date)
