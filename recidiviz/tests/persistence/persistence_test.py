@@ -22,27 +22,25 @@ from unittest import TestCase
 import attr
 from mock import patch, Mock
 
-import recidiviz.ingest.models.ingest_info as ii
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
     Sentence
-from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
-from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database import database
 from recidiviz.persistence.database.base_schema import \
     JailsBase
-from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import schema, \
     dao as county_dao
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.tests.utils import fakes
 
 ARREST_ID = 'ARREST_ID_1'
@@ -126,15 +124,6 @@ class TestPersistence(TestCase):
             # Assert
             assert len(result) == 1
             assert result[0].full_name == _format_full_name(FULL_NAME_1)
-
-    def test_multipleOpenBookings_raisesPersistenceError(self):
-        ingest_info = ii.IngestInfo()
-        person = ingest_info.create_person(full_name=FULL_NAME_1)
-        person.create_booking(admission_date=DATE_RAW)
-        person.create_booking(admission_date=DATE_RAW)
-
-        self.assertFalse(persistence.write(
-            convert_ingest_info_to_proto(ingest_info), DEFAULT_METADATA))
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange

@@ -22,20 +22,21 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import \
     JailsBase
-from recidiviz.persistence.entity.county import entities
+from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema.county import schema
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.entity_matching.county import county_entity_matcher,\
+from recidiviz.persistence.entity_matching.county import \
+    county_entity_matcher, \
     county_matching_utils
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.utils import fakes
@@ -260,7 +261,6 @@ class TestCountyEntityMatcher(TestCase):
             [])
         self.assertEqual(out.error_count, 0)
 
-
     def test_matchPeople(self):
         # Arrange
         schema_booking = schema.Booking(
@@ -473,6 +473,39 @@ class TestCountyEntityMatcher(TestCase):
                               [expected_unchanged_closed_booking,
                                expected_new_closed_booking,
                                expected_new_open_booking])
+        self.assertEqual(len(orphaned_entities), 0)
+
+    def test_matchAndCloseBookings(self):
+        db_booking = entities.Booking.new_with_defaults(
+            booking_id=_ID, admission_date=_DATE_2,
+            custody_status=CustodyStatus.IN_CUSTODY)
+        db_booking_another = entities.Booking.new_with_defaults(
+            booking_id=_ID_ANOTHER, admission_date=_DATE,
+            custody_status=CustodyStatus.IN_CUSTODY)
+        ingested_booking = entities.Booking.new_with_defaults(
+            admission_date=_DATE_2, custody_status=CustodyStatus.IN_CUSTODY,
+            facility=_FACILITY)
+
+        expected_closed_booking = attr.evolve(
+            db_booking_another,
+            custody_status=CustodyStatus.REMOVED_WITHOUT_INFO,
+            release_date=ingested_booking.admission_date,
+            release_date_inferred=True)
+        expected_matched_booking = attr.evolve(
+            ingested_booking, booking_id=db_booking.booking_id)
+
+        db_person = entities.Person.new_with_defaults(
+            bookings=[db_booking, db_booking_another])
+        ingested_person = entities.Person.new_with_defaults(
+            bookings=[ingested_booking])
+
+        orphaned_entities = []
+        county_entity_matcher.match_bookings(
+            db_person=db_person, ingested_person=ingested_person,
+            orphaned_entities=orphaned_entities)
+        self.assertCountEqual(
+            ingested_person.bookings,
+            [expected_closed_booking, expected_matched_booking])
         self.assertEqual(len(orphaned_entities), 0)
 
     def test_matchBookingWithChildren(self):

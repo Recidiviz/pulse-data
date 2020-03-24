@@ -32,7 +32,7 @@ from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
 
-_FAKE_SCRAPER_START_TIME = datetime(year=2019, month=1, day=2)
+_FAKE_SCRAPER_START_TIME = datetime(year=2020, month=3, day=20)
 
 class CommonScraperTest(IndividualIngestTest):
     """A base class for scraper tests which does extra validations."""
