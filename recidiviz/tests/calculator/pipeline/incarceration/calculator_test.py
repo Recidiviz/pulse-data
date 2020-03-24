@@ -51,6 +51,7 @@ ALL_INCLUSIONS_DICT = {
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 _COUNTY_OF_RESIDENCE = 'county'
 _STATUTE = 'XXXX'
+_NCIC_CODE = '1234'
 
 
 class TestMapIncarcerationCombinations(unittest.TestCase):
@@ -123,6 +124,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2000, 3, 31),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
             ),
             IncarcerationAdmissionEvent(
@@ -253,6 +255,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
@@ -262,6 +265,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
@@ -301,6 +305,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
@@ -885,6 +890,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE
             ),
             IncarcerationStayEvent(
@@ -892,6 +898,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 4, 30),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE
             ),
             IncarcerationStayEvent(
@@ -899,6 +906,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2010, 5, 31),
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE
             )
         ]

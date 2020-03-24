@@ -81,6 +81,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_reason=ReleaseReason.CONDITIONAL_RELEASE)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 12, 11),
             incarceration_periods=[temp_custody_period, revocation_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -91,7 +92,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             ]
         )
 
-        sentence_group = StateSentenceGroup.new_with_defaults(incarceration_sentences=[incarceration_sentence])
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=9797,
+                                                              incarceration_sentences=[incarceration_sentence])
 
         incarceration_sentence.sentence_group = sentence_group
 
@@ -108,6 +110,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(revocation_period.admission_date),
                 facility=revocation_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='0901',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationAdmissionEvent(
@@ -201,6 +204,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(temp_custody_period.admission_date),
                 facility=temp_custody_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='0901',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
@@ -211,6 +215,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(revocation_period.admission_date),
                 facility=revocation_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='0901',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationAdmissionEvent(
@@ -246,6 +251,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -274,6 +280,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period.admission_date),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='0901',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
@@ -283,6 +290,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period.admission_date + relativedelta(months=1)),
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='0901',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationAdmissionEvent(
@@ -328,6 +336,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 1, 11),
             incarceration_periods=[incarceration_period_1, incarceration_period_2],
             charges=[
                 StateCharge.new_with_defaults(
@@ -360,6 +369,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period_1.admission_date),
                 facility=incarceration_period_1.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='5511',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
@@ -368,6 +378,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period_1.admission_date + relativedelta(months=1)),
                 facility=incarceration_period_2.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='5511',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationStayEvent(
@@ -376,6 +387,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=last_day_of_month(incarceration_period_1.admission_date + relativedelta(months=2)),
                 facility=incarceration_period_2.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code='5511',
                 most_serious_offense_statute='9999'
             ),
             IncarcerationAdmissionEvent(
@@ -406,18 +418,23 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_date=date(2009, 1, 4),
             release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[
-                StateIncarcerationSentence.new_with_defaults(
-                    incarceration_periods=[incarceration_period]
-                )
-            ],
-            supervision_sentences=[
-                StateSupervisionSentence.new_with_defaults(
-                    incarceration_periods=[incarceration_period]
-                )
-            ]
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period]
         )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence]
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+        supervision_sentence.sentence_group = sentence_group
 
         sentence_groups = [sentence_group]
 
@@ -496,6 +513,11 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             start_date=date(2010, 1, 1),
             supervision_periods=[supervision_period],
             incarceration_periods=[incarceration_period])
+        incarceration_period.supervision_sentences = [supervision_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        supervision_sentence.sentence_group = sentence_group
+
         incarceration_sentences = []
         incarceration_events = identifier.find_end_of_month_state_prison_stays(
             incarceration_sentences,
@@ -538,6 +560,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 release_date=date(2010, 12, 1),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
+
         incarceration_events = \
             self._run_find_end_of_month_state_prison_stays_with_no_sentences(
                 incarceration_period, _COUNTY_OF_RESIDENCE
@@ -563,6 +594,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 facility='PRISON3',
                 admission_date=date(2018, 1, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
 
         incarceration_events = \
             self._run_find_end_of_month_state_prison_stays_with_no_sentences(
@@ -606,6 +646,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 release_date=date(2000, 2, 13),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
+
         incarceration_events = self._run_find_end_of_month_state_prison_stays_with_no_sentences(
             incarceration_period, _COUNTY_OF_RESIDENCE)
 
@@ -628,6 +677,14 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 facility='PRISON3',
                 admission_date=date(2019, 11, 30),
                 admission_reason=AdmissionReason.NEW_ADMISSION)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
 
         incarceration_events = self._run_find_end_of_month_state_prison_stays_with_no_sentences(
             incarceration_period, _COUNTY_OF_RESIDENCE)
@@ -652,6 +709,14 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2019, 11, 30),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
 
         incarceration_events = \
             self._run_find_end_of_month_state_prison_stays_with_no_sentences(
@@ -678,6 +743,14 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2019, 12, 1),
                 release_reason=ReleaseReason.TRANSFER)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
 
         incarceration_events = \
             self._run_find_end_of_month_state_prison_stays_with_no_sentences(
@@ -704,6 +777,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2019, 7, 31),
                 release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
 
         incarceration_events = \
             self._run_find_end_of_month_state_prison_stays_with_no_sentences(
@@ -1215,8 +1297,8 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
 
 
 class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
-    """Tests the find_most_serious_prior_offense_statute_in_sentence_group function,"""
-    def test_find_most_serious_prior_offense_statute_in_sentence_group(self):
+    """Tests the find_most_serious_prior_charge_in_sentence_group function,"""
+    def test_find_most_serious_prior_charge_in_sentence_group(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1230,6 +1312,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -1257,12 +1340,12 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period.incarceration_sentences = [incarceration_sentence]
         incarceration_sentence.sentence_group = sentence_group
 
-        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
-            incarceration_period, date(2008, 12, 31))
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31)).statute
 
         self.assertEqual(most_serious_statute, '8888')
 
-    def test_find_most_serious_prior_offense_statute_in_sentence_group_multiple_sentences(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_multiple_sentences(self):
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1275,6 +1358,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period_1],
             charges=[
                 StateCharge.new_with_defaults(
@@ -1308,6 +1392,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period_2],
             charges=[
                 StateCharge.new_with_defaults(
@@ -1338,12 +1423,12 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period_2.incarceration_sentences = [incarceration_sentence_2]
         incarceration_sentence_2.sentence_group = sentence_group
 
-        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
-            incarceration_period_1, date(2008, 12, 31))
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period_1, date(2008, 12, 31)).statute
 
         self.assertEqual(most_serious_statute, '3606')
 
-    def test_find_most_serious_prior_offense_statute_in_sentence_group_offense_after_date(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_offense_after_date(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1356,14 +1441,10 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 release_date=date(2009, 1, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period],
             charges=[
-                StateCharge.new_with_defaults(
-                    offense_date=date(2010, 12, 11),
-                    ncic_code='3606',
-                    statute='9999'
-                ),
                 StateCharge.new_with_defaults(
                     offense_date=date(2007, 12, 11),
                     ncic_code='3611',
@@ -1377,19 +1458,32 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             ]
         )
 
+        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2010, 12, 10),
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2010, 12, 11),
+                    ncic_code='3606',
+                    statute='9999'
+                ),
+            ]
+        )
+
         sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[incarceration_sentence]
+            incarceration_sentences=[incarceration_sentence_1, incarceration_sentence_2]
         )
 
         incarceration_period.incarceration_sentences = sentence_group.incarceration_sentences
-        incarceration_sentence.sentence_group = sentence_group
+        incarceration_sentence_1.sentence_group = sentence_group
+        incarceration_sentence_2.sentence_group = sentence_group
 
-        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
-            incarceration_period, date(2008, 12, 31))
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31)).statute
 
         self.assertEqual(most_serious_statute, '1111')
 
-    def test_find_most_serious_prior_offense_statute_in_sentence_group_charges_no_ncic(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_charges_no_ncic(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1427,12 +1521,12 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period.incarceration_sentences = sentence_group.incarceration_sentences
         incarceration_sentence.sentence_group = sentence_group
 
-        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
+        most_serious_charge = identifier.find_most_serious_prior_charge_in_sentence_group(
             incarceration_period, date(2008, 12, 31))
 
-        self.assertIsNone(most_serious_statute)
+        self.assertIsNone(most_serious_charge)
 
-    def test_find_most_serious_prior_offense_statute_in_sentence_group_includes_chars(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_includes_chars(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1446,6 +1540,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -1473,10 +1568,150 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period.incarceration_sentences = sentence_group.incarceration_sentences
         incarceration_sentence.sentence_group = sentence_group
 
-        most_serious_statute = identifier.find_most_serious_prior_offense_statute_in_sentence_group(
-            incarceration_period, date(2008, 12, 31))
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31)).statute
 
         self.assertEqual(most_serious_statute, '9999')
+
+    def test_find_most_serious_prior_offense_statute_no_offense_dates(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2009, 1, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    ncic_code='2703',
+                    statute='9999'
+                ),
+                StateCharge.new_with_defaults(
+                    ncic_code='1316',
+                    statute='8888'
+                ),
+                StateCharge.new_with_defaults(
+                    ncic_code='3619',
+                    statute='7777'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
+        incarceration_sentence.sentence_group = sentence_group
+
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31)).statute
+
+        self.assertEqual(most_serious_statute, '8888')
+
+    def test_find_most_serious_prior_offense_statute_offense_but_not_sentence_dates_before_cutoff(self):
+        """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2009, 1, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2009, 12, 10),
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 10),
+                    ncic_code='2703',
+                    statute='9999'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 10),
+                    ncic_code='1316',
+                    statute='8888'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 10),
+                    ncic_code='3619',
+                    statute='7777'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
+        incarceration_sentence.sentence_group = sentence_group
+
+        most_serious_charge = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31))
+
+        self.assertEqual(most_serious_charge, None)
+
+    def test_find_most_serious_prior_offense_statute_sentence_but_not_offense_dates_before_cutoff(self):
+        """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2009, 1, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2007, 12, 10),
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2009, 12, 10),
+                    ncic_code='2703',
+                    statute='9999'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2009, 12, 10),
+                    ncic_code='1316',
+                    statute='8888'
+                ),
+                StateCharge.new_with_defaults(
+                    offense_date=date(2009, 12, 10),
+                    ncic_code='3619',
+                    statute='7777'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
+        incarceration_sentence.sentence_group = sentence_group
+
+        most_serious_statute = identifier.find_most_serious_prior_charge_in_sentence_group(
+            incarceration_period, date(2008, 12, 31)).statute
+
+        self.assertEqual(most_serious_statute, '8888')
 
 
 def expected_incarceration_stay_events(
