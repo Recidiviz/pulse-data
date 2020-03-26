@@ -23,8 +23,10 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
-def normalized_database_base_dict(
-        database_base: StateBase) -> Dict[str, Any]:
+NormalizedDatabaseDict = Dict[str, Any]
+
+
+def normalized_database_base_dict(database_base: StateBase) -> NormalizedDatabaseDict:
     """Takes in a Base object and returns a dictionary with only keys
     that are column property names in the database. If any columns are not
     currently represented in the entity, sets the value as None for that key.
@@ -43,8 +45,7 @@ def normalized_database_base_dict(
     return new_object_dict
 
 
-def normalized_database_base_dict_list(
-        database_bases: List[StateBase]) -> List[Dict[str, Any]]:
+def normalized_database_base_dict_list(database_bases: List[StateBase]) -> List[NormalizedDatabaseDict]:
     """Returns a list of normalized database base dictionaries."""
     dict_list = []
 
