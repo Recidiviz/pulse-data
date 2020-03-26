@@ -1,0 +1,17 @@
+child_key_mappings:
+  ofndr_tst_id: state_assessment.state_assessment_id
+  ofndr_num: state_person_external_id.state_person_external_id_id
+  cert_dt: state_assessment.assessment_date
+  tot_score: state_assessment.assessment_score
+  eval_desc: state_assessment.assessment_level
+
+primary_key:
+  ofndr_num: state_person.state_person_id
+
+keys_to_ignore:
+  - assess_tst_id       # Unused - Always 2 for LSIR assessments
+  - body_loc_cd         # Unused - Location of person at time of assessment
+  - score_by_name       # Unused - Person who scored the assessment
+  - tst_dt              # Unused - Date the test was administered. Usually the same as the date the test was certified
+                        #         (cert_dt)
+  - cert_pass_flg       # Unused - Whether or not the test was certified. Always 'Y' because of SQL query.

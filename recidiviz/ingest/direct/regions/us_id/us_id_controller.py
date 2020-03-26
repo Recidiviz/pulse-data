@@ -21,11 +21,12 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook
-from recidiviz.ingest.models.ingest_info import StatePersonEthnicity, StatePerson, IngestObject
+from recidiviz.ingest.models.ingest_info import StatePersonEthnicity, StatePerson, IngestObject, StateAssessment
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -50,12 +51,19 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._rationalize_race_and_ethnicity,
             ],
+            'ofndr_tst_ofndr_tst_cert': [
+                self._add_lsir_to_assessments,
+                gen_label_single_external_id_hook(US_ID_DOC),
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
-            'offender': []
+            'offender': [],
         }
 
-    FILE_TAGS = ['offender']
+    FILE_TAGS = [
+        'offender',
+        'ofndr_tst_ofndr_tst_cert',
+    ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
         Race.ASIAN: ['A'],
@@ -72,6 +80,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
         Gender.TRANS_MALE: ['X'],
         Gender.TRANS_FEMALE: ['Y'],
         Gender.EXTERNAL_UNKNOWN: ['U'],
+
+        StateAssessmentLevel.LOW: ['Minimum'],
+        StateAssessmentLevel.LOW_MEDIUM: ['Low-Medium'],
+        StateAssessmentLevel.MEDIUM_HIGH: ['High-Medium'],
+        StateAssessmentLevel.HIGH: ['Maximum'],
+
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
@@ -116,3 +130,13 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     else:
                         updated_person_races.append(person_race)
                 obj.state_person_races = updated_person_races
+
+    def _add_lsir_to_assessments(
+            self,
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StateAssessment):
+                obj.assessment_type = StateAssessmentType.LSIR.value
