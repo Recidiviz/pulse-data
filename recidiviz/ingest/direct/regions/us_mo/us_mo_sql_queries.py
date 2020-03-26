@@ -26,8 +26,9 @@ a certain date. Those dates are in the "JDE Julian format" which is documented
 offline.
 """
 
-import os
 from typing import List, Tuple, Optional
+
+from recidiviz.ingest.direct.query_utils import output_sql_queries
 
 lower_bound_update_date = 0
 
@@ -1635,29 +1636,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     ]
 
 
-def write_all_queries_to_files(dir_path: str,
-                               query_name_to_query_list: List[Tuple[str, str]]):
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-
-    for query_name, query_str in query_name_to_query_list:
-        with open(os.path.join(dir_path, f'{query_name}.sql'), 'w') as output_path:
-            output_path.write(query_str)
-
-
-def print_all_queries_to_console(query_name_to_query_list: List[Tuple[str, str]]):
-    for query_name, query_str in query_name_to_query_list:
-        print(f'\n\n/* {query_name.upper()} */\n')
-        print(query_str)
-
-
 if __name__ == '__main__':
     # Uncomment the os.path clause below (change the directory as desired) if you want the queries to write out to
     # separate files instead of to the console.
     output_dir: Optional[str] = None  # os.path.expanduser('~/Downloads/mo_queries')
-
-    if output_dir is not None:
-        write_all_queries_to_files(dir_path=output_dir,
-                                   query_name_to_query_list=get_query_name_to_query_list())
-    else:
-        print_all_queries_to_console(query_name_to_query_list=get_query_name_to_query_list())
+    output_sql_queries(get_query_name_to_query_list(), output_dir)
