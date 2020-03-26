@@ -15,17 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit and integration tests for Idaho direct ingest."""
-
+import datetime
 from typing import Type
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_id.us_id_controller import UsIdController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
-    StatePersonEthnicity
+    StatePersonEthnicity, StateAssessment
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -100,6 +101,55 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'offender')
 
+    def test_populate_data_ofndr_tst_ofndr_tst_cert(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='1111',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                            ],
+                            state_assessments=[
+                                StateAssessment(
+                                    state_assessment_id='1',
+                                    assessment_date='01/01/2002',
+                                    assessment_type='LSIR',
+                                    assessment_score='6.0',
+                                    assessment_level='Minimum'),
+                                StateAssessment(
+                                    state_assessment_id='2',
+                                    assessment_date='01/01/2003',
+                                    assessment_type='LSIR',
+                                    assessment_score='16.0',
+                                    assessment_level='Low-Medium')
+                            ]),
+                StatePerson(state_person_id='2222',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                            ],
+                            state_assessments=[
+                                StateAssessment(
+                                    state_assessment_id='3',
+                                    assessment_date='01/01/2003',
+                                    assessment_type='LSIR',
+                                    assessment_score='31.0',
+                                    assessment_level='High-Medium')
+                            ]),
+                StatePerson(state_person_id='3333',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                            ],
+                            state_assessments=[
+                                StateAssessment(
+                                    state_assessment_id='4',
+                                    assessment_date='01/01/2003',
+                                    assessment_type='LSIR',
+                                    assessment_score='45.0',
+                                    assessment_level='Maximum')
+                            ]),
+            ])
+
+        self.run_parse_file_test(expected, 'ofndr_tst_ofndr_tst_cert')
+
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
 
@@ -172,6 +222,63 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('offender.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+
+        ######################################
+        # OFNDR_TST_OFNDR_TST_CERT
+        ######################################
+        # Arrange
+        assessment_1 = entities.StateAssessment.new_with_defaults(
+            external_id='1',
+            assessment_date=datetime.date(year=2002, month=1, day=1),
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_score=6,
+            assessment_level=StateAssessmentLevel.LOW,
+            assessment_level_raw_text='MINIMUM',
+            state_code=_STATE_CODE_UPPER,
+            person=person_1)
+        assessment_2 = entities.StateAssessment.new_with_defaults(
+            external_id='2',
+            assessment_date=datetime.date(year=2003, month=1, day=1),
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_score=16,
+            assessment_level=StateAssessmentLevel.LOW_MEDIUM,
+            assessment_level_raw_text='LOW-MEDIUM',
+            state_code=_STATE_CODE_UPPER,
+            person=person_1)
+        assessment_3 = entities.StateAssessment.new_with_defaults(
+            external_id='3',
+            assessment_date=datetime.date(year=2003, month=1, day=1),
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_score=31,
+            assessment_level=StateAssessmentLevel.MEDIUM_HIGH,
+            assessment_level_raw_text='HIGH-MEDIUM',
+            state_code=_STATE_CODE_UPPER,
+            person=person_2)
+        assessment_4 = entities.StateAssessment.new_with_defaults(
+            external_id='4',
+            assessment_date=datetime.date(year=2003, month=1, day=1),
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_type_raw_text='LSIR',
+            assessment_score=45,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_level_raw_text='MAXIMUM',
+            state_code=_STATE_CODE_UPPER,
+            person=person_3)
+
+        person_1.assessments.append(assessment_1)
+        person_1.assessments.append(assessment_2)
+        person_2.assessments.append(assessment_3)
+        person_3.assessments.append(assessment_4)
+
+        # Act
+        self._run_ingest_job_for_filename('ofndr_tst_ofndr_tst_cert.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
