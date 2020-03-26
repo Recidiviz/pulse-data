@@ -52,9 +52,9 @@ def parse_bool(bool_string: str) -> bool:
 
 
 def parse_int(int_string: str) -> int:
-    """Parses a string and returns an int."""
+    """Parses a string and returns an int. If the string has a decimal, the floor of the value is returned."""
     try:
-        return int(normalize(int_string))
+        return int(float(normalize(int_string)))
     except Exception:
         raise ValueError("Cannot parse int value: %s" % int_string)
 

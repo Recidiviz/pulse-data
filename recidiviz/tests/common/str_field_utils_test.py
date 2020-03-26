@@ -21,11 +21,21 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.common.str_field_utils import parse_days, parse_dollars, \
-    parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces
+    parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces, parse_int
 
 
 class TestStrFieldUtils(TestCase):
     """Test conversion util methods."""
+
+    def test_parseInt(self):
+        assert parse_int('123') == 123
+
+    def test_parseInt_floatProvided(self):
+        assert parse_int('123.6') == 123
+
+    def test_parseInt_invalidStr(self):
+        with pytest.raises(ValueError):
+            parse_int('hello')
 
     def test_parseTimeDurationDays(self):
         assert parse_days('10') == 10
