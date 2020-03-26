@@ -335,18 +335,13 @@ def run(argv):
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load Persons' >>
-                   BuildRootEntity(dataset=input_dataset,
-                                   data_dict=None,
-                                   root_entity_class=entities.StatePerson,
+                   BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StatePerson,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=True,
-                                   unifying_id_field_filter_set=person_id_filter_set))
+                                   build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateProgramAssignments
         program_assignments = (p | 'Load Program Assignments' >>
-                               BuildRootEntity(dataset=input_dataset,
-                                               data_dict=None,
-                                               root_entity_class=entities.
+                               BuildRootEntity(dataset=input_dataset, root_entity_class=entities.
                                                StateProgramAssignment,
                                                unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                build_related_entities=True,
@@ -354,24 +349,16 @@ def run(argv):
 
         # Get StateAssessments
         assessments = (p | 'Load Assessments' >>
-                       BuildRootEntity(dataset=input_dataset,
-                                       data_dict=None,
-                                       root_entity_class=entities.
-                                       StateAssessment,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=False,
-                                       unifying_id_field_filter_set=person_id_filter_set))
+                       BuildRootEntity(dataset=input_dataset, root_entity_class=entities.
+                                       StateAssessment, unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                       build_related_entities=False, unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateSupervisionPeriods
         supervision_periods = (p | 'Load SupervisionPeriods' >>
-                               BuildRootEntity(
-                                   dataset=input_dataset,
-                                   data_dict=None,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False,
-                                   unifying_id_field_filter_set=person_id_filter_set))
+                               BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StateSupervisionPeriod,
+                                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                               build_related_entities=False,
+                                               unifying_id_field_filter_set=person_id_filter_set))
 
         supervision_period_to_agent_association_query = \
             f"SELECT * FROM `{reference_dataset}.supervision_period_to_agent_association`"

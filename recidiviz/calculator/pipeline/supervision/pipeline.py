@@ -564,7 +564,6 @@ def run(argv):
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load Persons' >> BuildRootEntity(dataset=input_dataset,
-                                                         data_dict=None,
                                                          root_entity_class=entities.StatePerson,
                                                          unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                          build_related_entities=True,
@@ -573,7 +572,6 @@ def run(argv):
         # Get StateIncarcerationPeriods
         incarceration_periods = (p | 'Load IncarcerationPeriods' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateIncarcerationPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -583,7 +581,6 @@ def run(argv):
         # Get StateSupervisionViolations
         supervision_violations = (p | 'Load SupervisionViolations' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateSupervisionViolation,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -594,7 +591,6 @@ def run(argv):
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = (p | 'Load SupervisionViolationResponses' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateSupervisionViolationResponse,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -604,7 +600,6 @@ def run(argv):
         # Get StateSupervisionSentences
         supervision_sentences = (p | 'Load SupervisionSentences' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateSupervisionSentence,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -614,7 +609,6 @@ def run(argv):
         # Get StateIncarcerationSentences
         incarceration_sentences = (p | 'Load IncarcerationSentences' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateIncarcerationSentence,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -624,7 +618,6 @@ def run(argv):
         # Get StateSupervisionPeriods
         supervision_periods = (p | 'Load SupervisionPeriods' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateSupervisionPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
@@ -634,7 +627,6 @@ def run(argv):
         # Get StateAssessments
         assessments = (p | 'Load Assessments' >> BuildRootEntity(
             dataset=input_dataset,
-            data_dict=None,
             root_entity_class=entities.StateAssessment,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=False,
