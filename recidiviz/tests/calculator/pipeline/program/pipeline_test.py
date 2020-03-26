@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order
+# pylint: disable=wrong-import-order
 
 """Tests for program/pipeline.py"""
 import json
 import unittest
+from typing import Optional, Set
 
 import apache_beam as beam
-from apache_beam.pvalue import AsList, AsDict
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -29,11 +30,13 @@ from apache_beam.options.pipeline_options import PipelineOptions
 import datetime
 from datetime import date
 
+from mock import patch
+
 from recidiviz.calculator.pipeline.program import pipeline, calculator
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
-    ProgramReferralEvent, ProgramEvent
+    ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType, json_serializable_metric_key
@@ -50,6 +53,7 @@ from recidiviz.persistence.entity.state.entities import \
 
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_INCLUSIONS_DICT = {
@@ -62,11 +66,13 @@ ALL_INCLUSIONS_DICT = {
 
 class TestProgramPipeline(unittest.TestCase):
     """Tests the entire program pipeline."""
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-    def testProgramPipeline(self):
-        """Tests the program pipeline."""
-        fake_person_id = 12345
-
+    @staticmethod
+    def build_data_dict(fake_person_id: int,
+                        fake_supervision_period_id: int):
+        """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
@@ -112,7 +118,7 @@ class TestProgramPipeline(unittest.TestCase):
         )
 
         supervision_period = schema.StateSupervisionPeriod(
-            supervision_period_id=1111,
+            supervision_period_id=fake_supervision_period_id,
             state_code='CA',
             county_code='124',
             start_date=date(2015, 3, 14),
@@ -152,60 +158,94 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateProgramAssignment.__tablename__:
                 program_assignment_data,
             schema.StateAssessment.__tablename__:
-                assessment_data
+                assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
         }
 
+        return data_dict
+
+    def testProgramPipeline(self):
+        """Tests the program pipeline."""
+        fake_person_id = 12345
+        fake_supervision_period_id = 12345
+
+        data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
+
+        dataset = 'recidiviz-123.state'
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset, fake_supervision_period_id)
+
+    def testProgramPipelineWithFilterSet(self):
+        """Tests the program pipeline."""
+        fake_person_id = 12345
+        fake_supervision_period_id = 12345
+
+        data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
+
+        dataset = 'recidiviz-123.state'
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset, fake_supervision_period_id, unifying_id_field_filter_set={fake_person_id})
+
+    def run_test_pipeline(self,
+                          dataset: str,
+                          fake_supervision_period_id: int,
+                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+        """Runs a test version of the program pipeline."""
         test_pipeline = TestPipeline()
 
         # Get StatePersons
         persons = (test_pipeline
-                   | 'Load Persons' >>
+                   | 'Load Persons' >>  # type: ignore
                    extractor_utils.BuildRootEntity(
-                       dataset=None,
-                       data_dict=data_dict,
+                       dataset=dataset,
                        root_entity_class=entities.StatePerson,
                        unifying_id_field=entities.StatePerson.get_class_id_name(),
                        build_related_entities=True))
 
         # Get StateProgramAssignments
         program_assignments = (test_pipeline
-                               | 'Load Program Assignments' >>
+                               | 'Load Program Assignments' >>  # type: ignore
                                extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
+                                   dataset=dataset,
                                    root_entity_class=entities.
                                    StateProgramAssignment,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=True))
+                                   build_related_entities=True,
+                                   unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateAssessments
         assessments = (test_pipeline
-                       | 'Load Assessments' >>
+                       | 'Load Assessments' >>  # type: ignore
                        extractor_utils.BuildRootEntity(
-                           dataset=None,
-                           data_dict=data_dict,
+                           dataset=dataset,
                            root_entity_class=entities.
                            StateAssessment,
                            unifying_id_field=entities.StatePerson.get_class_id_name(),
-                           build_related_entities=False))
+                           build_related_entities=False,
+                           unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateSupervisionPeriods
         supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
+                               | 'Load SupervisionPeriods' >>  # type: ignore
                                extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
+                                   dataset=dataset,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
+                                   build_related_entities=False,
+                                   unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
+            'supervision_period_id': fake_supervision_period_id
         }
 
         supervision_period_to_agent_associations = (
@@ -251,7 +291,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         # Get program metrics
         program_metrics = (person_program_events
-                           | 'Get Program Metrics' >>
+                           | 'Get Program Metrics' >>  # type: ignore
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
                                inclusions=ALL_INCLUSIONS_DICT,
@@ -360,115 +400,17 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateProgramAssignment.__tablename__:
                 program_assignment_data,
             schema.StateAssessment.__tablename__:
-                assessment_data
+                assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
 
-        # Get StatePersons
-        persons = (test_pipeline
-                   | 'Load Persons' >>
-                   extractor_utils.BuildRootEntity(
-                       dataset=None,
-                       data_dict=data_dict,
-                       root_entity_class=entities.StatePerson,
-                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                       build_related_entities=True))
-
-        # Get StateProgramAssignments
-        program_assignments = (test_pipeline
-                               | 'Load Program Assignments' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_entity_class=entities.
-                                   StateProgramAssignment,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=True))
-
-        # Get StateAssessments
-        assessments = (test_pipeline
-                       | 'Load Assessments' >>
-                       extractor_utils.BuildRootEntity(
-                           dataset=None,
-                           data_dict=data_dict,
-                           root_entity_class=entities.
-                           StateAssessment,
-                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                           build_related_entities=False))
-
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_period_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
-        # Group each StatePerson with their other entities
-        persons_entities = (
-            {'person': persons,
-             'program_assignments': program_assignments,
-             'assessments': assessments,
-             'supervision_periods': supervision_periods
-             }
-            | 'Group StatePerson to StateProgramAssignments and' >>
-            beam.CoGroupByKey()
-        )
-
-        # Identify ProgramEvents from the StatePerson's
-        # StateProgramAssignments
-        person_program_events = (
-            persons_entities
-            | beam.ParDo(pipeline.ClassifyProgramAssignments(),
-                         AsDict(
-                             supervision_period_to_agent_associations_as_kv
-                         ))
-        )
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        # Get program metrics
-        program_metrics = (person_program_events
-                           | 'Get Program Metrics' >>
-                           pipeline.GetProgramMetrics(
-                               pipeline_options=all_pipeline_options,
-                               inclusions=ALL_INCLUSIONS_DICT,
-                               calculation_month_limit=-1))
-
-        assert_that(program_metrics,
-                    AssertMatchers.validate_pipeline_test())
-
-        test_pipeline.run()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset, supervision_period.supervision_period_id)
 
 
 class TestClassifyProgramAssignments(unittest.TestCase):
@@ -948,14 +890,13 @@ class AssertMatchers:
     @staticmethod
     def validate_pipeline_test():
 
-        def _validate_pipeline_test(output):
+        def _validate_pipeline_test(output, allow_empty=False):
+            if not allow_empty and not output:
+                raise BeamAssertException('Output metrics unexpectedly empty')
 
             for metric in output:
                 if not isinstance(metric, ProgramMetric):
-                    raise BeamAssertException(
-                        'Failed assert. Output is not'
-                        'of type'
-                        ' SupervisionMetric.')
+                    raise BeamAssertException('Failed assert. Output is not of type ProgramMetric.')
 
         return _validate_pipeline_test
 

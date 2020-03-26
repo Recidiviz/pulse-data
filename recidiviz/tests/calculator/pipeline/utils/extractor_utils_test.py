@@ -45,6 +45,7 @@ from recidiviz.persistence.entity.state.entities import Gender, \
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema_entity_converter.state. \
     schema_entity_converter import StateSchemaToEntityConverter
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory, FakeReadFromBigQuery
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list, \
@@ -53,6 +54,9 @@ from recidiviz.tests.calculator.calculator_test_utils import \
 
 class TestBuildRootEntity(unittest.TestCase):
     """"Tests the BuildRootEntity PTransform."""
+
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
     def testBuildRootEntity(self):
         """Tests building a root StatePerson with no related attributes."""
@@ -69,21 +73,23 @@ class TestBuildRootEntity(unittest.TestCase):
         data_dict = {schema.StatePerson.__tablename__: fake_person_data}
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
+        dataset = 'recidiviz-123.state'
 
-        test_pipeline = TestPipeline()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  |
-                  extractor_utils.BuildRootEntity(
-                      dataset=None,
-                      data_dict=data_dict,
-                      root_entity_class=entities.StatePerson,
-                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                      build_related_entities=False))
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(
+                          dataset=dataset,
+                          root_entity_class=entities.StatePerson,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          build_related_entities=False))
 
-        assert_that(output, equal_to([(12345, fake_person_entity)]))
+            assert_that(output, equal_to([(12345, fake_person_entity)]))
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testBuildRootEntity_HydratedRelationshipProperties(self):
         """Tests the extraction of a valid StatePerson entity with cross-entity
@@ -169,7 +175,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      sentence_group_data,
                      schema.StateAssessment.__tablename__:
                      assessment_data,
-                     schema.StatePersonRace.__tablename__: races_data}
+                     schema.StatePersonRace.__tablename__: races_data,
+                     schema.StateProgramAssignment.__tablename__: []}
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
 
@@ -190,21 +197,23 @@ class TestBuildRootEntity(unittest.TestCase):
 
         fake_person_entity.assessments = \
             StateSchemaToEntityConverter().convert_all([assessment_1])
+        dataset = 'recidiviz-123.state'
 
-        test_pipeline = TestPipeline()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  |
-                  extractor_utils.BuildRootEntity(
-                      dataset=None,
-                      data_dict=data_dict,
-                      root_entity_class=entities.StatePerson,
-                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                      build_related_entities=True))
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(
+                          dataset=dataset,
+                          root_entity_class=entities.StatePerson,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          build_related_entities=True))
 
-        assert_that(output, equal_to([(12345, fake_person_entity)]))
+            assert_that(output, equal_to([(12345, fake_person_entity)]))
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testBuildRootEntity_DoNotHydrateRelationshipProperties(self):
         """Tests the extraction of a valid StatePerson entity with cross-entity
@@ -294,21 +303,22 @@ class TestBuildRootEntity(unittest.TestCase):
                      schema.StatePersonRace.__tablename__: races_data}
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
+        dataset = 'recidiviz-123.state'
 
-        test_pipeline = TestPipeline()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  |
-                  extractor_utils.BuildRootEntity(
-                      dataset=None,
-                      data_dict=data_dict,
-                      root_entity_class=entities.StatePerson,
-                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                      build_related_entities=False))
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(dataset=dataset,
+                                                      root_entity_class=entities.StatePerson,
+                                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                                      build_related_entities=False))
 
-        assert_that(output, equal_to([(12345, fake_person_entity)]))
+            assert_that(output, equal_to([(12345, fake_person_entity)]))
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testBuildRootEntity_NoDataSource(self):
         """Tests the BuildRootEntity PTransform when there is no valid data
@@ -320,12 +330,10 @@ class TestBuildRootEntity(unittest.TestCase):
 
             _ = (test_pipeline
                  |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict={},
-                     root_entity_class=entities.StateIncarcerationSentence,
-                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                     build_related_entities=True))
+                 extractor_utils.BuildRootEntity(dataset=None,
+                                                 root_entity_class=entities.StateIncarcerationSentence,
+                                                 unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                                 build_related_entities=True))
 
             test_pipeline.run()
 
@@ -349,19 +357,19 @@ class TestBuildRootEntity(unittest.TestCase):
                      supervision_violation_data}
 
         with pytest.raises(ValueError) as e:
+            dataset = 'recidiviz-123.state'
 
-            test_pipeline = TestPipeline()
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_entity_class=None,
-                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                     build_related_entities=True))
+                _ = (test_pipeline
+                     |
+                     extractor_utils.BuildRootEntity(dataset=dataset, root_entity_class=None,
+                                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                                     build_related_entities=True))
 
-            test_pipeline.run()
+                test_pipeline.run()
 
         self.assertEqual(str(e.value), 'BuildRootEntity: Expecting root_entity_class to be not None.')
 
@@ -382,19 +390,20 @@ class TestBuildRootEntity(unittest.TestCase):
                      supervision_violation_data}
 
         with pytest.raises(ValueError) as e:
+            dataset = 'recidiviz-123.state'
 
-            test_pipeline = TestPipeline()
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field='XX',
-                     build_related_entities=True))
+                _ = (test_pipeline
+                     |
+                     extractor_utils.BuildRootEntity(dataset=dataset,
+                                                     root_entity_class=entities.StateSupervisionViolation,
+                                                     unifying_id_field='XX',
+                                                     build_related_entities=True))
 
-            test_pipeline.run()
+                test_pipeline.run()
 
         self.assertEqual(str(e.value),
                          'Root entity class [StateSupervisionViolation] does not have unifying id field [XX]')
@@ -415,20 +424,20 @@ class TestBuildRootEntity(unittest.TestCase):
         data_dict = {supervision_violation.__tablename__:
                      supervision_violation_data}
 
+        dataset = 'recidiviz-123.state'
         with pytest.raises(ValueError) as e:
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            test_pipeline = TestPipeline()
+                _ = (test_pipeline
+                     |
+                     extractor_utils.BuildRootEntity(dataset=dataset,
+                                                     root_entity_class=entities.StateSupervisionViolation,
+                                                     unifying_id_field=None,
+                                                     build_related_entities=True))
 
-            _ = (test_pipeline
-                 |
-                 extractor_utils.BuildRootEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     root_entity_class=entities.StateSupervisionViolation,
-                     unifying_id_field=None,
-                     build_related_entities=True))
-
-            test_pipeline.run()
+                test_pipeline.run()
 
         assert "No valid unifying_id_field passed to the pipeline." \
                in str(e.value)
@@ -470,35 +479,38 @@ class TestBuildRootEntity(unittest.TestCase):
                      supervision_violation_response_data}
 
         with patch('logging.Logger.warning') as mock:
-            test_pipeline = TestPipeline()
+            dataset = 'recidiviz-123.state'
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            output = (test_pipeline
-                      |
-                      extractor_utils.BuildRootEntity(
-                          dataset=None,
-                          data_dict=data_dict,
-                          root_entity_class=entities.StateSupervisionViolation,
-                          unifying_id_field='supervision_period_id',
-                          build_related_entities=True))
+                output = (test_pipeline
+                          |
+                          extractor_utils.BuildRootEntity(dataset=dataset,
+                                                          root_entity_class=entities.StateSupervisionViolation,
+                                                          unifying_id_field='supervision_period_id',
+                                                          build_related_entities=True))
 
-            output_violation_entity = \
-                StateSchemaToEntityConverter().convert(supervision_violation)
+                output_violation_entity = \
+                    StateSchemaToEntityConverter().convert(supervision_violation)
 
-            output_violation_entity.supervision_violation_responses = []
-            output_violation_entity.supervision_violation_types = []
-            output_violation_entity.supervision_violated_conditions = []
+                output_violation_entity.supervision_violation_responses = []
+                output_violation_entity.supervision_violation_types = []
+                output_violation_entity.supervision_violated_conditions = []
 
-            assert_that(output, equal_to([
-                (supervision_violation.supervision_period_id,
-                 output_violation_entity)]))
+                assert_that(output, equal_to([
+                    (supervision_violation.supervision_period_id,
+                     output_violation_entity)]))
 
-            test_pipeline.run()
+                test_pipeline.run()
 
             mock.assert_not_called()
 
 
 class TestExtractEntity(unittest.TestCase):
     """Tests the ExtractEntity PTransform."""
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
@@ -514,24 +526,22 @@ class TestExtractEntity(unittest.TestCase):
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StatePerson')
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output = (test_pipeline
-                  | "Extract StatePerson Entity" >>
-                  extractor_utils._ExtractEntity(
-                      dataset=None,
-                      data_dict=data_dict,
-                      entity_class=entity_class,
-                      unifying_id_field=
-                      entity_class.get_class_id_name(),
-                      parent_id_field=None,
-                      unifying_id_field_filter_set=None)
-                  )
+            output = (test_pipeline
+                      | "Extract StatePerson Entity" >>
+                      extractor_utils._ExtractEntity(dataset=dataset, entity_class=entity_class,
+                                                     unifying_id_field=entity_class.get_class_id_name(),
+                                                     parent_id_field=None, unifying_id_field_filter_set=None)
+                      )
 
-        assert_that(output, equal_to([
-            (output_person_entity.get_id(), output_person_entity)]))
+            assert_that(output, equal_to([
+                (output_person_entity.get_id(), output_person_entity)]))
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
@@ -545,23 +555,24 @@ class TestExtractEntity(unittest.TestCase):
             entities, 'StatePerson')
 
         with patch('logging.Logger.warning') as mock:
-            test_pipeline = TestPipeline()
+            dataset = 'recidiviz-123.state'
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            output = (test_pipeline
-                      | "Extract StatePerson Entity" >>
-                      extractor_utils._ExtractEntity(
-                          dataset=None,
-                          data_dict=data_dict,
-                          entity_class=entity_class,
-                          unifying_id_field='XX',
-                          parent_id_field='person_id',
-                          unifying_id_field_filter_set=None)
-                      )
+                output = (test_pipeline
+                          | "Extract StatePerson Entity" >>
+                          extractor_utils._ExtractEntity(dataset=dataset,
+                                                         entity_class=entity_class,
+                                                         unifying_id_field='XX',
+                                                         parent_id_field='person_id',
+                                                         unifying_id_field_filter_set=None)
+                          )
 
-            self.assertIsInstance(output, list)
-            self.assertEqual(output, [])
+                self.assertIsInstance(output, list)
+                self.assertEqual(output, [])
 
-            test_pipeline.run()
+                test_pipeline.run()
 
             mock.assert_not_called()
 
@@ -576,20 +587,21 @@ class TestExtractEntity(unittest.TestCase):
                      incarceration_period_data}
 
         with patch('logging.Logger.warning') as mock:
-            test_pipeline = TestPipeline()
+            dataset = 'recidiviz-123.state'
+            with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                       self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+                test_pipeline = TestPipeline()
 
-            _ = (test_pipeline
-                 | "Extract StatePerson Entity" >>
-                 extractor_utils._ExtractEntity(
-                     dataset=None,
-                     data_dict=data_dict,
-                     entity_class=entities.StateIncarcerationPeriod,
-                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                     parent_id_field='AAA',
-                     unifying_id_field_filter_set=None)
-                 )
+                _ = (test_pipeline
+                     | "Extract StatePerson Entity" >>
+                     extractor_utils._ExtractEntity(dataset=dataset,
+                                                    entity_class=entities.StateIncarcerationPeriod,
+                                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                                    parent_id_field='AAA',
+                                                    unifying_id_field_filter_set=None)
+                     )
 
-            test_pipeline.run()
+                test_pipeline.run()
 
             mock.assert_called_with("Invalid inner_connection_id_field: %s."
                                     "Dropping this entity.",
@@ -598,6 +610,8 @@ class TestExtractEntity(unittest.TestCase):
 
 class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     """Tests the ExtractRelationshipPropertyEntities PTransform."""
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
     def testExtractRelationshipPropertyEntities_With1ToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -616,35 +630,43 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 normalized_database_base_dict_list([supervision_period]),
             assessment.__tablename__:
                 normalized_database_base_dict_list([assessment]),
+            schema.StateSupervisionViolation.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateSupervisionCaseTypeEntry.__tablename__: [],
+            schema.state_supervision_period_supervision_violation_association_table.name: [],
+            schema.state_supervision_period_program_assignment_association_table.name: [],
         }
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        test_pipeline = TestPipeline()
+            properties_dict = (test_pipeline
+                               | 'Extract relationship properties for the '
+                                 'StateSupervisionPeriod' >>
+                               extractor_utils._ExtractRelationshipPropertyEntities(
+                                   dataset=dataset,
+                                   parent_schema_class=schema.StateSupervisionPeriod,
+                                   parent_id_field='supervision_period_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   unifying_id_field_filter_set=None))
 
-        properties_dict = (test_pipeline
-                           | 'Extract relationship properties for the '
-                             'StateSupervisionPeriod' >>
-                           extractor_utils._ExtractRelationshipPropertyEntities(
-                               dataset=None, data_dict=data_dict,
-                               parent_schema_class=schema.StateSupervisionPeriod,
-                               parent_id_field='supervision_period_id',
-                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                               unifying_id_field_filter_set=None
-                           ))
+            # Assert it has the property fields we expect
+            self.assertEqual(properties_dict.keys(),
+                             {'supervising_officer', 'supervision_violations', 'supervision_violation_entries',
+                              'assessments', 'program_assignments', 'case_type_entries'})
 
-        # Assert it has the property fields we expect
-        assert len(properties_dict.keys()) == 1
+            output_assessments = properties_dict.get('assessments')
 
-        output_assessments = properties_dict.get('assessments')
+            assert_that(
+                output_assessments, ExtractAssertMatchers.
+                validate_extract_relationship_property_entities(
+                    outer_connection_id=supervision_period.person_id,
+                    inner_connection_id=supervision_period.supervision_period_id,
+                    class_type=entities.StateAssessment),
+                label="Validate assessments output")
 
-        assert_that(
-            output_assessments, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=supervision_period.person_id,
-                inner_connection_id=supervision_period.supervision_period_id,
-                class_type=entities.StateAssessment),
-            label="Validate assessments output")
-
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_WithManyToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -669,41 +691,43 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 normalized_database_base_dict_list([supervision_period]),
             incarceration_sentence.__tablename__:
                 normalized_database_base_dict_list([incarceration_sentence]),
-            schema.
-            state_incarceration_sentence_supervision_period_association_table.
-            name:
-                incarceration_sentence_supervision_period_association_table
+            schema.state_incarceration_sentence_supervision_period_association_table.name:
+                incarceration_sentence_supervision_period_association_table,
+            schema.StateCharge.__tablename__: [],
+            schema.StateIncarcerationPeriod.__tablename__: [],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
+            schema.state_charge_incarceration_sentence_association_table.name: [],
         }
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        test_pipeline = TestPipeline()
+            properties_dict = (test_pipeline
+                               | 'Extract relationship properties for the '
+                                 'StateIncarcerationSentence' >>
+                               extractor_utils._ExtractRelationshipPropertyEntities(
+                                   dataset=dataset,
+                                   parent_schema_class=schema.StateIncarcerationSentence,
+                                   parent_id_field='incarceration_sentence_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   unifying_id_field_filter_set=None))
 
-        properties_dict = (test_pipeline
-                           | 'Extract relationship properties for the '
-                             'StateIncarcerationSentence' >>
-                           extractor_utils._ExtractRelationshipPropertyEntities(
-                               dataset=None, data_dict=data_dict,
-                               parent_schema_class=
-                               schema.StateIncarcerationSentence,
-                               parent_id_field='incarceration_sentence_id',
-                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                               unifying_id_field_filter_set=None
-                           ))
+            # Assert it has the property fields we expect
+            self.assertEqual(properties_dict.keys(), {'charges', 'incarceration_periods', 'supervision_periods'})
 
-        # Assert it has the property fields we expect
-        assert len(properties_dict.keys()) == 1
+            output_supervision_periods = properties_dict.get('supervision_periods')
 
-        output_supervision_periods = properties_dict.get('supervision_periods')
+            assert_that(
+                output_supervision_periods, ExtractAssertMatchers.
+                validate_extract_relationship_property_entities(
+                    outer_connection_id=incarceration_sentence.person_id,
+                    inner_connection_id=
+                    incarceration_sentence.incarceration_sentence_id,
+                    class_type=entities.StateSupervisionPeriod),
+                label="Validate supervision_period output")
 
-        assert_that(
-            output_supervision_periods, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=incarceration_sentence.person_id,
-                inner_connection_id=
-                incarceration_sentence.incarceration_sentence_id,
-                class_type=entities.StateSupervisionPeriod),
-            label="Validate supervision_period output")
-
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_With1To1(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -718,36 +742,38 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
         data_dict = {
             charge.__tablename__: normalized_database_base_dict_list([charge]),
-            court_case.__tablename__: normalized_database_base_dict_list([court_case])
+            court_case.__tablename__: normalized_database_base_dict_list([court_case]),
+            schema.StateBond.__tablename__: [],
         }
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        test_pipeline = TestPipeline()
+            properties_dict = (test_pipeline
+                               | 'Extract relationship properties for the '
+                                 'IncarcerationIncident' >>
+                               extractor_utils._ExtractRelationshipPropertyEntities(
+                                   dataset=dataset,
+                                   parent_schema_class=schema.StateCharge,
+                                   parent_id_field=charge.get_class_id_name(),
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   unifying_id_field_filter_set=None))
 
-        properties_dict = (test_pipeline
-                           | 'Extract relationship properties for the '
-                             'IncarcerationIncident' >>
-                           extractor_utils._ExtractRelationshipPropertyEntities(
-                               dataset=None, data_dict=data_dict,
-                               parent_schema_class=schema.StateCharge,
-                               parent_id_field=charge.get_class_id_name(),
-                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                               unifying_id_field_filter_set=None
-                           ))
+            # Assert it has the property fields we expect
+            self.assertEqual(properties_dict.keys(), {'court_case', 'bond'})
 
-        # Assert it has the property fields we expect
-        assert len(properties_dict.keys()) == 1
+            output_court_case = properties_dict.get('court_case')
 
-        output_court_case = properties_dict.get('court_case')
+            assert_that(
+                output_court_case, ExtractAssertMatchers.
+                validate_extract_relationship_property_entities(
+                    outer_connection_id=charge.person_id,
+                    inner_connection_id=charge.charge_id,
+                    class_type=entities.StateCourtCase),
+                label="Validate state_agent output")
 
-        assert_that(
-            output_court_case, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=charge.person_id,
-                inner_connection_id=charge.charge_id,
-                class_type=entities.StateCourtCase),
-            label="Validate state_agent output")
-
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_With1To1NoUnifyingId(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -770,30 +796,33 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 normalized_database_base_dict_list(
                     [incarceration_incident]),
             responding_officer.__tablename__:
-                normalized_database_base_dict_list([responding_officer])
+                normalized_database_base_dict_list([responding_officer]),
+            schema.StateIncarcerationIncidentOutcome.__tablename__: [],
         }
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
 
-        test_pipeline = TestPipeline()
+            test_pipeline = TestPipeline()
 
-        properties_dict = (test_pipeline
-                           | 'Extract relationship properties for the '
-                             'IncarcerationIncident' >>
-                           extractor_utils._ExtractRelationshipPropertyEntities(
-                               dataset=None, data_dict=data_dict,
-                               parent_schema_class=schema.StateIncarcerationIncident,
-                               parent_id_field='incarceration_incident_id',
-                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                               unifying_id_field_filter_set=None
-                           ))
+            properties_dict = (test_pipeline
+                               | 'Extract relationship properties for the '
+                                 'IncarcerationIncident' >>
+                               extractor_utils._ExtractRelationshipPropertyEntities(
+                                   dataset=dataset,
+                                   parent_schema_class=schema.StateIncarcerationIncident,
+                                   parent_id_field='incarceration_incident_id',
+                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                   unifying_id_field_filter_set=None))
 
-        # Assert it has the property fields we expect
-        assert len(properties_dict.keys()) == 1
+            # Assert it has the property fields we expect
+            self.assertEqual(properties_dict.keys(), {'responding_officer', 'incarceration_incident_outcomes'})
 
-        output_responding_officer = properties_dict.get('responding_officer')
+            output_responding_officer = properties_dict.get('responding_officer')
 
-        self.assertEqual(output_responding_officer, [])
+            self.assertEqual(output_responding_officer, [])
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_Optional1to1(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -823,37 +852,44 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                                     incarceration_period_2]),
             source_supervision_violation_response.__tablename__:
                 [normalized_database_base_dict(
-                    source_supervision_violation_response)]
+                    source_supervision_violation_response)],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateAssessment.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output_properties_dict = (test_pipeline
-                                  | 'Extract relationship properties for the '
-                                    'StateIncarcerationPeriod' >>
-                                  extractor_utils.
-                                  _ExtractRelationshipPropertyEntities(
-                                      dataset=None, data_dict=data_dict,
-                                      parent_schema_class=
-                                      schema.StateIncarcerationPeriod,
-                                      parent_id_field='incarceration_period_id',
-                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                      unifying_id_field_filter_set=None
-                                  ))
+            output_properties_dict = (test_pipeline
+                                      | 'Extract relationship properties for the '
+                                        'StateIncarcerationPeriod' >>
+                                      extractor_utils.
+                                      _ExtractRelationshipPropertyEntities(
+                                          dataset=dataset,
+                                          parent_schema_class=schema.StateIncarcerationPeriod,
+                                          parent_id_field='incarceration_period_id',
+                                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                          unifying_id_field_filter_set=None
+                                      ))
 
-        output_supervision_violation_response = \
-            output_properties_dict.get('source_supervision_violation_response')
+            output_supervision_violation_response = \
+                output_properties_dict.get('source_supervision_violation_response')
 
-        assert_that(
-            output_supervision_violation_response, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=incarceration_period_1.person_id,
-                inner_connection_id=
-                incarceration_period_1.incarceration_period_id,
-                class_type=entities.StateSupervisionViolationResponse),
-            label="Validate incarceration_period relationship output")
+            assert_that(
+                output_supervision_violation_response, ExtractAssertMatchers.
+                validate_extract_relationship_property_entities(
+                    outer_connection_id=incarceration_period_1.person_id,
+                    inner_connection_id=
+                    incarceration_period_1.incarceration_period_id,
+                    class_type=entities.StateSupervisionViolationResponse),
+                label="Validate incarceration_period relationship output")
 
-        test_pipeline.run()
+            test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_OrphanedChild(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
@@ -887,41 +923,51 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             source_supervision_violation_response_1.__tablename__:
                 normalized_database_base_dict_list(
                     [source_supervision_violation_response_1,
-                     source_supervision_violation_response_2])
+                     source_supervision_violation_response_2]),
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateAssessment.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        output_properties_dict = (test_pipeline
-                                  | 'Extract relationship properties for the '
-                                    'StateIncarcerationPeriod' >>
-                                  extractor_utils.
-                                  _ExtractRelationshipPropertyEntities(
-                                      dataset=None, data_dict=data_dict,
-                                      parent_schema_class=
-                                      schema.StateIncarcerationPeriod,
-                                      parent_id_field='incarceration_period_id',
-                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                      unifying_id_field_filter_set=None
-                                  ))
+            output_properties_dict = (test_pipeline
+                                      | 'Extract relationship properties for the '
+                                        'StateIncarcerationPeriod' >>
+                                      extractor_utils.
+                                      _ExtractRelationshipPropertyEntities(
+                                          dataset=dataset,
+                                          parent_schema_class=
+                                          schema.StateIncarcerationPeriod,
+                                          parent_id_field='incarceration_period_id',
+                                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                          unifying_id_field_filter_set=None
+                                      ))
 
-        output_supervision_violation_response = \
-            output_properties_dict.get('source_supervision_violation_response')
+            output_supervision_violation_response = \
+                output_properties_dict.get('source_supervision_violation_response')
 
-        assert_that(
-            output_supervision_violation_response, ExtractAssertMatchers.
-            validate_extract_relationship_property_entities(
-                outer_connection_id=incarceration_period_1.person_id,
-                inner_connection_id=
-                incarceration_period_1.incarceration_period_id,
-                class_type=entities.StateSupervisionViolationResponse),
-            label="Validate incarceration_period relationship output")
+            assert_that(
+                output_supervision_violation_response, ExtractAssertMatchers.
+                validate_extract_relationship_property_entities(
+                    outer_connection_id=incarceration_period_1.person_id,
+                    inner_connection_id=
+                    incarceration_period_1.incarceration_period_id,
+                    class_type=entities.StateSupervisionViolationResponse),
+                label="Validate incarceration_period relationship output")
 
-        test_pipeline.run()
+            test_pipeline.run()
 
 
 class TestExtractEntityWithAssociationTable(unittest.TestCase):
     """Tests the ExtractEntityWithAssociationTable DoFn."""
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
     def testExtractEntityWithAssociationTable(self):
         """Tests extracting an entity that requires an association table for
@@ -952,28 +998,32 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                 charge_sentence_association_table
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
 
-        output = (test_pipeline
-                  | 'Extract association table entities' >>
-                  extractor_utils._ExtractEntityWithAssociationTable(
-                      dataset=None, data_dict=data_dict,
-                      entity_class=entities.StateCharge,
-                      parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
-                      entity_id_field=entities.StateCharge.get_class_id_name(),
-                      association_table=association_table_name,
-                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                      unifying_id_field_filter_set=None
-                  ))
+            test_pipeline = TestPipeline()
 
-        assert_that(output, ExtractAssertMatchers.
-                    validate_extract_relationship_property_entities(
-                        outer_connection_id=incarceration_sentence.person_id,
-                        inner_connection_id=incarceration_sentence.incarceration_sentence_id,
-                        class_type=entities.StateCharge),
-                    label="Validate StateCharge output")
+            output = (test_pipeline
+                      | 'Extract association table entities' >>
+                      extractor_utils._ExtractEntityWithAssociationTable(
+                          dataset=dataset,
+                          entity_class=entities.StateCharge,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
+                          association_table=association_table_name,
+                          association_table_parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
+                          association_table_entity_id_field=entities.StateCharge.get_class_id_name(),
+                          unifying_id_field_filter_set=None))
 
-        test_pipeline.run()
+            assert_that(output, ExtractAssertMatchers.
+                        validate_extract_relationship_property_entities(
+                            outer_connection_id=incarceration_sentence.person_id,
+                            inner_connection_id=incarceration_sentence.incarceration_sentence_id,
+                            class_type=entities.StateCharge),
+                        label="Validate StateCharge output")
+
+            test_pipeline.run()
 
     def testExtractEntityWithAssociationTableNoUnifyingId(self):
         """Tests extracting an entity that requires an association table for
@@ -1010,24 +1060,26 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
             association_table_name:
                 decision_agent_association_table
         }
+        dataset = 'recidiviz-123.state'
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
 
-        test_pipeline = TestPipeline()
+            output = (test_pipeline
+                      | 'Extract association table entities' >>
+                      extractor_utils._ExtractEntityWithAssociationTable(
+                          dataset=dataset,
+                          entity_class=entities.StateAgent,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          parent_id_field=entities.StateParoleDecision.get_class_id_name(),
+                          association_table=association_table_name,
+                          association_table_parent_id_field=entities.StateParoleDecision.get_class_id_name(),
+                          association_table_entity_id_field=entities.StateAgent.get_class_id_name(),
+                          unifying_id_field_filter_set=None))
 
-        output = (test_pipeline
-                  | 'Extract association table entities' >>
-                  extractor_utils._ExtractEntityWithAssociationTable(
-                      dataset=None, data_dict=data_dict,
-                      entity_class=entities.StateAgent,
-                      parent_id_field=entities.StateParoleDecision.get_class_id_name(),
-                      entity_id_field=entities.StateAgent.get_class_id_name(),
-                      association_table=association_table_name,
-                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                      unifying_id_field_filter_set=None
-                  ))
+            self.assertEqual(output, [])
 
-        self.assertEqual(output, [])
-
-        test_pipeline.run()
+            test_pipeline.run()
 
 
 class TestHydrateRootEntity(unittest.TestCase):
@@ -1045,9 +1097,6 @@ class TestHydrateRootEntity(unittest.TestCase):
         supervision_violation = remove_relationship_properties(
             supervision_violation)
 
-        data_dict = {supervision_violation.__tablename__:
-                     supervision_violation_data}
-
         output_violation_entity = \
             StateSchemaToEntityConverter().convert(supervision_violation)
 
@@ -1059,11 +1108,8 @@ class TestHydrateRootEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read {supervision_violation.__tablename__}"
-            f" from data_dict" >>
-            extractor_utils._CreatePCollectionFromDict(
-                data_dict=data_dict,
-                field=supervision_violation.__tablename__))
+            | f"Read supervision violation data from dict" >>
+            FakeReadFromBigQuery(table_values=supervision_violation_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
                           'unifying_id_field': entity_class.get_class_id_name()}
@@ -1094,9 +1140,6 @@ class TestHydrateEntity(unittest.TestCase):
         charge_data = \
             [normalized_database_base_dict(charge)]
 
-        data_dict = {charge.__tablename__:
-                     charge_data}
-
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StateCharge')
 
@@ -1108,11 +1151,8 @@ class TestHydrateEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read {charge.__tablename__}"
-            f" from data_dict" >>
-            extractor_utils._CreatePCollectionFromDict(
-                data_dict=data_dict,
-                field=charge.__tablename__))
+            | f"Read charge data from dict" >>
+            FakeReadFromBigQuery(table_values=charge_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
                           'outer_connection_id_field': 'person_id',
@@ -1140,9 +1180,6 @@ class TestHydrateEntity(unittest.TestCase):
         charge_data = \
             [normalized_database_base_dict(charge)]
 
-        data_dict = {charge.__tablename__:
-                     charge_data}
-
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StateCharge')
 
@@ -1154,11 +1191,8 @@ class TestHydrateEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read {charge.__tablename__}"
-            f" from data_dict" >>
-            extractor_utils._CreatePCollectionFromDict(
-                data_dict=data_dict,
-                field=charge.__tablename__))
+            | f"Read charge data from dict" >>
+            FakeReadFromBigQuery(table_values=charge_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
                           'outer_connection_id_field':
@@ -1187,9 +1221,6 @@ class TestHydrateEntity(unittest.TestCase):
         charge_data = \
             [normalized_database_base_dict(charge)]
 
-        data_dict = {charge.__tablename__:
-                     charge_data}
-
         entity_class = entity_utils.get_entity_class_in_module_with_name(
             entities, 'StateCharge')
 
@@ -1199,11 +1230,8 @@ class TestHydrateEntity(unittest.TestCase):
             # Read entities from data_dict
             entities_raw = (
                 test_pipeline
-                | f"Read {charge.__tablename__}"
-                f" from data_dict" >>
-                extractor_utils._CreatePCollectionFromDict(
-                    data_dict=data_dict,
-                    field=charge.__tablename__))
+                | f"Read charge data from dict" >>
+                FakeReadFromBigQuery(table_values=charge_data))
 
             hydrate_kwargs = {'entity_class': entity_class,
                               'outer_connection_id_field': 'XX',
@@ -1441,58 +1469,6 @@ class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
-
-
-class TestCreatePCollectionFromDict(unittest.TestCase):
-
-    """Tests the CreatePCollectionFromDict PTransform."""
-
-    def testCreatePCollectionFromDict(self):
-        field = 'a'
-        data_dict = {field: ['b']}
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | "Create PCollection from data_dict" >>
-                  extractor_utils._CreatePCollectionFromDict(
-                      data_dict=data_dict, field=field))
-
-        assert_that(output, equal_to(['b']))
-
-        test_pipeline.run()
-
-    def testCreatePCollectionFromDict_EmptyDict(self):
-        data_dict = {}
-
-        with pytest.raises(ValueError) as e:
-
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | "Create PCollection from data_dict" >>
-                 extractor_utils._CreatePCollectionFromDict(data_dict=data_dict,
-                                                            field=''))
-
-            test_pipeline.run()
-
-        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
-
-    def testCreatePCollectionFromDict_InvalidField(self):
-        field = 'a'
-        data_dict = {'b': ['b']}
-
-        with pytest.raises(ValueError) as e:
-            test_pipeline = TestPipeline()
-
-            _ = (test_pipeline
-                 | "Create PCollection from data_dict" >>
-                 extractor_utils._CreatePCollectionFromDict(data_dict=data_dict,
-                                                            field=field))
-
-            test_pipeline.run()
-
-        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
 
 class ExtractAssertMatchers:

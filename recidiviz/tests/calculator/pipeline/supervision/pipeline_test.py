@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order
+# pylint: disable=wrong-import-order
 
 """Tests for supervision/pipeline.py"""
 import json
 import unittest
-from typing import Set
+from typing import Set, Optional
 
 import apache_beam as beam
 from apache_beam.pvalue import AsDict
@@ -31,6 +31,7 @@ import datetime
 from datetime import date
 
 from freezegun import freeze_time
+from mock import patch
 
 from recidiviz.calculator.pipeline.supervision import pipeline, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
@@ -72,12 +73,13 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import \
-    StateIncarcerationPeriod, Gender, Race, ResidencyStatus, Ethnicity, \
+    StateIncarcerationPeriod, Gender, ResidencyStatus, \
     StateSupervisionSentence, StateAssessment, StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionViolationTypeEntry, StateIncarcerationSentence
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
-    normalized_database_base_dict, normalized_database_base_dict_list
+    normalized_database_base_dict
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_INCLUSIONS_DICT = {
@@ -97,9 +99,13 @@ ALL_INCLUSIONS_DICT = {
 class TestSupervisionPipeline(unittest.TestCase):
     """Tests the entire supervision pipeline."""
 
-    def testSupervisionPipeline(self):
-        fake_person_id = 12345
+    def setUp(self) -> None:
+        self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
+    @staticmethod
+    def build_supervision_pipeline_data_dict(fake_person_id: int,
+                                             fake_supervision_period_id: int):
+        """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
@@ -149,7 +155,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id)
 
         supervision_period = schema.StateSupervisionPeriod(
-            supervision_period_id=1111,
+            supervision_period_id=fake_supervision_period_id,
             state_code='US_ND',
             county_code='124',
             start_date=date(2015, 3, 14),
@@ -180,7 +186,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence_supervision_period_association = [
             {
-                'supervision_period_id': 1111,
+                'supervision_period_id': fake_supervision_period_id,
                 'supervision_sentence_id': 1122,
             }
         ]
@@ -255,105 +261,168 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
-            schema.state_charge_supervision_sentence_association_table.name: [{}],
-            schema.state_charge_incarceration_sentence_association_table.name: [{}],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
+            schema.state_charge_supervision_sentence_association_table.name: [],
+            schema.state_charge_incarceration_sentence_association_table.name: [],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
+            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
-            schema.StateAssessment.__tablename__: assessment_data
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
+        return data_dict
+
+    def testSupervisionPipeline(self):
+        fake_person_id = 12345
+        fake_supervision_period_id = 1111
+        fake_svr_id = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id).supervision_violation_response_id
+
+        data_dict = self.build_supervision_pipeline_data_dict(fake_person_id, fake_supervision_period_id)
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   fake_supervision_period_id,
+                                   fake_svr_id,
+                                   expected_metric_types)
+
+    def testSupervisionPipelineWithFilterSet(self):
+        fake_person_id = 12345
+        fake_supervision_period_id = 1111
+        fake_svr_id = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id).supervision_violation_response_id
+
+        data_dict = self.build_supervision_pipeline_data_dict(fake_person_id, fake_supervision_period_id)
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   fake_supervision_period_id,
+                                   fake_svr_id,
+                                   expected_metric_types,
+                                   unifying_id_field_filter_set={fake_person_id})
+
+    @staticmethod
+    def run_test_pipeline(dataset: str,
+                          fake_supervision_period_id: int,
+                          fake_svr_id: int,
+                          expected_metric_types: Set[SupervisionMetricType],
+                          expected_violation_types: Set[ViolationType] = None,
+                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+        """Runs a test version of the supervision pipeline."""
         test_pipeline = TestPipeline()
 
         # Get StatePersons
         persons = (test_pipeline
-                   | 'Load Persons' >>
+                   | 'Load Persons' >>  # type: ignore
                    extractor_utils.BuildRootEntity(
-                       dataset=None,
-                       data_dict=data_dict,
+                       dataset=dataset,
                        root_entity_class=entities.StatePerson,
                        unifying_id_field=entities.StatePerson.get_class_id_name(),
-                       build_related_entities=True))
+                       build_related_entities=True,
+                       unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (test_pipeline
-                                 | 'Load IncarcerationPeriods' >>
+                                 | 'Load IncarcerationPeriods' >>  # type: ignore
                                  extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
+                                     dataset=dataset,
                                      root_entity_class=
                                      entities.StateIncarcerationPeriod,
                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
+                                     build_related_entities=True,
+                                     unifying_id_field_filter_set=unifying_id_field_filter_set
+                                 ))
 
         # Get StateSupervisionViolations
         supervision_violations = \
             (test_pipeline
-             | 'Load SupervisionViolations' >>
+             | 'Load SupervisionViolations' >>  # type: ignore
              extractor_utils.BuildRootEntity(
-                 dataset=None,
-                 data_dict=data_dict,
+                 dataset=dataset,
                  root_entity_class=entities.StateSupervisionViolation,
                  unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True
+                 build_related_entities=True,
+                 unifying_id_field_filter_set=unifying_id_field_filter_set
              ))
 
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (test_pipeline
-             | 'Load SupervisionViolationResponses' >>
+             | 'Load SupervisionViolationResponses' >>  # type: ignore
              extractor_utils.BuildRootEntity(
-                 dataset=None,
-                 data_dict=data_dict,
+                 dataset=dataset,
                  root_entity_class=entities.StateSupervisionViolationResponse,
                  unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True
+                 build_related_entities=True,
+                 unifying_id_field_filter_set=unifying_id_field_filter_set
              ))
 
         # Get StateSupervisionSentences
         supervision_sentences = (test_pipeline
-                                 | 'Load SupervisionSentences' >>
+                                 | 'Load SupervisionSentences' >>  # type: ignore
                                  extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
+                                     dataset=dataset,
                                      root_entity_class=
                                      entities.StateSupervisionSentence,
                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
+                                     build_related_entities=True,
+                                     unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateIncarcerationSentences
         incarceration_sentences = (test_pipeline
-                                   | 'Load IncarcerationSentences' >>
+                                   | 'Load IncarcerationSentences' >>  # type: ignore
                                    extractor_utils.BuildRootEntity(
-                                       dataset=None,
-                                       data_dict=data_dict,
+                                       dataset=dataset,
                                        root_entity_class=entities.StateIncarcerationSentence,
                                        unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True))
+                                       build_related_entities=True,
+                                       unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateSupervisionPeriods
         supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
+                               | 'Load SupervisionPeriods' >>  # type: ignore
                                extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
+                                   dataset=dataset,
                                    root_entity_class=
                                    entities.StateSupervisionPeriod,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
+                                   build_related_entities=False,
+                                   unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Get StateAssessments
         assessments = (test_pipeline
-                       | 'Load Assessments' >>
+                       | 'Load Assessments' >>  # type: ignore
                        extractor_utils.BuildRootEntity(
-                           dataset=None,
-                           data_dict=data_dict,
+                           dataset=dataset,
                            root_entity_class=
                            entities.StateAssessment,
                            unifying_id_field=entities.StatePerson.get_class_id_name(),
-                           build_related_entities=False))
+                           build_related_entities=False,
+                           unifying_id_field_filter_set=unifying_id_field_filter_set))
 
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
@@ -404,7 +473,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
-            'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
+            'supervision_violation_response_id': fake_svr_id
         }
 
         ssvr_to_agent_associations = (
@@ -420,7 +489,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
-            'supervision_period_id': supervision_period.supervision_period_id
+            'supervision_period_id': fake_supervision_period_id
         }
 
         supervision_period_to_agent_associations = (
@@ -456,15 +525,20 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         # Get supervision metrics
         supervision_metrics = (person_time_buckets
-                               | 'Get Supervision Metrics' >>
+                               | 'Get Supervision Metrics' >>  # type: ignore
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=ALL_INCLUSIONS_DICT,
                                    metric_type='ALL',
                                    calculation_month_limit=-1))
 
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
-            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}))
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types))
+
+        if expected_violation_types:
+            for expected_violation_type in expected_violation_types:
+                assert_that(supervision_metrics,
+                            AssertMatchers.assert_source_violation_type_set(expected_violation_type),
+                            f"Assert source violation {expected_violation_type} type is set")
 
         test_pipeline.run()
 
@@ -669,217 +743,37 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
-            schema.StateAssessment.__tablename__: assessment_data
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
 
-        # Get StatePersons
-        persons = (test_pipeline
-                   | 'Load Persons' >>
-                   extractor_utils.BuildRootEntity(
-                       dataset=None,
-                       data_dict=data_dict,
-                       root_entity_class=entities.StatePerson,
-                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                       build_related_entities=True))
-
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (test_pipeline
-                                 | 'Load IncarcerationPeriods' >>
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
-
-        # Get StateSupervisionViolations
-        supervision_violations = \
-            (test_pipeline
-             | 'Load SupervisionViolations' >>
-             extractor_utils.BuildRootEntity(
-                 dataset=None,
-                 data_dict=data_dict,
-                 root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True
-             ))
-
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = \
-            (test_pipeline
-             | 'Load SupervisionViolationResponses' >>
-             extractor_utils.BuildRootEntity(
-                 dataset=None,
-                 data_dict=data_dict,
-                 root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True
-             ))
-
-        # Get StateSupervisionSentences
-        supervision_sentences = (test_pipeline
-                                 | 'Load SupervisionSentences' >>
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
-                                     root_entity_class=
-                                     entities.StateSupervisionSentence,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
-
-        # Get StateIncarcerationSentences
-        incarceration_sentences = (test_pipeline
-                                   | 'Load IncarcerationSentences' >>
-                                   extractor_utils.BuildRootEntity(
-                                       dataset=None,
-                                       data_dict=data_dict,
-                                       root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True))
-
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
-
-        # Get StateAssessments
-        assessments = (test_pipeline
-                       | 'Load Assessments' >>
-                       extractor_utils.BuildRootEntity(
-                           dataset=None,
-                           data_dict=data_dict,
-                           root_entity_class=
-                           entities.StateAssessment,
-                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                           build_related_entities=False))
-
-        # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to StateSupervisionViolations' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on the corresponding
-        # StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on the StateSupervisionViolationResponses' >>
-            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
-
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses by person_id
-        incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses': violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on the StateIncarcerationPeriods' >>
-            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
-
-        # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionSentences
-        person_periods_and_sentences = (
-            {'person': persons,
-             'assessments': assessments,
-             'supervision_periods': supervision_periods,
-             'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': supervision_sentences,
-             'incarceration_sentences': incarceration_sentences,
-             'violation_responses': violation_responses_with_hydrated_violations
-             }
-            | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>
-            beam.CoGroupByKey()
-        )
-
-        ssvr_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'ASSAGENT1234',
-            'district_external_id': '4',
-            'supervision_violation_response_id': fake_svr_id
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.REVOCATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.ASSESSMENT_CHANGE
         }
 
-        ssvr_to_agent_associations = (
-            test_pipeline | 'Create SSVR to Agent table' >> beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations | 'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(), 'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id': supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(), 'supervision_period_id')
-        )
-
-        identifier_options = {
-            'state_code': 'ALL'
-        }
-
-        # Identify SupervisionTimeBuckets from the StatePerson's
-        # StateSupervisionSentences and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_periods_and_sentences
-            | beam.ParDo(
-                pipeline.ClassifySupervisionTimeBuckets(),
-                AsDict(ssvr_agent_associations_as_kv),
-                AsDict(supervision_periods_to_agent_associations_as_kv),
-                **identifier_options))
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-
-        # Get supervision metrics
-        supervision_metrics = (person_time_buckets
-                               | 'Get Supervision Metrics' >>
-                               pipeline.GetSupervisionMetrics(
-                                   pipeline_options=all_pipeline_options,
-                                   inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL',
-                                   calculation_month_limit=-1))
-
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
-            {SupervisionMetricType.POPULATION,
-             SupervisionMetricType.REVOCATION,
-             SupervisionMetricType.REVOCATION_ANALYSIS,
-             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-             SupervisionMetricType.ASSESSMENT_CHANGE}))
-
-        test_pipeline.run()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   supervision_period.supervision_period_id,
+                                   fake_svr_id,
+                                   expected_metric_types)
 
     def testSupervisionPipeline_withTechnicalRevocations(self):
         fake_person_id = 562
@@ -1104,212 +998,39 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
-            schema.StateAssessment.__tablename__: assessment_data
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateCharge.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
-        test_pipeline = TestPipeline()
+        dataset = 'recidiviz-123.state'
 
-        # Get StatePersons
-        persons = test_pipeline | 'Load Persons' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StatePerson,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateIncarcerationPeriods
-        incarceration_periods = test_pipeline | 'Load IncarcerationPeriods' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateSupervisionViolations
-        supervision_violations = test_pipeline | 'Load SupervisionViolations' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = (test_pipeline | 'Load SupervisionViolationResponses' >>
-                                           extractor_utils.BuildRootEntity(
-                                               dataset=None,
-                                               data_dict=data_dict,
-                                               root_entity_class=entities.StateSupervisionViolationResponse,
-                                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                               build_related_entities=True))
-
-        # Get StateSupervisionSentences
-        supervision_sentences = (test_pipeline | 'Load SupervisionSentences' >>
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
-                                     root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
-
-        # Get StateIncarcerationSentences
-        incarceration_sentences = (test_pipeline | 'Load IncarcerationSentences' >>
-                                   extractor_utils.BuildRootEntity(
-                                       dataset=None,
-                                       data_dict=data_dict,
-                                       root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True))
-
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
-
-        # Get StateAssessments
-        assessments = test_pipeline | 'Load Assessments' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateAssessment,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False)
-
-        # Group StateSupervisionViolationResponses and
-        # StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to StateSupervisionViolations' >> beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on the StateSupervisionViolationResponses' >>
-            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
-
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
-        # by person_id
-        incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses': violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on '
-            'the StateIncarcerationPeriods' >>
-            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
-
-        # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionSentences
-        person_periods_and_sentences = (
-            {'person': persons,
-             'assessments': assessments,
-             'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': supervision_sentences,
-             'incarceration_sentences': incarceration_sentences,
-             'supervision_periods': supervision_periods,
-             'violation_responses': violation_responses_with_hydrated_violations
-             }
-            | 'Group StatePerson to StateIncarcerationPeriods'
-              ' and StateSupervisionPeriods' >>
-            beam.CoGroupByKey()
-        )
-
-        ssvr_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'ASSAGENT1234',
-            'district_external_id': '4',
-            'supervision_violation_response_id': fake_svr_id
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.REVOCATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
         }
 
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
-        identifier_options = {
-            'state_code': 'ALL'
-        }
-
-        # Identify SupervisionTimeBuckets from the StatePerson's
-        # StateSupervisionSentences and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_periods_and_sentences
-            | beam.ParDo(
-                pipeline.ClassifySupervisionTimeBuckets(),
-                AsDict(
-                    ssvr_agent_associations_as_kv),
-                AsDict(
-                    supervision_periods_to_agent_associations_as_kv),
-                **identifier_options))
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        # Get supervision metrics
-        supervision_metrics = (person_time_buckets
-                               | 'Get Supervision Metrics' >>
-                               pipeline.GetSupervisionMetrics(
-                                   pipeline_options=all_pipeline_options,
-                                   inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL',
-                                   calculation_month_limit=-1))
-
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
-            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
-             SupervisionMetricType.REVOCATION_ANALYSIS, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}),
-                    "Assert all expected metric types are produced.")
-        assert_that(supervision_metrics, AssertMatchers.assert_source_violation_type_set(ViolationType.TECHNICAL),
-                    "Assert source violation TECHNICAL type is set")
-
-        assert_that(supervision_metrics, AssertMatchers.assert_source_violation_type_set(ViolationType.FELONY),
-                    "Assert source violation FELONY type is set")
-
-        test_pipeline.run()
+        expected_violation_types = {ViolationType.FELONY, ViolationType.TECHNICAL}
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   supervision_period.supervision_period_id,
+                                   fake_svr_id,
+                                   expected_metric_types,
+                                   expected_violation_types)
 
     def testSupervisionPipelineNoSupervision(self):
         """Tests the supervision pipeline when a person doesn't have any supervision periods."""
@@ -1492,203 +1213,36 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
                 supervision_sentence_supervision_period_association,
-            schema.StateAssessment.__tablename__: assessment_data
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
+        }
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.REVOCATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS
         }
 
-        test_pipeline = TestPipeline()
-
-        # Get StatePersons
-        persons = test_pipeline | 'Load Persons' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StatePerson,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateIncarcerationPeriods
-        incarceration_periods = test_pipeline | 'Load IncarcerationPeriods' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateSupervisionViolations
-        supervision_violations = test_pipeline | 'Load SupervisionViolations' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True)
-
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = (test_pipeline | 'Load SupervisionViolationResponses' >>
-                                           extractor_utils.BuildRootEntity(
-                                               dataset=None,
-                                               data_dict=data_dict,
-                                               root_entity_class=entities.StateSupervisionViolationResponse,
-                                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                               build_related_entities=True))
-
-        # Get StateSupervisionSentences
-        supervision_sentences = (test_pipeline | 'Load SupervisionSentences' >>
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=None,
-                                     data_dict=data_dict,
-                                     root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True))
-
-        # Get StateIncarcerationSentences
-        incarceration_sentences = (test_pipeline | 'Load IncarcerationSentences' >>
-                                   extractor_utils.BuildRootEntity(
-                                       dataset=None,
-                                       data_dict=data_dict,
-                                       root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True))
-
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline | 'Load SupervisionPeriods' >>
-                               extractor_utils.BuildRootEntity(
-                                   dataset=None,
-                                   data_dict=data_dict,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False))
-
-        # Get StateAssessments
-        assessments = test_pipeline | 'Load Assessments' >> extractor_utils.BuildRootEntity(
-            dataset=None,
-            data_dict=data_dict,
-            root_entity_class=entities.StateAssessment,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False)
-
-        # Group StateSupervisionViolationResponses and
-        # StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to StateSupervisionViolations' >> beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on the StateSupervisionViolationResponses' >>
-            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
-
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses
-        # by person_id
-        incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses': violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on '
-              'the StateIncarcerationPeriods' >>
-            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
-
-        # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionSentences
-        person_periods_and_sentences = (
-            {'person': persons,
-             'assessments': assessments,
-             'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': supervision_sentences,
-             'incarceration_sentences': incarceration_sentences,
-             'supervision_periods': supervision_periods,
-             'violation_responses': violation_responses_with_hydrated_violations
-             }
-            | 'Group StatePerson to StateIncarcerationPeriods'
-              ' and StateSupervisionPeriods' >>
-            beam.CoGroupByKey()
-        )
-
-        ssvr_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'ASSAGENT1234',
-            'district_external_id': '4',
-            'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id': 9999999
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
-        identifier_options = {
-            'state_code': 'ALL'
-        }
-
-        # Identify SupervisionTimeBuckets from the StatePerson's
-        # StateSupervisionSentences and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_periods_and_sentences
-            | beam.ParDo(
-                pipeline.ClassifySupervisionTimeBuckets(),
-                AsDict(ssvr_agent_associations_as_kv),
-                AsDict(supervision_periods_to_agent_associations_as_kv),
-                **identifier_options))
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        # Get supervision metrics
-        supervision_metrics = (person_time_buckets
-                               | 'Get Supervision Metrics' >>
-                               pipeline.GetSupervisionMetrics(
-                                   pipeline_options=all_pipeline_options,
-                                   inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL',
-                                   calculation_month_limit=-1))
-
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(
-            {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS, SupervisionMetricType.REVOCATION,
-             SupervisionMetricType.REVOCATION_ANALYSIS}), "Assert all expected metric types are produced.")
-
-        test_pipeline.run()
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   supervision_period__1.supervision_period_id,
+                                   supervision_violation_response.supervision_violation_response_id,
+                                   expected_metric_types)
 
 
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
