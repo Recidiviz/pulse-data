@@ -44,8 +44,8 @@ OFNDR_TST_OFNDR_TST_CERT_QUERY = \
         (updt_usr_id, updt_dt)
     FROM
         `{project_name}.us_id_raw_data.ofndr_tst`  tst
-    LEFT JOIN `
-        recidiviz-staging.us_id_raw_data.ofndr_tst_cert` tst_cert
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.ofndr_tst_cert` tst_cert
     USING
         (ofndr_tst_id, assess_tst_id)
     WHERE
@@ -55,11 +55,103 @@ OFNDR_TST_OFNDR_TST_CERT_QUERY = \
         tst.ofndr_num
     """
 
+MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY = \
+    f"""
+    SELECT
+        *
+    FROM
+        `{project_name}.us_id_raw_data.mittimus`
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.county`
+    USING
+        (cnty_cd)
+    # Only ignore jud_cd because already present in `county` table
+    LEFT JOIN
+        (SELECT
+                judge_cd,
+                judge_name
+        FROM
+            `{project_name}.us_id_raw_data.judge`)
+    USING
+        (judge_cd)
+    JOIN
+        `{project_name}.us_id_raw_data.sentence`
+    USING
+        (mitt_srl)
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.offense`
+    USING
+        (off_cat, off_cd, off_deg)
+    # Inner join against sentences that are supervision sentences.
+    JOIN
+        `{project_name}.us_id_raw_data.sentprob` sentprob
+    USING
+        (mitt_srl, sent_no)
+    WHERE
+        sent_disp != 'A' # TODO(2999): Figure out how to deal with the 10.7k amended sentences
+    ORDER BY
+        CAST(docno AS INT64),
+        CAST(sent_no AS INT64)
+"""
+
+MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = \
+    f"""
+    SELECT
+        *
+    FROM
+        `{project_name}.us_id_raw_data.mittimus`
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.county`
+    USING
+        (cnty_cd)
+    # Only ignore jud_cd because already present in `county` table
+    LEFT JOIN
+        (SELECT
+                judge_cd,
+                judge_name
+        FROM
+            `{project_name}.us_id_raw_data.judge`)
+    USING
+        (judge_cd)
+    JOIN
+        `{project_name}.us_id_raw_data.sentence`
+    USING
+        (mitt_srl)
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.offense`
+    USING
+        (off_cat, off_cd, off_deg)
+    JOIN
+        # Inner join against sentences that are incarceration sentences.
+        (SELECT
+            mitt_srl,
+            sent_no
+        FROM
+            `{project_name}.us_id_raw_data.sentence`
+        LEFT JOIN
+            `{project_name}.us_id_raw_data.sentprob` sentprob
+        USING
+            (mitt_srl, sent_no)
+        WHERE
+            sentprob.mitt_srl IS NULL)
+    USING
+        (mitt_srl, sent_no)
+    WHERE
+        sent_disp != 'A' # TODO(2999): Figure out how to deal with the 10.7k amended sentences
+    ORDER BY
+        CAST(docno AS INT64),
+        CAST(sent_no AS INT64)
+"""
+
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
         ('offender', TAK001_OFFENDER_IDENTIFICATION_QUERY),
         ('ofndr_tst_ofndr_tst_cert', OFNDR_TST_OFNDR_TST_CERT_QUERY),
+        ('mittimus_judge_sentence_offense_sentprob_supervision_sentences',
+         MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY),
+        ('mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
+         MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY),
     ]
 
 
