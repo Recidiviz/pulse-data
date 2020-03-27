@@ -1,0 +1,95 @@
+key_mappings:
+  docno: state_person.state_person_id
+
+child_key_mappings:
+  docno: state_person_external_id.state_person_external_id_id
+
+  incrno: state_sentence_group.state_sentence_group_id
+
+  cnty_sdesc: state_incarceration_sentence.county_code
+  lifer: state_incarceration_sentence.is_life
+  sent_beg_dtd: state_incarceration_sentence.start_date
+  sent_disp: state_incarceration_sentence.status
+  sentence_dtd: state_incarceration_sentence.date_imposed
+  sent_ft_dtd: state_incarceration_sentence.projected_max_release_date
+  sent_ind_dtd: state_incarceration_sentence.projected_min_release_date
+  sent_par_dtd: state_incarceration_sentence.parole_eligibility_date
+  sent_sat_dtd: state_incarceration_sentence.completion_date
+
+  off_cnt: state_charge.counts
+  off_ldesc: state_charge.description
+
+  caseno: state_court_case.state_court_case_id
+
+primary_key:
+  docno: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_incarceration_sentence
+
+keys_to_ignore:
+  - judge_cd            # Judge id - handled manually in the controller
+  - judge_name          # Judge name - handled manually in the controller
+  - off_stat_sect       # Statute Section - Handled manually in controller
+  - off_stat_title      # Statute Title - Handled manually in controller
+  - sent_min_da         # Minimum days in sentence - Handled manually in the controller
+  - sent_min_mo         # Minimum months in sentence - Handled manually in the controller
+  - sent_min_yr         # Minimum years in sentence - Handled manually in the controller
+  - sent_max_da         # Maximum days in sentence - Handled manually in the controller
+  - sent_max_mo         # Maximum months in sentence - Handled manually in the controller
+  - sent_max_yr         # Maximum years in sentence - Handled manually in the controller
+  - sent_no             # Sentence number - Handled manually in controller
+
+  - am_sent_no          # Unused - Amended sentence number. TODO(2999): Get more info from ID on how to handle amended
+                        #          sentences.
+  - caseno_seq          # Unused - Case sequence number within a single docket.
+  - co_defend           # Unused - Co-defendants
+  - consec_sent_no      # Unused - Sequence number indicating rank in the chain of consecutive sentences
+  - consec_typ          # Unused - Sentence timing type (Consecutive vs Concurrent)
+  - court_cred          # Unused - TODO(2999): Get more info from ID on this. Is this earned time?
+  - cnty_cd             # Unused - County code, instead we use cnty_desc for the actual county name
+  - cnty_ldesc          # Unused - County long description. We use cnty_sdesc instead (short description).
+  - def_atty            # Unused - Defense attorney code
+  - dist_atty           # Unused - DA code
+  - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(2999): Consider adding to schema.
+  - govn_sent           # Unused - Whether this is the governing sentence or not. TODO(2999): Consider adding to schema.
+  - interstate_mitt     # Unused - Y/N flag to indicate if this is an interstate mittimus
+  - jail_cred           # Unused - TODO(2999): Get more info from ID on this. Is this earned time?
+  - jud_cd              # Unused - TODO(2999): Get more info from ID on this. Is this judicial district?
+  - law_cd              # Unused - Law code. TODO(2999): Get more info from ID on this.
+  - lgl_fnam            # Unused - Legal first name of sentenced person (name information gathered from offender.csv)
+  - lgl_mnam            # Unused - Legal middle name of sentenced person (name information gathered from offender.csv)
+  - lgl_lnam            # Unused - Legal last name of sentenced person (name information gathered from offender.csv)
+  - lgl_title           # Unused - Legal title of sentenced person (name information gathered from offender.csv)
+  - mitt_disp           # Unused - Mittimus disposition (Probation, Incarceration, or Interstate)
+  - mitt_srl            # Unused - Mittimus id
+  - mitt_time_typ       # Unused - Original mittimus disposition
+  - off_actv_flg        # Unused - Whether or not the specific offense is currently a valid offense in ID.
+  - off_cat             # Unused - Offense category TODO(2999): Get more info from ID and see if it belongs on charge
+  - off_cd              # Unused - Offense category TODO(2999): Get more info from ID and see if it belongs on charge
+  - off_deg             # Unused - Offense category TODO(2999): Get more info from ID and see if it belongs on charge
+  - off_dtd             # Unused - offense date. TODO(2999): Handle different variations of this field.
+  - off_rank1           # Unused - TODO(2999): Get more info from ID.
+  - off_rank2           # Unused - TODO(2999): Get more info from ID.
+  - off_rank3           # Unused - TODO(2999): Get more info from ID.
+  - off_rpt_flg         # Unused - TODO(2999): Get more info from ID
+  - off_sdesc           # Unused - Offense short description. We use off_ldesc instead (long description).
+  - off_stat_eff_dtd    # Unused - Date the statue become effective
+  - off_stat_subsec     # Unused - Statute Subsection - TODO(2999): Get more info from ID on how this interacts with
+                        #          other statute fields.
+  - off_stat_term_dtd   # Unused - TODO(2999): Get more info from ID
+  - off_sxo_flg         # Unused - Offense sex offender? TODO(2999): Get more info from ID.
+  - off_typ             # Unused - Offense type - TODO(2999): Get more info from ID
+  - off_viol            # Unused - Whether or not the offense was violent. TODO(2999): Consider adding this to charge
+                        #          schema.
+  - offvisxo_flg        # Unused - TODO(2999): Get more info from ID
+  - plea                # Unused - Plea
+  - sent_eff_dtd        # Unused - Date sentences within a mittimus begin, instead we use sent_beg_dtd
+                        #          TODO(2999): Fully understand difference bw these two dates.
+  - sent_exp_dtd        # Unused - Date the mittimus expires. TODO(2999): Understand when this is different that
+                        #          sent_ft_dtd.
+  - sent_gtr_dtd        # Unused - Mostly null. TODO(2999): Get more info from ID on this.
+  - state               # Unused - State where sentenced. TODO(2999): Relax constraint to allow state codes to be set
+  - string_no           # Unused - TODO(2999): Get more info from ID
+  - vio_doc             # Unused - TODO(2999): Get more info from ID on this.
+  - vio_1311            # Unused - TODO(2999): Get more info from ID on this

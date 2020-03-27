@@ -21,15 +21,22 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook
-from recidiviz.ingest.models.ingest_info import StatePersonEthnicity, StatePerson, IngestObject, StateAssessment
+from recidiviz.ingest.models.ingest_info import StatePersonEthnicity, StatePerson, IngestObject, StateAssessment, \
+    StateIncarcerationSentence, StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
+# TODO(2999): Consider adding completion date to sentences even if the sentence is completed and we have a
+#  `projected_completion_date` that has passed.
 class UsIdController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_ID."""
 
@@ -55,14 +62,33 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._add_lsir_to_assessments,
                 gen_label_single_external_id_hook(US_ID_DOC),
             ],
+            'mittimus_judge_sentence_offense_sentprob_incarceration_sentences': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._add_statute_to_charge,
+                self._add_judge_to_court_cases,
+                self._set_extra_sentence_fields,
+                self._set_generated_ids,
+            ],
+            'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._add_statute_to_charge,
+                self._add_judge_to_court_cases,
+                self._set_extra_sentence_fields,
+                self._set_generated_ids,
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender': [],
+            'ofndr_tst_ofndr_tst_cert': [],
+            'mittimus_judge_sentence_offense_sentprob_incarceration_sentences': [],
+            'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
         }
 
     FILE_TAGS = [
         'offender',
         'ofndr_tst_ofndr_tst_cert',
+        'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
+        'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
     ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -86,6 +112,44 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateAssessmentLevel.MEDIUM_HIGH: ['High-Medium'],
         StateAssessmentLevel.HIGH: ['Maximum'],
 
+        StateSentenceStatus.COMMUTED: [
+            'M',    # Commuted
+        ],
+        # TODO(2999): Consider breaking out these sentence status enums in our schema (
+        #  vacated, sealed, early discharge, expired, etc)
+        StateSentenceStatus.COMPLETED: [
+            'C',    # Completed
+            'D',    # Discharged
+            'E',    # Expired
+            'F',    # Parole Early Discharge
+            'G',    # Dismissed
+            'H',    # Post conviction relief.
+            'L',    # Sealed
+            'Q',    # Vacated conviction
+            'S',    # Satisfied
+            'V',    # Vacated Sentence
+            'X',    # Rule 35 - Reduction of illegal or overly harsh sentence.
+            'Z',    # Reduced to misdemeanor TODO(2999): When is this used?
+        ],
+        StateSentenceStatus.REVOKED: [
+            'K',    # Revoked
+        ],
+        StateSentenceStatus.SERVING: [
+            'I',    # Imposed
+            'J',    # RJ To Court - Used for probation after treatment
+            'N',    # Interstate Parole
+            'O',    # Correctional Compact - TODO(2999): Get more info from ID.
+            'P',    # Bond Appeal - unused, but present in ID status table.
+            'R',    # Court Retains Jurisdiction - used when a person on a rider. TODO(2999): Whats the difference
+                    # between this and 'W'?
+            'T',    # Interstate probation - unused, but present in ID status table.
+            'U',    # Unsupervised - probation
+            'W',    # Witheld judgement - used when a person is on a rider.
+            'Y',    # Drug Court - TODO(2999): Consider adding this as a court type.
+        ],
+        StateSentenceStatus.SUSPENDED: [
+            'B',  # Suspended sentence - probation
+        ],
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
@@ -131,8 +195,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
                         updated_person_races.append(person_race)
                 obj.state_person_races = updated_person_races
 
+    @staticmethod
     def _add_lsir_to_assessments(
-            self,
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
@@ -140,3 +204,99 @@ class UsIdController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
                 obj.assessment_type = StateAssessmentType.LSIR.value
+
+    @staticmethod
+    def _add_statute_to_charge(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        statute_title = row.get('off_stat_title', '')
+        statute_section = row.get('off_stat_sect', '')
+
+        if not statute_title or not statute_section:
+            return
+        statute = f'{statute_title}-{statute_section}'
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                obj.statute = statute
+
+    @staticmethod
+    def _add_judge_to_court_cases(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        judge_id = row.get('judge_cd', '')
+        judge_name = row.get('judge_name', '')
+
+        if not judge_id or not judge_name:
+            return
+
+        judge_to_create = StateAgent(
+            state_agent_id=judge_id,
+            full_name=judge_name,
+            agent_type=StateAgentType.JUDGE.value)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCourtCase):
+                create_if_not_exists(judge_to_create, obj, 'judge')
+
+    @staticmethod
+    def _set_extra_sentence_fields(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        is_life = bool(row.get('lifer'))
+        max_years = row.get('sent_max_yr')
+        max_months = row.get('sent_max_mo')
+        max_days = row.get('sent_max_da')
+        min_years = row.get('sent_min_yr')
+        min_months = row.get('sent_min_mo')
+        min_days = row.get('sent_min_da')
+
+        for obj in extracted_objects:
+            if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
+                start_date = obj.start_date
+                max_time = parse_days_from_duration_pieces(
+                    years_str=max_years, months_str=max_months, days_str=max_days, start_dt_str=start_date)
+                min_time = parse_days_from_duration_pieces(
+                    years_str=min_years, months_str=min_months, days_str=min_days, start_dt_str=start_date)
+
+                if max_time:
+                    obj.max_length = str(max_time)
+                if min_time:
+                    obj.min_length = str(min_time)
+            if isinstance(obj, StateIncarcerationSentence):
+                obj.is_life = str(is_life)
+            if isinstance(obj, StateSupervisionSentence):
+                obj.supervision_type = StateSupervisionType.PROBATION.value
+
+    @staticmethod
+    def _set_generated_ids(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        person_id = row.get('docno', '')
+        sentence_group_id = row.get('incrno', '')
+        sentence_id = row.get('sent_no', '')
+        court_case_id = row.get('caseno', '')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSentenceGroup):
+                obj.state_sentence_group_id = f'{person_id}-{sentence_group_id}'
+
+            if isinstance(obj, StateIncarcerationSentence):
+                obj.state_incarceration_sentence_id = f'{person_id}-{sentence_id}'
+            if isinstance(obj, StateSupervisionSentence):
+                obj.state_supervision_sentence_id = f'{person_id}-{sentence_id}'
+
+            # Only one charge per sentence so recycle sentence id for the charge.
+            if isinstance(obj, StateCharge):
+                obj.state_charge_id = f'{person_id}-{sentence_id}'
+
+            if isinstance(obj, StateCourtCase):
+                obj.state_court_case_id = f'{person_id}-{court_case_id}'
