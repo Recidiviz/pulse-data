@@ -23,13 +23,15 @@ import importlib
 import logging
 from typing import Dict, List, Callable, Type, Optional, Union
 
+from recidiviz.common.constants.entity_enum import EntityEnum
+from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
 from recidiviz.ingest.direct.direct_ingest_controller_utils import \
     create_if_not_exists
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAlias, \
     StatePerson, StatePersonExternalId, StateSentenceGroup, \
-    StateSupervisionSentence, StateIncarcerationSentence, IngestInfo
+    StateSupervisionSentence, StateIncarcerationSentence, IngestInfo, StatePersonEthnicity
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -56,6 +58,33 @@ def copy_name_to_alias(_file_tag: str,
             create_if_not_exists(alias_to_create,
                                  extracted_object,
                                  'state_aliases')
+
+
+def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str]]) -> Callable:
+    """Generates a row post-hook that will identify provided races which are actually ethnicities, and record
+    them as ethnicities instead of races."""
+
+    def _rationalize_race_and_ethnicity(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        ethnicity_override_values = []
+        for ethnicity in Ethnicity:
+            ethnicity_override_values.extend(enum_overrides.get(ethnicity, []))
+
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                updated_person_races = []
+                for person_race in obj.state_person_races:
+                    if person_race.race in ethnicity_override_values:
+                        ethnicity_to_create = StatePersonEthnicity(ethnicity=person_race.race)
+                        create_if_not_exists(ethnicity_to_create, obj, 'state_person_ethnicities')
+                    else:
+                        updated_person_races.append(person_race)
+                obj.state_person_races = updated_person_races
+
+    return _rationalize_race_and_ethnicity
 
 
 # TODO(1882): If yaml format supported raw values, this would no-longer be
