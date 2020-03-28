@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for region controller tests."""
-
-from typing import List
-
-from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
-from recidiviz.persistence.entity.state import entities
-
-
-def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
-    for person in persons:
-        children = get_all_entities_from_tree(person)
-        for child in children:
-            if (child is not person
-                    and hasattr(child, 'person')
-                    and getattr(child, 'person', None) is None):
-                child.set_field('person', person)

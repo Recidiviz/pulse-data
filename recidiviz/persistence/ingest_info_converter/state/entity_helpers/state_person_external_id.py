@@ -45,4 +45,5 @@ def _parse_state_external_id(id_str):
     from ingest_info py -> ingest_info proto.
     """
     synthetic_id = parse_external_id(id_str)
-    return get_external_id(synthetic_id=synthetic_id)
+    external_id = get_external_id(synthetic_id=synthetic_id)
+    return normalize(external_id)
