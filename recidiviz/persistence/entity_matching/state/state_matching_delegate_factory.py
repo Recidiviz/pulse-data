@@ -16,13 +16,11 @@
 # =============================================================================
 """Contains factory class for creating StateMatchingDelegate objects"""
 
-from recidiviz.persistence.entity_matching.\
-    state.base_state_matching_delegate import BaseStateMatchingDelegate
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.us_id.us_id_matching_delegate import UsIdMatchingDelegate
-from recidiviz.persistence.entity_matching.state.us_mo.\
-    us_mo_matching_delegate import UsMoMatchingDelegate
-from recidiviz.persistence.entity_matching.state.\
-    us_nd.us_nd_matching_delegate import UsNdMatchingDelegate
+from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_delegate import UsMoMatchingDelegate
+from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_delegate import UsNdMatchingDelegate
+from recidiviz.persistence.entity_matching.state.us_pa.us_pa_matching_delegate import UsPaMatchingDelegate
 
 
 class StateMatchingDelegateFactory:
@@ -34,4 +32,6 @@ class StateMatchingDelegateFactory:
             return UsMoMatchingDelegate()
         if region_code.upper() == 'US_ND':
             return UsNdMatchingDelegate()
+        if region_code.upper() == 'US_PA':
+            return UsPaMatchingDelegate()
         raise ValueError(f'Unexpected region_code provided: {region_code}.')

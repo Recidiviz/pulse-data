@@ -37,7 +37,7 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
-from recidiviz.tests.ingest.direct.regions.utils import _populate_person_backedges
+from recidiviz.tests.ingest.direct.regions.utils import populate_person_backedges
 
 _STATE_CODE_UPPER = 'US_ID'
 
@@ -477,7 +477,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                 ],
         )
         expected_people = [person_1, person_2, person_3]
-        _populate_person_backedges(expected_people)
+        populate_person_backedges(expected_people)
 
         # Act
         self._run_ingest_job_for_filename('offender.csv')

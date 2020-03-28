@@ -52,7 +52,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
-from recidiviz.tests.ingest.direct.regions.utils import _populate_person_backedges
+from recidiviz.tests.ingest.direct.regions.utils import populate_person_backedges
 
 _STATE_CODE_UPPER = 'US_MO'
 
@@ -1919,7 +1919,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         expected_people = [person_910324, person_710448, person_310261, person_110035]
 
-        _populate_person_backedges(expected_people)
+        populate_person_backedges(expected_people)
 
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification.csv')
