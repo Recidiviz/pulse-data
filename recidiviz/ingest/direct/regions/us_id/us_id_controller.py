@@ -29,9 +29,10 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
-from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook
-from recidiviz.ingest.models.ingest_info import StatePersonEthnicity, StatePerson, IngestObject, StateAssessment, \
-    StateIncarcerationSentence, StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence
+from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
+    gen_rationalize_race_and_ethnicity
+from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
+    StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -56,7 +57,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 copy_name_to_alias,
                 # When first parsed, the info object just has a single external id - the DOC id.
                 gen_label_single_external_id_hook(US_ID_DOC),
-                self._rationalize_race_and_ethnicity,
+                gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             ],
             'ofndr_tst_ofndr_tst_cert': [
                 self._add_lsir_to_assessments,
@@ -159,7 +160,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         return self.FILE_TAGS
 
     def generate_enum_overrides(self) -> EnumOverrides:
-        """Provides Missouri-specific overrides for enum mappings."""
+        """Provides Idaho-specific overrides for enum mappings."""
         base_overrides = super(UsIdController, self).get_enum_overrides()
         return update_overrides_from_maps(
             base_overrides, self.ENUM_OVERRIDES, self.ENUM_IGNORES, self.ENUM_MAPPERS, self.ENUM_IGNORE_PREDICATES)
@@ -172,28 +173,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
         return self.file_post_processors_by_file.get(file_tag, [])
-
-    def _rationalize_race_and_ethnicity(
-            self,
-            _file_tag: str,
-            _row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        """For a person whose provided race is actually an ethnicity, we record it as an ethnicity instead of a race."""
-        ethnicity_override_values = []
-        for ethnicity in Ethnicity:
-            ethnicity_override_values.extend(self.ENUM_OVERRIDES.get(ethnicity, []))
-
-        for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
-                updated_person_races = []
-                for person_race in obj.state_person_races:
-                    if person_race.race in ethnicity_override_values:
-                        ethnicity_to_create = StatePersonEthnicity(ethnicity=person_race.race)
-                        create_if_not_exists(ethnicity_to_create, obj, 'state_person_ethnicities')
-                    else:
-                        updated_person_races.append(person_race)
-                obj.state_person_races = updated_person_races
 
     @staticmethod
     def _add_lsir_to_assessments(

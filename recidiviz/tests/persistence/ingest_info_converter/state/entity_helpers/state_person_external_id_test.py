@@ -50,3 +50,24 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, expected_result)
+
+    def testParseStatePersonExternalIdWithWhitespace(self):
+        # Arrange
+        ingest_external_id = ingest_info_pb2.StatePersonExternalId(
+            state_person_external_id_id='state_id: 123A',
+            id_type='state_id',
+            state_code='us_nd',
+        )
+
+        # Act
+        result = state_person_external_id.convert(ingest_external_id,
+                                                  _EMPTY_METADATA)
+
+        # Assert
+        expected_result = entities.StatePersonExternalId(
+            external_id='123A',
+            id_type='STATE_ID',
+            state_code='US_ND',
+        )
+
+        self.assertEqual(result, expected_result)

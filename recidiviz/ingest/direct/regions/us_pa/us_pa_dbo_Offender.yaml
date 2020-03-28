@@ -1,0 +1,42 @@
+key_mappings:
+  ParoleNumber: state_person.state_person_id
+  OffSex: state_person.gender
+
+child_key_mappings:
+  OffRaceEthnicGroup: state_person_race.race
+  ParoleNumber: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  ParoleNumber: state_person.state_person_id
+
+keys_to_ignore:
+  - PrlStatusCodeID
+  - OffSID                           # State ID - Hydrated manually in the controller
+  - OffReceptionDate
+  - OffEducationGrade
+  - OffCitizenship
+  - OffAct14Notify
+  - OffHeight
+  - OffWeight
+  - OffFingerPrintCode
+  - OffCaseNumberAtInstitution
+  - OffReligionActive
+  - OffReligionOtherInfo
+  - OffCountyOfProgram
+  - OffEyeColor
+  - OffHairColor
+  - OffSkinTone
+  - OffMiscellaneous
+  - OffPreSentence
+  - OffStatusDateYear
+  - OffStatusDateMonth
+  - OffStatusDateDay
+  - OffRecordNumber
+  - OffSexOld
+  - OffRaceEthnicGroupOld
+  - EyeColor_ID
+  - HairColor_ID
+  - SkinTone_ID
+  - GangAffiliation_ID
+  - LastModifiedDate
+  - LastModifiedBy
