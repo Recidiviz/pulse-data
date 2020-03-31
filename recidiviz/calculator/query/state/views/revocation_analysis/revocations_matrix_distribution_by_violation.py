@@ -43,13 +43,16 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         year,
         month,
         metric_period_months,
-        supervision_type,
+        IFNULL(supervision_type, 'ALL') AS supervision_type,
         IFNULL(case_type, 'ALL') AS charge_category,
         IFNULL(supervising_district_external_id, 'ALL') AS district,
         IF(response_count > 8, 8, response_count) as reported_violations,
-        CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-             ELSE most_severe_violation_type
-             END AS violation_type,
+        CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+          CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+               WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+               ELSE most_severe_violation_type END
+          ELSE most_severe_violation_type
+          END AS violation_type,
         SUM(IF(violation_count_type = 'ABSCONDED', count, 0)) AS absconded_count,
         SUM(IF(violation_count_type = 'ASC', count, 0)) AS association_count,
         SUM(IF(violation_count_type = 'DIR', count, 0)) AS directive_count,
@@ -57,7 +60,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         SUM(IF(violation_count_type = 'EMP', count, 0)) AS employment_count,
         SUM(IF(violation_count_type = 'FELONY', count, 0)) AS felony_count,
         SUM(IF(violation_count_type = 'INT', count, 0)) AS intervention_fee_count,
-        SUM(IF(violation_count_type = 'MISDEMEANOR', count, 0)) AS misdemeanor_count,
+        SUM(IF(violation_count_type IN ('LAW_CITATION', 'MISDEMEANOR'), count, 0)) AS misdemeanor_count,
         SUM(IF(violation_count_type = 'MUNICIPAL', count, 0)) AS municipal_count,
         SUM(IF(violation_count_type = 'RES', count, 0)) AS residency_count,
         SUM(IF(violation_count_type = 'SPC', count, 0)) AS special_count,
@@ -68,8 +71,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`
     JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
-    WHERE month IS NOT NULL
-        AND supervision_type IS NOT NULL
+    WHERE (supervision_type IS NULL OR supervision_type IN ('DUAL', 'PAROLE', 'PROBATION'))
         AND revocation_type = 'REINCARCERATION'
         AND assessment_score_bucket IS NULL
         AND assessment_type IS NULL

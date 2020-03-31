@@ -52,11 +52,14 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
         FROM (
           SELECT 
             state_code, year, month, 
-            CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' 
-                  THEN most_severe_violation_type_subtype 
-                  ELSE most_severe_violation_type END as violation_type, 
+            CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+              CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+                   WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+                   ELSE most_severe_violation_type END
+              ELSE most_severe_violation_type
+              END AS violation_type,
             IF(response_count > 8, 8, response_count) as reported_violations,
-            supervision_type, 
+            IFNULL(supervision_type, 'ALL') AS supervision_type,
             IFNULL(case_type, 'ALL') AS charge_category,
             IFNULL(supervising_district_external_id, 'ALL') as district,
             SUM(count) as total_revocations
@@ -66,7 +69,6 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
           WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND metric_period_months = 1
-            AND supervision_type IS NOT NULL
             AND response_count IS NOT NULL
             AND most_severe_violation_type_subtype IS NOT NULL
             AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
@@ -91,7 +93,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
           SELECT
             state_code, year, month,
             IF(response_count > 8, 8, response_count) as reported_violations,
-            supervision_type, 
+            IFNULL(supervision_type, 'ALL') AS supervision_type,
             IFNULL(case_type, 'ALL') AS charge_category,
             IFNULL(supervising_district_external_id, 'ALL') as district,
             SUM(count) AS response_with_violations
@@ -101,7 +103,6 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
           WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND metric_period_months = 1
-            AND supervision_type IS NOT NULL
             -- SUM the total number of people with a response and violations per category
             AND response_count IS NOT NULL
             AND most_severe_violation_type IS NOT NULL 
@@ -126,6 +127,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
     )
     -- Only include rows that have revocations
     WHERE total_revocations > 0
+      AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
     ORDER BY state_code, year, month, district, supervision_type, violation_type, reported_violations
     """.format(
         description=REVOCATIONS_MATRIX_BY_MONTH_DESCRIPTION,
