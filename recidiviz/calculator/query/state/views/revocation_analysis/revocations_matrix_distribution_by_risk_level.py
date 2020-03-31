@@ -66,12 +66,15 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
       FROM (
         SELECT
           state_code,
-          CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' 
-            THEN most_severe_violation_type_subtype 
-            ELSE most_severe_violation_type END as violation_type,
+          CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+            CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+                 WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+                 ELSE most_severe_violation_type END
+            ELSE most_severe_violation_type
+            END AS violation_type,
           IF(response_count > 8, 8, response_count) as reported_violations,
           IFNULL(assessment_score_bucket, 'OVERALL') as risk_level, 
-          supervision_type, 
+          IFNULL(supervision_type, 'ALL') AS supervision_type,
           IFNULL(case_type, 'ALL') AS charge_category, 
           IFNULL(supervising_district_external_id, 'ALL') as district,
           metric_period_months,
@@ -80,7 +83,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
           USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
-          AND supervision_type IS NOT NULL
           AND response_count IS NOT NULL
           AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
           AND most_severe_violation_type_subtype IS NOT NULL
@@ -106,7 +108,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
           state_code,
           IF(response_count > 8, 8, response_count) as reported_violations,
           IFNULL(assessment_score_bucket, 'OVERALL') as risk_level, 
-          supervision_type, 
+          IFNULL(supervision_type, 'ALL') AS supervision_type,
           IFNULL(case_type, 'ALL') AS charge_category, 
           IFNULL(supervising_district_external_id, 'ALL') as district,
           metric_period_months,
@@ -115,7 +117,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
           USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
-          AND supervision_type IS NOT NULL
           AND response_count IS NOT NULL
           AND most_severe_violation_type IS NOT NULL
           AND most_severe_violation_type_subtype = 'UNSET'
@@ -155,12 +156,15 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
       FROM (
         SELECT
           state_code,
-          CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' 
-            THEN most_severe_violation_type_subtype 
-            ELSE most_severe_violation_type END as violation_type,
+          CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+            CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+                 WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+                 ELSE most_severe_violation_type END
+            ELSE most_severe_violation_type
+            END AS violation_type,
           IF(response_count > 8, 8, response_count) as reported_violations,
           IFNULL(assessment_score_bucket, 'OVERALL') as risk_level,
-          supervision_type,
+          IFNULL(supervision_type, 'ALL') AS supervision_type,
           IFNULL(case_type, 'ALL') AS charge_category,
           IFNULL(supervising_district_external_id, 'ALL') as district,
           metric_period_months,
@@ -169,7 +173,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
           USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
-          AND supervision_type IS NOT NULL
           AND response_count IS NOT NULL
           AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
           AND most_severe_violation_type_subtype IS NOT NULL
@@ -196,7 +199,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
           state_code,
           IF(response_count > 8, 8, response_count) as reported_violations,
           IFNULL(assessment_score_bucket, 'OVERALL') as risk_level,
-          supervision_type,
+          IFNULL(supervision_type, 'ALL') AS supervision_type,
           IFNULL(case_type, 'ALL') AS charge_category,
           IFNULL(supervising_district_external_id, 'ALL') as district,
           metric_period_months,
@@ -205,7 +208,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
         JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
           USING (state_code, job_id, year, month, metric_period_months)
         WHERE methodology = 'PERSON'
-          AND supervision_type IS NOT NULL
           AND response_count IS NOT NULL
           AND most_severe_violation_type IS NOT NULL
           AND most_severe_violation_type_subtype = 'UNSET'
@@ -232,7 +234,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
     ) rev
     USING (state_code, violation_type, reported_violations, risk_level, supervision_type, 
       charge_category, district, metric_period_months)
-    WHERE supervision_type IN ('PAROLE', 'PROBATION')
+    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
       AND total_supervision_count > 0
     ORDER BY state_code, district, supervision_type, risk_level, metric_period_months, violation_type,
       reported_violations, charge_category
