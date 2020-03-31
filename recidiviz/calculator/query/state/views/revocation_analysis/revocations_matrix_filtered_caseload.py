@@ -34,21 +34,24 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, 
-      person_external_id AS state_id, 
-      supervising_officer_external_id AS officer, 
-      most_severe_response_decision AS officer_recommendation, 
-      violation_history_description AS violation_record, 
-      supervising_district_external_id AS district, 
-      supervision_type, 
-      case_type AS charge_category, 
-      assessment_score_bucket AS risk_level, 
-      CASE WHEN most_severe_violation_type = 'TECHNICAL' AND most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' 
-           THEN most_severe_violation_type_subtype 
-           ELSE most_severe_violation_type END AS violation_type, 
-      IF(response_count > 8, 8, response_count) AS reported_violations, 
-      metric_period_months 
+    SELECT
+      state_code,
+      person_external_id AS state_id,
+      supervising_officer_external_id AS officer,
+      most_severe_response_decision AS officer_recommendation,
+      violation_history_description AS violation_record,
+      supervising_district_external_id AS district,
+      supervision_type,
+      case_type AS charge_category,
+      assessment_score_bucket AS risk_level,
+      CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+        CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+             WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+             ELSE most_severe_violation_type END
+        ELSE most_severe_violation_type
+        END AS violation_type,
+      IF(response_count > 8, 8, response_count) AS reported_violations,
+      metric_period_months
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
     JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
       USING (state_code, job_id, year, month, metric_period_months)
@@ -59,7 +62,8 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY = \
       AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
       AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
       AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-    ORDER BY metric_period_months, violation_record 
+      AND supervision_type IN ('DUAL', 'PAROLE', 'PROBATION')
+    ORDER BY metric_period_months, violation_record
     """.format(
         description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
         project_id=PROJECT_ID,
