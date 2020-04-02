@@ -36,6 +36,12 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
                         help='BigQuery reference dataset to query.',
                         default='dashboard_views')
 
+    # NOTE: Must stay up to date to include all active states
+    parser.add_argument('--state_code',
+                        dest='state_code',
+                        type=str,
+                        help='The state_code to include in the calculations.')
+
     parser.add_argument('--include_age',
                         type=str_to_bool,
                         help='Include metrics broken down by age.',

@@ -19,7 +19,7 @@ supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Set, Tuple, Optional, Any, NamedTuple, Sequence
+from typing import List, Dict, Set, Tuple, Optional, Any, NamedTuple
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -53,8 +53,7 @@ from recidiviz.common.constants.state.state_supervision_violation import \
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
-from recidiviz.persistence.entity.base_entity import ExternalIdEntity
-from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
@@ -88,8 +87,7 @@ def find_supervision_time_buckets(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        state_code_filter: Optional[str] = 'ALL'
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
 ) -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines if they resulted in revocation return.
 
@@ -128,14 +126,6 @@ def find_supervision_time_buckets(
         A list of SupervisionTimeBuckets for the person.
     """
     if not supervision_periods and not incarceration_periods:
-        return []
-
-    # We assume here that that a person will only have supervision or incarceration periods from a single state - this
-    #  will break in the future when we start entity matching across multiple states.
-    all_periods: Sequence[ExternalIdEntity] = [*supervision_periods, *incarceration_periods]
-    state_code = get_single_state_code(all_periods)
-
-    if state_code_filter not in ('ALL', state_code):
         return []
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []

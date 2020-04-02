@@ -339,7 +339,6 @@ class TestBuildRootEntity(unittest.TestCase):
 
         self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
-
     def testBuildRootEntity_EmptyEntityClass(self):
         """Tests the BuildRootEntity PTransform when the |root_entity_class|
         is None."""
@@ -506,6 +505,267 @@ class TestBuildRootEntity(unittest.TestCase):
 
             mock.assert_not_called()
 
+    def testBuildRootEntity_HydratedRelationshipProperties_StateCodeFilter_Mismatch(self):
+        """Tests the extraction of a valid StatePerson entity with cross-entity relationship properties hydrated,
+        where the state_codes on the hydrated entities do not match the state_code filter."""
+
+        fake_person_id = 12345
+
+        fake_person = schema.StatePerson(
+            person_id=fake_person_id, current_address='123 Street',
+            full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        fake_person_data = [normalized_database_base_dict(fake_person)]
+
+        ethnicity_1 = schema.StatePersonEthnicity(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC,
+            person_id=fake_person_id,
+            person_ethnicity_id=234
+        )
+
+        ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
+
+        alias_1 = schema.StatePersonAlias(
+            state_code='NY',
+            full_name='Bernie Madoff',
+            person_alias_id=18615,
+            person_id=fake_person_id
+        )
+
+        alias_data = [normalized_database_base_dict(alias_1)]
+
+        external_id_1 = schema.StatePersonExternalId(
+            person_external_id_id=999,
+            external_id=888,
+            state_code='CA',
+            person_id=fake_person_id)
+
+        external_ids_data = [normalized_database_base_dict(external_id_1)]
+
+        sentence_group_1 = schema.StateSentenceGroup(
+            status=StateSentenceStatus.SERVING,
+            date_imposed=date(2011, 3, 7),
+            state_code='CA',
+            min_length_days=199,
+            max_length_days=500,
+            sentence_group_id=213,
+            person_id=fake_person_id
+        )
+
+        sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
+
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+                                        person_id=fake_person_id)
+
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+                                        person_id=fake_person_id)
+
+        races_data = [normalized_database_base_dict(race_1),
+                      normalized_database_base_dict(race_2)]
+
+        assessment_1 = schema.StateAssessment(
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2012, 4, 1),
+            state_code='CA',
+            assessment_score=29,
+            assessment_id=184672,
+            person_id=fake_person_id
+        )
+
+        assessment_data = [normalized_database_base_dict(assessment_1)]
+
+        data_dict = {schema.StatePerson.__tablename__: fake_person_data,
+                     schema.StatePersonEthnicity.__tablename__:
+                         ethnicities_data,
+                     schema.StatePersonAlias.__tablename__: alias_data,
+                     schema.StatePersonExternalId.__tablename__:
+                     external_ids_data,
+                     schema.StateSentenceGroup.__tablename__:
+                     sentence_group_data,
+                     schema.StateAssessment.__tablename__:
+                     assessment_data,
+                     schema.StatePersonRace.__tablename__: races_data,
+                     schema.StateProgramAssignment.__tablename__: []}
+
+        fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
+
+        fake_person_entity.ethnicities = \
+            StateSchemaToEntityConverter().convert_all([ethnicity_1])
+
+        fake_person_entity.aliases = \
+            StateSchemaToEntityConverter().convert_all([alias_1])
+
+        fake_person_entity.external_ids = \
+            StateSchemaToEntityConverter().convert_all([external_id_1])
+
+        fake_person_entity.sentence_groups = \
+            StateSchemaToEntityConverter().convert_all([sentence_group_1])
+
+        fake_person_entity.races = \
+            StateSchemaToEntityConverter().convert_all([race_1, race_2])
+
+        fake_person_entity.assessments = \
+            StateSchemaToEntityConverter().convert_all([assessment_1])
+
+        empty_person = schema.StatePerson(
+            person_id=fake_person_id, current_address='123 Street',
+            full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        empty_person_entity = StateSchemaToEntityConverter().convert(empty_person)
+
+        dataset = 'recidiviz-123.state'
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
+
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(
+                          dataset=dataset,
+                          root_entity_class=entities.StatePerson,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          build_related_entities=True,
+                          state_code='FL'))
+
+            assert_that(output, equal_to([(12345, empty_person_entity)]))
+
+            test_pipeline.run()
+
+    def testBuildRootEntity_HydratedRelationshipProperties_StateCodeFilter_Match(self):
+        """Tests the extraction of a valid StatePerson entity with cross-entity relationship properties hydrated,
+        where the state_codes on the hydrated entities match the state_code filter."""
+
+        fake_person_id = 12345
+
+        fake_person = schema.StatePerson(
+            person_id=fake_person_id, current_address='123 Street',
+            full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        fake_person_data = [normalized_database_base_dict(fake_person)]
+
+        ethnicity_1 = schema.StatePersonEthnicity(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC,
+            person_id=fake_person_id,
+            person_ethnicity_id=234
+        )
+
+        ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
+
+        alias_1 = schema.StatePersonAlias(
+            state_code='CA',
+            full_name='Bernie Madoff',
+            person_alias_id=18615,
+            person_id=fake_person_id
+        )
+
+        alias_data = [normalized_database_base_dict(alias_1)]
+
+        external_id_1 = schema.StatePersonExternalId(
+            person_external_id_id=999,
+            external_id=888,
+            state_code='CA',
+            person_id=fake_person_id)
+
+        external_ids_data = [normalized_database_base_dict(external_id_1)]
+
+        sentence_group_1 = schema.StateSentenceGroup(
+            status=StateSentenceStatus.SERVING,
+            date_imposed=date(2011, 3, 7),
+            state_code='CA',
+            min_length_days=199,
+            max_length_days=500,
+            sentence_group_id=213,
+            person_id=fake_person_id
+        )
+
+        sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
+
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+                                        person_id=fake_person_id)
+
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+                                        person_id=fake_person_id)
+
+        races_data = [normalized_database_base_dict(race_1),
+                      normalized_database_base_dict(race_2)]
+
+        assessment_1 = schema.StateAssessment(
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2012, 4, 1),
+            state_code='CA',
+            assessment_score=29,
+            assessment_id=184672,
+            person_id=fake_person_id
+        )
+
+        assessment_data = [normalized_database_base_dict(assessment_1)]
+
+        data_dict = {schema.StatePerson.__tablename__: fake_person_data,
+                     schema.StatePersonEthnicity.__tablename__:
+                         ethnicities_data,
+                     schema.StatePersonAlias.__tablename__: alias_data,
+                     schema.StatePersonExternalId.__tablename__:
+                     external_ids_data,
+                     schema.StateSentenceGroup.__tablename__:
+                     sentence_group_data,
+                     schema.StateAssessment.__tablename__:
+                     assessment_data,
+                     schema.StatePersonRace.__tablename__: races_data,
+                     schema.StateProgramAssignment.__tablename__: []}
+
+        fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
+
+        fake_person_entity.ethnicities = \
+            StateSchemaToEntityConverter().convert_all([ethnicity_1])
+
+        fake_person_entity.aliases = \
+            StateSchemaToEntityConverter().convert_all([alias_1])
+
+        fake_person_entity.external_ids = \
+            StateSchemaToEntityConverter().convert_all([external_id_1])
+
+        fake_person_entity.sentence_groups = \
+            StateSchemaToEntityConverter().convert_all([sentence_group_1])
+
+        fake_person_entity.races = \
+            StateSchemaToEntityConverter().convert_all([race_1, race_2])
+
+        fake_person_entity.assessments = \
+            StateSchemaToEntityConverter().convert_all([assessment_1])
+
+        dataset = 'recidiviz-123.state'
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            test_pipeline = TestPipeline()
+
+            output = (test_pipeline
+                      |
+                      extractor_utils.BuildRootEntity(
+                          dataset=dataset,
+                          root_entity_class=entities.StatePerson,
+                          unifying_id_field=entities.StatePerson.get_class_id_name(),
+                          build_related_entities=True,
+                          state_code='CA'))
+
+            assert_that(output, equal_to([(12345, fake_person_entity)]))
+
+            test_pipeline.run()
+
 
 class TestExtractEntity(unittest.TestCase):
     """Tests the ExtractEntity PTransform."""
@@ -535,7 +795,8 @@ class TestExtractEntity(unittest.TestCase):
                       | "Extract StatePerson Entity" >>
                       extractor_utils._ExtractEntity(dataset=dataset, entity_class=entity_class,
                                                      unifying_id_field=entity_class.get_class_id_name(),
-                                                     parent_id_field=None, unifying_id_field_filter_set=None)
+                                                     parent_id_field=None, unifying_id_field_filter_set=None,
+                                                     state_code=None)
                       )
 
             assert_that(output, equal_to([
@@ -566,11 +827,11 @@ class TestExtractEntity(unittest.TestCase):
                                                          entity_class=entity_class,
                                                          unifying_id_field='XX',
                                                          parent_id_field='person_id',
-                                                         unifying_id_field_filter_set=None)
+                                                         unifying_id_field_filter_set=None,
+                                                         state_code=None)
                           )
 
-                self.assertIsInstance(output, list)
-                self.assertEqual(output, [])
+                assert_that(output, equal_to([]))
 
                 test_pipeline.run()
 
@@ -598,7 +859,8 @@ class TestExtractEntity(unittest.TestCase):
                                                     entity_class=entities.StateIncarcerationPeriod,
                                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                     parent_id_field='AAA',
-                                                    unifying_id_field_filter_set=None)
+                                                    unifying_id_field_filter_set=None,
+                                                    state_code=None)
                      )
 
                 test_pipeline.run()
@@ -649,7 +911,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_schema_class=schema.StateSupervisionPeriod,
                                    parent_id_field='supervision_period_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   unifying_id_field_filter_set=None))
+                                   unifying_id_field_filter_set=None,
+                                   state_code=None))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(),
@@ -711,7 +974,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_schema_class=schema.StateIncarcerationSentence,
                                    parent_id_field='incarceration_sentence_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   unifying_id_field_filter_set=None))
+                                   unifying_id_field_filter_set=None,
+                                   state_code=None))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(), {'charges', 'incarceration_periods', 'supervision_periods'})
@@ -758,7 +1022,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_schema_class=schema.StateCharge,
                                    parent_id_field=charge.get_class_id_name(),
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   unifying_id_field_filter_set=None))
+                                   unifying_id_field_filter_set=None,
+                                   state_code=None))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(), {'court_case', 'bond'})
@@ -813,14 +1078,15 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_schema_class=schema.StateIncarcerationIncident,
                                    parent_id_field='incarceration_incident_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   unifying_id_field_filter_set=None))
+                                   unifying_id_field_filter_set=None,
+                                   state_code=None))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(), {'responding_officer', 'incarceration_incident_outcomes'})
 
             output_responding_officer = properties_dict.get('responding_officer')
 
-            self.assertEqual(output_responding_officer, [])
+            assert_that(output_responding_officer, equal_to([]))
 
             test_pipeline.run()
 
@@ -874,7 +1140,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                           parent_schema_class=schema.StateIncarcerationPeriod,
                                           parent_id_field='incarceration_period_id',
                                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                          unifying_id_field_filter_set=None
+                                          unifying_id_field_filter_set=None,
+                                          state_code=None
                                       ))
 
             output_supervision_violation_response = \
@@ -946,7 +1213,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                           schema.StateIncarcerationPeriod,
                                           parent_id_field='incarceration_period_id',
                                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                          unifying_id_field_filter_set=None
+                                          unifying_id_field_filter_set=None,
+                                          state_code=None
                                       ))
 
             output_supervision_violation_response = \
@@ -1014,7 +1282,8 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                           association_table=association_table_name,
                           association_table_parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
                           association_table_entity_id_field=entities.StateCharge.get_class_id_name(),
-                          unifying_id_field_filter_set=None))
+                          unifying_id_field_filter_set=None,
+                          state_code=None))
 
             assert_that(output, ExtractAssertMatchers.
                         validate_extract_relationship_property_entities(
@@ -1075,9 +1344,10 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                           association_table=association_table_name,
                           association_table_parent_id_field=entities.StateParoleDecision.get_class_id_name(),
                           association_table_entity_id_field=entities.StateAgent.get_class_id_name(),
-                          unifying_id_field_filter_set=None))
+                          unifying_id_field_filter_set=None,
+                          state_code=None))
 
-            self.assertEqual(output, [])
+            assert_that(output, equal_to([]))
 
             test_pipeline.run()
 

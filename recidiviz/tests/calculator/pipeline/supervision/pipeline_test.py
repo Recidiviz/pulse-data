@@ -19,7 +19,7 @@
 """Tests for supervision/pipeline.py"""
 import json
 import unittest
-from typing import Set, Optional
+from typing import Set, Optional, Dict
 
 import apache_beam as beam
 from apache_beam.pvalue import AsDict
@@ -82,25 +82,25 @@ from recidiviz.tests.calculator.calculator_test_utils import \
 from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
 from recidiviz.tests.persistence.database import database_test_utils
 
-ALL_INCLUSIONS_DICT = {
-        'age_bucket': True,
-        'gender': True,
-        'race': True,
-        'ethnicity': True,
-        SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
-        SupervisionMetricType.SUCCESS.value: True,
-        SupervisionMetricType.REVOCATION.value: True,
-        SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
-        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
-        SupervisionMetricType.POPULATION.value: True,
-    }
-
 
 class TestSupervisionPipeline(unittest.TestCase):
     """Tests the entire supervision pipeline."""
 
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
+
+        self.all_inclusions_dict: Dict[str, bool] = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
+            SupervisionMetricType.SUCCESS.value: True,
+            SupervisionMetricType.REVOCATION.value: True,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
+            SupervisionMetricType.POPULATION.value: True,
+        }
 
     @staticmethod
     def build_supervision_pipeline_data_dict(fake_person_id: int,
@@ -301,6 +301,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
                                    fake_supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types)
@@ -320,6 +321,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
                                    fake_supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
@@ -327,11 +329,13 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     @staticmethod
     def run_test_pipeline(dataset: str,
+                          inclusions: Dict[str, bool],
                           fake_supervision_period_id: int,
                           fake_svr_id: int,
                           expected_metric_types: Set[SupervisionMetricType],
                           expected_violation_types: Set[ViolationType] = None,
-                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+                          unifying_id_field_filter_set: Optional[Set[int]] = None,
+                          metric_types_filter: Optional[Set[str]] = None):
         """Runs a test version of the supervision pipeline."""
         test_pipeline = TestPipeline()
 
@@ -523,13 +527,15 @@ class TestSupervisionPipeline(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
+
         # Get supervision metrics
         supervision_metrics = (person_time_buckets
                                | 'Get Supervision Metrics' >>  # type: ignore
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=ALL_INCLUSIONS_DICT,
-                                   metric_type='ALL',
+                                   inclusions=inclusions,
+                                   metric_types=metric_types,
                                    calculation_month_limit=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types))
@@ -771,6 +777,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types)
@@ -1027,10 +1034,248 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
                                    expected_violation_types)
+
+    @freeze_time('2017-01-31')
+    def testSupervisionPipeline_withMetricTypesFilter(self):
+        fake_person_id = 12345
+        fake_svr_id = 56789
+        fake_violation_id = 345789
+
+        fake_person = schema.StatePerson(
+            person_id=fake_person_id, gender=Gender.FEMALE,
+            birthdate=date(1990, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT)
+
+        persons_data = [normalized_database_base_dict(fake_person)]
+
+        initial_incarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_MO',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2008, 11, 20),
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.
+            SENTENCE_SERVED,
+            person_id=fake_person_id
+        )
+
+        first_reincarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code='US_MO',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2011, 4, 5),
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            person_id=fake_person_id)
+
+        # This probation supervision period ended in a revocation
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=1111,
+            state_code='US_MO',
+            county_code='124',
+            start_date=date(2015, 3, 14),
+            termination_date=date(2017, 1, 4),
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            person_id=fake_person_id
+        )
+
+        supervision_sentence = schema.StateSupervisionSentence(
+            supervision_sentence_id=1122,
+            state_code='US_MO',
+            supervision_type=StateSupervisionType.PROBATION,
+            supervision_periods=[supervision_period],
+            projected_completion_date=date(2017, 12, 31),
+            person_id=fake_person_id
+        )
+
+        incarceration_sentence = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=123,
+            state_code='US_ND',
+            person_id=fake_person_id
+        )
+
+        supervision_sentence_supervision_period_association = [
+            {
+                'supervision_period_id': 1111,
+                'supervision_sentence_id': 1122,
+            }
+        ]
+
+        charge = database_test_utils.generate_test_charge(
+            person_id=fake_person_id,
+            charge_id=1234523,
+            court_case=None,
+            bond=None
+        )
+
+        ssvr = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=fake_svr_id,
+            state_code='us_ca',
+            person_id=fake_person_id,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            supervision_violation_id=fake_violation_id
+        )
+
+        state_agent = database_test_utils.generate_test_assessment_agent()
+
+        ssvr.decision_agents = [state_agent]
+
+        violation_report = schema.StateSupervisionViolationResponse(
+            supervision_violation_response_id=99999,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            is_draft=False,
+            response_date=date(2017, 1, 1),
+            person_id=fake_person_id
+        )
+
+        supervision_violation_type = schema.StateSupervisionViolationTypeEntry(
+            person_id=fake_person_id,
+            state_code='US_MO',
+            violation_type=StateSupervisionViolationType.FELONY
+        )
+
+        supervision_violation = schema.StateSupervisionViolation(
+            supervision_violation_id=fake_violation_id,
+            state_code='US_MO',
+            person_id=fake_person_id,
+            supervision_violation_responses=[violation_report, ssvr],
+            supervision_violation_types=[supervision_violation_type]
+        )
+
+        violation_report.supervision_violation_id = supervision_violation.supervision_violation_id
+
+        # This incarceration period was due to a probation revocation
+        revocation_reincarceration = schema.StateIncarcerationPeriod(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_MO',
+            county_code='124',
+            facility='San Quentin',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2017, 1, 4),
+            person_id=fake_person_id,
+            source_supervision_violation_response_id=fake_svr_id)
+
+        assessment = schema.StateAssessment(
+            assessment_id=298374,
+            assessment_date=date(2015, 3, 19),
+            assessment_type=StateAssessmentType.LSIR,
+            person_id=fake_person_id
+        )
+
+        incarceration_periods_data = [
+            normalized_database_base_dict(initial_incarceration),
+            normalized_database_base_dict(first_reincarceration),
+            normalized_database_base_dict(revocation_reincarceration)
+        ]
+
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period)
+        ]
+
+        supervision_violation_type_data = [
+            normalized_database_base_dict(supervision_violation_type)
+        ]
+
+        supervision_violation_response_data = [
+            normalized_database_base_dict(ssvr),
+            normalized_database_base_dict(violation_report)
+        ]
+
+        supervision_violation_data = [
+            normalized_database_base_dict(supervision_violation)
+        ]
+
+        supervision_sentences_data = [
+            normalized_database_base_dict(supervision_sentence)
+        ]
+
+        incarceration_sentences_data = [
+            normalized_database_base_dict(incarceration_sentence)
+        ]
+
+        charge_data = [
+            normalized_database_base_dict(charge)
+        ]
+
+        assessment_data = [
+            normalized_database_base_dict(assessment)
+        ]
+
+        data_dict = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
+            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
+            schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
+            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name: [{}],
+            schema.state_charge_incarceration_sentence_association_table.name: [{}],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
+            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
+            schema.state_supervision_sentence_supervision_period_association_table.name:
+            supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
+        }
+
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.ASSESSMENT_CHANGE
+        }
+
+        metric_types_filter = {
+            metric.value for metric in expected_metric_types
+        }
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
+                                   supervision_period.supervision_period_id,
+                                   fake_svr_id,
+                                   expected_metric_types,
+                                   metric_types_filter=metric_types_filter)
 
     def testSupervisionPipelineNoSupervision(self):
         """Tests the supervision pipeline when a person doesn't have any supervision periods."""
@@ -1240,6 +1485,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
+                                   self.all_inclusions_dict,
                                    supervision_period__1.supervision_period_id,
                                    supervision_violation_response.supervision_violation_response_id,
                                    expected_metric_types)
@@ -1247,6 +1493,21 @@ class TestSupervisionPipeline(unittest.TestCase):
 
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
+
+    def setUp(self) -> None:
+        self.all_inclusions_dict = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
+            SupervisionMetricType.SUCCESS.value: True,
+            SupervisionMetricType.REVOCATION.value: True,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
+            SupervisionMetricType.POPULATION.value: True,
+        }
+
 
     def testClassifySupervisionTimeBuckets(self):
         """Tests the ClassifySupervisionTimeBuckets DoFn."""
@@ -2050,6 +2311,20 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
     """Tests the CalculateSupervisionMetricCombinations DoFn in the pipeline."""
 
+    def setUp(self) -> None:
+        self.all_inclusions_dict: Dict[str, bool] = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True,
+            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
+            SupervisionMetricType.SUCCESS.value: True,
+            SupervisionMetricType.REVOCATION.value: True,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
+            SupervisionMetricType.POPULATION.value: True,
+        }
+
     def testCalculateSupervisionMetricCombinations(self):
         """Tests the CalculateSupervisionMetricCombinations DoFn."""
         fake_person = StatePerson.new_with_defaults(
@@ -2070,7 +2345,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_time_buckets[0], ALL_INCLUSIONS_DICT, SupervisionMetricType.POPULATION))
+            fake_person, supervision_time_buckets[0], self.all_inclusions_dict, SupervisionMetricType.POPULATION))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -2089,7 +2364,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit, ALL_INCLUSIONS_DICT).with_outputs('populations')
+                             calculation_month_limit, self.all_inclusions_dict).with_outputs('populations')
                   )
 
         assert_that(output.populations, AssertMatchers.
@@ -2122,7 +2397,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for revocation counts
         num_combinations_revocation = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT,
+                fake_person, supervision_months[0], self.all_inclusions_dict,
                 SupervisionMetricType.REVOCATION))
         assert num_combinations_revocation > 0
 
@@ -2137,7 +2412,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for population count
         num_combinations_population = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], ALL_INCLUSIONS_DICT, SupervisionMetricType.POPULATION))
+                fake_person, supervision_months[0], self.all_inclusions_dict, SupervisionMetricType.POPULATION))
         assert num_combinations_population > 0
 
         # Multiply by the number of months and by 2 (to account for methodology)
@@ -2157,8 +2432,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_month_limit,
-                             ALL_INCLUSIONS_DICT).with_outputs('populations',
-                                                               'revocations')
+                             self.all_inclusions_dict).with_outputs('populations',
+                                                                    'revocations')
                   )
 
         assert_that(output.revocations, AssertMatchers.
@@ -2186,7 +2461,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, inclusions=ALL_INCLUSIONS_DICT)
+                             calculation_month_limit=-1, inclusions=self.all_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))
@@ -2203,7 +2478,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, inclusions=ALL_INCLUSIONS_DICT)
+                             calculation_month_limit=-1, inclusions=self.all_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))
