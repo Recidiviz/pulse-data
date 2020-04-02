@@ -31,7 +31,7 @@ DataDictQueryFn = Callable[[DatasetStr, QueryStr, DataTablesDict, str], List[Nor
 
 ENTITY_TABLE_QUERY_REGEX = re.compile(
     r'SELECT \* FROM `([a-z\d\-.]+)\.([a-z_]+)`'
-    r'( WHERE ([a-z_]+) IN \(([\d ,]+)\))?'
+    r'( WHERE ([a-z_]+) IN \(([\'\w\d ,]+)\))?'
 )
 
 ASSOCIATION_TABLE_QUERY_REGEX = re.compile(
@@ -118,16 +118,29 @@ class FakeReadFromBigQueryFactory:
         if table_name not in data_dict:
             raise ValueError(f'Table {table_name} not in data dict')
 
-        filter_id_name = match.group(4)
-        filter_id_list_str = match.group(5)
-        if filter_id_name and filter_id_list_str:
-            if unifying_id_field != filter_id_name:
+        filter_field = match.group(4)
+        filter_field_list_str = match.group(5)
+        if filter_field and filter_field_list_str:
+            if filter_field == 'state_code':
+                filter_field_list_value = filter_field_list_str.replace("\'", "")
+
+                matching_entities: List[NormalizedDatabaseDict] = []
+                for entity_dict in data_dict[table_name]:
+                    if filter_field not in entity_dict.keys() or entity_dict.get(filter_field) is None:
+                        raise ValueError(
+                            f'Expected {filter_field} to be a set field in {table_name}.'
+                        )
+                    if entity_dict.get(filter_field) == filter_field_list_value:
+                        matching_entities.append(entity_dict)
+
+                return matching_entities
+            if unifying_id_field != filter_field:
                 raise ValueError(
-                    f'Expected unifying_id_field {unifying_id_field} to equal the filter_id_name {filter_id_name}')
+                    f'Expected unifying_id_field {unifying_id_field} to equal the filter_id_name {filter_field}')
 
-            return filter_results(data_dict, table_name, filter_id_name, id_list_str_to_set(filter_id_list_str))
+            return filter_results(data_dict, table_name, filter_field, id_list_str_to_set(filter_field_list_str))
 
-        if filter_id_name or filter_id_list_str:
+        if filter_field or filter_field_list_str:
             raise ValueError('Found one of filter_id_name, filter_id_list_str is None, but not both.')
 
         return data_dict[table_name]
