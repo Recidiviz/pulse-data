@@ -4,30 +4,67 @@
 #  If you want to deploy a pipeline just to stage, add it to staging_only_calculation_pipeline_templates.yaml
 
 # Number of pipelines to deploy
-pipeline_count: 4
+pipeline_count: 7
 
 # List of pipelines with their necessary details
 pipelines:
-  - pipeline: recidivism
-    job_name: full-recidivism-calculations
-    input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
-    output: dataflow_metrics
-  - pipeline: incarceration
-    job_name: full-incarceration-calculations
-    input: state
-    reference_input: dashboard_views
-    output: dataflow_metrics
+# Full US_ND calculations with no time limit
   - pipeline: supervision
-    job_name: full-supervision-calculations
+    job_name: full-us-nd-supervision-calculations
     input: state
     # TODO(2821): Move to reference dataset
     reference_input: dashboard_views
     output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: -1 # No limit
+    # metric_types must be the last in this list
+    metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+  - pipeline: recidivism
+    job_name: full-us-nd-recidivism-calculations
+    input: state
+    # TODO(2821): Move to reference dataset
+    reference_input: dashboard_views
+    output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: -1 # No limit
+  - pipeline: incarceration
+    job_name: full-us-nd-incarceration-calculations
+    input: state
+    reference_input: dashboard_views
+    output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: -1 # No limit
   - pipeline: program
-    job_name: full-program-calculations
+    job_name: full-us-nd-program-calculations
     input: state
     # TODO(2821): Move to reference dataset
     reference_input: dashboard_views
     output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: -1 # No limit
+# Daily US_ND calculations for the 36-mo dashboard
+  - pipeline: supervision
+    job_name: us-nd-supervision-calculations-36
+    input: state
+    # TODO(2821): Move to reference dataset
+    reference_input: dashboard_views
+    output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: 36
+    # metric_types must be the last in this list
+    metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+  - pipeline: incarceration
+    job_name: us-nd-incarceration-calculations-36
+    input: state
+    reference_input: dashboard_views
+    output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: 36
+  - pipeline: program
+    job_name: us-nd-program-calculations-36
+    input: state
+    # TODO(2821): Move to reference dataset
+    reference_input: dashboard_views
+    output: dataflow_metrics
+    state_code: US_ND
+    calculation_month_limit: 36

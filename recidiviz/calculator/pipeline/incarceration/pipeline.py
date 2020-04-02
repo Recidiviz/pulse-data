@@ -402,6 +402,7 @@ def run(argv):
     reference_dataset = all_pipeline_options['project'] + '.' + known_args.reference_input
 
     person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+    state_code = known_args.state_code
 
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
@@ -412,26 +413,36 @@ def run(argv):
 
         # Get StateSentenceGroups
         sentence_groups = (p | 'Load StateSentenceGroups' >>
-                           BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StateSentenceGroup,
-                                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                           build_related_entities=True,
-                                           unifying_id_field_filter_set=person_id_filter_set))
+                           BuildRootEntity(
+                               dataset=query_dataset,
+                               root_entity_class=entities.StateSentenceGroup,
+                               unifying_id_field=entities.StatePerson.get_class_id_name(),
+                               build_related_entities=True,
+                               unifying_id_field_filter_set=person_id_filter_set,
+                               state_code=state_code
+                           ))
 
         # Get StateIncarcerationSentences
         incarceration_sentences = (p | 'Load StateIncarcerationSentences' >>
-                                   BuildRootEntity(dataset=query_dataset,
-                                                   root_entity_class=entities.StateIncarcerationSentence,
-                                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                   build_related_entities=True,
-                                                   unifying_id_field_filter_set=person_id_filter_set))
+                                   BuildRootEntity(
+                                       dataset=query_dataset,
+                                       root_entity_class=entities.StateIncarcerationSentence,
+                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                       build_related_entities=True,
+                                       unifying_id_field_filter_set=person_id_filter_set,
+                                       state_code=state_code
+                                   ))
 
         # Get StateSupervisionSentences
         supervision_sentences = (p | 'Load StateSupervisionSentences' >>
-                                 BuildRootEntity(dataset=query_dataset,
-                                                 root_entity_class=entities.StateSupervisionSentence,
-                                                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                 build_related_entities=True,
-                                                 unifying_id_field_filter_set=person_id_filter_set))
+                                 BuildRootEntity(
+                                     dataset=query_dataset,
+                                     root_entity_class=entities.StateSupervisionSentence,
+                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                     build_related_entities=True,
+                                     unifying_id_field_filter_set=person_id_filter_set,
+                                     state_code=state_code
+                                 ))
 
         sentences_and_sentence_groups = (
             {'sentence_groups': sentence_groups,

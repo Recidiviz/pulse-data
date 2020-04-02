@@ -561,6 +561,7 @@ def run(argv):
                         known_args.reference_input
 
     person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+    state_code = known_args.state_code
 
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
@@ -577,7 +578,9 @@ def run(argv):
                                                  root_entity_class=entities.StateIncarcerationPeriod,
                                                  unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                  build_related_entities=True,
-                                                 unifying_id_field_filter_set=person_id_filter_set))
+                                                 unifying_id_field_filter_set=person_id_filter_set,
+                                                 state_code=state_code
+                                                 ))
 
         # Get StateSupervisionViolations
         supervision_violations = \
@@ -585,7 +588,9 @@ def run(argv):
              | 'Load SupervisionViolations' >>
              BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StateSupervisionViolation,
                              unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
-                             unifying_id_field_filter_set=person_id_filter_set))
+                             unifying_id_field_filter_set=person_id_filter_set,
+                             state_code=state_code
+                             ))
 
         # TODO(2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
@@ -594,7 +599,9 @@ def run(argv):
              | 'Load SupervisionViolationResponses' >>
              BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StateSupervisionViolationResponse,
                              unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
-                             unifying_id_field_filter_set=person_id_filter_set))
+                             unifying_id_field_filter_set=person_id_filter_set,
+                             state_code=state_code
+                             ))
 
         # Group StateSupervisionViolationResponses and
         # StateSupervisionViolations by person_id

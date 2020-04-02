@@ -22,7 +22,7 @@ import datetime
 import json
 import logging
 import sys
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Set
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions
@@ -77,7 +77,7 @@ class GetSupervisionMetrics(beam.PTransform):
     """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
     def __init__(self, pipeline_options: Dict[str, str],
                  inclusions: Dict[str, bool],
-                 metric_type: str,
+                 metric_types: Set[str],
                  calculation_month_limit: int):
         super(GetSupervisionMetrics, self).__init__()
         self._pipeline_options = pipeline_options
@@ -85,7 +85,7 @@ class GetSupervisionMetrics(beam.PTransform):
         self.calculation_month_limit = calculation_month_limit
 
         for metric_option in MetricType:
-            if metric_type in ('ALL', metric_option.value):
+            if metric_option.value in metric_types or 'ALL' in metric_types:
                 self.inclusions[metric_option.value] = True
                 logging.info("Producing %s metrics", metric_option.value)
             else:
@@ -243,8 +243,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
             assessments,
             violation_responses,
             ssvr_agent_associations,
-            supervision_period_to_agent_associations,
-            state_code)
+            supervision_period_to_agent_associations)
 
         if not supervision_time_buckets:
             logging.info("No valid supervision time buckets for person with id: %d. Excluding them from the "
@@ -472,9 +471,10 @@ def parse_arguments(argv):
     # Parse arguments
     add_shared_pipeline_arguments(parser)
 
-    parser.add_argument('--metric_type',
-                        dest='metric_type',
+    parser.add_argument('--metric_types',
+                        dest='metric_types',
                         type=str,
+                        nargs='+',
                         choices=[
                             'ALL',
                             MetricType.ASSESSMENT_CHANGE.value,
@@ -485,16 +485,8 @@ def parse_arguments(argv):
                             MetricType.SUCCESS.value,
                             MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value
                         ],
-                        help='The type of metric to calculate.',
-                        default='ALL')
-
-    # NOTE: Must stay up to date to include all active states
-    parser.add_argument('--state_code',
-                        dest='state_code',
-                        type=str,
-                        choices=['ALL', 'US_MO', 'US_ND'],
-                        help='The state_code to include in the calculations',
-                        default='ALL')
+                        help='A list of the types of metric to calculate.',
+                        default={'ALL'})
 
     parser.add_argument('--calculation_month_limit',
                         dest='calculation_month_limit',
@@ -560,6 +552,7 @@ def run(argv):
         known_args.reference_input
 
     person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+    state_code = known_args.state_code
 
     with beam.Pipeline(options=pipeline_options) as p:
         # Get StatePersons
@@ -567,7 +560,8 @@ def run(argv):
                                                          root_entity_class=entities.StatePerson,
                                                          unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                          build_related_entities=True,
-                                                         unifying_id_field_filter_set=person_id_filter_set))
+                                                         unifying_id_field_filter_set=person_id_filter_set,
+                                                         state_code=state_code))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p | 'Load IncarcerationPeriods' >> BuildRootEntity(
@@ -575,7 +569,8 @@ def run(argv):
             root_entity_class=entities.StateIncarcerationPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Get StateSupervisionViolations
@@ -584,7 +579,8 @@ def run(argv):
             root_entity_class=entities.StateSupervisionViolation,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # TODO(2769): Don't bring this in as a root entity
@@ -594,7 +590,8 @@ def run(argv):
             root_entity_class=entities.StateSupervisionViolationResponse,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Get StateSupervisionSentences
@@ -603,7 +600,8 @@ def run(argv):
             root_entity_class=entities.StateSupervisionSentence,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Get StateIncarcerationSentences
@@ -612,7 +610,8 @@ def run(argv):
             root_entity_class=entities.StateIncarcerationSentence,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Get StateSupervisionPeriods
@@ -621,7 +620,8 @@ def run(argv):
             root_entity_class=entities.StateSupervisionPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Get StateAssessments
@@ -630,7 +630,8 @@ def run(argv):
             root_entity_class=entities.StateAssessment,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
             build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
         ))
 
         # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
@@ -737,7 +738,7 @@ def run(argv):
         all_pipeline_options = pipeline_options.get_all_options()
 
         # Get the type of metric to calculate
-        metric_type = known_args.metric_type
+        metric_types = set(known_args.metric_types) if known_args.metric_types else ['ALL']
 
         # The number of months to limit the monthly calculation output to
         calculation_month_limit = known_args.calculation_month_limit
@@ -751,7 +752,7 @@ def run(argv):
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    inclusions=inclusions,
-                                   metric_type=metric_type,
+                                   metric_types=metric_types,
                                    calculation_month_limit=calculation_month_limit))
         if person_id_filter_set:
             logging.warning("Non-empty person filter set - returning before writing metrics.")

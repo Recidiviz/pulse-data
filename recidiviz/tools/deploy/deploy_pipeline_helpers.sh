@@ -44,13 +44,15 @@ function deploy_pipelines {
       output="$(cat $file | pipenv run yq -r .pipelines[$i].output)"
       check_not_empty output
 
-      metric_type="$(cat $file | pipenv run yq -r .pipelines[$i].metric_type)"
       state_code="$(cat $file | pipenv run yq -r .pipelines[$i].state_code)"
+      calculation_month_limit="$(cat $file | pipenv run yq -r .pipelines[$i].calculation_month_limit)"
+      metric_types="$(cat $file | pipenv run yq -r .pipelines[$i].metric_types)"
 
       base_command="pipenv run ${bash_source_dir}/deploy_pipeline_to_template.sh $project $bucket $pipeline $job_name $input $reference_input $output"
 
-      [[ ${metric_type} == "null" ]] || base_command="$base_command $metric_type"
       [[ ${state_code} == "null" ]] || base_command="$base_command $state_code"
+      [[ ${calculation_month_limit} == "null" ]] || base_command="$base_command $calculation_month_limit"
+      [[ ${metric_types} == "null" ]] || base_command="$base_command $metric_types"
 
       run_cmd "${base_command}"
       ((i = i + 1))

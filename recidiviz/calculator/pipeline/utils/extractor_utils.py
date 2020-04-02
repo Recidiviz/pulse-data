@@ -44,7 +44,8 @@ class BuildRootEntity(beam.PTransform):
                  root_entity_class: Type[state_entities.Entity],
                  unifying_id_field: str,
                  build_related_entities: bool,
-                 unifying_id_field_filter_set: Optional[Set[int]] = None):
+                 unifying_id_field_filter_set: Optional[Set[int]] = None,
+                 state_code: Optional[str] = None):
         """Initializes the PTransform with the required arguments.
 
         Arguments:
@@ -75,6 +76,7 @@ class BuildRootEntity(beam.PTransform):
         self._unifying_id_field = unifying_id_field
         self._build_related_entities = build_related_entities
         self._unifying_id_field_filter_set = unifying_id_field_filter_set
+        self._state_code = state_code
 
         if not dataset:
             raise ValueError("No valid data source passed to the pipeline.")
@@ -103,7 +105,8 @@ class BuildRootEntity(beam.PTransform):
                                         entity_class=self._root_entity_class,
                                         unifying_id_field=self._unifying_id_field,
                                         parent_id_field=None,
-                                        unifying_id_field_filter_set=self._unifying_id_field_filter_set))
+                                        unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                                        state_code=self._state_code))
 
         if self._build_related_entities:
             # Get the related property entities
@@ -116,7 +119,9 @@ class BuildRootEntity(beam.PTransform):
                                    parent_schema_class=self._root_schema_class,
                                    parent_id_field=self._root_entity_class.get_class_id_name(),
                                    unifying_id_field=self._unifying_id_field,
-                                   unifying_id_field_filter_set=self._unifying_id_field_filter_set))
+                                   unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                                   state_code=self._state_code
+                               ))
         else:
             properties_dict = {}
 
@@ -163,7 +168,8 @@ class _ExtractEntityBase(beam.PTransform):
                  entity_class: Type[state_entities.Entity],
                  unifying_id_field: str,
                  parent_id_field: Optional[str],
-                 unifying_id_field_filter_set: Optional[Set[int]]):
+                 unifying_id_field_filter_set: Optional[Set[int]],
+                 state_code: Optional[str]):
         super(_ExtractEntityBase, self).__init__()
         self._dataset = dataset
 
@@ -177,9 +183,13 @@ class _ExtractEntityBase(beam.PTransform):
             schema_utils.get_state_database_entity_with_name(self._entity_class.__name__)
         self._entity_table_name = self._schema_class.__tablename__
         self._entity_id_field = self._entity_class.get_class_id_name()
+        self._state_code = state_code
 
     def _entity_has_unifying_id_field(self):
         return hasattr(self._schema_class, self._unifying_id_field)
+
+    def _entity_has_state_code_field(self):
+        return hasattr(self._schema_class, 'state_code')
 
     def _is_unifying_id_field_in_filter_set(self, association_raw_tuple):
         if not self._unifying_id_field_filter_set or not self._entity_has_unifying_id_field():
@@ -198,14 +208,19 @@ class _ExtractEntityBase(beam.PTransform):
         if self._entity_has_unifying_id_field() and self._unifying_id_field_filter_set:
             id_str_set = {str(unifying_id) for unifying_id in self._unifying_id_field_filter_set if str(unifying_id)}
 
-            entity_query = entity_query + \
-                           f" WHERE {self._unifying_id_field} IN ({', '.join(id_str_set)})"
+            entity_query = entity_query + f" WHERE {self._unifying_id_field} IN ({', '.join(id_str_set)})"
+
+        if self._entity_has_state_code_field() and self._state_code:
+            conjunctive_word = 'AND' if 'WHERE' in entity_query else 'WHERE'
+            entity_query = entity_query + f" {conjunctive_word} state_code IN ('{self._state_code}')"
 
         return entity_query
 
     def _get_entities_raw_pcollection(self, input_or_inputs):
         if not self._entity_has_unifying_id_field():
-            return []
+            empty_output = (input_or_inputs | f"{self._entity_class} does not have {self._unifying_id_field}."
+                            >> beam.Create([]))
+            return empty_output
 
         entity_query = self._get_entities_table_sql_query()
 
@@ -242,9 +257,10 @@ class _ExtractEntity(_ExtractEntityBase):
                  entity_class: Type[state_entities.Entity],
                  unifying_id_field: str,
                  parent_id_field: Optional[str],
-                 unifying_id_field_filter_set: Optional[Set[int]]):
+                 unifying_id_field_filter_set: Optional[Set[int]],
+                 state_code: Optional[str]):
         super(_ExtractEntity, self).__init__(dataset, entity_class, unifying_id_field, parent_id_field,
-                                             unifying_id_field_filter_set)
+                                             unifying_id_field_filter_set, state_code)
 
     def expand(self, input_or_inputs):
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
@@ -279,13 +295,15 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                  parent_schema_class: Type[StateBase],
                  parent_id_field: str,
                  unifying_id_field: str,
-                 unifying_id_field_filter_set: Optional[Set[int]]):
+                 unifying_id_field_filter_set: Optional[Set[int]],
+                 state_code: Optional[str]):
         super(_ExtractRelationshipPropertyEntities, self).__init__()
         self._dataset = dataset
         self._parent_schema_class = parent_schema_class
         self._parent_id_field = parent_id_field
         self._unifying_id_field = unifying_id_field
         self._unifying_id_field_filter_set = unifying_id_field_filter_set
+        self._state_code = state_code
 
     def expand(self, input_or_inputs):
         names_to_properties = self._parent_schema_class. \
@@ -321,7 +339,8 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                                     association_table=association_table,
                                     association_table_parent_id_field=self._parent_id_field,
                                     association_table_entity_id_field=entity_id_field,
-                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set)
+                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                                    state_code=self._state_code)
                                 )
 
                 # 1-to-many relationship
@@ -334,7 +353,8 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                                     entity_class=property_entity_class,
                                     unifying_id_field=self._unifying_id_field,
                                     parent_id_field=self._parent_id_field,
-                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set)
+                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                                    state_code=self._state_code)
                                 )
 
                 # 1-to-1 relationship (from parent class perspective)
@@ -353,7 +373,8 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                                     association_table=association_table,
                                     association_table_parent_id_field=self._parent_id_field,
                                     association_table_entity_id_field=association_table_entity_id_field,
-                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set)
+                                    unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                                    state_code=self._state_code)
                                 )
 
                 properties_dict[property_name] = entities
@@ -376,9 +397,10 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
                  association_table: str,
                  association_table_parent_id_field: str,
                  association_table_entity_id_field: str,
-                 unifying_id_field_filter_set: Optional[Set[int]]):
+                 unifying_id_field_filter_set: Optional[Set[int]],
+                 state_code: Optional[str]):
         super(_ExtractEntityWithAssociationTable, self).__init__(
-            dataset, entity_class, unifying_id_field, parent_id_field, unifying_id_field_filter_set)
+            dataset, entity_class, unifying_id_field, parent_id_field, unifying_id_field_filter_set, state_code)
 
         self._association_table_parent_id_field = association_table_parent_id_field
         self._association_table_entity_id_field = association_table_entity_id_field
@@ -387,7 +409,10 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
     def _get_association_tuples_raw_pcollection(self, input_or_inputs):
         """Returns the PCollection of association tuples from all relevant rows in the association table."""
         if not self._entity_has_unifying_id_field():
-            return []
+            empty_output = (input_or_inputs | f"{self._entity_class} does not have {self._unifying_id_field}."
+                                              f"Dropping this associated entity."
+                            >> beam.Create([]))
+            return empty_output
 
         # The join is doing a filter - we need to know which entities this instance of the pipeline will end up
         # hydrating to know which association table rows we will need.
