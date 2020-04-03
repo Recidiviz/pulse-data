@@ -53,7 +53,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsIdController
 
-    def test_populate_data_offender(self):
+    def test_populate_data_offender_ofndr_dob(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='1111',
@@ -61,6 +61,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                             given_names='FIRST_1',
                             middle_names='MIDDLE_1',
                             gender='M',
+                            birthdate='01/01/75',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
                             ],
@@ -77,6 +78,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                             given_names='FIRST_2',
                             middle_names='MIDDLE_2',
                             gender='F',
+                            birthdate='01/01/85',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
                             ],
@@ -93,6 +95,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                             given_names='FIRST_3',
                             middle_names='MIDDLE_3',
                             gender='F',
+                            birthdate='01/01/95',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
                             ],
@@ -106,7 +109,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                 ]),
             ])
 
-        self.run_parse_file_test(expected, 'offender')
+        self.run_parse_file_test(expected, 'offender_ofndr_dob')
 
     def test_populate_data_ofndr_tst_ofndr_tst_cert(self):
         expected = IngestInfo(
@@ -413,13 +416,15 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         self.maxDiff = None
 
         ######################################
-        # OFFENDER
+        # OFFENDER_OFNDR_DOB
         ######################################
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "FIRST_1", "middle_names": "MIDDLE_1", "surname": "LAST_1"}',
             gender=Gender.MALE,
             gender_raw_text='M',
+            birthdate=datetime.date(year=1975, month=1, day=1),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='1111', id_type=US_ID_DOC),
@@ -440,6 +445,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             full_name='{"given_names": "FIRST_2", "middle_names": "MIDDLE_2", "surname": "LAST_2"}',
             gender=Gender.FEMALE,
             gender_raw_text='F',
+            birthdate=datetime.date(year=1985, month=1, day=1),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='2222', id_type=US_ID_DOC),
@@ -460,6 +467,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             full_name='{"given_names": "FIRST_3", "middle_names": "MIDDLE_3", "surname": "LAST_3"}',
             gender=Gender.FEMALE,
             gender_raw_text='F',
+            birthdate=datetime.date(year=1995, month=1, day=1),
+            birthdate_inferred_from_age=False,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='3333', id_type=US_ID_DOC),
@@ -480,7 +489,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('offender.csv')
+        self._run_ingest_job_for_filename('offender_ofndr_dob.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
