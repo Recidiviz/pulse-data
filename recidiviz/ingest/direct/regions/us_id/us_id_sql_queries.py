@@ -26,13 +26,17 @@ from recidiviz.utils import metadata
 project_name = metadata.project_id()
 
 
-TAK001_OFFENDER_IDENTIFICATION_QUERY = \
+OFFENDER_OFNDR_DOB = \
     f"""
-    -- offender
+    -- offender_ofndr_dob
     SELECT
         *
     FROM
-        `{project_name}.us_id_raw_data.offender`
+        `{project_name}.us_id_raw_data.offender` offender
+    LEFT JOIN
+        `{project_name}.us_id_raw_data.ofndr_dob` dob
+    ON
+      offender.docno = dob.ofndr_num
     """
 
 OFNDR_TST_OFNDR_TST_CERT_QUERY = \
@@ -146,7 +150,7 @@ MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = \
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
-        ('offender', TAK001_OFFENDER_IDENTIFICATION_QUERY),
+        ('offender_ofndr_dob', OFFENDER_OFNDR_DOB),
         ('ofndr_tst_ofndr_tst_cert', OFNDR_TST_OFNDR_TST_CERT_QUERY),
         ('mittimus_judge_sentence_offense_sentprob_supervision_sentences',
          MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY),
