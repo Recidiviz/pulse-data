@@ -53,7 +53,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             max_delay_sec_between_files=max_delay_sec_between_files)
         self.enum_overrides = self.generate_enum_overrides()
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'offender': [
+            'offender_ofndr_dob': [
                 copy_name_to_alias,
                 # When first parsed, the info object just has a single external id - the DOC id.
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -79,14 +79,14 @@ class UsIdController(CsvGcsfsDirectIngestController):
             ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
-            'offender': [],
+            'offender_ofndr_dob': [],
             'ofndr_tst_ofndr_tst_cert': [],
             'mittimus_judge_sentence_offense_sentprob_incarceration_sentences': [],
             'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
         }
 
     FILE_TAGS = [
-        'offender',
+        'offender_ofndr_dob',
         'ofndr_tst_ofndr_tst_cert',
         'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',

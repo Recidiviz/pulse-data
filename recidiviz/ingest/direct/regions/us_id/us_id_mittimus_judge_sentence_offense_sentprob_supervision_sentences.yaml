@@ -54,10 +54,14 @@ keys_to_ignore:
   - jail_cred           # Unused - TODO(2999): Get more info from ID on this. Is this earned time?
   - jud_cd              # Unused - TODO(2999): Get more info from ID on this. Is this judicial district?
   - law_cd              # Unused - Law code. TODO(2999): Get more info from ID on this.
-  - lgl_fnam            # Unused - Legal first name of sentenced person (name information gathered from offender.csv)
-  - lgl_mnam            # Unused - Legal middle name of sentenced person (name information gathered from offender.csv)
-  - lgl_lnam            # Unused - Legal last name of sentenced person (name information gathered from offender.csv)
-  - lgl_title           # Unused - Legal title of sentenced person (name information gathered from offender.csv)
+  - lgl_fnam            # Unused - Legal first name of sentenced person (name information gathered from
+                        #          offender_ofndr_dob.csv)
+  - lgl_mnam            # Unused - Legal middle name of sentenced person (name information gathered from
+                        #          offender_ofndr_dob.csv)
+  - lgl_lnam            # Unused - Legal last name of sentenced person (name information gathered from
+                        #          offender_ofndr_dob.csv)
+  - lgl_title           # Unused - Legal title of sentenced person (name information gathered from
+                        #          offender_ofndr_dob.csv)
   - lifer               # Unused - life sentence - TODO(2999): Consider add this to the SupervisionSentence schema.
   - mitt_disp           # Unused - Mittimus disposition (Probation, Incarceration, or Interstate)
   - mitt_srl            # Unused - Mittimus id
