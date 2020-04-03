@@ -39,6 +39,9 @@ def get_urls_to_download() -> Set[str]:
     for link in links:
         link = unquote(link)
         if 'weekly jail' in link.lower() and 'pdf' in link.lower():
+            # Fix typo in link for ​​October 17, 2019
+            if link.endswith('12-17-19.pdf'):
+                link = link.replace('12-17-19', '10-17-19')
             # Make sure we only take things after Aug 9th 2018 as the format
             # changed before that.
             d = parse_date(link)
