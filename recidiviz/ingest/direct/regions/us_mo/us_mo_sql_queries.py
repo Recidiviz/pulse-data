@@ -1110,8 +1110,10 @@ TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
                     supv_period_partition_statuses.CYC AND
                 field_assignments_with_valid_region.FLD_ASSN_BEG_DT <
                     supv_period_partition_statuses.STATUS_CODE_CHG_DT AND
-                supv_period_partition_statuses.STATUS_CODE_CHG_DT <
+                (supv_period_partition_statuses.STATUS_CODE_CHG_DT <
                     field_assignments_with_valid_region.FLD_ASSN_END_DT
+                    OR field_assignments_with_valid_region.FLD_ASSN_END_DT = 0
+                )
             WHERE supv_period_partition_statuses.DOC IS NOT NULL
             UNION
             -- Field assignment close dates
