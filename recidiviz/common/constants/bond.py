@@ -71,6 +71,7 @@ BOND_TYPE_MAP = {
     '10 W BAIL CREDIT': BondType.PARTIAL_CASH,
     '17 ALT': None,
     '20 BOND': BondType.PARTIAL_CASH,
+    'APPEARANCE': BondType.CASH,
     'APPROVED SURETY': BondType.SECURED,
     'AR': BondType.NOT_REQUIRED,  # Administrative Release
     'AT 10': BondType.PARTIAL_CASH,
