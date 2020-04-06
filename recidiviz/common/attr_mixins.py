@@ -22,6 +22,7 @@ import attr
 
 from recidiviz.common.attr_utils import is_enum, is_forward_ref, is_list, \
     get_enum_cls, is_date
+from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
 
 
 class DefaultableAttr:
@@ -170,8 +171,10 @@ class BuildableAttr:
         value = build_dict.get(field)
 
         if value and isinstance(value, str):
-            value = datetime.datetime.strptime(
-                value, '%Y-%m-%d').date()
+            if is_yyyymmdd_date(value):
+                value = parse_yyyymmdd_date(value)
+            else:
+                value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
 
         return value
 

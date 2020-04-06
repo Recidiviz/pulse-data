@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, ConvertDictToKVTuple, AverageFn
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
-    SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
+    SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentenceToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -200,15 +200,14 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
     projected completion as either successful or not."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations, **kwargs):
+    def process(self,
+                element,
+                ssvr_agent_associations,
+                supervision_period_to_agent_associations,
+                **kwargs):
         """Identifies instances of revocation and non-revocation time buckets on supervision, and classifies months of
         projected completion as either successful or not.
         """
-        state_code = 'ALL'
-
-        if kwargs.get('state_code') is not None:
-            state_code = kwargs.get('state_code')
-            logging.info("Limiting calculations to state: %s", state_code)
 
         _, person_entities = element
 
@@ -552,6 +551,8 @@ def run(argv):
         known_args.reference_input
 
     person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
+
+    # The state_code to run calculations on, or ALL if calculations should be run on all states
     state_code = known_args.state_code
 
     with beam.Pipeline(options=pipeline_options) as p:
@@ -665,6 +666,43 @@ def run(argv):
                                                                      'supervision_period_id')
                                                           )
 
+        if state_code is None or state_code == 'US_MO':
+            # Bring in the reference table that includes sentence status ranking information
+            us_mo_sentence_status_query = f"SELECT * FROM `{reference_dataset}.us_mo_sentence_statuses`"
+
+            us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
+                                       beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
+                                                                           use_standard_sql=True)))
+        else:
+            us_mo_sentence_statuses = (p | f"Generate empty MO statuses list for non-MO state run: {state_code} " >>
+                                       beam.Create([]))
+
+        us_mo_sentence_status_rankings_as_kv = (
+            us_mo_sentence_statuses |
+            'Convert MO sentence status ranking table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(),
+                       'sentence_external_id')
+        )
+
+        # Group the sentence status tuples by sentence_external_id
+        us_mo_sentence_statuses_by_sentence = (
+            us_mo_sentence_status_rankings_as_kv |
+            'Group the MO sentence status ranking tuples by sentence_external_id' >>
+            beam.GroupByKey()
+        )
+
+        supervision_sentences_converted = (
+            supervision_sentences
+            | 'Convert to state-specific supervision sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
+        incarceration_sentences_converted = (
+            incarceration_sentences
+            | 'Convert to state-specific incarceration sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
             {'violations': supervision_violations,
@@ -707,20 +745,13 @@ def run(argv):
              'incarceration_periods':
                  incarceration_periods_with_source_violations,
              'supervision_periods': supervision_periods,
-             'supervision_sentences': supervision_sentences,
-             'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences_converted,
+             'incarceration_sentences': incarceration_sentences_converted,
              'violation_responses': violation_responses_with_hydrated_violations
              }
             | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()
         )
-
-        # The state_code to run calculations on
-        state_code = known_args.state_code
-
-        identifier_options = {
-            'state_code': state_code
-        }
 
         # Identify SupervisionTimeBuckets from the StatePerson's StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
@@ -728,8 +759,7 @@ def run(argv):
             | 'Get SupervisionTimeBuckets' >>
             beam.ParDo(ClassifySupervisionTimeBuckets(),
                        AsDict(ssvr_agent_associations_as_kv),
-                       AsDict(supervision_period_to_agent_associations_as_kv),
-                       **identifier_options))
+                       AsDict(supervision_period_to_agent_associations_as_kv)))
 
         # Get dimensions to include and methodologies to use
         inclusions, _ = dimensions_and_methodologies(known_args)
