@@ -22,6 +22,8 @@ from typing import Optional, Set, List
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
     use_supervision_periods_for_pre_incarceration_supervision_type_for_state
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoIncarcerationSentence, \
+    UsMoSupervisionSentence
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -60,6 +62,12 @@ def get_pre_incarceration_supervision_type(
     state_code = incarceration_period.state_code
 
     if use_supervision_periods_for_pre_incarceration_supervision_type_for_state(state_code):
+        # TODO(2647): Update to have MO use an entirely different method to calculate supervision type based on
+        #  sentence statuses
+        incarceration_sentences = [(s.base_sentence if isinstance(s, UsMoIncarcerationSentence) else s)
+                                   for s in incarceration_sentences]
+        supervision_sentences = [(s.base_sentence if isinstance(s, UsMoSupervisionSentence) else s)
+                                 for s in supervision_sentences]
         supervision_type = get_pre_incarceration_supervision_type_from_relevant_supervision_periods(
             incarceration_sentences, supervision_sentences, incarceration_period, supervision_periods)
         if supervision_type:
@@ -185,6 +193,27 @@ def _get_pre_incarceration_supervision_type_from_incarceration_period(
 # TODO(2647): Refactor this into a helper function that accepts arbitrary start and end dates, then uses that helper
 #  here and in _get_pre_incarceration_supervision_type_on_date.
 def get_month_supervision_type(
+        any_date_in_month: datetime.date,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: StateSupervisionPeriod
+) -> StateSupervisionPeriodSupervisionType:
+
+    if supervision_period.state_code == 'US_MO':
+        # TODO(2647): Update to have MO use an entirely different method to calculate supervision type based on
+        #  sentence statuses
+        incarceration_sentences = [(s.base_sentence if isinstance(s, UsMoIncarcerationSentence) else s)
+                                   for s in incarceration_sentences]
+        supervision_sentences = [(s.base_sentence if isinstance(s, UsMoSupervisionSentence) else s)
+                                 for s in supervision_sentences]
+
+    return get_month_supervision_type_default(
+        any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
+
+
+# TODO(2647): Refactor this into a helper function that accepts arbitrary start and end dates, then uses that helper
+#  here and in _get_pre_incarceration_supervision_type_on_date.
+def get_month_supervision_type_default(
         any_date_in_month: datetime.date,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],

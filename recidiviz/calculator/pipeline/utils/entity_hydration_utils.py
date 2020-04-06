@@ -15,14 +15,62 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for hydrating connections between entities."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 
 from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSupervisionSentence, \
+    UsMoIncarcerationSentence
 from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
+
+
+@with_input_types(beam.typehints.Tuple[int,
+                                       Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence]],
+                  beam.typehints.Dict[str, List[Dict[str, Any]]])
+@with_output_types(beam.typehints.Tuple[int,
+                                        Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence]])
+class ConvertSentenceToStateSpecificType(beam.DoFn):
+    """Converts sentences into state-specific sublcasses of those sentences, for use in state-specific calculate flows.
+    """
+
+    # pylint: disable=arguments-differ
+    def process(self,
+                element,
+                us_mo_sentence_statuses_by_sentence,
+                *args,
+                **kwargs):
+        """For the given sentence convert to a state-specific subclass, if necessary.
+
+        Args:
+            element: A tuple containing person_id and either a StateSupervisionSentence or a StateIncarcerationSentence
+
+        Yields:
+            A tuple containing person_id and the sentence, converted to a state-specific subclass, if necessary
+        """
+        person_id, sentence = element
+
+        state_specific_sentence = sentence
+        if sentence.state_code == 'US_MO':
+
+            sentence_statuses = []
+            if sentence.external_id in us_mo_sentence_statuses_by_sentence:
+                sentence_statuses = us_mo_sentence_statuses_by_sentence[sentence.external_id]
+
+            if isinstance(sentence, entities.StateSupervisionSentence):
+                state_specific_sentence = UsMoSupervisionSentence.from_supervision_sentence(sentence, sentence_statuses)
+            elif isinstance(sentence, entities.StateIncarcerationSentence):
+                state_specific_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(sentence,
+                                                                                                sentence_statuses)
+            else:
+                raise ValueError(f'Unexpected sentence type: {sentence}')
+
+        yield person_id, state_specific_sentence
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
