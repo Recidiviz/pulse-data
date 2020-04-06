@@ -674,7 +674,9 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
 
     def test_getPreIncarcerationSupervisionType_typeBasedOnAdmissionReason(self):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            incarceration_period = StateIncarcerationPeriod.new_with_defaults(admission_reason=admission_reason)
+            incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+                admission_reason=admission_reason,
+                state_code='US_XX')
             expected_type = None
             if admission_reason == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
                 expected_type = StateSupervisionPeriodSupervisionType.PROBATION
