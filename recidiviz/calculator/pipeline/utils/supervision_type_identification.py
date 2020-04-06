@@ -20,6 +20,8 @@ import logging
 from typing import Optional, Set, List
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
+from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
+    use_supervision_periods_for_pre_incarceration_supervision_type_for_state
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -57,15 +59,13 @@ def get_pre_incarceration_supervision_type(
 
     state_code = incarceration_period.state_code
 
-    # TODO(2995): Formalize state-specific calc logic
-    if state_code == 'US_MO':
+    if use_supervision_periods_for_pre_incarceration_supervision_type_for_state(state_code):
         supervision_type = get_pre_incarceration_supervision_type_from_relevant_supervision_periods(
             incarceration_sentences, supervision_sentences, incarceration_period, supervision_periods)
         if supervision_type:
             return supervision_type
         return _get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
 
-    # TODO(2938): Decide if we want date matching logic for US_ND.
     return _get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
 
 

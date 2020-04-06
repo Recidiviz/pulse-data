@@ -62,7 +62,6 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY = \
       AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
       AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
       AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-      AND supervision_type IN ('DUAL', 'PAROLE', 'PROBATION')
     ORDER BY metric_period_months, violation_record
     """.format(
         description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,

@@ -23,6 +23,8 @@ from copy import deepcopy
 from datetime import date
 from typing import List
 
+from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
+    drop_temporary_custody_incarceration_periods_for_state
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.calculator.pipeline.utils import us_nd_utils
@@ -297,10 +299,9 @@ def drop_periods_not_under_state_custodial_authority(incarceration_periods: List
     """Returns a filtered subset of the provided |incarceration_periods| where all periods that are not under state
     custodial authority are filtered out.
     """
-    # TODO(2912): Use `custodial_authority` to determine this insted, when that field exists on incarceration periods.
+    # TODO(2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
     state_code = get_single_state_code(incarceration_periods)
-    # TODO(2995): Formalize state-specific calc logic
-    if state_code == 'US_ND':
+    if drop_temporary_custody_incarceration_periods_for_state(state_code):
         filtered_incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
     else:
         filtered_incarceration_periods = _drop_non_prison_periods(incarceration_periods)

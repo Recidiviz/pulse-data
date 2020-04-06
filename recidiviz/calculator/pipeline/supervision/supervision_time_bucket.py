@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Buckets of time on supervision that may have included a revocation."""
+from datetime import date
 from typing import Optional, List
 
 import attr
@@ -52,7 +53,7 @@ class SupervisionTimeBucket(BuildableAttr):
     # TODO(2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
-    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+    supervision_type: StateSupervisionPeriodSupervisionType = attr.ib(default=None)
 
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
@@ -82,6 +83,9 @@ class SupervisionTimeBucket(BuildableAttr):
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
+
+    # The date of the revocation admission
+    revocation_admission_date: date = attr.ib(default=None)
 
     # The type of revocation of supervision
     revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
