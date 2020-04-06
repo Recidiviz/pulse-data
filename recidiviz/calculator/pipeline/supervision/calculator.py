@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -679,9 +680,10 @@ def include_supervision_in_count(combo: Dict[str, Any],
     buckets in the period.
 
     If the combo has a value for the key 'supervision_type', this means that this will contribute to a metric that is
-    specific to a given supervision type. The person-based count for this metric should only be with respect
-    to other buckets that share the same supervision-type. If the combo is not for a supervision-type-specific metric,
-    then the person-based count should take into account all buckets in the period.
+    specific to a given supervision type. For some states, the person-based count for this metric should only be with
+    respect to other buckets that share the same supervision-type. If the combo is not for a supervision-type-specific
+    metric, or the combo is for the person-level output, then the person-based count should take into account all
+    buckets in the period.
 
     If the metric is of type POPULATION, and there are buckets that represent revocation in that period, then this
     bucket is included only if it is the last instance of revocation for the period. However, if none of the
@@ -697,21 +699,30 @@ def include_supervision_in_count(combo: Dict[str, Any],
     This function assumes that the SupervisionTimeBuckets in all_buckets_in_period are of the same type and that the
     list is sorted in ascending order by year and month.
     """
-    supervision_type_specific_metric = combo.get('supervision_type') is not None
+    # If supervision types are distinct for a given state, then a person who has events with different types of
+    # supervision cannot contribute to counts for more than one type
+    if supervision_types_distinct_for_state(supervision_time_bucket.state_code):
+        supervision_type_specific_metric = False
+    else:
+        # If this combo specifies the supervision type (and it's not a person-level combo), then limit this inclusion
+        # logic to only buckets of the same supervision type
+        supervision_type_specific_metric = combo.get('supervision_type') is not None and combo.get('person_id') is None
 
-    # If the combination specifies the supervision type, then remove any buckets of other supervision types
     relevant_buckets = [
         bucket for bucket in all_buckets_in_period
         if not (supervision_type_specific_metric and bucket.supervision_type !=
                 supervision_time_bucket.supervision_type)
     ]
 
-    if metric_type == SupervisionMetricType.POPULATION:
-        revocation_buckets = [
-            bucket for bucket in relevant_buckets
-            if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
-        ]
+    revocation_buckets = [
+        bucket for bucket in relevant_buckets
+        if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
+    ]
 
+    # Sort by the revocation admission date
+    revocation_buckets.sort(key=lambda b: b.revocation_admission_date)
+
+    if metric_type == SupervisionMetricType.POPULATION:
         if revocation_buckets:
             # If there are SupervisionTimeBuckets that are of type RevocationReturnSupervisionTimeBucket, then we want
             # to include that bucket in the counts over any NonRevocationReturnSupervisionTimeBucket. This ensures that
@@ -723,10 +734,11 @@ def include_supervision_in_count(combo: Dict[str, Any],
 
     if metric_type in (SupervisionMetricType.REVOCATION,
                        SupervisionMetricType.REVOCATION_ANALYSIS,
-                       SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-                       SupervisionMetricType.SUCCESS,
-                       SupervisionMetricType.ASSESSMENT_CHANGE):
+                       SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
+        return id(supervision_time_bucket) == id(revocation_buckets[-1])
 
+    if metric_type in (SupervisionMetricType.SUCCESS,
+                       SupervisionMetricType.ASSESSMENT_CHANGE):
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
     if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:

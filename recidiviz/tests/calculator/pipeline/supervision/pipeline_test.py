@@ -1821,6 +1821,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket(
                 supervision_period.state_code,
                 year=2015, month=5,
+                revocation_admission_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype='UNSET',
@@ -2223,6 +2224,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT)
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='ip1',
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code='US_ND',
