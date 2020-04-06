@@ -19,7 +19,7 @@
 """Tests for supervision/pipeline.py"""
 import json
 import unittest
-from typing import Set, Optional, Dict
+from typing import Set, Optional, Dict, List, Any
 
 import apache_beam as beam
 from apache_beam.pvalue import AsDict
@@ -44,7 +44,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult
+from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult, ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSentenceToStateSpecificType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -458,6 +459,37 @@ class TestSupervisionPipeline(unittest.TestCase):
             | 'Set hydrated StateSupervisionViolationResponses on the StateIncarcerationPeriods' >>
             beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
+        us_mo_sentence_status_rows: List[Dict[str, Any]] = []
+
+        us_mo_sentence_statuses = (
+            test_pipeline | 'Create MO sentence statuses' >> beam.Create(us_mo_sentence_status_rows)
+        )
+
+        sentence_status_rankings_as_kv = (
+            us_mo_sentence_statuses |
+            'Convert sentence status ranking table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(), 'sentence_external_id')
+        )
+
+        # Group the sentence status tuples by sentence_external_id
+        us_mo_sentence_statuses_by_sentence = (
+            sentence_status_rankings_as_kv |
+            'Group the sentence status ranking tuples by sentence_external_id' >>
+            beam.GroupByKey()
+        )
+
+        supervision_sentences_converted = (
+            supervision_sentences
+            | 'Convert to state-specific supervision sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
+        incarceration_sentences_converted = (
+            incarceration_sentences
+            | 'Convert to state-specific incarceration sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
         # Group each StatePerson with their StateIncarcerationPeriods and
         # StateSupervisionSentences
         person_periods_and_sentences = (
@@ -465,8 +497,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              'assessments': assessments,
              'supervision_periods': supervision_periods,
              'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': supervision_sentences,
-             'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences_converted,
+             'incarceration_sentences': incarceration_sentences_converted,
              'violation_responses': violation_responses_with_hydrated_violations
              }
             | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>

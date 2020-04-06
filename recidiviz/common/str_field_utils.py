@@ -194,7 +194,7 @@ def parse_datetime_with_negative_component(date_string: str,
     return parsed_date
 
 
-def _is_yyyymmdd_date(date_string: str) -> bool:
+def is_yyyymmdd_date(date_string: str) -> bool:
     try:
         datetime.datetime.strptime(date_string, '%Y%m%d')
     except ValueError:
@@ -204,7 +204,7 @@ def _is_yyyymmdd_date(date_string: str) -> bool:
 
 
 def parse_yyyymmdd_date(date_str: str) -> Optional[datetime.date]:
-    if not _is_yyyymmdd_date(date_str):
+    if not is_yyyymmdd_date(date_str):
         return None
 
     return datetime.datetime.strptime(date_str, '%Y%m%d').date()
@@ -220,7 +220,7 @@ def parse_date(
     if date_string == '0':
         return None
 
-    if _is_yyyymmdd_date(date_string):
+    if is_yyyymmdd_date(date_string):
         return parse_yyyymmdd_date(date_string)
 
     parsed = parse_datetime(date_string, from_dt=from_dt)
