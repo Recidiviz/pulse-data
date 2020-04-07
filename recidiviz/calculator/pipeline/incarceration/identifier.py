@@ -169,7 +169,7 @@ def find_end_of_month_state_prison_stays(
 
     end_of_month = last_day_of_month(admission_date)
 
-    while end_of_month <= release_date:
+    while end_of_month < release_date:
         most_serious_charge = find_most_serious_prior_charge_in_sentence_group(sentence_group, end_of_month)
         most_serious_offense_ncic_code = most_serious_charge.ncic_code if most_serious_charge else None
         most_serious_offense_statute = most_serious_charge.statute if most_serious_charge else None
