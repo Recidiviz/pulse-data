@@ -36,12 +36,12 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state, \
-    default_to_supervision_period_officer_for_revocation_details_for_state
+    default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
+    get_pre_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
-    get_month_supervision_type, get_pre_incarceration_supervision_type, \
-    get_supervision_period_supervision_type_from_sentence
+    get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.us_mo_utils import _normalize_violations_on_responses_us_mo
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
@@ -721,7 +721,7 @@ def find_revocation_return_buckets(
                     ssvr_agent_associations, supervision_period_to_agent_associations)
 
                 supervision_type_at_admission = get_pre_incarceration_supervision_type(
-                    incarceration_sentences, supervision_sentences, incarceration_period, [supervision_period])
+                    incarceration_sentences, supervision_sentences, incarceration_period)
 
                 case_type = _identify_most_severe_case_type(supervision_period)
                 supervision_level = supervision_period.supervision_level
@@ -763,7 +763,7 @@ def find_revocation_return_buckets(
                 incarceration_period, None, ssvr_agent_associations, None)
 
             supervision_type_at_admission = get_pre_incarceration_supervision_type(
-                incarceration_sentences, supervision_sentences, incarceration_period, [])
+                incarceration_sentences, supervision_sentences, incarceration_period)
 
             # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
             case_type = StateSupervisionCaseType.GENERAL
@@ -875,7 +875,8 @@ def _get_projected_completion_bucket(
         logging.warning("Supervision sentence completion date is before the start date: %s", supervision_sentence)
         return None
 
-    supervision_type = get_supervision_period_supervision_type_from_sentence(supervision_sentence)
+    supervision_type = get_supervision_type_from_sentences(incarceration_sentences=[],
+                                                           supervision_sentences=[supervision_sentence])
 
     sentence_days_served = (supervision_sentence.completion_date - supervision_sentence.start_date).days
 

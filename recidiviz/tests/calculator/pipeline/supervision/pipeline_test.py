@@ -81,6 +81,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict
 from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
+from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSupervisionSentence
 from recidiviz.tests.persistence.database import database_test_utils
 
 
@@ -649,7 +650,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=123,
-            state_code='US_ND',
+            state_code='US_MO',
             person_id=fake_person_id
         )
 
@@ -1141,7 +1142,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=123,
-            state_code='US_ND',
+            state_code='US_MO',
             person_id=fake_person_id
         )
 
@@ -1785,13 +1786,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             source_supervision_violation_response=source_supervision_violation_response)
 
         supervision_sentence = \
-            StateSupervisionSentence.new_with_defaults(
-                supervision_sentence_id=111,
-                external_id='ss1',
-                start_date=date(2015, 1, 1),
-                supervision_type=StateSupervisionType.PROBATION,
-                status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[supervision_period]
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    external_id='ss1',
+                    start_date=date(2015, 1, 1),
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.COMPLETED,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type=StateSupervisionType.PROBATION
             )
 
         assessment = StateAssessment.new_with_defaults(
