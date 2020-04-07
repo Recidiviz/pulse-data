@@ -64,10 +64,34 @@ def get_pre_incarceration_supervision_type(
     if use_supervision_periods_for_pre_incarceration_supervision_type_for_state(state_code):
         # TODO(2647): Update to have MO use an entirely different method to calculate supervision type based on
         #  sentence statuses
-        incarceration_sentences = [(s.base_sentence if isinstance(s, UsMoIncarcerationSentence) else s)
-                                   for s in incarceration_sentences]
-        supervision_sentences = [(s.base_sentence if isinstance(s, UsMoSupervisionSentence) else s)
-                                 for s in supervision_sentences]
+        base_incarceration_sentences: List[StateIncarcerationSentence] = []
+        for in_s in incarceration_sentences:
+            if isinstance(in_s, UsMoIncarcerationSentence):
+                if isinstance(in_s.base_sentence, StateIncarcerationSentence):
+                    base_incarceration_sentences.append(in_s.base_sentence)
+                else:
+                    raise ValueError(f'Unexpected base sentence type {type(in_s.base_sentence)}')
+            elif isinstance(in_s, StateIncarcerationSentence):
+                base_incarceration_sentences.append(in_s)
+            else:
+                raise ValueError(f'Unexpected sentence type {type(in_s)}')
+
+        incarceration_sentences = base_incarceration_sentences
+
+        base_supervision_sentences: List[StateSupervisionSentence] = []
+        for ss in supervision_sentences:
+            if isinstance(ss, UsMoSupervisionSentence):
+                if isinstance(ss.base_sentence, StateSupervisionSentence):
+                    base_supervision_sentences.append(ss.base_sentence)
+                else:
+                    raise ValueError(f'Unexpected base sentence type {type(ss.base_sentence)}')
+            elif isinstance(ss, StateSupervisionSentence):
+                base_supervision_sentences.append(ss)
+            else:
+                raise ValueError(f'Unexpected sentence type {type(ss)}')
+
+        supervision_sentences = base_supervision_sentences
+
         supervision_type = get_pre_incarceration_supervision_type_from_relevant_supervision_periods(
             incarceration_sentences, supervision_sentences, incarceration_period, supervision_periods)
         if supervision_type:
@@ -198,14 +222,46 @@ def get_month_supervision_type(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod
 ) -> StateSupervisionPeriodSupervisionType:
+    """Supervision type can change over time even if the period does not change. This function calculates the
+    supervision type that a given supervision period represents during the month that |any_date_in_month| falls in. The
+    objects / info we use to determine supervision type may be state-specific.
+
+    Args:
+    any_date_in_month: (date) Any day in the month to consider
+    supervision_period: (StateSupervisionPeriod) The supervision period we want to associate a supervision type with
+    supervision_sentences: (List[StateSupervisionSentence]) All supervision sentences for a given person.
+    """
 
     if supervision_period.state_code == 'US_MO':
         # TODO(2647): Update to have MO use an entirely different method to calculate supervision type based on
         #  sentence statuses
-        incarceration_sentences = [(s.base_sentence if isinstance(s, UsMoIncarcerationSentence) else s)
-                                   for s in incarceration_sentences]
-        supervision_sentences = [(s.base_sentence if isinstance(s, UsMoSupervisionSentence) else s)
-                                 for s in supervision_sentences]
+        base_incarceration_sentences: List[StateIncarcerationSentence] = []
+        for in_s in incarceration_sentences:
+            if isinstance(in_s, UsMoIncarcerationSentence):
+                if isinstance(in_s.base_sentence, StateIncarcerationSentence):
+                    base_incarceration_sentences.append(in_s.base_sentence)
+                else:
+                    raise ValueError(f'Unexpected base sentence type {type(in_s.base_sentence)}')
+            elif isinstance(in_s, StateIncarcerationSentence):
+                base_incarceration_sentences.append(in_s)
+            else:
+                raise ValueError(f'Unexpected sentence type {type(in_s)}')
+
+        incarceration_sentences = base_incarceration_sentences
+
+        base_supervision_sentences: List[StateSupervisionSentence] = []
+        for ss in supervision_sentences:
+            if isinstance(ss, UsMoSupervisionSentence):
+                if isinstance(ss.base_sentence, StateSupervisionSentence):
+                    base_supervision_sentences.append(ss.base_sentence)
+                else:
+                    raise ValueError(f'Unexpected base sentence type {type(ss.base_sentence)}')
+            elif isinstance(ss, StateSupervisionSentence):
+                base_supervision_sentences.append(ss)
+            else:
+                raise ValueError(f'Unexpected sentence type {type(ss)}')
+
+        supervision_sentences = base_supervision_sentences
 
     return get_month_supervision_type_default(
         any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
