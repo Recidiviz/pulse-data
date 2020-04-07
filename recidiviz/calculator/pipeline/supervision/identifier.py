@@ -18,7 +18,7 @@
 supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Dict, Set, Tuple, Optional, Any, NamedTuple, Type
 
 import attr
@@ -225,15 +225,18 @@ def find_time_buckets_for_supervision_period(
     start_date = supervision_period.start_date
     termination_date = supervision_period.termination_date
 
-    if termination_date is None:
-        termination_date = date.today()
-
     if start_date is None:
         return supervision_month_buckets
 
     start_of_month = first_day_of_month(start_date)
 
-    while start_of_month <= termination_date:
+    # The last month this person will count towards supervision population is the month of the last full day on
+    # supervision.
+    month_upper_bound = \
+        first_day_of_month(termination_date - timedelta(days=1)) \
+        if termination_date else first_day_of_month(date.today())
+
+    while start_of_month <= month_upper_bound:
         if month_is_non_revocation_supervision_bucket(
                 start_of_month, termination_date, months_fully_incarcerated, incarceration_periods_by_admission_month):
 
@@ -248,7 +251,8 @@ def find_time_buckets_for_supervision_period(
 
             case_type = _identify_most_severe_case_type(supervision_period)
 
-            end_of_violation_window = end_of_month if end_of_month < termination_date else termination_date
+            end_of_violation_window = \
+                end_of_month if (termination_date is None or end_of_month < termination_date) else termination_date
             violation_history = get_violation_and_response_history(end_of_violation_window, violation_responses)
 
             supervision_month_buckets.append(
@@ -294,7 +298,7 @@ def has_revocation_admission_in_month(
 
 def month_is_non_revocation_supervision_bucket(
         start_of_month: date,
-        termination_date: date,
+        termination_date: Optional[date],
         months_fully_incarcerated: Set[Tuple[int, int]],
         incarceration_periods_by_admission_month: Dict[int, Dict[int, List[StateIncarcerationPeriod]]]):
     """Determines whether the given month was a month on supervision without a revocation and without being
@@ -306,6 +310,11 @@ def month_is_non_revocation_supervision_bucket(
 
     if has_revocation_admission_in_month(start_of_month, incarceration_periods_by_admission_month):
         return False
+
+    if termination_date is None:
+        # If supervision has not terminated, and there was no incarceration this month, then count this as a
+        # non-revocation bucket.
+        return True
 
     if last_day_of_month(termination_date) == last_day_of_month(start_of_month):
         # If the supervision period ended this month, make sure there wasn't an incarceration period that

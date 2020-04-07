@@ -738,13 +738,73 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
 
-        expected_month_count = 1
+        # We do not count the termination date of an incarceration period as a day the person is incarcerated.
+        expected_month_count = 0
         expected_incarceration_events = expected_incarceration_stay_events(
             incarceration_period, expected_month_count
         )
 
         self.assertEqual(expected_month_count, len(incarceration_events))
         self.assertEqual(expected_incarceration_events, incarceration_events)
+
+    def test_find_end_of_month_state_prison_stays_transfers_end_of_month(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2019, 11, 29),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2019, 11, 30),
+                release_reason=ReleaseReason.TRANSFER)
+        incarceration_period_2 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON4',
+                admission_date=date(2019, 11, 30),
+                admission_reason=AdmissionReason.TRANSFER,
+                release_date=date(2019, 12, 1),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period, incarceration_period_2]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period_2.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
+
+        incarceration_events_period_1 = \
+            self._run_find_end_of_month_state_prison_stays_with_no_sentences(
+                incarceration_period, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 0
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events_period_1))
+        self.assertEqual(expected_incarceration_events, incarceration_events_period_1)
+
+        incarceration_events_period_2 = \
+            self._run_find_end_of_month_state_prison_stays_with_no_sentences(
+                incarceration_period_2, _COUNTY_OF_RESIDENCE
+            )
+
+        expected_month_count = 1
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period_2, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events_period_2))
+        self.assertEqual(expected_incarceration_events, incarceration_events_period_2)
 
     def test_find_end_of_month_state_prison_stays_released_first_of_month(self):
         incarceration_period = \
@@ -807,7 +867,11 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
 
-        expected_month_count = 1
+        # We do not count people who were released on the last day of the month as being incarcerated on that last day.
+        # In normal circumstances, if this person remained incarcerated but had a quick, one-day transfer, there will
+        # be another incarceration period that opens on the last day of the month with a later termination date - we
+        # *will* count this one.
+        expected_month_count = 0
         expected_incarceration_events = expected_incarceration_stay_events(
             incarceration_period, expected_month_count
         )
