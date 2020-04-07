@@ -28,9 +28,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    _get_relevant_supervision_periods_before_admission_date
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_pre_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
@@ -58,7 +56,7 @@ def find_incarceration_events(
     for sentence_group in sentence_groups:
         incarceration_sentences.extend(sentence_group.incarceration_sentences)
         supervision_sentences.extend(sentence_group.supervision_sentences)
-    incarceration_periods, supervision_periods = get_unique_periods_from_sentence_groups_and_add_backedges(
+    incarceration_periods, _supervision_periods = get_unique_periods_from_sentence_groups_and_add_backedges(
         sentence_groups)
 
     if not incarceration_periods:
@@ -68,14 +66,12 @@ def find_incarceration_events(
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
-        supervision_periods,
         county_of_residence))
 
     incarceration_events.extend(find_all_admission_release_events(
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
-        supervision_periods,
         county_of_residence))
 
     return incarceration_events
@@ -85,7 +81,6 @@ def find_all_admission_release_events(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: List[StateSupervisionPeriod],
         county_of_residence: Optional[str],
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationAdmissionEvents and
@@ -103,7 +98,6 @@ def find_all_admission_release_events(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            supervision_periods,
             county_of_residence)
 
         if admission_event:
@@ -124,7 +118,6 @@ def find_all_end_of_month_state_prison_stay_events(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: List[StateSupervisionPeriod],
         county_of_residence: Optional[str],
 ) -> List[IncarcerationStayEvent]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationStayEvents based on the
@@ -140,7 +133,6 @@ def find_all_end_of_month_state_prison_stay_events(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            supervision_periods,
             county_of_residence)
 
         if period_stay_events:
@@ -153,7 +145,6 @@ def find_end_of_month_state_prison_stays(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
-        supervision_periods: List[StateSupervisionPeriod],
         county_of_residence: Optional[str]) -> List[IncarcerationStayEvent]:
     """Finds months for which this person was incarcerated in a state prison on the last day of the month.
     """
@@ -171,11 +162,8 @@ def find_end_of_month_state_prison_stays(
     if admission_date is None:
         return incarceration_stay_events
 
-    relevant_pre_incarceration_supervision_periods = \
-        _get_relevant_supervision_periods_before_admission_date(admission_date, supervision_periods)
     supervision_type_at_admission = get_pre_incarceration_supervision_type(
-        incarceration_sentences, supervision_sentences, incarceration_period,
-        relevant_pre_incarceration_supervision_periods)
+        incarceration_sentences, supervision_sentences, incarceration_period)
 
     sentence_group = _get_sentence_group_for_incarceration_period(incarceration_period)
 
@@ -315,19 +303,15 @@ def admission_event_for_period(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
-        supervision_periods: List[StateSupervisionPeriod],
         county_of_residence: Optional[str]) -> Optional[IncarcerationAdmissionEvent]:
     """Returns an IncarcerationAdmissionEvent if this incarceration period represents an admission to incarceration."""
 
     admission_date = incarceration_period.admission_date
     admission_reason = incarceration_period.admission_reason
-    relevant_pre_incarceration_supervision_periods = \
-        _get_relevant_supervision_periods_before_admission_date(admission_date, supervision_periods)
     supervision_type_at_admission = get_pre_incarceration_supervision_type(
         incarceration_sentences,
         supervision_sentences,
-        incarceration_period,
-        relevant_pre_incarceration_supervision_periods)
+        incarceration_period)
     incarceration_type = incarceration_period.incarceration_type
     specialized_purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 

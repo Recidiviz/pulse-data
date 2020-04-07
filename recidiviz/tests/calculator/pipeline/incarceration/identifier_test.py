@@ -44,6 +44,8 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, \
     StateIncarcerationSentence, StateSupervisionSentence, StateCharge, StateSupervisionPeriod
+from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSupervisionSentence, \
+    FakeUsMoIncarcerationSentence
 
 _COUNTY_OF_RESIDENCE = 'county'
 
@@ -165,24 +167,33 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             external_id='3',
             start_date=date(2008, 1, 1))
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            incarceration_sentence_id=123,
-            incarceration_periods=[temp_custody_period, revocation_period],
-            supervision_periods=[supervision_period],
-            start_date=date(2008, 1, 1),
-            charges=[
-                StateCharge.new_with_defaults(
-                    offense_date=date(2007, 12, 11),
-                    ncic_code='0901',
-                    statute='9999'
-                )
-            ]
-        )
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            supervision_sentence_id=123,
-            incarceration_periods=[temp_custody_period, revocation_period],
-            supervision_periods=[supervision_period],
-            start_date=date(2008, 1, 1))
+        incarceration_sentence = \
+            FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+                StateIncarcerationSentence.new_with_defaults(
+                    incarceration_sentence_id=123,
+                    incarceration_periods=[temp_custody_period, revocation_period],
+                    supervision_periods=[supervision_period],
+                    start_date=date(2008, 1, 1),
+                    charges=[
+                        StateCharge.new_with_defaults(
+                            offense_date=date(2007, 12, 11),
+                            ncic_code='0901',
+                            statute='9999'
+                        )
+                    ]
+                ),
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=123,
+                    incarceration_periods=[temp_custody_period, revocation_period],
+                    supervision_periods=[supervision_period],
+                    start_date=date(2008, 1, 1)),
+                supervision_type=StateSupervisionType.PROBATION
+            )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             supervision_sentences=[supervision_sentence],
@@ -482,12 +493,10 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         """
         incarceration_sentences = []
         supervision_sentences = []
-        supervision_periods = []
         return identifier.find_end_of_month_state_prison_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            supervision_periods,
             county_of_residence)
 
     def test_find_end_of_month_prison_stays_type_us_mo(self):
@@ -506,13 +515,20 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             state_code='US_MO',
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15))
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            supervision_sentence_id=1111,
-            state_code='US_MO',
-            supervision_type=StateSupervisionType.PROBATION,
-            start_date=date(2010, 1, 1),
-            supervision_periods=[supervision_period],
-            incarceration_periods=[incarceration_period])
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=1111,
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    start_date=date(2010, 1, 1),
+                    supervision_periods=[supervision_period],
+                    incarceration_periods=[incarceration_period]
+                ),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
         incarceration_period.supervision_sentences = [supervision_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
@@ -523,7 +539,6 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
-            [supervision_period],
             _COUNTY_OF_RESIDENCE)
 
         expected_event = IncarcerationStayEvent(
@@ -989,12 +1004,10 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         """
         incarceration_sentences = []
         supervision_sentences = []
-        supervision_periods = []
         return identifier.admission_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
-            supervision_periods,
             county_of_residence)
 
     def test_admission_event_for_period_us_mo(self):
@@ -1013,20 +1026,23 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             state_code='US_MO',
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15))
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            supervision_sentence_id=1111,
-            state_code='US_MO',
-            supervision_type=StateSupervisionType.PROBATION,
-            start_date=date(2010, 1, 1),
-            supervision_periods=[supervision_period],
-            incarceration_periods=[incarceration_period])
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=1111,
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    start_date=date(2010, 1, 1),
+                    supervision_periods=[supervision_period],
+                    incarceration_periods=[incarceration_period]),
+                supervision_type=StateSupervisionType.PROBATION
+            )
         incarceration_sentences = []
 
         admission_event = identifier.admission_event_for_period(
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
-            [supervision_period],
             _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(IncarcerationAdmissionEvent(

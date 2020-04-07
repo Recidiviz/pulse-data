@@ -103,6 +103,7 @@ class UsMoSentenceStatus(BuildableAttr):
 
     # Indicates whether the status is related to the start or end of a sentencing investigation/assessment
     is_investigation_status: bool = attr.ib()
+
     @is_investigation_status.default
     def _get_is_investigation_status(self) -> bool:
         return self.status_code.startswith('05I5') or \
@@ -120,7 +121,7 @@ class UsMoSentenceStatus(BuildableAttr):
             '35I6010',  # Release from DMH for SVP Supv
             '35I6020',  # Lifetime Supervision Revisit
             '40O6010',  # Release for SVP Commit Hearing
-            '40O6020',   # Release for Lifetime Supv
+            '40O6020',  # Release for Lifetime Supv
 
             # These indicate a transition to lifetime supervision (electronic monitoring). They are still serving
             # the sentence in this case.
@@ -175,7 +176,6 @@ class UsMoSentenceStatus(BuildableAttr):
 
     @supervision_type_critical_status_category.default
     def _get_supervision_type_critical_status_category(self) -> Optional[SupervisionTypeCriticalStatusCategory]:
-
         if not self.is_supervision_type_critical_status:
             return None
 
@@ -240,7 +240,7 @@ class UsMoSentenceStatus(BuildableAttr):
         return StateSupervisionType.INTERNAL_UNKNOWN
 
 
-@attr.s(frozen=True)
+@attr.s
 class UsMoSentenceMixin(Generic[SentenceType]):
     """State-specific extension of sentence classes for MO which allows us to calculate additional info based on the
     MO sentence statuses.
@@ -340,14 +340,17 @@ class UsMoIncarcerationSentence(StateIncarcerationSentence, UsMoSentenceMixin[St
     @classmethod
     def from_incarceration_sentence(cls,
                                     sentence: StateIncarcerationSentence,
-                                    sentence_statuses_raw: List[Dict[str, Any]]) -> 'UsMoIncarcerationSentence':
+                                    sentence_statuses_raw: List[Dict[str, Any]],
+                                    subclass_args: Optional[Dict[str, Any]] = None) -> 'UsMoIncarcerationSentence':
+        subclass_args = subclass_args if subclass_args else {}
         sentence_statuses_converted = [UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
                                        for status_dict_raw in sentence_statuses_raw]
 
         sentence_dict = {
             **sentence.__dict__,
             'base_sentence': sentence,
-            'sentence_statuses': sentence_statuses_converted
+            'sentence_statuses': sentence_statuses_converted,
+            **subclass_args
         }
 
         return cls(
@@ -361,13 +364,16 @@ class UsMoSupervisionSentence(StateSupervisionSentence, UsMoSentenceMixin[StateS
     @classmethod
     def from_supervision_sentence(cls,
                                   sentence: StateSupervisionSentence,
-                                  sentence_statuses_raw: List[Dict[str, Any]]) -> 'UsMoSupervisionSentence':
+                                  sentence_statuses_raw: List[Dict[str, Any]],
+                                  subclass_args: Optional[Dict[str, Any]] = None) -> 'UsMoSupervisionSentence':
+        subclass_args = subclass_args if subclass_args else {}
         sentence_statuses_converted = [UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
                                        for status_dict_raw in sentence_statuses_raw]
         sentence_dict = {
             **sentence.__dict__,
             'base_sentence': sentence,
-            'sentence_statuses': sentence_statuses_converted
+            'sentence_statuses': sentence_statuses_converted,
+            **subclass_args
         }
 
         return cls(
