@@ -4358,7 +4358,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
-        self.assertEqual(len(supervision_time_buckets), 7)
+        self.assertEqual(len(supervision_time_buckets), 6)
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -4398,13 +4398,160 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 year=2001, month=6,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
-                case_type=StateSupervisionCaseType.GENERAL),
+                case_type=StateSupervisionCaseType.GENERAL)
+            # We don't count the last day of the period as a day on supervision. If there is another period that follows
+            # which starts on the first day of the month, then we will count supervision for that month.
+        ])
+
+    def test_find_time_buckets_for_supervision_period_ends_on_last(self):
+        """Tests the find_time_buckets_for_supervision_period function for a
+        supervision period with no incarceration periods, where the supervision
+        period ends on the last day of a month."""
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                state_code='US_ND',
+                start_date=date(2001, 1, 5),
+                termination_date=date(2001, 6, 30),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2000, 1, 1),
+                external_id='ss1',
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSentenceStatus.COMPLETED,
+                completion_date=date(2001, 6, 30),
+                supervision_periods=[supervision_period]
+            )
+
+        indexed_incarceration_periods = \
+            identifier.index_incarceration_periods_by_admission_month(
+                [])
+
+        months_of_incarceration = identifier._identify_months_fully_incarcerated(
+            [])
+
+        assessments = []
+
+        violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
+                months_of_incarceration,
+                assessments, violation_reports,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            )
+
+        self.assertEqual(len(supervision_time_buckets), 6)
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        self.assertCountEqual(supervision_time_buckets, [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
-                year=2001, month=7,
+                year=2001, month=1,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=2,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=3,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=4,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=5,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=6,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL)
+        ])
+
+    def test_find_time_buckets_for_supervision_period_start_end_same_day(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                state_code='US_ND',
+                start_date=date(2001, 3, 3),
+                termination_date=date(2001, 3, 3),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2000, 1, 1),
+                external_id='ss1',
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSentenceStatus.COMPLETED,
+                completion_date=date(2001, 3, 3),
+                supervision_periods=[supervision_period]
+            )
+
+        indexed_incarceration_periods = \
+            identifier.index_incarceration_periods_by_admission_month(
+                [])
+
+        months_of_incarceration = identifier._identify_months_fully_incarcerated(
+            [])
+
+        assessments = []
+
+        violation_reports = []
+        incarceration_sentences = []
+        supervision_sentences = [supervision_sentence]
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                indexed_incarceration_periods,
+                months_of_incarceration,
+                assessments, violation_reports,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            )
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        self.assertEqual(len(supervision_time_buckets), 1)
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2001, month=3,
+                supervision_type=supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL)
         ])
 
     def test_find_time_buckets_for_supervision_period_multiple_assessments(self):
