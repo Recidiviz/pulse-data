@@ -23,7 +23,7 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-staging \
-    --destination-dataset test_dataset.table_name \
+    --destination-table test_dataset.table_name \
     --local-filepath ~/Downloads/test.csv \
     --separator , \
     --dry-run True
@@ -105,8 +105,9 @@ if __name__ == '__main__':
     parser.add_argument('--chunksize', required=False, default=100000,
                         help='Number of rows to be inserted into BQ at a time. Defaults to 100,000.')
 
-    parser.add_argument('--encoding', required=False, default='ISO-8859-1',
-                        help='Encoding for the file to be parsed. Defaults to ISO-8859-1.')
+    parser.add_argument('--encoding', required=False, default='UTF-8',
+                        help='Encoding for the file to be parsed. Defaults to UTF-8. If you are parsing files from '
+                             'US_ID, you might need ISO-8859-1.')
 
     parser.add_argument('--ignore-quotes', required=False, default=False, type=str_to_bool,
                         help='If false, assumes text between quotes should be treated as a unified string (even if the '
