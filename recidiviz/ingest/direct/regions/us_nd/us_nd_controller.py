@@ -806,10 +806,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionPeriodTerminationReason.ABSCONSION: ['13'],
             StateSupervisionPeriodTerminationReason.DEATH: ['11'],
             StateSupervisionPeriodTerminationReason.DISCHARGE:
-                ['1', '2', '5', '8', '12', '15', '16', '17', '18'],
+                ['1', '2', '5', '8', '12', '15', '16', '17'],
             StateSupervisionPeriodTerminationReason.EXPIRATION: ['4', '7', '19', '20'],
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
-            StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10'],
+            StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10', '18'],
             StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
 
             StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
