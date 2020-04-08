@@ -45,7 +45,8 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType as MetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
+    ConvertSentenceToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
@@ -444,10 +445,47 @@ def run(argv):
                                      state_code=state_code
                                  ))
 
+        if state_code is None or state_code == 'US_MO':
+            # Bring in the reference table that includes sentence status ranking information
+            us_mo_sentence_status_query = f"SELECT * FROM `{reference_dataset}.us_mo_sentence_statuses`"
+
+            us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
+                                       beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
+                                                                           use_standard_sql=True)))
+        else:
+            us_mo_sentence_statuses = (p | f"Generate empty MO statuses list for non-MO state run: {state_code} " >>
+                                       beam.Create([]))
+
+        us_mo_sentence_status_rankings_as_kv = (
+            us_mo_sentence_statuses |
+            'Convert MO sentence status ranking table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(),
+                       'sentence_external_id')
+        )
+
+        # Group the sentence status tuples by sentence_external_id
+        us_mo_sentence_statuses_by_sentence = (
+            us_mo_sentence_status_rankings_as_kv |
+            'Group the MO sentence status ranking tuples by sentence_external_id' >>
+            beam.GroupByKey()
+        )
+
+        supervision_sentences_converted = (
+            supervision_sentences
+            | 'Convert to state-specific supervision sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
+        incarceration_sentences_converted = (
+            incarceration_sentences
+            | 'Convert to state-specific incarceration sentences' >>
+            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        )
+
         sentences_and_sentence_groups = (
             {'sentence_groups': sentence_groups,
-             'incarceration_sentences': incarceration_sentences,
-             'supervision_sentences': supervision_sentences}
+             'incarceration_sentences': incarceration_sentences_converted,
+             'supervision_sentences': supervision_sentences_converted}
             | 'Group sentences to sentence groups' >>
             beam.CoGroupByKey()
         )
