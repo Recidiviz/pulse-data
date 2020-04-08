@@ -86,7 +86,7 @@ def us_mo_get_supervision_period_supervision_type_on_date(
 
     for in_s in incarceration_sentences:
         if not isinstance(in_s, UsMoIncarcerationSentence):
-            raise ValueError(f'Supervision sentence has unexpected type {type(in_s)}')
+            raise ValueError(f'Incarceration sentence has unexpected type {type(in_s)}')
         supervision_types.add(in_s.get_sentence_supervision_type_on_day(supervision_type_determination_date))
 
     if supervision_types == {None}:
