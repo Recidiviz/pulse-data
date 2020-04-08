@@ -318,6 +318,23 @@ class UsMoSentenceTest(unittest.TestCase):
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
                          StateSupervisionType.PAROLE)
 
+    def test_lifetime_supervision_no_supervision_in(self):
+        raw_statuses = [
+            {"sentence_external_id": "1096616-20060515-3", "sentence_status_external_id": "1096616-20060515-3-5",
+             "status_code": "20I1000", "status_date": "20090611", "status_description": "Court Comm-Inst-Addl Charge"},
+            {"sentence_external_id": "1096616-20060515-3", "sentence_status_external_id": "1096616-20060515-3-10",
+             "status_code": "90O1070", "status_date": "20151129", "status_description": "Director's Rel Comp-Life Supv"}
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1096616-20060515-3',
+            start_date=datetime.date(year=2009, month=6, day=11)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
+
     def test_probation_after_investigation_status_list_unsorted(self):
         raw_statuses = [
             {'sentence_external_id': '282443-20180427-1', 'sentence_status_external_id': '282443-20180427-1-3',

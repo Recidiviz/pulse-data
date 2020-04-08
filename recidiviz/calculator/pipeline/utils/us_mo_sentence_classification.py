@@ -323,6 +323,15 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         most_recent_critical_day_statuses_filtered = \
             [s for s in most_recent_critical_day_statuses if not s.is_sentence_termination_status_candidate]
 
+        if not most_recent_critical_day_statuses_filtered:
+            logging.warning('Found no most_recent_critical_day_statuses_filtered, most_recent_critical_day_statuses: '
+                            '[%s]. Person: [%s], Sentence: [%s], Critical status date: [%s]}',
+                            most_recent_critical_day_statuses,
+                            most_recent_critical_day_statuses[0].person_external_id,
+                            most_recent_critical_day_statuses[0].sentence_external_id,
+                            most_recent_critical_day_statuses[0].status_date)
+            return most_recent_critical_day_statuses[0].supervision_type_status_classification
+
         if len(most_recent_critical_day_statuses_filtered) > 1:
             logging.warning('Should only have one status, found [%s]. '
                             'Person: [%s], Sentence: [%s], Critical status date: [%s]}',
