@@ -278,6 +278,22 @@ class UsMoSentenceTest(unittest.TestCase):
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
                          StateSupervisionType.PAROLE)
 
+    def test_supervision_type_court_parole(self):
+        # Court Parole is actually probation
+        raw_statuses = [
+            {"sentence_external_id": "1344959-20190718-1", "sentence_status_external_id": "1344959-20190718-1-1",
+             "status_code": "15I1200", "status_date": "20190718", "status_description": "New Court Parole"}
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1344959-20190718-1',
+            start_date=datetime.date(year=2017, month=10, day=12)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
     def test_supervision_type_lifetime_supervision(self):
         raw_statuses = [
             {'sentence_external_id': '13252-20160627-1', 'sentence_status_external_id': '13252-20160627-1-1',

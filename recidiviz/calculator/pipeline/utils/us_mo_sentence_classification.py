@@ -228,6 +228,9 @@ class UsMoSentenceStatus(BuildableAttr):
 
         if 'Prob' in self.status_description:
             return StateSupervisionType.PROBATION
+        if 'Court Parole' in self.status_description:
+            # Confirmed from MO that 'Court Parole' should be treated as a probation sentence
+            return StateSupervisionType.PROBATION
         if 'Diversion Sup' in self.status_description:
             return StateSupervisionType.PROBATION
         if 'Parole' in self.status_description:
