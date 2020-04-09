@@ -2914,7 +2914,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_19890901_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-19890901-2-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=1992, month=10, day=6),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1010,40O0000',
@@ -2931,7 +2931,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_19890901_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-19890901-4-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=1993, month=11, day=2),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1030,40O0000',
@@ -2946,7 +2946,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_19890901_6_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-19890901-6-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=1995, month=2, day=6),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1030,40O0000',
@@ -2976,7 +2976,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20010414_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20010414-1-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2001, month=4, day=14),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='15I1000',
@@ -2991,7 +2991,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20010414_3_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20010414-3-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2012, month=11, day=2),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
             admission_reason_raw_text='65I2015',
@@ -3006,7 +3006,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20010414_5_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20010414-5-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2013, month=11, day=27),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1030',
@@ -3021,7 +3021,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20010414_6_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20010414-6-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2016, month=3, day=28),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             admission_reason_raw_text='65N9500',
@@ -3044,7 +3044,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_710448_20010414_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='710448-20010414-2-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2002, month=1, day=17),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O4199',
@@ -3061,7 +3061,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_710448_20010414_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='710448-20010414-4-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2004, month=9, day=28),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1010',
@@ -3093,7 +3093,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_910324_19890825_2_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='910324-19890825-2-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             start_date=datetime.date(year=1989, month=5, day=16),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1010',
@@ -3145,7 +3145,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_624624_19890617_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='624624-19890617-1-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             start_date=datetime.date(year=1989, month=6, day=17),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='15I1000',
@@ -3197,7 +3197,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20040712_1_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20040712-1-0',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2004, month=7, day=12),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O1010',
@@ -3230,7 +3230,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20040712_1_8 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20040712-1-8',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2005, month=8, day=8),
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
             admission_reason_raw_text='65L9100',
@@ -3263,7 +3263,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_110035_20040712_1_9 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='110035-20040712-1-9',
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=datetime.date(year=2005, month=9, day=9),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             admission_reason_raw_text='65N9500',

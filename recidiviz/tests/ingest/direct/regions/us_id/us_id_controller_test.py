@@ -26,14 +26,18 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
+    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_id.us_id_controller import UsIdController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
-    StateCourtCase, StateAgent, StateSupervisionSentence
+    StateCourtCase, StateAgent, StateSupervisionSentence, StateIncarcerationPeriod, StateSupervisionPeriod
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -411,6 +415,212 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
 
         self.run_parse_file_test(expected, 'mittimus_judge_sentence_offense_sentprob_supervision_sentences')
+
+    def test_populate_data_movement_facility_offstat_incarceration_periods(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='1111',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-1',
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_periods=[
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='1111-1',
+                                            incarceration_type='STATE_PRISON',
+                                            facility='FACILITY 1',
+                                            admission_reason='NEW_ADMISSION',
+                                            admission_date='2008-01-01',
+                                            release_reason='I',
+                                            release_date='2008-10-01',
+                                        ),
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='1111-2',
+                                            incarceration_type='COUNTY_JAIL',
+                                            facility='COUNTY JAIL',
+                                            admission_reason='I',
+                                            admission_date='2008-10-01',
+                                            release_reason='H',
+                                            release_date='2009-01-01',
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-2',
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_periods=[
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='1111-3',
+                                            facility='FACILITY 1',
+                                            incarceration_type='STATE_PRISON',
+                                            admission_reason='P',
+                                            admission_date='2019-01-01',
+                                            release_reason='I',
+                                            release_date='2019-02-01',
+                                        ),
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='1111-4',
+                                            facility='FACILITY 1',
+                                            incarceration_type='STATE_PRISON',
+                                            admission_reason='I',
+                                            admission_date='2019-02-01',
+                                            release_reason='P',
+                                            release_date='2020-01-01',
+                                            specialized_purpose_for_incarceration='TREATMENT_IN_PRISON',
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+                StatePerson(
+                    state_person_id='2222',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='2222-1',
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_periods=[
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='2222-1',
+                                            facility='FACILITY 3',
+                                            incarceration_type='STATE_PRISON',
+                                            admission_reason='P',
+                                            admission_date='2010-01-01',
+                                            release_reason='F',
+                                            release_date='2011-01-01',
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'movement_facility_offstat_incarceration_periods')
+
+    def test_populate_data_movement_facility_supervision_periods(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='1111',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-2',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='1111-1',
+                                            supervision_site='DISTRICT 1',
+                                            admission_reason='COURT_SENTENCE',
+                                            start_date='2018-01-01',
+                                            termination_reason='I',
+                                            termination_date='2018-12-31',
+                                        ),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='1111-2',
+                                            supervision_site='DISTRICT 1',
+                                            admission_reason='I',
+                                            start_date='2020-01-01',
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+                StatePerson(
+                    state_person_id='2222',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='2222-1',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='2222-1',
+                                            supervision_site='DISTRICT 2',
+                                            admission_reason='COURT_SENTENCE',
+                                            start_date='2009-01-01',
+                                            termination_reason='F',
+                                            termination_date='2009-07-01',
+                                        ),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='2222-2',
+                                            admission_reason='ABSCONSION',
+                                            start_date='2009-07-01',
+                                            termination_reason='RETURN_FROM_ABSCONSION',
+                                            termination_date='2009-12-01',
+                                        ),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='2222-3',
+                                            supervision_site='DISTRICT 2',
+                                            admission_reason='F',
+                                            start_date='2009-12-01',
+                                            termination_reason='I',
+                                            termination_date='2009-12-31',
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+                StatePerson(
+                    state_person_id='3333',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='3333-1',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='3333-1',
+                                            supervision_site='DISTRICT 4',
+                                            admission_reason='COURT_SENTENCE',
+                                            start_date='2015-01-01',
+                                            termination_reason='IS',
+                                            termination_date='2018-01-01',
+                                        ),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='3333-2',
+                                            admission_reason='IS',
+                                            start_date='2018-01-01',
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'movement_facility_supervision_periods')
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -845,6 +1055,250 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         # Assert
         self.assert_expected_db_people(expected_people)
+
+        # TODO(2999): Associate supervision/incarceration periods to sentences by date.
+        #################################################################
+        # MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS
+        #################################################################
+        # Arrange
+        is_1111_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            sentence_group=sg_1111_1,
+            person=sg_1111_1.person)
+        ip_1111_1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-1',
+            facility='FACILITY 1',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text='NEW_ADMISSION',
+            admission_date=datetime.date(year=2008, month=1, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text='I',
+            release_date=datetime.date(year=2008, month=10, day=1),
+            incarceration_sentences=[is_1111_1_placeholder],
+            person=is_1111_1_placeholder.person,
+        )
+        ip_1111_2 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-2',
+            facility='COUNTY JAIL',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text='COUNTY_JAIL',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text='I',
+            admission_date=datetime.date(year=2008, month=10, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason_raw_text='H',
+            release_date=datetime.date(year=2009, month=1, day=1),
+            incarceration_sentences=[is_1111_1_placeholder],
+            person=is_1111_1_placeholder.person,
+        )
+        sg_1111_1.incarceration_sentences.append(is_1111_1_placeholder)
+        is_1111_1_placeholder.incarceration_periods.extend([ip_1111_1, ip_1111_2])
+
+        is_1111_2_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            sentence_group=sg_1111_2,
+            person=sg_1111_2.person)
+        ip_1111_3 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-3',
+            facility='FACILITY 1',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text='P',
+            admission_date=datetime.date(year=2019, month=1, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text='I',
+            release_date=datetime.date(year=2019, month=2, day=1),
+            incarceration_sentences=[is_1111_2_placeholder],
+            person=is_1111_2_placeholder.person,
+        )
+        ip_1111_4 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-4',
+            facility='FACILITY 1',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text='I',
+            admission_date=datetime.date(year=2019, month=2, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='P',
+            release_date=datetime.date(year=2020, month=1, day=1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            specialized_purpose_for_incarceration_raw_text='TREATMENT_IN_PRISON',
+            incarceration_sentences=[is_1111_2_placeholder],
+            person=is_1111_2_placeholder.person,
+        )
+        sg_1111_2.incarceration_sentences.append(is_1111_2_placeholder)
+        is_1111_2_placeholder.incarceration_periods.extend([ip_1111_3, ip_1111_4])
+
+        is_2222_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            sentence_group=sg_2222_1,
+            person=sg_2222_1.person)
+        ip_2222_1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-1',
+            facility='FACILITY 3',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text='P',
+            admission_date=datetime.date(year=2010, month=1, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            release_reason_raw_text='F',
+            release_date=datetime.date(year=2011, month=1, day=1),
+            incarceration_sentences=[is_2222_1_placeholder],
+            person=is_2222_1_placeholder.person,
+        )
+        sg_2222_1.incarceration_sentences.append(is_2222_1_placeholder)
+        is_2222_1_placeholder.incarceration_periods.append(ip_2222_1)
+
+        # Act
+        self._run_ingest_job_for_filename('movement_facility_offstat_incarceration_periods.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # MOVEMENT_FACILITY_SUPERVISION_PERIODS
+        #################################################################
+        # Arrange
+        ss_1111_2_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_1111_2,
+            person=sg_1111_2.person)
+        ss_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-1',
+            supervision_site='DISTRICT 1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text='COURT_SENTENCE',
+            start_date=datetime.date(year=2018, month=1, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason_raw_text='I',
+            termination_date=datetime.date(year=2018, month=12, day=31),
+            supervision_sentences=[ss_1111_2_placeholder],
+            person=ss_1111_2_placeholder.person,
+        )
+        ss_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-2',
+            supervision_site='DISTRICT 1',
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason_raw_text='I',
+            start_date=datetime.date(year=2020, month=1, day=1),
+            supervision_sentences=[ss_1111_2_placeholder],
+            person=ss_1111_2_placeholder.person,
+        )
+        sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
+        ss_1111_2_placeholder.supervision_periods.extend([ss_1111_1, ss_1111_2])
+
+        ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_2222_1,
+            person=sg_2222_1.person)
+        ss_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-1',
+            supervision_site='DISTRICT 2',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text='COURT_SENTENCE',
+            start_date=datetime.date(year=2009, month=1, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            termination_reason_raw_text='F',
+            termination_date=datetime.date(year=2009, month=7, day=1),
+            supervision_sentences=[ss_2222_1_placeholder],
+            person=ss_2222_1_placeholder.person,
+        )
+        ss_2222_2 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-2',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
+            admission_reason_raw_text='ABSCONSION',
+            start_date=datetime.date(year=2009, month=7, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+            termination_reason_raw_text='RETURN_FROM_ABSCONSION',
+            termination_date=datetime.date(year=2009, month=12, day=1),
+            supervision_sentences=[ss_2222_1_placeholder],
+            person=ss_2222_1_placeholder.person,
+        )
+        ss_2222_3 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-3',
+            supervision_site='DISTRICT 2',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            admission_reason_raw_text='F',
+            start_date=datetime.date(year=2009, month=12, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason_raw_text='I',
+            termination_date=datetime.date(year=2009, month=12, day=31),
+            supervision_sentences=[ss_2222_1_placeholder],
+            person=ss_2222_1_placeholder.person,
+        )
+        sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
+        ss_2222_1_placeholder.supervision_periods.extend([ss_2222_1, ss_2222_2, ss_2222_3])
+
+        ss_3333_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_3333_1,
+            person=sg_3333_1.person)
+        ss_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='3333-1',
+            supervision_site='DISTRICT 4',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text='COURT_SENTENCE',
+            start_date=datetime.date(year=2015, month=1, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            termination_reason_raw_text='IS',
+            termination_date=datetime.date(year=2018, month=1, day=1),
+            supervision_sentences=[ss_3333_1_placeholder],
+            person=ss_3333_1_placeholder.person,
+        )
+        ss_3333_2 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='3333-2',
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+            admission_reason_raw_text='IS',
+            start_date=datetime.date(year=2018, month=1, day=1),
+            supervision_sentences=[ss_3333_1_placeholder],
+            person=ss_3333_1_placeholder.person,
+        )
+        sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
+        ss_3333_1_placeholder.supervision_periods.extend([ss_3333_1, ss_3333_2])
+
+        # Act
+        self._run_ingest_job_for_filename('movement_facility_supervision_periods.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people, debug=True)
 
         # Rerun for sanity
         # pylint:disable=protected-access
