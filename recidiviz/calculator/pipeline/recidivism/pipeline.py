@@ -482,13 +482,13 @@ def parse_arguments(argv):
                         dest='include_release_facility',
                         type=bool,
                         help='Include metrics broken down by release facility.',
-                        default=False)
+                        default=True)
 
     parser.add_argument('--include_stay_length',
                         dest='include_stay_length',
                         type=bool,
                         help='Include metrics broken down by stay length.',
-                        default=False)
+                        default=True)
 
     return parser.parse_known_args(argv)
 
