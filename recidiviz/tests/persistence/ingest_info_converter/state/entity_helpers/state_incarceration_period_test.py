@@ -240,3 +240,69 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             state_code='US_ND')
 
         self.assertEqual(result, expected_result)
+
+    def testParseStateIncarcerationPeriod_inferStatus_noDates(self):
+        # Arrange
+        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
+            incarceration_type='STATE_PRISON',
+            state_code='us_nd')
+
+        # Act
+        incarceration_builder = entities.StateIncarcerationPeriod.builder()
+        state_incarceration_period.copy_fields_to_builder(incarceration_builder, ingest_incarceration, _EMPTY_METADATA)
+        result = incarceration_builder.build()
+
+        # Assert
+        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            state_code='US_ND')
+
+        self.assertEqual(result, expected_result)
+
+    def testParseStateIncarcerationPeriod_inferStatus_releaseDate(self):
+        # Arrange
+        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
+            incarceration_type='STATE_PRISON',
+            admission_date='1/2/2111',
+            release_date='1/2/2112',
+            state_code='us_nd')
+
+        # Act
+        incarceration_builder = entities.StateIncarcerationPeriod.builder()
+        state_incarceration_period.copy_fields_to_builder(incarceration_builder, ingest_incarceration, _EMPTY_METADATA)
+        result = incarceration_builder.build()
+
+        # Assert
+        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_date=date(year=2111, month=1, day=2),
+            release_date=date(year=2112, month=1, day=2),
+            state_code='US_ND')
+
+        self.assertEqual(result, expected_result)
+
+    def testParseStateIncarcerationPeriod_inferStatus_admissionNoRelease(self):
+        # Arrange
+        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
+            incarceration_type='STATE_PRISON',
+            admission_date='1/2/2111',
+            state_code='us_nd')
+
+        # Act
+        incarceration_builder = entities.StateIncarcerationPeriod.builder()
+        state_incarceration_period.copy_fields_to_builder(incarceration_builder, ingest_incarceration, _EMPTY_METADATA)
+        result = incarceration_builder.build()
+
+        # Assert
+        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_date=date(year=2111, month=1, day=2),
+            state_code='US_ND')
+
+        self.assertEqual(result, expected_result)
