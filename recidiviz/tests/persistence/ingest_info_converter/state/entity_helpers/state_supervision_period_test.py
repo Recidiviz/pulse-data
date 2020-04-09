@@ -83,3 +83,61 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         )
 
         self.assertEqual(result, expected_result)
+
+    def testParseStateSupervisionPeriod_inferStatus_noDates(self):
+        # Arrange
+        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(state_code='us_nd')
+
+        # Act
+        supervision_builder = entities.StateSupervisionPeriod.builder()
+        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        result = supervision_builder.build()
+
+        # Assert
+        expected_result = entities.StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            state_code='US_ND')
+
+        self.assertEqual(expected_result, result)
+
+    def testParseStateSupervisionPeriod_inferStatus_terminationDate(self):
+        # Arrange
+        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
+            state_code='us_nd',
+            start_date='1/2/2111',
+            termination_date='1/2/2112',
+        )
+
+        # Act
+        supervision_builder = entities.StateSupervisionPeriod.builder()
+        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        result = supervision_builder.build()
+
+        # Assert
+        expected_result = entities.StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            start_date=date(year=2111, month=1, day=2),
+            termination_date=date(year=2112, month=1, day=2),
+            state_code='US_ND')
+
+        self.assertEqual(expected_result, result)
+
+    def testParseStateSupervisionPeriod_inferStatus_startNoTermination(self):
+        # Arrange
+        ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
+            state_code='us_nd',
+            start_date='1/2/2111',
+        )
+
+        # Act
+        supervision_builder = entities.StateSupervisionPeriod.builder()
+        state_supervision_period.copy_fields_to_builder(supervision_builder, ingest_supervision, _EMPTY_METADATA)
+        result = supervision_builder.build()
+
+        # Assert
+        expected_result = entities.StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            start_date=date(year=2111, month=1, day=2),
+            state_code='US_ND')
+
+        self.assertEqual(expected_result, result)

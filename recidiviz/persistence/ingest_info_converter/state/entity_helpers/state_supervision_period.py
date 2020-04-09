@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Converts an ingest_info proto StateSupervisionPeriod to a
-persistence entity."""
+"""Converts an ingest_info proto StateSupervisionPeriod to a persistence entity."""
 
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
@@ -38,12 +37,22 @@ def copy_fields_to_builder(
         supervision_period_builder: entities.StateSupervisionPeriod.Builder,
         proto: StateSupervisionPeriod,
         metadata: IngestMetadata) -> None:
-    """Mutates the provided |supervision_period_builder| by converting an
-    ingest_info proto StateSupervisionPeriod.
+    """Mutates the provided |supervision_period_builder| by converting an ingest_info proto StateSupervisionPeriod.
 
     Note: This will not copy children into the Builder!
     """
     new = supervision_period_builder
+
+    # 1-to-1 mappings
+    new.external_id = fn(parse_external_id, 'state_supervision_period_id', proto)
+
+    new.start_date = fn(parse_date, 'start_date', proto)
+    new.termination_date = fn(parse_date, 'termination_date', proto)
+    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
+    new.county_code = fn(normalize, 'county_code', proto)
+    new.supervision_site = fn(normalize, 'supervision_site', proto)
+    if proto.conditions:
+        new.conditions = create_comma_separated_list(proto, 'conditions')
 
     enum_fields = {
         'status': StateSupervisionPeriodStatus,
@@ -55,33 +64,21 @@ def copy_fields_to_builder(
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # enum values
-    new.status = enum_mappings.get(
-        StateSupervisionPeriodStatus,
-        default=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
+    # Status default based on presence of admission/release dates
+    if new.termination_date:
+        status_default = StateSupervisionPeriodStatus.TERMINATED
+    elif new.start_date and not new.termination_date:
+        status_default = StateSupervisionPeriodStatus.UNDER_SUPERVISION
+    else:
+        status_default = StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
+    new.status = enum_mappings.get(StateSupervisionPeriodStatus, default=status_default)
+
     new.status_raw_text = fn(normalize, 'status', proto)
     new.supervision_type = enum_mappings.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, 'supervision_type', proto)
-    new.admission_reason = enum_mappings.get(
-        StateSupervisionPeriodAdmissionReason)
+    new.admission_reason = enum_mappings.get(StateSupervisionPeriodAdmissionReason)
     new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
-    new.termination_reason = enum_mappings.get(
-        StateSupervisionPeriodTerminationReason)
-    new.termination_reason_raw_text = fn(normalize,
-                                         'termination_reason',
-                                         proto)
+    new.termination_reason = enum_mappings.get(StateSupervisionPeriodTerminationReason)
+    new.termination_reason_raw_text = fn(normalize, 'termination_reason', proto)
     new.supervision_level = enum_mappings.get(StateSupervisionLevel)
     new.supervision_level_raw_text = fn(normalize, 'supervision_level', proto)
-
-    # 1-to-1 mappings
-    new.external_id = fn(parse_external_id,
-                         'state_supervision_period_id',
-                         proto)
-
-    new.start_date = fn(parse_date, 'start_date', proto)
-    new.termination_date = fn(parse_date, 'termination_date', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
-    new.county_code = fn(normalize, 'county_code', proto)
-    new.supervision_site = fn(normalize, 'supervision_site', proto)
-    if proto.conditions:
-        new.conditions = create_comma_separated_list(proto, 'conditions')

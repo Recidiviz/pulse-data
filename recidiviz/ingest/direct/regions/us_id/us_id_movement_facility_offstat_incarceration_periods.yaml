@@ -1,0 +1,30 @@
+key_mappings:
+  docno: state_person.state_person_id
+
+child_key_mappings:
+  docno: state_person_external_id.state_person_external_id_id
+
+  incrno: state_sentence_group.state_sentence_group_id
+
+  end_date: state_incarceration_period.release_date
+  fac_ldesc: state_incarceration_period.facility
+  next_fac_typ: state_incarceration_period.release_reason
+  period_id: state_incarceration_period.state_incarceration_period_id
+  prev_fac_typ: state_incarceration_period.admission_reason
+  start_date: state_incarceration_period.admission_date
+
+primary_key:
+  docno: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_incarceration_sentence
+
+keys_to_ignore:
+  - rider             # Whether or not the person is on a rider - handled manually in the controller.
+
+  - fac_cd            # Unused - facility code - analogous to fac_ldesc used above.
+  - fac_typ           # Unused - always 'I' for incarcerated
+  - next_fac_cd       # Unused - next facility code
+  - next_fac_ldesc    # Unused - next facility name
+  - prev_fac_cd       # Unused - previous facility code
+  - prev_fac_ldesc    # Unused - previous facility name
