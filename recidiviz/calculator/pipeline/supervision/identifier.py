@@ -37,7 +37,7 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state, \
     default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
-    get_pre_incarceration_supervision_type
+    get_pre_incarceration_supervision_type, supervision_period_counts_towards_supervision_population_on_day
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
@@ -150,6 +150,7 @@ def find_supervision_time_buckets(
     indexed_supervision_periods = _index_supervision_periods_by_termination_month(supervision_periods)
 
     months_fully_incarcerated = _identify_months_fully_incarcerated(incarceration_periods)
+    months_incarcerated_eom = _identify_months_incarcerated_end_of_month(incarceration_periods)
 
     projected_supervision_completion_buckets = classify_supervision_success(supervision_sentences,
                                                                             incarceration_periods,
@@ -166,6 +167,7 @@ def find_supervision_time_buckets(
                 supervision_period,
                 incarceration_periods_by_admission_month,
                 months_fully_incarcerated,
+                months_incarcerated_eom,
                 assessments,
                 violation_responses,
                 supervision_period_to_agent_associations)
@@ -182,10 +184,10 @@ def find_supervision_time_buckets(
             if supervision_termination_bucket:
                 supervision_time_buckets.append(supervision_termination_bucket)
 
-    supervision_time_buckets = find_revocation_return_buckets(
+    supervision_time_buckets = supervision_time_buckets + find_revocation_return_buckets(
         supervision_sentences, incarceration_sentences, supervision_periods, incarceration_periods,
-        supervision_time_buckets, assessments, violation_responses, ssvr_agent_associations,
-        supervision_period_to_agent_associations)
+        assessments, violation_responses, ssvr_agent_associations,
+        supervision_period_to_agent_associations, months_incarcerated_eom)
 
     if supervision_types_distinct_for_state(state_code):
         supervision_time_buckets = _convert_buckets_to_dual(supervision_time_buckets)
@@ -199,9 +201,9 @@ def find_time_buckets_for_supervision_period(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
-        incarceration_periods_by_admission_month:
-        Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
+        incarceration_periods_by_admission_month: Dict[int, Dict[int, List[StateIncarcerationPeriod]]],
         months_fully_incarcerated: Set[Tuple[int, int]],
+        months_incarcerated_eom: Set[Tuple[int, int]],
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations:
@@ -215,6 +217,8 @@ def find_time_buckets_for_supervision_period(
             StateIncarcerationPeriods that started in that month.
         - months_fully_incarcerated: A set of tuples in the format (year, month) for each month of which this person has
             been incarcerated for the full month.
+        - months_fully_incarcerated: A set of tuples in the format (year, month) for each month of which this person was
+            incarcerated on the last day of the month.
         - ssvr_agent_associations: dictionary associating StateSupervisionViolationResponse ids to information about the
             corresponding StateAgent on the response
     Returns
@@ -222,6 +226,7 @@ def find_time_buckets_for_supervision_period(
     """
     supervision_month_buckets: List[SupervisionTimeBucket] = []
 
+    state_code = supervision_period.state_code
     start_date = supervision_period.start_date
     termination_date = supervision_period.termination_date
 
@@ -255,6 +260,17 @@ def find_time_buckets_for_supervision_period(
                 end_of_month if (termination_date is None or end_of_month < termination_date) else termination_date
             violation_history = get_violation_and_response_history(end_of_violation_window, violation_responses)
 
+            # TODO(3064): Use similar logic to filter out people entirely if they are not actually on supervision
+            #  on any day in this month.
+            is_on_supervision_last_day_of_month = _get_is_on_supervision_last_day_of_month(
+                end_of_month,
+                state_code,
+                months_incarcerated_eom,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period
+            )
+
             supervision_month_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
@@ -271,7 +287,8 @@ def find_time_buckets_for_supervision_period(
                     supervising_officer_external_id=supervising_officer_external_id,
                     supervising_district_external_id=supervising_district_external_id,
                     supervision_level=supervision_period.supervision_level,
-                    supervision_level_raw_text=supervision_period.supervision_level_raw_text
+                    supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                    is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month
                 )
             )
 
@@ -686,17 +703,39 @@ def index_incarceration_periods_by_admission_month(
     return incarceration_periods_by_admission_month
 
 
+def _get_is_on_supervision_last_day_of_month(
+        any_date_in_month: date,
+        state_code: str,
+        months_incarcerated_eom: Set[Tuple[int, int]],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: Optional[StateSupervisionPeriod]
+) -> bool:
+    end_of_month = last_day_of_month(any_date_in_month)
+    if date.today() < last_day_of_month(any_date_in_month):
+        return False
+
+    is_incarcerated_eom = (end_of_month.year, end_of_month.month) in months_incarcerated_eom
+
+    return not is_incarcerated_eom and \
+        supervision_period_counts_towards_supervision_population_on_day(end_of_month,
+                                                                        state_code,
+                                                                        supervision_sentences,
+                                                                        incarceration_sentences,
+                                                                        supervision_period)
+
+
 def find_revocation_return_buckets(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_time_buckets: List[SupervisionTimeBucket],
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) -> \
-        List[SupervisionTimeBucket]:
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        months_incarcerated_eom: Set[Tuple[int, int]]
+) -> List[SupervisionTimeBucket]:
     """Looks at all incarceration periods to see if they were revocation returns. For each revocation admission, adds
     one RevocationReturnSupervisionTimeBuckets for each overlapping supervision period. If there are no overlapping
     supervision periods, looks for a recently terminated period. If there are no overlapping or recently terminated
@@ -712,6 +751,7 @@ def find_revocation_return_buckets(
         if not is_revocation_admission(incarceration_period.admission_reason):
             continue
 
+        state_code = incarceration_period.state_code
         admission_date = incarceration_period.admission_date
         admission_year = admission_date.year
         admission_month = admission_date.month
@@ -740,6 +780,15 @@ def find_revocation_return_buckets(
                 violation_history = get_violation_and_response_history(admission_date, violation_responses)
 
                 if supervision_type_at_admission is not None:
+                    is_on_supervision_last_day_of_month = _get_is_on_supervision_last_day_of_month(
+                        end_of_month,
+                        state_code,
+                        months_incarcerated_eom,
+                        supervision_sentences,
+                        incarceration_sentences,
+                        supervision_period
+                    )
+
                     revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                         state_code=incarceration_period.state_code,
                         year=admission_year,
@@ -761,7 +810,8 @@ def find_revocation_return_buckets(
                         supervising_officer_external_id=revocation_details.supervising_officer_external_id,
                         supervising_district_external_id=revocation_details.supervising_district_external_id,
                         supervision_level=supervision_level,
-                        supervision_level_raw_text=supervision_level_raw_text
+                        supervision_level_raw_text=supervision_level_raw_text,
+                        is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month
                     )
 
                     revocation_return_buckets.append(revocation_month_bucket)
@@ -786,6 +836,14 @@ def find_revocation_return_buckets(
             violation_history = get_violation_and_response_history(admission_date, violation_responses)
 
             if supervision_type_at_admission is not None:
+                is_on_supervision_last_day_of_month = _get_is_on_supervision_last_day_of_month(
+                    end_of_month,
+                    state_code,
+                    months_incarcerated_eom,
+                    supervision_sentences,
+                    incarceration_sentences,
+                    None
+                )
                 revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
@@ -805,15 +863,13 @@ def find_revocation_return_buckets(
                     violation_history_description=violation_history.violation_history_description,
                     violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                     supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-                    supervising_district_external_id=revocation_details.supervising_district_external_id
+                    supervising_district_external_id=revocation_details.supervising_district_external_id,
+                    is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month
                 )
 
                 revocation_return_buckets.append(revocation_month_bucket)
 
-    if revocation_return_buckets:
-        supervision_time_buckets.extend(revocation_return_buckets)
-
-    return supervision_time_buckets
+    return revocation_return_buckets
 
 
 def classify_supervision_success(supervision_sentences: List[StateSupervisionSentence],
@@ -995,10 +1051,28 @@ def _index_supervision_periods_by_termination_month(
 
     return indexed_supervision_periods
 
+def _identify_months_incarcerated_end_of_month(
+        incarceration_periods: List[StateIncarcerationPeriod]
+) -> Set[Tuple[int, int]]:
+    months_incarcerated_eom: Set[Tuple[int, int]] = set()
+
+    for incarceration_period in incarceration_periods:
+        first_of_month = first_day_of_month(incarceration_period.admission_date)
+
+        if incarceration_period.release_date is None:
+            release_date = date.today() + relativedelta(days=1)
+        else:
+            release_date = incarceration_period.release_date
+
+        while last_day_of_month(first_of_month) < release_date:
+            months_incarcerated_eom.add((first_of_month.year, first_of_month.month))
+            first_of_month = first_of_month + relativedelta(months=1)
+
+    return months_incarcerated_eom
 
 def _identify_months_fully_incarcerated(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        Set[Tuple[int, int]]:
+        incarceration_periods: List[StateIncarcerationPeriod]
+) -> Set[Tuple[int, int]]:
     """For each StateIncarcerationPeriod, identifies months where the person was incarcerated for every day during that
     month. Returns a set of months in the format (year, month) for which the person spent the entire month in a
     prison."""

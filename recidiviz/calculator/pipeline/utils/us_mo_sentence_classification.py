@@ -17,6 +17,7 @@
 """Missouri-specific code for modeling sentence based on sentence statuses from table TAK026."""
 
 import logging
+from collections import defaultdict
 from datetime import date
 from enum import Enum, auto
 from typing import Optional, Dict, List, Any, Generic
@@ -243,6 +244,19 @@ class UsMoSentenceStatus(BuildableAttr):
         return StateSupervisionType.INTERNAL_UNKNOWN
 
 
+@attr.s(frozen=True)
+class _SupervisionTypeSpan:
+    # Sentence supervision type to associate with this time span
+    supervision_type: StateSupervisionType = attr.ib()
+
+    # First day where the sentence has the given supervision type, inclusive
+    start_date: date = attr.ib()
+
+    # Last day where the sentence has the given supervision type, exclusive. None if the sentence has that status up
+    # until present day.
+    end_date: Optional[date] = attr.ib()
+
+
 @attr.s
 class UsMoSentenceMixin(Generic[SentenceType]):
     """State-specific extension of sentence classes for MO which allows us to calculate additional info based on the
@@ -261,39 +275,51 @@ class UsMoSentenceMixin(Generic[SentenceType]):
     def _sentence_statuses(self):
         raise ValueError('Must set sentence_statuses')
 
-    def get_sentence_supervision_type_on_day(
-            self,
-            supervision_type_day: date
-    ) -> Optional[StateSupervisionType]:
-        """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
-        has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
-        person on/before a given date.
+    # Time span objects that represent time spans where a sentence has a given supervision type
+    supervision_type_spans: List[_SupervisionTypeSpan] = attr.ib()
+
+    @supervision_type_spans.default
+    def _get_supervision_type_spans(self) -> List[_SupervisionTypeSpan]:
+        """Generates the time span objects representing the supervision type for this sentence between certain critical
+        dates where the type may have changed.
         """
         if not self.base_sentence.external_id:
-            return None
+            return []
 
         if not self.sentence_statuses:
             logging.warning('No sentence statuses in the reftable for sentence [%s]', self.base_sentence.external_id)
-            return None
+            return []
 
-        critical_statuses_before_date = \
-            [status for status in self.sentence_statuses
-             if status.status_date and status.status_date <= supervision_type_day
-             and status.is_supervision_type_critical_status]
+        all_critical_statuses = [status for status in self.sentence_statuses
+                                 if status.is_supervision_type_critical_status]
+        critical_statuses_by_day = defaultdict(list)
 
-        if not critical_statuses_before_date:
-            logging.warning('Sentence [%s] has no statuses before [%s]',
-                            self.base_sentence.external_id,
-                            supervision_type_day)
-            return None
+        for s in all_critical_statuses:
+            critical_statuses_by_day[s.status_date].append(s)
 
-        max_critical_date = max([status.status_date for status in critical_statuses_before_date])
+        critical_days = sorted(critical_statuses_by_day.keys())
 
-        most_recent_critical_day_statuses = \
-            [status for status in critical_statuses_before_date if status.status_date == max_critical_date]
+        supervision_type_spans = []
+        for i, critical_day in enumerate(critical_days):
+            if critical_day is None:
+                continue
+            start_date = critical_day
+            end_date = critical_days[i+1] if i < len(critical_days) - 1 else None
 
+            supervision_type = \
+                self._get_sentence_supervision_type_from_critical_day_statuses(critical_statuses_by_day[critical_day])
+            supervision_type_spans.append(_SupervisionTypeSpan(start_date=start_date,
+                                                               end_date=end_date,
+                                                               supervision_type=supervision_type))
+
+        return supervision_type_spans
+
+    @staticmethod
+    def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]):
+        """Given a set of 'supervision type critical' statuses, returns the supervision type for the
+        _SupervisionTypeSpan starting on that day."""
         status_categories_on_day = {
-            status.supervision_type_critical_status_category for status in most_recent_critical_day_statuses}
+            status.supervision_type_critical_status_category for status in critical_day_statuses}
 
         has_supv_start_status = \
             SupervisionTypeCriticalStatusCategory.SUPERVISION_START in status_categories_on_day
@@ -310,40 +336,58 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
         if has_supv_end_status and not has_supv_start_status:
             # If we can assume that the date we're inspecting is a date that the person is not incarcerated,
-            # this seems to happen when a sentence is revoked and ended completely - a new sentence will be
-            # started in this case.
-            logging.warning('Sentence [%s] has_supv_end_status and not has_supv_start_status before [%s]',
-                            self.base_sentence.external_id,
-                            supervision_type_day)
+            # this seems to happen when a sentence is revoked and ended completely (a new sentence will be
+            # started in this case) or when a probation sentence is suspended.
             return None
 
         if not has_supv_start_status and not has_lifetime_supervision_start_status:
             raise ValueError(f'Expect only supervision start statuses at this point. '
-                             f'Person: {most_recent_critical_day_statuses[0].person_external_id},'
-                             f'Sentence: {most_recent_critical_day_statuses[0].sentence_external_id},'
-                             f'Critical status date: {most_recent_critical_day_statuses[0].status_date}')
+                             f'Person: {critical_day_statuses[0].person_external_id},'
+                             f'Sentence: {critical_day_statuses[0].sentence_external_id},'
+                             f'Critical status date: {critical_day_statuses[0].status_date}')
 
-        most_recent_critical_day_statuses_filtered = \
-            [s for s in most_recent_critical_day_statuses if not s.is_sentence_termination_status_candidate]
+        critical_day_statuses_filtered = \
+            [s for s in critical_day_statuses if not s.is_sentence_termination_status_candidate]
 
-        if not most_recent_critical_day_statuses_filtered:
+        if not critical_day_statuses_filtered:
             logging.warning('Found no most_recent_critical_day_statuses_filtered, most_recent_critical_day_statuses: '
                             '[%s]. Person: [%s], Sentence: [%s], Critical status date: [%s]}',
-                            most_recent_critical_day_statuses,
-                            most_recent_critical_day_statuses[0].person_external_id,
-                            most_recent_critical_day_statuses[0].sentence_external_id,
-                            most_recent_critical_day_statuses[0].status_date)
-            return most_recent_critical_day_statuses[0].supervision_type_status_classification
+                            critical_day_statuses,
+                            critical_day_statuses[0].person_external_id,
+                            critical_day_statuses[0].sentence_external_id,
+                            critical_day_statuses[0].status_date)
+            return critical_day_statuses[0].supervision_type_status_classification
 
-        if len(most_recent_critical_day_statuses_filtered) > 1:
+        if len(critical_day_statuses_filtered) > 1:
             logging.warning('Should only have one status, found [%s]. '
                             'Person: [%s], Sentence: [%s], Critical status date: [%s]}',
-                            len(most_recent_critical_day_statuses_filtered),
-                            most_recent_critical_day_statuses_filtered[0].person_external_id,
-                            most_recent_critical_day_statuses_filtered[0].sentence_external_id,
-                            most_recent_critical_day_statuses_filtered[0].status_date)
+                            len(critical_day_statuses_filtered),
+                            critical_day_statuses_filtered[0].person_external_id,
+                            critical_day_statuses_filtered[0].sentence_external_id,
+                            critical_day_statuses_filtered[0].status_date)
 
-        return most_recent_critical_day_statuses_filtered[0].supervision_type_status_classification
+        return critical_day_statuses_filtered[0].supervision_type_status_classification
+
+    def get_sentence_supervision_type_on_day(
+            self,
+            supervision_type_day: date
+    ) -> Optional[StateSupervisionType]:
+        """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
+        has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
+        person on/before a given date.
+        """
+
+        filtered_spans = [span for span in self.supervision_type_spans
+                          if span.start_date <= supervision_type_day and
+                          (span.end_date is None or supervision_type_day < span.end_date)]
+
+        if not filtered_spans:
+            return None
+
+        if len(filtered_spans) > 1:
+            raise ValueError("Should have non-overlapping supervision type spans")
+
+        return filtered_spans[0].supervision_type
 
 
 @attr.s

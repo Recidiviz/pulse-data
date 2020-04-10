@@ -114,6 +114,13 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # were listed on the given violation.
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
 
+    # True if the stint of time on supervision this month included the last day of the month
+    is_on_supervision_last_day_of_month: bool = attr.ib()
+
+    @is_on_supervision_last_day_of_month.default
+    def _default_is_on_supervision_last_day_of_month(self):
+        raise ValueError('Must set is_on_supervision_last_day_of_month!')
+
 
 @attr.s(frozen=True)
 class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
@@ -127,6 +134,13 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
     # The number of violation responses leading up to the revocation
     response_count: Optional[int] = attr.ib(default=0)
+
+    # True if the stint of time on supervision this month included the last day of the month
+    is_on_supervision_last_day_of_month: bool = attr.ib()
+
+    @is_on_supervision_last_day_of_month.default
+    def _default_is_on_supervision_last_day_of_month(self):
+        raise ValueError('Must set is_on_supervision_last_day_of_month!')
 
 
 @attr.s(frozen=True)

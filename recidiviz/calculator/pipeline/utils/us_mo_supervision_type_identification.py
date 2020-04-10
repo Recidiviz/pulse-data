@@ -16,7 +16,6 @@
 # =============================================================================
 """US_MO-specific implementations of functions related to supervision type identification."""
 import datetime
-import logging
 from typing import List, Set, Optional
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
@@ -65,15 +64,21 @@ def us_mo_get_month_supervision_type(
     else:
         supervision_type_determination_date = min(end_of_month,
                                                   supervision_period.termination_date - datetime.timedelta(days=1))
-    return us_mo_get_supervision_period_supervision_type_on_date(supervision_type_determination_date,
-                                                                 supervision_sentences,
-                                                                 incarceration_sentences)
+    supervision_type = \
+        us_mo_get_supervision_period_supervision_type_on_date(supervision_type_determination_date,
+                                                              supervision_sentences,
+                                                              incarceration_sentences)
+
+    if not supervision_type:
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+    return supervision_type
 
 
 def us_mo_get_supervision_period_supervision_type_on_date(
         supervision_type_determination_date: datetime.date,
         supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence]) -> StateSupervisionPeriodSupervisionType:
+        incarceration_sentences: List[StateIncarcerationSentence]) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Calculates the US_MO supervision period supervision type for any period overlapping with the provided
     |supervision_type_determination_date|.
     """
@@ -89,8 +94,14 @@ def us_mo_get_supervision_period_supervision_type_on_date(
             raise ValueError(f'Incarceration sentence has unexpected type {type(in_s)}')
         supervision_types.add(in_s.get_sentence_supervision_type_on_day(supervision_type_determination_date))
 
-    if supervision_types == {None}:
-        logging.warning('Should have at least one valid sentence on [%s] date, found none]',
-                        supervision_type_determination_date)
-
     return _sentence_supervision_types_to_supervision_period_supervision_type(supervision_types)
+
+
+def us_mo_counts_towards_supervision_population_on_day(
+        any_date: datetime.date,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence]) -> bool:
+    """Returns True if a person with the given sentences can be counted towards the supervision population on that day.
+    """
+    return us_mo_get_supervision_period_supervision_type_on_date(
+        any_date, supervision_sentences, incarceration_sentences) is not None
