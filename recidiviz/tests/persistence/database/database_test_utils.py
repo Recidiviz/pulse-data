@@ -205,13 +205,13 @@ def generate_test_bond(person_id) -> state_schema.StateBond:
     return instance
 
 
-def generate_test_charge(person_id, charge_id, court_case=None, bond=None) -> \
+def generate_test_charge(person_id, charge_id, court_case=None, bond=None, state_code='us_ca') -> \
         state_schema.StateCharge:
     instance = state_schema.StateCharge(
         charge_id=charge_id,
         person_id=person_id,
         status=ChargeStatus.PENDING.value,
-        state_code='us_ca',
+        state_code=state_code,
         court_case=court_case,
         bond=bond,
     )

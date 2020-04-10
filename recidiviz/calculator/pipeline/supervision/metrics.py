@@ -129,6 +129,9 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
     # Raw text of the level of supervision
     supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
+    # For person-level metrics only, indicates whether this person was on supervision at the end of the month
+    is_on_supervision_last_day_of_month: Optional[bool] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionPopulationMetric']:
         """Builds a SupervisionPopulationMetric object from the given arguments."""

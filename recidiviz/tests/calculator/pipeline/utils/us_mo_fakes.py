@@ -37,8 +37,11 @@ class FakeUsMoSupervisionSentence(UsMoSupervisionSentence):
 
     def get_sentence_supervision_type_on_day(
             self,
-            _supervision_type_day: date
+            supervision_type_day: date
     ) -> Optional[StateSupervisionType]:
+        if self.completion_date and supervision_type_day >= self.completion_date:
+            return None
+
         return self.test_supervision_type
 
     @classmethod
@@ -66,8 +69,11 @@ class FakeUsMoIncarcerationSentence(UsMoIncarcerationSentence):
 
     def get_sentence_supervision_type_on_day(
             self,
-            _supervision_type_day: date
+            supervision_type_day: date
     ) -> Optional[StateSupervisionType]:
+        if self.completion_date and supervision_type_day >= self.completion_date:
+            return None
+
         return self.test_supervision_type
 
     @classmethod

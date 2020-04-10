@@ -527,3 +527,36 @@ class UsMoSentenceTest(unittest.TestCase):
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date), None)
+
+    def test_suspended_and_reinstated(self):
+        raw_statuses = [
+            {"sentence_external_id": "1001298-20160310-1", "sentence_status_external_id": "1001298-20160310-1-1",
+             "status_code": "15I1000", "status_date": "20160310", "status_description": "New Court Probation"},
+            {"sentence_external_id": "1001298-20160310-1", "sentence_status_external_id": "1001298-20160310-1-2",
+             "status_code": "65O2015", "status_date": "20160712", "status_description": "Court Probation Suspension"},
+            {"sentence_external_id": "1001298-20160310-1", "sentence_status_external_id": "1001298-20160310-1-3",
+             "status_code": "65I2015", "status_date": "20180726", "status_description": "Court Probation Reinstated"},
+            {"sentence_external_id": "1001298-20160310-1", "sentence_status_external_id": "1001298-20160310-1-4",
+             "status_code": "65O2015", "status_date": "20191030", "status_description": "Court Probation Suspension"},
+            {"sentence_external_id": "1001298-20160310-1", "sentence_status_external_id": "1001298-20160310-1-5",
+             "status_code": "99O1000", "status_date": "20200220", "status_description": "Court Probation Discharge"}
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1001298-20160310-1',
+            start_date=datetime.date(year=2016, month=3, day=10)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        # Suspension - treated same as termination
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2016, 7, 12)), None)
+
+        # Suspension end - back on probation
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2018, 7, 26)),
+                         StateSupervisionType.PROBATION)
+
+        # Suspension #2 - treated same as termination
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2019, 10, 30)), None)
+
+        # Actual discharge
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2020, 2, 20)), None)
