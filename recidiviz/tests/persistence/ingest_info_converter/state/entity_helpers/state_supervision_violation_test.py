@@ -51,7 +51,7 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
         result = violation_builder.build()
 
         # Assert
-        expected_result = entities.StateSupervisionViolation(
+        expected_result = entities.StateSupervisionViolation.new_with_defaults(
             violation_type=StateSupervisionViolationType.TECHNICAL,
             violation_type_raw_text='TECHNICAL',
             external_id='VIOLATION_ID',
