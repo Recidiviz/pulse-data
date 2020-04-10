@@ -751,25 +751,26 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     -- tak158_tak024_tak026_incarceration_period_from_supervision_sentence
 
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
-    {NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT},
     {STATUSES_BY_DATE_FRAGMENT},
     incarceration_subcycle_from_supervision_sentence AS (
         SELECT
-            non_investigation_probation_sentence_ids.BU$DOC,
-            non_investigation_probation_sentence_ids.BU$CYC,
-            non_investigation_probation_sentence_ids.BU$SEO,
+            probation_sentence_ids.BU$DOC,
+            probation_sentence_ids.BU$CYC,
+            probation_sentence_ids.BU$SEO,
             body_status_f1.*
         FROM (
+            -- We intentionally do NOT filter out INV sentences here, otherwise an incarceration subcycle that is
+            -- erroneously attributed to an INV sentence in TAK158 would get dropped entirely.
             SELECT BU$DOC, BU$CYC, BU$SEO
-            FROM non_investigation_supervision_sentences_bu
+            FROM LBAKRDTA.TAK024 sentence_prob_bu
             GROUP BY BU$DOC, BU$CYC, BU$SEO
-        ) non_investigation_probation_sentence_ids
+        ) probation_sentence_ids
         LEFT OUTER JOIN
             LBAKRDTA.TAK158 body_status_f1
         ON
-            non_investigation_probation_sentence_ids.BU$DOC = body_status_f1.F1$DOC AND
-            non_investigation_probation_sentence_ids.BU$CYC = body_status_f1.F1$CYC AND
-            non_investigation_probation_sentence_ids.BU$SEO = body_status_f1.F1$SEO
+            probation_sentence_ids.BU$DOC = body_status_f1.F1$DOC AND
+            probation_sentence_ids.BU$CYC = body_status_f1.F1$CYC AND
+            probation_sentence_ids.BU$SEO = body_status_f1.F1$SEO
         WHERE body_status_f1.F1$DOC IS NOT NULL AND body_status_f1.F1$SST = 'I'
     ),
     incarceration_periods_from_supervision_sentence AS (
