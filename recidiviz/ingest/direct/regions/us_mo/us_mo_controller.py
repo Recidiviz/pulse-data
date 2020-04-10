@@ -414,6 +414,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         StateSpecializedPurposeForIncarceration: [
             'S',  # Serving Sentence
+            'X'   # Unknown
         ],
         StateSupervisionViolationResponseDecision: [
             'NOREC',  # No Recommendation
