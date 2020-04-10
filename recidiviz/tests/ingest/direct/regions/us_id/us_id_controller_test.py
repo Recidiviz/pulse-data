@@ -33,11 +33,16 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
     StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecision
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_id.us_id_controller import UsIdController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
-    StateCourtCase, StateAgent, StateSupervisionSentence, StateIncarcerationPeriod, StateSupervisionPeriod
+    StateCourtCase, StateAgent, StateSupervisionSentence, StateIncarcerationPeriod, StateSupervisionPeriod, \
+    StateSupervisionViolation, StateSupervisionViolationTypeEntry, StateSupervisionViolationResponse, \
+    StateSupervisionViolationResponseDecisionEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -621,6 +626,195 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
 
         self.run_parse_file_test(expected, 'movement_facility_supervision_periods')
+
+    # TODO(2999): Associate VRs by date to SPs
+    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='1111',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_violation_entries=[
+                                                StateSupervisionViolation(
+                                                    is_violent='True',
+                                                    is_sex_offense='True',
+                                                    state_supervision_violation_id='5',
+                                                    state_supervision_violation_types=[
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='New Misdemeanor',
+                                                        ),
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='Technical (enter details below)',
+                                                        ),
+                                                    ],
+                                                    state_supervision_violation_responses=[
+                                                        StateSupervisionViolationResponse(
+                                                            state_supervision_violation_response_id='5',
+                                                            response_type='VIOLATION_REPORT',
+                                                            response_date='12/01/2018',
+                                                            supervision_violation_response_decisions=[
+                                                                StateSupervisionViolationResponseDecisionEntry(
+                                                                    decision='Imposition of Sentence',
+                                                                )
+                                                            ]
+                                                        )
+                                                    ]
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+                StatePerson(
+                    state_person_id='2222',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_violation_entries=[
+                                                StateSupervisionViolation(
+                                                    is_violent='False',
+                                                    is_sex_offense='False',
+                                                    state_supervision_violation_id='6',
+                                                    state_supervision_violation_types=[
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='Absconding',
+                                                        ),
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='Technical (enter details below)',
+                                                        ),
+                                                    ],
+                                                    state_supervision_violation_responses=[
+                                                        StateSupervisionViolationResponse(
+                                                            state_supervision_violation_response_id='6',
+                                                            response_type='VIOLATION_REPORT',
+                                                            response_date='06/15/2009',
+                                                        )
+                                                    ]
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+                StatePerson(
+                    state_person_id='3333',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_violation_entries=[
+                                                StateSupervisionViolation(
+                                                    is_violent='False',
+                                                    is_sex_offense='False',
+                                                    state_supervision_violation_id='7',
+                                                    state_supervision_violation_types=[
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='Technical (enter details below)',
+                                                        ),
+                                                    ],
+                                                    state_supervision_violation_responses=[
+                                                        StateSupervisionViolationResponse(
+                                                            state_supervision_violation_response_id='7',
+                                                            response_type='VIOLATION_REPORT',
+                                                            response_date='01/01/2016',
+                                                            supervision_violation_response_decisions=[
+                                                                StateSupervisionViolationResponseDecisionEntry(
+                                                                    decision='Reinstatement',
+                                                                )
+                                                            ]
+                                                        )
+                                                    ]
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'ofndr_tst_tst_qstn_rspns_violation_reports')
+
+    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports_old(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='2222',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_violation_entries=[
+                                                StateSupervisionViolation(
+                                                    is_violent='False',
+                                                    is_sex_offense='False',
+                                                    state_supervision_violation_id='8',
+                                                    state_supervision_violation_types=[
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='New Misdemeanor',
+                                                        ),
+                                                        StateSupervisionViolationTypeEntry(
+                                                            violation_type='Technical',
+                                                        ),
+                                                    ],
+                                                    state_supervision_violation_responses=[
+                                                        StateSupervisionViolationResponse(
+                                                            state_supervision_violation_response_id='8',
+                                                            response_type='VIOLATION_REPORT',
+                                                            response_date='02/01/2009',
+                                                            supervision_violation_response_decisions=[
+                                                                StateSupervisionViolationResponseDecisionEntry(
+                                                                    decision='Referral to Problem Solving Court',
+                                                                )
+                                                            ]
+                                                        )
+                                                    ]
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'ofndr_tst_tst_qstn_rspns_violation_reports_old')
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -1296,6 +1490,262 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('movement_facility_supervision_periods.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # ofndr_tst_tst_qstn_rspns_violation_reports
+        #################################################################
+
+        # Arrange
+        sg_1111_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_1
+        )
+        ss_1111_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_1111_placeholder,
+            person=sg_1111_placeholder.person)
+        sp_1111_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss_1111_placeholder],
+            person=ss_1111_placeholder.person
+        )
+        sv_1111_5 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='5',
+            is_violent=True,
+            is_sex_offense=True,
+            supervision_periods=[sp_1111_placeholder],
+            person=sp_1111_placeholder.person
+        )
+        vte_1111_5_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            violation_type_raw_text='NEW MISDEMEANOR',
+            supervision_violation=sv_1111_5,
+            person=sv_1111_5.person
+        )
+        vte_1111_5_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            violation_type_raw_text='TECHNICAL (ENTER DETAILS BELOW)',
+            supervision_violation=sv_1111_5,
+            person=sv_1111_5.person
+        )
+        svr_1111_5 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='5',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            response_date=datetime.date(year=2018, month=12, day=1),
+            supervision_violation=sv_1111_5,
+            person=sv_1111_5.person
+        )
+        svrd_1111_5_r = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            decision_raw_text='IMPOSITION OF SENTENCE',
+            supervision_violation_response=svr_1111_5,
+            person=svr_1111_5.person,
+        )
+        person_1.sentence_groups.append(sg_1111_placeholder)
+        sg_1111_placeholder.supervision_sentences.append(ss_1111_placeholder)
+        ss_1111_placeholder.supervision_periods.append(sp_1111_placeholder)
+        sp_1111_placeholder.supervision_violation_entries.append(sv_1111_5)
+        sv_1111_5.supervision_violation_types.extend([vte_1111_5_m, vte_1111_5_t])
+        sv_1111_5.supervision_violation_responses.append(svr_1111_5)
+        svr_1111_5.supervision_violation_response_decisions.append(svrd_1111_5_r)
+
+        sg_2222_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2
+        )
+        ss_2222_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_2222_placeholder,
+            person=sg_2222_placeholder.person)
+        sp_2222_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss_2222_placeholder],
+            person=ss_2222_placeholder.person
+        )
+        sv_2222_6 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='6',
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_periods=[sp_2222_placeholder],
+            person=sp_2222_placeholder.person
+        )
+        vte_2222_6_a = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.ABSCONDED,
+            violation_type_raw_text='ABSCONDING',
+            supervision_violation=sv_2222_6,
+            person=sv_2222_6.person
+        )
+        vte_2222_6_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            violation_type_raw_text='TECHNICAL (ENTER DETAILS BELOW)',
+            supervision_violation=sv_2222_6,
+            person=sv_2222_6.person
+        )
+        svr_2222_6 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='6',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            response_date=datetime.date(year=2009, month=6, day=15),
+            supervision_violation=sv_2222_6,
+            person=sv_2222_6.person
+        )
+        person_2.sentence_groups.append(sg_2222_placeholder)
+        sg_2222_placeholder.supervision_sentences.append(ss_2222_placeholder)
+        ss_2222_placeholder.supervision_periods.append(sp_2222_placeholder)
+        sp_2222_placeholder.supervision_violation_entries.append(sv_2222_6)
+        sv_2222_6.supervision_violation_types.extend([vte_2222_6_a, vte_2222_6_t])
+        sv_2222_6.supervision_violation_responses.append(svr_2222_6)
+
+        sg_3333_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_3
+        )
+        ss_3333_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_3333_placeholder,
+            person=sg_3333_placeholder.person)
+        sp_3333_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss_3333_placeholder],
+            person=ss_3333_placeholder.person
+        )
+        sv_3333_7 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='7',
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_periods=[sp_3333_placeholder],
+            person=sp_3333_placeholder.person
+        )
+        vte_3333_7_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            violation_type_raw_text='TECHNICAL (ENTER DETAILS BELOW)',
+            supervision_violation=sv_3333_7,
+            person=sv_3333_7.person
+        )
+        svr_3333_7 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='7',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            response_date=datetime.date(year=2016, month=1, day=1),
+            supervision_violation=sv_3333_7,
+            person=sv_3333_7.person
+        )
+        svrd_3333_7_r = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            decision_raw_text='REINSTATEMENT',
+            supervision_violation_response=svr_3333_7,
+            person=svr_3333_7.person,
+        )
+        person_3.sentence_groups.append(sg_3333_placeholder)
+        sg_3333_placeholder.supervision_sentences.append(ss_3333_placeholder)
+        ss_3333_placeholder.supervision_periods.append(sp_3333_placeholder)
+        sp_3333_placeholder.supervision_violation_entries.append(sv_3333_7)
+        sv_3333_7.supervision_violation_types.append(vte_3333_7_t)
+        sv_3333_7.supervision_violation_responses.append(svr_3333_7)
+        svr_3333_7.supervision_violation_response_decisions.append(svrd_3333_7_r)
+
+        # Act
+        self._run_ingest_job_for_filename('ofndr_tst_tst_qstn_rspns_violation_reports.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # ofndr_tst_tst_qstn_rspns_violation_reports_old
+        #################################################################
+        # TODO(3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
+
+        # Arrange
+        sg_2222_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2
+        )
+        ss_2222_placeholder_2 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_2222_placeholder_2,
+            person=sg_2222_placeholder_2.person)
+        sp_2222_placeholder_2 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss_2222_placeholder_2],
+            person=ss_2222_placeholder_2.person
+        )
+        sv_2222_8 = entities.StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='8',
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_periods=[sp_2222_placeholder_2],
+            person=sp_2222_placeholder_2.person
+        )
+        vte_2222_8_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            violation_type_raw_text='NEW MISDEMEANOR',
+            supervision_violation=sv_2222_8,
+            person=sv_2222_8.person
+        )
+        vte_2222_8_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+            violation_type_raw_text='TECHNICAL',
+            supervision_violation=sv_2222_8,
+            person=sv_2222_8.person
+        )
+        svr_2222_8 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='8',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            response_date=datetime.date(year=2009, month=2, day=1),
+            supervision_violation=sv_2222_8,
+            person=sv_2222_8.person
+        )
+        svrd_2222_8_c = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            decision=StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+            decision_raw_text='REFERRAL TO PROBLEM SOLVING COURT',
+            supervision_violation_response=svr_2222_8,
+            person=svr_2222_8.person,
+        )
+        person_2.sentence_groups.append(sg_2222_placeholder_2)
+        sg_2222_placeholder_2.supervision_sentences.append(ss_2222_placeholder_2)
+        ss_2222_placeholder_2.supervision_periods.append(sp_2222_placeholder_2)
+        sp_2222_placeholder_2.supervision_violation_entries.append(sv_2222_8)
+        sv_2222_8.supervision_violation_types.extend([vte_2222_8_m, vte_2222_8_t])
+        sv_2222_8.supervision_violation_responses.append(svr_2222_8)
+        svr_2222_8.supervision_violation_response_decisions.append(svrd_2222_8_c)
+
+        # Act
+        self._run_ingest_job_for_filename('ofndr_tst_tst_qstn_rspns_violation_reports_old.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people, debug=True)

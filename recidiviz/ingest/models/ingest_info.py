@@ -1323,7 +1323,7 @@ class StateSupervisionViolation(IngestObject):
     """Class for information about a supervision violation. Referenced from SupervisionViolation."""
 
     def __init__(self, state_supervision_violation_id=None, violation_type=None, violation_date=None, state_code=None,
-                 is_violent=None, violated_conditions=None, state_supervision_violation_types=None,
+                 is_violent=None, is_sex_offense=None, violated_conditions=None, state_supervision_violation_types=None,
                  state_supervision_violated_conditions=None, state_supervision_violation_responses=None):
         self.state_supervision_violation_id: Optional[str] = state_supervision_violation_id
 
@@ -1332,6 +1332,7 @@ class StateSupervisionViolation(IngestObject):
         self.violation_date: Optional[str] = violation_date
         self.state_code: Optional[str] = state_code
         self.is_violent: Optional[str] = is_violent
+        self.is_sex_offense: Optional[str] = is_sex_offense
 
         # TODO(2668): DEPRECATED - Delete this when we delete the column
         self.violated_conditions: Optional[str] = violated_conditions
@@ -1541,7 +1542,7 @@ def to_string(obj, exclude=None):
         if isinstance(val, list):
             for index, elem in enumerate(val):
                 out += '{}[{}]: {}'.format(key, index, elem).split('\n')
-        elif val:
+        elif val is not None:
             out += '{}: {}'.format(key, val).split('\n')
     return '\n   '.join(out)
 
@@ -1553,7 +1554,7 @@ def to_repr(obj, exclude=None):
     for key, val in vars(obj).items():
         if key in exclude:
             continue
-        if val:
+        if val is not None:
             args.append('{}={}'.format(key, repr(val)))
 
     return '{}({})'.format(obj.__class__.__name__, ', '.join(args))

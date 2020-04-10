@@ -468,6 +468,106 @@ MOVEMENT_FACILITY_SUPERVISION_PERIODS_QUERY = f"""
     ORDER BY docno, incrno, start_date, end_date
 """
 
+QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT = """
+    qstn_nums_with_descriptive_answers AS (
+      SELECT
+        ofndr_num,
+        body_loc_cd,
+        ofndr_tst_id, 
+        assess_tst_id,
+        tst_dt,
+        score_by_name,
+        CONCAT(assess_qstn_num, '-', tst_sctn_num) AS qstn_num, 
+        STRING_AGG(qstn_choice_desc) AS qstn_answer
+      FROM 
+        `{project_id}.us_id_raw_data.ofndr_tst`
+      LEFT JOIN 
+        `{project_id}.us_id_raw_data.tst_qstn_rspns`
+      USING 
+        (ofndr_tst_id, assess_tst_id)
+      LEFT JOIN 
+        `{project_id}.us_id_raw_data.assess_qstn_choice`
+      USING 
+        (assess_tst_id, tst_sctn_num, qstn_choice_num, assess_qstn_num)
+      WHERE 
+        assess_tst_id = '{test_id}'
+      GROUP BY 
+        ofndr_num, 
+        body_loc_cd,
+        ofndr_tst_id, 
+        assess_tst_id,
+        tst_dt,
+        score_by_name,
+        assess_qstn_num, 
+        tst_sctn_num
+    ) 
+"""
+
+VIOLATION_REPORT_OLD_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT = \
+    QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT.format(test_id='204', project_id=project_id)
+VIOLATION_REPORT_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT = \
+    QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT.format(test_id='210', project_id=project_id)
+
+
+OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY = f"""
+    WITH {VIOLATION_REPORT_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
+    SELECT 
+      ofndr_num,
+      body_loc_cd,
+      ofndr_tst_id,
+      assess_tst_id,
+      tst_dt,
+      score_by_name,
+      # Question 1-1 is violation date, which we already have access to from tst_dt
+      MAX(IF(qstn_num='2-2', qstn_answer, NULL)) AS violation_types,
+      MAX(IF(qstn_num='3-3', qstn_answer, NULL)) AS new_crime_types,
+      MAX(IF(qstn_num='4-4', qstn_answer, NULL)) AS parolee_placement_recommendation,
+      MAX(IF(qstn_num='5-5', qstn_answer, NULL)) AS probationer_placement_recommendation,
+      MAX(IF(qstn_num='6-6', qstn_answer, NULL)) AS legal_status
+    FROM 
+      qstn_nums_with_descriptive_answers
+    GROUP BY
+      ofndr_num,
+      body_loc_cd,
+      ofndr_tst_id,
+      assess_tst_id,
+      tst_dt,
+      score_by_name
+    ORDER BY 
+      ofndr_num,
+      ofndr_tst_id 
+"""
+
+OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
+  WITH {VIOLATION_REPORT_OLD_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
+    SELECT 
+      ofndr_num,
+      body_loc_cd,
+      ofndr_tst_id,
+      assess_tst_id,
+      tst_dt,
+      score_by_name,
+      # Question 1-1 is violation date, which we already have access to from tst_dt
+      MAX(IF(qstn_num='1-2', qstn_answer, NULL)) AS violation_types,
+      MAX(IF(qstn_num='1-3', qstn_answer, NULL)) AS new_crime_types,
+      MAX(IF(qstn_num='1-4', qstn_answer, NULL)) AS pv_initiated_by_prosecutor,
+      MAX(IF(qstn_num='1-5', qstn_answer, NULL)) AS parolee_placement_recommendation,
+      MAX(IF(qstn_num='1-6', qstn_answer, NULL)) AS probationer_placement_recommendation,
+      MAX(IF(qstn_num='1-7', qstn_answer, NULL)) AS legal_status,
+    FROM 
+      qstn_nums_with_descriptive_answers
+    GROUP BY
+      ofndr_num,
+      body_loc_cd,
+      ofndr_tst_id,
+      assess_tst_id,
+      tst_dt,
+      score_by_name
+    ORDER BY 
+      ofndr_num,
+      ofndr_tst_id
+"""
+
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
@@ -479,6 +579,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
          MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY),
         ('movement_facility_offstat_incarceration_periods', MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY),
         ('movement_facility_supervision_periods', MOVEMENT_FACILITY_SUPERVISION_PERIODS_QUERY),
+        ('ofndr_tst_tst_qstn_rspns_violation_reports', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY),
+        ('ofndr_tst_tst_qstn_rspns_violation_reports_old', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY),
     ]
 
 

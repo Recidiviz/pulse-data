@@ -893,6 +893,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     #   - What
     # These should correspond to |conditions| in StateSupervisionPeriod
     is_violent: Optional[bool] = attr.ib()
+    is_sex_offense: Optional[bool] = attr.ib()
 
     # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     violated_conditions: Optional[str] = attr.ib(default=None)

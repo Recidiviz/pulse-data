@@ -17,86 +17,54 @@
 
 """Constants related to a StateSupervisionViolationResponse."""
 
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-class StateSupervisionViolationResponseType(EntityEnum,
-                                            metaclass=EntityEnumMeta):
-    CITATION = \
-        state_enum_strings.state_supervision_violation_response_type_citation
-    VIOLATION_REPORT = \
-        state_enum_strings.\
-        state_supervision_violation_response_type_violation_report
-    PERMANENT_DECISION = \
-        state_enum_strings. \
-        state_supervision_violation_response_type_permanent_decision
+class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta):
+    CITATION = state_enum_strings.state_supervision_violation_response_type_citation
+    VIOLATION_REPORT = state_enum_strings.state_supervision_violation_response_type_violation_report
+    PERMANENT_DECISION = state_enum_strings.state_supervision_violation_response_type_permanent_decision
 
     @staticmethod
     def _get_default_map():
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
 
-class StateSupervisionViolationResponseDecision(EntityEnum,
-                                                metaclass=EntityEnumMeta):
-    CONTINUANCE = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_continuance
-    DELAYED_ACTION = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_delayed_action
-    EXTENSION = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_extension
-    REVOCATION = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_revocation
-    PRIVILEGES_REVOKED = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_privileges_revoked
-    SERVICE_TERMINATION = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_service_termination
-    SUSPENSION = \
-        state_enum_strings.\
-        state_supervision_violation_response_decision_suspension
+class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnumMeta):
+    CONTINUANCE = state_enum_strings.state_supervision_violation_response_decision_continuance
+    DELAYED_ACTION = state_enum_strings.state_supervision_violation_response_decision_delayed_action
+    EXTENSION = state_enum_strings.state_supervision_violation_response_decision_extension
+    REVOCATION = state_enum_strings.state_supervision_violation_response_decision_revocation
+    PRIVILEGES_REVOKED = state_enum_strings.state_supervision_violation_response_decision_privileges_revoked
+    SERVICE_TERMINATION = state_enum_strings.state_supervision_violation_response_decision_service_termination
+    SPECIALIZED_COURT = state_enum_strings.state_supervision_violation_response_decision_specialized_court
+    SHOCK_INCARCERATION = state_enum_strings.state_supervision_violation_response_decision_shock_incarceration
+    SUSPENSION = state_enum_strings.state_supervision_violation_response_decision_suspension
+    TREATMENT_IN_PRISON = state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison
 
     @staticmethod
     def _get_default_map():
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
-class StateSupervisionViolationResponseRevocationType(EntityEnum,
-                                                      metaclass=EntityEnumMeta):
-    REINCARCERATION = state_enum_strings. \
-        state_supervision_violation_response_revocation_type_reincarceration
-    RETURN_TO_SUPERVISION = state_enum_strings. \
-        state_supervision_violation_response_revocation_type_return_to_supervision
-    SHOCK_INCARCERATION = \
-        state_enum_strings. \
-        state_supervision_violation_response_revocation_type_shock_incarceration
-    TREATMENT_IN_PRISON = \
-        state_enum_strings. \
-        state_supervision_violation_response_revocation_type_treatment_in_prison
+class StateSupervisionViolationResponseRevocationType(EntityEnum, metaclass=EntityEnumMeta):
+    REINCARCERATION = state_enum_strings.state_supervision_violation_response_revocation_type_reincarceration
+    RETURN_TO_SUPERVISION = \
+        state_enum_strings.state_supervision_violation_response_revocation_type_return_to_supervision
+    SHOCK_INCARCERATION = state_enum_strings.state_supervision_violation_response_revocation_type_shock_incarceration
+    TREATMENT_IN_PRISON = state_enum_strings.state_supervision_violation_response_revocation_type_treatment_in_prison
 
     @staticmethod
     def _get_default_map():
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP
 
 
-class StateSupervisionViolationResponseDecidingBodyType(
-        EntityEnum, metaclass=EntityEnumMeta):
-    COURT = \
-        state_enum_strings. \
-        state_supervision_violation_response_deciding_body_type_court
-    PAROLE_BOARD = \
-        state_enum_strings.\
-        state_supervision_violation_response_deciding_body_parole_board
+class StateSupervisionViolationResponseDecidingBodyType(EntityEnum, metaclass=EntityEnumMeta):
+    COURT = state_enum_strings.state_supervision_violation_response_deciding_body_type_court
+    PAROLE_BOARD = state_enum_strings.state_supervision_violation_response_deciding_body_parole_board
     # A parole/probation officer (PO)
-    SUPERVISION_OFFICER = \
-        state_enum_strings. \
-        state_supervision_violation_response_deciding_body_type_supervision_officer
+    SUPERVISION_OFFICER = state_enum_strings.state_supervision_violation_response_deciding_body_type_supervision_officer
 
     @staticmethod
     def _get_default_map():
@@ -106,43 +74,34 @@ class StateSupervisionViolationResponseDecidingBodyType(
 _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {
     'CITATION': StateSupervisionViolationResponseType.CITATION,
     'VIOLATION REPORT': StateSupervisionViolationResponseType.VIOLATION_REPORT,
-    'PERMANENT DECISION':
-        StateSupervisionViolationResponseType.PERMANENT_DECISION,
+    'PERMANENT DECISION': StateSupervisionViolationResponseType.PERMANENT_DECISION,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     'CONTINUANCE': StateSupervisionViolationResponseDecision.CONTINUANCE,
     'EXTENSION': StateSupervisionViolationResponseDecision.EXTENSION,
     'DELAYED ACTION': StateSupervisionViolationResponseDecision.DELAYED_ACTION,
-    'PRIVILEGES REVOKED':
-        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+    'PRIVILEGES REVOKED': StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
     'REVOCATION': StateSupervisionViolationResponseDecision.REVOCATION,
-    'SERVICE TERMINATION':
-        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+    'SERVICE TERMINATION': StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+    'SPECIALIZED COURT': StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+    'SHOCK INCARCERATION': StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
     'SUSPENSION': StateSupervisionViolationResponseDecision.SUSPENSION,
+    'TREATMENT IN PRISON': StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {
-    'REINCARCERATION':
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-    'SUPERVISION TERMINATED':
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-    'PLACED BACK ON PROBATION PAROLE':
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    'SUPERVISION':
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    'RETURN TO SUPERVISION':
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    'SHOCK INCARCERATION':
-        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-    'TREATMENT IN PRISON':
-        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
+    'REINCARCERATION': StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+    'SUPERVISION TERMINATED': StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+    'PLACED BACK ON PROBATION PAROLE': StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+    'SUPERVISION': StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+    'RETURN TO SUPERVISION': StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+    'SHOCK INCARCERATION': StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+    'TREATMENT IN PRISON': StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP = {
     'COURT': StateSupervisionViolationResponseDecidingBodyType.COURT,
-    'PAROLE BOARD':
-        StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-    'SUPERVISION OFFICER':
-        StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+    'PAROLE BOARD': StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+    'SUPERVISION OFFICER': StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
 }

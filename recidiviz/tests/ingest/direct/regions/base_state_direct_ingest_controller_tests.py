@@ -170,7 +170,6 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
                 print_entity_tree(sg, print_tree_structure_only=False)
                 self.assertCountEqual([sg], [expected_sg])
 
-
         self.assertCountEqual(found_people, expected_db_people)
 
         assert_no_unexpected_entities_in_db(found_people_from_db, session)

@@ -1,0 +1,4 @@
+ofndr_num,body_loc_cd,ofndr_tst_id,assess_tst_id,tst_dt,score_by_name,violation_types,new_crime_types,parolee_placement_recommendation,probationer_placement_recommendation,legal_status
+1111,,5,210,12/01/2018,usr1,"Technical (enter details below),New Misdemeanor","Violent Misdemeanor,Violent Sex Offense",,Imposition of Sentence,Probation
+2222,,6,210,06/15/2009,usr2,"Technical (enter details below),Absconding",,No Recommendation - Defer to Parole Commission,,Parole
+3333,,7,210,01/01/2016,usr3,Technical (enter details below),Non-Violent Misdemeanor,,Reinstatement,Probation

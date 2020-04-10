@@ -48,8 +48,11 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
 
 DECISION_SEVERITY_ORDER = [
         StateSupervisionViolationResponseDecision.REVOCATION,
+        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+        StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
         StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
         StateSupervisionViolationResponseDecision.EXTENSION,
+        StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
         StateSupervisionViolationResponseDecision.SUSPENSION,
         StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
         StateSupervisionViolationResponseDecision.DELAYED_ACTION,

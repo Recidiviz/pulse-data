@@ -110,6 +110,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         print_visible_header_label('EXPECTED')
         print(expected)
 
-        self.assertEqual(final_info, expected)
+        self.assertEqual(expected, final_info)
 
         return final_info
