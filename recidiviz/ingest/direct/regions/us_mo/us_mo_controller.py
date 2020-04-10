@@ -242,6 +242,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'IT-RF',
             'IC-IC',  # Institutional Release to Probation
             'RT-BH',  # Board Return
+
+            # Inmate Release to EMP (electronic monitoring program). Only 1
+            # occurrence of any of these in the last 10 years.
+            'EM-FB',
+            'EM-FF',
+            'EM-FM',
+            'EM-FT',
         ],
         StateIncarcerationPeriodReleaseReason.COURT_ORDER: [
             # TODO(2898) - Use TAK026 statuses to populate release reason
@@ -275,6 +282,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'XX-XX',  # Unknown (Not Associated)
             '??-??',  # Code Unknown
             '??-XX',
+        ],
+        StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN: [
+            'CN-FB',  # Committed New Charge- No Vio: seems erroneous
+            'CN-NV',
+            'RV-FF',  # Revoked: seems erroneous
+            'RV-FM',
+            'RV-FT',
         ],
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
             # These statuses indicate an end to a period of temporary hold since
@@ -398,24 +412,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
         StateSupervisionType: ['INT'],  # Unknown meaning, rare
 
-        # TODO(2647): Test to see if these omissions have calculation impact
-        # Note, there are 312 records (as of 11-6-19) without a release reason
-        # but with a release date
-        StateIncarcerationPeriodReleaseReason: [
-            'CN-FB',  # Committed New Charge- No Vio: seems erroneous
-            'CN-NV',
-            'RV-FF',  # Revoked: seems erroneous
-            'RV-FM',
-            'RV-FT',
-
-            # Inmate Release to EMP (electronic monitoring program). Doesn't
-            # make sense as a Supervision termination reason and only 1
-            # occurrence of any of these in the last 10 years.
-            'EM-FB',
-            'EM-FF',
-            'EM-FM',
-            'EM-FT',
-        ],
         StateSpecializedPurposeForIncarceration: [
             'S',  # Serving Sentence
         ],
