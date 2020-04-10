@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.calculator.pipeline.utils import us_nd_utils
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
-    StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
@@ -103,7 +103,8 @@ def validate_release_data(
             logging.info("No release_reason on intermediate incarceration "
                          "period with id: %d",
                          incarceration_period.incarceration_period_id)
-            continue
+            # TODO(XXXX): Write tests for this
+            incarceration_period.release_reason = StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
         if not incarceration_period.release_date and \
                 (incarceration_period.release_reason or incarceration_period.release_reason_raw_text):

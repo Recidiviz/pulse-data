@@ -703,6 +703,7 @@ SHOULD_INCLUDE_WITH_RETURN_TYPE: \
      ReleaseReason.ESCAPE: {},
      ReleaseReason.EXECUTION: {},
      ReleaseReason.EXTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
+     ReleaseReason.INTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
      ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: {},
      ReleaseReason.RELEASED_IN_ERROR: {},
      ReleaseReason.SENTENCE_SERVED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
@@ -866,6 +867,7 @@ class TestForLastIncarcerationPeriod(unittest.TestCase):
                 if release_reason in [ReleaseReason.COMMUTED,
                                       ReleaseReason.COMPASSIONATE,
                                       ReleaseReason.CONDITIONAL_RELEASE,
+                                      ReleaseReason.INTERNAL_UNKNOWN,
                                       ReleaseReason.EXTERNAL_UNKNOWN,
                                       ReleaseReason.SENTENCE_SERVED]:
                     assert event == NonRecidivismReleaseEvent(

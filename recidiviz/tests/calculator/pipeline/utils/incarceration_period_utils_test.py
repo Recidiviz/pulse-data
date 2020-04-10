@@ -228,7 +228,10 @@ class TestValidateReleaseData(unittest.TestCase):
             input_incarceration_periods
         )
 
-        self.assertEqual([], valid_incarceration_periods)
+        expected_valid_incarceration_periods = [attr.evolve(input_incarceration_periods[0],
+                                                            release_reason=ReleaseReason.INTERNAL_UNKNOWN)]
+
+        self.assertEqual(expected_valid_incarceration_periods, valid_incarceration_periods)
 
     def test_validate_release_data_empty_release_in_custody(self):
         initial_incarceration_period = \

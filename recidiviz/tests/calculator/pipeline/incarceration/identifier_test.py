@@ -648,6 +648,41 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         self.assertEqual(0, len(incarceration_events))
         self.assertEqual([], incarceration_events)
 
+    def test_find_end_of_month_state_prison_stays_no_release_reason(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2000, 1, 20),
+                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                release_date=date(2010, 12, 1),
+                release_reason=None)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=9797,
+            incarceration_periods=[incarceration_period]
+        )
+        incarceration_period.supervision_sentences = [incarceration_sentence]
+
+        sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
+        incarceration_sentence.sentence_group = sentence_group
+
+        incarceration_events = \
+            self._run_find_end_of_month_state_prison_stays_with_no_sentences(
+                incarceration_period, _COUNTY_OF_RESIDENCE)
+
+        expected_month_count = 131
+
+        expected_incarceration_events = expected_incarceration_stay_events(
+            incarceration_period, expected_month_count
+        )
+
+        self.assertEqual(expected_month_count, len(incarceration_events))
+        self.assertEqual(expected_incarceration_events, incarceration_events)
+
     def test_find_end_of_month_state_prison_stays_admitted_end_of_month(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(

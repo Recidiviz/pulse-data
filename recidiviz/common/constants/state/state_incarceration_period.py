@@ -82,6 +82,7 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     EXECUTION = state_enum_strings.state_incarceration_period_release_reason_execution
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
     RELEASED_FROM_TEMPORARY_CUSTODY = \
         state_enum_strings.state_incarceration_period_release_reason_released_from_temporary_custody
     RELEASED_IN_ERROR = state_enum_strings.state_incarceration_period_release_reason_released_in_error
@@ -201,6 +202,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'EXPIRED': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'EXTERNAL UNKNOWN': StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    'INTERNAL UNKNOWN': StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RPAR': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,

@@ -209,6 +209,7 @@ def for_last_incarceration_period(
                           ReleaseReason.COMPASSIONATE,
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
+                          ReleaseReason.INTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED]:
 
         return NonRecidivismReleaseEvent(
@@ -358,6 +359,7 @@ def should_include_in_release_cohort(
                           ReleaseReason.COMPASSIONATE,
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
+                          ReleaseReason.INTERNAL_UNKNOWN,
                           ReleaseReason.SENTENCE_SERVED):
         if reincarceration_admission_reason in (
                 AdmissionReason.RETURN_FROM_ESCAPE,
