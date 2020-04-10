@@ -328,6 +328,12 @@ def characteristic_combinations(person: StatePerson,
             characteristics_with_person_details['supervision_level_raw_text'] = \
                 supervision_time_bucket.supervision_level_raw_text
 
+        if metric_type == SupervisionMetricType.POPULATION:
+            if isinstance(supervision_time_bucket,
+                          (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)):
+                characteristics_with_person_details['is_on_supervision_last_day_of_month'] = \
+                    supervision_time_bucket.is_on_supervision_last_day_of_month
+
         if metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
             # Only include violation history descriptions on person-level metrics
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
@@ -729,6 +735,14 @@ def include_supervision_in_count(combo: Dict[str, Any],
             # the supervision information (supervision_type, district, officer, etc) for the revocation metrics will
             # have corresponding population instances
             return id(supervision_time_bucket) == id(revocation_buckets[-1])
+
+        last_day_of_month_buckets = [
+            b for b in relevant_buckets
+            if isinstance(b, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket))
+            and b.is_on_supervision_last_day_of_month]
+
+        if last_day_of_month_buckets:
+            return id(supervision_time_bucket) == id(last_day_of_month_buckets[-1])
 
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 

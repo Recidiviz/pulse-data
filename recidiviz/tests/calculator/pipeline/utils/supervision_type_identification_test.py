@@ -25,7 +25,7 @@ from datetime import date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     _get_most_relevant_supervision_type, \
     _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences, \
-    get_sentence_supervision_type_from_sentence, get_pre_incarceration_supervision_type_from_incarceration_period
+    _get_sentence_supervision_type_from_sentence, get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_month_supervision_type, \
     get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
@@ -784,13 +784,13 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
             supervision_sentence.supervision_type = supervision_type
 
             # Assert this doesn't fail for all possible supervision types
-            _ = get_sentence_supervision_type_from_sentence(supervision_sentence)
+            _ = _get_sentence_supervision_type_from_sentence(supervision_sentence)
 
     def test_get_supervision_period_supervision_type_from_sentence_incarceration_sentence(self):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             incarceration_sentence_id=111
         )
 
-        supervision_type = get_sentence_supervision_type_from_sentence(incarceration_sentence)
+        supervision_type = _get_sentence_supervision_type_from_sentence(incarceration_sentence)
 
         self.assertEqual(StateSupervisionType.PAROLE, supervision_type)

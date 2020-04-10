@@ -148,7 +148,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
                                                                   incarceration_sentences=[])
 
         # Assert
-        self.assertEqual(supervision_period_supervision_type, StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+        self.assertEqual(supervision_period_supervision_type, None)
 
     def test_get_supervision_type_all_sentences_expired(self):
         # Arrange
@@ -162,7 +162,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
                                                                   incarceration_sentences=[mo_incarceration_sentence])
 
         # Assert
-        self.assertEqual(supervision_period_supervision_type, StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+        self.assertEqual(supervision_period_supervision_type, None)
 
     def test_get_supervision_type_dual_with_incarceration_and_supervision_sentences(self):
         # Arrange
