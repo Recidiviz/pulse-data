@@ -22,7 +22,8 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
-    us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type
+    us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
+    us_mo_counts_towards_supervision_population_on_day
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod
@@ -115,3 +116,28 @@ def get_pre_incarceration_supervision_type(
 
     # TODO(2938): Decide if we want date matching/supervision period lookback logic for US_ND
     return get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
+
+
+def supervision_period_counts_towards_supervision_population_on_day(
+        day: datetime.date,
+        state_code: str,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: Optional[StateSupervisionPeriod]) -> bool:
+    """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
+    population on the provided |day| date.
+    """
+
+    if state_code == 'US_MO':
+        return us_mo_counts_towards_supervision_population_on_day(day,
+                                                                  supervision_sentences,
+                                                                  incarceration_sentences)
+
+    if not supervision_period:
+        return False
+
+    if not supervision_period.start_date:
+        raise ValueError(f'Expected start date for period {supervision_period.supervision_period_id}, found None')
+
+    return supervision_period.start_date <= day and (
+        supervision_period.termination_date is None or day < supervision_period.termination_date)
