@@ -65,7 +65,8 @@ def main(*,
         encoding=encoding,
         quoting=quoting,
         usecols=list(range(len(dfcolumns.columns))),
-        names=dfcolumns.columns)
+        names=dfcolumns.columns,
+        keep_default_na=False)
 
     logging.info('\n\nLoaded dataframe has %d rows\n', df.shape[0])
 
