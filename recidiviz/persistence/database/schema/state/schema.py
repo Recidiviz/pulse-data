@@ -324,7 +324,10 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_revocation,
     state_enum_strings.state_supervision_violation_response_decision_privileges_revoked,
     state_enum_strings.state_supervision_violation_response_decision_service_termination,
+    state_enum_strings.state_supervision_violation_response_decision_shock_incarceration,
+    state_enum_strings.state_supervision_violation_response_decision_specialized_court,
     state_enum_strings.state_supervision_violation_response_decision_suspension,
+    state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison,
     name='state_supervision_violation_response_decision')
 
 state_supervision_violation_response_revocation_type = Enum(
@@ -1938,6 +1941,7 @@ class _StateSupervisionViolationSharedColumns(
     violation_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     is_violent = Column(Boolean)
+    is_sex_offense = Column(Boolean)
     violated_conditions = Column(String(255))
 
     # TODO(2668): Deprecated - remove this column from our schema.

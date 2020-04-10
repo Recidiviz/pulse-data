@@ -49,11 +49,9 @@ def copy_fields_to_builder(
     new.violation_type_raw_text = fn(normalize, 'violation_type', proto)
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id,
-                         'state_supervision_violation_id',
-                         proto)
+    new.external_id = fn(parse_external_id, 'state_supervision_violation_id', proto)
     new.violation_date = fn(parse_date, 'violation_date', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = parse_region_code_with_override(proto, 'state_code', metadata)
     new.is_violent = fn(parse_bool, 'is_violent', proto)
+    new.is_sex_offense = fn(parse_bool, 'is_sex_offense', proto)
     new.violated_conditions = fn(normalize, 'violated_conditions', proto)

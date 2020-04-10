@@ -30,19 +30,24 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, sorted_list_from_str
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
-    JAIL_FACILITY_CODES
+    JAIL_FACILITY_CODES, VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
+    SEX_CRIME_TYPES
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
-    StateSupervisionPeriod
+    StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 from recidiviz.utils.params import str_to_bool
@@ -102,6 +107,20 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._add_default_admission_reason,
                 self._update_interstate_and_absconsion_periods,
             ],
+            'ofndr_tst_tst_qstn_rspns_violation_reports': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+                self._set_violation_violent_sex_offense,
+                self._hydrate_violation_types,
+                self._hydrate_violation_report_fields,
+            ],
+            'ofndr_tst_tst_qstn_rspns_violation_reports_old': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+                self._set_violation_violent_sex_offense,
+                self._hydrate_violation_types,
+                self._hydrate_violation_report_fields,
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender_ofndr_dob': [],
@@ -110,6 +129,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
             'movement_facility_offstat_incarceration_periods': [],
             'movement_facility_supervision_periods': [],
+            'ofndr_tst_tst_qstn_rspns_violation_reports': [],
+            'ofndr_tst_tst_qstn_rspns_violation_reports_old': [],
         }
 
     FILE_TAGS = [
@@ -119,6 +140,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
         'movement_facility_offstat_incarceration_periods',
         'movement_facility_supervision_periods',
+        'ofndr_tst_tst_qstn_rspns_violation_reports',
+        'ofndr_tst_tst_qstn_rspns_violation_reports_old',
     ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -180,6 +203,51 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSentenceStatus.SUSPENDED: [
             'B',  # Suspended sentence - probation
         ],
+
+        StateSupervisionViolationType.ABSCONDED: [
+            'Absconding',   # From violation report 210
+            'Absconder',    # From violation report 204
+        ],
+        StateSupervisionViolationType.FELONY: [
+            'New Felony',   # From violation report 210/204
+        ],
+        StateSupervisionViolationType.MISDEMEANOR: [
+            'New Misdemeanor',  # From violation report 210/204
+        ],
+        StateSupervisionViolationType.TECHNICAL: [
+            'Technical (enter details below)',  # From violation report 210
+            'Technical',                        # From violation report 204
+        ],
+
+        # TODO(2999): Go through values with ID to ensure we have the correct mappings
+        StateSupervisionViolationResponseDecision.CONTINUANCE: [
+            'Reinstatement',    # Parole/probation recommendation from violation report 210
+            # TODO(2999): Is there a better enum for this (recommendation that max release date is used instead of min)?
+            'Recommended Full Term Release Date',  # Parole recommendation from violation report 204
+        ],
+        StateSupervisionViolationResponseDecision.SPECIALIZED_COURT: [
+            'Diversion - Problem Solving Court',    # Parole recommendation from violation report 210
+            'Treatment Court',                      # Probation recommendation from violation report 210
+            'Referral to Problem Solving Court',    # Probation recommendation from violation report 204
+        ],
+        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
+            # TODO(2999): Are these 'Diversion' recs shock incarceration or treatment in prison?
+            'Diversion - Jail',     # Parole recommendation from violation report 210
+            'Diversion - CRC',      # Parole recommendation from violation report 210
+            'Diversion - Prison',   # Parole recommendation from violation report 210
+            'Local Jail Time',      # Probation recommendation from violation report 210/204
+        ],
+        StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
+            'Rider',                            # Probation recommendation from violation report 210
+            'Rider Recommendation'              # Probation recommendation from violation report 204
+            # TODO(2999): is this shock incarceration or treatment in prison?
+            'PVC - Parole Violator Program'     # Parole recommendation from violation report 204
+        ],
+        StateSupervisionViolationResponseDecision.REVOCATION: [
+            'Revocation',               # Parole recommendation from violation report 210
+            'Imposition of Sentence',   # Probation recommendation from violation report 210/204
+        ],
+
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -302,6 +370,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         sentence_id = row.get('sent_no', '')
         court_case_id = row.get('caseno', '')
         period_id = row.get('period_id', '')
+        violation_id = row.get('ofndr_tst_id', '')
 
         for obj in extracted_objects:
             if isinstance(obj, StateSentenceGroup):
@@ -323,6 +392,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
             if isinstance(obj, StateCourtCase):
                 obj.state_court_case_id = f'{person_id}-{court_case_id}'
+
+            if isinstance(obj, StateSupervisionViolation):
+                obj.state_supervision_violation_id = f'{violation_id}'
+            # One response per violation, so recycle violation id for the response.
+            if isinstance(obj, StateSupervisionViolationResponse):
+                obj.state_supervision_violation_response_id = f'{violation_id}'
 
     @staticmethod
     def _add_rider_treatment(
@@ -407,3 +482,67 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     obj.admission_reason = StateSupervisionPeriodAdmissionReason.ABSCONSION.value
                     if obj.termination_date:
                         obj.termination_reason = StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION.value
+
+    @staticmethod
+    def _hydrate_violation_report_fields(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Adds fields/children to the SupervisionViolationResponses as necessary. This assumes all
+        SupervisionViolationResponses are of violation reports.
+        """
+        recommendations = set(
+            sorted_list_from_str(row.get('parolee_placement_recommendation', ''))
+            + sorted_list_from_str(row.get('probationer_placement_recommendation', '')))
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolationResponse):
+                obj.response_type = StateSupervisionViolationResponseType.VIOLATION_REPORT.value
+
+                for recommendation in recommendations:
+                    if recommendation in VIOLATION_REPORT_NO_RECOMMENDATION_VALUES:
+                        continue
+                    recommendation_to_create = StateSupervisionViolationResponseDecisionEntry(decision=recommendation)
+                    create_if_not_exists(
+                        recommendation_to_create, obj, 'state_supervision_violation_response_decisions')
+
+    @staticmethod
+    def _hydrate_violation_types(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Adds ViolationTypeEntries onto the already generated SupervisionViolations."""
+        violation_types = sorted_list_from_str(row.get('violation_types', ''))
+
+        if not violation_types:
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                for violation_type in violation_types:
+                    violation_type_to_create = StateSupervisionViolationTypeEntry(violation_type=violation_type)
+                    create_if_not_exists(violation_type_to_create, obj, 'state_supervision_violation_types')
+
+    @staticmethod
+    def _set_violation_violent_sex_offense(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets the fields `is_violent` and `is_sex_offense` onto StateSupervisionViolations based on fields passed in
+        through the |row|.
+        """
+        new_crime_types = sorted_list_from_str(row.get('new_crime_types', ''))
+
+        if not all(ct in ALL_NEW_CRIME_TYPES for ct in new_crime_types):
+            raise ValueError(f'Unexpected new crime type: {new_crime_types}')
+
+        violent = any([ct in VIOLENT_CRIME_TYPES for ct in new_crime_types])
+        sex_offense = any([ct in SEX_CRIME_TYPES for ct in new_crime_types])
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolation):
+                obj.is_violent = str(violent)
+                obj.is_sex_offense = str(sex_offense)
