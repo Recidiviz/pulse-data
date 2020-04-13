@@ -936,9 +936,9 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
     """
 
 # TODO(2802): Implement date-based filtering for this query
-TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
+TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
     f"""
-    -- tak034_tak026_apfx90_apfx91_supervision_enhancements_supervision_periods
+    -- tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods
 
     WITH field_assignments_ce AS (
         SELECT
@@ -1633,7 +1633,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ('tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
          TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE),
         ('tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
-         TAK034_TAK026_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS),
+         TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS),
         ('tak028_tak042_tak076_tak024_violation_reports', TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS),
         ('tak291_tak292_tak024_citations', TAK291_TAK292_TAK024_CITATIONS)
     ]
