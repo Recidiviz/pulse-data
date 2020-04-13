@@ -26,11 +26,8 @@ from recidiviz.utils import monitoring
 # pylint: disable=redefined-outer-name
 @pytest.fixture
 def mock_mmap():
-    monitoring.clear_stats()
-    with patch('opencensus.stats.stats.Stats') as mock_stats:
-        yield mock_stats.return_value.stats_recorder.new_measurement_map\
-            .return_value
-    monitoring.clear_stats()
+    with patch('recidiviz.utils.monitoring.stats') as mock:
+        yield mock.return_value.stats_recorder.new_measurement_map.return_value
 
 
 def test_measurements(mock_mmap):
@@ -73,7 +70,7 @@ def test_tags_multiple_threads():
 
     @monitoring.with_region_tag
     def inner(region_code):
-        results[region_code] = monitoring.thread_local_tags()
+        results[region_code] = monitoring.context_tags()
 
     threads = [threading.Thread(target=inner, args=[region_code])
                for region_code in ['us_ny', 'us_pa']]

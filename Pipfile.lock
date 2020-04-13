@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d4c75f7b2cae33159cfde0b37746083f88118f94ae65a6ac16f6e5569391af81"
+            "sha256": "aefdc98ff7dd5f58f9b26d468a53eebadae79c0148dc34a1833e7df0bbadcbc9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -219,32 +219,33 @@
         },
         "gevent": {
             "hashes": [
-                "sha256:0774babec518a24d9a7231d4e689931f31b332c4517a771e532002614e270a64",
-                "sha256:0e1e5b73a445fe82d40907322e1e0eec6a6745ca3cea19291c6f9f50117bb7ea",
-                "sha256:0ff2b70e8e338cf13bedf146b8c29d475e2a544b5d1fe14045aee827c073842c",
-                "sha256:107f4232db2172f7e8429ed7779c10f2ed16616d75ffbe77e0e0c3fcdeb51a51",
-                "sha256:14b4d06d19d39a440e72253f77067d27209c67e7611e352f79fe69e0f618f76e",
-                "sha256:1b7d3a285978b27b469c0ff5fb5a72bcd69f4306dbbf22d7997d83209a8ba917",
-                "sha256:1eb7fa3b9bd9174dfe9c3b59b7a09b768ecd496debfc4976a9530a3e15c990d1",
-                "sha256:2711e69788ddb34c059a30186e05c55a6b611cb9e34ac343e69cf3264d42fe1c",
-                "sha256:28a0c5417b464562ab9842dd1fb0cc1524e60494641d973206ec24d6ec5f6909",
-                "sha256:3249011d13d0c63bea72d91cec23a9cf18c25f91d1f115121e5c9113d753fa12",
-                "sha256:44089ed06a962a3a70e96353c981d628b2d4a2f2a75ea5d90f916a62d22af2e8",
-                "sha256:4bfa291e3c931ff3c99a349d8857605dca029de61d74c6bb82bd46373959c942",
-                "sha256:50024a1ee2cf04645535c5ebaeaa0a60c5ef32e262da981f4be0546b26791950",
-                "sha256:53b72385857e04e7faca13c613c07cab411480822ac658d97fd8a4ddbaf715c8",
-                "sha256:74b7528f901f39c39cdbb50cdf08f1a2351725d9aebaef212a29abfbb06895ee",
-                "sha256:7d0809e2991c9784eceeadef01c27ee6a33ca09ebba6154317a257353e3af922",
-                "sha256:896b2b80931d6b13b5d9feba3d4eebc67d5e6ec54f0cf3339d08487d55d93b0e",
-                "sha256:8d9ec51cc06580f8c21b41fd3f2b3465197ba5b23c00eb7d422b7ae0380510b0",
-                "sha256:9f7a1e96fec45f70ad364e46de32ccacab4d80de238bd3c2edd036867ccd48ad",
-                "sha256:ab4dc33ef0e26dc627559786a4fba0c2227f125db85d970abbf85b77506b3f51",
-                "sha256:d1e6d1f156e999edab069d79d890859806b555ce4e4da5b6418616322f0a3df1",
-                "sha256:d752bcf1b98174780e2317ada12013d612f05116456133a6acf3e17d43b71f05",
-                "sha256:e5bcc4270671936349249d26140c267397b7b4b1381f5ec8b13c53c5b53ab6e1"
+                "sha256:0b6680dedf6a620d2223be088e09f52a8ed072f5a501ff77bd8cf23b04728f20",
+                "sha256:1739d58230ccfbfe3194aef9e60a058c7bd30bc72f6bd616905d732649aa62ab",
+                "sha256:198fda1925bda8fbd734980eabec0fe510da54f678a2e36eefebb2d097a0fbb8",
+                "sha256:3049e6c1db34da6d1c8ae460af880393d1ee0165e8db44793667bf914e4ea70c",
+                "sha256:31c7f1d72daee5b6e32c53df9c39d874445a00538db5660e8b6a7561c324f826",
+                "sha256:49c85425e7a1b07dcd94bf00f8c9ede279f1e74b7ce1cafb743b5841fc6f17cc",
+                "sha256:4e23c692a3520a844be2068cf4078036d7b4fb2562fb601c2e1c14b1039647bf",
+                "sha256:4facee7173096169834c6939aff9201988d47a35fb0fc37de9c30361d51698f0",
+                "sha256:5ff7c70190152c6eb562afae09139754c5eb9a8c10dd5e741073abe73551e7ea",
+                "sha256:62b5892ff0551ddfab2711a3c831894e0316d96f212e07525f7ded6cc45272ad",
+                "sha256:714a42bbc18adb3237bfae7ac50d9f4d835d332e0c8b97bdddcc0460e93f25c9",
+                "sha256:73f00fae0aacfd412ed0d235523879983f21484d0172d4e33c28ede5b92e5182",
+                "sha256:750b109b67cba588a45ec96544aec2b37d21ba8d7b697d2d9eba8c1c5c831673",
+                "sha256:7a0b5d47239737db7ff02372bd0c20161ffc8997af298e9113a3e9fcc096b084",
+                "sha256:8288c8ffaf1eb468c6c4c3b0c922425ed3e42acaf9ef0b769d49563eb30bdb10",
+                "sha256:89b382bbb573b3ac8fb59dc54dfcaf828a3cdde0d95fabfc177aa52ab9fa8535",
+                "sha256:a082d13007fd8afec2a51c773583ac88c0a73316cdcb9cc649ce792398792530",
+                "sha256:b150ab0b1b73c7b7d250ae9b95e61031286fb46731c1a0a9c06cbc9c71986c64",
+                "sha256:bcee85933679e3c25c4e63721495b7b7f4445eaca1b4e1288ae6b01047dc3857",
+                "sha256:c31144e00c7c072614182d62b8c0d9bd5666499df7f55e884f0e66d02aa63d4f",
+                "sha256:c687a8f936efb8d5902eb54b89fd2142451b7649aa68e39ff24ed01303ccb38b",
+                "sha256:e12c4b0e5e80ccda7466b0ea4638d4174e3cbd6d6938467fddc3e462d1be9610",
+                "sha256:f95fa52cf5d1a37f681858c095995f27a1f1896b32bb8d6cfd0526bb8bca343b",
+                "sha256:fd6c587957a62a88017c963641b602cc8779be1f4c164b12e5196b2d31f11b63"
             ],
             "index": "pypi",
-            "version": "==1.4.0"
+            "version": "==1.5a4"
         },
         "google-api-core": {
             "extras": [
@@ -687,21 +688,68 @@
             "version": "==3.1.0"
         },
         "opencensus": {
-            "editable": true,
-            "git": "https://github.com/census-instrumentation/opencensus-python.git",
-            "ref": "d37b6d267307a136631881e593c2bc8921a786b6"
+            "hashes": [
+                "sha256:0dde7fb46046be5acd000bd3d02828cd310d1673bef4fd3d6f582a4205a91db1",
+                "sha256:116068b9dd3a373157ef05da46c83ef08acae2e138862a8f6b7c6fee718ce633"
+            ],
+            "index": "pypi",
+            "version": "==0.7.7"
+        },
+        "opencensus-context": {
+            "hashes": [
+                "sha256:1a3fdf6bec537031efcc93d51b04f1edee5201f8c9a0c85681d63308b76f5702"
+            ],
+            "index": "pypi",
+            "version": "==0.1.1"
         },
         "opencensus-correlation": {
-            "editable": true,
-            "git": "https://github.com/census-instrumentation/opencensus-python.git",
-            "ref": "d37b6d267307a136631881e593c2bc8921a786b6",
-            "subdirectory": "contrib/opencensus-correlation"
+            "hashes": [
+                "sha256:4c9eed5547c6653296eec3b173cdc5f2924be3d97c42b1342ffa4a9a73a770de"
+            ],
+            "index": "pypi",
+            "version": "==0.3.0"
         },
         "opencensus-ext-flask": {
-            "editable": true,
-            "git": "https://github.com/census-instrumentation/opencensus-python.git",
-            "ref": "d37b6d267307a136631881e593c2bc8921a786b6",
-            "subdirectory": "contrib/opencensus-ext-flask"
+            "hashes": [
+                "sha256:0de123d4a808ed1fc6e9c9b8832acfb5773e7e107f11bf9fa519c2133cc19fed"
+            ],
+            "index": "pypi",
+            "version": "==0.7.3"
+        },
+        "opencensus-ext-google-cloud-clientlibs": {
+            "hashes": [
+                "sha256:6baf5c7f057b94eff6f43b203c58204aa130259b46add9c54e96ca49fd8135ea"
+            ],
+            "index": "pypi",
+            "version": "==0.1.2"
+        },
+        "opencensus-ext-grpc": {
+            "hashes": [
+                "sha256:4bfcf602c2a300aed4535f8bc8426bd56c5ed836f7700849f6c6585a8681feb8"
+            ],
+            "index": "pypi",
+            "version": "==0.7.1"
+        },
+        "opencensus-ext-requests": {
+            "hashes": [
+                "sha256:9647988dd6c2f07685ae43e9e3c957e840ef7515ee55472ba42f7dba71893b44"
+            ],
+            "index": "pypi",
+            "version": "==0.7.3"
+        },
+        "opencensus-ext-sqlalchemy": {
+            "hashes": [
+                "sha256:b3a4e7c4387a8b163044e6f38aba621428682285d68d60c63e48a9098cca6a8c"
+            ],
+            "index": "pypi",
+            "version": "==0.1.2"
+        },
+        "opencensus-ext-stackdriver": {
+            "hashes": [
+                "sha256:72ec109dc6572fb98aef071e77c43d127a2032cb4b8ff01f77c9b7f332e511b2"
+            ],
+            "index": "pypi",
+            "version": "==0.7.2"
         },
         "ordered-set": {
             "hashes": [
