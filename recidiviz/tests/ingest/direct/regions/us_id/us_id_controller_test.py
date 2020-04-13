@@ -120,6 +120,40 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'offender_ofndr_dob')
 
+    def test_populate_data_ofndr_agnt_applc_usr_body_loc_cd_current_pos(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='1111',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                            ],
+                            supervising_officer=StateAgent(
+                                state_agent_id='po1',
+                                full_name='NAME1',
+                                agent_type='SUPERVISION_OFFICER',
+                            )),
+                StatePerson(state_person_id='2222',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
+                            ],
+                            supervising_officer=StateAgent(
+                                state_agent_id='po1',
+                                full_name='NAME1',
+                                agent_type='SUPERVISION_OFFICER',
+                            )),
+                StatePerson(state_person_id='3333',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                            ],
+                            supervising_officer=StateAgent(
+                                state_agent_id='po2',
+                                full_name='NAME2',
+                                agent_type='SUPERVISION_OFFICER',
+                            )),
+            ])
+
+        self.run_parse_file_test(expected, 'ofndr_agnt_applc_usr_body_loc_cd_current_pos')
+
     def test_populate_data_ofndr_tst_ofndr_tst_cert(self):
         expected = IngestInfo(
             state_people=[
@@ -898,6 +932,34 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        ######################################
+        # US_ID_OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS
+        ######################################
+        # Arrange
+        po_1 = entities.StateAgent.new_with_defaults(
+            external_id='PO1',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME1"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
+        po_2 = entities.StateAgent.new_with_defaults(
+            external_id='PO2',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME2"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
+        person_1.supervising_officer = po_1
+        person_2.supervising_officer = po_1
+        person_3.supervising_officer = po_2
+
+        # Act
+        self._run_ingest_job_for_filename('ofndr_agnt_applc_usr_body_loc_cd_current_pos.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
 
         ######################################
         # OFNDR_TST_OFNDR_TST_CERT
@@ -1128,7 +1190,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             full_name='{"full_name": "JUDGE 5"}')
 
-        ss_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
+        sp_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
             status=StateSentenceStatus.REVOKED,
@@ -1151,8 +1213,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='4-44',
             description='CRIME 4 + DESC',
-            supervision_sentences=[ss_1111_2],
-            person=ss_1111_2.person)
+            supervision_sentences=[sp_1111_2],
+            person=sp_1111_2.person)
         cc_1111_234 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-234',
@@ -1161,11 +1223,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             judge=judge_3,
             charges=[c_1111_2],
             person=c_1111_2.person)
-        sg_1111_2.supervision_sentences.append(ss_1111_2)
-        ss_1111_2.charges.append(c_1111_2)
+        sg_1111_2.supervision_sentences.append(sp_1111_2)
+        sp_1111_2.charges.append(c_1111_2)
         c_1111_2.court_case = cc_1111_234
 
-        ss_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
+        sp_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
             status=StateSentenceStatus.REVOKED,
@@ -1188,8 +1250,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='5-55',
             description='CRIME 5 + DESC',
-            supervision_sentences=[ss_2222_1],
-            person=ss_2222_1.person)
+            supervision_sentences=[sp_2222_1],
+            person=sp_2222_1.person)
         cc_2222_567 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-567',
@@ -1198,8 +1260,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             judge=judge_4,
             charges=[c_2222_1],
             person=c_2222_1.person)
-        sg_2222_1.supervision_sentences.append(ss_2222_1)
-        ss_2222_1.charges.append(c_2222_1)
+        sg_2222_1.supervision_sentences.append(sp_2222_1)
+        sp_2222_1.charges.append(c_2222_1)
         c_2222_1.court_case = cc_2222_567
 
         sg_3333_1 = entities.StateSentenceGroup.new_with_defaults(
@@ -1207,7 +1269,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id='3333-1',
             person=person_3)
-        ss_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
+        sp_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-1',
             status=StateSentenceStatus.SUSPENDED,
@@ -1229,8 +1291,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='6-66',
             description='CRIME 6 + DESC',
-            supervision_sentences=[ss_3333_1],
-            person=ss_3333_1.person)
+            supervision_sentences=[sp_3333_1],
+            person=sp_3333_1.person)
         cc_3333_890 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-890',
@@ -1240,8 +1302,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             charges=[c_3333_1],
             person=c_3333_1.person)
         person_3.sentence_groups.append(sg_3333_1)
-        sg_3333_1.supervision_sentences.append(ss_3333_1)
-        ss_3333_1.charges.append(c_3333_1)
+        sg_3333_1.supervision_sentences.append(sp_3333_1)
+        sp_3333_1.charges.append(c_3333_1)
         c_3333_1.court_case = cc_3333_890
 
         # Act
@@ -1379,7 +1441,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_1111_2,
             person=sg_1111_2.person)
-        ss_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-1',
             supervision_site='DISTRICT 1',
@@ -1393,7 +1455,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[ss_1111_2_placeholder],
             person=ss_1111_2_placeholder.person,
         )
-        ss_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
             supervision_site='DISTRICT 1',
@@ -1402,17 +1464,18 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='I',
             start_date=datetime.date(year=2020, month=1, day=1),
             supervision_sentences=[ss_1111_2_placeholder],
+            supervising_officer=po_1,
             person=ss_1111_2_placeholder.person,
         )
         sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
-        ss_1111_2_placeholder.supervision_periods.extend([ss_1111_1, ss_1111_2])
+        ss_1111_2_placeholder.supervision_periods.extend([sp_1111_1, sp_1111_2])
 
         ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_2222_1,
             person=sg_2222_1.person)
-        ss_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
             supervision_site='DISTRICT 2',
@@ -1426,7 +1489,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[ss_2222_1_placeholder],
             person=ss_2222_1_placeholder.person,
         )
-        ss_2222_2 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_2222_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-2',
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -1439,7 +1502,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[ss_2222_1_placeholder],
             person=ss_2222_1_placeholder.person,
         )
-        ss_2222_3 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_2222_3 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-3',
             supervision_site='DISTRICT 2',
@@ -1454,14 +1517,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=ss_2222_1_placeholder.person,
         )
         sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
-        ss_2222_1_placeholder.supervision_periods.extend([ss_2222_1, ss_2222_2, ss_2222_3])
+        ss_2222_1_placeholder.supervision_periods.extend([sp_2222_1, sp_2222_2, sp_2222_3])
 
         ss_3333_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_3333_1,
             person=sg_3333_1.person)
-        ss_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-1',
             supervision_site='DISTRICT 4',
@@ -1475,7 +1538,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[ss_3333_1_placeholder],
             person=ss_3333_1_placeholder.person,
         )
-        ss_3333_2 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_3333_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-2',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
@@ -1483,16 +1546,17 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='IS',
             start_date=datetime.date(year=2018, month=1, day=1),
             supervision_sentences=[ss_3333_1_placeholder],
+            supervising_officer=po_2,
             person=ss_3333_1_placeholder.person,
         )
         sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
-        ss_3333_1_placeholder.supervision_periods.extend([ss_3333_1, ss_3333_2])
+        ss_3333_1_placeholder.supervision_periods.extend([sp_3333_1, sp_3333_2])
 
         # Act
         self._run_ingest_job_for_filename('movement_facility_supervision_periods.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports

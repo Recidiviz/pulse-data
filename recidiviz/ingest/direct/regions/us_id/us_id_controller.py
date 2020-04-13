@@ -43,11 +43,11 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity
+    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 from recidiviz.utils.params import str_to_bool
@@ -121,6 +121,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._hydrate_violation_types,
                 self._hydrate_violation_report_fields,
             ],
+            'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._add_supervising_officer,
+            ]
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender_ofndr_dob': [],
@@ -131,10 +135,18 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'movement_facility_supervision_periods': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports_old': [],
+            'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
+                # TODO(1883): Would not need this file postprocessor if our data extractor would add the main entity to
+                #  our 'extracted_objects' cache when a single id field is used in the following situation:
+                #   - the only key in "keys"
+                #   - reused as a child key
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
         }
 
     FILE_TAGS = [
         'offender_ofndr_dob',
+        'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
         'ofndr_tst_ofndr_tst_cert',
         'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
@@ -271,11 +283,28 @@ class UsIdController(CsvGcsfsDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
+    def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+        return self.file_post_processors_by_file.get(file_tag, [])
+
     def _get_row_post_processors_for_file(self, file_tag: str) -> List[Callable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
-        return self.file_post_processors_by_file.get(file_tag, [])
+    @staticmethod
+    def _get_id_type(file_tag: str) -> Optional[str]:
+        if file_tag in [
+                'offender_ofndr_dob',
+                'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
+                'ofndr_tst_ofndr_tst_cert',
+                'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
+                'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
+                'movement_facility_offstat_incarceration_periods',
+                'movement_facility_supervision_periods',
+                'ofndr_tst_tst_qstn_rspns_violation_reports',
+                'ofndr_tst_tst_qstn_rspns_violation_reports_old',
+        ]:
+            return US_ID_DOC
+
+        return None
 
     @staticmethod
     def _add_lsir_to_assessments(
@@ -546,3 +575,19 @@ class UsIdController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionViolation):
                 obj.is_violent = str(violent)
                 obj.is_sex_offense = str(sex_offense)
+
+    @staticmethod
+    def _add_supervising_officer(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        agent_id = row.get('agnt_id', '')
+        agent_name = row.get('name', '')
+        if not agent_id or not agent_name:
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                agent_to_create = StateAgent(
+                    state_agent_id=agent_id,
+                    full_name=agent_name,
+                    agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+                create_if_not_exists(agent_to_create, obj, 'supervising_officer')
