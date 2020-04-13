@@ -51,6 +51,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.recidivism.pipeline import \
     json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
@@ -1830,7 +1831,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     status=StateSentenceStatus.COMPLETED,
                     supervision_periods=[supervision_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2015, 1, 1),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
             )
 
         assessment = StateAssessment.new_with_defaults(

@@ -212,7 +212,6 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state,
     name='state_incarceration_period_admission_reason')
 
-# TODO(XXXX): Write a migration for this!
 state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_commuted,
     state_enum_strings.state_incarceration_period_release_reason_compassionate,

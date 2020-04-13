@@ -15,77 +15,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """File containing fake / test implementations of US_MO-specific classes."""
-from datetime import date
-from typing import Optional
+from typing import List
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSupervisionSentence, \
-    UsMoIncarcerationSentence
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+    UsMoIncarcerationSentence, SupervisionTypeSpan
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence
 
 
 @attr.s
 class FakeUsMoSupervisionSentence(UsMoSupervisionSentence):
-    """Fake UsMoSupervisionSentence that allows you to set the supervision type manually."""
-
-    test_supervision_type: Optional[StateSupervisionType] = attr.ib()
-    @test_supervision_type.default
-    def default_test_supervision_type(self):
-        raise ValueError('Must set test_supervision_type')
-
-    def get_sentence_supervision_type_on_day(
-            self,
-            supervision_type_day: date
-    ) -> Optional[StateSupervisionType]:
-        if self.completion_date and supervision_type_day >= self.completion_date:
-            return None
-
-        return self.test_supervision_type
+    """Fake UsMoSupervisionSentence that allows you to set the supervision type spans manually."""
 
     @classmethod
     def fake_sentence_from_sentence(
             cls,
             sentence: StateSupervisionSentence,
-            supervision_type: Optional[StateSupervisionType]
+            supervision_type_spans: List[SupervisionTypeSpan]
     ) -> UsMoSupervisionSentence:
-        sentence = FakeUsMoSupervisionSentence.from_supervision_sentence(sentence,
-                                                                         sentence_statuses_raw=[],
-                                                                         subclass_args={
-                                                                             'test_supervision_type': supervision_type
-                                                                         })
+        sentence = FakeUsMoSupervisionSentence.from_supervision_sentence(
+            sentence,
+            sentence_statuses_raw=[],
+            subclass_args={
+                'supervision_type_spans': supervision_type_spans
+            })
         return sentence
 
 
 @attr.s
 class FakeUsMoIncarcerationSentence(UsMoIncarcerationSentence):
-    """Fake UsMoIncarcerationSentence that allows you to set the supervision type manually."""
-
-    test_supervision_type: Optional[StateSupervisionType] = attr.ib()
-    @test_supervision_type.default
-    def default_test_supervision_type(self):
-        raise ValueError('Must set test_supervision_type')
-
-    def get_sentence_supervision_type_on_day(
-            self,
-            supervision_type_day: date
-    ) -> Optional[StateSupervisionType]:
-        if self.completion_date and supervision_type_day >= self.completion_date:
-            return None
-
-        return self.test_supervision_type
+    """Fake UsMoIncarcerationSentence that allows you to set the supervision type spans manually."""
 
     @classmethod
     def fake_sentence_from_sentence(
             cls,
             sentence: StateIncarcerationSentence,
-            supervision_type: Optional[StateSupervisionType]
+            supervision_type_spans: List[SupervisionTypeSpan]
     ) -> UsMoIncarcerationSentence:
         sentence = FakeUsMoIncarcerationSentence.from_incarceration_sentence(
             sentence,
             sentence_statuses_raw=[],
             subclass_args={
-                'test_supervision_type': supervision_type
+                'supervision_type_spans': supervision_type_spans
             })
         return sentence
