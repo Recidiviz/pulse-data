@@ -39,7 +39,7 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
     JAIL_FACILITY_CODES, VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
-    SEX_CRIME_TYPES
+    SEX_CRIME_TYPES, MAX_DATE_STR
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
@@ -97,6 +97,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'movement_facility_offstat_incarceration_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
+                self._clear_max_dates,
                 self._add_rider_treatment,
                 self._add_default_admission_reason,
                 self._add_incarceration_type,
@@ -104,6 +105,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'movement_facility_supervision_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
+                self._clear_max_dates,
                 self._add_default_admission_reason,
                 self._update_interstate_and_absconsion_periods,
             ],
@@ -475,6 +477,23 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     obj.incarceration_type = StateIncarcerationType.COUNTY_JAIL.value
                 else:
                     obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
+
+    @staticmethod
+    def _clear_max_dates(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Clears recidiviz-generated (from queries) maximum date fields which really signify that a period is
+        currently unended.
+        """
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                if obj.release_date == MAX_DATE_STR:
+                    obj.release_date = None
+            if isinstance(obj, StateSupervisionPeriod):
+                if obj.termination_date == MAX_DATE_STR:
+                    obj.termination_date = None
 
     @staticmethod
     def _update_interstate_and_absconsion_periods(

@@ -76,3 +76,6 @@ SEX_CRIME_TYPES = (
     VIOLENT_SEX_OFFENSE,
     NON_VIOLENT_SEX_OFFENSE,
 )
+
+# Recidiviz generated date used by Supervision/Incarceration periods query
+MAX_DATE_STR = '9999-12-31'
