@@ -16,13 +16,14 @@
 # =============================================================================
 """US_MO-specific implementations of functions related to supervision type identification."""
 import datetime
-from typing import List, Set, Optional
+import itertools
+from collections import defaultdict
+from typing import List, Set, Optional, Dict
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     _sentence_supervision_types_to_supervision_period_supervision_type
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSupervisionSentence, \
-    UsMoIncarcerationSentence
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSentenceMixin
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
@@ -33,17 +34,53 @@ def us_mo_get_pre_incarceration_supervision_type(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Calculates the pre-incarceration supervision type for US_MO people by calculating the supervision period
-    supervision type on the day before reincarceration.
+    """Calculates the pre-incarceration supervision type for US_MO people by calculating the most recent type of
+    supervision a given person was on.
     """
     if not incarceration_period.admission_date:
         raise ValueError(
             f'No admission date for incarceration period {incarceration_period.incarceration_period_id}')
 
-    last_day_before_incarceration = incarceration_period.admission_date - datetime.timedelta(days=1)
-    return us_mo_get_supervision_period_supervision_type_on_date(last_day_before_incarceration,
-                                                                 supervision_sentences,
-                                                                 incarceration_sentences)
+    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+        upper_bound_exclusive_date=incarceration_period.admission_date,
+        lower_bound_inclusive_date=None,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences
+    )
+
+
+def us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+        upper_bound_exclusive_date: datetime.date,
+        lower_bound_inclusive_date: Optional[datetime.date],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Finds the most recent nonnull supervision period supervision type associated the person with these sentences,
+    preceding the provided date. An optional lower bound may be provided to limit the lookback window.
+
+    Returns a tuple (last valid date of that supervision type span, supervision type). If there is no valid supervision
+    type found (e.g. the person has only been incarcerated for the time window).
+    """
+    supervision_types_by_end_date: Dict[datetime.date, Set[Optional[StateSupervisionType]]] = defaultdict(set)
+    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
+    for sentence in sentences:
+        if not isinstance(sentence, UsMoSentenceMixin):
+            raise ValueError(f'Sentence has unexpected type {type(sentence)}')
+        res = sentence.get_most_recent_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=upper_bound_exclusive_date,
+            lower_bound_inclusive_date=lower_bound_inclusive_date)
+        if res:
+            last_supervision_date, supervision_type = res
+            supervision_types_by_end_date[last_supervision_date].add(supervision_type)
+
+    if not supervision_types_by_end_date:
+        return None
+
+    max_end_date = max(supervision_types_by_end_date.keys())
+
+    return _sentence_supervision_types_to_supervision_period_supervision_type(
+        supervision_types_by_end_date[max_end_date])
 
 
 def us_mo_get_month_supervision_type(
@@ -58,16 +95,21 @@ def us_mo_get_month_supervision_type(
     The date used to calculate the supervision period supervision type is either the last day of the month, or
     the last day of supervision, whichever comes first.
     """
+    start_of_month = first_day_of_month(any_date_in_month)
     end_of_month = last_day_of_month(any_date_in_month)
+    first_of_next_month = end_of_month + datetime.timedelta(days=1)
+
     if supervision_period.termination_date is None:
-        supervision_type_determination_date = end_of_month
+        upper_bound_exclusive_date = first_of_next_month
     else:
-        supervision_type_determination_date = min(end_of_month,
-                                                  supervision_period.termination_date - datetime.timedelta(days=1))
+        upper_bound_exclusive_date = min(first_of_next_month, supervision_period.termination_date)
+
     supervision_type = \
-        us_mo_get_supervision_period_supervision_type_on_date(supervision_type_determination_date,
-                                                              supervision_sentences,
-                                                              incarceration_sentences)
+        us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=upper_bound_exclusive_date,
+            lower_bound_inclusive_date=start_of_month,
+            supervision_sentences=supervision_sentences,
+            incarceration_sentences=incarceration_sentences)
 
     if not supervision_type:
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
@@ -83,18 +125,14 @@ def us_mo_get_supervision_period_supervision_type_on_date(
     |supervision_type_determination_date|.
     """
 
-    supervision_types: Set[Optional[StateSupervisionType]] = set()
-    for ss in supervision_sentences:
-        if not isinstance(ss, UsMoSupervisionSentence):
-            raise ValueError(f'Supervision sentence has unexpected type {type(ss)}')
-        supervision_types.add(ss.get_sentence_supervision_type_on_day(supervision_type_determination_date))
+    upper_bound_exclusive_date = supervision_type_determination_date + datetime.timedelta(days=1)
 
-    for in_s in incarceration_sentences:
-        if not isinstance(in_s, UsMoIncarcerationSentence):
-            raise ValueError(f'Incarceration sentence has unexpected type {type(in_s)}')
-        supervision_types.add(in_s.get_sentence_supervision_type_on_day(supervision_type_determination_date))
-
-    return _sentence_supervision_types_to_supervision_period_supervision_type(supervision_types)
+    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+        upper_bound_exclusive_date=upper_bound_exclusive_date,
+        lower_bound_inclusive_date=supervision_type_determination_date,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences
+    )
 
 
 def us_mo_counts_towards_supervision_population_on_day(
