@@ -36,12 +36,9 @@ REQUIRED_PACKAGES = [
     'google-cloud-monitoring',
     'more-itertools',
     'oauth2client',
-    'opencensus @ git+https://github.com/census-instrumentation/'
-        'opencensus-python.git@d37b6d267307a136631881e593c2bc8921a786b6#egg'
-        '=opencensus',
-    'opencensus-correlation @ git+https://github.com/census-instrumentation/'
-        'opencensus-python.git@d37b6d267307a136631881e593c2bc8921a786b6#egg='
-        'opencensus_correlation&subdirectory=contrib/opencensus-correlation',
+    'opencensus',
+    'opencensus-correlation',
+    'opencensus-ext-stackdriver',
     'SQLAlchemy'
 ]
 
