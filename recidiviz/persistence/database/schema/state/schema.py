@@ -2081,6 +2081,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     response_subtype = Column(String(255))
     response_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
+    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     decision = Column(state_supervision_violation_response_decision)
     decision_raw_text = Column(String(255))
     revocation_type = \
