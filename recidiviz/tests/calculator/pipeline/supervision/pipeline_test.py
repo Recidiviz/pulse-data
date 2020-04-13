@@ -2440,11 +2440,17 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         # Each characteristic combination will be tracked for each of the
         # months and the two methodology types
-        expected_population_metric_count = \
-            num_combinations * len(supervision_time_buckets) * 2
+        expected_population_metric_count = num_combinations * len(supervision_time_buckets) * 2
 
-        expected_combination_counts = \
+        expected_person_level_output = 2
+
+        expected_population_metric_count -= expected_person_level_output
+
+        expected_population_combination_counts = \
             {'population': expected_population_metric_count}
+
+        expected_person_level_combination_counts = \
+            {'population': expected_person_level_output}
 
         test_pipeline = TestPipeline()
 
@@ -2454,12 +2460,17 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit, self.all_inclusions_dict).with_outputs('populations')
+                             calculation_month_limit,
+                             self.all_inclusions_dict).with_outputs('populations', 'person_level_output')
                   )
 
         assert_that(output.populations, AssertMatchers.
-                    count_combinations(expected_combination_counts),
+                    count_combinations(expected_population_combination_counts),
                     'Assert number of population metrics is expected value')
+
+        assert_that(output.person_level_output, AssertMatchers.
+                    count_combinations(expected_person_level_combination_counts),
+                    'Assert number of person-level metrics is expected value')
 
         test_pipeline.run()
 
@@ -2494,11 +2505,19 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         assert num_combinations_revocation > 0
 
         # Multiply by the number of months and by 2 (to account for methodology)
-        expected_revocation_metric_count = \
-            num_combinations_revocation * len(supervision_months) * 2
+        expected_revocation_metric_count = num_combinations_revocation * len(supervision_months) * 2
+
+        expected_person_level_output = 4
+
+        expected_revocation_metric_count -= expected_person_level_output
 
         expected_combination_counts_revocations = {
             'revocation': expected_revocation_metric_count
+        }
+
+        expected_combination_counts_person_level = {
+            'revocation': 4,
+            'population': 4
         }
 
         # Get expected number of combinations for population count
@@ -2506,14 +2525,6 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             calculator.characteristic_combinations(
                 fake_person, supervision_months[0], self.all_inclusions_dict, SupervisionMetricType.POPULATION))
         assert num_combinations_population > 0
-
-        # Multiply by the number of months and by 2 (to account for methodology)
-        expected_population_metric_count = \
-            num_combinations_population * len(supervision_months) * 2
-
-        expected_combination_counts_populations = {
-            'population': expected_population_metric_count,
-        }
 
         test_pipeline = TestPipeline()
 
@@ -2524,17 +2535,17 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_month_limit,
-                             self.all_inclusions_dict).with_outputs('populations',
-                                                                    'revocations')
+                             self.all_inclusions_dict).with_outputs('revocations',
+                                                                    'person_level_output')
                   )
 
         assert_that(output.revocations, AssertMatchers.
                     count_combinations(expected_combination_counts_revocations),
                     'Assert number of revocation metrics is expected value')
 
-        assert_that(output.populations, AssertMatchers.
-                    count_combinations(expected_combination_counts_populations),
-                    'Assert number of population metrics is expected value')
+        assert_that(output.person_level_output, AssertMatchers.
+                    count_combinations(expected_combination_counts_person_level),
+                    'Assert number of person_level metrics is expected value')
 
         test_pipeline.run()
 
@@ -2791,8 +2802,8 @@ class AssertMatchers:
             for key in expected_combination_counts:
                 if expected_combination_counts[key] != \
                         actual_combination_counts[key]:
-                    raise BeamAssertException('Failed assert. Count does not'
-                                              'match expected value.')
+                    raise BeamAssertException('Failed assert. Count does not match expected value:'
+                                              f'{expected_combination_counts[key]} != {actual_combination_counts[key]}')
 
         return _count_combinations
 

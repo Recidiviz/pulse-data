@@ -218,6 +218,8 @@ def characteristic_combinations(person: StatePerson,
         A list of dictionaries containing all unique combinations of
         characteristics.
     """
+    # TODO(3058): Limit the output of this function to just the characteristics_with_person_details dictionary
+    #  for all metrics that currently include person-level output
     characteristics: Dict[str, Any] = {}
 
     include_revocation_dimensions = _include_revocation_dimensions_for_metric(metric_type)
