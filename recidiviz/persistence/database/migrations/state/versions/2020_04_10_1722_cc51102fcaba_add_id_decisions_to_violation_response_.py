@@ -41,6 +41,12 @@ def upgrade():
     op.alter_column('state_supervision_violation_response_decision_entry_history', column_name='decision',
                     type_=sa.Enum(*new_values, name='state_supervision_violation_response_decision'),
                     postgresql_using='decision::text::state_supervision_violation_response_decision')
+    op.alter_column('state_supervision_violation_response', column_name='decision',
+                    type_=sa.Enum(*new_values, name='state_supervision_violation_response_decision'),
+                    postgresql_using='decision::text::state_supervision_violation_response_decision')
+    op.alter_column('state_supervision_violation_response_history', column_name='decision',
+                    type_=sa.Enum(*new_values, name='state_supervision_violation_response_decision'),
+                    postgresql_using='decision::text::state_supervision_violation_response_decision')
     op.execute('DROP TYPE state_supervision_violation_response_decision_old;')
 
 
@@ -51,6 +57,12 @@ def downgrade():
                     type_=sa.Enum(*old_values, name='state_supervision_violation_response_decision'),
                     postgresql_using='decision::text::state_supervision_violation_response_decision')
     op.alter_column('state_supervision_violation_response_decision_entry_history', column_name='decision',
+                    type_=sa.Enum(*old_values, name='state_supervision_violation_response_decision'),
+                    postgresql_using='decision::text::state_supervision_violation_response_decision')
+    op.alter_column('state_supervision_violation_response', column_name='decision',
+                    type_=sa.Enum(*old_values, name='state_supervision_violation_response_decision'),
+                    postgresql_using='decision::text::state_supervision_violation_response_decision')
+    op.alter_column('state_supervision_violation_response_history', column_name='decision',
                     type_=sa.Enum(*old_values, name='state_supervision_violation_response_decision'),
                     postgresql_using='decision::text::state_supervision_violation_response_decision')
     op.execute('DROP TYPE state_supervision_violation_response_decision_old;')
