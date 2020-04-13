@@ -43,7 +43,6 @@ def check_for_finished_scrapers():
     next_phase_url = url_for(next_phase) if next_phase else None
     cloud_task_manager = ScraperCloudTaskManager()
 
-    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _check_finished(region_code: str):
         # If there are no sessions currently scraping, nothing to check.
@@ -66,9 +65,11 @@ def check_for_finished_scrapers():
 
     failed_regions = []
     with futures.ThreadPoolExecutor() as executor:
-        future_to_region = \
-            {executor.submit(_check_finished, region_code): region_code
-             for region_code in region_codes}
+        future_to_region = {
+            executor.submit(structured_logging.with_context(_check_finished),
+                            region_code): region_code
+            for region_code in region_codes
+        }
         for future in futures.as_completed(future_to_region):
             region_code = future_to_region[future]
             with monitoring.push_tags({monitoring.TagKey.REGION: region_code}):
