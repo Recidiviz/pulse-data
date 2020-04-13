@@ -20,10 +20,11 @@ import datetime
 import logging
 
 from flask import Flask
+
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
-from opencensus.trace import config_integration
-from opencensus.trace.exporters import file_exporter, stackdriver_exporter
+from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
+from opencensus.trace import config_integration, file_exporter
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.query.export_manager import export_manager_blueprint
@@ -42,7 +43,8 @@ from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager
-from recidiviz.utils import environment, structured_logging, metadata
+from recidiviz.utils import (environment, metadata, monitoring,
+                             structured_logging)
 
 structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
@@ -67,18 +69,18 @@ app.register_blueprint(dataflow_monitor_blueprint,
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
-# Setup tracing of requests not traced by default
+# Export traces and metrics to stackdriver if running on GAE
 if environment.in_gae():
-    exporter = stackdriver_exporter.StackdriverExporter(
+    monitoring.register_stackdriver_exporter()
+    trace_exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)
 else:
-    exporter = file_exporter.FileExporter(file_name='traces')
+    trace_exporter = file_exporter.FileExporter(file_name='traces')
 
-
-# TODO(596): This is a no-op until the next release of `opencensus`.
+# Setup tracing
 app.config['OPENCENSUS_TRACE_PARAMS'] = {
     'BLACKLIST_HOSTNAMES': ['metadata']  # Don't trace metadata requests
 }
-middleware = FlaskMiddleware(app, exporter=exporter)
+middleware = FlaskMiddleware(app, exporter=trace_exporter)
 config_integration.trace_integrations(
     ['google_cloud_clientlibs', 'requests', 'sqlalchemy'])

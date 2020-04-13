@@ -21,43 +21,27 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import Any, Dict, Optional
 
-from opencensus.tags import TagMap, execution_context
+from opencensus.ext.stackdriver import stats_exporter as stackdriver
 from opencensus.stats import stats as stats_module
-from opencensus.stats.exporters import stackdriver_exporter as stackdriver
+from opencensus.tags import TagContext, TagMap
 
-from recidiviz.utils import environment, metadata
 
-_stats = None
 def stats():
-    global _stats
-    if not _stats:
-        new_stats = stats_module.Stats()
-        if environment.in_gae() and not environment.in_test():
-            exporter = stackdriver.new_stats_exporter(stackdriver.Options(
-                project_id=metadata.project_id(),
-            ))
-            new_stats.view_manager.register_exporter(exporter)
-        _stats = new_stats
-    return _stats
+    return stats_module.stats
 
 
-@environment.test_only
-def clear_stats():
-    global _stats
-    _stats = None
+def register_stackdriver_exporter():
+    exporter = stackdriver.new_stats_exporter()
+    stats().view_manager.register_exporter(exporter)
 
 
 def register_views(views):
-    if environment.in_gae() and not environment.in_test():
-        for view in views:
-            stats().view_manager.register_view(view)
+    for view in views:
+        stats().view_manager.register_view(view)
 
 
-def set_thread_local_tags(tags: Dict[str, Any]):
-    tag_map = execution_context.get_current_tag_map()
-    if not tag_map:
-        tag_map = TagMap()
-        execution_context.set_current_tag_map(tag_map)
+def set_context_tags(tags: Dict[str, Any]):
+    tag_map = TagMap(TagContext.get())
 
     for key, value in tags.items():
         if value:
@@ -65,20 +49,22 @@ def set_thread_local_tags(tags: Dict[str, Any]):
         else:
             tag_map.delete(key)
 
+    return TagContext.contextvar.set(tag_map)
 
-def thread_local_tags() -> Optional[TagMap]:
-    """Returns a copy of the thread local TagMap"""
-    tag_map = execution_context.get_current_tag_map()
+
+def context_tags() -> Optional[TagMap]:
+    """Returns a copy of the context TagMap"""
+    tag_map = TagContext.get()
     return TagMap(tag_map.map if tag_map else None)
 
 
 @contextmanager
 def push_tags(tags: Dict[str, Any]):
-    set_thread_local_tags(tags)
+    token = set_context_tags(tags)
     try:
         yield
     finally:
-        set_thread_local_tags({key: None for key in tags})
+        TagContext.contextvar.reset(token)
 
 
 def push_region_tag(region_code: str):
@@ -101,13 +87,14 @@ def measurements(tags=None):
     try:
         yield mmap
     finally:
-        tag_map = thread_local_tags()
+        tag_map = context_tags()
         for key, value in tags.items():
             tag_map.insert(key, str(value))
-        # Log to see if region not getting set is our bug or an opencensus bug.
         if not tag_map.map.get(TagKey.REGION):
-            logging.warning("No region set for metric, tags are: %s",
+            logging.warning("No region set for metrics %s, tags are: %s",
+                            [measure.name for measure in mmap.measurement_map],
                             tag_map.map)
+
         mmap.record(tag_map)
 
 

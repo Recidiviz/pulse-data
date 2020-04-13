@@ -17,43 +17,30 @@
 """Configures logging setup."""
 
 import logging
+from functools import partial
 import sys
-import threading
-from functools import partial, wraps
 
 from google.cloud.logging import Client, handlers
+from opencensus.common.runtime_context import RuntimeContext
+from opencensus.trace import execution_context
 
 from recidiviz.utils import environment, monitoring
 
-_thread_local = threading.local()
 
-
-def copy_trace_id_to_thread(func):
-    # pylint: disable=protected-access
-    trace_id = handlers._helpers.get_trace_id_from_flask()
-    if trace_id is None:
-        # TODO: raise error
-        logging.info("No trace id")
-
-    @wraps(func)
-    def add_trace_id_and_call(*args, **kwargs):
-        setattr(_thread_local, 'trace_id', trace_id)
-        return func(*args, **kwargs)
-
-    return add_trace_id_and_call
-
-
-def get_trace_id_from_thread() -> str:
-    return getattr(_thread_local, 'trace_id', None)
+# TODO(3043): Once census-instrumentation/opencensus-python#442 is fixed we can
+# use OpenCensus threading intregration which will copy this for us. Until then
+# we can just copy it manually.
+with_context = RuntimeContext.with_current_context
 
 
 def region_record_factory(default_record_factory, *args, **kwargs):
     record = default_record_factory(*args, **kwargs)
 
-    tags = monitoring.thread_local_tags()
+    tags = monitoring.context_tags()
     record.region = tags.map.get(monitoring.TagKey.REGION)
 
-    record.traceId = get_trace_id_from_thread()
+    context = execution_context.get_opencensus_tracer().span_context
+    record.traceId = context.trace_id
 
     return record
 
@@ -96,7 +83,7 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
         jsonPayload.message
         """
         message = super(StructuredAppEngineHandler, self).format(record)
-        labels = {**message['labels'], **self.get_gae_labels()}
+        labels = {**message.get('labels', {}), **self.get_gae_labels()}
         # pylint: disable=protected-access
         trace_id = (
             "projects/%s/traces/%s" % (
@@ -110,12 +97,12 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
 
 
 def setup():
-    """Initializes logging handlers for the app."""
-    logger = logging.getLogger()
-
+    """Setup logging"""
     # Set the region on log records.
     default_factory = logging.getLogRecordFactory()
     logging.setLogRecordFactory(partial(region_record_factory, default_factory))
+
+    logger = logging.getLogger()
 
     # Send logs directly via the logging client if possible. This ensures trace
     # ids are propogated and allows us to send structured messages.
@@ -146,3 +133,8 @@ def setup():
             handler.setFormatter(logging.Formatter(
                 "(%(region)s) %(module)s/%(funcName)s : %(message)s"
             ))
+
+    # Export gunicorn errors using the same handlers as other logs, so that they
+    # go to Stackdriver in production.
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    gunicorn_logger.handlers = logger.handlers

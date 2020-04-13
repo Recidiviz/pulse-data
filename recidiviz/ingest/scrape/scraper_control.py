@@ -69,7 +69,6 @@ def scraper_start():
         N/A
     """
 
-    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _start_scraper(region, scrape_type):
         scrape_key = ScrapeKey(region, scrape_type)
@@ -108,11 +107,8 @@ def scraper_start():
         # Note, the request context isn't copied when launching this thread, so
         # any logs from within `load_target_list` will not be associated with
         # the start scraper request.
-        #
-        # TODO(#1045): Either kill this, or ensure logs are correlated and
-        # exceptions are passed up to the parent thread.
         load_docket_thread = threading.Thread(
-            target=docket.load_target_list,
+            target=structured_logging.with_context(docket.load_target_list),
             args=(scrape_key, given_names, surname))
         load_docket_thread.start()
 
@@ -145,11 +141,13 @@ def scraper_start():
     failed_starts = []
     with futures.ThreadPoolExecutor() as executor:
         # Start all of the calls.
-        future_to_args = \
-            {executor.submit(_start_scraper, region_code, scrape_type): \
-                (region_code, scrape_type)
-             for scrape_type in scrape_types
-             for region_code in scrape_regions}
+        future_to_args = {
+            executor.submit(
+                structured_logging.with_context(_start_scraper),
+                region_code, scrape_type): (region_code, scrape_type)
+            for scrape_type in scrape_types
+            for region_code in scrape_regions
+        }
 
         # Wait for all the calls to finish.
         for future in futures.as_completed(future_to_args):
@@ -218,7 +216,6 @@ def scraper_stop():
     next_phase = scrape_phase.next_phase(request.endpoint)
     next_phase_url = url_for(next_phase) if next_phase else None
 
-    @structured_logging.copy_trace_id_to_thread
     @monitoring.with_region_tag
     def _stop_scraper(region: str):
         logging.info("Trying to stop scraper for region [%s].", region)
@@ -253,9 +250,11 @@ def scraper_stop():
     failed_stops = []
     with futures.ThreadPoolExecutor() as executor:
         # Start all of the calls.
-        future_to_regions = \
-            {executor.submit(_stop_scraper, region_code): region_code
-             for region_code in scrape_regions}
+        future_to_regions = {
+            executor.submit(structured_logging.with_context(_stop_scraper),
+                            region_code): region_code
+            for region_code in scrape_regions
+        }
 
         # Wait for all the calls to finish.
         for future in futures.as_completed(future_to_regions):
