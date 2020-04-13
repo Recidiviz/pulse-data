@@ -20,15 +20,16 @@ import unittest
 from typing import Optional
 
 from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoIncarcerationSentence, \
-    UsMoSupervisionSentence
+    UsMoSupervisionSentence, SupervisionTypeSpan
 from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
-    us_mo_get_supervision_period_supervision_type_on_date, us_mo_get_pre_incarceration_supervision_type
+    us_mo_get_supervision_period_supervision_type_on_date, us_mo_get_pre_incarceration_supervision_type, \
+    us_mo_get_month_supervision_type, us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
-    StateIncarcerationPeriod
+    StateIncarcerationPeriod, StateSupervisionPeriod
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSupervisionSentence, \
     FakeUsMoIncarcerationSentence
 
@@ -36,34 +37,25 @@ from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSuperv
 class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     """Tests for us_mo_get_pre_incarceration_supervision_type"""
 
-    REVOCATION_DATE = datetime.date(year=2019, month=9, day=13)
-    REVOCATION_DATE_STR = REVOCATION_DATE.strftime('%Y%m%d')
-
-    TERMINATED_BEFORE_REVOCATION_DATE_STATUSES = [
-        {'sentence_external_id': '13252-20160627-1', 'sentence_status_external_id': '13252-20160627-1-1',
-         'status_code': '10I1000', 'status_date': '20171012', 'status_description': 'New Court Comm-Institution'},
-        {'sentence_external_id': '13252-20160627-1', 'sentence_status_external_id': '13252-20160627-1-2',
-         'status_code': '90O1010', 'status_date': '20180912',
-         'status_description': "Inst. Expiration of Sentence"},
-    ]
-
-    PAROLE_SENTENCE_EXTERNAL_ID = '1167633-20171012-2'
-
     def test_usMo_getPreIncarcerationSupervisionType(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             external_id='ip1',
             state_code='US_MO',
-            admission_date=self.REVOCATION_DATE)
+            admission_date=datetime.date(year=2019, month=9, day=13))
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=1,
-                external_id=self.PAROLE_SENTENCE_EXTERNAL_ID,
+                external_id='1167633-20171012-2',
                 start_date=datetime.date(2017, 2, 1),
                 supervision_type=StateSupervisionType.PROBATION),
-            supervision_type=StateSupervisionType.PAROLE
+            supervision_type_spans=[SupervisionTypeSpan(
+                start_date=datetime.date(2017, 2, 1),
+                end_date=None,
+                supervision_type=StateSupervisionType.PAROLE
+            )]
         )
 
         # Even though the supervision type of the sentence is PROBATION, we find that it's actually a PAROLE
@@ -80,15 +72,19 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             external_id='ip1',
             state_code='US_MO',
-            admission_date=self.REVOCATION_DATE)
+            admission_date=datetime.date(year=2019, month=9, day=13))
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=1,
-                external_id=self.PAROLE_SENTENCE_EXTERNAL_ID,
+                external_id='1167633-20171012-2',
                 start_date=datetime.date(2017, 2, 1),
                 supervision_type=StateSupervisionType.PROBATION),
-            supervision_type=StateSupervisionType.PAROLE
+            supervision_type_spans=[SupervisionTypeSpan(
+                start_date=datetime.date(2017, 2, 1),
+                end_date=None,
+                supervision_type=StateSupervisionType.PAROLE
+            )]
         )
 
         old_incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
@@ -98,7 +94,18 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
                 start_date=datetime.date(2017, 2, 1),
                 completion_date=datetime.date(2017, 3, 4),
                 status=StateSentenceStatus.COMPLETED),
-            supervision_type=None  # Terminated already
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=datetime.date(2017, 2, 1),
+                    end_date=datetime.date(2017, 3, 4),
+                    supervision_type=StateSupervisionType.PAROLE
+                ),
+                SupervisionTypeSpan(
+                    start_date=datetime.date(2017, 3, 4),
+                    end_date=None,
+                    supervision_type=None
+                )
+            ]  # Terminated by revocation date
         )
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
@@ -121,7 +128,12 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             start_date=datetime.date(year=2012, month=6, day=27)
         )
         mo_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
-            base_sentence, supervision_type=supervision_type)
+            base_sentence,
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=base_sentence.start_date,
+                                    end_date=None,
+                                    supervision_type=supervision_type)
+            ])
 
         self.sentence_id_counter += 1
 
@@ -134,7 +146,12 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             start_date=datetime.date(year=2012, month=6, day=27)
         )
         mo_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            base_sentence, supervision_type=supervision_type)
+            base_sentence,
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=base_sentence.start_date,
+                                    end_date=None,
+                                    supervision_type=supervision_type)
+            ])
 
         self.sentence_id_counter += 1
 
@@ -311,3 +328,443 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(supervision_period_supervision_type, StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+
+
+class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
+    """Unittests for the us_mo_get_month_supervision_type helper."""
+
+    def setUp(self) -> None:
+        self.start_of_month_date = datetime.date(2019, 12, 1)
+        self.end_of_month_date = datetime.date(2019, 12, 31)
+        self.start_of_next_month_date = datetime.date(2020, 1, 1)
+
+    def test_month_supervision_type_no_sentences(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[],
+                                             incarceration_sentences=[],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+
+    def test_month_supervision_type_single_sentence(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=None,
+                                    supervision_type=StateSupervisionType.PROBATION)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.PROBATION)
+
+    def test_month_supervision_type_no_supervision_all_month(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=self.start_of_month_date,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                # Incarcerated / suspended since start of month
+                SupervisionTypeSpan(start_date=self.start_of_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+
+    def test_month_supervision_type_supervision_ends_middle_of_month(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        supervision_end_date_middle_of_month = self.start_of_month_date + datetime.timedelta(days=5)
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=supervision_end_date_middle_of_month,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                # Incarcerated / suspended since middle of month
+                SupervisionTypeSpan(start_date=supervision_end_date_middle_of_month,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.PROBATION)
+
+    def test_get_month_supervision_type_parole_transitions_to_probation(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        parole_end_date_middle_of_month = self.start_of_month_date + datetime.timedelta(days=5)
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=parole_end_date_middle_of_month,
+                                    supervision_type=StateSupervisionType.PAROLE),
+                # Parole finishes middle of month
+                SupervisionTypeSpan(start_date=parole_end_date_middle_of_month,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=parole_end_date_middle_of_month
+            ),
+            supervision_type_spans=[
+                # Probation sentence starts after parole sentence ends
+                SupervisionTypeSpan(start_date=parole_end_date_middle_of_month,
+                                    end_date=None,
+                                    supervision_type=StateSupervisionType.PROBATION)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[incarceration_sentence],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.PROBATION)
+
+    def test_get_month_supervision_type_dual(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=self.start_of_next_month_date,
+                                    supervision_type=StateSupervisionType.PAROLE),
+                SupervisionTypeSpan(start_date=self.start_of_next_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=self.start_of_next_month_date,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                SupervisionTypeSpan(start_date=self.start_of_next_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[incarceration_sentence],
+                                             supervision_period=supervision_period)
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.DUAL)
+
+    def test_get_month_supervision_type_dual_ends_mid_month(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        second_to_last_month_date = self.end_of_month_date - datetime.timedelta(days=1)
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=second_to_last_month_date,
+                                    supervision_type=StateSupervisionType.PAROLE),
+                SupervisionTypeSpan(start_date=second_to_last_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                # Probation sentence starts after parole sentence ends
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=second_to_last_month_date,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                SupervisionTypeSpan(start_date=second_to_last_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[incarceration_sentence],
+                                             supervision_period=supervision_period)
+
+        # Assert
+
+        # Even though both sentences are terminated before the last day, we still return DUAL
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.DUAL)
+
+    def test_get_month_supervision_type_sentence_supervision_ends_different_days(self):
+        # Arrange
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1234,
+            external_id='sp1',
+            state_code='US_MO',
+            start_date=(self.end_of_month_date - datetime.timedelta(days=60))
+        )
+
+        mid_month_date = self.end_of_month_date - datetime.timedelta(days=10)
+        second_to_last_month_date = self.end_of_month_date - datetime.timedelta(days=1)
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=second_to_last_month_date,
+                                    supervision_type=StateSupervisionType.PAROLE),
+                SupervisionTypeSpan(start_date=second_to_last_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=supervision_period.start_date
+            ),
+            supervision_type_spans=[
+                # Probation sentence starts after parole sentence ends
+                SupervisionTypeSpan(start_date=supervision_period.start_date,
+                                    end_date=mid_month_date,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                SupervisionTypeSpan(start_date=mid_month_date,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_month_supervision_type(self.end_of_month_date,
+                                             supervision_sentences=[supervision_sentence],
+                                             incarceration_sentences=[incarceration_sentence],
+                                             supervision_period=supervision_period)
+
+        # Assert
+
+        # Since the probation sentence ends before the parole sentence, the last valid supervision type is PAROLE
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.PAROLE)
+
+
+class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(unittest.TestCase):
+    """Unittests for the us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day helper."""
+
+    def setUp(self) -> None:
+        self.upper_bound_date = datetime.date(2018, 10, 10)
+
+    def test_most_recent_supervision_type_no_sentences_no_bound(self):
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_sentences=[],
+                incarceration_sentences=[])
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type, None)
+
+    def test_most_recent_supervision_type_no_sentences_same_day_bound(self):
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=self.upper_bound_date,
+                supervision_sentences=[],
+                incarceration_sentences=[])
+
+        # Assert
+        self.assertEqual(supervision_period_supervision_type, None)
+
+    def test_most_recent_supervision_type_two_sentences_same_transition_day_one_different(self):
+        # Arrange
+
+        start_date = self.upper_bound_date - datetime.timedelta(days=5)
+        transition_date_1 = self.upper_bound_date - datetime.timedelta(days=3)
+        transition_date_2 = self.upper_bound_date - datetime.timedelta(days=1)
+
+        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=start_date,
+                                    end_date=transition_date_2,
+                                    supervision_type=StateSupervisionType.PAROLE),
+                SupervisionTypeSpan(start_date=transition_date_2,
+                                    end_date=None,
+                                    supervision_type=None)
+            ])
+
+        supervision_sentence_1 = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=start_date,
+                                    end_date=transition_date_1,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                SupervisionTypeSpan(start_date=transition_date_1,
+                                    end_date=None,
+                                    supervision_type=None),
+            ])
+
+        supervision_sentence_2 = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                external_id=f'ss1',
+                state_code='US_MO',
+                start_date=start_date
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(start_date=start_date,
+                                    end_date=transition_date_2,
+                                    supervision_type=StateSupervisionType.PROBATION),
+                SupervisionTypeSpan(start_date=transition_date_2,
+                                    end_date=None,
+                                    supervision_type=StateSupervisionType.PAROLE),
+            ])
+
+        # Act
+        supervision_period_supervision_type = \
+            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=self.upper_bound_date,
+                lower_bound_inclusive_date=None,
+                supervision_sentences=[supervision_sentence_1, supervision_sentence_2],
+                incarceration_sentences=[incarceration_sentence])
+
+        # Assert
+
+        # Since the probation sentence ends before the parole sentence, the last valid supervision type is PAROLE
+        self.assertEqual(supervision_period_supervision_type,
+                         StateSupervisionPeriodSupervisionType.PAROLE)

@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationStayEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -182,7 +183,23 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                         )
                     ]
                 ),
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=temp_custody_period.admission_date,
+                        supervision_type=StateSupervisionType.PAROLE
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=temp_custody_period.admission_date,
+                        end_date=revocation_period.admission_date,
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=revocation_period.admission_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         supervision_sentence = \
@@ -192,7 +209,23 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     incarceration_periods=[temp_custody_period, revocation_period],
                     supervision_periods=[supervision_period],
                     start_date=date(2008, 1, 1)),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=temp_custody_period.admission_date,
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=temp_custody_period.admission_date,
+                        end_date=revocation_period.admission_date,
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=revocation_period.admission_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -526,7 +559,13 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                     supervision_periods=[supervision_period],
                     incarceration_periods=[incarceration_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2010, 1, 1),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
             )
 
         incarceration_period.supervision_sentences = [supervision_sentence]
@@ -1134,7 +1173,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                     start_date=date(2010, 1, 1),
                     supervision_periods=[supervision_period],
                     incarceration_periods=[incarceration_period]),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2010, 1, 1),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
             )
         incarceration_sentences = []
 
