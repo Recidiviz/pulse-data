@@ -37,7 +37,8 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state, \
     default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
-    get_pre_incarceration_supervision_type, supervision_period_counts_towards_supervision_population_on_day
+    get_pre_incarceration_supervision_type, supervision_period_counts_towards_supervision_population_on_day, \
+    terminating_supervision_period_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
@@ -403,8 +404,9 @@ def find_supervision_termination_bucket(
             _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
         case_type = _identify_most_severe_case_type(supervision_period)
-        supervision_type = get_month_supervision_type(
-            termination_date, supervision_sentences, incarceration_sentences, supervision_period)
+
+        supervision_type = terminating_supervision_period_supervision_type(
+            supervision_period, supervision_sentences, incarceration_sentences)
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,

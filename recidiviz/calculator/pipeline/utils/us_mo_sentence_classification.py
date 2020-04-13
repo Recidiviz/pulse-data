@@ -18,9 +18,9 @@
 
 import logging
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from enum import Enum, auto
-from typing import Optional, Dict, List, Any, Generic
+from typing import Optional, Dict, List, Any, Generic, Tuple
 
 import attr
 
@@ -245,9 +245,10 @@ class UsMoSentenceStatus(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class _SupervisionTypeSpan:
-    # Sentence supervision type to associate with this time span
-    supervision_type: StateSupervisionType = attr.ib()
+class SupervisionTypeSpan:
+    # Sentence supervision type to associate with this time span, or None if the person was not on supervision at this
+    # time.
+    supervision_type: Optional[StateSupervisionType] = attr.ib()
 
     # First day where the sentence has the given supervision type, inclusive
     start_date: date = attr.ib()
@@ -276,10 +277,10 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         raise ValueError('Must set sentence_statuses')
 
     # Time span objects that represent time spans where a sentence has a given supervision type
-    supervision_type_spans: List[_SupervisionTypeSpan] = attr.ib()
+    supervision_type_spans: List[SupervisionTypeSpan] = attr.ib()
 
     @supervision_type_spans.default
-    def _get_supervision_type_spans(self) -> List[_SupervisionTypeSpan]:
+    def _get_supervision_type_spans(self) -> List[SupervisionTypeSpan]:
         """Generates the time span objects representing the supervision type for this sentence between certain critical
         dates where the type may have changed.
         """
@@ -308,16 +309,34 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
             supervision_type = \
                 self._get_sentence_supervision_type_from_critical_day_statuses(critical_statuses_by_day[critical_day])
-            supervision_type_spans.append(_SupervisionTypeSpan(start_date=start_date,
-                                                               end_date=end_date,
-                                                               supervision_type=supervision_type))
+            supervision_type_spans.append(SupervisionTypeSpan(start_date=start_date,
+                                                              end_date=end_date,
+                                                              supervision_type=supervision_type))
 
         return supervision_type_spans
+
+    @supervision_type_spans.validator
+    def _supervision_type_spans_validator(self,
+                                          _attribute: attr.Attribute,
+                                          supervision_type_spans: List[SupervisionTypeSpan]):
+        if supervision_type_spans is None:
+            raise ValueError('Spans list should not be None')
+
+        if not supervision_type_spans:
+            return
+
+        last_span = supervision_type_spans[-1]
+        if last_span.end_date is not None:
+            raise ValueError('Must end span list with an open span')
+
+        for not_last_span in supervision_type_spans[:-1]:
+            if not_last_span.end_date is None:
+                raise ValueError('Intermediate span must not have None end date')
 
     @staticmethod
     def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]):
         """Given a set of 'supervision type critical' statuses, returns the supervision type for the
-        _SupervisionTypeSpan starting on that day."""
+        SupervisionTypeSpan starting on that day."""
         status_categories_on_day = {
             status.supervision_type_critical_status_category for status in critical_day_statuses}
 
@@ -368,16 +387,10 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
         return critical_day_statuses_filtered[0].supervision_type_status_classification
 
-    def get_sentence_supervision_type_on_day(
-            self,
-            supervision_type_day: date
-    ) -> Optional[StateSupervisionType]:
-        """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
-        has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
-        person on/before a given date.
-        """
-
-        filtered_spans = [span for span in self.supervision_type_spans
+    def _get_overlapping_supervision_type_span_index(self, supervision_type_day: date) -> Optional[int]:
+        """Returns the index of the span in this sentence's supervision_type_spans list that overlaps in time with the
+        provided date, or None if there are no overlapping spans."""
+        filtered_spans = [(i, span) for i, span in enumerate(self.supervision_type_spans)
                           if span.start_date <= supervision_type_day and
                           (span.end_date is None or supervision_type_day < span.end_date)]
 
@@ -387,7 +400,59 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         if len(filtered_spans) > 1:
             raise ValueError("Should have non-overlapping supervision type spans")
 
-        return filtered_spans[0].supervision_type
+        return filtered_spans[0][0]
+
+    def get_sentence_supervision_type_on_day(
+            self,
+            supervision_type_day: date
+    ) -> Optional[StateSupervisionType]:
+        """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
+        has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
+        person on/before a given date.
+        """
+
+        overlapping_span_index = self._get_overlapping_supervision_type_span_index(supervision_type_day)
+
+        if overlapping_span_index is None:
+            return None
+
+        return self.supervision_type_spans[overlapping_span_index].supervision_type
+
+    def get_most_recent_supervision_type_before_upper_bound_day(
+            self,
+            upper_bound_exclusive_date: date,
+            lower_bound_inclusive_date: Optional[date]
+    ) -> Optional[Tuple[date, StateSupervisionType]]:
+        """Finds the most recent nonnull type associated this sentence, preceding the provided date. An optional lower
+        bound may be provided to limit the lookback window.
+
+        Returns a tuple (last valid date of that supervision type span, supervision type).
+        """
+        upper_bound_inclusive_day = upper_bound_exclusive_date - timedelta(days=1)
+        overlapping_span_index = self._get_overlapping_supervision_type_span_index(upper_bound_inclusive_day)
+
+        if overlapping_span_index is None:
+            return None
+
+        while True:
+            span = self.supervision_type_spans[overlapping_span_index]
+
+            last_supervision_type_day_exclusive = \
+                min(upper_bound_exclusive_date, span.end_date) if span.end_date else upper_bound_exclusive_date
+            last_supervision_type_day_inclusive = last_supervision_type_day_exclusive - timedelta(days=1)
+
+            if lower_bound_inclusive_date and last_supervision_type_day_inclusive < lower_bound_inclusive_date:
+                return None
+
+            supervision_type = self.get_sentence_supervision_type_on_day(span.start_date)
+
+            if supervision_type is not None:
+                return last_supervision_type_day_inclusive, supervision_type
+
+            if overlapping_span_index == 0:
+                return None
+
+            overlapping_span_index -= 1
 
 
 @attr.s

@@ -247,6 +247,13 @@ class UsMoSentenceTest(unittest.TestCase):
         self.assertTrue(isinstance(us_mo_sentence, StateIncarcerationSentence))
         self.assertEqual(us_mo_sentence.external_id, sentence.external_id)
 
+
+class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
+    """Tests for UsMoSentence.get_supervision_type_on_day()."""
+
+    def setUp(self) -> None:
+        self.validation_date = datetime.date(year=2019, month=10, day=31)
+
     def test_supervision_type_new_probation(self):
         raw_statuses = [
             {'sentence_external_id': '1345495-20190808-1', 'sentence_status_external_id': '1345495-20190808-1-1',
@@ -560,3 +567,100 @@ class UsMoSentenceTest(unittest.TestCase):
 
         # Actual discharge
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2020, 2, 20)), None)
+
+
+class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
+    """Tests for UsMoSentence.get_most_recent_supervision_type_before_upper_bound_day()."""
+
+    def test_no_statuses(self):
+        raw_statuses = []
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1000044-20100920-1',
+            start_date=datetime.date(year=2012, month=1, day=25)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        # Initial commit day
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2012, 1, 25),
+                                                                                   lower_bound_inclusive_date=None),
+            None)
+
+    def test_no_previous_supervision(self):
+        raw_statuses = [
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-6",
+             "status_code": "10I1000", "status_date": "20120125", "status_description": "New Court Comm-Institution"},
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1000044-20100920-1',
+            start_date=datetime.date(year=2012, month=1, day=25)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        # Initial commit day
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2012, 1, 25),
+                                                                                   lower_bound_inclusive_date=None),
+            None)
+
+    def test_board_hold_revocation(self):
+        raw_statuses = [
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-6",
+             "status_code": "10I1000", "status_date": "20120125", "status_description": "New Court Comm-Institution"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-7",
+             "status_code": "40O1010", "status_date": "20150507", "status_description": "Parole Release"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-9",
+             "status_code": "40I0050", "status_date": "20171108", "status_description": "Board Holdover"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-10",
+             "status_code": "45O0050", "status_date": "20171108", "status_description": "Board Holdover"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-12",
+             "status_code": "50N1010", "status_date": "20171130", "status_description": "Parole Update-Tech Viol"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-13",
+             "status_code": "40O1010", "status_date": "20180330", "status_description": "Parole Release"},
+            {"sentence_external_id": "1000044-20100920-1", "sentence_status_external_id": "1000044-20100920-1-13",
+             "status_code": "95O2010", "status_date": "20190120", "status_description": "Parole Completion"}
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1000044-20100920-1',
+            start_date=datetime.date(year=2012, month=1, day=25)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        # Supervision type BEFORE first day of first stint on Parole is None
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2015, 5, 7),
+                                                                                   lower_bound_inclusive_date=None),
+            None)
+
+        # Supervision type BEFORE second day of first stint on Parole is PAROLE
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2015, 5, 8),
+                                                                                   lower_bound_inclusive_date=None),
+            (datetime.date(2015, 5, 7), StateSupervisionType.PAROLE))
+
+        # Initial Board Holdover day
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2017, 11, 8),
+                                                                                   lower_bound_inclusive_date=None),
+            (datetime.date(2017, 11, 7), StateSupervisionType.PAROLE))
+
+        # Parole Update day
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2017, 11, 30),
+                                                                                   lower_bound_inclusive_date=None),
+            (datetime.date(2017, 11, 7), StateSupervisionType.PAROLE))
+
+        # Second stint on parole
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2018, 3, 31),
+                                                                                   lower_bound_inclusive_date=None),
+            (datetime.date(2018, 3, 30), StateSupervisionType.PAROLE))
+
+        # After sentence completion
+        self.assertEqual(
+            us_mo_sentence.get_most_recent_supervision_type_before_upper_bound_day(datetime.date(2019, 1, 31),
+                                                                                   lower_bound_inclusive_date=None),
+            (datetime.date(2019, 1, 19), StateSupervisionType.PAROLE))

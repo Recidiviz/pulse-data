@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
+from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import \
@@ -855,7 +856,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             state_code='US_MO',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_type=StateSupervisionType.PROBATION
+            supervision_type=StateSupervisionType.PAROLE
         )
 
         temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
@@ -891,7 +892,23 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionType.PROBATION,
                 supervision_periods=[first_supervision_period]
             ),
-            supervision_type=StateSupervisionType.PROBATION
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=first_supervision_period.start_date,
+                    end_date=temporary_custody_period.admission_date,
+                    supervision_type=StateSupervisionType.PAROLE
+                ),
+                SupervisionTypeSpan(
+                    start_date=temporary_custody_period.admission_date,
+                    end_date=revocation_period.admission_date,
+                    supervision_type=None
+                ),
+                SupervisionTypeSpan(
+                    start_date=revocation_period.admission_date,
+                    end_date=None,
+                    supervision_type=None
+                )
+            ]
         )
 
         supervision_sentences = [supervision_sentence]
@@ -908,7 +925,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             DEFAULT_SSVR_AGENT_ASSOCIATIONS, DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        first_supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        first_supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
         expected_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
@@ -2848,7 +2865,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     supervision_periods=[supervision_period],
                     supervision_type=StateSupervisionType.PROBATION
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=supervision_period.termination_date,
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.termination_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         incarceration_sentence = \
@@ -2860,7 +2888,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     completion_date=date(2018, 5, 19),
                     supervision_periods=[supervision_period]
                 ),
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=supervision_period.termination_date,
+                        supervision_type=StateSupervisionType.PAROLE
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.termination_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -3624,11 +3663,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
                     supervision_type=StateSupervisionType.PROBATION,
-                    status=StateSentenceStatus.COMPLETED,
+                    status=StateSentenceStatus.REVOKED,
                     completion_date=date(2018, 5, 19),
                     supervision_periods=[supervision_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=supervision_period.termination_date,
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.termination_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         incarceration_sentence = \
@@ -3639,7 +3689,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=date(2018, 5, 25),
                     incarceration_periods=[incarceration_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=incarceration_period.admission_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         assessments = [assessment]
@@ -3805,7 +3861,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     completion_date=date(2018, 5, 19),
                     supervision_periods=[supervision_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=supervision_period.termination_date,
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.termination_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         incarceration_sentence = \
@@ -3816,7 +3883,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     start_date=date(2018, 5, 25),
                     incarceration_periods=[incarceration_period]
                 ),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=incarceration_period.admission_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
             )
 
         assessments = [assessment]

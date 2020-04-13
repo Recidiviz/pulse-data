@@ -23,7 +23,8 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
-    us_mo_counts_towards_supervision_population_on_day
+    us_mo_counts_towards_supervision_population_on_day, \
+    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod
@@ -141,3 +142,32 @@ def supervision_period_counts_towards_supervision_population_on_day(
 
     return supervision_period.start_date <= day and (
         supervision_period.termination_date is None or day < supervision_period.termination_date)
+
+
+def terminating_supervision_period_supervision_type(
+        supervision_period: StateSupervisionPeriod,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+) -> StateSupervisionPeriodSupervisionType:
+    """Calculates the supervision type that should be associated with a terminated supervision period. In some cases,
+    the supervision period will be terminated long after the person has been incarcerated (e.g. in the case of a board
+    hold, someone might remain assigned to a PO until their parole is revoked), so we do a lookback to see the most
+    recent supervision period supervision type we can associate with this termination.
+    """
+
+    if not supervision_period.termination_date:
+        raise ValueError(f'Expected a terminated supervision period for period '
+                         f'[{supervision_period.supervision_period_id}]')
+
+    if supervision_period.state_code == 'US_MO':
+        supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=supervision_period.termination_date,
+            lower_bound_inclusive_date=supervision_period.start_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences
+        )
+
+        return supervision_type if supervision_type else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+    return get_month_supervision_type_default(
+        supervision_period.termination_date, supervision_sentences, incarceration_sentences, supervision_period)

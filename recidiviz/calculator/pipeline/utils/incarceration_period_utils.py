@@ -103,7 +103,6 @@ def validate_release_data(
             logging.info("No release_reason on intermediate incarceration "
                          "period with id: %d",
                          incarceration_period.incarceration_period_id)
-            # TODO(XXXX): Write tests for this
             incarceration_period.release_reason = StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
         if not incarceration_period.release_date and \
