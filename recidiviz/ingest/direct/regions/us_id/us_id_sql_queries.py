@@ -568,6 +568,40 @@ OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
       ofndr_tst_id
 """
 
+OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
+    # TODO(2999): Integrate PO assignments into supervision query once we have a loss-less table with POs and their 
+    #  assignments through history.
+    SELECT 
+      ofndr_num, 
+      agnt_id,
+      usr_id,
+      name,
+      # TODO(2999): Understand why these agencies don't align.
+      a.agcy_id AS ofndr_agent_agcy,
+      u.agcy_id AS applc_usr_agcy,
+      agnt_strt_dt,
+      end_dt,
+      usr_typ_cd,
+      updt_usr_id,
+      updt_dt,
+      lan_id,
+      st_id_num,
+      body_loc_cd,
+      body_loc_desc,
+      loc_typ_cd,
+      body_loc_cd_id
+    FROM 
+      `{project_id}.us_id_raw_data.ofndr_agnt` a
+    LEFT JOIN 
+      `{project_id}.us_id_raw_data.applc_usr` u
+    ON 
+      (agnt_id = usr_id)
+    LEFT JOIN 
+      `{project_id}.us_id_raw_data.body_loc_cd`
+    USING
+      (body_loc_cd)
+"""
+
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
@@ -581,6 +615,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ('movement_facility_supervision_periods', MOVEMENT_FACILITY_SUPERVISION_PERIODS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports_old', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY),
+        ('ofndr_agnt_applc_usr_body_loc_cd_current_pos_query', OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY),
     ]
 
 

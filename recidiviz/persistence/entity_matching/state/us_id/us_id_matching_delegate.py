@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for US_ID specific entity matching overrides."""
+import logging
 from typing import List, Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
-from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls
+from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls, \
+    add_supervising_officer_to_open_supervision_periods
 
 
 class UsIdMatchingDelegate(BaseStateMatchingDelegate):
@@ -41,3 +43,11 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
         db_persons = read_persons_by_root_entity_cls(
             session, self.region_code, ingested_persons, allowed_root_entity_classes)
         return db_persons
+
+    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
+        """Performs the following ID specific postprocessing on the provided |matched_persons| directly after they have
+        been entity matched:
+            - Moves supervising_officer from StatePerson onto open SupervisionPeriods.
+        """
+        logging.info('[Entity matching] Moving supervising officer onto open supervision periods')
+        add_supervising_officer_to_open_supervision_periods(matched_persons)

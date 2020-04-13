@@ -17,16 +17,14 @@
 
 """Constants related to a StateAgent entity."""
 
-import recidiviz.common.constants.state.enum_canonical_strings as \
-    state_enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
-    CORRECTIONAL_OFFICER = \
-        state_enum_strings.state_agent_correctional_officer
+    CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
     JUDGE = state_enum_strings.state_agent_judge
     PAROLE_BOARD_MEMBER = state_enum_strings.state_agent_parole_board_member
     # A parole/probation officer (PO)
