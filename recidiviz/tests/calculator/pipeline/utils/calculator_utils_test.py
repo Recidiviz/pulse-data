@@ -20,6 +20,7 @@ from datetime import date
 from datetime import datetime
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
+from recidiviz.calculator.pipeline.utils.calculator_utils import add_demographic_characteristics
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
@@ -54,10 +55,9 @@ def test_for_characteristics_races_ethnicities_one_race():
     race_white = StatePersonRace.new_with_defaults(state_code='CA',
                                                    race=Race.WHITE)
 
-    characteristics = {'gender': 'female', 'age': '<25'}
+    characteristics = {'gender': 'female', 'age': '<25', 'race': [race_white.race]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white], [], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'gender': 'female'},
@@ -77,10 +77,9 @@ def test_for_characteristics_races_ethnicities_two_races():
     race_black = StatePersonRace.new_with_defaults(state_code='MT',
                                                    race=Race.BLACK)
 
-    characteristics = {'gender': 'female', 'age': '<25'}
+    characteristics = {'gender': 'female', 'age': '<25', 'race': [race_white.race, race_black.race]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white, race_black], [], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'gender': 'female'},
@@ -103,10 +102,9 @@ def test_for_characteristics_races_ethnicities_one_ethnicity():
         state_code='CA',
         ethnicity=Ethnicity.HISPANIC)
 
-    characteristics = {'gender': 'female', 'age': '<25'}
+    characteristics = {'gender': 'female', 'age': '<25', 'ethnicity': [ethnicity_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [], [ethnicity_hispanic], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'gender': 'female'},
@@ -129,10 +127,10 @@ def test_for_characteristics_races_ethnicities_multiple_ethnicities():
         state_code='FL',
         ethnicity=Ethnicity.NOT_HISPANIC)
 
-    characteristics = {'gender': 'female', 'age': '<25'}
+    characteristics = {'gender': 'female', 'age': '<25',
+                       'ethnicity': [ethnicity_hispanic.ethnicity, ethnicity_not_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [], [ethnicity_hispanic, ethnicity_not_hispanic], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'gender': 'female'},
@@ -161,10 +159,10 @@ def test_for_characteristics_races_ethnicities_one_race_one_ethnicity():
         state_code='CA',
         ethnicity=Ethnicity.HISPANIC)
 
-    characteristics = {'gender': 'female', 'age': '<25'}
+    characteristics = {'gender': 'female', 'age': '<25', 'race': [race_white.race],
+                       'ethnicity': [ethnicity_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white], [ethnicity_hispanic], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'gender': 'female'},
@@ -206,10 +204,10 @@ def test_for_characteristics_races_ethnicities_multiple_races_one_ethnicity():
         state_code='CA',
         ethnicity=Ethnicity.HISPANIC)
 
-    characteristics = {'age': '<25'}
+    characteristics = {'age': '<25', 'race': [race_white.race, race_black.race],
+                       'ethnicity': [ethnicity_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white, race_black], [ethnicity_hispanic], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'age': '<25'},
@@ -242,11 +240,11 @@ def test_for_characteristics_races_ethnicities_one_race_multiple_ethnicities():
         state_code='CA',
         ethnicity=Ethnicity.NOT_HISPANIC)
 
-    characteristics = {'age': '<25'}
+    characteristics = {'age': '<25',
+                       'race': [race_white.race],
+                       'ethnicity': [ethnicity_hispanic.ethnicity, ethnicity_not_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white], [ethnicity_hispanic, ethnicity_not_hispanic],
-        characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'age': '<25'},
@@ -270,8 +268,7 @@ def test_for_characteristics_races_ethnicities_one_race_multiple_ethnicities():
 def test_for_characteristics_races_ethnicities_no_races_or_ethnicities():
     characteristics = {'age': '<25'}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [], [], characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{}, {'age': '<25'}]
 
@@ -291,11 +288,11 @@ def test_for_characteristics_races_ethnicities_multiple_races_and_ethnicities():
         state_code='CA',
         ethnicity=Ethnicity.NOT_HISPANIC)
 
-    characteristics = {'age': '<25'}
+    characteristics = {'age': '<25',
+                       'race': [race_white.race, race_black.race],
+                       'ethnicity': [ethnicity_hispanic.ethnicity, ethnicity_not_hispanic.ethnicity]}
 
-    combinations = calculator_utils.for_characteristics_races_ethnicities(
-        [race_white, race_black], [ethnicity_hispanic, ethnicity_not_hispanic],
-        characteristics)
+    combinations = calculator_utils.for_characteristics_races_ethnicities(characteristics)
 
     assert combinations == [{},
                             {'age': '<25'},
@@ -617,3 +614,115 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
             self.assertEqual(most_severe_violation_type, violation_type)
             self.assertEqual('UNSET', most_severe_violation_type_subtype)
+
+
+ALL_INCLUSIONS_DICT = {
+    'age_bucket': True,
+    'gender': True,
+    'race': True,
+    'ethnicity': True,
+}
+
+
+class TestAddDemographicCharacteristics(unittest.TestCase):
+    """Tests the add_demographic_characteristics function used by all pipelines."""
+    def test_add_demographic_characteristics(self):
+        characteristics = {}
+
+        person = StatePerson.new_with_defaults(
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    race=Race.ASIAN
+                )
+            ])
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = add_demographic_characteristics(characteristics,
+                                                                  person,
+                                                                  ALL_INCLUSIONS_DICT,
+                                                                  event_date)
+
+        expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN], 'gender': Gender.FEMALE}
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    def test_add_demographic_characteristics_MultipleRaces(self):
+        characteristics = {}
+
+        person = StatePerson.new_with_defaults(
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    race=Race.ASIAN
+                ),
+                StatePersonRace.new_with_defaults(
+                    race=Race.BLACK
+                )
+            ])
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = add_demographic_characteristics(characteristics,
+                                                                  person,
+                                                                  ALL_INCLUSIONS_DICT,
+                                                                  event_date)
+
+        expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN, Race.BLACK], 'gender': Gender.FEMALE}
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    def test_add_demographic_characteristics_RaceEthnicity(self):
+        characteristics = {}
+
+        person = StatePerson.new_with_defaults(
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    race=Race.ASIAN
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    ethnicity=Ethnicity.HISPANIC
+                )
+            ])
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = add_demographic_characteristics(characteristics,
+                                                                  person,
+                                                                  ALL_INCLUSIONS_DICT,
+                                                                  event_date)
+
+        expected_output = {
+            'age_bucket': '25-29',
+            'race': [Race.ASIAN],
+            'gender': Gender.FEMALE,
+            'ethnicity': [Ethnicity.HISPANIC]
+        }
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    def test_add_demographic_characteristics_NoAttributes(self):
+        characteristics = {}
+
+        person = StatePerson.new_with_defaults(person_id=12345)
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = add_demographic_characteristics(characteristics,
+                                                                  person,
+                                                                  ALL_INCLUSIONS_DICT,
+                                                                  event_date)
+
+        expected_output = {}
+
+        self.assertEqual(updated_characteristics, expected_output)
