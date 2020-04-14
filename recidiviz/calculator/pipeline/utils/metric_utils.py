@@ -18,14 +18,13 @@
 
 import datetime
 from datetime import date
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, List
 
 from enum import Enum
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Gender, Race, \
-    Ethnicity
+from recidiviz.common.constants.person_characteristics import Gender
 
 
 class MetricMethodologyType(Enum):
@@ -71,11 +70,11 @@ class RecidivizMetric(BuildableAttr):
     # '35-39'
     age_bucket: Optional[str] = attr.ib(default=None)
 
-    # The race of the persons the metric describes
-    race: Optional[Race] = attr.ib(default=None)
+    # A string representation of the race of the persons the metric describes
+    race: Optional[str] = attr.ib(default=None)
 
-    # The ethnicity of the persons the metric describes
-    ethnicity: Optional[Ethnicity] = attr.ib(default=None)
+    # The string representation of the ethnicity of the persons the metric describes
+    ethnicity: Optional[str] = attr.ib(default=None)
 
     # The gender of the persons the metric describes
     gender: Optional[Gender] = attr.ib(default=None)
@@ -131,6 +130,15 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:
             serializable_dict[key] = v.strftime('%Y-%m-%d')
+        elif isinstance(v, List):
+            # These are the only two metric fields that support lists
+            if key in ('race', 'ethnicity'):
+                values = [f"{entry.value}" for entry in v]
+
+                if values:
+                    serializable_dict[key] = ','.join(filter(None, values))
+            else:
+                raise ValueError(f"Unexpected list in metric_key for key: {key}")
         else:
             serializable_dict[key] = v
 
