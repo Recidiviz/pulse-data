@@ -30,10 +30,10 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
-from recidiviz.calculator.pipeline.utils.calculator_utils import age_at_date, \
-    age_bucket, for_characteristics_races_ethnicities, for_characteristics, \
-    last_day_of_month, relevant_metric_periods, augmented_combo_list, get_calculation_month_lower_bound_date, \
-    include_in_monthly_metrics, first_day_of_month, characteristics_with_person_id_fields
+from recidiviz.calculator.pipeline.utils.calculator_utils import for_characteristics_races_ethnicities,\
+    for_characteristics, last_day_of_month, relevant_metric_periods, augmented_combo_list, \
+    get_calculation_month_lower_bound_date, include_in_monthly_metrics, characteristics_with_person_id_fields, \
+    add_demographic_characteristics
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
@@ -180,27 +180,12 @@ def characteristic_combinations(person: StatePerson,
     if incarceration_event.county_of_residence:
         characteristics['county_of_residence'] = incarceration_event.county_of_residence
 
-    if inclusions.get('age_bucket'):
-        start_of_bucket = first_day_of_month(incarceration_event.event_date)
-        entry_age = age_at_date(person, start_of_bucket)
-        entry_age_bucket = age_bucket(entry_age)
-        if entry_age_bucket is not None:
-            characteristics['age_bucket'] = entry_age_bucket
-    if inclusions.get('gender'):
-        if person.gender is not None:
-            characteristics['gender'] = person.gender
-    if person.races or person.ethnicities:
-        if inclusions.get('race'):
-            races = person.races
-        else:
-            races = []
+    event_date = incarceration_event.event_date
 
-        if inclusions.get('ethnicity'):
-            ethnicities = person.ethnicities
-        else:
-            ethnicities = []
+    characteristics = add_demographic_characteristics(characteristics, person, inclusions, event_date)
 
-        all_combinations = for_characteristics_races_ethnicities(races, ethnicities, characteristics)
+    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
+        all_combinations = for_characteristics_races_ethnicities(characteristics)
     else:
         all_combinations = for_characteristics(characteristics)
 

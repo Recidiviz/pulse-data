@@ -1499,13 +1499,13 @@ class MetricGroup:
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
-        race=Race.BLACK, total_releases=1000, recidivated_releases=875,
+        race='BLACK', total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='CA', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
-        ethnicity=Ethnicity.HISPANIC, total_releases=1000,
+        ethnicity='HISPANIC', total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = \

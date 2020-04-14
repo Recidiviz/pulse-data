@@ -2485,12 +2485,14 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         supervision_months = [
             RevocationReturnSupervisionTimeBucket(
                 state_code='CA', year=2015, month=2,
+                revocation_admission_date=date(2015, 2, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
                 source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=True),
             RevocationReturnSupervisionTimeBucket(
                 state_code='CA', year=2015, month=3,
+                revocation_admission_date=date(2015, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
                 source_violation_type=ViolationType.TECHNICAL,
