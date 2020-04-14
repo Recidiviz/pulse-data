@@ -28,6 +28,6 @@ VIEWS_TO_EXCLUDE_FROM_EXPORT: List[bqview.BigQueryView] = \
     reference_views.REF_VIEWS
 
 VIEWS_TO_EXPORT = [
-    view for view in view_manager.VIEWS_TO_UPDATE
+    view for view_list in view_manager.VIEWS_TO_UPDATE.values() for view in view_list
     if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
 ]

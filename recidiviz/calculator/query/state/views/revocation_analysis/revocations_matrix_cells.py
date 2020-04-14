@@ -22,8 +22,7 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_MATRIX_CELLS_VIEW_NAME = 'revocations_matrix_cells'
 
@@ -36,62 +35,25 @@ REVOCATIONS_MATRIX_CELLS_DESCRIPTION = """
 REVOCATIONS_MATRIX_CELLS_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, 
-      violation_type, 
-      reported_violations, 
-      SUM(total_revocations) as total_revocations, 
-      supervision_type, 
-      charge_category, 
-      district, 
-      metric_period_months
-    FROM (
-      SELECT 
+    SELECT
         state_code,
-        CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-          CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-               WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-               ELSE most_severe_violation_type END
-          ELSE most_severe_violation_type
-          END AS violation_type,
-        IF(response_count > 8, 8, response_count) as reported_violations,
-        count as total_revocations, 
-        IFNULL(supervision_type, 'ALL') AS supervision_type,
-        IFNULL(case_type, 'ALL') AS charge_category, 
-        IFNULL(supervising_district_external_id, 'ALL') as district,
+        violation_type, reported_violations,
+        COUNT(DISTINCT person_id) AS total_revocations,
+        supervision_type,
+        charge_category,
+        district,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND response_count IS NOT NULL
-        AND response_count > 0
-        AND most_severe_violation_type IS NOT NULL
-        AND most_severe_violation_type_subtype IS NOT NULL
-        AND most_severe_response_decision IS NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND revocation_type = 'REINCARCERATION'
-        AND source_violation_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-    )
-    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-    GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
-    ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type, charge_category
+    FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
+    WHERE current_month
+        AND reported_violations > 0
+    GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
+        metric_period_months
+    ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type,
+        charge_category
     """.format(
         description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
         )
 
 REVOCATIONS_MATRIX_CELLS_VIEW = bqview.BigQueryView(

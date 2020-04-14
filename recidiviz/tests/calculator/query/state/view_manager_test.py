@@ -50,16 +50,12 @@ class ViewManagerTest(unittest.TestCase):
             'recidiviz.calculator.query.state.view_manager.bq_utils.client')
         self.mock_client = self.client_patcher.start().return_value
 
-
     def tearDown(self):
         self.bq_utils_patcher.stop()
         self.client_patcher.stop()
 
-
     def test_create_dataset_and_update_views(self):
-        """Test that create_dataset_and_update_views creates a dataset
-            if necessary, and updates all views.
-        """
+        """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
         self.mock_client.dataset.return_value = self.mock_dataset
 
         # Note: This is a hack because view_manager imports global code that
@@ -70,13 +66,9 @@ class ViewManagerTest(unittest.TestCase):
         # pylint: disable=import-outside-toplevel
         from recidiviz.calculator.query.state import view_manager
 
-        view_manager.create_dataset_and_update_views(
-            self.mock_view_dataset_name,
-            self.mock_views
-        )
+        view_manager.create_dataset_and_update_views({self.mock_view_dataset_name: self.mock_views})
 
-        self.mock_bq_utils.create_dataset_if_necessary.assert_called_with(
-            self.mock_dataset)
+        self.mock_bq_utils.create_dataset_if_necessary.assert_called_with(self.mock_dataset)
 
         self.mock_bq_utils.create_or_update_view.assert_has_calls(
             [mock.call(self.mock_dataset, view) for view in self.mock_views]

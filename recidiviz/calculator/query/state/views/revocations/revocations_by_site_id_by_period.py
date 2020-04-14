@@ -23,7 +23,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW_NAME = 'revocations_by_site_id_by_period'
 
@@ -55,7 +55,7 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY = \
         supervising_district_external_id,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
@@ -90,7 +90,7 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY = \
         supervising_district_external_id,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
@@ -118,7 +118,7 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY = \
         description=REVOCATIONS_BY_SITE_ID_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
     )
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW = bqview.BigQueryView(

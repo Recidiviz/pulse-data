@@ -36,14 +36,10 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.mock_project_id, self.mock_dataset_name)
 
-        self.client_patcher = mock.patch(
-            'recidiviz.calculator.query.state.dashboard_export_manager.bq_utils.client')
+        self.client_patcher = mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.bq_utils.client')
         self.mock_client = self.client_patcher.start().return_value
 
-        self.mock_view = bqview.BigQueryView(
-            view_id='test_view',
-            view_query='SELECT NULL LIMIT 0'
-        )
+        self.mock_view = bqview.BigQueryView(view_id='test_view', view_query='SELECT NULL LIMIT 0')
 
         views_to_export = [self.mock_view]
         dashboard_export_config_values = {
@@ -55,9 +51,9 @@ class DashboardExportManagerTest(unittest.TestCase):
             **dashboard_export_config_values)
         self.mock_export_config = self.dashboard_export_config_patcher.start()
 
-
+        views_to_update = {self.mock_dataset_name: views_to_export}
         view_manager_config_values = {
-            'VIEWS_TO_UPDATE': views_to_export
+            'VIEWS_TO_UPDATE': views_to_update
         }
         self.view_manager_config_patcher = mock.patch(
             'recidiviz.calculator.query.state.dashboard_export_manager.view_manager',
@@ -70,21 +66,16 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.dashboard_export_config_patcher.stop()
         self.view_manager_config_patcher.stop()
 
-    @mock.patch(
-        'recidiviz.calculator.query.state.dashboard_export_manager.view_config')
+    @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.view_config')
     def test_export_dashboard_data_to_cloud_storage(self, mock_view_config):
-        """Tests that both _export_views_to_table and
-        _export_view_tables_to_cloud_storage are executed.
-        """
-        dashboard_export_manager.export_dashboard_data_to_cloud_storage(
-            bucket='bucket'
-        )
+        """Tests that both _export_views_to_table and _export_view_tables_to_cloud_storage are executed."""
+        dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket='bucket')
 
         mock_view_config.DASHBOARD_VIEWS_DATASET.return_value = 'dataset'
 
-        self.mock_view_manager.create_dataset_and_update_views. \
-            assert_called_with(mock_view_config.DASHBOARD_VIEWS_DATASET,
-                               self.mock_view_manager.VIEWS_TO_UPDATE)
+        self.mock_view_manager.create_dataset_and_update_views.assert_called_with(
+            self.mock_view_manager.VIEWS_TO_UPDATE
+        )
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
 

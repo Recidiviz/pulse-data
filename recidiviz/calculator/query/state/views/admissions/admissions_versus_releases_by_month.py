@@ -23,7 +23,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME = \
     'admissions_versus_releases_by_month'
@@ -46,7 +46,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         IFNULL(county_of_residence, 'ALL') AS district,
         SUM(count) AS admission_count
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -72,7 +72,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         IFNULL(county_of_residence, 'ALL') AS district,
         SUM(count) AS release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -99,7 +99,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND metric_period_months = 1
@@ -124,7 +124,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
 """.format(
         description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
         metrics_dataset=METRICS_DATASET,
     )
 

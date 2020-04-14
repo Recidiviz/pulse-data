@@ -22,7 +22,7 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'case_terminations_by_type_by_month'
 
@@ -31,7 +31,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
 """
 
 
-def _get_query_prep_statement(project_id, views_dataset):
+def _get_query_prep_statement(project_id, reference_dataset):
     """Return the Common Table Expression used to gather the termination case data"""
     return """
         -- Gather supervision period case termination data
@@ -45,7 +45,7 @@ def _get_query_prep_statement(project_id, views_dataset):
             agent.district_external_id AS district,
             agent.agent_external_id AS officer_external_id
           FROM `{project_id}.state.state_supervision_period` supervision_period
-          LEFT JOIN `{project_id}.{views_dataset}.supervision_period_to_agent_association` agent
+          LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id)
           WHERE termination_date IS NOT NULL
         ),
@@ -74,7 +74,7 @@ def _get_query_prep_statement(project_id, views_dataset):
             officer_external_id
           FROM case_terminations
         )
-    """.format(project_id=project_id, views_dataset=views_dataset)
+    """.format(project_id=project_id, reference_dataset=reference_dataset)
 
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
@@ -115,7 +115,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
     ORDER BY state_code, year, month, supervision_type, district
     """.format(
         description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
-        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET)
+        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET)
     )
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW = bqview.BigQueryView(

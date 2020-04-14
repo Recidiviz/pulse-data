@@ -21,7 +21,7 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 
 AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_NAME = 'avg_days_at_liberty_by_month'
@@ -38,7 +38,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
       returns, 
       avg_liberty
     FROM `{project_id}.{metrics_dataset}.recidivism_liberty_metrics`
-    JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
       USING (state_code, job_id)
     WHERE methodology = 'PERSON'
       AND age_bucket IS NULL
@@ -61,7 +61,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
         description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
     )
 
 AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW = bqview.BigQueryView(

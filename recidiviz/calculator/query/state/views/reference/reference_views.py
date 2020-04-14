@@ -26,6 +26,10 @@ from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association 
     SSVR_TO_AGENT_ASSOCIATION_VIEW
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW
+from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import \
+    REVOCATIONS_MATRIX_BY_PERSON_VIEW
+from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import \
+    SUPERVISION_MATRIX_BY_PERSON_VIEW
 
 REF_VIEWS = [
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW,
@@ -33,5 +37,7 @@ REF_VIEWS = [
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW,
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW,
+    REVOCATIONS_MATRIX_BY_PERSON_VIEW,
+    SUPERVISION_MATRIX_BY_PERSON_VIEW,
     US_MO_SENTENCE_STATUSES_VIEW,
 ]

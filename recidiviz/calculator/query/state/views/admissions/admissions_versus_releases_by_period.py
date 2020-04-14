@@ -25,7 +25,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME = \
     'admissions_versus_releases_by_period'
@@ -50,7 +50,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         IFNULL(county_of_residence, 'ALL') AS district,
         SUM(count) as admission_count
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
@@ -77,7 +77,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         IFNULL(county_of_residence, 'ALL') AS district,
         SUM(count) as release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND release_reason IS NULL
@@ -102,7 +102,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
         UNNEST([1,3,6,12,36]) AS metric_period_months
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
@@ -127,7 +127,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
     )
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW = bqview.BigQueryView(

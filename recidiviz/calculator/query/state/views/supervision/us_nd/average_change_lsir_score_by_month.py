@@ -27,7 +27,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME = 'average_change_lsir_score_by_month'
 
@@ -46,7 +46,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
       IFNULL(supervision_type, 'ALL') as supervision_type, 
       IFNULL(supervising_district_external_id, 'ALL') as district
     FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`
-    JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
       USING (state_code, job_id, year, month, metric_period_months)
     WHERE methodology = 'PERSON'
       AND metric_period_months = 1
@@ -70,7 +70,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
         description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
     )
 
 AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW = bqview.BigQueryView(

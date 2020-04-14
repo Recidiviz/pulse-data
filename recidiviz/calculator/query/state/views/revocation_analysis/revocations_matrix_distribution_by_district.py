@@ -22,18 +22,16 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW_NAME = 'revocations_matrix_distribution_by_district'
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_DESCRIPTION = """
  Revocations matrix of violation response count and most severe violation by district and metric period month.
- This counts all individuals admitted to prison for a revocation of probation or parole, broken down by number of 
- violations leading up to the revocation, the most severe violation, the supervision district, and the metric period. 
+ This counts all individuals admitted to prison for a revocation of supervision, broken down by number of
+ violations leading up to the revocation, the most severe violation, the supervision district, and the metric period.
  """
 
-# TODO(2853): Handle unset violation type in the calc step
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY = \
     """
     /*{description}*/
@@ -49,187 +47,41 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY = \
       metric_period_months
     FROM (
       SELECT
-        state_code, 
-        IFNULL(violation_type, 'NO_VIOLATIONS') AS violation_type,
-        reported_violations,
-        CASE WHEN reported_violations > 0 AND violation_type IS NULL
-             THEN total_supervision_count - IFNULL(response_with_violations, 0)
-             ELSE total_supervision_count END AS total_supervision_count,
-        supervision_type,
-        charge_category,
-        district,
-        metric_period_months    
-      FROM (
-        SELECT
-          state_code,
-          CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-            CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-                 WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-                 ELSE most_severe_violation_type END
-            ELSE most_severe_violation_type
-            END AS violation_type,
-          IF(response_count > 8, 8, response_count) as reported_violations,
-          IFNULL(supervision_type, 'ALL') AS supervision_type,
-          IFNULL(case_type, 'ALL') AS charge_category, 
-          IFNULL(supervising_district_external_id, 'ALL') as district,
-          metric_period_months,
-          SUM(count) AS total_supervision_count
-        FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id, year, month, metric_period_months)
-        WHERE methodology = 'PERSON'
-          AND response_count IS NOT NULL
-          AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
-          AND most_severe_violation_type_subtype IS NOT NULL
-          AND assessment_score_bucket IS NULL
-          AND assessment_type IS NULL
-          AND supervising_officer_external_id IS NULL
-          AND age_bucket IS NULL
-          AND race IS NULL
-          AND ethnicity IS NULL
-          AND gender IS NULL
-          AND person_id IS NULL
-          AND person_external_id IS NULL
-          AND supervision_level IS NULL
-          AND supervision_level_raw_text IS NULL
-          AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-          AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-          AND job.metric_type = 'SUPERVISION_POPULATION'
-        GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
-          metric_period_months
-      )
-      LEFT JOIN (
-        SELECT
-          state_code, metric_period_months,
-          IF(response_count > 8, 8, response_count) as reported_violations,
-          IFNULL(supervision_type, 'ALL') AS supervision_type,
-          IFNULL(case_type, 'ALL') AS charge_category, 
-          IFNULL(supervising_district_external_id, 'ALL') as district,
-          SUM(count) AS response_with_violations
-        FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id, year, month, metric_period_months)
-        WHERE methodology = 'PERSON'
-          -- SUM the total number of people with a response and violations per category
-          AND response_count IS NOT NULL
-          AND most_severe_violation_type IS NOT NULL
-          AND most_severe_violation_type_subtype = 'UNSET'
-          AND assessment_score_bucket IS NULL
-          AND assessment_type IS NULL
-          AND supervising_officer_external_id IS NULL
-          AND age_bucket IS NULL
-          AND race IS NULL
-          AND ethnicity IS NULL
-          AND gender IS NULL
-          AND person_id IS NULL
-          AND person_external_id IS NULL
-          AND supervision_level IS NULL
-          AND supervision_level_raw_text IS NULL
-          AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-          AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-          AND job.metric_type = 'SUPERVISION_POPULATION'
-        GROUP BY state_code, reported_violations, supervision_type, charge_category, district, metric_period_months
-      ) supervision_response_with_violation
-      USING (state_code, metric_period_months, reported_violations, supervision_type, charge_category, district)
-    ) pop
-    LEFT JOIN (
-      SELECT
         state_code,
-        IFNULL(violation_type, 'NO_VIOLATIONS') AS violation_type,
+        violation_type,
         reported_violations,
-        CASE WHEN reported_violations > 0 AND violation_type IS NULL
-             THEN total_revocations - IFNULL(response_with_violations, 0)
-             ELSE total_revocations END as population_count,
+        COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         charge_category,
         district,
         metric_period_months
-      FROM (
-        SELECT
-          state_code,
-          CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-            CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-                 WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-                 ELSE most_severe_violation_type END
-            ELSE most_severe_violation_type
-            END AS violation_type,
-          IF(response_count > 8, 8, response_count) as reported_violations,
-          IFNULL(supervision_type, 'ALL') AS supervision_type,
-          IFNULL(case_type, 'ALL') AS charge_category,
-          IFNULL(supervising_district_external_id, 'ALL') as district,
-          metric_period_months,
-          SUM(count) as total_revocations
-        FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id, year, month, metric_period_months)
-        WHERE methodology = 'PERSON'
-          AND response_count IS NOT NULL
-          AND (most_severe_violation_type IS NOT NULL OR most_severe_violation_type_subtype = 'UNSET')
-          AND most_severe_violation_type_subtype IS NOT NULL
-          AND most_severe_response_decision IS NULL
-          AND assessment_score_bucket IS NULL
-          AND assessment_type IS NULL
-          AND revocation_type = 'REINCARCERATION'
-          AND source_violation_type IS NULL
-          AND supervising_officer_external_id IS NULL
-          AND age_bucket IS NULL
-          AND race IS NULL
-          AND ethnicity IS NULL
-          AND gender IS NULL
-          AND person_id IS NULL
-          AND person_external_id IS NULL
-          AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-          AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-          AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-        GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
-          metric_period_months
-      )
-      LEFT JOIN (
-        SELECT
-          state_code, metric_period_months,
-          IF(response_count > 8, 8, response_count) as reported_violations,
-          IFNULL(supervision_type, 'ALL') AS supervision_type,
-          IFNULL(case_type, 'ALL') AS charge_category,
-          IFNULL(supervising_district_external_id, 'ALL') as district,
-          SUM(count) AS response_with_violations
-        FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-        JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
-          USING (state_code, job_id, year, month, metric_period_months)
-        WHERE methodology = 'PERSON'
-          -- SUM the total number of people with a response and violations per category
-          AND response_count IS NOT NULL
-          AND most_severe_violation_type IS NOT NULL 
-          AND most_severe_violation_type_subtype = 'UNSET'
-          AND most_severe_response_decision IS NULL
-          AND assessment_score_bucket IS NULL
-          AND assessment_type IS NULL
-          AND revocation_type = 'REINCARCERATION'
-          AND source_violation_type IS NULL
-          AND supervising_officer_external_id IS NULL
-          AND age_bucket IS NULL
-          AND race IS NULL
-          AND ethnicity IS NULL
-          AND gender IS NULL
-          AND person_id IS NULL
-          AND person_external_id IS NULL
-          AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-          AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-          AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-        GROUP BY state_code, reported_violations, supervision_type, charge_category, district, metric_period_months
-      ) revocation_response_with_violation
-      USING (state_code, metric_period_months, reported_violations, supervision_type, charge_category, district)
+      FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
+      WHERE current_month
+      GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
+    ) pop
+    LEFT JOIN (
+      SELECT
+        state_code,
+        violation_type,
+        reported_violations,
+        COUNT(DISTINCT person_id) as population_count,
+        supervision_type,
+        charge_category,
+        district,
+        metric_period_months
+      FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
+      WHERE current_month
+      GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
     ) rev
     USING (state_code, violation_type, reported_violations, supervision_type, charge_category, district, 
       metric_period_months)
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-      AND total_supervision_count > 0
     ORDER BY state_code, district, supervision_type, metric_period_months, violation_type, reported_violations,
       charge_category
     """.format(
         description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
         )
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW = bqview.BigQueryView(
