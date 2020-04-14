@@ -21,7 +21,7 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 
 REINCARCERATIONS_BY_MONTH_VIEW_NAME = 'reincarcerations_by_month'
@@ -41,7 +41,7 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         IFNULL(county_of_residence, 'ALL') AS district,
         SUM(count) as total_admissions
       FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND facility IS NULL
@@ -70,7 +70,7 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         month,
         returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND age_bucket IS NULL
@@ -95,7 +95,7 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
         )
 
 REINCARCERATIONS_BY_MONTH_VIEW = bqview.BigQueryView(
