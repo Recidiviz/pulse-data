@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_
     _get_query_prep_statement
 
 PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'case_terminations_by_type_by_officer_by_period'
 
@@ -75,7 +75,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
     ORDER BY state_code, supervision_type, district, officer_external_id, metric_period_months
     """.format(
         description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
-        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET)
+        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET)
     )
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = bqview.BigQueryView(

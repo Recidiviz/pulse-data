@@ -38,8 +38,7 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
     Args:
         bucket: The cloud storage location where the exported data should go.
     """
-    view_manager.create_dataset_and_update_views(
-        view_config.DASHBOARD_VIEWS_DATASET, view_manager.VIEWS_TO_UPDATE)
+    view_manager.create_dataset_and_update_views(view_manager.VIEWS_TO_UPDATE)
 
     dataset_ref = bq_utils.client().dataset(view_config.DASHBOARD_VIEWS_DATASET)
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT

@@ -24,7 +24,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 FTR_REFERRALS_BY_MONTH_VIEW_NAME = \
     'ftr_referrals_by_month'
@@ -51,7 +51,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         IFNULL(supervision_type, 'ALL') AS supervision_type, 
         IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id 
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
@@ -80,7 +80,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         IFNULL(supervision_type, 'ALL') AS supervision_type, 
         IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id  
       FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
-      JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
         AND month IS NOT NULL
@@ -106,7 +106,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
     )
 
 FTR_REFERRALS_BY_MONTH_VIEW = bqview.BigQueryView(

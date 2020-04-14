@@ -23,7 +23,7 @@ from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME = 'revocations_matrix_distribution_by_violation'
 
@@ -69,10 +69,11 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         SUM(IF(violation_count_type = 'WEA', count, 0)) AS weapon_count,
         SUM(IF(violation_count_type = 'VIOLATION', count, 0)) AS violation_count
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`
-    JOIN `{project_id}.{views_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
     WHERE (supervision_type IS NULL OR supervision_type IN ('DUAL', 'PAROLE', 'PROBATION'))
         AND revocation_type = 'REINCARCERATION'
+        AND methodology = 'PERSON'
         AND assessment_score_bucket IS NULL
         AND assessment_type IS NULL
         AND supervising_officer_external_id IS NULL
@@ -93,7 +94,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        views_dataset=VIEWS_DATASET,
+        reference_dataset=REFERENCE_DATASET,
         )
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW = bqview.BigQueryView(
