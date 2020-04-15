@@ -377,7 +377,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'Diversion Instrument'  # One record with this entry in DB.
         ],
         StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING: [
-            'Community Supervision Screening Tool - 9 Item'
+            'Community Supervision Screening Tool - 9 Items'
         ],
         StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: [
             'Community Supervision Tool'
