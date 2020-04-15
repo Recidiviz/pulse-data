@@ -548,7 +548,10 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeri
         '65O2015',  # Court Probation Suspension
         '65O3015',  # Court Parole Suspension
     ],
-
+    StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE: [
+        '75O3000',  # MO Field-Interstate Transfer
+        '75O3010'   # MO Board-Interstate Transfer
+    ]
 }
 
 
@@ -651,6 +654,10 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriod
         # these statuses as the primary status, it means a new investigation happened to open up on the same day as a
         # person transferred POs and we want to still count that as a transfer.
         *INVESTIGATION_START_STATUSES
+    ],
+    StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
+        '75I3000',  # MO Field-Interstate Returned
+        '75I3010'  # MO Board-Interstate Returned
     ]
 }
 
