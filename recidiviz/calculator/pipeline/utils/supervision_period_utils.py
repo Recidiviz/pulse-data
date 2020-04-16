@@ -24,9 +24,9 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
-# The number of days for the window of time prior to a revocation return in which we look for a terminated supervision
+# The number of months for the window of time prior to a revocation return in which we look for a terminated supervision
 # period to attribute the revocation to
-SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT = 30
+SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
 
 def _get_relevant_supervision_periods_before_admission_date(
@@ -48,7 +48,7 @@ def _get_relevant_supervision_periods_before_admission_date(
         # |SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT|, find the most recently terminated supervision period.
         most_recent_supervision_period = \
             _find_last_supervision_period_terminated_before_date(
-                admission_date, supervision_periods, SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT)
+                admission_date, supervision_periods, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
 
         if most_recent_supervision_period:
             relevant_periods.append(most_recent_supervision_period)
@@ -58,13 +58,13 @@ def _get_relevant_supervision_periods_before_admission_date(
 
 def _find_last_supervision_period_terminated_before_date(
         upper_bound_date: date, supervision_periods: List[StateSupervisionPeriod],
-        maximum_days_proximity=SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT) -> Optional[StateSupervisionPeriod]:
+        maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT) -> Optional[StateSupervisionPeriod]:
     """Looks for the supervision period that ended most recently before the upper_bound_date, within the
-    day window defined by |maximum_days_proximity|.
+    month window defined by |maximum_months_proximity|.
 
     If no terminated supervision period is found before the upper_bound_date, returns None.
     """
-    termination_date_cutoff = upper_bound_date - relativedelta(days=maximum_days_proximity)
+    termination_date_cutoff = upper_bound_date - relativedelta(months=maximum_months_proximity)
 
     previous_periods = [
         supervision_period for supervision_period in supervision_periods

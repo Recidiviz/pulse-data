@@ -23,7 +23,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    _find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT
+    _find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -78,7 +78,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         # Set the admission date to be 1 day after the cut-off for how close a supervision period termination has to be
         # to a revocation admission to be counted as a proximal supervision period
         admission_date = (supervision_period_recent.termination_date +
-                          relativedelta(days=SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT)
+                          relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
                           + relativedelta(days=1))
 
         most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
@@ -101,7 +101,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         # Set the admission date to be on the last day of the cut-off for how close a supervision period termination
         # has to be to a revocation admission to be counted as a proximal supervision period
         admission_date = (supervision_period_recent.termination_date +
-                          relativedelta(days=SUPERVISION_PERIOD_PROXIMITY_DAY_LIMIT))
+                          relativedelta(days=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT))
 
         most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
             upper_bound_date=admission_date,
