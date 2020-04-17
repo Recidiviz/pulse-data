@@ -21,9 +21,9 @@ from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
+from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
-    us_mo_counts_towards_supervision_population_on_day, \
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
@@ -119,29 +119,31 @@ def get_pre_incarceration_supervision_type(
     return get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
 
 
-def supervision_period_counts_towards_supervision_population_on_day(
-        day: datetime.date,
-        state_code: str,
+def supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
+        date_range: TimeRange,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_period: Optional[StateSupervisionPeriod]) -> bool:
-    """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
-    population on the provided |day| date.
+        supervision_period: StateSupervisionPeriod) -> bool:
+    """ Returns False if there is state-specific information to indicate that the supervision period should not count
+    towards the supervision population in a range. Returns True if either there is a state-specific check that indicates
+    that the supervision period should count or if there is no state-specific check to perform.
     """
 
-    if state_code == 'US_MO':
-        return us_mo_counts_towards_supervision_population_on_day(day,
-                                                                  supervision_sentences,
-                                                                  incarceration_sentences)
+    if supervision_period.state_code == 'US_MO':
+        sp_range = TimeRange.for_supervision_period(supervision_period)
+        overlapping_range = TimeRangeDiff(range_1=date_range, range_2=sp_range).overlapping_range
 
-    if not supervision_period:
-        return False
+        if not overlapping_range:
+            return False
 
-    if not supervision_period.start_date:
-        raise ValueError(f'Expected start date for period {supervision_period.supervision_period_id}, found None')
+        return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=overlapping_range.upper_bound_exclusive_date,
+            lower_bound_inclusive_date=overlapping_range.lower_bound_inclusive_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences
+        ) is not None
 
-    return supervision_period.start_date <= day and (
-        supervision_period.termination_date is None or day < supervision_period.termination_date)
+    return True
 
 
 def terminating_supervision_period_supervision_type(
