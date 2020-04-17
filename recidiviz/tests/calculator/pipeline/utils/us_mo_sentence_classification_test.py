@@ -63,8 +63,7 @@ class UsMoSentenceStatusTest(unittest.TestCase):
                              is_sentence_termimination_status=False,
                              is_investigation_status=False,
                              is_lifetime_supervision_start_status=False,
-                             is_supervision_type_critical_status=False,
-                             supervision_type_critical_status_category=None))
+                             is_supervision_type_critical_status=False))
 
         self.assertEqual(output.person_external_id, '1000038')
 
@@ -301,6 +300,49 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
                          StateSupervisionType.PROBATION)
 
+    def test_supervision_type_conditional_release_cr(self):
+        raw_statuses = [
+            {"sentence_external_id": "505542-20120927-1", "sentence_status_external_id": "505542-20120927-1-1",
+             "status_code": "15I1000", "status_date": "20150808", "status_description": "New Court Probation"},
+            {"sentence_external_id": "505542-20120927-1", "sentence_status_external_id": "505542-20120927-1-11",
+             "status_code": "40I2300", "status_date": "20151105", "status_description": "Prob Rev Ret-Technical"},
+            {"sentence_external_id": "505542-20120927-1", "sentence_status_external_id": "505542-20120927-1-12",
+             "status_code": "45O2000", "status_date": "20151105", "status_description": "Prob Rev-Technical"},
+            {"sentence_external_id": "505542-20120927-1", "sentence_status_external_id": "505542-20120927-1-13",
+             "status_code": "40O3020", "status_date": "20180527", "status_description": "CR To Custody/Detainer"}
+            ]
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='505542-20120927-1',
+            start_date=datetime.date(year=2015, month=8, day=8)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
+
+    def test_supervision_type_board_holdover_release(self):
+        raw_statuses = [
+            {"sentence_external_id": "1333144-20180912-1", "sentence_status_external_id": "1333144-20180912-1-1",
+             "status_code": "10I1000", "status_date": "20180912", "status_description": "New Court Comm-Institution"},
+            {"sentence_external_id": "1333144-20180912-1", "sentence_status_external_id": "1333144-20180912-1-2",
+             "status_code": "40O1010", "status_date": "20190131", "status_description": "Parole Release"},
+            {"sentence_external_id": "1333144-20180912-1", "sentence_status_external_id": "1333144-20180912-1-5",
+             "status_code": "45O0050", "status_date": "20191003", "status_description": "Board Holdover"},
+            {"sentence_external_id": "1333144-20180912-1", "sentence_status_external_id": "1333144-20180912-1-4",
+             "status_code": "40I0050", "status_date": "20191003", "status_description": "Board Holdover"},
+            {"sentence_external_id": "1333144-20180912-1", "sentence_status_external_id": "1333144-20180912-1-7",
+             "status_code": "40O0050", "status_date": "20191029", "status_description": "Board Holdover Release"}
+        ]
+
+        base_sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id='1333144-20180912-1',
+            start_date=datetime.date(year=2018, month=9, day=12)
+        )
+        us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
+
     def test_supervision_type_lifetime_supervision(self):
         raw_statuses = [
             {'sentence_external_id': '13252-20160627-1', 'sentence_status_external_id': '13252-20160627-1-1',
@@ -437,6 +479,23 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
                          StateSupervisionType.PROBATION)
 
+    def test_interstate_compact_parole_classified_as_probation_2(self):
+        raw_statuses = [
+            {"sentence_external_id": "1269010-20140403-1", "sentence_status_external_id": "1269010-20140403-1-1",
+             "status_code": "10I4000", "status_date": "20140403", "status_description": "New Interstate Compact-Inst"},
+            {"sentence_external_id": "1269010-20140403-1", "sentence_status_external_id": "1269010-20140403-1-2",
+             "status_code": "40O7400", "status_date": "20151118", "status_description": "IS Compact Parole to Missouri"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1269010-20140403-1',
+            start_date=datetime.date(year=2014, month=4, day=3)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
     def test_probation_starts_same_day_as_new_investigation(self):
         raw_statuses = [
             {'sentence_external_id': '1344336-20190703-1', 'sentence_status_external_id': '1344336-20190703-1-1',
@@ -567,6 +626,189 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 
         # Actual discharge
         self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(datetime.date(2020, 2, 20)), None)
+
+    def test_release_to_field_other_sentence_lookback(self):
+        raw_statuses = [
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-26",
+             "status_code": "35I1000", "status_date": "20180716", "status_description": "Court Probation-Revisit"},
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-28",
+             "status_code": "40I7000", "status_date": "20180716",
+             "status_description": "Field Supv to DAI-Oth Sentence"},
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-30",
+             "status_code": "40O7000", "status_date": "20180816", "status_description": "Rel to Field-DAI Other Sent"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1343861-20190620-2',
+            start_date=datetime.date(year=2019, month=7, day=10)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
+    def test_release_to_field_statuses_cancel_each_other_out(self):
+        raw_statuses = [
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-26",
+             "status_code": "35I1000", "status_date": "20180716", "status_description": "Court Probation-Revisit"},
+            # These three statuses below all happened in the same day and represent a commitment and
+            # release to supervision.
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-28",
+             "status_code": "40I7000", "status_date": "20180716",
+             "status_description": "Field Supv to DAI-Oth Sentence"},
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-29",
+             "status_code": "45O7000", "status_date": "20180716", "status_description": "Field to DAI-Other Sentence"},
+            {"sentence_external_id": "1061945-20030505-7", "sentence_status_external_id": "1061945-20030505-7-30",
+             "status_code": "40O7000", "status_date": "20180716", "status_description": "Rel to Field-DAI Other Sent"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1343861-20190620-2',
+            start_date=datetime.date(year=2019, month=7, day=10)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
+    def test_interstate_transfer_not_on_supervision(self):
+        raw_statuses = [
+            {"sentence_external_id": "1343861-20190620-2", "sentence_status_external_id": "1343861-20190620-2-2",
+             "status_code": "25I1000", "status_date": "20190710", "status_description": "Court Probation-Addl Charge"},
+            {"sentence_external_id": "1343861-20190620-2", "sentence_status_external_id": "1343861-20190620-2-3",
+             "status_code": "75O3000", "status_date": "20190814", "status_description": "MO Field-Interstate Transfer"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1343861-20190620-2',
+            start_date=datetime.date(year=2019, month=7, day=10)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         None)
+
+    def test_interstate_transfer_same_day_as_new_charge(self):
+        raw_statuses = [
+            {"sentence_external_id": "1343861-20190620-2", "sentence_status_external_id": "1343861-20190620-2-2",
+             "status_code": "25I1000", "status_date": "20190710", "status_description": "Court Probation-Addl Charge"},
+            {"sentence_external_id": "1343861-20190620-2", "sentence_status_external_id": "1343861-20190620-2-3",
+             "status_code": "75O3000", "status_date": "20190710", "status_description": "MO Field-Interstate Transfer"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1343861-20190620-2',
+            start_date=datetime.date(year=2019, month=7, day=10)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         None)
+
+    def test_probation_reinstated_on_validation_date(self):
+        raw_statuses = [
+            {"sentence_external_id": "1313746-20170505-1", "sentence_status_external_id": "1313746-20170505-1-1",
+             "status_code": "15I1000", "status_date": "20170505", "status_description": "New Court Probation"},
+            {"sentence_external_id": "1313746-20170505-1", "sentence_status_external_id": "1313746-20170505-1-2",
+             "status_code": "65O2015", "status_date": "20191001", "status_description": "Court Probation Suspension"},
+            {"sentence_external_id": "1313746-20170505-1", "sentence_status_external_id": "1313746-20170505-1-3",
+             "status_code": "65I2015", "status_date": "20191031", "status_description": "Court Probation Reinstated"},
+            {"sentence_external_id": "1313746-20170505-1", "sentence_status_external_id": "1313746-20170505-1-4",
+             "status_code": "99O1011", "status_date": "20200201",
+             "status_description": "Ct Prob ECC Disc-CONFIDENTIAL"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1343861-20190620-2',
+            start_date=datetime.date(year=2017, month=5, day=5)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
+    def test_conditional_release(self):
+        raw_statuses = [
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-18",
+             "status_code": "20I1000", "status_date": "20130603",
+             "status_description": "Court Comm-Inst-Addl Charge"},
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-21",
+             "status_code": "40O3010", "status_date": "20180525", "status_description": "Conditional Release"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1123534-20041220-5',
+            start_date=datetime.date(year=2013, month=6, day=3)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
+
+    def test_conditional_re_release(self):
+        raw_statuses = [
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-18",
+             "status_code": "20I1000", "status_date": "20130603",
+             "status_description": "Court Comm-Inst-Addl Charge"},
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-21",
+             "status_code": "40O3010", "status_date": "20180525", "status_description": "Conditional Release"},
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-31",
+             "status_code": "40I3060", "status_date": "20190509", "status_description": "CR Ret-Treatment Center"},
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-32",
+             "status_code": "45O3060", "status_date": "20190509", "status_description": "CR Ret-Treatment Center"},
+            {"sentence_external_id": "1123534-20041220-5", "sentence_status_external_id": "1123534-20041220-5-34",
+             "status_code": "40O3030", "status_date": "20191022", "status_description": "Conditional Re-Release"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1123534-20041220-5',
+            start_date=datetime.date(year=2013, month=6, day=3)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
+
+    def test_interstate_transfer_and_return_same_day(self):
+        raw_statuses = [
+            {"sentence_external_id": "1291992-20151103-1", "sentence_status_external_id": "1291992-20151103-1-3",
+             "status_code": "35I1000", "status_date": "20160105", "status_description": "Court Probation-Revisit"},
+            {"sentence_external_id": "1291992-20151103-1", "sentence_status_external_id": "1291992-20151103-1-5",
+             "status_code": "75I3000", "status_date": "20160111", "status_description": "MO Field-Interstate Returned"},
+            {"sentence_external_id": "1291992-20151103-1", "sentence_status_external_id": "1291992-20151103-1-4",
+             "status_code": "75O3000", "status_date": "20160111", "status_description": "MO Field-Interstate Transfer"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='1291992-20151103-1',
+            start_date=datetime.date(year=2016, month=1, day=5)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PROBATION)
+
+    def test_crc_converted_from_dai_to_parole(self):
+        raw_statuses = [
+            {"sentence_external_id": "38140-19800131-8", "sentence_status_external_id": "38140-19800131-8-1",
+             "status_code": "10I1000", "status_date": "19800131", "status_description": "New Court Comm-Institution"},
+            {"sentence_external_id": "38140-19800131-8", "sentence_status_external_id": "38140-19800131-8-8",
+             "status_code": "40O4099", "status_date": "19950918", "status_description": "Inmate Release to RF"},
+            {"sentence_external_id": "38140-19800131-8", "sentence_status_external_id": "38140-19800131-8-18",
+             "status_code": "40N1010", "status_date": "20020220", "status_description": "Parole Assigned To CRC"},
+            {"sentence_external_id": "38140-19800131-8", "sentence_status_external_id": "38140-19800131-8-27",
+             "status_code": "40O6000", "status_date": "20080701",
+             "status_description": "Converted-CRC DAI to CRC Field"}
+        ]
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id='38140-19800131-8',
+            start_date=datetime.date(year=1980, month=1, day=31)
+        )
+        us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
+
+        self.assertEqual(us_mo_sentence.get_sentence_supervision_type_on_day(self.validation_date),
+                         StateSupervisionType.PAROLE)
 
 
 class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):

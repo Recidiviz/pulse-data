@@ -19,7 +19,6 @@
 import logging
 from collections import defaultdict
 from datetime import date, timedelta
-from enum import Enum, auto
 from typing import Optional, Dict, List, Any, Generic, Tuple
 
 import attr
@@ -28,16 +27,6 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
     SentenceType
-
-
-class SupervisionTypeCriticalStatusCategory(Enum):
-    SUPERVISION_START = auto()
-    SUPERVISION_END = auto()
-    # For certain charges (sex offenders), people are sentenced to lifetime supervision via electronic monitoring. These
-    # statuses indicate a start to that period of supervision once the other (often incarceration) portions of the
-    # sentence have been served.
-    LIFETIME_SUPERVISION_START = auto()
-    SENTENCE_COMPLETION = auto()
 
 
 @attr.s(frozen=True)
@@ -171,38 +160,22 @@ class UsMoSentenceStatus(BuildableAttr):
         ) and not self.is_investigation_status
         return result
 
-    # A classification that helps us understand the supervision type at a given point in time, or None if
-    # |is_supervision_type_critical_status| is False.
-    supervision_type_critical_status_category: Optional[SupervisionTypeCriticalStatusCategory] = attr.ib()
-
-    @supervision_type_critical_status_category.default
-    def _get_supervision_type_critical_status_category(self) -> Optional[SupervisionTypeCriticalStatusCategory]:
-        if not self.is_supervision_type_critical_status:
-            return None
-
-        if self.is_sentence_termimination_status:
-            return SupervisionTypeCriticalStatusCategory.SENTENCE_COMPLETION
-        if self.is_lifetime_supervision_start_status:
-            return SupervisionTypeCriticalStatusCategory.LIFETIME_SUPERVISION_START
-        if self.is_supervision_out_status:
-            return SupervisionTypeCriticalStatusCategory.SUPERVISION_END
-        if self.is_supervision_in_status or self.is_incarceration_out_status:
-            return SupervisionTypeCriticalStatusCategory.SUPERVISION_START
-
-        raise ValueError(f'Unexpected critical sentence type status [{self.status_code} - {self.status_description}]')
-
     # For a status that is found to be the most recent critical status when determining supervision type, this tells us
     # what supervision type should be associated with this sentence.
     supervision_type_status_classification: Optional[StateSupervisionType] = attr.ib()
 
     @supervision_type_status_classification.default
-    def _supervision_type_status_classification(self) -> StateSupervisionType:
+    def _supervision_type_status_classification(self) -> Optional[StateSupervisionType]:
         """Calculates what supervision type should be associated with this sentence if this status that is found to be
         the most recent critical status for determining supervision type.
         """
+        if self.is_supervision_out_status or self.is_sentence_termimination_status:
+            return None
+
         if self.status_code in (
                 # Called parole, but MO classifies interstate 'Parole' as probation
                 '35I4100',  # IS Compact-Parole-Revisit
+                '40O7400',  # IS Compact Parole to Missouri
 
                 # The term 'Field' does not always exclusively mean probation, but in the case of interstate transfer
                 # statuses, it does.
@@ -221,6 +194,10 @@ class UsMoSentenceStatus(BuildableAttr):
                 # TODO(2647): For some reason MO treats this as Parole even though it's clearly a release that happens
                 #  after a probation commitment for treatment - ask if this is correct.
                 '40O2000',  # Prob Rev-Rel to Field-Spc Cir
+
+                # In July 2008, MO transitioned people in CRC transitional facilities from the control of the DAI
+                # (incarceration) to the parole board. If we see this status it means someone is on parole.
+                '40O6000'   # Converted-CRC DAI to CRC Field
         ):
             return StateSupervisionType.PAROLE
 
@@ -239,6 +216,9 @@ class UsMoSentenceStatus(BuildableAttr):
         if 'Board' in self.status_description:
             return StateSupervisionType.PAROLE
         if 'Conditional Release' in self.status_description:
+            return StateSupervisionType.PAROLE
+        if 'CR ' in self.status_description:
+            # CR stands for Conditional Release
             return StateSupervisionType.PAROLE
 
         return StateSupervisionType.INTERNAL_UNKNOWN
@@ -337,55 +317,11 @@ class UsMoSentenceMixin(Generic[SentenceType]):
     def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]):
         """Given a set of 'supervision type critical' statuses, returns the supervision type for the
         SupervisionTypeSpan starting on that day."""
-        status_categories_on_day = {
-            status.supervision_type_critical_status_category for status in critical_day_statuses}
 
-        has_supv_start_status = \
-            SupervisionTypeCriticalStatusCategory.SUPERVISION_START in status_categories_on_day
-        has_supv_end_status = \
-            SupervisionTypeCriticalStatusCategory.SUPERVISION_END in status_categories_on_day
-        has_sentence_completion_status = \
-            SupervisionTypeCriticalStatusCategory.SENTENCE_COMPLETION in status_categories_on_day
-        has_lifetime_supervision_start_status = \
-            SupervisionTypeCriticalStatusCategory.LIFETIME_SUPERVISION_START in status_categories_on_day
-
-        if has_sentence_completion_status and not has_lifetime_supervision_start_status:
-            # This sentence has been completed by this date
-            return None
-
-        if has_supv_end_status and not has_supv_start_status:
-            # If we can assume that the date we're inspecting is a date that the person is not incarcerated,
-            # this seems to happen when a sentence is revoked and ended completely (a new sentence will be
-            # started in this case) or when a probation sentence is suspended.
-            return None
-
-        if not has_supv_start_status and not has_lifetime_supervision_start_status:
-            raise ValueError(f'Expect only supervision start statuses at this point. '
-                             f'Person: {critical_day_statuses[0].person_external_id},'
-                             f'Sentence: {critical_day_statuses[0].sentence_external_id},'
-                             f'Critical status date: {critical_day_statuses[0].status_date}')
-
-        critical_day_statuses_filtered = \
-            [s for s in critical_day_statuses if not s.is_sentence_termination_status_candidate]
-
-        if not critical_day_statuses_filtered:
-            logging.warning('Found no most_recent_critical_day_statuses_filtered, most_recent_critical_day_statuses: '
-                            '[%s]. Person: [%s], Sentence: [%s], Critical status date: [%s]}',
-                            critical_day_statuses,
-                            critical_day_statuses[0].person_external_id,
-                            critical_day_statuses[0].sentence_external_id,
-                            critical_day_statuses[0].status_date)
-            return critical_day_statuses[0].supervision_type_status_classification
-
-        if len(critical_day_statuses_filtered) > 1:
-            logging.warning('Should only have one status, found [%s]. '
-                            'Person: [%s], Sentence: [%s], Critical status date: [%s]}',
-                            len(critical_day_statuses_filtered),
-                            critical_day_statuses_filtered[0].person_external_id,
-                            critical_day_statuses_filtered[0].sentence_external_id,
-                            critical_day_statuses_filtered[0].status_date)
-
-        return critical_day_statuses_filtered[0].supervision_type_status_classification
+        # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
+        # should be given precedence.
+        critical_day_statuses.sort(key=lambda status: status.sentence_status_external_id, reverse=True)
+        return critical_day_statuses[0].supervision_type_status_classification
 
     def _get_overlapping_supervision_type_span_index(self, supervision_type_day: date) -> Optional[int]:
         """Returns the index of the span in this sentence's supervision_type_spans list that overlaps in time with the
@@ -416,6 +352,18 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         if overlapping_span_index is None:
             return None
 
+        if self.supervision_type_spans[overlapping_span_index].supervision_type is None:
+            return None
+
+        while overlapping_span_index >= 0:
+            span = self.supervision_type_spans[overlapping_span_index]
+            if span.supervision_type is not None and span.supervision_type != StateSupervisionType.INTERNAL_UNKNOWN:
+                return span.supervision_type
+
+            # If the most recent status status is INTERNAL_UNKNOWN, we look back at previous statuses until we can
+            # find a status that is not INTERNAL_UNKNOWN
+            overlapping_span_index -= 1
+
         return self.supervision_type_spans[overlapping_span_index].supervision_type
 
     def get_most_recent_supervision_type_before_upper_bound_day(
@@ -434,7 +382,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         if overlapping_span_index is None:
             return None
 
-        while True:
+        while overlapping_span_index >= 0:
             span = self.supervision_type_spans[overlapping_span_index]
 
             last_supervision_type_day_exclusive = \
@@ -449,10 +397,9 @@ class UsMoSentenceMixin(Generic[SentenceType]):
             if supervision_type is not None:
                 return last_supervision_type_day_inclusive, supervision_type
 
-            if overlapping_span_index == 0:
-                return None
-
             overlapping_span_index -= 1
+
+        return None
 
 
 @attr.s
