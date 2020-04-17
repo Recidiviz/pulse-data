@@ -25,6 +25,7 @@ import unittest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import identifier
+from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
@@ -3157,7 +3158,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         ])
 
-    def test_find_supervision_time_buckets_infer_supervision_type_internal_unknown_no_sentences_us_mo(self):
+    def test_find_supervision_time_buckets_no_supervision_when_no_sentences_supervision_spans_us_mo(self):
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -3203,50 +3204,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(len(supervision_time_buckets), 4)
-
-        # Note: MO uses the existence of sentences and related sentence statues to determine if someone is on
-        # supervision on a given day, hence is_on_supervision_last_day_of_month=False for all months.
-        self.assertCountEqual(supervision_time_buckets, [
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2018, month=3,
-                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                most_severe_violation_type_subtype='UNSET',
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=False),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2018, month=4,
-                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                most_severe_violation_type_subtype='UNSET',
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=False),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2018, month=5,
-                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                most_severe_violation_type_subtype='UNSET',
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=False),
-            SupervisionTerminationBucket(
-                state_code=supervision_period.state_code,
-                year=supervision_period.termination_date.year,
-                month=supervision_period.termination_date.month,
-                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                termination_reason=supervision_period.termination_reason
-            )
-        ])
+        self.assertCountEqual(supervision_time_buckets, [])
 
     @freeze_time('2019-09-04')
     def test_find_supervision_time_buckets_admission_today(self):
@@ -3966,6 +3924,396 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
+    def test_supervision_time_buckets_no_supervision_period_end_of_month_us_mo_supervision_span_shows_supervision(self):
+        """Tests that we do not mark someone as under supervision at the end of the month if there is no supervision
+        period overlapping with the end of the month, even if the US_MO sentence supervision spans indicate that they
+        are on supervision at a given time.
+        """
+
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_MO',
+                supervision_site='DISTRICTX',
+                supervising_officer='AGENTX',
+                start_date=date(2019, 10, 3),
+                termination_date=date(2019, 10, 9),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=supervision_period.start_date,
+                    external_id='ss1',
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.SERVING,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+
+        assessments = []
+        violation_responses = []
+        incarceration_sentences = []
+        incarceration_periods = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2019,
+                month=10,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                most_severe_violation_type_subtype='UNSET',
+                response_count=0,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                termination_reason=supervision_period.termination_reason
+            )
+        ])
+
+    def test_supervision_time_buckets_period_eom_us_mo_supervision_span_shows_no_supervision_eom(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_MO',
+                supervision_site='DISTRICTX',
+                supervising_officer='AGENTX',
+                start_date=date(2019, 10, 3),
+                termination_date=date(2019, 11, 9),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=supervision_period.start_date,
+                    external_id='ss1',
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.SERVING,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=date(2019, 10, 6),
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 10, 6),
+                        end_date=date(2019, 11, 6),
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 11, 6),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+
+        assessments = []
+        violation_responses = []
+        incarceration_sentences = []
+        incarceration_periods = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2019,
+                month=10,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                most_severe_violation_type_subtype='UNSET',
+                response_count=0,
+                is_on_supervision_last_day_of_month=False),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2019,
+                month=11,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                most_severe_violation_type_subtype='UNSET',
+                response_count=0,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                termination_reason=supervision_period.termination_reason
+            )
+        ])
+
+    def test_supervision_period_end_of_month_us_mo_supervision_span_shows_no_supervision_all_month(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_MO',
+                supervision_site='DISTRICTX',
+                supervising_officer='AGENTX',
+                start_date=date(2019, 10, 3),
+                termination_date=date(2019, 11, 9),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=supervision_period.start_date,
+                    external_id='ss1',
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.SERVING,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 9, 6),
+                        end_date=date(2019, 10, 3),
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 10, 3),
+                        end_date=date(2019, 11, 6),
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 11, 6),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+
+        assessments = []
+        violation_responses = []
+        incarceration_sentences = []
+        incarceration_periods = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2019,
+                month=11,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                most_severe_violation_type_subtype='UNSET',
+                response_count=0,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                termination_reason=supervision_period.termination_reason
+            )
+        ])
+
+    def test_supervision_period_us_mo_supervision_spans_do_not_overlap(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_MO',
+                supervision_site='DISTRICTX',
+                supervising_officer='AGENTX',
+                start_date=date(2019, 10, 3),
+                termination_date=date(2019, 11, 9),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=supervision_period.start_date,
+                    external_id='ss1',
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.SERVING,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 9, 6),
+                        end_date=date(2019, 10, 3),
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 10, 3),
+                        end_date=date(2019, 11, 9),
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 11, 9),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+
+        assessments = []
+        violation_responses = []
+        incarceration_sentences = []
+        incarceration_periods = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [])
+
+    def test_supervision_period_mid_month_us_mo_supervision_span_shows_supervision_eom(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_MO',
+                supervision_site='DISTRICTX',
+                supervising_officer='AGENTX',
+                start_date=date(2019, 10, 3),
+                termination_date=date(2019, 10, 20),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=supervision_period.start_date,
+                    external_id='ss1',
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.SERVING,
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 9, 6),
+                        end_date=date(2019, 10, 15),
+                        supervision_type=None
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 10, 15),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+
+        assessments = []
+        violation_responses = []
+        incarceration_sentences = []
+        incarceration_periods = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO',
+                year=2019,
+                month=10,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                most_severe_violation_type_subtype='UNSET',
+                response_count=0,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=supervision_period.supervision_site,
+                termination_reason=supervision_period.termination_reason
+            )
+        ])
+
 
 class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
     """Tests for the find_months_for_supervision_period function."""
@@ -4009,13 +4357,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = []
 
@@ -4028,9 +4370,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4113,13 +4453,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = []
         violation_reports = []
@@ -4131,9 +4465,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4195,13 +4527,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = []
 
@@ -4214,9 +4540,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4276,13 +4600,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = []
 
@@ -4295,9 +4613,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4367,13 +4683,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         incarceration_sentences = []
         assessments = []
@@ -4382,14 +4692,13 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         supervision_time_buckets = \
             identifier.find_time_buckets_for_supervision_period(
                 [supervision_sentence], incarceration_sentences,
-                supervision_period, indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                supervision_period,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
-        self.assertEqual(len(supervision_time_buckets), 1)
+        # self.assertEqual(len(supervision_time_buckets), 1)
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -4437,13 +4746,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
         assessments = []
 
         violation_reports = []
@@ -4455,9 +4758,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4530,13 +4831,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = []
 
@@ -4549,9 +4844,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4628,13 +4921,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [first_incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [first_incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([first_incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[first_incarceration_period])
 
         assessments = []
 
@@ -4647,9 +4934,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4743,13 +5028,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
 
         assessments = []
 
@@ -4762,9 +5041,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4846,13 +5123,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
 
         assessments = []
 
@@ -4865,9 +5136,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -4943,13 +5212,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
 
         assessments = []
 
@@ -4962,25 +5225,13 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
 
-        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
-
-        self.assertEqual(len(supervision_time_buckets), 1)
-        self.assertCountEqual(supervision_time_buckets, [
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2001, month=3,
-                supervision_type=supervision_period_supervision_type,
-                most_severe_violation_type_subtype='UNSET',
-                case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=False)
-        ])
+        self.assertEqual(len(supervision_time_buckets), 0)
+        self.assertCountEqual(supervision_time_buckets, [])
 
     def test_find_time_buckets_for_supervision_period_multiple_assessments(self):
         """Tests the find_time_buckets_for_supervision_period function
@@ -5035,13 +5286,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [incarceration_period])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
 
         assessments = [assessment_1, assessment_2]
 
@@ -5053,9 +5298,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [supervision_sentence],
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -5150,13 +5393,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [])
-        months_incarcerated_eom = identifier._identify_months_incarcerated_end_of_month([])
-
-        months_of_incarceration = identifier._identify_months_fully_incarcerated(
-            [])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
 
         assessments = [assessment]
         violation_responses = []
@@ -5167,9 +5404,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [supervision_sentence],
                 incarceration_sentences,
                 supervision_period,
-                indexed_incarceration_periods,
-                months_of_incarceration,
-                months_incarcerated_eom,
+                incarceration_period_index,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
             )
@@ -5212,214 +5447,6 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         ])
 
 
-class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
-    """Tests the index_incarceration_periods_by_admission_month function."""
-
-    def test_index_incarceration_periods_by_admission_month(self):
-        """Tests the index_incarceration_periods_by_admission_month function."""
-
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 6, 8),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
-            )
-
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [incarceration_period]
-            )
-
-        self.assertEqual(indexed_incarceration_periods, {
-            2018: {
-                6: [incarceration_period]
-            }
-        })
-
-    def test_index_incarceration_periods_by_admission_month_multiple(self):
-        """Tests the index_incarceration_periods_by_admission_month function
-        when there are multiple incarceration periods."""
-
-        first_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 6, 8),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
-            )
-
-        second_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip2',
-                state_code='US_ND',
-                admission_date=date(2019, 3, 2),
-                admission_reason=AdmissionReason.NEW_ADMISSION
-            )
-
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [first_incarceration_period, second_incarceration_period]
-            )
-
-        self.assertEqual(indexed_incarceration_periods, {
-            2018: {
-                6: [first_incarceration_period]
-            },
-            2019: {
-                3: [second_incarceration_period]
-            }
-        })
-
-    def test_index_incarceration_periods_by_admission_month_multiple_month(self):
-        """Tests the index_incarceration_periods_by_admission_month function
-        when there are multiple incarceration periods with admission dates
-        in the same month."""
-
-        first_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 6, 1),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 6, 21)
-            )
-
-        second_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip2',
-                state_code='US_ND',
-                admission_date=date(2018, 6, 30),
-                admission_reason=AdmissionReason.NEW_ADMISSION
-            )
-
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month(
-                [first_incarceration_period, second_incarceration_period]
-            )
-
-        self.assertEqual(indexed_incarceration_periods, {
-            2018: {
-                6: [first_incarceration_period, second_incarceration_period]
-            },
-        })
-
-    def test_index_incarceration_periods_by_admission_month_none(self):
-        """Tests the index_incarceration_periods_by_admission_month function
-        when there are no incarceration periods."""
-        indexed_incarceration_periods = \
-            identifier.index_incarceration_periods_by_admission_month([])
-
-        self.assertEqual(indexed_incarceration_periods, {})
-
-
-class TestIdentifyMonthsOfIncarceration(unittest.TestCase):
-    """Tests the identify_months_of_incarceration function."""
-
-    def test_identify_months_of_incarceration_incarcerated(self):
-        """Tests the identify_months_of_incarceration function."""
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 6, 8),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
-            )
-
-        months_incarcerated = \
-            identifier._identify_months_fully_incarcerated([incarceration_period])
-
-        self.assertEqual(months_incarcerated, {
-            (2018, 7), (2018, 8), (2018, 9), (2018, 10), (2018, 11)
-        })
-
-    def test_identify_months_of_incarceration_incarcerated_on_first(self):
-        """Tests the identify_months_of_incarceration function where the person
-        was incarcerated on the first of the month."""
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 8, 1),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
-            )
-
-        months_incarcerated = \
-            identifier._identify_months_fully_incarcerated([incarceration_period])
-
-        self.assertEqual(months_incarcerated, {
-            (2018, 8), (2018, 9), (2018, 10), (2018, 11)
-        })
-
-    def test_identify_months_of_incarceration_released_last_day(self):
-        """Tests the identify_months_of_incarceration function where the person
-        was released on the last day of a month."""
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2018, 8, 15),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 10, 31)
-            )
-
-        months_incarcerated = \
-            identifier._identify_months_fully_incarcerated([incarceration_period])
-
-        self.assertEqual(months_incarcerated, {
-            (2018, 9), (2018, 10)
-        })
-
-    def test_identify_months_of_incarceration_no_full_months(self):
-        """Tests the identify_months_of_incarceration function where the person
-        was not incarcerated for a full month."""
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(2013, 3, 1),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2013, 3, 30)
-            )
-
-        months_incarcerated = \
-            identifier._identify_months_fully_incarcerated([incarceration_period])
-
-        self.assertEqual(months_incarcerated, set())
-
-    def test_identify_months_of_incarceration_leap_year(self):
-        """Tests the identify_months_of_incarceration function where the person
-        was incarcerated until the 28th of February during a leap year, so they
-        were not incarcerated for a full month."""
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=111,
-                external_id='ip1',
-                state_code='US_ND',
-                admission_date=date(1996, 2, 1),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(1996, 2, 28)
-            )
-
-        months_incarcerated = \
-            identifier._identify_months_fully_incarcerated([incarceration_period])
-
-        self.assertEqual(months_incarcerated, set())
-
-
 class TestClassifySupervisionSuccess(unittest.TestCase):
     """Tests the classify_supervision_success function."""
     def test_classify_supervision_success(self):
@@ -5452,7 +5479,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            [],
+            IncarcerationPeriodIndex([]),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5513,7 +5540,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5579,7 +5606,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5656,7 +5683,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5746,7 +5773,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -5820,7 +5847,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             supervision_period_agent_association
         )
 
@@ -5884,7 +5911,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             supervision_period_agent_association
         )
         self.assertEqual(1, len(projected_completion_buckets))
@@ -5937,7 +5964,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -6105,7 +6132,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         projected_completion_buckets = identifier.classify_supervision_success(
             supervision_sentences,
-            incarceration_periods,
+            IncarcerationPeriodIndex(incarceration_periods),
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
@@ -6192,11 +6219,11 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             indexed_supervision_periods,
             assessments,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            IncarcerationPeriodIndex(incarceration_periods=[])
         )
 
-        assessment_score_change = last_assessment.assessment_score - \
-                                  first_reassessment.assessment_score
+        assessment_score_change = last_assessment.assessment_score - first_reassessment.assessment_score
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -6255,7 +6282,8 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             indexed_supervision_periods,
             assessments,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            IncarcerationPeriodIndex(incarceration_periods=[])
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -6321,7 +6349,8 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             indexed_supervision_periods,
             assessments,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            IncarcerationPeriodIndex(incarceration_periods=[])
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -6377,7 +6406,8 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             indexed_supervision_periods,
             assessments,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            IncarcerationPeriodIndex(incarceration_periods=[])
         )
 
         self.assertEqual(None, termination_bucket)
@@ -6466,7 +6496,8 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             first_supervision_period,
             indexed_supervision_periods,
             assessments,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            IncarcerationPeriodIndex(incarceration_periods=[])
         )
 
         first_supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -6485,6 +6516,100 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         )
 
         self.assertEqual(expected_termination_bucket, termination_bucket)
+
+    def test_find_supervision_termination_bucket_incarceration_overlaps_full_supervision_period(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_ND',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PROBATION
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id='ip1',
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2018, 3, 5),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2018, 5, 19),
+            release_reason=ReleaseReason.COMMUTED,
+            source_supervision_violation_response=None
+        )
+
+        indexed_supervision_periods = identifier._index_supervision_periods_by_termination_month([supervision_period])
+
+        termination_bucket = identifier.find_supervision_termination_bucket(
+            supervision_sentences=[],
+            incarceration_sentences=[],
+            supervision_period=supervision_period,
+            indexed_supervision_periods=indexed_supervision_periods,
+            assessments=[],
+            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            incarceration_period_index=IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        )
+
+        self.assertEqual(None, termination_bucket)
+
+    def test_find_supervision_termination_bucket_us_mo_suspension_span_overlaps_full_supervision_period(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_MO',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=
+            StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PROBATION
+        )
+
+        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_periods=[supervision_period]
+            ),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=date(2018, 2, 5),
+                    end_date=supervision_period.start_date,
+                    supervision_type=StateSupervisionType.PAROLE
+                ),
+                SupervisionTypeSpan(
+                    start_date=supervision_period.start_date,
+                    end_date=supervision_period.termination_date,
+                    supervision_type=None
+                ),
+                SupervisionTypeSpan(
+                    start_date=supervision_period.termination_date,
+                    end_date=None,
+                    supervision_type=StateSupervisionType.PAROLE
+                )
+            ]
+        )
+
+        indexed_supervision_periods = identifier._index_supervision_periods_by_termination_month([supervision_period])
+
+        termination_bucket = identifier.find_supervision_termination_bucket(
+            supervision_sentences=[supervision_sentence],
+            incarceration_sentences=[],
+            supervision_period=supervision_period,
+            indexed_supervision_periods=indexed_supervision_periods,
+            assessments=[],
+            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            incarceration_period_index=IncarcerationPeriodIndex(incarceration_periods=[])
+        )
+
+        self.assertEqual(None, termination_bucket)
 
 
 class TestGetViolationAndResponseHistory(unittest.TestCase):
