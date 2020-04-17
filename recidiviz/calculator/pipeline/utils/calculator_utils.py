@@ -279,7 +279,7 @@ def convert_event_based_to_person_based_metrics(
     return person_based_metrics
 
 
-def first_day_of_month(any_date):
+def first_day_of_month(any_date: datetime.date):
     """Returns the date corresponding to the first day of the month for the given date."""
     year = any_date.year
     month = any_date.month
@@ -287,11 +287,16 @@ def first_day_of_month(any_date):
     return date(year, month, 1)
 
 
-def last_day_of_month(any_date):
+def last_day_of_month(any_date: datetime.date):
     """Returns the date corresponding to the last day of the month for the given date."""
-    next_month = any_date.replace(day=28) + datetime.timedelta(
-        days=4)
-    return next_month - datetime.timedelta(days=next_month.day)
+    first_of_next_month = first_day_of_next_month(any_date)
+    return first_of_next_month - datetime.timedelta(days=1)
+
+
+def first_day_of_next_month(any_date: datetime.date) -> datetime.date:
+    """Returns the date corresponding to the first day of the next month for the given date."""
+    next_month_date = any_date.replace(day=28) + datetime.timedelta(days=4)
+    return next_month_date.replace(day=1)
 
 
 def identify_most_severe_violation_type_and_subtype(violations: List[StateSupervisionViolation]) \

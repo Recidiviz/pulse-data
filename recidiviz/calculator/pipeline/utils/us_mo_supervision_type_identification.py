@@ -104,10 +104,12 @@ def us_mo_get_month_supervision_type(
     else:
         upper_bound_exclusive_date = min(first_of_next_month, supervision_period.termination_date)
 
+    lower_bound_inclusive = max(start_of_month, supervision_period.start_date)
+
     supervision_type = \
         us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=upper_bound_exclusive_date,
-            lower_bound_inclusive_date=start_of_month,
+            lower_bound_inclusive_date=lower_bound_inclusive,
             supervision_sentences=supervision_sentences,
             incarceration_sentences=incarceration_sentences)
 
@@ -133,13 +135,3 @@ def us_mo_get_supervision_period_supervision_type_on_date(
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences
     )
-
-
-def us_mo_counts_towards_supervision_population_on_day(
-        any_date: datetime.date,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence]) -> bool:
-    """Returns True if a person with the given sentences can be counted towards the supervision population on that day.
-    """
-    return us_mo_get_supervision_period_supervision_type_on_date(
-        any_date, supervision_sentences, incarceration_sentences) is not None
