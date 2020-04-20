@@ -238,11 +238,12 @@ state_supervision_period_status = Enum(
     name='state_supervision_period_status')
 
 state_supervision_period_admission_reason = Enum(
+    enum_strings.external_unknown,
+    enum_strings.internal_unknown,
     state_enum_strings.state_supervision_period_admission_reason_absconsion,
     state_enum_strings.state_supervision_period_admission_reason_conditional_release,
     state_enum_strings.state_supervision_period_admission_reason_court_sentence,
-    enum_strings.external_unknown,
-    enum_strings.internal_unknown,
+    state_enum_strings.state_supervision_period_admission_reason_investigation,
     state_enum_strings.state_supervision_period_admission_reason_transfer_out_of_state,
     state_enum_strings.state_supervision_period_admission_reason_transfer_within_state,
     state_enum_strings.state_supervision_period_admission_reason_return_from_absconsion,
@@ -269,6 +270,7 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_death,
     state_enum_strings.state_supervision_period_termination_reason_discharge,
     state_enum_strings.state_supervision_period_termination_reason_expiration,
+    state_enum_strings.state_supervision_period_termination_reason_investigation,
     state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state,
     state_enum_strings.state_supervision_period_termination_reason_transfer_within_state,
     state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion,

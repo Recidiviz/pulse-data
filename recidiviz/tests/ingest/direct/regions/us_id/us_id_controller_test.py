@@ -536,8 +536,17 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             state_incarceration_period_id='2222-1',
                                             facility='FACILITY 3',
                                             incarceration_type='STATE_PRISON',
-                                            admission_reason='P',
+                                            admission_reason='TEMPORARY_CUSTODY',
                                             admission_date='2010-01-01',
+                                            release_reason='RELEASED_FROM_TEMPORARY_CUSTODY',
+                                            release_date='2010-06-01',
+                                        ),
+                                        StateIncarcerationPeriod(
+                                            state_incarceration_period_id='2222-2',
+                                            facility='FACILITY 3',
+                                            incarceration_type='STATE_PRISON',
+                                            admission_reason='PROBATION_REVOCATION',
+                                            admission_date='2010-06-01',
                                             release_reason='F',
                                             release_date='2011-01-01',
                                         ),
@@ -552,7 +561,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'movement_facility_offstat_incarceration_periods')
 
-    def test_populate_data_movement_facility_supervision_periods(self):
+    def test_populate_data_movement_facility_offstat_supervision_periods(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -562,12 +571,37 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                     ],
                     state_sentence_groups=[
                         StateSentenceGroup(
-                            state_sentence_group_id='1111-2',
+                            state_sentence_group_id='1111-1',
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
                                     state_supervision_periods=[
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-1',
+                                            supervision_site='DISTRICT 1',
+                                            admission_reason='INVESTIGATION',
+                                            start_date='2007-10-01',
+                                            termination_reason='INVESTIGATION',
+                                            termination_date='2008-01-01',
+                                        ),
+                                    ],
+                                )
+                            ]
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-2',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='1111-2',
+                                            supervision_site='DISTRICT 1',
+                                            admission_reason='INVESTIGATION',
+                                            start_date='2017-10-01',
+                                            termination_reason='INVESTIGATION',
+                                            termination_date='2018-01-01',
+                                        ),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='1111-3',
                                             supervision_site='DISTRICT 1',
                                             admission_reason='COURT_SENTENCE',
                                             start_date='2018-01-01',
@@ -575,7 +609,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2018-12-31',
                                         ),
                                         StateSupervisionPeriod(
-                                            state_supervision_period_id='1111-2',
+                                            state_supervision_period_id='1111-4',
                                             supervision_site='DISTRICT 1',
                                             admission_reason='I',
                                             start_date='2020-01-01',
@@ -642,12 +676,12 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             supervision_site='DISTRICT 4',
                                             admission_reason='COURT_SENTENCE',
                                             start_date='2015-01-01',
-                                            termination_reason='IS',
+                                            termination_reason='TRANSFER_OUT_OF_STATE',
                                             termination_date='2018-01-01',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='3333-2',
-                                            admission_reason='IS',
+                                            admission_reason='TRANSFER_OUT_OF_STATE',
                                             start_date='2018-01-01',
                                         ),
                                     ]
@@ -659,7 +693,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, 'movement_facility_supervision_periods')
+        self.run_parse_file_test(expected, 'movement_facility_offstat_supervision_periods')
 
     # TODO(2999): Associate VRs by date to SPs
     def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports(self):
@@ -1414,17 +1448,33 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='STATE_PRISON',
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='P',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text='TEMPORARY_CUSTODY',
             admission_date=datetime.date(year=2010, month=1, day=1),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text='RELEASED_FROM_TEMPORARY_CUSTODY',
+            release_date=datetime.date(year=2010, month=6, day=1),
+            incarceration_sentences=[is_2222_1_placeholder],
+            person=is_2222_1_placeholder.person,
+        )
+        ip_2222_2 = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-2',
+            facility='FACILITY 3',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text='STATE_PRISON',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason_raw_text='PROBATION_REVOCATION',
+            admission_date=datetime.date(year=2010, month=6, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
             release_reason_raw_text='F',
             release_date=datetime.date(year=2011, month=1, day=1),
             incarceration_sentences=[is_2222_1_placeholder],
             person=is_2222_1_placeholder.person,
         )
+        is_2222_1_placeholder.incarceration_periods.extend([ip_2222_1, ip_2222_2])
         sg_2222_1.incarceration_sentences.append(is_2222_1_placeholder)
-        is_2222_1_placeholder.incarceration_periods.append(ip_2222_1)
 
         # Act
         self._run_ingest_job_for_filename('movement_facility_offstat_incarceration_periods.csv')
@@ -1433,17 +1483,53 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         #################################################################
-        # MOVEMENT_FACILITY_SUPERVISION_PERIODS
+        # MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS
         #################################################################
         # Arrange
+        ss_1111_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_1111_1,
+            person=sg_1111_1.person)
+        sp_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-1',
+            supervision_site='DISTRICT 1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
+            admission_reason_raw_text='INVESTIGATION',
+            start_date=datetime.date(year=2007, month=10, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.INVESTIGATION,
+            termination_reason_raw_text='INVESTIGATION',
+            termination_date=datetime.date(year=2008, month=1, day=1),
+            supervision_sentences=[ss_1111_1_placeholder],
+            person=ss_1111_1_placeholder.person,
+        )
+        sg_1111_1.supervision_sentences.append(ss_1111_1_placeholder)
+        ss_1111_1_placeholder.supervision_periods.append(sp_1111_1)
+
         ss_1111_2_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_1111_2,
             person=sg_1111_2.person)
-        sp_1111_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id='1111-1',
+            external_id='1111-2',
+            supervision_site='DISTRICT 1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
+            admission_reason_raw_text='INVESTIGATION',
+            start_date=datetime.date(year=2017, month=10, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.INVESTIGATION,
+            termination_reason_raw_text='INVESTIGATION',
+            termination_date=datetime.date(year=2018, month=1, day=1),
+            supervision_sentences=[ss_1111_2_placeholder],
+            person=ss_1111_2_placeholder.person,
+        )
+        sp_1111_3 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-3',
             supervision_site='DISTRICT 1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1455,9 +1541,9 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[ss_1111_2_placeholder],
             person=ss_1111_2_placeholder.person,
         )
-        sp_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
+        sp_1111_4 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            external_id='1111-2',
+            external_id='1111-4',
             supervision_site='DISTRICT 1',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -1468,7 +1554,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=ss_1111_2_placeholder.person,
         )
         sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
-        ss_1111_2_placeholder.supervision_periods.extend([sp_1111_1, sp_1111_2])
+        ss_1111_2_placeholder.supervision_periods.extend([sp_1111_2, sp_1111_3, sp_1111_4])
 
         ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1533,7 +1619,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='COURT_SENTENCE',
             start_date=datetime.date(year=2015, month=1, day=1),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
-            termination_reason_raw_text='IS',
+            termination_reason_raw_text='TRANSFER_OUT_OF_STATE',
             termination_date=datetime.date(year=2018, month=1, day=1),
             supervision_sentences=[ss_3333_1_placeholder],
             person=ss_3333_1_placeholder.person,
@@ -1543,7 +1629,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='3333-2',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
-            admission_reason_raw_text='IS',
+            admission_reason_raw_text='TRANSFER_OUT_OF_STATE',
             start_date=datetime.date(year=2018, month=1, day=1),
             supervision_sentences=[ss_3333_1_placeholder],
             supervising_officer=po_2,
@@ -1553,7 +1639,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         ss_3333_1_placeholder.supervision_periods.extend([sp_3333_1, sp_3333_2])
 
         # Act
-        self._run_ingest_job_for_filename('movement_facility_supervision_periods.csv')
+        self._run_ingest_job_for_filename('movement_facility_offstat_supervision_periods.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people, debug=True)
