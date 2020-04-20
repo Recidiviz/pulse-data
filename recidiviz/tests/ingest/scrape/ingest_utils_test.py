@@ -353,6 +353,8 @@ class TestIngestUtils:
 
         incarceration_sentence = group.create_state_incarceration_sentence()
         incarceration_sentence.state_incarceration_sentence_id = 'is1'
+        early_discharge1 = incarceration_sentence.create_early_discharge()
+        early_discharge1.state_early_discharge_id = 'early_discharge1'
         charge1 = incarceration_sentence.create_state_charge()
         charge1.state_charge_id = 'charge1'
         charge1.classification_type = 'F'
@@ -384,6 +386,8 @@ class TestIngestUtils:
 
         supervision_sentence = group.create_state_supervision_sentence()
         supervision_sentence.state_supervision_sentence_id = 'ss1'
+        early_discharge2 = supervision_sentence.create_early_discharge()
+        early_discharge2.state_early_discharge_id = 'early_discharge2'
         charge2 = supervision_sentence.create_state_charge()
         charge2.state_charge_id = 'charge2'
         charge2.classification_type = 'M'
@@ -500,6 +504,9 @@ class TestIngestUtils:
         supervision_sentence_pb = \
             expected_proto.state_supervision_sentences.add()
         supervision_sentence_pb.state_supervision_sentence_id = 'ss1'
+        supervision_sentence_pb.state_early_discharge_ids.append('early_discharge2')
+        early_discharge2_pb = expected_proto.state_early_discharges.add()
+        early_discharge2_pb.state_early_discharge_id = 'early_discharge2'
         supervision_sentence_pb.state_charge_ids.append('charge2')
         charge2_pb = expected_proto.state_charges.add()
         charge2_pb.state_charge_id = 'charge2'
@@ -578,6 +585,9 @@ class TestIngestUtils:
         incarceration_sentence_pb = \
             expected_proto.state_incarceration_sentences.add()
         incarceration_sentence_pb.state_incarceration_sentence_id = 'is1'
+        incarceration_sentence_pb.state_early_discharge_ids.append('early_discharge1')
+        early_discharge1_pb = expected_proto.state_early_discharges.add()
+        early_discharge1_pb.state_early_discharge_id = 'early_discharge1'
         incarceration_sentence_pb.state_charge_ids.append('charge1')
         charge1_pb = expected_proto.state_charges.add()
         charge1_pb.state_charge_id = 'charge1'

@@ -376,6 +376,21 @@ state_specialized_purpose_for_incarceration = Enum(
     name='state_specialized_purpose_for_incarceration'
 )
 
+state_early_discharge_decision = Enum(
+    state_enum_strings.state_early_discharge_decision_request_denied,
+    state_enum_strings.state_early_discharge_decision_sentence_termination_granted,
+    state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted,
+    name='state_early_discharge_decision'
+)
+
+state_acting_body_type = Enum(
+    state_enum_strings.state_acting_body_type_court,
+    state_enum_strings.state_acting_body_type_parole_board,
+    state_enum_strings.state_acting_body_type_sentenced_person,
+    state_enum_strings.state_acting_body_type_supervision_officer,
+    name='state_acting_body_type'
+)
+
 # Join tables
 
 state_supervision_sentence_incarceration_period_association_table = \
@@ -1167,8 +1182,7 @@ class _StateSupervisionSentenceSharedColumns(
     max_length_days = Column(Integer)
 
 
-class StateSupervisionSentence(StateBase,
-                               _StateSupervisionSentenceSharedColumns):
+class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
     """Represents a StateSupervisionSentence in the SQL schema"""
     __tablename__ = 'state_supervision_sentence'
 
@@ -1192,6 +1206,7 @@ class StateSupervisionSentence(StateBase,
         state_supervision_sentence_supervision_period_association_table,
         backref='supervision_sentences',
         lazy='selectin')
+    early_discharges = relationship('StateEarlyDischarge', backref='supervision_sentence', lazy='selectin')
 
 
 class StateSupervisionSentenceHistory(StateBase,
@@ -1263,17 +1278,17 @@ class StateIncarcerationSentence(StateBase,
         lazy='selectin')
     incarceration_periods = relationship(
         'StateIncarcerationPeriod',
-        secondary=
-        state_incarceration_sentence_incarceration_period_association_table,
+        secondary=state_incarceration_sentence_incarceration_period_association_table,
         backref='incarceration_sentences',
         lazy='selectin')
 
     supervision_periods = relationship(
         'StateSupervisionPeriod',
-        secondary=
-        state_incarceration_sentence_supervision_period_association_table,
+        secondary=state_incarceration_sentence_supervision_period_association_table,
         backref='incarceration_sentences',
         lazy='selectin')
+
+    early_discharges = relationship('StateEarlyDischarge', backref='incarceration_sentence', lazy='selectin')
 
 
 class StateIncarcerationSentenceHistory(
@@ -2246,3 +2261,67 @@ class StateProgramAssignmentHistory(StateBase,
         Integer, ForeignKey(
             'state_program_assignment.program_assignment_id'),
         nullable=False, index=True)
+
+
+# StateEarlyDischarge
+
+class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StateEarlyDischarge and
+    StateEarlyDischargeHistory.
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateEarlyDischargeSharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    external_id = Column(String(255), index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+    county_code = Column(String(255))
+
+    decision_date = Column(Date)
+    decision = Column(state_early_discharge_decision)
+    decision_raw_text = Column(String(255))
+    deciding_body_type = Column(state_acting_body_type)
+    deciding_body_type_raw_text = Column(String(255))
+    request_date = Column(Date)
+    requesting_body_type = Column(state_acting_body_type)
+    requesting_body_type_raw_text = Column(String(255))
+
+    @declared_attr
+    def supervision_sentence_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_supervision_sentence.supervision_sentence_id', deferrable=True, initially='DEFERRED'),
+            index=True,
+            nullable=True)
+
+    @declared_attr
+    def incarceration_sentence_id(self):
+        return Column(
+            Integer,
+            ForeignKey('state_incarceration_sentence.incarceration_sentence_id', deferrable=True, initially='DEFERRED'),
+            index=True,
+            nullable=True)
+
+
+class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
+    """Represents a StateEarlyDischarge in the SQL schema."""
+    __tablename__ = 'state_early_discharge'
+
+    early_discharge_id = Column(Integer, primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+
+
+class StateEarlyDischargeHistory(StateBase, _StateEarlyDischargeSharedColumns, HistoryTableSharedColumns):
+    """Represents the historical state of a StateProgramAssignment"""
+    __tablename__ = 'state_early_discharge_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    early_discharge_history_id = Column(Integer, primary_key=True)
+
+    early_discharge_id = Column(
+        Integer, ForeignKey('state_early_discharge.early_discharge_id'), nullable=False, index=True)

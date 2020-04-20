@@ -672,6 +672,7 @@ class _HydrateRootEntitiesWithRelationshipPropertyEntities(beam.DoFn):
 
                 if is_property_list(root_entity, property_name):
                     getattr(root_entity, property_name).extend(entities)
+                # TODO(1886): We should include properties that aren't forward refs, but are entity types here.
                 elif is_property_forward_ref(root_entity, property_name):
                     if len(entities) > 1:
                         raise ValueError("Attempting to set a list of entities"

@@ -78,8 +78,33 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
     @staticmethod
-    def build_incarceration_pipeline_data_dict(fake_person_id: int,
-                                               state_code: str = 'US_XX'):
+    def _default_data_dict():
+        return {
+            schema.StatePerson.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateIncarcerationSentence.__tablename__: [],
+            schema.StateSupervisionSentence.__tablename__: [],
+            schema.StateIncarcerationPeriod.__tablename__: [],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StateAssessment.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateCharge.__tablename__: [],
+            schema.StateSupervisionPeriod.__tablename__: [],
+            schema.StateEarlyDischarge.__tablename__: [],
+            schema.state_charge_incarceration_sentence_association_table.name: [],
+            schema.state_charge_supervision_sentence_association_table.name: [],
+            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
+            schema.state_supervision_sentence_supervision_period_association_table.name: [],
+        }
+
+    def build_incarceration_pipeline_data_dict(
+            self, fake_person_id: int, state_code: str = 'US_XX'):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
@@ -226,7 +251,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             },
         ]
 
-        return {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -236,19 +262,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.state_incarceration_sentence_incarceration_period_association_table.name:
                 state_incarceration_sentence_incarceration_period_association,
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateCharge.__tablename__: [],
-            schema.StateSupervisionPeriod.__tablename__: [],
-            schema.state_charge_incarceration_sentence_association_table.name: [],
-            schema.state_charge_supervision_sentence_association_table.name: [],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
-            schema.state_supervision_sentence_supervision_period_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
+        return data_dict
 
     def testIncarcerationPipeline(self):
         fake_person_id = 12345
@@ -414,8 +430,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         test_pipeline.run()
 
-    @staticmethod
-    def build_incarceration_pipeline_data_dict_no_incarceration(fake_person_id: int):
+    def build_incarceration_pipeline_data_dict_no_incarceration(self, fake_person_id: int):
         """Builds a data_dict for a run of the pipeline where the person has no incarceration."""
         fake_person_1 = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
@@ -492,7 +507,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             },
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
@@ -500,21 +516,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.state_incarceration_sentence_incarceration_period_association_table.name:
                 state_incarceration_sentence_incarceration_period_association,
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateCharge.__tablename__: [],
-            schema.StateSupervisionPeriod.__tablename__: [],
-            schema.state_charge_incarceration_sentence_association_table.name: [],
-            schema.state_charge_supervision_sentence_association_table.name: [],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
-            schema.state_supervision_sentence_supervision_period_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
 
         return data_dict
 
