@@ -11,6 +11,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
@@ -220,7 +221,7 @@ def generate_test_charge(person_id, charge_id, court_case=None, bond=None, state
 
 
 def generate_test_supervision_sentence(
-        person_id, charges, supervision_periods) \
+        person_id, charges, supervision_periods, early_discharges=None) \
         -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
@@ -229,13 +230,14 @@ def generate_test_supervision_sentence(
         person_id=person_id,
         charges=charges,
         supervision_periods=supervision_periods,
+        early_discharges=(early_discharges if early_discharges else []),
     )
 
     return instance
 
 
 def generate_test_incarceration_sentence(
-        person_id, charges=None, incarceration_periods=None) \
+        person_id, charges=None, incarceration_periods=None, early_discharges=None) \
         -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -245,8 +247,20 @@ def generate_test_incarceration_sentence(
         is_capital_punishment=False,
         charges=(charges if charges else []),
         incarceration_periods=(incarceration_periods if incarceration_periods else []),
+        early_discharges=(early_discharges if early_discharges else []),
     )
 
+    return instance
+
+
+def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge:
+    instance = state_schema.StateEarlyDischarge(
+        early_discharge_id=1,
+        external_id='external_id',
+        state_code='us_ca',
+        person_id=person_id,
+        decision=StateEarlyDischargeDecision.REQUEST_DENIED.value,
+    )
     return instance
 
 
@@ -407,9 +421,11 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_charge_2 = generate_test_charge(test_person_id, 7777, test_court_case,
                                          test_bond)
 
+    test_early_discharge = generate_test_early_discharge(test_person_id)
+
     test_supervision_sentence = generate_test_supervision_sentence(
         test_person_id, [test_charge_1, test_charge_2],
-        [test_supervision_period])
+        [test_supervision_period], [test_early_discharge])
 
     test_incarceration_sentence = generate_test_incarceration_sentence(
         test_person_id, [test_charge_1, test_charge_2],

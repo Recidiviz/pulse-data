@@ -726,7 +726,7 @@ class StateSupervisionSentence(IngestObject):
     def __init__(self, state_supervision_sentence_id=None, status=None, supervision_type=None, date_imposed=None,
                  start_date=None, projected_completion_date=None, completion_date=None, state_code=None,
                  county_code=None, min_length=None, max_length=None, state_charges=None,
-                 state_incarceration_periods=None, state_supervision_periods=None):
+                 state_incarceration_periods=None, state_supervision_periods=None, state_early_discharges=None):
         self.state_supervision_sentence_id: Optional[str] = state_supervision_sentence_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
@@ -742,9 +742,10 @@ class StateSupervisionSentence(IngestObject):
         self.state_charges: List[StateCharge] = state_charges or []
         self.state_incarceration_periods: List[StateIncarcerationPeriod] = state_incarceration_periods or []
         self.state_supervision_periods: List[StateSupervisionPeriod] = state_supervision_periods or []
+        self.state_early_discharges: List[StateEarlyDischarge] = state_early_discharges or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_supervision_periods', name, value)
+        restricted_setattr(self, 'state_early_discharges', name, value)
 
     def create_state_charge(self, **kwargs) -> 'StateCharge':
         charge = StateCharge(**kwargs)
@@ -761,6 +762,11 @@ class StateSupervisionSentence(IngestObject):
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
+    def create_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
+        early_discharge = StateEarlyDischarge(**kwargs)
+        self.state_early_discharges.append(early_discharge)
+        return early_discharge
+
     def get_state_charge_by_id(self, state_charge_id) -> Optional['StateCharge']:
         return next((sc for sc in self.state_charges
                      if sc.state_charge_id == state_charge_id), None)
@@ -774,6 +780,10 @@ class StateSupervisionSentence(IngestObject):
         return next((sc for sc in self.state_supervision_periods
                      if sc.state_supervision_period_id == state_supervision_period_id),
                     None)
+
+    def get_state_early_discharge_by_id(self, state_early_discharge_id) -> Optional['StateEarlyDischarge']:
+        return next((ed for ed in self.state_early_discharges
+                     if ed.state_early_discharge_id == state_early_discharge_id), None)
 
     def prune(self) -> 'StateSupervisionSentence':
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
@@ -804,7 +814,7 @@ class StateIncarcerationSentence(IngestObject):
                  completion_date=None, parole_eligibility_date=None, state_code=None, county_code=None, min_length=None,
                  max_length=None, is_life=None, is_capital_punishment=None, parole_possible=None,
                  initial_time_served=None, good_time=None, earned_time=None, state_charges=None,
-                 state_incarceration_periods=None, state_supervision_periods=None):
+                 state_incarceration_periods=None, state_supervision_periods=None, state_early_discharges=None):
         self.state_incarceration_sentence_id: Optional[str] = state_incarceration_sentence_id
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
@@ -828,9 +838,10 @@ class StateIncarcerationSentence(IngestObject):
         self.state_charges: List[StateCharge] = state_charges or []
         self.state_incarceration_periods: List[StateIncarcerationPeriod] = state_incarceration_periods or []
         self.state_supervision_periods: List[StateSupervisionPeriod] = state_supervision_periods or []
+        self.state_early_discharges: List[StateEarlyDischarge] = state_early_discharges or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, 'state_supervision_periods', name, value)
+        restricted_setattr(self, 'state_early_discharges', name, value)
 
     def create_state_charge(self, **kwargs) -> 'StateCharge':
         state_charge = StateCharge(**kwargs)
@@ -847,6 +858,11 @@ class StateIncarcerationSentence(IngestObject):
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
+    def create_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
+        early_discharge = StateEarlyDischarge(**kwargs)
+        self.state_early_discharges.append(early_discharge)
+        return early_discharge
+
     def get_state_charge_by_id(self, state_charge_id) -> Optional['StateCharge']:
         return next((sc for sc in self.state_charges if sc.state_charge_id == state_charge_id), None)
 
@@ -859,6 +875,10 @@ class StateIncarcerationSentence(IngestObject):
         return next((sp for sp in self.state_supervision_periods
                      if sp.state_supervision_period_id == supervision_period_id),
                     None)
+
+    def get_state_early_discharge_by_id(self, state_early_discharge_id) -> Optional['StateEarlyDischarge']:
+        return next((ed for ed in self.state_early_discharges
+                     if ed.state_early_discharge_id == state_early_discharge_id), None)
 
     def prune(self) -> 'StateIncarcerationSentence':
         self.state_charges = [sc.prune() for sc in self.state_charges if sc]
@@ -1508,6 +1528,33 @@ class StateProgramAssignment(IngestObject):
         if not self.referring_agent:
             self.referring_agent = None
         return self
+
+
+class StateEarlyDischarge(IngestObject):
+    """Class for information about an Early Discharge. Referenced from StateIncarcerationSentence and
+    StateSupervisionSentence.
+    """
+
+    def __init__(self,
+                 state_early_discharge_id=None,
+                 request_date=None,
+                 decision_date=None,
+                 decision=None,
+                 deciding_body_type=None,
+                 requesting_body_type=None,
+                 state_code=None,
+                 county_code=None):
+        self.state_early_discharge_id: Optional[str] = state_early_discharge_id
+        self.request_date: Optional[str] = request_date
+        self.decision_date: Optional[str] = decision_date
+        self.decision: Optional[str] = decision
+        self.deciding_body_type: Optional[str] = deciding_body_type
+        self.requesting_body_type: Optional[str] = requesting_body_type
+        self.state_code: Optional[str] = state_code
+        self.county_code: Optional[str] = county_code
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'county_code', name, value)
 
 
 def eq(self, other, exclude=None):

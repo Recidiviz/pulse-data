@@ -71,6 +71,8 @@ from recidiviz.common.constants.state.state_program_assignment import \
     StateProgramAssignmentParticipationStatus, \
     StateProgramAssignmentDischargeReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
 )
@@ -489,6 +491,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     # terms of the sentence and are sent back to prison.
     incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
@@ -549,6 +552,7 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
 
     incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
@@ -1036,3 +1040,38 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     referring_agent: Optional['StateAgent'] = attr.ib(default=None)
     incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
     supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+
+
+@attr.s(eq=False)
+class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models a person's sentenced-level early discharge requests."""
+    # Attributes
+    #   - When
+    request_date: Optional[datetime.date] = attr.ib()
+    decision_date: Optional[datetime.date] = attr.ib()
+
+    #  - What
+    decision: Optional[StateEarlyDischargeDecision] = attr.ib()
+    decision_raw_text: Optional[str] = attr.ib()
+    deciding_body_type: Optional[StateActingBodyType] = attr.ib()
+    deciding_body_type_raw_text: Optional[str] = attr.ib()
+    requesting_body_type: Optional[StateActingBodyType] = attr.ib()
+    requesting_body_type_raw_text: Optional[str] = attr.ib()
+
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+    county_code: str = attr.ib()
+
+    #   - Who
+    # See |person| in entity relationships below.
+
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
+    early_discharge_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+
+    # Should only be one of incarceration or supervision sentences on this.
+    incarceration_sentence: Optional['StateIncarcerationSentence'] = attr.ib(default=None)
+    supervision_sentence: Optional['StateIncarcerationSentence'] = attr.ib(default=None)
