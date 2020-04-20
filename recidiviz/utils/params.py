@@ -56,6 +56,7 @@ def get_bool_param_value(
 
     return str_to_bool(str_value)
 
+
 def str_to_bool(bool_str: str, arg_key=None):
     bool_str_lower = bool_str.lower()
     if bool_str_lower == 'true':

@@ -42,12 +42,13 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
 class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     """Admission reasons for StateSupervisionPeriod"""
     ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
-    # This reason indicates the person has been released from an incarceration
-    # period into a supervision period (i.e. parole).
+    # This reason indicates the person has been released from an incarceration period into a supervision period
+    # (i.e. parole).
     CONDITIONAL_RELEASE = state_enum_strings.state_supervision_period_admission_reason_conditional_release
     COURT_SENTENCE = state_enum_strings.state_supervision_period_admission_reason_court_sentence
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INVESTIGATION = state_enum_strings.state_supervision_period_admission_reason_investigation
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_admission_reason_transfer_out_of_state
     TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_admission_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_return_from_absconsion
@@ -94,6 +95,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
     EXPIRATION = state_enum_strings.state_supervision_period_termination_reason_expiration
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INVESTIGATION = state_enum_strings.state_supervision_period_admission_reason_investigation
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state
     TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion
@@ -115,17 +117,18 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
 
 
 _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
+    'ABSCONDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+    'ABSCONSION': StateSupervisionPeriodAdmissionReason.ABSCONSION,
     'CONDITIONAL RELEASE': StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     'COURT SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'SENTENCE': StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     'INTERNAL UNKNOWN': StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-    'ABSCONSION': StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    'INVESTIGATION': StateSupervisionPeriodAdmissionReason.INVESTIGATION,
     'TRANSFER WITHIN STATE': StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
     'TRANSFER OUT OF STATE': StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
     'RETURN FROM ABSCOND': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'RETURN FROM ABSCONSION': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    'ABSCONDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     'RETURN FROM SUSPENSION': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
     'SUSPENDED': StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
 }
@@ -168,6 +171,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'EXTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
     'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
     'INTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+    'INVESTIGATION': StateSupervisionPeriodTerminationReason.INVESTIGATION,
     'TRANSFER WITHIN STATE': StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
     'TRANSFER OUT OF STATE': StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
     'RETURN FROM ABSCONSION': StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,

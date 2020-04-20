@@ -25,6 +25,20 @@ JAIL_FACILITY_CODES = (
     'JAIL BACKLOG'
 )
 
+PREVIOUS_FACILITY_TYPE = 'prev_fac_typ'
+PREVIOUS_FACILITY_CODE = 'prev_fac_cd'
+PREVIOUS_INVESTIGATION = 'prev_investigative'
+PREVIOUS_PAROLE_VIOLATOR = 'prev_parole_violator'
+
+CURRENT_FACILITY_TYPE = 'fac_typ'
+CURRENT_FACILITY_CODE = 'fac_cd'
+CURRENT_INVESTIGATION = 'investigative'
+CURRENT_RIDER = 'rider'
+CURRENT_PAROLE_VIOLATOR = 'parole_violator'
+
+NEXT_FACILITY_TYPE = 'next_fac_typ'
+NEXT_FACILITY_CODE = 'next_fac_cd'
+
 # Violation report constants
 
 # Constants from Violation Report 210

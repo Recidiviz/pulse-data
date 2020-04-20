@@ -990,6 +990,11 @@ def _include_termination_in_success_metric(termination_reason: Optional[StateSup
     ):
         return False
 
+    # If the last period is an investigative period, then the person was never actually sentenced formally. In this case
+    # we should not include the period in our "success" metrics.
+    if termination_reason == StateSupervisionPeriodTerminationReason.INVESTIGATION:
+        return False
+
     if termination_reason in (
             # Successful terminations
             StateSupervisionPeriodTerminationReason.DISCHARGE,
