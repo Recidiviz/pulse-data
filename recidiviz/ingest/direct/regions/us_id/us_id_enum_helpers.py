@@ -28,11 +28,9 @@ def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervision
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
     if label == 'P':    # Coming from probation/parole within the state
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
-    if label == 'IS':   # Coming from interstate probation/parole (set manually in controller)
-        return StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE
-    if label in ('I', 'O'):     # Coming from incarceration. TODO(2999): Clarify when 'O' is used.
+    if label in ('I', 'O'):  # Coming from incarceration. TODO(2999): Clarify when 'O' is used.
         return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
-    if label == 'F':     # Coming from absconsion.
+    if label == 'F':    # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
     return None
 
@@ -42,11 +40,10 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
         return StateSupervisionPeriodTerminationReason.DISCHARGE
     if label == 'P':    # Going to probation/parole within the state
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
-    if label == 'IS':   # Going to interstate probation/parole (set manually in controller)
-        return StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE
+    # TODO(2999): Should we have a special reason for when someone goes to parole violation?
     if label in ('I', 'O'):     # Going to incarceration. TODO(2999): Clarify when 'O' is used.
         return StateSupervisionPeriodTerminationReason.REVOCATION
-    if label == 'F':     # Going to absconsion.
+    if label == 'F':    # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     return None
 
@@ -58,7 +55,7 @@ def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcera
         return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
     if label in ('I', 'O'):     # Coming from incarceration. TODO(2999): Clarify when 'O' is used.
         return StateIncarcerationPeriodAdmissionReason.TRANSFER
-    if label == 'F':     # Coming from absconsion.
+    if label == 'F':    # Coming from absconsion.
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
     return None
 
@@ -70,6 +67,6 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
     if label in ('I', 'O'):     # Going to incarceration. TODO(2999): Clarify when 'O' is used.
         return StateIncarcerationPeriodReleaseReason.TRANSFER
-    if label == 'F':     # Going to absconsion.
+    if label == 'F':    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
     return None
