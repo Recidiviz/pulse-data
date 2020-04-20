@@ -33,6 +33,8 @@ from recidiviz.common.constants.state.state_charge import \
     StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus, StateCourtType
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -344,6 +346,45 @@ def generate_full_graph_state_person(
     supervision_sentence.charges = [charge, charge2, charge3]
     incarceration_sentence.charges = [charge, charge2, charge3]
 
+    early_discharge_1 = entities.StateEarlyDischarge.new_with_defaults(
+        external_id='ed1',
+        request_date=datetime.date(year=2001, month=7, day=1),
+        decision_date=datetime.date(year=2001, month=7, day=20),
+        decision=StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
+        decision_raw_text='approved',
+        deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+        deciding_body_type_raw_text='pb',
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text='sentenced_person',
+        state_code='us_ca',
+        county_code='san_francisco')
+    early_discharge_2 = entities.StateEarlyDischarge.new_with_defaults(
+        external_id='ed2',
+        request_date=datetime.date(year=2002, month=7, day=1),
+        decision_date=datetime.date(year=2002, month=7, day=20),
+        decision=StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
+        decision_raw_text='conditionally_approved',
+        deciding_body_type=StateActingBodyType.COURT,
+        deciding_body_type_raw_text='c',
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text='sentenced_person',
+        state_code='us_ca',
+        county_code='san_francisco')
+    early_discharge_3 = entities.StateEarlyDischarge.new_with_defaults(
+        external_id='ed3',
+        request_date=datetime.date(year=2001, month=1, day=1),
+        decision_date=datetime.date(year=2001, month=1, day=20),
+        decision=StateEarlyDischargeDecision.REQUEST_DENIED,
+        decision_raw_text='denied',
+        deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+        deciding_body_type_raw_text='pb',
+        requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+        requesting_body_type_raw_text='sentenced_person',
+        state_code='us_ca',
+        county_code='san_francisco')
+    supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
+    incarceration_sentence.early_discharges = [early_discharge_3]
+
     incarceration_period = \
         entities.StateIncarcerationPeriod.new_with_defaults(
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -586,19 +627,27 @@ def generate_full_graph_state_person(
         incarceration_sentence_children = \
             incarceration_sentence.charges + \
             incarceration_sentence.incarceration_periods + \
-            incarceration_sentence.supervision_periods
+            incarceration_sentence.supervision_periods + \
+            incarceration_sentence.early_discharges
 
         for child in incarceration_sentence_children:
-            child.incarceration_sentences = [incarceration_sentence]
+            if hasattr(child, 'incarceration_sentences'):
+                child.incarceration_sentences = [incarceration_sentence]
+            else:
+                child.incarceration_sentence = incarceration_sentence
             child.person = person
 
         supervision_sentence_children = \
             supervision_sentence.charges + \
             supervision_sentence.incarceration_periods + \
-            supervision_sentence.supervision_periods
+            supervision_sentence.supervision_periods + \
+            supervision_sentence.early_discharges
 
         for child in supervision_sentence_children:
-            child.supervision_sentences = [supervision_sentence]
+            if hasattr(child, 'supervision_sentences'):
+                child.supervision_sentences = [supervision_sentence]
+            else:
+                child.supervision_sentence = supervision_sentence
             child.person = person
 
         court_case.charges = [charge, charge2, charge3]

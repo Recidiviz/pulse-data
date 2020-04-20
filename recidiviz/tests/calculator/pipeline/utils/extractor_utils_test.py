@@ -960,6 +960,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: [],
             schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
             schema.state_charge_incarceration_sentence_association_table.name: [],
+            schema.StateEarlyDischarge.__tablename__: [],
         }
         dataset = 'recidiviz-123.state'
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
@@ -978,7 +979,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    state_code=None))
 
             # Assert it has the property fields we expect
-            self.assertEqual(properties_dict.keys(), {'charges', 'incarceration_periods', 'supervision_periods'})
+            self.assertEqual(properties_dict.keys(),
+                             {'charges', 'incarceration_periods', 'supervision_periods', 'early_discharges'})
 
             output_supervision_periods = properties_dict.get('supervision_periods')
 

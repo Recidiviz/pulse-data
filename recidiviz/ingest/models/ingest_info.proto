@@ -64,6 +64,7 @@ message IngestInfo {
     repeated StateSupervisionViolationResponseDecisionEntry state_supervision_violation_response_decision_entries = 32;
     repeated StateAgent state_agents = 33;
     repeated StateProgramAssignment state_program_assignments = 34;
+    repeated StateEarlyDischarge state_early_discharges = 35;
 }
 
 message Person {
@@ -267,6 +268,7 @@ message StateSupervisionSentence {
     repeated string state_charge_ids = 12;
     repeated string state_incarceration_period_ids = 13;
     repeated string state_supervision_period_ids = 14;
+    repeated string state_early_discharge_ids = 15;
 }
 
 message StateIncarcerationSentence {
@@ -293,6 +295,7 @@ message StateIncarcerationSentence {
     repeated string state_charge_ids = 20;
     repeated string state_incarceration_period_ids = 21;
     repeated string state_supervision_period_ids = 22;
+    repeated string state_early_discharge_ids = 23;
 }
 
 message StateFine {
@@ -510,4 +513,15 @@ message StateProgramAssignment{
     optional string referral_metadata = 11;
 
     optional string referring_agent_id = 10;
+}
+
+message StateEarlyDischarge{
+    optional string state_early_discharge_id = 1;
+    optional string request_date = 2;
+    optional string decision_date = 3;
+    optional string decision = 4;
+    optional string deciding_body_type = 5;
+    optional string requesting_body_type = 6;
+    optional string state_code = 7;
+    optional string county_code = 8;
 }

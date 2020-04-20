@@ -151,6 +151,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
     state_incarceration_sentence_map: \
         Dict[str, ingest_info.StateIncarcerationSentence] = {}
     state_fine_map: Dict[str, ingest_info.StateFine] = {}
+    state_early_discharge_map: Dict[str, ingest_info.StateEarlyDischarge] = {}
     state_charge_map: Dict[str, ingest_info.StateCharge] = {}
     state_court_case_map: Dict[str, ingest_info.StateCourtCase] = {}
     state_bond_map: Dict[str, ingest_info.StateBond] = {}
@@ -174,9 +175,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
     state_supervision_violation_response_map: \
         Dict[str, ingest_info.StateSupervisionViolationResponse] = {}
     state_supervision_violation_response_decision_entry_map: \
-        Dict[
-            str,
-            ingest_info.StateSupervisionViolationResponseDecisionEntry] = {}
+        Dict[str, ingest_info.StateSupervisionViolationResponseDecisionEntry] = {}
     state_agent_map: Dict[str, ingest_info.StateAgent] = {}
 
     id_to_generated: Dict[int, str] = {}
@@ -595,6 +594,15 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 _populate_supervision_period_protos(
                     supervision_sentence, proto_supervision_sentence)
 
+                for early_discharge in supervision_sentence.state_early_discharges:
+                    proto_early_discharge = _populate_proto(
+                        'state_early_discharges',
+                        early_discharge,
+                        'state_early_discharge_id',
+                        state_early_discharge_map)
+                    proto_supervision_sentence.state_early_discharge_ids.append(
+                        proto_early_discharge.state_early_discharge_id)
+
             for incarceration_sentence in \
                     sentence_group.state_incarceration_sentences:
                 proto_incarceration_sentence = _populate_proto(
@@ -613,6 +621,14 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
 
                 _populate_supervision_period_protos(
                     incarceration_sentence, proto_incarceration_sentence)
+                for early_discharge in incarceration_sentence.state_early_discharges:
+                    proto_early_discharge = _populate_proto(
+                        'state_early_discharges',
+                        early_discharge,
+                        'state_early_discharge_id',
+                        state_early_discharge_map)
+                    proto_incarceration_sentence.state_early_discharge_ids.append(
+                        proto_early_discharge.state_early_discharge_id)
 
             for fine in sentence_group.state_fines:
                 proto_fine = _populate_proto('state_fines', fine,
@@ -701,6 +717,9 @@ def convert_proto_to_ingest_info(
     state_fine_map: Dict[str, ingest_info.StateFine] = \
         dict(_proto_to_py(fine, ingest_info.StateFine, 'state_fine_id')
              for fine in proto.state_fines)
+    state_early_discharge_map: Dict[str, ingest_info.StateEarlyDischarge] = \
+        dict(_proto_to_py(early_discharge, ingest_info.StateEarlyDischarge, 'state_early_discharge_id')
+             for early_discharge in proto.state_early_discharges)
     state_charge_map: Dict[str, ingest_info.StateCharge] = \
         dict(_proto_to_py(state_charge, ingest_info.StateCharge,
                           'state_charge_id')
@@ -783,14 +802,12 @@ def convert_proto_to_ingest_info(
              in proto.state_supervision_violation_responses)
 
     state_supervision_violation_response_decision_entry_map: \
-        Dict[str,
-             ingest_info.StateSupervisionViolationResponseDecisionEntry] = \
+        Dict[str, ingest_info.StateSupervisionViolationResponseDecisionEntry] = \
         dict(_proto_to_py(
             decision_type,
             ingest_info.StateSupervisionViolationResponseDecisionEntry,
             'state_supervision_violation_response_decision_entry_id')
-             for decision_type
-             in proto.state_supervision_violation_response_decision_entries)
+             for decision_type in proto.state_supervision_violation_response_decision_entries)
 
     state_agent_map: Dict[str, ingest_info.StateAgent] = \
         dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
@@ -836,6 +853,9 @@ def convert_proto_to_ingest_info(
         sentence.state_incarceration_periods = \
             [state_incarceration_period_map[proto_id] for proto_id
              in proto_sentence.state_incarceration_period_ids]
+
+        sentence.state_early_discharges = \
+            [state_early_discharge_map[proto_id] for proto_id in proto_sentence.state_early_discharge_ids]
 
     # Wire agents to respective parent entities
     for proto_parole_decision in proto.state_parole_decisions:

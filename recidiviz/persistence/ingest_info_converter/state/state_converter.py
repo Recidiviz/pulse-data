@@ -22,7 +22,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StateCharge, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateFine, StateParoleDecision, \
     StateIncarcerationIncident, StateAssessment, StateCourtCase, \
-    StateSupervisionViolationResponse, StateProgramAssignment
+    StateSupervisionViolationResponse, StateProgramAssignment, StateEarlyDischarge
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
@@ -38,7 +38,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_supervision_violation_type_entry, \
     state_supervision_violated_condition_entry, \
     state_supervision_violation_response_decision_entry, \
-    state_supervision_case_type_entry
+    state_supervision_case_type_entry, state_early_discharge
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -69,12 +69,12 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         self.incarceration_sentences = {
             ins.state_incarceration_sentence_id: ins for ins
             in ingest_info.state_incarceration_sentences}
+        self.early_discharges = {ed.state_early_discharge_id: ed for ed in ingest_info.state_early_discharges}
         self.fines = {f.state_fine_id: f for f in ingest_info.state_fines}
         self.charges = {sc.state_charge_id: sc for sc
                         in ingest_info.state_charges}
         self.bonds = {b.state_bond_id: b for b in ingest_info.state_bonds}
-        self.court_cases = {cc.state_court_case_id: cc for cc
-                            in ingest_info.state_court_cases}
+        self.court_cases = {cc.state_court_case_id: cc for cc in ingest_info.state_court_cases}
         self.supervision_periods = {
             sp.state_supervision_period_id: sp for sp
             in ingest_info.state_supervision_periods
@@ -249,8 +249,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_supervision_sentence,
             self.metadata)
 
-        self._copy_children_to_sentence(supervision_sentence_builder,
-                                        ingest_supervision_sentence)
+        self._copy_children_to_sentence(supervision_sentence_builder, ingest_supervision_sentence)
 
         return supervision_sentence_builder.build()
 
@@ -267,10 +266,18 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_incarceration_sentence,
             self.metadata)
 
-        self._copy_children_to_sentence(incarceration_sentence_builder,
-                                        ingest_incarceration_sentence)
+        self._copy_children_to_sentence(incarceration_sentence_builder, ingest_incarceration_sentence)
 
         return incarceration_sentence_builder.build()
+
+    def _convert_early_discharge(
+            self, ingest_early_discharge: StateEarlyDischarge) -> entities.StateIncarcerationSentence:
+        """Converts an ingest_info proto StateEarlyDischarge to a persistence entity."""
+        early_discharge_builder = entities.StateEarlyDischarge.builder()
+
+        state_early_discharge.copy_fields_to_builder(early_discharge_builder, ingest_early_discharge, self.metadata)
+
+        return early_discharge_builder.build()
 
     def _convert_fine(self, ingest_fine: StateFine) -> entities.StateFine:
         """Converts an ingest_info proto StateFine to a persistence entity."""
@@ -279,21 +286,32 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         state_fine.copy_fields_to_builder(
             state_fine_builder, ingest_fine, self.metadata)
 
-        self._copy_children_to_sentence(state_fine_builder,
-                                        ingest_fine,
-                                        copy_periods=False)
+        self._copy_children_to_sentence(
+            state_fine_builder, ingest_fine, copy_periods=False, copy_early_discharges=False)
 
         return state_fine_builder.build()
 
     def _copy_children_to_sentence(self,
                                    sentence_builder,
                                    ingest_sentence,
-                                   copy_periods=True):
+                                   copy_periods=True,
+                                   copy_early_discharges=True):
+        """Copies all entity children from the provided |ingest_sentence| onto the |sentence_builder|. If |copy_periods|
+        is False, does not copy incarceration/supervision periods. If |copy_early_discharges| is false, does not copy
+        early discharges.
+        """
         converted_charges = [
             self._convert_charge(self.charges[charge_id])
             for charge_id in ingest_sentence.state_charge_ids
         ]
         sentence_builder.charges = converted_charges
+
+        if copy_early_discharges:
+            converted_early_discharges = [
+                self._convert_early_discharge(self.early_discharges[early_discharge_id])
+                for early_discharge_id in ingest_sentence.state_early_discharge_ids
+            ]
+            sentence_builder.early_discharges = converted_early_discharges
 
         if copy_periods:
             converted_incarceration_periods = [

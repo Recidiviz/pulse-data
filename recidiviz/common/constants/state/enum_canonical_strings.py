@@ -258,3 +258,16 @@ state_program_assignment_discharge_reason_reincarcerated = 'REINCARCERATED'
 # state_specialized_purpose_for_incarceration
 state_specialized_purpose_for_incarceration_shock_incarceration = 'SHOCK_INCARCERATION'
 state_specialized_purpose_for_incarceration_treatment_in_prison = 'TREATMENT_IN_PRISON'
+
+# state_early_discharge.py
+
+state_early_discharge_decision_request_denied = 'REQUEST_DENIED'
+state_early_discharge_decision_sentence_termination_granted = 'SENTENCE_TERMINATION_GRANTED'
+state_early_discharge_decision_unsupervised_probation_granted = 'UNSUPERVISED_PROBATION_GRANTED'
+
+# shared_enums.py
+
+state_acting_body_type_court = 'COURT'
+state_acting_body_type_parole_board = 'PAROLE_BOARD'
+state_acting_body_type_supervision_officer = 'SUPERVISION_OFFICER'
+state_acting_body_type_sentenced_person = 'SENTENCED_PERSON'

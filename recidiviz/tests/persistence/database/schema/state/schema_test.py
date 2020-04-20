@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state-specific SQLAlchemy enums."""
-
+import recidiviz.common.constants.state.shared_enums
 from recidiviz.common.constants.state import state_assessment, state_charge, \
     state_sentence, state_supervision, state_fine, state_incarceration, \
     state_court_case, state_agent, state_incarceration_period, \
     state_supervision_period, state_incarceration_incident, \
     state_supervision_violation, state_supervision_violation_response, \
     state_parole_decision, state_person_alias, state_program_assignment
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import \
@@ -52,6 +53,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
                 state_charge.StateChargeClassificationType,
             'state_sentence_status': state_sentence.StateSentenceStatus,
             'state_supervision_type': state_supervision.StateSupervisionType,
+            'state_acting_body_type': recidiviz.common.constants.state.shared_enums.StateActingBodyType,
+            'state_early_discharge_decision': StateEarlyDischargeDecision,
             'state_fine_status': state_fine.StateFineStatus,
             'state_incarceration_type':
                 state_incarceration.StateIncarcerationType,

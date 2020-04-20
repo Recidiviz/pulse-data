@@ -139,6 +139,9 @@ class IngestInfo(google___protobuf___message___Message):
     @property
     def state_program_assignments(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[StateProgramAssignment]: ...
 
+    @property
+    def state_early_discharges(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[StateEarlyDischarge]: ...
+
     def __init__(self,
         *,
         people : typing___Optional[typing___Iterable[Person]] = None,
@@ -175,6 +178,7 @@ class IngestInfo(google___protobuf___message___Message):
         state_supervision_violation_response_decision_entries : typing___Optional[typing___Iterable[StateSupervisionViolationResponseDecisionEntry]] = None,
         state_agents : typing___Optional[typing___Iterable[StateAgent]] = None,
         state_program_assignments : typing___Optional[typing___Iterable[StateProgramAssignment]] = None,
+        state_early_discharges : typing___Optional[typing___Iterable[StateEarlyDischarge]] = None,
         ) -> None: ...
     if sys.version_info >= (3,):
         @classmethod
@@ -184,7 +188,7 @@ class IngestInfo(google___protobuf___message___Message):
         def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> IngestInfo: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"arrests",b"arrests",u"bonds",b"bonds",u"bookings",b"bookings",u"charges",b"charges",u"holds",b"holds",u"people",b"people",u"sentence_relationships",b"sentence_relationships",u"sentences",b"sentences",u"state_agents",b"state_agents",u"state_aliases",b"state_aliases",u"state_assessments",b"state_assessments",u"state_bonds",b"state_bonds",u"state_charges",b"state_charges",u"state_court_cases",b"state_court_cases",u"state_fines",b"state_fines",u"state_incarceration_incident_outcomes",b"state_incarceration_incident_outcomes",u"state_incarceration_incidents",b"state_incarceration_incidents",u"state_incarceration_periods",b"state_incarceration_periods",u"state_incarceration_sentences",b"state_incarceration_sentences",u"state_parole_decisions",b"state_parole_decisions",u"state_people",b"state_people",u"state_person_ethnicities",b"state_person_ethnicities",u"state_person_external_ids",b"state_person_external_ids",u"state_person_races",b"state_person_races",u"state_program_assignments",b"state_program_assignments",u"state_sentence_groups",b"state_sentence_groups",u"state_supervision_case_type_entries",b"state_supervision_case_type_entries",u"state_supervision_periods",b"state_supervision_periods",u"state_supervision_sentences",b"state_supervision_sentences",u"state_supervision_violated_condition_entries",b"state_supervision_violated_condition_entries",u"state_supervision_violation_response_decision_entries",b"state_supervision_violation_response_decision_entries",u"state_supervision_violation_responses",b"state_supervision_violation_responses",u"state_supervision_violation_type_entries",b"state_supervision_violation_type_entries",u"state_supervision_violations",b"state_supervision_violations"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"arrests",b"arrests",u"bonds",b"bonds",u"bookings",b"bookings",u"charges",b"charges",u"holds",b"holds",u"people",b"people",u"sentence_relationships",b"sentence_relationships",u"sentences",b"sentences",u"state_agents",b"state_agents",u"state_aliases",b"state_aliases",u"state_assessments",b"state_assessments",u"state_bonds",b"state_bonds",u"state_charges",b"state_charges",u"state_court_cases",b"state_court_cases",u"state_early_discharges",b"state_early_discharges",u"state_fines",b"state_fines",u"state_incarceration_incident_outcomes",b"state_incarceration_incident_outcomes",u"state_incarceration_incidents",b"state_incarceration_incidents",u"state_incarceration_periods",b"state_incarceration_periods",u"state_incarceration_sentences",b"state_incarceration_sentences",u"state_parole_decisions",b"state_parole_decisions",u"state_people",b"state_people",u"state_person_ethnicities",b"state_person_ethnicities",u"state_person_external_ids",b"state_person_external_ids",u"state_person_races",b"state_person_races",u"state_program_assignments",b"state_program_assignments",u"state_sentence_groups",b"state_sentence_groups",u"state_supervision_case_type_entries",b"state_supervision_case_type_entries",u"state_supervision_periods",b"state_supervision_periods",u"state_supervision_sentences",b"state_supervision_sentences",u"state_supervision_violated_condition_entries",b"state_supervision_violated_condition_entries",u"state_supervision_violation_response_decision_entries",b"state_supervision_violation_response_decision_entries",u"state_supervision_violation_responses",b"state_supervision_violation_responses",u"state_supervision_violation_type_entries",b"state_supervision_violation_type_entries",u"state_supervision_violations",b"state_supervision_violations"]) -> None: ...
 
 class Person(google___protobuf___message___Message):
     DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
@@ -725,6 +729,7 @@ class StateSupervisionSentence(google___protobuf___message___Message):
     state_charge_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_incarceration_period_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_supervision_period_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    state_early_discharge_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
         *,
@@ -742,6 +747,7 @@ class StateSupervisionSentence(google___protobuf___message___Message):
         state_charge_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_incarceration_period_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_supervision_period_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
+        state_early_discharge_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     if sys.version_info >= (3,):
         @classmethod
@@ -752,7 +758,7 @@ class StateSupervisionSentence(google___protobuf___message___Message):
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def HasField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"max_length",b"max_length",u"min_length",b"min_length",u"projected_completion_date",b"projected_completion_date",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_sentence_id",b"state_supervision_sentence_id",u"status",b"status",u"supervision_type",b"supervision_type"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"max_length",b"max_length",u"min_length",b"min_length",u"projected_completion_date",b"projected_completion_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_supervision_period_ids",b"state_supervision_period_ids",u"state_supervision_sentence_id",b"state_supervision_sentence_id",u"status",b"status",u"supervision_type",b"supervision_type"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"max_length",b"max_length",u"min_length",b"min_length",u"projected_completion_date",b"projected_completion_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_early_discharge_ids",b"state_early_discharge_ids",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_supervision_period_ids",b"state_supervision_period_ids",u"state_supervision_sentence_id",b"state_supervision_sentence_id",u"status",b"status",u"supervision_type",b"supervision_type"]) -> None: ...
 
 class StateIncarcerationSentence(google___protobuf___message___Message):
     DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
@@ -778,6 +784,7 @@ class StateIncarcerationSentence(google___protobuf___message___Message):
     state_charge_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_incarceration_period_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_supervision_period_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    state_early_discharge_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
         *,
@@ -803,6 +810,7 @@ class StateIncarcerationSentence(google___protobuf___message___Message):
         state_charge_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_incarceration_period_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_supervision_period_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
+        state_early_discharge_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     if sys.version_info >= (3,):
         @classmethod
@@ -813,7 +821,7 @@ class StateIncarcerationSentence(google___protobuf___message___Message):
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def HasField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"earned_time",b"earned_time",u"good_time",b"good_time",u"incarceration_type",b"incarceration_type",u"initial_time_served",b"initial_time_served",u"is_capital_punishment",b"is_capital_punishment",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_eligibility_date",b"parole_eligibility_date",u"parole_possible",b"parole_possible",u"projected_max_release_date",b"projected_max_release_date",u"projected_min_release_date",b"projected_min_release_date",u"start_date",b"start_date",u"state_code",b"state_code",u"state_incarceration_sentence_id",b"state_incarceration_sentence_id",u"status",b"status"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"earned_time",b"earned_time",u"good_time",b"good_time",u"incarceration_type",b"incarceration_type",u"initial_time_served",b"initial_time_served",u"is_capital_punishment",b"is_capital_punishment",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_eligibility_date",b"parole_eligibility_date",u"parole_possible",b"parole_possible",u"projected_max_release_date",b"projected_max_release_date",u"projected_min_release_date",b"projected_min_release_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_incarceration_sentence_id",b"state_incarceration_sentence_id",u"state_supervision_period_ids",b"state_supervision_period_ids",u"status",b"status"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"completion_date",b"completion_date",u"county_code",b"county_code",u"date_imposed",b"date_imposed",u"earned_time",b"earned_time",u"good_time",b"good_time",u"incarceration_type",b"incarceration_type",u"initial_time_served",b"initial_time_served",u"is_capital_punishment",b"is_capital_punishment",u"is_life",b"is_life",u"max_length",b"max_length",u"min_length",b"min_length",u"parole_eligibility_date",b"parole_eligibility_date",u"parole_possible",b"parole_possible",u"projected_max_release_date",b"projected_max_release_date",u"projected_min_release_date",b"projected_min_release_date",u"start_date",b"start_date",u"state_charge_ids",b"state_charge_ids",u"state_code",b"state_code",u"state_early_discharge_ids",b"state_early_discharge_ids",u"state_incarceration_period_ids",b"state_incarceration_period_ids",u"state_incarceration_sentence_id",b"state_incarceration_sentence_id",u"state_supervision_period_ids",b"state_supervision_period_ids",u"status",b"status"]) -> None: ...
 
 class StateFine(google___protobuf___message___Message):
     DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
@@ -1415,3 +1423,36 @@ class StateProgramAssignment(google___protobuf___message___Message):
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def HasField(self, field_name: typing_extensions___Literal[u"discharge_date",b"discharge_date",u"discharge_reason",b"discharge_reason",u"participation_status",b"participation_status",u"program_id",b"program_id",u"program_location_id",b"program_location_id",u"referral_date",b"referral_date",u"referral_metadata",b"referral_metadata",u"referring_agent_id",b"referring_agent_id",u"start_date",b"start_date",u"state_code",b"state_code",u"state_program_assignment_id",b"state_program_assignment_id"]) -> builtin___bool: ...
     def ClearField(self, field_name: typing_extensions___Literal[u"discharge_date",b"discharge_date",u"discharge_reason",b"discharge_reason",u"participation_status",b"participation_status",u"program_id",b"program_id",u"program_location_id",b"program_location_id",u"referral_date",b"referral_date",u"referral_metadata",b"referral_metadata",u"referring_agent_id",b"referring_agent_id",u"start_date",b"start_date",u"state_code",b"state_code",u"state_program_assignment_id",b"state_program_assignment_id"]) -> None: ...
+
+class StateEarlyDischarge(google___protobuf___message___Message):
+    DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
+    state_early_discharge_id = ... # type: typing___Text
+    request_date = ... # type: typing___Text
+    decision_date = ... # type: typing___Text
+    decision = ... # type: typing___Text
+    deciding_body_type = ... # type: typing___Text
+    requesting_body_type = ... # type: typing___Text
+    state_code = ... # type: typing___Text
+    county_code = ... # type: typing___Text
+
+    def __init__(self,
+        *,
+        state_early_discharge_id : typing___Optional[typing___Text] = None,
+        request_date : typing___Optional[typing___Text] = None,
+        decision_date : typing___Optional[typing___Text] = None,
+        decision : typing___Optional[typing___Text] = None,
+        deciding_body_type : typing___Optional[typing___Text] = None,
+        requesting_body_type : typing___Optional[typing___Text] = None,
+        state_code : typing___Optional[typing___Text] = None,
+        county_code : typing___Optional[typing___Text] = None,
+        ) -> None: ...
+    if sys.version_info >= (3,):
+        @classmethod
+        def FromString(cls, s: builtin___bytes) -> StateEarlyDischarge: ...
+    else:
+        @classmethod
+        def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> StateEarlyDischarge: ...
+    def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
+    def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
+    def HasField(self, field_name: typing_extensions___Literal[u"county_code",b"county_code",u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"decision_date",b"decision_date",u"request_date",b"request_date",u"requesting_body_type",b"requesting_body_type",u"state_code",b"state_code",u"state_early_discharge_id",b"state_early_discharge_id"]) -> builtin___bool: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"county_code",b"county_code",u"deciding_body_type",b"deciding_body_type",u"decision",b"decision",u"decision_date",b"decision_date",u"request_date",b"request_date",u"requesting_body_type",b"requesting_body_type",u"state_code",b"state_code",u"state_early_discharge_id",b"state_early_discharge_id"]) -> None: ...
