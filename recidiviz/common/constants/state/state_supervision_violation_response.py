@@ -60,6 +60,7 @@ class StateSupervisionViolationResponseRevocationType(EntityEnum, metaclass=Enti
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP
 
 
+# TODO(3108): Transition this enum to use StateActingBodyType
 class StateSupervisionViolationResponseDecidingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     COURT = state_enum_strings.state_supervision_violation_response_deciding_body_type_court
     PAROLE_BOARD = state_enum_strings.state_supervision_violation_response_deciding_body_parole_board

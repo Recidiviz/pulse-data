@@ -106,8 +106,41 @@ class TestSupervisionPipeline(unittest.TestCase):
         }
 
     @staticmethod
-    def build_supervision_pipeline_data_dict(fake_person_id: int,
-                                             fake_supervision_period_id: int):
+    def _default_data_dict():
+        return {
+            schema.StatePerson.__tablename__: [],
+            schema.StateIncarcerationPeriod.__tablename__: [],
+            schema.StateSupervisionViolationResponse.__tablename__: [],
+            schema.StateSupervisionViolation.__tablename__: [],
+            schema.StateSupervisionPeriod.__tablename__: [],
+            schema.StateSupervisionSentence.__tablename__: [],
+            schema.StateIncarcerationSentence.__tablename__: [],
+            schema.StateCharge.__tablename__: [],
+            schema.state_charge_supervision_sentence_association_table.name: [],
+            schema.state_charge_incarceration_sentence_association_table.name: [],
+            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
+            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
+            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
+            schema.state_supervision_sentence_supervision_period_association_table.name: [],
+            schema.StateAssessment.__tablename__: [],
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StateProgramAssignment.__tablename__: [],
+            schema.StateFine.__tablename__: [],
+            schema.StateIncarcerationIncident.__tablename__: [],
+            schema.StateParoleDecision.__tablename__: [],
+            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.state_incarceration_period_program_assignment_association_table.name: [],
+            schema.StateEarlyDischarge.__tablename__: [],
+        }
+
+    def build_supervision_pipeline_data_dict(
+            self, fake_person_id: int, fake_supervision_period_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             person_id=fake_person_id, gender=Gender.MALE,
@@ -255,7 +288,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
@@ -264,28 +298,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
-            schema.state_charge_supervision_sentence_association_table.name: [],
-            schema.state_charge_incarceration_sentence_association_table.name: [],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
 
         return data_dict
 
@@ -790,7 +807,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
@@ -800,27 +818,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
-            schema.state_charge_supervision_sentence_association_table.name: [{}],
-            schema.state_charge_incarceration_sentence_association_table.name: [{}],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
 
         dataset = 'recidiviz-123.state'
 
@@ -1046,7 +1048,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
@@ -1056,27 +1059,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
             schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violation_condition_entry_data,
-            schema.state_charge_supervision_sentence_association_table.name: [{}],
-            schema.state_charge_incarceration_sentence_association_table.name: [{}],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateCharge.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
 
         dataset = 'recidiviz-123.state'
 
@@ -1290,7 +1277,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
@@ -1300,27 +1288,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
-            schema.state_charge_supervision_sentence_association_table.name: [{}],
-            schema.state_charge_incarceration_sentence_association_table.name: [{}],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
 
         dataset = 'recidiviz-123.state'
 
@@ -1508,7 +1480,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        data_dict = {
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
@@ -1517,28 +1490,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
-            schema.state_charge_supervision_sentence_association_table.name: [{}],
-            schema.state_charge_incarceration_sentence_association_table.name: [{}],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [{}],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [{}],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [{}],
             schema.state_supervision_sentence_supervision_period_association_table.name:
                 supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
+        data_dict.update(data_dict_overrides)
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {

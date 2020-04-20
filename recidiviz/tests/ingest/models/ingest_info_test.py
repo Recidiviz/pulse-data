@@ -28,7 +28,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import Person, \
     StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateIncarcerationIncident, StateParoleDecision, \
     StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateIncarcerationIncidentOutcome, StateProgramAssignment
+    StateIncarcerationIncidentOutcome, StateProgramAssignment, StateEarlyDischarge
 
 
 class FieldsDontMatchError(Exception):
@@ -84,11 +84,13 @@ class TestIngestInfo(unittest.TestCase):
         supervision_sentence_fields_ignore = \
             ['state_charge_ids', 'state_charges',
              'state_incarceration_period_ids', 'state_incarceration_periods',
-             'state_supervision_period_ids', 'state_supervision_periods']
+             'state_supervision_period_ids', 'state_supervision_periods',
+             'state_early_discharge_ids', 'state_early_discharges']
         incarceration_sentence_fields_ignore = \
             ['state_charge_ids', 'state_charges',
              'state_incarceration_period_ids', 'state_incarceration_periods',
-             'state_supervision_period_ids', 'state_supervision_periods']
+             'state_supervision_period_ids', 'state_supervision_periods',
+             'state_early_discharge_ids', 'state_early_discharges']
         fine_fields_ignore = ['state_charge_ids', 'state_charges']
         state_charge_fields_ignore = ['state_court_case_id', 'state_court_case',
                                       'state_bond_id', 'state_bond']
@@ -150,6 +152,7 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(StateIncarcerationSentence,
                        ingest_info.StateIncarcerationSentence(),
                        incarceration_sentence_fields_ignore)
+        _verify_fields(StateEarlyDischarge, ingest_info.StateEarlyDischarge())
         _verify_fields(StateFine, ingest_info.StateFine(), fine_fields_ignore)
         _verify_fields(StateCharge, ingest_info.StateCharge(),
                        state_charge_fields_ignore)

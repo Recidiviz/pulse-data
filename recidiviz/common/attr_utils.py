@@ -78,9 +78,11 @@ def is_property_forward_ref(obj, property_name) -> bool:
     return is_forward_ref(attribute)
 
 
+# TODO(1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
+#  as a flat field
 def is_property_flat_field(obj, property_name) -> bool:
     """Returns true if the attribute corresponding to |property_name| on the
-     given object is a flat field (not a List or ForwardRef)."""
+     given object is a flat field (not a List, attr class, or ForwardRef)."""
     attribute = attr.fields_dict(obj.__class__).get(property_name)
 
     return not is_list(attribute) and not is_forward_ref(attribute)
@@ -92,6 +94,11 @@ def is_forward_ref(attribute) -> bool:
         return _is_forward_ref_in_union(attribute.type)
 
     return _is_forward_ref(attribute.type)
+
+
+def is_attr_decorated(obj) -> bool:
+    """Returns True if the object type is attr decorated"""
+    return attr.has(obj)
 
 
 def is_enum(attribute) -> bool:
@@ -115,9 +122,11 @@ def is_list(attribute) -> bool:
     """Returns true if the attribute is a List type."""
     return _is_list(attribute.type)
 
+
 def _is_list(attr_type) -> bool:
     return hasattr(attr_type, '__origin__') \
         and attr_type.__origin__ is list
+
 
 def get_enum_cls(attribute) -> Optional[Type[Enum]]:
     """Return the MappableEnum cls from the provided type attribute,

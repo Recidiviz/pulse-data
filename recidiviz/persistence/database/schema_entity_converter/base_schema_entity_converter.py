@@ -234,15 +234,13 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                     if self._direction_checker.is_back_edge(src, field):
                         self._register_back_edge(src, next_src, field)
                         continue
-                    values.append(self._convert_forward(next_src,
-                                                        populate_back_edges))
+                    values.append(self._convert_forward(next_src, populate_back_edges))
 
                 if not values:
                     continue
 
                 value: Optional[Any] = values
-            elif issubclass(type(v), Entity) or issubclass(type(v),
-                                                           DatabaseEntity):
+            elif issubclass(type(v), Entity) or issubclass(type(v), DatabaseEntity):
                 next_src = v
                 if self._direction_checker.is_back_edge(src, field):
                     self._register_back_edge(src, next_src, field)
