@@ -21,7 +21,6 @@ from datetime import date
 from typing import List, Tuple, Dict
 
 import apache_beam as beam
-from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to
 from apache_beam.testing.test_pipeline import TestPipeline
 
@@ -44,11 +43,14 @@ from recidiviz.persistence.entity.state.entities import \
 
 
 class TestCovertSentenceToStateSpecificType(unittest.TestCase):
-    """Tests the ConvertSentenceToStateSpecificType DoFn."""
+    """Tests the ConvertSentencesToStateSpecificType DoFn."""
+
+    TEST_PERSON_ID = 456
 
     TEST_MO_SENTENCE_STATUS_ROWS = [
-        {'sentence_external_id': '123-external-id', 'sentence_status_external_id': '123-external-id-1',
-         'status_code': '10I1000', 'status_date': '20171012', 'status_description': 'New Court Comm-Institution'}
+        {'person_id': TEST_PERSON_ID, 'sentence_external_id': '123-external-id',
+         'sentence_status_external_id': '123-external-id-1', 'status_code': '10I1000', 'status_date': '20171012',
+         'status_description': 'New Court Comm-Institution'}
     ]
 
     TEST_CONVERTED_MO_STATUS = UsMoSentenceStatus(
@@ -61,7 +63,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
 
     @staticmethod
     def convert_sentence_output_is_valid(expected_output: List[Tuple[int, SentenceType]]):
-        """Beam assert matcher for checking output of ConvertSentenceToStateSpecificType."""
+        """Beam assert matcher for checking output of ConvertSentencesToStateSpecificType."""
 
         def _convert_sentence_output_is_valid(output: List[Tuple[int, SentenceType]]):
             if len(output) != len(expected_output):
@@ -81,7 +83,6 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
     def test_ConvertSentenceToStateSpecificType_incarceration_sentence_fake_state_not_mo(self):
         """Tests that the sentence does not get converted to the state_specific_type for states where that is not
         defined."""
-        person_id = 456
         incarceration_sentence_id = 123
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -91,14 +92,13 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             start_date=date(2000, 1, 1),
         )
 
-        self.run_test_pipeline(person_id,
+        self.run_test_pipeline(self.TEST_PERSON_ID,
                                incarceration_sentence,
                                self.TEST_MO_SENTENCE_STATUS_ROWS,
                                incarceration_sentence)
 
     def test_ConvertSentenceToStateSpecificType_incarceration_sentence_mo(self):
         """Tests that for MO, incarceration sentences get converted to UsMoIncarcerationSentence."""
-        person_id = 456
         incarceration_sentence_id = 123
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -117,14 +117,13 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             sentence_statuses=[self.TEST_CONVERTED_MO_STATUS]
         )
 
-        self.run_test_pipeline(person_id,
+        self.run_test_pipeline(self.TEST_PERSON_ID,
                                incarceration_sentence,
                                self.TEST_MO_SENTENCE_STATUS_ROWS,
                                expected_sentence)
 
     def test_ConvertSentenceToStateSpecificType_supervision_sentence_mo(self):
         """Tests that for MO, supervision sentences get converted to UsMoSupervisionSentence."""
-        person_id = 456
         supervision_sentence_id = 123
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -143,7 +142,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             sentence_statuses=[self.TEST_CONVERTED_MO_STATUS]
         )
 
-        self.run_test_pipeline(person_id,
+        self.run_test_pipeline(self.TEST_PERSON_ID,
                                supervision_sentence,
                                self.TEST_MO_SENTENCE_STATUS_ROWS,
                                expected_sentence)
@@ -153,7 +152,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
                           sentence: SentenceType,
                           us_mo_sentence_status_rows: List[Dict[str, str]],
                           expected_sentence: SentenceType):
-        """Runs a test pipeline to test ConvertSentenceToStateSpecificType and checks the output against expected."""
+        """Runs a test pipeline to test ConvertSentencesToStateSpecificType and checks the output against expected."""
         test_pipeline = TestPipeline()
 
         us_mo_sentence_statuses = (
@@ -162,30 +161,49 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
 
         sentence_status_rankings_as_kv = (
             us_mo_sentence_statuses |
-            'Convert sentence status ranking table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'sentence_external_id')
+            'Convert MO sentence status ranking table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
-        # Group the sentence status tuples by sentence_external_id
-        us_mo_sentence_statuses_by_sentence = (
-            sentence_status_rankings_as_kv |
-            'Group the sentence status ranking tuples by sentence_external_id' >>
-            beam.GroupByKey()
+        sentences = (test_pipeline
+                     | 'Create person_id sentence tuple' >>
+                     beam.Create([(person_id, sentence)])
+                     )
+
+        empty_sentences = (test_pipeline
+                           | 'Create empty PCollection' >>
+                           beam.Create([]))
+
+        if isinstance(sentence, StateSupervisionSentence):
+            supervision_sentences = sentences
+            incarceration_sentences = empty_sentences
+        else:
+            incarceration_sentences = sentences
+            supervision_sentences = empty_sentences
+
+        sentences_and_statuses = (
+            {'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences,
+             'sentence_statuses': sentence_status_rankings_as_kv}
+            | 'Group sentences to the sentence statuses for that person' >>
+            beam.CoGroupByKey()
         )
 
-        output = (test_pipeline
-                  | beam.Create([(person_id, sentence)])
-                  | 'Convert sentence' >>
-                  beam.ParDo(
-                      entity_hydration_utils.ConvertSentenceToStateSpecificType(),
-                      AsDict(us_mo_sentence_statuses_by_sentence)
-                  ))
+        output = (
+            sentences_and_statuses
+            | 'Convert to state-specific sentences' >>
+            beam.ParDo(
+                entity_hydration_utils.ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
+                                                                                           'supervision_sentences')
+        )
 
         # Expect no change
         expected_output = [(person_id, expected_sentence)]
 
-        assert_that(output,
-                    self.convert_sentence_output_is_valid(expected_output))
+        if isinstance(sentence, StateSupervisionSentence):
+            assert_that(output.supervision_sentences, self.convert_sentence_output_is_valid(expected_output))
+        else:
+            assert_that(output.incarceration_sentences, self.convert_sentence_output_is_valid(expected_output))
 
         test_pipeline.run()
 

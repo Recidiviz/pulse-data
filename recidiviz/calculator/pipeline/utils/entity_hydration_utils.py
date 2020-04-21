@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for hydrating connections between entities."""
+from collections import defaultdict
 from typing import Dict, Any, Union, List
 
 from more_itertools import one
@@ -27,47 +28,69 @@ from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
 
 
-@with_input_types(beam.typehints.Tuple[int,
-                                       Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence]],
-                  beam.typehints.Dict[str, List[Dict[str, Any]]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int,
                                         Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence]])
-class ConvertSentenceToStateSpecificType(beam.DoFn):
+class ConvertSentencesToStateSpecificType(beam.DoFn):
     """Converts sentences into state-specific sublcasses of those sentences, for use in state-specific calculate flows.
     """
 
     # pylint: disable=arguments-differ
-    def process(self,
-                element,
-                us_mo_sentence_statuses_by_sentence,
-                *args,
-                **kwargs):
-        """For the given sentence convert to a state-specific subclass, if necessary.
+    def process(self, element, *args, **kwargs):
+        """For the sentences of the given person, convert to a state-specific subclass, if necessary.
 
         Args:
-            element: A tuple containing person_id and either a StateSupervisionSentence or a StateIncarcerationSentence
+            element: A tuple containing person_id and a dictionary with all of the person's incarceration sentences,
+                supervision sentences, and sentence statuses (if applicable)
 
         Yields:
-            A tuple containing person_id and the sentence, converted to a state-specific subclass, if necessary
+            For each incarceration and supervision sentence, yields a tuple containing person_id and the sentence,
+                converted to a state-specific subclass, if necessary
         """
-        person_id, sentence = element
+        person_id, sentences_and_statuses = element
 
-        state_specific_sentence = sentence
-        if sentence.state_code == 'US_MO':
+        incarceration_sentences = sentences_and_statuses.get('incarceration_sentences')
+        supervision_sentences = sentences_and_statuses.get('supervision_sentences')
+        all_sentence_statuses = sentences_and_statuses.get('sentence_statuses')
 
-            sentence_statuses = []
-            if sentence.external_id in us_mo_sentence_statuses_by_sentence:
-                sentence_statuses = us_mo_sentence_statuses_by_sentence[sentence.external_id]
+        us_mo_sentence_statuses_by_sentence: Dict[str, List[Dict[str, str]]] = defaultdict(list)
 
-            if isinstance(sentence, entities.StateSupervisionSentence):
-                state_specific_sentence = UsMoSupervisionSentence.from_supervision_sentence(sentence, sentence_statuses)
-            elif isinstance(sentence, entities.StateIncarcerationSentence):
-                state_specific_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(sentence,
-                                                                                                sentence_statuses)
-            else:
-                raise ValueError(f'Unexpected sentence type: {sentence}')
+        if all_sentence_statuses:
+            # Build a dictionary that maps each sentence_external_id to a list of dictionaries containing status
+            # updates for this sentence
+            for status_dict in all_sentence_statuses:
+                sentence_external_id = status_dict.get('sentence_external_id')
 
-        yield person_id, state_specific_sentence
+                if sentence_external_id:
+                    us_mo_sentence_statuses_by_sentence[sentence_external_id].append(status_dict)
+
+        for incarceration_sentence in incarceration_sentences:
+            state_specific_incarceration_sentence = incarceration_sentence
+            if incarceration_sentence.state_code == 'US_MO':
+
+                sentence_statuses = []
+                if incarceration_sentence.external_id in us_mo_sentence_statuses_by_sentence:
+                    sentence_statuses = us_mo_sentence_statuses_by_sentence[incarceration_sentence.external_id]
+
+                state_specific_incarceration_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(
+                    incarceration_sentence, sentence_statuses)
+
+            yield beam.pvalue.TaggedOutput('incarceration_sentences',
+                                           (person_id, state_specific_incarceration_sentence))
+
+        for supervision_sentence in supervision_sentences:
+            state_specific_supervision_sentence = supervision_sentence
+            if supervision_sentence.state_code == 'US_MO':
+
+                sentence_statuses = []
+                if supervision_sentence.external_id in us_mo_sentence_statuses_by_sentence:
+                    sentence_statuses = us_mo_sentence_statuses_by_sentence[supervision_sentence.external_id]
+
+                state_specific_supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+                    supervision_sentence, sentence_statuses)
+
+            yield beam.pvalue.TaggedOutput('supervision_sentences',
+                                           (person_id, state_specific_supervision_sentence))
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

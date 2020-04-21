@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import \
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
-    ConvertSentenceToStateSpecificType
+    ConvertSentencesToStateSpecificType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -338,7 +338,14 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                      build_related_entities=True,
                                      unifying_id_field_filter_set=unifying_id_field_filter_set))
 
-        us_mo_sentence_status_rows: List[Dict[str, Any]] = []
+        us_mo_sentence_status_rows: List[Dict[str, Any]] = [{
+            'person_id': fake_person_id,
+            'sentence_external_id': 'XXX',
+            'sentence_status_external_id': 'YYY',
+            'status_code': 'ZZZ',
+            'status_date': 'not_a_date',
+            'status_description': 'XYZ'
+        }]
 
         us_mo_sentence_statuses = (
             test_pipeline | 'Create MO sentence statuses' >> beam.Create(us_mo_sentence_status_rows)
@@ -347,32 +354,28 @@ class TestIncarcerationPipeline(unittest.TestCase):
         us_mo_sentence_status_rankings_as_kv = (
             us_mo_sentence_statuses |
             'Convert sentence status ranking table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'sentence_external_id')
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
-        # Group the sentence status tuples by sentence_external_id
-        us_mo_sentence_statuses_by_sentence = (
-            us_mo_sentence_status_rankings_as_kv |
-            'Group the sentence status ranking tuples by sentence_external_id' >>
-            beam.GroupByKey()
+        sentences_and_statuses = (
+            {'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences,
+             'sentence_statuses': us_mo_sentence_status_rankings_as_kv}
+            | 'Group sentences to the sentence statuses for that person' >>
+            beam.CoGroupByKey()
         )
 
-        supervision_sentences_converted = (
-            supervision_sentences
-            | 'Convert to state-specific supervision sentences' >>
-            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
-        )
-
-        incarceration_sentences_converted = (
-            incarceration_sentences
-            | 'Convert to state-specific incarceration sentences' >>
-            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        sentences_converted = (
+            sentences_and_statuses
+            | 'Convert to state-specific sentences' >>
+            beam.ParDo(ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
+                                                                           'supervision_sentences')
         )
 
         sentences_and_sentence_groups = (
             {'sentence_groups': sentence_groups,
-             'incarceration_sentences': incarceration_sentences_converted,
-             'supervision_sentences': supervision_sentences_converted}
+             'incarceration_sentences': sentences_converted.incarceration_sentences,
+             'supervision_sentences': sentences_converted.supervision_sentences}
             | 'Group sentences to sentence groups' >>
             beam.CoGroupByKey()
         )
