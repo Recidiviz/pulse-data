@@ -45,7 +45,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult, ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSentenceToStateSpecificType
+from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -322,6 +322,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id,
                                    fake_supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types)
@@ -342,6 +343,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id,
                                    fake_supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
@@ -350,6 +352,7 @@ class TestSupervisionPipeline(unittest.TestCase):
     @staticmethod
     def run_test_pipeline(dataset: str,
                           inclusions: Dict[str, bool],
+                          fake_person_id: int,
                           fake_supervision_period_id: int,
                           fake_svr_id: int,
                           expected_metric_types: Set[SupervisionMetricType],
@@ -479,20 +482,20 @@ class TestSupervisionPipeline(unittest.TestCase):
             beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
 
         us_mo_sentence_status_rows: List[Dict[str, Any]] = [
-            {'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-1',
+            {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-1',
              'status_code': '10I1000', 'status_date': '20081120',
              'status_description': 'New Court Comm-Institution'},
-            {'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
+            {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
              'status_code': '40O1010', 'status_date': '20101204', 'status_description': 'Parole Release'},
-            {'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
+            {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
              'status_code': '45O1060', 'status_date': '20110405', 'status_description': 'Parole Ret-Treatment Center'},
-            {'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-3',
+            {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-3',
              'status_code': '40O1030', 'status_date': '20140414', 'status_description': 'Parole Re-Release'},
-            {'sentence_external_id': 'ss-1122', 'sentence_status_external_id': 'ss-1122-1',
+            {'person_id': fake_person_id, 'sentence_external_id': 'ss-1122', 'sentence_status_external_id': 'ss-1122-1',
              'status_code': '25I1000', 'status_date': '20150314', 'status_description': 'Court Probation - Addl Chg'},
-            {'sentence_external_id': 'ss-1122', 'sentence_status_external_id': 'ss-1122-2',
+            {'person_id': fake_person_id, 'sentence_external_id': 'ss-1122', 'sentence_status_external_id': 'ss-1122-2',
              'status_code': '45O7000', 'status_date': '20170104', 'status_description': 'Field to DAI-Other Sentence'},
-            {'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
+            {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-2',
              'status_code': '45O1010', 'status_date': '20170104', 'status_description': 'Parole Ret-Tech Viol'},
         ]
 
@@ -500,29 +503,25 @@ class TestSupervisionPipeline(unittest.TestCase):
             test_pipeline | 'Create MO sentence statuses' >> beam.Create(us_mo_sentence_status_rows)
         )
 
-        sentence_status_rankings_as_kv = (
+        us_mo_sentence_status_rankings_as_kv = (
             us_mo_sentence_statuses |
-            'Convert sentence status ranking table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'sentence_external_id')
+            'Convert MO sentence status ranking table to KV tuples' >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
-        # Group the sentence status tuples by sentence_external_id
-        us_mo_sentence_statuses_by_sentence = (
-            sentence_status_rankings_as_kv |
-            'Group the sentence status ranking tuples by sentence_external_id' >>
-            beam.GroupByKey()
+        sentences_and_statuses = (
+            {'incarceration_sentences': incarceration_sentences,
+             'supervision_sentences': supervision_sentences,
+             'sentence_statuses': us_mo_sentence_status_rankings_as_kv}
+            | 'Group sentences to the sentence statuses for that person' >>
+            beam.CoGroupByKey()
         )
 
-        supervision_sentences_converted = (
-            supervision_sentences
-            | 'Convert to state-specific supervision sentences' >>
-            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
-        )
-
-        incarceration_sentences_converted = (
-            incarceration_sentences
-            | 'Convert to state-specific incarceration sentences' >>
-            beam.ParDo(ConvertSentenceToStateSpecificType(), AsDict(us_mo_sentence_statuses_by_sentence))
+        sentences_converted = (
+            sentences_and_statuses
+            | 'Convert to state-specific sentences' >>
+            beam.ParDo(ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
+                                                                           'supervision_sentences')
         )
 
         # Group each StatePerson with their StateIncarcerationPeriods and
@@ -532,8 +531,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              'assessments': assessments,
              'supervision_periods': supervision_periods,
              'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': supervision_sentences_converted,
-             'incarceration_sentences': incarceration_sentences_converted,
+             'supervision_sentences': sentences_converted.supervision_sentences,
+             'incarceration_sentences': sentences_converted.incarceration_sentences,
              'violation_responses': violation_responses_with_hydrated_violations
              }
             | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>
@@ -838,6 +837,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types)
@@ -1080,6 +1080,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
@@ -1310,6 +1311,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
@@ -1508,6 +1510,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
                                    self.all_inclusions_dict,
+                                   fake_person_id_1,
                                    supervision_period__1.supervision_period_id,
                                    supervision_violation_response.supervision_violation_response_id,
                                    expected_metric_types)
