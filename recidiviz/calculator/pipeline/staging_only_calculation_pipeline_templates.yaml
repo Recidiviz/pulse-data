@@ -12,8 +12,7 @@ pipelines:
   - pipeline: supervision
     job_name: us-mo-supervision-calculations-1
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_MO
     calculation_month_limit: 1

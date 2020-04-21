@@ -34,7 +34,7 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--reference_input',
                         type=str,
                         help='BigQuery reference dataset to query.',
-                        default='dashboard_views')
+                        default='reference_tables')
 
     # NOTE: Must stay up to date to include all active states
     parser.add_argument('--state_code',
