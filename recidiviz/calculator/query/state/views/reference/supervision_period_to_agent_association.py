@@ -34,34 +34,19 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION = \
 
 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY = \
     """
-/*{description}*/
+    /*{description}*/
     SELECT 
       sup.state_code, 
       sup.supervision_period_id, 
-      agent.agent_id, 
-      CONCAT(agent.external_id, ': ', off.FNAME, ' ', off.LNAME) as agent_external_id, 
-      CAST(off.SITEID as STRING) as district_external_id
-    FROM `{project_id}.{base_dataset}.state_supervision_period` sup
-    LEFT JOIN `{project_id}.{base_dataset}.state_agent` agent
-      ON agent.agent_id = sup.supervising_officer_id 
-    LEFT JOIN `{project_id}.{reference_tables_dataset}.nd_officers_temp` off
-      ON agent.external_id = CAST(off.OFFICER as STRING)
-    WHERE agent.external_id is not null and agent.state_code = 'US_ND'
-
-    UNION ALL
-
-    SELECT 
-      sup.state_code, 
-      sup.supervision_period_id, 
-      agent.agent_id,
-      REPLACE(CONCAT(agent.external_id, ': ', JSON_EXTRACT(full_name, '$.given_names'), ' ', JSON_EXTRACT(full_name, '$.surname')), '"', '') as agent_external_id, 
-      off.work_location as district_external_id
-    FROM `{project_id}.{base_dataset}.state_supervision_period` sup
-    LEFT JOIN `{project_id}.{base_dataset}.state_agent` agent
-      ON agent.agent_id = sup.supervising_officer_id 
-    LEFT JOIN `{project_id}.{reference_tables_dataset}.mo_officers_temp` off
-      ON agent.external_id = CAST(off.badge_number as STRING)
-    WHERE agent.external_id is not null and agent.state_code = 'US_MO'
+      agents.agent_id, 
+      agents.agent_external_id, 
+      agents.latest_district_external_id AS district_external_id
+    FROM 
+      `{project_id}.{base_dataset}.state_supervision_period` sup
+    LEFT JOIN 
+      `{project_id}.{reference_tables_dataset}.augmented_agent_info` agents
+    ON agents.state_code = sup.state_code AND agents.agent_id = sup.supervising_officer_id
+    WHERE agents.external_id IS NOT NULL;
 """.format(
         description=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION,
         project_id=PROJECT_ID,

@@ -12,8 +12,7 @@ pipelines:
   - pipeline: supervision
     job_name: full-us-nd-supervision-calculations
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: -1 # No limit
@@ -22,23 +21,21 @@ pipelines:
   - pipeline: recidivism
     job_name: full-us-nd-recidivism-calculations
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: -1 # No limit
   - pipeline: incarceration
     job_name: full-us-nd-incarceration-calculations
     input: state
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: -1 # No limit
   - pipeline: program
     job_name: full-us-nd-program-calculations
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: -1 # No limit
@@ -46,8 +43,7 @@ pipelines:
   - pipeline: supervision
     job_name: us-nd-supervision-calculations-36
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: 36
@@ -56,15 +52,14 @@ pipelines:
   - pipeline: incarceration
     job_name: us-nd-incarceration-calculations-36
     input: state
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: 36
   - pipeline: program
     job_name: us-nd-program-calculations-36
     input: state
-    # TODO(2821): Move to reference dataset
-    reference_input: dashboard_views
+    reference_input: reference_tables
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: 36
