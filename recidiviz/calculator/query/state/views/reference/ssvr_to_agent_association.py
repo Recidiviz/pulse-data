@@ -47,43 +47,16 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY = \
         row_number() OVER (PARTITION BY supervision_violation_response_id ORDER BY agent_external_id) as rownum 
       FROM (
         SELECT
-          state_code, 
+          agents.state_code, 
           response.supervision_violation_response_id, 
-          agent.agent_id, 
-          CONCAT(external_id, ': ', off.FNAME, ' ', off.LNAME) as agent_external_id, 
-          CAST(off.SITEID as STRING) as district_external_id
-        FROM `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
-        LEFT JOIN `{project_id}.{base_dataset}.state_agent` agent
-          ON agent.agent_id = response.agent_id 
-        LEFT JOIN `{project_id}.{reference_tables_dataset}.nd_officers_temp` off
-          ON agent.external_id = CAST(off.OFFICER as STRING)
-        WHERE agent.external_id IS NOT NULL 
-          AND state_code = 'US_ND'
-      )
-    )
-    WHERE rownum = 1
-
-    UNION ALL
-
-    SELECT 
-      * EXCEPT(rownum) 
-    FROM (
-      SELECT 
-        *, 
-        row_number() OVER (PARTITION BY supervision_violation_response_id ORDER BY agent_external_id) as rownum 
-      FROM (
-        SELECT 
-          state_code, 
-          response.supervision_violation_response_id, 
-          agent.agent_id,
-          REPLACE(CONCAT(agent.external_id, ': ', JSON_EXTRACT(full_name, '$.given_names'), ' ', JSON_EXTRACT(full_name, '$.surname')), '"', '') as agent_external_id,
-          off.work_location as district_external_id
-        FROM `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
-        LEFT JOIN `{project_id}.{base_dataset}.state_agent` agent
-          ON agent.agent_id = response.agent_id 
-        LEFT JOIN `{project_id}.{reference_tables_dataset}.mo_officers_temp` off
-          ON agent.external_id = CAST(off.badge_number as STRING)
-        WHERE agent.external_id is not null AND state_code = 'US_MO'
+          agents.agent_id, 
+          agents.agent_external_id, 
+          agents.latest_district_external_id AS district_external_id
+        FROM
+        `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
+        LEFT JOIN 
+        `{project_id}.{reference_tables_dataset}.augmented_agent_info` agents
+        ON agents.agent_id = response.agent_id 
       )
     )
     WHERE rownum = 1

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Reference views used by other views."""
+from recidiviz.calculator.query.state.views.reference.augmented_agent_info import AUGMENTED_AGENT_INFO_VIEW
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW
 from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
@@ -33,6 +34,7 @@ from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_pers
 
 REF_VIEWS = [
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW,
+    AUGMENTED_AGENT_INFO_VIEW,
     SSVR_TO_AGENT_ASSOCIATION_VIEW,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW,
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
