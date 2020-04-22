@@ -429,9 +429,32 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
                  supervision_sentence_status_xref_bv.BW$SY <=
                  supervision_sentence_type_classifier.PROBATION_REVOCATION_DATE)
     ),
+    valid_sentences_with_status_xref AS (
+        /* Join all statuses with valid, non-investigative sentences */
+        SELECT
+            BU$DOC, BU$CYC, BU$SEO,
+            supervision_sentence_status_xref_with_types.IS_PROBATION_REVOCATION,
+            supervision_sentence_status_xref_with_types.SENTENCE_TYPE,
+            supervision_sentence_status_xref_with_types.BV$DOC,
+            supervision_sentence_status_xref_with_types.BV$CYC,
+            supervision_sentence_status_xref_with_types.BV$SEO,
+            supervision_sentence_status_xref_with_types.BV$FSO,
+            supervision_sentence_status_xref_with_types.BW$SSO,
+            supervision_sentence_status_xref_with_types.BW$SCD,
+            supervision_sentence_status_xref_with_types.BW$SY
+        FROM
+            distinct_supervision_sentence_ids
+        LEFT OUTER JOIN
+            supervision_sentence_status_xref_with_types
+        ON
+            supervision_sentence_status_xref_with_types.BV$DOC = distinct_supervision_sentence_ids.BU$DOC AND
+            supervision_sentence_status_xref_with_types.BV$CYC = distinct_supervision_sentence_ids.BU$CYC AND
+            supervision_sentence_status_xref_with_types.BV$SEO = distinct_supervision_sentence_ids.BU$SEO AND
+            supervision_sentence_status_xref_with_types.BV$FSO = distinct_supervision_sentence_ids.BU$FSO
+    ),
     ranked_supervision_sentence_status_xref AS (
         SELECT
-            supervision_sentence_status_xref_with_types.*,
+            valid_sentences_with_status_xref.*,
             ROW_NUMBER() OVER (
                 PARTITION BY BV$DOC, BV$CYC, BV$SEO
                 ORDER BY
@@ -439,20 +462,21 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
                     -- If there is a probation revocation status on a day, this is the
                     -- most important piece of information
                     IS_PROBATION_REVOCATION DESC,
+                    -- If there are multiple field sequence numbers (FSO) with
+                    -- the same status update on the same day, pick the largest
+                    -- FSO, since this is likely the most recent status
+                    BV$FSO DESC,
                     -- Otherwise, if multiple statuses are on the same day, pick the larger
                     -- status code, alphabetically, giving preference to close (9*)
                     -- statuses
-                    BW$SCD DESC,
-                    -- If there are multiple field sequence numbers (FSO) with
-                    -- the same status update on the same day, pick the largest
-                    -- FSO.
-                    BV$FSO DESC
+                    BW$SCD DESC
+
             ) AS SUPERVISION_SENTENCE_STATUS_RECENCY_RANK
         FROM
-            supervision_sentence_status_xref_with_types
+            valid_sentences_with_status_xref
     ),
     most_recent_fso_and_status_for_sentence AS (
-        /* Join all statuses with their associated sentences, pick the FSO row with the most recent status */
+        /* Pick the FSO row with the most recent status */
         SELECT
             BU$DOC, BU$CYC, BU$SEO,
             ranked_supervision_sentence_status_xref.SENTENCE_TYPE,
@@ -461,14 +485,7 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
             ranked_supervision_sentence_status_xref.BW$SCD AS MOST_RECENT_SENTENCE_STATUS_SCD,
             ranked_supervision_sentence_status_xref.BW$SY AS MOST_RECENT_SENTENCE_STATUS_DATE
         FROM
-            distinct_supervision_sentence_ids
-        LEFT OUTER JOIN
             ranked_supervision_sentence_status_xref
-        ON
-            ranked_supervision_sentence_status_xref.BV$DOC = distinct_supervision_sentence_ids.BU$DOC AND
-            ranked_supervision_sentence_status_xref.BV$CYC = distinct_supervision_sentence_ids.BU$CYC AND
-            ranked_supervision_sentence_status_xref.BV$SEO = distinct_supervision_sentence_ids.BU$SEO AND
-            ranked_supervision_sentence_status_xref.BV$FSO = distinct_supervision_sentence_ids.BU$FSO
         WHERE SUPERVISION_SENTENCE_STATUS_RECENCY_RANK = 1
     )
     SELECT
