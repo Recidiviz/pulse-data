@@ -67,7 +67,7 @@ AUGMENTED_AGENT_INFO_QUERY = \
             ELSE surname
           END AS surname, 
           CASE 
-            WHEN state_code = 'US_ND' THEN SITEID
+            WHEN state_code = 'US_ND' THEN CAST(SITEID AS STRING)
             ELSE NULL
           END AS latest_district_external_id
         FROM agents_base
