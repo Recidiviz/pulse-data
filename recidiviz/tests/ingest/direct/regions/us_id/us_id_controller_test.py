@@ -22,9 +22,11 @@ from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodStatus
@@ -42,7 +44,7 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
     StateCourtCase, StateAgent, StateSupervisionSentence, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateSupervisionViolationTypeEntry, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry
+    StateSupervisionViolationResponseDecisionEntry, StateEarlyDischarge
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -454,6 +456,81 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
 
         self.run_parse_file_test(expected, 'mittimus_judge_sentence_offense_sentprob_supervision_sentences')
+
+    def test_populate_data_early_discharge_incarceration_sentence(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='1111',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-2',
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id='1111-3',
+                                    state_early_discharges=[
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed1-1',
+                                            request_date='02/01/2020',
+                                            requesting_body_type='SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE '
+                                                                 'DISCHARGE REQUEST',
+                                            deciding_body_type='PAROLE',
+                                            decision_date='02/05/2020',
+                                            decision='Deny - Programming Needed',
+                                        ),
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed2-2',
+                                            request_date='03/01/2020',
+                                            requesting_body_type='SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION',
+                                            deciding_body_type='PAROLE',
+                                        ),
+                                    ],
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'early_discharge_incarceration_sentence')
+
+    def test_populate_data_early_discharge_supervision_sentence(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='3333',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='3333-1',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_sentence_id='3333-1',
+                                    state_early_discharges=[
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed3-3',
+                                            request_date='01/01/2015',
+                                            requesting_body_type='REQUEST FOR DISCHARGE: PROBATION',
+                                            deciding_body_type='PROBATION',
+                                            decision_date='06/01/2015',
+                                            decision='Deny',
+                                        ),
+                                    ],
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'early_discharge_supervision_sentence')
 
     def test_populate_data_movement_facility_offstat_incarceration_periods(self):
         expected = IngestInfo(
@@ -1224,7 +1301,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             full_name='{"full_name": "JUDGE 5"}')
 
-        sp_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
+        ss_1111_2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
             status=StateSentenceStatus.REVOKED,
@@ -1247,8 +1324,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='4-44',
             description='CRIME 4 + DESC',
-            supervision_sentences=[sp_1111_2],
-            person=sp_1111_2.person)
+            supervision_sentences=[ss_1111_2],
+            person=ss_1111_2.person)
         cc_1111_234 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-234',
@@ -1257,11 +1334,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             judge=judge_3,
             charges=[c_1111_2],
             person=c_1111_2.person)
-        sg_1111_2.supervision_sentences.append(sp_1111_2)
-        sp_1111_2.charges.append(c_1111_2)
+        sg_1111_2.supervision_sentences.append(ss_1111_2)
+        ss_1111_2.charges.append(c_1111_2)
         c_1111_2.court_case = cc_1111_234
 
-        sp_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
+        ss_2222_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
             status=StateSentenceStatus.REVOKED,
@@ -1284,8 +1361,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='5-55',
             description='CRIME 5 + DESC',
-            supervision_sentences=[sp_2222_1],
-            person=sp_2222_1.person)
+            supervision_sentences=[ss_2222_1],
+            person=ss_2222_1.person)
         cc_2222_567 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-567',
@@ -1294,8 +1371,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             judge=judge_4,
             charges=[c_2222_1],
             person=c_2222_1.person)
-        sg_2222_1.supervision_sentences.append(sp_2222_1)
-        sp_2222_1.charges.append(c_2222_1)
+        sg_2222_1.supervision_sentences.append(ss_2222_1)
+        ss_2222_1.charges.append(c_2222_1)
         c_2222_1.court_case = cc_2222_567
 
         sg_3333_1 = entities.StateSentenceGroup.new_with_defaults(
@@ -1303,7 +1380,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id='3333-1',
             person=person_3)
-        sp_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
+        ss_3333_1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-1',
             status=StateSentenceStatus.SUSPENDED,
@@ -1325,8 +1402,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             counts=2,
             statute='6-66',
             description='CRIME 6 + DESC',
-            supervision_sentences=[sp_3333_1],
-            person=sp_3333_1.person)
+            supervision_sentences=[ss_3333_1],
+            person=ss_3333_1.person)
         cc_3333_890 = entities.StateCourtCase.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-890',
@@ -1336,12 +1413,75 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             charges=[c_3333_1],
             person=c_3333_1.person)
         person_3.sentence_groups.append(sg_3333_1)
-        sg_3333_1.supervision_sentences.append(sp_3333_1)
-        sp_3333_1.charges.append(c_3333_1)
+        sg_3333_1.supervision_sentences.append(ss_3333_1)
+        ss_3333_1.charges.append(c_3333_1)
         c_3333_1.court_case = cc_3333_890
 
         # Act
         self._run_ingest_job_for_filename('mittimus_judge_sentence_offense_sentprob_supervision_sentences.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # EARLY_DISCHARGE_INCARCERATION_SENTENCE
+        #################################################################
+        # Arrange
+
+        ed_1 = entities.StateEarlyDischarge.new_with_defaults(
+            external_id='ED1-1',
+            state_code=_STATE_CODE_UPPER,
+            request_date=datetime.date(year=2020, month=2, day=1),
+            requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
+            requesting_body_type_raw_text='SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE DISCHARGE REQUEST',
+            deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE',
+            decision_date=datetime.date(year=2020, month=2, day=5),
+            decision=StateEarlyDischargeDecision.REQUEST_DENIED,
+            decision_raw_text='DENY - PROGRAMMING NEEDED',
+            incarceration_sentence=is_1111_3,
+            person=is_1111_3.person,
+        )
+        ed_2 = entities.StateEarlyDischarge.new_with_defaults(
+            external_id='ED2-2',
+            state_code=_STATE_CODE_UPPER,
+            request_date=datetime.date(year=2020, month=3, day=1),
+            requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
+            requesting_body_type_raw_text='SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION',
+            deciding_body_type=StateActingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE',
+            incarceration_sentence=is_1111_3,
+            person=is_1111_3.person,
+        )
+        is_1111_3.early_discharges.extend([ed_1, ed_2])
+
+        # Act
+        self._run_ingest_job_for_filename('early_discharge_incarceration_sentence.csv')
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # EARLY_DISCHARGE_SUPERVISION_SENTENCE
+        #################################################################
+        # Arrange
+        ed_3 = entities.StateEarlyDischarge.new_with_defaults(
+            external_id='ED3-3',
+            state_code=_STATE_CODE_UPPER,
+            request_date=datetime.date(year=2015, month=1, day=1),
+            requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
+            requesting_body_type_raw_text='REQUEST FOR DISCHARGE: PROBATION',
+            deciding_body_type=StateActingBodyType.COURT,
+            deciding_body_type_raw_text='PROBATION',
+            decision_date=datetime.date(year=2015, month=6, day=1),
+            decision=StateEarlyDischargeDecision.REQUEST_DENIED,
+            decision_raw_text='DENY',
+            supervision_sentence=ss_3333_1,
+            person=ss_3333_1.person,
+        )
+        ss_3333_1.early_discharges.append(ed_3)
+
+        # Act
+        self._run_ingest_job_for_filename('early_discharge_supervision_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -1513,7 +1653,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_1111_2,
             person=sg_1111_2.person)
-        sp_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
+        ss_1111_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
             supervision_site='DISTRICT 1',
@@ -1554,14 +1694,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=ss_1111_2_placeholder.person,
         )
         sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
-        ss_1111_2_placeholder.supervision_periods.extend([sp_1111_2, sp_1111_3, sp_1111_4])
+        ss_1111_2_placeholder.supervision_periods.extend([ss_1111_2, sp_1111_3, sp_1111_4])
 
         ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_2222_1,
             person=sg_2222_1.person)
-        sp_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        ss_2222_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
             supervision_site='DISTRICT 2',
@@ -1603,14 +1743,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=ss_2222_1_placeholder.person,
         )
         sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
-        ss_2222_1_placeholder.supervision_periods.extend([sp_2222_1, sp_2222_2, sp_2222_3])
+        ss_2222_1_placeholder.supervision_periods.extend([ss_2222_1, sp_2222_2, sp_2222_3])
 
         ss_3333_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group=sg_3333_1,
             person=sg_3333_1.person)
-        sp_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
+        ss_3333_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='3333-1',
             supervision_site='DISTRICT 4',
@@ -1636,7 +1776,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=ss_3333_1_placeholder.person,
         )
         sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
-        ss_3333_1_placeholder.supervision_periods.extend([sp_3333_1, sp_3333_2])
+        ss_3333_1_placeholder.supervision_periods.extend([ss_3333_1, sp_3333_2])
 
         # Act
         self._run_ingest_job_for_filename('movement_facility_offstat_supervision_periods.csv')

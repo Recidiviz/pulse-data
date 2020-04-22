@@ -58,6 +58,12 @@ _HIERARCHY_MAP: Dict[
             'state_incarceration_sentence': ('state_person',
                                              'state_sentence_group',),
             'state_fine': ('state_person', 'state_sentence_group',),
+            'state_early_discharge': (
+                'state_person', 'state_sentence_group',
+                AncestorTypeChoices(
+                    key='state_sentence',
+                    ancestor_choices={'state_incarceration_sentence',
+                                      'state_supervision_sentence'})),
             'state_incarceration_period': (
                 'state_person', 'state_sentence_group',
                 AncestorTypeChoices(
