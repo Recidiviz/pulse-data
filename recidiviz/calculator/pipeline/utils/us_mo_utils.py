@@ -32,17 +32,48 @@ _LAW_CITATION_SUBTYPE_STR: str = 'LAW_CITATION'
 _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP = OrderedDict([
     (StateSupervisionViolationType.FELONY.value, 'fel'),
     (StateSupervisionViolationType.MISDEMEANOR.value, 'misd'),
+    (_LAW_CITATION_SUBTYPE_STR, 'law_cit'),
     (StateSupervisionViolationType.ABSCONDED.value, 'absc'),
     (StateSupervisionViolationType.MUNICIPAL.value, 'muni'),
-    (_LAW_CITATION_SUBTYPE_STR, 'law_cit'),
     (StateSupervisionViolationType.ESCAPED.value, 'esc'),
     (_SUBSTANCE_ABUSE_SUBTYPE_STR, 'subs'),
     (StateSupervisionViolationType.TECHNICAL.value, 'tech')
 ])
 
 
-def identify_violation_subtype(violation_type: StateSupervisionViolationType,
-                               violations: List[StateSupervisionViolation]) -> Optional[str]:
+def us_mo_identify_most_severe_violation_type(violations: List[StateSupervisionViolation],
+                                              violation_type_severity_order: List[StateSupervisionViolationType]) -> \
+        Optional[StateSupervisionViolationType]:
+    """Identifies the most severe violation type on the violation according to the violation type severity order
+    ranking. Classifies LAW_CITATION violations as severe as a MISDEMEANOR."""
+    has_law_citation = False
+
+    violation_types = []
+    for violation in violations:
+        for violation_type_entry in violation.supervision_violation_types:
+            violation_types.append(violation_type_entry.violation_type)
+
+            if violation_type_entry.violation_type == StateSupervisionViolationType.TECHNICAL:
+                technical_subtype = us_mo_identify_violation_subtype(StateSupervisionViolationType.TECHNICAL,
+                                                                     [violation])
+
+                if technical_subtype == _LAW_CITATION_SUBTYPE_STR:
+                    has_law_citation = True
+
+    most_severe_type = next((violation_type for violation_type in violation_type_severity_order
+                             if violation_type in violation_types), None)
+
+    if (most_severe_type not in (StateSupervisionViolationType.FELONY, StateSupervisionViolationType.MISDEMEANOR)
+            and has_law_citation):
+        # The most severe violation type was a LAW_CITATION. Return TECHNICAL so that TECHNICAL-LAW_CITATION will be
+        # this person's most severe violation type and subtype.
+        return StateSupervisionViolationType.TECHNICAL
+
+    return most_severe_type
+
+
+def us_mo_identify_violation_subtype(violation_type: StateSupervisionViolationType,
+                                     violations: List[StateSupervisionViolation]) -> Optional[str]:
     """Looks through all provided |violations| of type |violation_type| and returns a string subtype, if necessary."""
     # We only care about subtypes for technical violations
     if violation_type != StateSupervisionViolationType.TECHNICAL:
@@ -87,7 +118,7 @@ def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisi
             violation_type = violation_type_entry.violation_type
             if not violation_type:
                 continue
-            subtype = identify_violation_subtype(violation_type, [violation])
+            subtype = us_mo_identify_violation_subtype(violation_type, [violation])
 
             to_increment = subtype if subtype and all_technicals else violation_type.value
             type_and_subtype_counts[to_increment] += 1
