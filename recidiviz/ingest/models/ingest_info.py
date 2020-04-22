@@ -762,7 +762,7 @@ class StateSupervisionSentence(IngestObject):
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
-    def create_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
+    def create_state_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
         early_discharge = StateEarlyDischarge(**kwargs)
         self.state_early_discharges.append(early_discharge)
         return early_discharge
@@ -858,7 +858,7 @@ class StateIncarcerationSentence(IngestObject):
         self.state_supervision_periods.append(supervision_period)
         return supervision_period
 
-    def create_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
+    def create_state_early_discharge(self, **kwargs) -> 'StateEarlyDischarge':
         early_discharge = StateEarlyDischarge(**kwargs)
         self.state_early_discharges.append(early_discharge)
         return early_discharge

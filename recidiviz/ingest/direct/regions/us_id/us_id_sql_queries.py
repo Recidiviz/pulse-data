@@ -621,6 +621,106 @@ OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
       (body_loc_cd)
 """
 
+INCARCERATION_SENTENCE_IDS_QUERY = f"""
+      SELECT
+          mitt_srl,
+          incrno,
+          sent_no
+      FROM
+          `{project_id}.us_id_raw_data.sentence`
+      LEFT JOIN
+          `{project_id}.us_id_raw_data.mittimus`
+      USING
+          (mitt_srl)
+      LEFT JOIN
+          `{project_id}.us_id_raw_data.sentprob` sentprob
+      USING
+          (mitt_srl, sent_no)
+      WHERE
+          sentprob.mitt_srl IS NULL
+
+"""
+
+PROBATION_SENTENCE_IDS_QUERY = f"""
+      SELECT
+          mitt_srl,
+          incrno,
+          sent_no
+      FROM
+          `{project_id}.us_id_raw_data.sentence`
+      LEFT JOIN
+          `{project_id}.us_id_raw_data.sentprob` sentprob
+      USING
+          (mitt_srl, sent_no)
+      WHERE
+          sentprob.mitt_srl IS NOT NULL
+"""
+
+EARLY_DISCHARGE_QUERY = """
+    WITH 
+    relevant_sentences AS ({relevant_sentence_query}
+    ),
+    early_discharge AS (
+      SELECT 
+        * 
+      EXCEPT (
+        jurisdiction_decision_code_id, 
+        supervisor_review_date,
+        jurisdiction_authize_date)  # Ignore fields which are always NULL.
+      FROM 
+      `{project_id}.us_id_raw_data.early_discharge`
+    ),
+    form_type AS (
+      SELECT 
+        early_discharge_form_typ_id,
+        early_discharge_form_typ_desc,
+      FROM 
+        `{project_id}.us_id_raw_data.early_discharge_form_typ`
+    ),
+    jurisdiction_code AS (
+      SELECT
+        jurisdiction_decision_code_id,
+        jurisdiction_decision_description
+      FROM 
+       `{project_id}.us_id_raw_data.jurisdiction_decision_code`
+    )
+    SELECT 
+      *
+    FROM 
+      `{project_id}.us_id_raw_data.early_discharge_sent`
+    LEFT JOIN 
+      early_discharge
+    USING 
+      (early_discharge_id)
+    LEFT JOIN 
+      form_type
+    USING 
+      (early_discharge_form_typ_id)
+    LEFT JOIN 
+      jurisdiction_code
+    USING 
+      (jurisdiction_decision_code_id)
+    JOIN 
+      relevant_sentences
+    USING
+      (mitt_srl, sent_no)
+    ORDER BY 
+      ofndr_num, early_discharge_id
+
+"""
+
+
+EARLY_DISCHARGE_INCARCERATION_SENTENCE_QUERY = f"""
+    {EARLY_DISCHARGE_QUERY.format(
+        relevant_sentence_query=INCARCERATION_SENTENCE_IDS_QUERY.format(project_id=project_id), project_id=project_id)}
+"""
+
+
+EARLY_DISCHARGE_SUPERVISION_SENTENCE_QUERY = f"""
+    {EARLY_DISCHARGE_QUERY.format(
+        relevant_sentence_query=PROBATION_SENTENCE_IDS_QUERY.format(project_id=project_id), project_id=project_id)}
+"""
+
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
@@ -630,6 +730,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
          MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY),
         ('mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
          MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY),
+        ('early_discharge_incarceration_sentence', EARLY_DISCHARGE_INCARCERATION_SENTENCE_QUERY),
+        ('early_discharge_supervision_sentence', EARLY_DISCHARGE_SUPERVISION_SENTENCE_QUERY),
         ('movement_facility_offstat_incarceration_periods', MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY),
         ('movement_facility_offstat_supervision_periods', MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY),
