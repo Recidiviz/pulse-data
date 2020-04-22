@@ -21,8 +21,10 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
@@ -49,7 +51,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson, StateEarlyDischarge
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 from recidiviz.utils.params import str_to_bool
@@ -96,6 +98,14 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._set_extra_sentence_fields,
                 self._set_generated_ids,
             ],
+            'early_discharge_incarceration_sentence': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+            ],
+            'early_discharge_supervision_sentence': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+            ],
             'movement_facility_offstat_incarceration_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
@@ -131,13 +141,15 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_supervising_officer,
-            ]
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender_ofndr_dob': [],
             'ofndr_tst_ofndr_tst_cert': [],
             'mittimus_judge_sentence_offense_sentprob_incarceration_sentences': [],
             'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
+            'early_discharge_incarceration_sentence': [],
+            'early_discharge_supervision_sentence': [],
             'movement_facility_offstat_incarceration_periods': [],
             'movement_facility_offstat_supervision_periods': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [],
@@ -157,6 +169,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         'ofndr_tst_ofndr_tst_cert',
         'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
+        'early_discharge_incarceration_sentence',
+        'early_discharge_supervision_sentence',
         'movement_facility_offstat_incarceration_periods',
         'movement_facility_offstat_supervision_periods',
         'ofndr_tst_tst_qstn_rspns_violation_reports',
@@ -265,6 +279,41 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision.REVOCATION: [
             'Revocation',               # Parole recommendation from violation report 210
             'Imposition of Sentence',   # Probation recommendation from violation report 210/204
+        ],
+
+        StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED: [
+            'Grant Request to Terminate',
+        ],
+        StateEarlyDischargeDecision.REQUEST_DENIED: [
+            'Deny',
+            'Deny - Committed Crime(s) While on Probation',
+            'Deny - New Charges',
+            'Deny - No Violations, but Unsatisfactory',
+            'Deny - Other',
+            'Deny - Pending Charge(s)',
+            'Deny - Programming Needed',
+            'Deny - Serious Nature of the Offense',
+            'Deny - Unpaid Restitution',
+            'Deny - Unpaid Restitution, Court Costs or Fees',
+            'Deny - Unsatisfactory Performance to Date',
+        ],
+        StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED: [
+            'Grant Unsupervised Probation',
+        ],
+
+        StateActingBodyType.COURT: [
+            'PROBATION',
+        ],
+        StateActingBodyType.PAROLE_BOARD: [
+            'PAROLE',
+        ],
+        StateActingBodyType.SUPERVISION_OFFICER: [
+            'REQUEST FOR DISCHARGE: PROBATION',
+            'SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION',
+        ],
+        StateActingBodyType.SENTENCED_PERSON: [
+            'SPECIAL PROGRESS REPORT MOTION FOR PROBATION DISCHARGE BY DEFENDANT',
+            'SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE DISCHARGE REQUEST',
         ],
 
     }
@@ -402,11 +451,16 @@ class UsIdController(CsvGcsfsDirectIngestController):
         external id is unique among all entities in US_ID.
         """
         person_id = row.get('docno', '')
+        if not person_id:
+            person_id = row.get('ofndr_num', '')
+
         sentence_group_id = row.get('incrno', '')
         sentence_id = row.get('sent_no', '')
         court_case_id = row.get('caseno', '')
         period_id = row.get('period_id', '')
         violation_id = row.get('ofndr_tst_id', '')
+        early_discharge_id = row.get('early_discharge_id', '')
+        early_discharge_sent_id = row.get('early_discharge_sent_id', '')
 
         for obj in extracted_objects:
             if isinstance(obj, StateSentenceGroup):
@@ -434,6 +488,14 @@ class UsIdController(CsvGcsfsDirectIngestController):
             # One response per violation, so recycle violation id for the response.
             if isinstance(obj, StateSupervisionViolationResponse):
                 obj.state_supervision_violation_response_id = f'{violation_id}'
+
+            # While early_discharge_sent_id is unique for every sentence-level early discharge request,
+            # early_discharge_id can be repeated across sentences if discharge was requested for the
+            # sentences at the same time. Decisions are made on a sentence level, so we need to include
+            # early_discharge_sent_id in the key. We prepend early_discharge_id in case it is useful in calculate to
+            # know which sentences had early discharge requested together.
+            if isinstance(obj, StateEarlyDischarge):
+                obj.state_early_discharge_id = f'{early_discharge_id}-{early_discharge_sent_id}'
 
     @staticmethod
     def _add_rider_treatment(
