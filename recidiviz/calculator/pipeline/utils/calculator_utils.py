@@ -315,6 +315,14 @@ def _identify_most_severe_violation_type(
         violations: List[StateSupervisionViolation]) -> Optional[StateSupervisionViolationType]:
     """Identifies the most severe violation type on the violation according
     to the static violation type ranking."""
+    if not violations:
+        return None
+
+    state_code = violations[0].state_code
+
+    if state_code.upper() == 'US_MO':
+        return us_mo_utils.us_mo_identify_most_severe_violation_type(violations, VIOLATION_TYPE_SEVERITY_ORDER)
+
     violation_types = []
     for violation in violations:
         for violation_type_entry in violation.supervision_violation_types:
@@ -332,7 +340,7 @@ def identify_violation_subtype(violation_type: Optional[StateSupervisionViolatio
 
     state_code = violations[0].state_code
     if state_code.upper() == 'US_MO':
-        return us_mo_utils.identify_violation_subtype(violation_type, violations)
+        return us_mo_utils.us_mo_identify_violation_subtype(violation_type, violations)
 
     return None
 
