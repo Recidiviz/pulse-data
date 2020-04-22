@@ -353,7 +353,7 @@ class TestIngestUtils:
 
         incarceration_sentence = group.create_state_incarceration_sentence()
         incarceration_sentence.state_incarceration_sentence_id = 'is1'
-        early_discharge1 = incarceration_sentence.create_early_discharge()
+        early_discharge1 = incarceration_sentence.create_state_early_discharge()
         early_discharge1.state_early_discharge_id = 'early_discharge1'
         charge1 = incarceration_sentence.create_state_charge()
         charge1.state_charge_id = 'charge1'
@@ -386,7 +386,7 @@ class TestIngestUtils:
 
         supervision_sentence = group.create_state_supervision_sentence()
         supervision_sentence.state_supervision_sentence_id = 'ss1'
-        early_discharge2 = supervision_sentence.create_early_discharge()
+        early_discharge2 = supervision_sentence.create_state_early_discharge()
         early_discharge2.state_early_discharge_id = 'early_discharge2'
         charge2 = supervision_sentence.create_state_charge()
         charge2.state_charge_id = 'charge2'
