@@ -16,13 +16,9 @@
 # =============================================================================
 """Contains util methods for UsMoMatchingDelegate."""
 import datetime
-import logging
-from typing import List, Union, Optional
+from typing import List, Union
 
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema.state.schema import StateSupervisionViolation, StateSupervisionSentence, \
-    StateIncarcerationSentence
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls
 from recidiviz.persistence.errors import EntityMatchingError
@@ -73,84 +69,3 @@ def set_current_supervising_officer_from_supervision_periods(
 
         latest_supervision_period = non_placeholder_sps[-1]
         person.supervising_officer = latest_supervision_period.supervising_officer
-
-
-def move_violations_onto_supervision_periods_by_date(
-        matched_persons: List[schema.StatePerson]):
-    """Given a list of |matched_persons|, for each sentence (either Incarceration or Supervision) associates all
-    violations in that sentence with the corresponding SupervisionPeriod(s) based on date.
-    """
-    for person in matched_persons:
-        for sentence_group in person.sentence_groups:
-            for sentence in sentence_group.supervision_sentences \
-                            + sentence_group.incarceration_sentences:
-                _move_violations_onto_supervision_periods_for_sentence(sentence)
-
-
-def _move_violations_onto_supervision_periods_for_sentence(
-        sentence: Union[StateSupervisionSentence, StateIncarcerationSentence]):
-    """Looks at all SupervisionViolations in the provided |sentence|, and attempts to match them to the corresponding
-    SupervisionPeriod, based on date.
-    """
-    supervision_periods = sentence.supervision_periods
-
-    # Get all supervision violations from supervision periods
-    supervision_violations = get_all_entities_of_cls(supervision_periods, StateSupervisionViolation)
-
-    # Clear the links from supervision period to supervision violations. We will
-    # re-add/update these relationships below.
-    for supervision_period in supervision_periods:
-        supervision_period.supervision_violation_entries = []
-
-    unmatched_svs = []
-    non_placeholder_periods = [sp for sp in supervision_periods if not is_placeholder(sp)]
-
-    # Match SVs to non_placeholder_periods by date.
-    for sv in supervision_violations:
-        matched = False
-        violation_date = _get_approximate_violation_date(sv)
-        if violation_date:
-            for sp in non_placeholder_periods:
-                sp_end_date = sp.termination_date if sp.termination_date else datetime.date.max
-                sp_start_date = sp.start_date
-                if sp_start_date <= violation_date <= sp_end_date:
-                    matched = True
-                    sp.supervision_violation_entries.append(sv)
-
-        # Unmatched SVs will be re-added to a placeholder period at the end.
-        if not matched:
-            unmatched_svs.append(sv)
-
-    # Add unmatched supervision violations to a placeholder period
-    if unmatched_svs:
-        placeholder_periods = [sp for sp in supervision_periods if is_placeholder(sp)]
-
-        if not placeholder_periods:
-            # We may hit this case if an entity that has already been committed to the DB has a date updated in a later
-            # run such that the dates of the existing supervision periods no longer line up with one of the existing
-            # supervision violations.
-            logging.info(
-                'No placeholder supervision periods exist on sentence [%s]([%s]), creating a new placeholder '
-                'supervision period.',
-                sentence.external_id, sentence.get_id())
-            new_placeholder_supervision_period = schema.StateSupervisionPeriod(
-                state_code=sentence.state_code,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-                person=sentence.person
-            )
-            placeholder_periods.append(new_placeholder_supervision_period)
-            sentence.supervision_periods.append(new_placeholder_supervision_period)
-
-        placeholder_periods[0].supervision_violation_entries = unmatched_svs
-
-
-def _get_approximate_violation_date(violation: StateSupervisionViolation) -> Optional[datetime.date]:
-    """For the provided |violation|, returns the violation date (if present), otherwise relies on the earliest
-    violation response date."""
-    if violation.violation_date:
-        return violation.violation_date
-
-    response_dates = [svr.response_date for svr in violation.supervision_violation_responses if svr.response_date]
-    if not response_dates:
-        return None
-    return min(response_dates)

@@ -1486,10 +1486,10 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        # TODO(2999): Associate supervision/incarceration periods to sentences by date.
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS
         #################################################################
+        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         is_1111_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1625,6 +1625,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS
         #################################################################
+        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         ss_1111_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1789,6 +1790,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports
         #################################################################
+        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
         sg_1111_placeholder = entities.StateSentenceGroup.new_with_defaults(
@@ -1812,8 +1814,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='5',
             is_violent=True,
             is_sex_offense=True,
-            supervision_periods=[sp_1111_placeholder],
-            person=sp_1111_placeholder.person
+            supervision_periods=[sp_1111_3],
+            person=sp_1111_3.person
         )
         vte_1111_5_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1848,7 +1850,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         person_1.sentence_groups.append(sg_1111_placeholder)
         sg_1111_placeholder.supervision_sentences.append(ss_1111_placeholder)
         ss_1111_placeholder.supervision_periods.append(sp_1111_placeholder)
-        sp_1111_placeholder.supervision_violation_entries.append(sv_1111_5)
+        sp_1111_3.supervision_violation_entries.append(sv_1111_5)
         sv_1111_5.supervision_violation_types.extend([vte_1111_5_m, vte_1111_5_t])
         sv_1111_5.supervision_violation_responses.append(svr_1111_5)
         svr_1111_5.supervision_violation_response_decisions.append(svrd_1111_5_r)
@@ -1874,8 +1876,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='6',
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_2222_placeholder],
-            person=sp_2222_placeholder.person
+            supervision_periods=[sp_2222_1],
+            person=sp_2222_1.person
         )
         vte_2222_6_a = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1903,7 +1905,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         person_2.sentence_groups.append(sg_2222_placeholder)
         sg_2222_placeholder.supervision_sentences.append(ss_2222_placeholder)
         ss_2222_placeholder.supervision_periods.append(sp_2222_placeholder)
-        sp_2222_placeholder.supervision_violation_entries.append(sv_2222_6)
+        sp_2222_1.supervision_violation_entries.append(sv_2222_6)
         sv_2222_6.supervision_violation_types.extend([vte_2222_6_a, vte_2222_6_t])
         sv_2222_6.supervision_violation_responses.append(svr_2222_6)
 
@@ -1928,8 +1930,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='7',
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_3333_placeholder],
-            person=sp_3333_placeholder.person
+            supervision_periods=[sp_3333_1],
+            person=sp_3333_1.person
         )
         vte_3333_7_t = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1957,7 +1959,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         person_3.sentence_groups.append(sg_3333_placeholder)
         sg_3333_placeholder.supervision_sentences.append(ss_3333_placeholder)
         ss_3333_placeholder.supervision_periods.append(sp_3333_placeholder)
-        sp_3333_placeholder.supervision_violation_entries.append(sv_3333_7)
+        sp_3333_1.supervision_violation_entries.append(sv_3333_7)
         sv_3333_7.supervision_violation_types.append(vte_3333_7_t)
         sv_3333_7.supervision_violation_responses.append(svr_3333_7)
         svr_3333_7.supervision_violation_response_decisions.append(svrd_3333_7_r)
@@ -1966,12 +1968,13 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         self._run_ingest_job_for_filename('ofndr_tst_tst_qstn_rspns_violation_reports.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_people(expected_people, debug=True)
 
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports_old
         #################################################################
         # TODO(3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
+        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
         sg_2222_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
@@ -1995,8 +1998,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='8',
             is_violent=False,
             is_sex_offense=False,
-            supervision_periods=[sp_2222_placeholder_2],
-            person=sp_2222_placeholder_2.person
+            supervision_periods=[sp_2222_1],
+            person=sp_2222_1.person
         )
         vte_2222_8_m = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2031,7 +2034,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         person_2.sentence_groups.append(sg_2222_placeholder_2)
         sg_2222_placeholder_2.supervision_sentences.append(ss_2222_placeholder_2)
         ss_2222_placeholder_2.supervision_periods.append(sp_2222_placeholder_2)
-        sp_2222_placeholder_2.supervision_violation_entries.append(sv_2222_8)
+
+        sp_2222_1.supervision_violation_entries.append(sv_2222_8)
         sv_2222_8.supervision_violation_types.extend([vte_2222_8_m, vte_2222_8_t])
         sv_2222_8.supervision_violation_responses.append(svr_2222_8)
         svr_2222_8.supervision_violation_response_decisions.append(svrd_2222_8_c)

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_matching_utils.py"""
-import datetime
 
 import attr
 import pytest
@@ -41,38 +40,24 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
     read_persons
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
+
+from recidiviz.persistence.entity_matching.entity_matching_types import \
+    EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import \
     BaseStateMatchingUtilsTest
 
-_DATE_1 = datetime.date(year=2019, month=1, day=1)
-_DATE_2 = datetime.date(year=2019, month=2, day=1)
-_DATE_3 = datetime.date(year=2019, month=3, day=1)
-_DATE_4 = datetime.date(year=2019, month=4, day=1)
-_DATE_5 = datetime.date(year=2019, month=5, day=1)
-_DATE_6 = datetime.date(year=2019, month=6, day=1)
-_DATE_7 = datetime.date(year=2019, month=7, day=1)
-_DATE_8 = datetime.date(year=2019, month=8, day=1)
 _EXTERNAL_ID = 'EXTERNAL_ID-1'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
-_EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
-_EXTERNAL_ID_5 = 'EXTERNAL_ID-5'
-_EXTERNAL_ID_6 = 'EXTERNAL_ID-6'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
 _COUNTY_CODE = 'COUNTY'
 _STATE_CODE = 'NC'
 _STATE_CODE_ANOTHER = 'CA'
-_FULL_NAME = 'NAME'
 _ID_TYPE = 'ID_TYPE'
 _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
-_FACILITY = 'FACILITY'
-_FACILITY_2 = 'FACILITY_2'
-_FACILITY_3 = 'FACILITY_3'
-_FACILITY_4 = 'FACILITY_4'
 
 
 # pylint: disable=protected-access

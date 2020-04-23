@@ -30,9 +30,10 @@ from recidiviz.persistence.entity_matching.state.\
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     read_persons_by_root_entity_cls, base_entity_match
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import move_periods_onto_sentences_by_date
+from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import \
+    move_violations_onto_supervision_periods_for_sentence
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids, \
-    move_violations_onto_supervision_periods_by_date, \
     set_current_supervising_officer_from_supervision_periods
 
 
@@ -71,7 +72,7 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
 
         logging.info(
             "[Entity matching] Post-processing: Move SupervisionViolationResponses onto SupervisionPeriods by date.")
-        move_violations_onto_supervision_periods_by_date(matched_persons)
+        move_violations_onto_supervision_periods_for_sentence(matched_persons)
 
     def get_non_external_id_match(
             self, ingested_entity_tree: EntityTree,

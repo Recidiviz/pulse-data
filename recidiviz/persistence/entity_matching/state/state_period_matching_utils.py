@@ -16,14 +16,14 @@
 # ============================================================================
 """Specific entity matching utils for StateIncarcerationPeriod/StateSupervisionPeriod entities."""
 import datetime
-import logging
 from typing import List, Optional, Type
 
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls
+from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls, \
+    get_or_create_placeholder_child
 
 
 def add_supervising_officer_to_open_supervision_periods(persons: List[schema.StatePerson]):
@@ -174,17 +174,11 @@ def _move_periods_onto_sentences_for_sentence_group(
     if unmatched_periods:
         placeholder_sentences = [s for s in sentences if is_placeholder(s)]
         if not placeholder_sentences:
-            # We may hit this case if an entity that has already been committed to the DB has a date updated in a later
-            # run such that the dates of the existing sentences no longer line up with one of the existing periods.
-            logging.info(
-                'No placeholder sentences exist on sentence group [%s]([%s]), creating a new placeholder sentence.',
-                sentence_group.external_id, sentence_group.sentence_group_id)
-            new_placeholder_sentence = schema.StateSupervisionSentence(
-                state_code=sentence_group.state_code,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            placeholder_sentence = get_or_create_placeholder_child(
+                sentence_group, 'supervision_sentences', schema.StateSupervisionSentence,
+                state_code=sentence_group.state_code, status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
                 person=sentence_group.person)
-            placeholder_sentences.append(new_placeholder_sentence)
-            sentence_group.supervision_sentences.append(new_placeholder_sentence)
-        placeholder_sentence = placeholder_sentences[0]
+        else:
+            placeholder_sentence = placeholder_sentences[0]
         for unmatched_period in unmatched_periods:
             _add_period_to_sentence(unmatched_period, placeholder_sentence)
