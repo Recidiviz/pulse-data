@@ -167,9 +167,11 @@ class SupervisionTerminationBucket(SupervisionTimeBucket):
     Describes the reason for termination, and the change in assessment score between first reassessment and termination
     of supervision.
     """
+    # The date of the termination
+    termination_date: date = attr.ib(default=None)
+
     # The reason for supervision termination
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = \
-        attr.ib(default=None)
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
 
     # The difference between the first reassessment score and the score at termination of supervision
     assessment_score_change: Optional[int] = attr.ib(default=None)

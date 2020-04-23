@@ -297,6 +297,8 @@ def characteristic_combinations(person: StatePerson,
 
     if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
         event_date = supervision_time_bucket.revocation_admission_date
+    elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
+        event_date = supervision_time_bucket.termination_date
     else:
         year = supervision_time_bucket.year
         month = supervision_time_bucket.month
@@ -330,6 +332,12 @@ def characteristic_combinations(person: StatePerson,
                     and supervision_time_bucket.violation_history_description:
                 characteristics_with_person_details['violation_history_description'] = \
                     supervision_time_bucket.violation_history_description
+
+        if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
+            if isinstance(supervision_time_bucket, SupervisionTerminationBucket):
+                if supervision_time_bucket.termination_date:
+                    # Only include termination date on the person-level termination metrics
+                    characteristics_with_person_details['termination_date'] = supervision_time_bucket.termination_date
 
         all_combinations.append(characteristics_with_person_details)
 
