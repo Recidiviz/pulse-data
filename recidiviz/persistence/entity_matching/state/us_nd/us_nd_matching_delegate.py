@@ -28,7 +28,8 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.state. \
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    base_entity_match, read_persons_by_root_entity_cls, \
+    base_entity_match, read_persons_by_root_entity_cls
+from recidiviz.persistence.entity_matching.state.state_period_matching_utils import \
     add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity_matching.state.us_nd. \
     us_nd_matching_utils import \

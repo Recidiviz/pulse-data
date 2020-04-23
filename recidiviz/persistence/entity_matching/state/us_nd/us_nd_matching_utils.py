@@ -33,7 +33,8 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     default_merge_flat_fields, add_child_to_entity, remove_child_from_entity, \
-    get_all_entities_of_cls, revoked_to_prison
+    get_all_entities_of_cls
+from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import revoked_to_prison
 from recidiviz.persistence.errors import EntityMatchingError
 
 

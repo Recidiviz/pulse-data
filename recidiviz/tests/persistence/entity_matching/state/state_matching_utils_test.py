@@ -16,8 +16,6 @@
 # =============================================================================
 """Tests for state_matching_utils.py"""
 import datetime
-from typing import List
-from unittest import TestCase
 
 import attr
 import pytest
@@ -28,14 +26,8 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, is_revocation_admission
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodStatus
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_entity_converter import \
-    schema_entity_converter as converter
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StateCharge, StateSentenceGroup, StateFine, \
@@ -44,20 +36,15 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     _is_match, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, \
     get_root_entity_cls, get_total_entities_of_cls, \
-    revoked_to_prison, base_entity_match, get_external_ids_of_cls, \
+    base_entity_match, get_external_ids_of_cls, \
     get_all_entity_trees_of_cls, default_merge_flat_fields, \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
-    read_persons, add_supervising_officer_to_open_supervision_periods
+    read_persons
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-
-from recidiviz.persistence.entity_matching.entity_matching_types import \
-    EntityTree
+from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
-from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
-    import generate_agent, generate_person, generate_external_id, \
-    generate_supervision_period, generate_supervision_sentence, \
-    generate_sentence_group
-from recidiviz.tests.utils import fakes
+from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import \
+    BaseStateMatchingUtilsTest
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -89,47 +76,8 @@ _FACILITY_4 = 'FACILITY_4'
 
 
 # pylint: disable=protected-access
-class TestStateMatchingUtils(TestCase):
+class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     """Tests for state entity matching utils"""
-
-    def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
-
-    def to_entity(self, schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False)
-
-    def to_entities(self, schema_objects):
-        return converter.convert_schema_objects_to_entity(
-            schema_objects, populate_back_edges=False)
-
-    def assert_schema_objects_equal(self,
-                                    expected: StateBase,
-                                    actual: StateBase):
-        self.assertEqual(
-            converter.convert_schema_object_to_entity(expected),
-            converter.convert_schema_object_to_entity(actual)
-        )
-
-    def assert_schema_object_lists_equal(self,
-                                         expected: List[StateBase],
-                                         actual: List[StateBase]):
-        self.assertCountEqual(
-            converter.convert_schema_objects_to_entity(expected),
-            converter.convert_schema_objects_to_entity(actual)
-        )
-
-    def assert_people_match(self,
-                            expected_people: List[StatePerson],
-                            matched_people: List[schema.StatePerson]):
-        converted_matched = \
-            converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = \
-            converter.convert_entity_people_to_schema_people(expected_people)
-        expected_with_backedges = \
-            converter.convert_schema_objects_to_entity(
-                db_expected_with_backedges)
-        self.assertEqual(expected_with_backedges, converted_matched)
 
     def test_isMatch_statePerson(self):
         external_id = schema.StatePersonExternalId(
@@ -458,12 +406,6 @@ class TestStateMatchingUtils(TestCase):
 
         is_revocation_admission(StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None))
 
-    def test_completeEnumSet_revokedToPrison(self):
-        svr = schema.StateSupervisionViolationResponse()
-        for revocation_type in StateSupervisionViolationResponseRevocationType:
-            svr.revocation_type = revocation_type.value
-            revoked_to_prison(svr)
-
     def test_baseEntityMatch_placeholder(self):
         charge = StateCharge.new_with_defaults()
         charge_another = StateCharge.new_with_defaults()
@@ -651,61 +593,3 @@ class TestStateMatchingUtils(TestCase):
         self.assertEqual({entity_tree.entity.sentence_group_id
                           for entity_tree in sentence_group_trees_to_merge},
                          {1, 2})
-
-    def test_addSupervisingOfficerToOpenSupervisionPeriods(self):
-        # Arrange
-        supervising_officer = generate_agent(
-            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_STATE_CODE)
-        person = generate_person(
-            person_id=_ID, supervising_officer=supervising_officer)
-        external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            id_type=_ID_TYPE)
-        open_supervision_period = generate_supervision_period(
-            person=person,
-            supervision_period_id=_ID,
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE_1,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
-        placeholder_supervision_period = generate_supervision_period(
-            person=person,
-            supervision_period_id=_ID_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
-        closed_supervision_period = generate_supervision_period(
-            person=person,
-            supervision_period_id=_ID_3,
-            external_id=_EXTERNAL_ID_3,
-            start_date=_DATE_3,
-            termination_date=_DATE_4,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE)
-        supervision_sentence = generate_supervision_sentence(
-            person=person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            supervision_sentence_id=_ID,
-            supervision_periods=[open_supervision_period,
-                                 placeholder_supervision_period,
-                                 closed_supervision_period])
-        sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            sentence_group_id=_ID,
-            supervision_sentences=[supervision_sentence])
-        person.external_ids = [external_id]
-        person.sentence_groups = [sentence_group]
-
-        # Act
-        add_supervising_officer_to_open_supervision_periods([person])
-
-        # Assert
-        self.assertEqual(
-            open_supervision_period.supervising_officer, supervising_officer)
-        self.assertIsNone(
-            placeholder_supervision_period.supervising_officer,
-            supervising_officer)
-        self.assertIsNone(
-            closed_supervision_period.supervising_officer, supervising_officer)
