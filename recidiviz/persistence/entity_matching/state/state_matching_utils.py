@@ -528,3 +528,28 @@ def read_persons_by_root_entity_cls(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
+
+
+def get_or_create_placeholder_child(
+        parent_entity: DatabaseEntity, child_field_name: str, child_class: Type[DatabaseEntity], **child_kwargs):
+    """Checks all the entities in the |parent_entity|'s field |child_field_name|. If there is a placeholder entity,
+    returns that. Otherwise creates a new placeholder entity of type |child_class| on the parent's |child_field_name|
+    using |child_kw_args|.
+    """
+    children = parent_entity.get_field_as_list(child_field_name)
+    placeholder_children = [c for c in children if is_placeholder(c)]
+
+    if placeholder_children:
+        return placeholder_children[0]
+
+    logging.info(
+        'No placeholder children on entity with id [%s] of type [%s] exist on field [%s]. Have to create one.',
+        parent_entity.get_external_id(), parent_entity.get_entity_name(), child_field_name)
+    new_child = child_class(**child_kwargs)
+    if not is_placeholder(new_child):
+        raise EntityMatchingError(f'Child created with kwargs is not a placeholder [{child_kwargs}]',
+                                  parent_entity.get_entity_name())
+
+    children.append(new_child)
+    parent_entity.set_field_from_list(child_field_name, children)
+    return new_child
