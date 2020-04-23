@@ -50,8 +50,8 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY = \
           agents.state_code, 
           response.supervision_violation_response_id, 
           agents.agent_id, 
-          agents.agent_external_id, 
-          agents.latest_district_external_id AS district_external_id
+          CAST(agents.agent_external_id AS STRING) as agent_external_id, 
+          CAST(agents.latest_district_external_id AS STRING) AS district_external_id
         FROM
         `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
         LEFT JOIN 
