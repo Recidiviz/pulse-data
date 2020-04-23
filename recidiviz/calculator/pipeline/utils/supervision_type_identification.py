@@ -20,6 +20,7 @@ import logging
 from typing import Optional, Set, List
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
+from recidiviz.common.common_utils import date_spans_overlap_inclusive
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -272,12 +273,8 @@ def _get_sentences_overlapping_with_dates(
         sentence_start = sentence.start_date
         sentence_completion = sentence.completion_date if sentence.completion_date else datetime.date.max
 
-        if _date_spans_overlap_inclusive(begin_date, end_date, sentence_start, sentence_completion):
+        if date_spans_overlap_inclusive(
+                start_1=begin_date, end_1=end_date, start_2=sentence_start, end_2=sentence_completion):
             sentences_within_dates.append(sentence)
 
     return sentences_within_dates
-
-
-def _date_spans_overlap_inclusive(
-        start_1: datetime.date, end_1: datetime.date, start_2: datetime.date, end_2: datetime.date) -> bool:
-    return start_1 <= end_2 and end_1 >= start_2

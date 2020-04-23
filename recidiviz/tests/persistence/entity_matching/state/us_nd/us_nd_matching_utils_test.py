@@ -16,8 +16,6 @@
 # =============================================================================
 """Tests for us_nd_state_matching_utils.py"""
 import datetime
-from typing import List
-from unittest import TestCase
 
 import attr
 from mock import create_autospec
@@ -31,7 +29,6 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import \
     schema_entity_converter as converter
@@ -48,7 +45,8 @@ from recidiviz.persistence.entity_matching.state.us_nd.\
     merge_incomplete_periods, _update_temporary_holds_helper, \
     associate_revocation_svrs_with_ips, _merge_incarceration_periods_helper, \
     move_incidents_onto_periods
-from recidiviz.tests.utils import fakes
+from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import \
+    BaseStateMatchingUtilsTest
 from recidiviz.utils.regions import Region
 
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -81,43 +79,8 @@ _FACILITY_4 = 'FACILITY_4'
 
 
 # pylint: disable=protected-access
-class TestUsNdMatchingUtils(TestCase):
+class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
     """Test class for US_ND specific matching utils."""
-
-    def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
-
-    def to_entity(self, schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False)
-
-    def assert_schema_objects_equal(self,
-                                    expected: StateBase,
-                                    actual: StateBase):
-        self.assertEqual(
-            converter.convert_schema_object_to_entity(expected),
-            converter.convert_schema_object_to_entity(actual)
-        )
-
-    def assert_schema_object_lists_equal(self,
-                                         expected: List[StateBase],
-                                         actual: List[StateBase]):
-        self.assertCountEqual(
-            converter.convert_schema_objects_to_entity(expected),
-            converter.convert_schema_objects_to_entity(actual)
-        )
-
-    def assert_people_match(self,
-                            expected_people: List[StatePerson],
-                            matched_people: List[schema.StatePerson]):
-        converted_matched = \
-            converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = \
-            converter.convert_entity_people_to_schema_people(expected_people)
-        expected_with_backedges = \
-            converter.convert_schema_objects_to_entity(
-                db_expected_with_backedges)
-        self.assertEqual(expected_with_backedges, converted_matched)
 
     def create_fake_nd_region(self):
         fake_region = create_autospec(Region)
