@@ -441,6 +441,7 @@ def find_supervision_termination_bucket(
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
+            termination_date=termination_date,
             year=termination_date.year,
             month=termination_date.month,
             supervision_type=supervision_type,

@@ -361,6 +361,9 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, Person
     # The reason the supervisions were terminated
     termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
 
+    # The date the supervision was terminated
+    termination_date: Optional[date] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['TerminatedSupervisionAssessmentScoreChangeMetric']:
