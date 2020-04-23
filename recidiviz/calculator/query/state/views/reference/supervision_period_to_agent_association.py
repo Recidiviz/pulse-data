@@ -39,8 +39,8 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY = \
       sup.state_code, 
       sup.supervision_period_id, 
       agents.agent_id, 
-      agents.agent_external_id, 
-      agents.latest_district_external_id AS district_external_id
+      CAST(agents.agent_external_id AS STRING) as agent_external_id, 
+      CAST(agents.latest_district_external_id AS STRING) AS district_external_id
     FROM 
       `{project_id}.{base_dataset}.state_supervision_period` sup
     LEFT JOIN 
