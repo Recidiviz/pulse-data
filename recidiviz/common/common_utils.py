@@ -16,6 +16,7 @@
 # =============================================================================
 
 "Utils to be shared across recidiviz project"
+import datetime
 import logging
 import random
 import time
@@ -92,3 +93,29 @@ def retry_grpc(num_retries, fn, *args, **kwargs):
 def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type):
     if not all(isinstance(o, expected_type) for o in objs):
         raise ValueError(f"Not all objects are type [{expected_type.__name__}]")
+
+
+def date_intersects_with_span(*, point_in_time: datetime.date, start_date: datetime.date, end_date: datetime.date):
+    """Returns true if the provided |point_in_time| is within [start_date, end_date)"""
+    return start_date <= point_in_time < end_date
+
+
+def date_spans_overlap_exclusive(
+        *, start_1: datetime.date, end_1: datetime.date, start_2: datetime.date, end_2: datetime.date) -> bool:
+    """Returns true if the provided spans overlap. Spans which share a single date are not considered overlapping.
+
+    The only exception to this is if one of the provided spans actually has the same start/end date.
+    In this case, the spans are considered overlapping if the single-date span is within [start_date, end_date) of the
+    other span.
+    """
+    if start_1 == end_1:
+        return date_intersects_with_span(point_in_time=start_1, start_date=start_2, end_date=end_2)
+    if start_2 == end_2:
+        return date_intersects_with_span(point_in_time=start_2, start_date=start_1, end_date=end_1)
+    return start_1 < end_2 and end_1 > start_2
+
+
+def date_spans_overlap_inclusive(
+        *, start_1: datetime.date, end_1: datetime.date, start_2: datetime.date, end_2: datetime.date) -> bool:
+    """Returns true if the provided spans overlap. Spans which share a single date are considered overlapping."""
+    return start_1 <= end_2 and end_1 >= start_2

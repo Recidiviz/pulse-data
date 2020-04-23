@@ -32,6 +32,7 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
+from typing import TypeVar
 
 from sqlalchemy import (
     Boolean,
@@ -558,6 +559,9 @@ state_supervision_violation_response_decision_agent_association_table = \
                  ForeignKey('state_agent.agent_id'),
                  index=True),
           )
+
+SchemaPeriodType = TypeVar('SchemaPeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
+SchemaSentenceType = TypeVar('SchemaSentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
 
 
 # Shared mixin columns

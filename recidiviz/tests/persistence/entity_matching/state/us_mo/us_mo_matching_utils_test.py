@@ -16,19 +16,15 @@
 # =============================================================================
 """Tests for us_mo_state_matching_utils.py"""
 import datetime
-from typing import List
-from unittest import TestCase
 
 import attr
 import pytest
 
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state.entities import \
     StateSupervisionViolation, StateSupervisionPeriod, \
     StateSupervisionSentence, StateSentenceGroup, StatePerson, \
@@ -36,13 +32,14 @@ from recidiviz.persistence.entity.state.entities import \
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids, \
     move_violations_onto_supervision_periods_by_date, \
-    move_supervision_periods_onto_sentences_by_date, \
     set_current_supervising_officer_from_supervision_periods
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import \
     generate_sentence_group, generate_agent, generate_person, \
     generate_external_id, generate_supervision_period, \
     generate_supervision_sentence
+from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import \
+    BaseStateMatchingUtilsTest
 
 _DATE = datetime.date(year=2001, month=7, day=20)
 _DATE_2 = datetime.date(year=2002, month=7, day=20)
@@ -62,32 +59,9 @@ _ID_3 = 3
 _ID_TYPE = 'ID_TYPE'
 _STATE_CODE = 'US_MO'
 
-class TestUsMoMatchingUtils(TestCase):
+
+class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
     """Test class for US_MO specific matching utils."""
-
-    def to_entity(self, schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False)
-
-    def assert_people_match(self,
-                            expected_people: List[StatePerson],
-                            matched_people: List[schema.StatePerson],
-                            debug: bool = True):
-        converted_matched = \
-            converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = \
-            converter.convert_entity_people_to_schema_people(expected_people)
-        expected_with_backedges = \
-            converter.convert_schema_objects_to_entity(
-                db_expected_with_backedges)
-
-        if debug:
-            print('============== EXPECTED WITH BACKEDGES ==============')
-            print_entity_trees(expected_with_backedges)
-            print('============== CONVERTED MATCHED ==============')
-            print_entity_trees(converted_matched)
-
-        self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def test_removeSeosFromViolationIds(self):
         svr = schema.StateSupervisionViolationResponse(
@@ -199,231 +173,6 @@ class TestUsMoMatchingUtils(TestCase):
         self.assertIsNone(placeholder_supervision_period.supervising_officer)
         self.assertEqual(
             person.supervising_officer, supervising_officer_2)
-
-    def test_associatedSupervisionPeriodsWithSentences(self):
-        # Arrange
-        sp_no_match = StateSupervisionPeriod.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE,
-            termination_date=_DATE_2
-        )
-
-        sp_1 = StateSupervisionPeriod.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE_4,
-            termination_date=_DATE_6
-        )
-
-        sp_2 = StateSupervisionPeriod.new_with_defaults(
-            external_id=_EXTERNAL_ID_2,
-            start_date=_DATE_6,
-            termination_date=None)
-
-        placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            supervision_periods=[sp_no_match, sp_1, sp_2])
-
-        ss = StateSupervisionSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE_4,
-            completion_date=None)
-        inc_s = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE_3,
-            completion_date=_DATE_5
-        )
-
-        sg = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[inc_s],
-            supervision_sentences=[ss, placeholder_ss])
-
-        state_person = StatePerson.new_with_defaults(
-            sentence_groups=[sg])
-
-        expected_sp_1 = attr.evolve(sp_1)
-        expected_sp_2 = attr.evolve(sp_2)
-
-        expected_placeholder_ss = attr.evolve(placeholder_ss,
-                                              supervision_periods=[sp_no_match])
-        expected_inc_s = attr.evolve(
-            inc_s, supervision_periods=[expected_sp_1])
-        expected_ss = attr.evolve(
-            ss,
-            supervision_periods=[expected_sp_1, expected_sp_2])
-
-        expected_sg = attr.evolve(
-            sg,
-            supervision_sentences=[expected_ss, expected_placeholder_ss],
-            incarceration_sentences=[expected_inc_s])
-        expected_person = attr.evolve(
-            state_person, sentence_groups=[expected_sg])
-
-        # Act
-        input_people = \
-            converter.convert_entity_people_to_schema_people(
-                [state_person])
-        move_supervision_periods_onto_sentences_by_date(input_people)
-
-        # Assert
-        self.assert_people_match([expected_person], input_people)
-
-    def test_associateSupervisionPeriodsWithSentenceDoNotMatchSentenceWithNoStart(self):
-        # Arrange
-        placeholder_sp = StateSupervisionPeriod.new_with_defaults()
-
-        sp = StateSupervisionPeriod.new_with_defaults(
-            external_id=_EXTERNAL_ID_3,
-            start_date=_DATE_2,
-            termination_date=_DATE_3)
-
-        inc_s_no_dates = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            supervision_periods=[placeholder_sp])
-
-        placeholder_inc_s = StateIncarcerationSentence.new_with_defaults(
-            supervision_periods=[sp])
-
-        sg = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[inc_s_no_dates, placeholder_inc_s])
-
-        state_person = StatePerson.new_with_defaults(
-            sentence_groups=[sg])
-
-        # Should remain unchanged - the non-placeholder supervision period
-        # should not get moved onto sentence with an id but no start date
-        expected_person = attr.evolve(state_person)
-
-        # Act
-        input_people = \
-            converter.convert_entity_people_to_schema_people(
-                [state_person])
-        move_supervision_periods_onto_sentences_by_date(input_people)
-
-        # Assert
-        self.assert_people_match([expected_person], input_people)
-
-    def test_associateSupervisionPeriodsWithSentencePeriodNoLongerMatches(self):
-        # Arrange
-        sp_which_no_longer_overlaps = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_ID,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            start_date=_DATE_6
-        )
-
-        # This sentence, which has already been written to the DB, has presumably been updated so that the date range no
-        # longer overlaps with the attached supervision period.
-        inc_s_updated_dates = StateIncarcerationSentence.new_with_defaults(
-            incarceration_sentence_id=_ID_2,
-            external_id=_EXTERNAL_ID,
-            state_code=_STATE_CODE,
-            start_date=_DATE_3,
-            completion_date=_DATE_5,
-            supervision_periods=[sp_which_no_longer_overlaps]
-        )
-
-        sg = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=_ID_3,
-            state_code=_STATE_CODE,
-            incarceration_sentences=[inc_s_updated_dates])
-
-        state_person = StatePerson.new_with_defaults(
-            person_id=_ID,
-            sentence_groups=[sg])
-
-        expected_sp = attr.evolve(sp_which_no_longer_overlaps)
-        expected_is = attr.evolve(inc_s_updated_dates, supervision_periods=[])
-
-        # We expect that a new placeholder supervision sentence has been created to hold on to the orphaned supervision
-        # period.
-        expected_placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_periods=[expected_sp],
-        )
-        expected_sg = attr.evolve(sg,
-                                  incarceration_sentences=[expected_is],
-                                  supervision_sentences=[expected_placeholder_ss])
-        expected_person = attr.evolve(state_person, sentence_groups=[expected_sg])
-
-        # Act
-        input_people = \
-            converter.convert_entity_people_to_schema_people(
-                [state_person])
-        move_supervision_periods_onto_sentences_by_date(input_people)
-
-        # Assert
-        self.assert_people_match([expected_person], input_people)
-
-    def test_associateSupervisionPeriodsWithSentenceDoNotMoveOntoPlaceholder(self):
-        # Arrange
-        placeholder_inc_s = StateIncarcerationSentence.new_with_defaults()
-
-        placeholder_sp = StateSupervisionPeriod.new_with_defaults()
-
-        sp = StateSupervisionPeriod.new_with_defaults(
-            external_id=_EXTERNAL_ID_3,
-            start_date=_DATE_2,
-            termination_date=_DATE_3)
-
-        inc_s = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE,
-            completion_date=_DATE_8,
-            supervision_periods=[sp, placeholder_sp])
-
-        sg = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[inc_s, placeholder_inc_s])
-
-        state_person = StatePerson.new_with_defaults(
-            sentence_groups=[sg])
-
-        # Should remain unchanged - periods should not get attached to other
-        # placeholder sentence.
-        expected_person = attr.evolve(state_person)
-
-        # Act
-        input_people = \
-            converter.convert_entity_people_to_schema_people(
-                [state_person])
-        move_supervision_periods_onto_sentences_by_date(input_people)
-
-        # Assert
-        self.assert_people_match([expected_person], input_people)
-
-    def test_associateSupervisionPeriodsWithSentenceDoNotMovePlaceholderPeriods(self):
-        # Arrange
-        placeholder_sp = StateSupervisionPeriod.new_with_defaults()
-
-        inc_s_2 = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            start_date=_DATE,
-            completion_date=_DATE_8)
-
-        inc_s = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID_2,
-            start_date=_DATE,
-            completion_date=_DATE_8,
-            supervision_periods=[placeholder_sp])
-
-        sg = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[inc_s, inc_s_2])
-
-        state_person = StatePerson.new_with_defaults(
-            sentence_groups=[sg])
-
-        # Should remain unchanged - placeholder period should not get attached
-        # to any other sentences
-        expected_person = attr.evolve(state_person)
-
-        # Act
-        input_people = \
-            converter.convert_entity_people_to_schema_people(
-                [state_person])
-        move_supervision_periods_onto_sentences_by_date(input_people)
-
-        # Assert
-        self.assert_people_match([expected_person], input_people)
-
 
     def test_associateViolationsWithSupervisionPeriods(self):
         # Arrange

@@ -49,7 +49,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     generate_supervision_period, \
     generate_supervision_sentence, generate_agent, generate_supervision_case_type_entry
 from recidiviz.tests.persistence.entity_matching.state.\
-    base_state_entity_matcher_test import BaseStateEntityMatcherTest
+    base_state_entity_matcher_test_classes import BaseStateEntityMatcherTest
 from recidiviz.utils.regions import Region
 
 _EXTERNAL_ID = 'EXTERNAL_ID-1'

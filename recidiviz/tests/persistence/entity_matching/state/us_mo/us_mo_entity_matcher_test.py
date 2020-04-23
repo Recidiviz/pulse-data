@@ -37,7 +37,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils \
     generate_supervision_violation, generate_agent, \
     generate_supervision_sentence
 from recidiviz.tests.persistence.entity_matching.state. \
-    base_state_entity_matcher_test import BaseStateEntityMatcherTest
+    base_state_entity_matcher_test_classes import BaseStateEntityMatcherTest
 
 _EXTERNAL_ID = 'EXTERNAL_ID'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID_2'

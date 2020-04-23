@@ -14,19 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""State schema specific utils for match database entities with ingested
-entities."""
+"""State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 import logging
 from collections import defaultdict
-from typing import List, cast, Optional, Set, Type, Dict
+from typing import List, cast, Optional, Set, Type, Dict, Sequence
 
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
-from recidiviz.common.constants.state.state_supervision_violation_response \
-    import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema, dao
@@ -299,24 +296,6 @@ def default_merge_flat_fields(
     return old_entity
 
 
-def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
-    """Determines if the provided |svr| resulted in a revocation."""
-    if not svr.revocation_type:
-        return False
-    reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
-        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION.value,
-        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value]
-    non_reincarceration_types = [
-        StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION.value]
-    if svr.revocation_type in reincarceration_types:
-        return True
-    if svr.revocation_type in non_reincarceration_types:
-        return False
-    raise EntityMatchingError(f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type}.",
-                              svr.get_entity_name())
-
-
 def get_total_entities_of_cls(
         persons: List[schema.StatePerson], cls: Type) -> int:
     """Counts the total number of unique objects of type |cls| in the entity
@@ -373,31 +352,23 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     return cls_list
 
 
-def get_all_entities_of_cls(
-        persons: List[schema.StatePerson],
-        cls: Type[DatabaseEntity]):
-    """Returns all entities found in the provided |persons| trees of type |cls|.
-    """
+def get_all_entities_of_cls(sources: Sequence[DatabaseEntity], cls: Type[DatabaseEntity]):
+    """Returns all entities found in the provided |sources| of type |cls|."""
     seen_entities: List[DatabaseEntity] = []
-    for tree in get_all_entity_trees_of_cls(persons, cls):
+    for tree in get_all_entity_trees_of_cls(sources, cls):
         seen_entities.append(tree.entity)
     return seen_entities
 
 
-def get_all_entity_trees_of_cls(
-        persons: List[schema.StatePerson],
-        cls: Type[DatabaseEntity]) -> List[EntityTree]:
-    """
-    Finds all unique entities of type |cls| in the provided |persons|, and
-    returns their corresponding EntityTrees.
+def get_all_entity_trees_of_cls(sources: Sequence[DatabaseEntity], cls: Type[DatabaseEntity]) -> List[EntityTree]:
+    """Finds all unique entities of type |cls| in the provided |sources|, and returns their corresponding EntityTrees.
     """
     seen_ids: Set[int] = set()
     seen_trees: List[EntityTree] = []
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-    for person in persons:
-        tree = EntityTree(entity=person, ancestor_chain=[])
-        _get_all_entity_trees_of_cls_helper(
-            tree, cls, seen_ids, seen_trees, direction_checker)
+    for source in sources:
+        tree = EntityTree(entity=source, ancestor_chain=[])
+        _get_all_entity_trees_of_cls_helper(tree, cls, seen_ids, seen_trees, direction_checker)
     return seen_trees
 
 
@@ -408,28 +379,24 @@ def _get_all_entity_trees_of_cls_helper(
         seen_trees: List[EntityTree],
         direction_checker: SchemaEdgeDirectionChecker):
     """
-    Finds all objects in the provided |tree| graph which have the type |cls|.
-    When an object of type |cls| is found, updates the provided |seen_ids| and
-    |seen_trees| with the object's id and EntityTree respectively.
+    Finds all objects in the provided |tree| graph which have the type |cls|. When an object of type |cls| is found,
+    updates the provided |seen_ids| and |seen_trees| with the object's id and EntityTree respectively.
     """
     entity = tree.entity
     entity_cls = entity.__class__
 
-    # If |cls| is higher ranked than |entity_cls|, it is impossible to reach
-    # an object of type |cls| from the current entity.
+    # If |cls| is higher ranked than |entity_cls|, it is impossible to reach an object of type |cls| from the current
+    # entity.
     if direction_checker.is_higher_ranked(cls, entity_cls):
         return
     if entity_cls == cls and id(entity) not in seen_ids:
         seen_ids.add(id(entity))
         seen_trees.append(tree)
         return
-    for child_field_name in get_set_entity_field_names(
-            entity, EntityFieldType.FORWARD_EDGE):
-        child_trees = tree.generate_child_trees(
-            entity.get_field_as_list(child_field_name))
+    for child_field_name in get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE):
+        child_trees = tree.generate_child_trees(entity.get_field_as_list(child_field_name))
         for child_tree in child_trees:
-            _get_all_entity_trees_of_cls_helper(
-                child_tree, cls, seen_ids, seen_trees, direction_checker)
+            _get_all_entity_trees_of_cls_helper(child_tree, cls, seen_ids, seen_trees, direction_checker)
 
 
 def get_root_entity_cls(
@@ -561,21 +528,3 @@ def read_persons_by_root_entity_cls(
             seen_person_ids.add(person.person_id)
 
     return deduped_people
-
-
-def add_supervising_officer_to_open_supervision_periods(persons: List[schema.StatePerson]):
-    """For each person in the provided |persons|, adds the supervising_officer from the person entity onto all open
-    StateSupervisionPeriods.
-    """
-    for person in persons:
-        if not person.supervising_officer:
-            continue
-
-        supervision_periods = get_all_entities_of_cls([person], schema.StateSupervisionPeriod)
-        for supervision_period in supervision_periods:
-            # Skip placeholders
-            if is_placeholder(supervision_period):
-                continue
-
-            if not supervision_period.termination_date:
-                supervision_period.supervising_officer = person.supervising_officer
