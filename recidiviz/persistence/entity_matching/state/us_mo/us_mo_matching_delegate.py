@@ -29,10 +29,10 @@ from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     read_persons_by_root_entity_cls, base_entity_match
+from recidiviz.persistence.entity_matching.state.state_period_matching_utils import move_periods_onto_sentences_by_date
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids, \
     move_violations_onto_supervision_periods_by_date, \
-    move_supervision_periods_onto_sentences_by_date, \
     set_current_supervising_officer_from_supervision_periods
 
 
@@ -63,18 +63,14 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
 
     def perform_match_postprocessing(
             self, matched_persons: List[schema.StatePerson]):
-        logging.info('[Entity matching] Move supervision periods onto '
-                     'sentences by date.')
-        move_supervision_periods_onto_sentences_by_date(matched_persons)
+        logging.info('[Entity matching] Move supervision periods onto sentences by date.')
+        move_periods_onto_sentences_by_date(matched_persons, period_filter=schema.StateSupervisionPeriod)
 
-        logging.info('[Entity matching] Set current / last supervising officer '
-                     'from supervision periods.')
-        set_current_supervising_officer_from_supervision_periods(
-            matched_persons)
+        logging.info('[Entity matching] Set current / last supervising officer from supervision periods.')
+        set_current_supervising_officer_from_supervision_periods(matched_persons)
 
         logging.info(
-            "[Entity matching] Post-processing: Move "
-            "SupervisionViolationResponses onto SupervisionPeriods by date.")
+            "[Entity matching] Post-processing: Move SupervisionViolationResponses onto SupervisionPeriods by date.")
         move_violations_onto_supervision_periods_by_date(matched_persons)
 
     def get_non_external_id_match(
