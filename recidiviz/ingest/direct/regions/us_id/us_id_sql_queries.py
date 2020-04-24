@@ -26,6 +26,67 @@ from recidiviz.utils import metadata
 project_id = metadata.project_id()
 
 
+def create_sentence_query_fragment(add_supervision_args: bool = False) -> str:
+    """Helper method that creates query parameters meant for combining sentences rows with their corresponding
+    amendment rows. If |add_supervision_args| is True, adds arguments unique to supervision sentences.
+    """
+    base_sentence_args = [
+        'mitt_srl',
+        'sent_no',
+        'sent_disp',
+    ]
+    supervision_base_sentence_args = ['prob_no']
+
+    amended_sentence_args = [
+        'off_dtd',
+        'off_cat',
+        'off_cd',
+        'off_deg',
+        'off_cnt',
+        'sent_min_yr',
+        'sent_min_mo',
+        'sent_min_da',
+        'sent_max_yr',
+        'sent_max_mo',
+        'sent_max_da',
+        'law_cd',
+        'vio_doc',
+        'vio_1311',
+        'lifer',
+        'enhanced',
+        'govn_sent',
+        'sent_gtr_dtd',
+        'sent_beg_dtd',
+        'sent_par_dtd',
+        'sent_ind_dtd',
+        'sent_ft_dtd',
+        'sent_sat_dtd',
+        'consec_typ',
+        'consec_sent_no',
+        'am_sent_no',
+        'string_no',
+    ]
+    supervision_amended_sentence_args = [
+        'prob_strt_dtd',
+        'prob_yr',
+        'prob_mo',
+        'prob_da',
+        'prob_end_dtd',
+    ]
+
+    if add_supervision_args:
+        base_sentence_args += supervision_base_sentence_args
+        amended_sentence_args += supervision_amended_sentence_args
+
+    n_spaces = 8 * ' '
+    query_fragment = '\n'
+    for arg in base_sentence_args:
+        query_fragment += f'{n_spaces}COALESCE(s.{arg}, a.{arg}) AS {arg},\n'
+    for arg in amended_sentence_args:
+        query_fragment += f'{n_spaces}COALESCE(a.{arg}, s.{arg}) AS {arg},\n'
+    return query_fragment
+
+
 OFFENDER_OFNDR_DOB = \
     f"""
     -- offender_ofndr_dob
@@ -59,72 +120,28 @@ OFNDR_TST_OFNDR_TST_CERT_QUERY = \
         tst.ofndr_num
     """
 
-MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY = \
-    f"""
+# Gets all probation sentences
+PROBATION_SENTENCES_QUERY = f"""
     SELECT
         *
     FROM
-        `{project_id}.us_id_raw_data.mittimus`
-    LEFT JOIN
-        `{project_id}.us_id_raw_data.county`
-    USING
-        (cnty_cd)
-    # Only ignore jud_cd because already present in `county` table
-    LEFT JOIN
-        (SELECT
-                judge_cd,
-                judge_name
-        FROM
-            `{project_id}.us_id_raw_data.judge`)
-    USING
-        (judge_cd)
-    JOIN
         `{project_id}.us_id_raw_data.sentence`
-    USING
-        (mitt_srl)
-    LEFT JOIN
-        `{project_id}.us_id_raw_data.offense`
-    USING
-        (off_cat, off_cd, off_deg)
     # Inner join against sentences that are supervision sentences.
     JOIN
         `{project_id}.us_id_raw_data.sentprob` sentprob
     USING
         (mitt_srl, sent_no)
-    WHERE
-        sent_disp != 'A' # TODO(2999): Figure out how to deal with the 10.7k amended sentences
     ORDER BY
-        CAST(docno AS INT64),
+        CAST(mitt_srl AS INT64),
         CAST(sent_no AS INT64)
 """
 
-MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = \
-    f"""
+# Gets all incarceration sentences
+INCARCERATION_SENTENCES_QUERY = f"""
     SELECT
         *
     FROM
-        `{project_id}.us_id_raw_data.mittimus`
-    LEFT JOIN
-        `{project_id}.us_id_raw_data.county`
-    USING
-        (cnty_cd)
-    # Only ignore jud_cd because already present in `county` table
-    LEFT JOIN
-        (SELECT
-                judge_cd,
-                judge_name
-        FROM
-            `{project_id}.us_id_raw_data.judge`)
-    USING
-        (judge_cd)
-    JOIN
         `{project_id}.us_id_raw_data.sentence`
-    USING
-        (mitt_srl)
-    LEFT JOIN
-        `{project_id}.us_id_raw_data.offense`
-    USING
-        (off_cat, off_cd, off_deg)
     JOIN
         # Inner join against sentences that are incarceration sentences.
         (SELECT
@@ -140,12 +157,102 @@ MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = \
             sentprob.mitt_srl IS NULL)
     USING
         (mitt_srl, sent_no)
-    WHERE
-        sent_disp != 'A' # TODO(2999): Figure out how to deal with the 10.7k amended sentences
-    ORDER BY
-        CAST(docno AS INT64),
-        CAST(sent_no AS INT64)
 """
+
+# In Idaho, if a sentence is amended, a new row is added to the `sentence` table with a sentence disposition of `A` and
+# an am_sent_no which points back to the sent_no of the original sentence (that is being amended).
+# When this happens, we trust all values of the amended sentence (aside from sentence number and status) over that of
+# the original sentence. With that in mind, at a high level, this query gets all sentences of a given type (either
+# incarceration or supervision) and collapses all amended-sentence rows into their referenced sentence. If a sentence
+# has multiple amendments, the last amendment is trusted over all others.
+UP_TO_DATE_SENTENCE_QUERY_FRAGMENT = """
+# Get all sentences, either probation or incarceration
+WITH sentences AS ({sentence_query}),
+# Only non-amended sentences
+non_amended_sentences AS (
+    SELECT
+        * 
+      FROM
+      sentences
+    WHERE sent_disp != 'A'
+),
+# Only amended sentences with an added amendment_number.
+amended_sentences AS (
+    SELECT
+        *,
+        ROW_NUMBER() 
+          OVER (PARTITION BY mitt_srl, am_sent_no ORDER BY sent_no DESC) AS amendment_number    
+      FROM
+      sentences
+    WHERE sent_disp = 'A'
+),
+# Keep only the most recent amended sentence. We assume this has the most up to date information.
+most_recent_amended_sentences AS (
+    SELECT
+        *
+    EXCEPT 
+        (amendment_number)
+    FROM 
+      amended_sentences
+    WHERE 
+        amendment_number = 1
+),
+# Join the amended sentences with the non-amended sentences. Only keep sentence number and status information from the 
+# non-amended sentence.
+up_to_date_sentences AS (
+    SELECT 
+        {sentence_args}
+        (a.mitt_srl IS NOT NULL) AS was_amended
+    FROM 
+        non_amended_sentences s 
+    LEFT JOIN 
+        most_recent_amended_sentences a
+    ON 
+        (s.mitt_srl = a.mitt_srl AND s.sent_no = a.am_sent_no)
+)
+# Join sentence level information with that from mittimus, county, judge, and offense to get descriptive details.
+SELECT
+    *
+FROM
+    `{project_id}.us_id_raw_data.mittimus`
+LEFT JOIN
+    `{project_id}.us_id_raw_data.county`
+USING
+    (cnty_cd)
+# Only ignore jud_cd because already present in `county` table
+LEFT JOIN
+    (SELECT
+            judge_cd,
+            judge_name
+    FROM
+        `{project_id}.us_id_raw_data.judge`)
+USING
+    (judge_cd)
+JOIN
+    up_to_date_sentences
+USING
+    (mitt_srl)
+LEFT JOIN
+    `{project_id}.us_id_raw_data.offense`
+USING
+    (off_cat, off_cd, off_deg)
+ORDER BY
+    CAST(docno AS INT64),
+    CAST(sent_no AS INT64)
+"""
+
+MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY = f"""
+{UP_TO_DATE_SENTENCE_QUERY_FRAGMENT.format(project_id=project_id,
+                                           sentence_query=PROBATION_SENTENCES_QUERY,
+                                           sentence_args=create_sentence_query_fragment(add_supervision_args=True))}
+"""
+
+MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = f"""
+{UP_TO_DATE_SENTENCE_QUERY_FRAGMENT.format(project_id=project_id,
+                                           sentence_query=INCARCERATION_SENTENCES_QUERY,
+                                           sentence_args=create_sentence_query_fragment(add_supervision_args=False))}
+"""
+
 
 # Idaho provides us with a table 'movements', which acts as a ledger for each person's physical movements throughout
 # the ID criminal justice system. By default, each row of this table includes a location and the date that the
@@ -250,7 +357,6 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT = """
         AND (p.start_date
              BETWEEN s.start_date
              AND IF (s.start_date = s.end_date, s.start_date, DATE_SUB(s.end_date, INTERVAL 1 DAY))))
-
 """
 
 # The goal of this query fragment is to create a single row per '(incarceration/supervision)period' as Recidiviz has
