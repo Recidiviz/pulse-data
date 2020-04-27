@@ -1629,10 +1629,10 @@ ORAS_ASSESSMENTS_WEEKLY = \
     FROM
         FOCTEST.ORAS_ASSESSMENTS_WEEKLY
     WHERE
-        E16 = 'Complete'
+        E17 = 'Complete'
     -- explicitly filter out any test data from UCCI
-        AND E08 NOT LIKE '%Test%'
-        AND E08 NOT LIKE '%test%';
+        AND E09 NOT LIKE '%Test%'
+        AND E09 NOT LIKE '%test%';
     """
 
 
