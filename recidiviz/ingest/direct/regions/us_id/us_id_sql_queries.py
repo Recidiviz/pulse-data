@@ -755,6 +755,10 @@ PROBATION_SENTENCE_IDS_QUERY = f"""
       FROM
           `{project_id}.us_id_raw_data.sentence`
       LEFT JOIN
+          `{project_id}.us_id_raw_data.mittimus`
+      USING
+          (mitt_srl)
+      LEFT JOIN
           `{project_id}.us_id_raw_data.sentprob` sentprob
       USING
           (mitt_srl, sent_no)
@@ -842,7 +846,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ('movement_facility_offstat_supervision_periods', MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports_old', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY),
-        ('ofndr_agnt_applc_usr_body_loc_cd_current_pos_query', OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY),
+        ('ofndr_agnt_applc_usr_body_loc_cd_current_pos', OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY),
     ]
 
 
