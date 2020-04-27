@@ -21,6 +21,7 @@ keys_to_ignore:
   - updt_usr_id         # Unused - user that updated this row
   - updt_dt             # Unused - row update date
   - lan_id              # Unused - TODO(2999): Understand what this column means
+  - st_id_num           # Unused - TODO(2999): Understand what type of state id this is.
   - body_loc_cd         # Unused - agent's district code
   - body_loc_desc       # Unused - name of agent's district TODO(2999): consider adding location to state agent
   - loc_typ_cd          # Unused - location type information

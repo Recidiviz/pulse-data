@@ -272,9 +272,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
         ],
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
             'Rider',                            # Probation recommendation from violation report 210
-            'Rider Recommendation'              # Probation recommendation from violation report 204
+            'Rider Recommendation',             # Probation recommendation from violation report 204
             # TODO(2999): is this shock incarceration or treatment in prison?
-            'PVC - Parole Violator Program'     # Parole recommendation from violation report 204
+            'PVC - Parole Violator Program',    # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.REVOCATION: [
             'Revocation',               # Parole recommendation from violation report 210
@@ -659,9 +659,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
         """Adds fields/children to the SupervisionViolationResponses as necessary. This assumes all
         SupervisionViolationResponses are of violation reports.
         """
-        recommendations = set(
-            sorted_list_from_str(row.get('parolee_placement_recommendation', ''))
-            + sorted_list_from_str(row.get('probationer_placement_recommendation', '')))
+        parole_recommendation = row.get('parolee_placement_recommendation', '')
+        probation_recommendation = row.get('probationer_placement_recommendation', '')
+        recommendations = list(filter(None, [parole_recommendation, probation_recommendation]))
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
