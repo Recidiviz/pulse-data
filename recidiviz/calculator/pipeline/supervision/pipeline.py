@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetricType as MetricType
+    SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, ConvertDictToKVTuple, AverageFn
@@ -47,7 +47,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    json_serializable_metric_key, MetricMethodologyType
+    json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
 from recidiviz.persistence.database.schema.state import schema
@@ -76,20 +76,20 @@ def clear_job_id():
 class GetSupervisionMetrics(beam.PTransform):
     """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
     def __init__(self, pipeline_options: Dict[str, str],
-                 inclusions: Dict[str, bool],
                  metric_types: Set[str],
                  calculation_month_limit: int):
         super(GetSupervisionMetrics, self).__init__()
         self._pipeline_options = pipeline_options
-        self.inclusions = inclusions
         self.calculation_month_limit = calculation_month_limit
 
-        for metric_option in MetricType:
+        self.metric_inclusions: Dict[SupervisionMetricType, bool] = {}
+
+        for metric_option in SupervisionMetricType:
             if metric_option.value in metric_types or 'ALL' in metric_types:
-                self.inclusions[metric_option.value] = True
+                self.metric_inclusions[metric_option] = True
                 logging.info("Producing %s metrics", metric_option.value)
             else:
-                self.inclusions[metric_option.value] = False
+                self.metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
         # Calculate supervision metric combinations from a StatePerson and their
@@ -97,7 +97,7 @@ class GetSupervisionMetrics(beam.PTransform):
         supervision_metric_combinations = (
             input_or_inputs | 'Map to metric combinations' >>
             beam.ParDo(CalculateSupervisionMetricCombinations(),
-                       self.calculation_month_limit, self.inclusions).with_outputs(
+                       self.calculation_month_limit, self.metric_inclusions).with_outputs(
                            'populations',
                            'revocations',
                            'successes',
@@ -260,13 +260,13 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]],
-                  beam.typehints.Optional[int], beam.typehints.Dict[str, bool])
+                  beam.typehints.Optional[int], beam.typehints.Dict[SupervisionMetricType, bool])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateSupervisionMetricCombinations(beam.DoFn):
     """Calculates supervision metric combinations."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, calculation_month_limit, inclusions):
+    def process(self, element, calculation_month_limit, metric_inclusions):
         """Produces various supervision metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
@@ -275,11 +275,8 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         Args:
             element: Tuple containing a StatePerson and their SupervisionTimeBuckets
             calculation_month_limit: The number of months to limit the monthly calculation output to.
-            inclusions: This should be a dictionary with values for the following keys:
-                    - age_bucket
-                    - gender
-                    - race
-                    - ethnicity
+            metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
+                values for whether or not to include that metric type in the calculations
         Yields:
             Each supervision metric combination, tagged by metric type.
         """
@@ -288,8 +285,18 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         # Calculate supervision metric combinations for this person and their supervision time buckets
         metric_combinations = calculator.map_supervision_combinations(person,
                                                                       supervision_time_buckets,
-                                                                      inclusions,
+                                                                      metric_inclusions,
                                                                       calculation_month_limit)
+
+        metric_type_output_tag = {
+            SupervisionMetricType.ASSESSMENT_CHANGE: 'assessment_changes',
+            SupervisionMetricType.POPULATION: 'populations',
+            SupervisionMetricType.REVOCATION: 'revocations',
+            SupervisionMetricType.REVOCATION_ANALYSIS: 'revocation_analyses',
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: 'revocation_violation_type_analyses',
+            SupervisionMetricType.SUCCESS: 'successes',
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: 'successful_sentence_lengths',
+        }
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
@@ -303,16 +310,6 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
             output = (json_key, value)
-
-            metric_type_output_tag = {
-                MetricType.ASSESSMENT_CHANGE.value: 'assessment_changes',
-                MetricType.POPULATION.value: 'populations',
-                MetricType.REVOCATION.value: 'revocations',
-                MetricType.REVOCATION_ANALYSIS.value: 'revocation_analyses',
-                MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: 'revocation_violation_type_analyses',
-                MetricType.SUCCESS.value: 'successes',
-                MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: 'successful_sentence_lengths',
-            }
 
             output_tag = 'person_level_output' if is_person_level_metric else metric_type_output_tag.get(metric_type)
 
@@ -348,17 +345,17 @@ class ProduceSupervisionMetricsForSumMetrics(beam.DoFn):
 
         dict_metric_key['count'] = value
 
-        if metric_type == MetricType.POPULATION.value:
+        if metric_type == SupervisionMetricType.POPULATION.value:
             supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.REVOCATION.value:
+        elif metric_type == SupervisionMetricType.REVOCATION.value:
             supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
+        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS.value:
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
+        elif metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
             supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
@@ -397,20 +394,20 @@ class ProduceSupervisionMetricsForAvgMetrics(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == MetricType.SUCCESS.value:
+        if metric_type == SupervisionMetricType.SUCCESS.value:
             dict_metric_key['successful_completion_count'] = result.sum_of_inputs
             dict_metric_key['projected_completion_count'] = result.input_count
 
             supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
+        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
             dict_metric_key['successful_completion_count'] = result.input_count
             dict_metric_key['average_days_served'] = result.average_of_inputs
 
             supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == MetricType.ASSESSMENT_CHANGE.value:
+        elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE.value:
             dict_metric_key['count'] = result.input_count
             dict_metric_key['average_score_change'] = result.average_of_inputs
 
@@ -452,36 +449,36 @@ class ProduceSupervisionMetricsForPersonLevelMetrics(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == MetricType.ASSESSMENT_CHANGE.value:
+        if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE.value:
             dict_metric_key['count'] = 1
             dict_metric_key['average_score_change'] = value
 
             supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == MetricType.POPULATION.value:
+        elif metric_type == SupervisionMetricType.POPULATION.value:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.REVOCATION.value:
+        elif metric_type == SupervisionMetricType.REVOCATION.value:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.REVOCATION_ANALYSIS.value:
+        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS.value:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == MetricType.SUCCESS.value:
+        elif metric_type == SupervisionMetricType.SUCCESS.value:
             dict_metric_key['successful_completion_count'] = value
             dict_metric_key['projected_completion_count'] = 1
 
             supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
+        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
             dict_metric_key['successful_completion_count'] = 1
             dict_metric_key['average_days_served'] = value
 
@@ -554,13 +551,13 @@ def parse_arguments(argv):
                         nargs='+',
                         choices=[
                             'ALL',
-                            MetricType.ASSESSMENT_CHANGE.value,
-                            MetricType.POPULATION.value,
-                            MetricType.REVOCATION.value,
-                            MetricType.REVOCATION_ANALYSIS.value,
-                            MetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
-                            MetricType.SUCCESS.value,
-                            MetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value
+                            SupervisionMetricType.ASSESSMENT_CHANGE.value,
+                            SupervisionMetricType.POPULATION.value,
+                            SupervisionMetricType.REVOCATION.value,
+                            SupervisionMetricType.REVOCATION_ANALYSIS.value,
+                            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
+                            SupervisionMetricType.SUCCESS.value,
+                            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value
                         ],
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
@@ -573,37 +570,6 @@ def parse_arguments(argv):
                         default=1)
 
     return parser.parse_known_args(argv)
-
-
-def dimensions_and_methodologies(known_args) -> \
-        Tuple[Dict[str, bool], List[MetricMethodologyType]]:
-
-    filterable_dimensions_map = {
-        'include_age': 'age_bucket',
-        'include_ethnicity': 'ethnicity',
-        'include_gender': 'gender',
-        'include_race': 'race',
-    }
-
-    known_args_dict = vars(known_args)
-
-    dimensions: Dict[str, bool] = {}
-
-    for dimension_key in filterable_dimensions_map:
-        if not known_args_dict[dimension_key]:
-            dimensions[filterable_dimensions_map[dimension_key]] = False
-        else:
-            dimensions[filterable_dimensions_map[dimension_key]] = True
-
-    methodologies = []
-
-    if known_args.methodology == 'BOTH':
-        methodologies.append(MetricMethodologyType.EVENT)
-        methodologies.append(MetricMethodologyType.PERSON)
-    else:
-        methodologies.append(MetricMethodologyType[known_args.methodology])
-
-    return dimensions, methodologies
 
 
 def run(argv):
@@ -834,9 +800,6 @@ def run(argv):
                        AsDict(ssvr_agent_associations_as_kv),
                        AsDict(supervision_period_to_agent_associations_as_kv)))
 
-        # Get dimensions to include and methodologies to use
-        inclusions, _ = dimensions_and_methodologies(known_args)
-
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
 
@@ -854,7 +817,6 @@ def run(argv):
         supervision_metrics = (person_time_buckets | 'Get Supervision Metrics' >>
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions,
                                    metric_types=metric_types,
                                    calculation_month_limit=calculation_month_limit))
         if person_id_filter_set:

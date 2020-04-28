@@ -20,8 +20,6 @@ from typing import List, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions
 
-from recidiviz.utils.params import str_to_bool
-
 
 def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     """Adds argument configs to the |parser| for shared pipeline args that do not get passed through to Apache Beam."""
@@ -36,37 +34,10 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
                         help='BigQuery reference dataset to query.',
                         default='reference_tables')
 
-    # NOTE: Must stay up to date to include all active states
     parser.add_argument('--state_code',
                         dest='state_code',
                         type=str,
                         help='The state_code to include in the calculations.')
-
-    parser.add_argument('--include_age',
-                        type=str_to_bool,
-                        help='Include metrics broken down by age.',
-                        default=True)
-
-    parser.add_argument('--include_gender',
-                        type=str_to_bool,
-                        help='Include metrics broken down by gender.',
-                        default=True)
-
-    parser.add_argument('--include_race',
-                        type=str_to_bool,
-                        help='Include metrics broken down by race.',
-                        default=True)
-
-    parser.add_argument('--include_ethnicity',
-                        type=str_to_bool,
-                        help='Include metrics broken down by ethnicity.',
-                        default=True)
-
-    parser.add_argument('--methodology',
-                        type=str,
-                        choices=['PERSON', 'EVENT', 'BOTH'],
-                        help='PERSON, EVENT, or BOTH',
-                        default='BOTH')
 
     parser.add_argument('--output',
                         type=str,

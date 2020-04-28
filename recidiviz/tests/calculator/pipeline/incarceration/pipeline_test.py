@@ -37,7 +37,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationAdmissionEvent, IncarcerationReleaseEvent, \
     IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
-    IncarcerationMetric, IncarcerationMetricType
+    IncarcerationMetric, IncarcerationMetricType, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
+    IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.beam_utils import \
     ConvertDictToKVTuple
@@ -63,12 +64,17 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQue
 
 _COUNTY_OF_RESIDENCE = 'county_of_residence'
 
-ALL_INCLUSIONS_DICT = {
-        'age_bucket': True,
-        'gender': True,
-        'race': True,
-        'ethnicity': True,
-    }
+ALL_METRICS_INCLUSIONS_DICT = {
+    IncarcerationMetricType.ADMISSION: True,
+    IncarcerationMetricType.POPULATION: True,
+    IncarcerationMetricType.RELEASE: True
+}
+
+ALL_METRIC_TYPES_SET = {
+    IncarcerationMetricType.ADMISSION,
+    IncarcerationMetricType.POPULATION,
+    IncarcerationMetricType.RELEASE
+}
 
 
 class TestIncarcerationPipeline(unittest.TestCase):
@@ -273,7 +279,20 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, dataset)
+            self.run_test_pipeline(fake_person_id, dataset, expected_metric_types=ALL_METRIC_TYPES_SET)
+
+    def testIncarcerationPipelineFilterMetrics(self):
+        fake_person_id = 12345
+        data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id)
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {IncarcerationMetricType.ADMISSION}
+        metric_types_filter = {IncarcerationMetricType.ADMISSION.value}
+
+        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
+                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
+            self.run_test_pipeline(fake_person_id, dataset, expected_metric_types=expected_metric_types,
+                                   metric_types_filter=metric_types_filter)
 
     def testIncarcerationPipelineUsMo(self):
         fake_person_id = 12345
@@ -282,7 +301,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, dataset)
+            self.run_test_pipeline(fake_person_id, dataset, expected_metric_types=ALL_METRIC_TYPES_SET)
 
     def testIncarcerationPipelineWithFilterSet(self):
         fake_person_id = 12345
@@ -291,13 +310,16 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, dataset, unifying_id_field_filter_set={fake_person_id})
+            self.run_test_pipeline(fake_person_id, dataset, unifying_id_field_filter_set={fake_person_id},
+                                   expected_metric_types=ALL_METRIC_TYPES_SET)
 
     @staticmethod
     def run_test_pipeline(fake_person_id: int,
                           dataset: str,
+                          expected_metric_types: Set[IncarcerationMetricType],
                           allow_empty: bool = False,
-                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+                          unifying_id_field_filter_set: Optional[Set[int]] = None,
+                          metric_types_filter: Optional[Set[str]] = None):
         """Runs a test version of the incarceration pipeline."""
         test_pipeline = TestPipeline()
 
@@ -312,7 +334,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         # Get StateSentenceGroups
         sentence_groups = (test_pipeline
-                           | 'Load StateSentencegroups' >>  # type: ignore
+                           | 'Load StateSentenceGroups' >>  # type: ignore
                            extractor_utils.BuildRootEntity(
                                dataset=dataset,
                                root_entity_class=entities.StateSentenceGroup,
@@ -420,16 +442,21 @@ class TestIncarcerationPipeline(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
+
         # Get IncarcerationMetrics
         incarceration_metrics = (person_events
                                  | 'Get Incarceration Metrics' >>  # type: ignore
                                  pipeline.GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
-                                     inclusions=ALL_INCLUSIONS_DICT,
+                                     metric_types=metric_types,
                                      calculation_month_limit=-1))
 
-        assert_that(incarceration_metrics,
-                    AssertMatchers.validate_metric_type(allow_empty=allow_empty))
+        assert_that(incarceration_metrics, AssertMatchers.validate_metric_type(allow_empty=allow_empty),
+                    'Assert that all metrics are of the expected type.')
+
+        assert_that(incarceration_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types),
+                    'Assert the type of metrics produced are expected')
 
         test_pipeline.run()
 
@@ -533,7 +560,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, dataset, allow_empty=True)
+            self.run_test_pipeline(fake_person_id, dataset, expected_metric_types=set(), allow_empty=True)
 
 
 class TestClassifyIncarcerationEvents(unittest.TestCase):
@@ -692,7 +719,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, incarceration_events[0], ALL_INCLUSIONS_DICT, IncarcerationMetricType.POPULATION))
+            fake_person, incarceration_events[0], IncarcerationMetricType.POPULATION))
         assert num_combinations > 0
 
         expected_metric_count = num_combinations * 2
@@ -710,7 +737,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_INCLUSIONS_DICT).with_outputs('admissions', 'releases')
+                      -1, ALL_METRICS_INCLUSIONS_DICT).with_outputs('admissions', 'releases')
                   )
 
         assert_that(output.admissions, AssertMatchers.
@@ -739,7 +766,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_INCLUSIONS_DICT)
+                      -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -757,7 +784,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_INCLUSIONS_DICT)
+                      -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -815,3 +842,26 @@ class AssertMatchers:
                                               'match expected value.')
 
         return _count_combinations
+
+    @staticmethod
+    def validate_pipeline_test(expected_metric_types: Set[IncarcerationMetricType]):
+        """Asserts that the pipeline produced the expected types of metrics."""
+        def _validate_pipeline_test(output):
+            observed_metric_types: Set[IncarcerationMetricType] = set()
+
+            for metric in output:
+                if not isinstance(metric, IncarcerationMetric):
+                    raise BeamAssertException('Failed assert. Output is not of type SupervisionMetric.')
+
+                if isinstance(metric, IncarcerationAdmissionMetric):
+                    observed_metric_types.add(IncarcerationMetricType.ADMISSION)
+                elif isinstance(metric, IncarcerationPopulationMetric):
+                    observed_metric_types.add(IncarcerationMetricType.POPULATION)
+                elif isinstance(metric, IncarcerationReleaseMetric):
+                    observed_metric_types.add(IncarcerationMetricType.RELEASE)
+
+            if observed_metric_types != expected_metric_types:
+                raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
+                                          f" observed metric types {observed_metric_types}.")
+
+        return _validate_pipeline_test

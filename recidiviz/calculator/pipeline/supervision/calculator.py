@@ -46,7 +46,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 def map_supervision_combinations(person: StatePerson,
                                  supervision_time_buckets: List[SupervisionTimeBucket],
-                                 inclusions: Dict[str, bool],
+                                 metric_inclusions: Dict[SupervisionMetricType, bool],
                                  calculation_month_limit: int) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms SupervisionTimeBuckets and a StatePerson into metric combinations.
 
@@ -62,12 +62,8 @@ def map_supervision_combinations(person: StatePerson,
     Args:
         person: the StatePerson
         supervision_time_buckets: A list of SupervisionTimeBuckets for the given StatePerson.
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
+        metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
+                flags for whether or not to include that metric type in the calculations
         calculation_month_limit: The number of months (including this one) to limit the monthly calculation output to.
             If set to -1, does not limit the calculations.
     Returns:
@@ -88,9 +84,9 @@ def map_supervision_combinations(person: StatePerson,
 
     for supervision_time_bucket in supervision_time_buckets:
         if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-            if inclusions.get(SupervisionMetricType.SUCCESS.value):
+            if metric_inclusions.get(SupervisionMetricType.SUCCESS):
                 characteristic_combos_success = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.SUCCESS)
+                    person, supervision_time_bucket, SupervisionMetricType.SUCCESS)
 
                 supervision_success_metrics = map_metric_combinations(
                     characteristic_combos_success, supervision_time_bucket,
@@ -99,13 +95,13 @@ def map_supervision_combinations(person: StatePerson,
 
                 metrics.extend(supervision_success_metrics)
 
-            if inclusions.get(SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value) \
+            if metric_inclusions.get(SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED) \
                     and supervision_time_bucket.successful_completion \
                     and not supervision_time_bucket.incarcerated_during_sentence:
                 # Only include successful sentences where the person was not incarcerated during the sentence in this
                 # metric
                 characteristic_combos_successful_sentence_length = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+                    person, supervision_time_bucket, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
                 )
 
                 successful_sentence_length_metrics = map_metric_combinations(
@@ -117,9 +113,9 @@ def map_supervision_combinations(person: StatePerson,
                 metrics.extend(successful_sentence_length_metrics)
 
         elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
-            if inclusions.get(SupervisionMetricType.ASSESSMENT_CHANGE.value):
+            if metric_inclusions.get(SupervisionMetricType.ASSESSMENT_CHANGE):
                 characteristic_combos_assessment = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.ASSESSMENT_CHANGE)
+                    person, supervision_time_bucket, SupervisionMetricType.ASSESSMENT_CHANGE)
 
                 assessment_change_metrics = map_metric_combinations(
                     characteristic_combos_assessment, supervision_time_bucket,
@@ -128,9 +124,9 @@ def map_supervision_combinations(person: StatePerson,
 
                 metrics.extend(assessment_change_metrics)
         else:
-            if inclusions.get(SupervisionMetricType.POPULATION.value):
+            if metric_inclusions.get(SupervisionMetricType.POPULATION):
                 characteristic_combos_population = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.POPULATION)
+                    person, supervision_time_bucket, SupervisionMetricType.POPULATION)
 
                 population_metrics = map_metric_combinations(
                     characteristic_combos_population, supervision_time_bucket,
@@ -139,9 +135,9 @@ def map_supervision_combinations(person: StatePerson,
 
                 metrics.extend(population_metrics)
 
-            if inclusions.get(SupervisionMetricType.REVOCATION.value):
+            if metric_inclusions.get(SupervisionMetricType.REVOCATION):
                 characteristic_combos_revocation = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.REVOCATION)
+                    person, supervision_time_bucket, SupervisionMetricType.REVOCATION)
 
                 if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
                     revocation_metrics = map_metric_combinations(
@@ -155,10 +151,10 @@ def map_supervision_combinations(person: StatePerson,
 
                     metrics.extend(revocation_metrics)
 
-            if inclusions.get(SupervisionMetricType.REVOCATION_ANALYSIS.value) and \
+            if metric_inclusions.get(SupervisionMetricType.REVOCATION_ANALYSIS) and \
                     isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
                 characteristic_combos_revocation_analysis = characteristic_combinations(
-                    person, supervision_time_bucket, inclusions, SupervisionMetricType.REVOCATION_ANALYSIS)
+                    person, supervision_time_bucket, SupervisionMetricType.REVOCATION_ANALYSIS)
 
                 revocation_analysis_metrics = map_metric_combinations(
                     characteristic_combos_revocation_analysis,
@@ -172,12 +168,11 @@ def map_supervision_combinations(person: StatePerson,
 
                 metrics.extend(revocation_analysis_metrics)
 
-            if (inclusions.get(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value)
+            if (metric_inclusions.get(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
                     and isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket)
                     and supervision_time_bucket.violation_type_frequency_counter):
                 characteristic_combos_revocation_violation_type_analysis = characteristic_combinations(
-                    person, supervision_time_bucket,
-                    inclusions, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                    person, supervision_time_bucket, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
 
                 revocation_violation_type_analysis_metrics = get_revocation_violation_type_analysis_metrics(
                     supervision_time_bucket, characteristic_combos_revocation_violation_type_analysis,
@@ -191,7 +186,6 @@ def map_supervision_combinations(person: StatePerson,
 
 def characteristic_combinations(person: StatePerson,
                                 supervision_time_bucket: SupervisionTimeBucket,
-                                inclusions: Dict[str, bool],
                                 metric_type: SupervisionMetricType) -> \
         List[Dict[str, Any]]:
     """Calculates all supervision metric combinations for the given inputs.
@@ -207,13 +201,6 @@ def characteristic_combinations(person: StatePerson,
     Args:
         person: the StatePerson we are picking characteristics from
         supervision_time_bucket: the SupervisionTimeBucket we are picking characteristics from
-        inclusions: A dictionary containing the following keys that correspond
-            to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
         metric_type: The SupervisionMetricType provided determines which fields should be added to the characteristics
             dictionary
 
@@ -224,6 +211,7 @@ def characteristic_combinations(person: StatePerson,
 
     include_revocation_dimensions = _include_revocation_dimensions_for_metric(metric_type)
     include_assessment_dimensions = _include_assessment_dimensions_for_metric(metric_type)
+    include_demographic_dimensions = _include_demographic_dimensions_for_metric(metric_type)
     limit_to_person_level_output = _limit_to_person_level_output_for_metric(metric_type)
 
     if (metric_type == SupervisionMetricType.POPULATION and
@@ -305,7 +293,8 @@ def characteristic_combinations(person: StatePerson,
 
         event_date = date(year, month, 1)
 
-    characteristics = add_demographic_characteristics(characteristics, person, inclusions, event_date)
+    if include_demographic_dimensions:
+        characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     if limit_to_person_level_output:
         person_level_characteristic_dict = characteristics_with_person_id_fields(characteristics, person, 'supervision')
@@ -373,7 +362,7 @@ def map_metric_combinations(
     metrics = []
 
     for combo in characteristic_combos:
-        combo['metric_type'] = metric_type.value
+        combo['metric_type'] = metric_type
 
         if include_in_monthly_metrics(
                 supervision_time_bucket.year, supervision_time_bucket.month, calculation_month_lower_bound):
@@ -880,15 +869,35 @@ def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType
     if metric_type in (
             SupervisionMetricType.REVOCATION,
             SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
             SupervisionMetricType.POPULATION,
             SupervisionMetricType.ASSESSMENT_CHANGE
     ):
         return True
 
     if metric_type in (
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
             SupervisionMetricType.SUCCESS,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+    ):
+        return False
+
+    raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
+
+
+def _include_demographic_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
+    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            SupervisionMetricType.REVOCATION,
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.ASSESSMENT_CHANGE,
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+    ):
+        return True
+
+    if metric_type in (
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
     ):
         return False
 
