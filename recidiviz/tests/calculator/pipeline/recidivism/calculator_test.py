@@ -24,7 +24,6 @@ from typing import Dict, List
 
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
-from more_itertools import one
 
 from recidiviz.calculator.pipeline.recidivism import calculator
 from recidiviz.calculator.pipeline.recidivism.calculator \
@@ -41,8 +40,6 @@ from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person
 
 
 _COUNTY_OF_RESIDENCE = 'county'
@@ -507,71 +504,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     RECIDIVISM_METHODOLOGIES = len(MetricMethodologyType)
 
-    RETURN_TYPE_COMBOS_INCLUDING_NEW_ADMISSION = (
-        0 +  # NEW_ADMISSSION - sub-explosions
-        1    # NEW_ADMISSSION - all
-    )
-
-    RETURN_TYPE_COMBOS_INCLUDING_REVOCATION = (
-        (
-            (
-                len(ReincarcerationReturnFromSupervisionType) *
-                len(StateSupervisionViolationType)
-            ) +  # VIOLATION TYPE and RETURN FROM TYPE crossproduct
-            len(ReincarcerationReturnFromSupervisionType) +  # VIOLATION TYPE - all
-            len(StateSupervisionViolationType)  # RETURN FROM TYPE - all
-        ) +  # REVOCATION - sub-explosions
-        1  # REVOCATION - all
-    )
-
-    RETURN_TYPE_METRIC_COMBOS = (
-        RETURN_TYPE_COMBOS_INCLUDING_NEW_ADMISSION +
-        RETURN_TYPE_COMBOS_INCLUDING_REVOCATION +
-        1  # RETURNS - all
-    )
-
-    RECIDIVISM_COUNT_WINDOWS = 2  # Month, Year
-
-    def relevant_combos_count_for_recidivism_release_event(
-            self, release_event: RecidivismReleaseEvent):
-        """For the given release_event, determines the number of metric key
-        combinations that match the details of the given event."""
-        current_possible_metrics = 1  # All Returns metric
-
-        if release_event.return_type is None and \
-                release_event.from_supervision_type is None \
-                and release_event.source_violation_type is None:
-            return current_possible_metrics
-
-        self.assertIsNotNone(release_event.return_type)
-
-        current_possible_metrics += 1  # Add metric that has just return type
-        if release_event.from_supervision_type is None \
-                and release_event.source_violation_type is None:
-            return current_possible_metrics
-
-        # Only REVOCATION can have a from_supervision_type or
-        # source_violation_type.
-        self.assertEqual(release_event.return_type,
-                         ReincarcerationReturnType.REVOCATION)
-
-        if release_event.from_supervision_type is None:
-            self.assertIsNotNone(release_event.source_violation_type)
-            # Add metric with just source violation type
-            return current_possible_metrics + 1
-
-        if release_event.source_violation_type is None:
-            self.assertIsNotNone(release_event.from_supervision_type)
-            # Add metric with just from supervision type
-            return current_possible_metrics + 1
-
-        # Metrics include cross-product of including violation, from type,
-        # and both.
-        return current_possible_metrics + 3
-
     def expected_metric_combos_count(self, release_events_by_cohort: Dict[int, List[ReleaseEvent]]) -> int:
-        """Calculates the expected number of characteristic combinations given the person, the release events, and the
-        dimensions that should be included in the explosion of feature combinations."""
+        """Calculates the expected number of characteristic combinations given the release events."""
         all_release_events = [
             re
             for re_list in release_events_by_cohort.values()
@@ -588,16 +522,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             if len(events) > 1:
                 num_events_with_multiple_releases_in_year += (len(events) - 1)
 
-        recidivism_rate_metrics = (len(FOLLOW_UP_PERIODS) * len(all_release_events))
+        expected_rate_metrics = self.RECIDIVISM_METHODOLOGIES * len(FOLLOW_UP_PERIODS) * len(all_release_events)
 
-        expected_rate_metrics = self.RECIDIVISM_METHODOLOGIES * recidivism_rate_metrics
-
-        # Duplicated person-based combos for duplicate releases in the same year
+        # Duplicated combos for multiple releases in the same year
         expected_rate_metrics -= (
             len(FOLLOW_UP_PERIODS) * num_events_with_multiple_releases_in_year
         )
 
-        # Person-level count metrics
         expected_count_metrics = (len(recidivism_release_events) * self.RECIDIVISM_METHODOLOGIES)
 
         return expected_rate_metrics + expected_count_metrics

@@ -730,11 +730,10 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, incarceration_events)])
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
-                      pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_METRICS_INCLUSIONS_DICT).with_outputs('admissions', 'releases', 'person_level_output')
+                      pipeline.CalculateIncarcerationMetricCombinations(), -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
-        assert_that(output.person_level_output, AssertMatchers.
+        assert_that(output, AssertMatchers.
                     count_combinations(expected_combination_counts), 'Assert number of metrics is expected value')
 
         test_pipeline.run()
@@ -811,21 +810,17 @@ class AssertMatchers:
                 actual_combination_counts[key] = 0
 
             for result in output:
-                combination, _ = result
+                combination_dict, _ = result
 
-                combination_dict = json.loads(combination)
                 metric_type = combination_dict.get('metric_type')
 
-                if metric_type == IncarcerationMetricType.ADMISSION.value:
-                    actual_combination_counts['admissions'] = \
-                        actual_combination_counts['admissions'] + 1
-                elif metric_type == IncarcerationMetricType.RELEASE.value:
-                    actual_combination_counts['releases'] = \
-                        actual_combination_counts['releases'] + 1
+                if metric_type == IncarcerationMetricType.ADMISSION:
+                    actual_combination_counts['admissions'] = actual_combination_counts['admissions'] + 1
+                elif metric_type == IncarcerationMetricType.RELEASE:
+                    actual_combination_counts['releases'] = actual_combination_counts['releases'] + 1
 
             for key in expected_combination_counts:
-                if expected_combination_counts[key] != \
-                        actual_combination_counts[key]:
+                if expected_combination_counts[key] != actual_combination_counts[key]:
 
                     raise BeamAssertException('Failed assert. Count does not'
                                               'match expected value.')

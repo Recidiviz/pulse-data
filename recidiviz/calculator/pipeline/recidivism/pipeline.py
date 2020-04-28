@@ -215,8 +215,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
         job_id(pipeline_options) function can be called to retrieve the job_id.
 
         Args:
-            element: A tuple containing string representation of the metric_key
-                for a given recidivism metric, and the value of that metric.
+            element: A tuple containing the dictionary for a given recidivism metric, and the value of that metric.
             **kwargs: This should be a dictionary with values for the
                 following keys:
                     - runner: Either 'DirectRunner' or 'DataflowRunner'

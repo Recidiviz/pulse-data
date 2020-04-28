@@ -19,7 +19,6 @@ run.
 """
 import argparse
 import datetime
-import json
 import logging
 import sys
 from typing import Dict, Any, List, Tuple, Set
@@ -41,7 +40,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, ConvertDictToKVTuple, AverageFn
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
@@ -50,7 +49,6 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
-from recidiviz.calculator.pipeline.utils.pipeline_utils import tagged_metric_output
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -93,108 +91,19 @@ class GetSupervisionMetrics(beam.PTransform):
                 self.metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
-        # Calculate supervision metric combinations from a StatePerson and their
-        # SupervisionTimeBuckets
+        # Calculate supervision metric combinations from a StatePerson and their SupervisionTimeBuckets
         supervision_metric_combinations = (
             input_or_inputs | 'Map to metric combinations' >>
             beam.ParDo(CalculateSupervisionMetricCombinations(),
-                       self.calculation_month_limit, self.metric_inclusions).with_outputs(
-                           'populations',
-                           'revocations',
-                           'successes',
-                           'successful_sentence_lengths',
-                           'assessment_changes',
-                           'revocation_analyses',
-                           'revocation_violation_type_analyses',
-                           'person_level_output'))
+                       self.calculation_month_limit, self.metric_inclusions))
 
-        # Calculate the supervision population values for the metrics combined by key
-        populations_with_sums = (supervision_metric_combinations.populations
-                                 | 'Calculate supervision population values' >>
-                                 beam.CombinePerKey(SumFn()))
-
-        # Calculate the revocation count values for metrics combined by key
-        revocations_with_sums = (supervision_metric_combinations.revocations
-                                 | 'Calculate supervision revocation values' >>
-                                 beam.CombinePerKey(SumFn()))
-
-        # Calculate the supervision success values for the metrics combined by key
-        successes_with_sums = (supervision_metric_combinations.successes
-                               | 'Calculate the supervision success values' >>
-                               beam.CombinePerKey(AverageFn()))
-
-        # Calculate the supervision success sentence lengths values for the metrics combined by key
-        average_successful_sentence_lengths = (supervision_metric_combinations.successful_sentence_lengths
-                                               | 'Calculate the average successful sentence lengths ' >>
-                                               beam.CombinePerKey(AverageFn()))
-
-        # Calculate the assessment score changes for the metrics combined by key
-        assessment_changes_with_averages = (
-            supervision_metric_combinations.assessment_changes
-            | 'Calculate the assessment score change average values' >>
-            beam.CombinePerKey(AverageFn())
-        )
-
-        # Calculate the revocation analyses count values for metrics combined by key
-        revocation_analyses_with_sums = (
-            supervision_metric_combinations.revocation_analyses
-            | 'Calculate the revocation analyses count values' >>
-            beam.CombinePerKey(SumFn())
-        )
-
-        # Calculate the violation type analyses count values for metrics combined by key
-        revocation_violation_type_analyses_with_sums = (
-            supervision_metric_combinations.revocation_violation_type_analyses
-            | 'Calculate the revocation violation type analyses count values' >>
-            beam.CombinePerKey(SumFn())
-        )
-
-        # Produce the SupervisionPopulationMetrics
-        population_metrics = (populations_with_sums | 'Produce supervision population metrics' >>
-                              beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
-
-        # Produce the SupervisionRevocationMetrics
-        revocation_metrics = (revocations_with_sums | 'Produce supervision revocation metrics' >>
-                              beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
-
-        # Produce the SupervisionSuccessMetrics
-        success_metrics = (successes_with_sums | 'Produce supervision success metrics' >>
-                           beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
-
-        # Produce the SuccessfulSupervisionSentenceLengthMetrics
-        sentence_length_metrics = (average_successful_sentence_lengths | 'Produce successful sentence length metrics' >>
-                                   beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
-
-        # Produce the TerminatedSupervisionAssessmentScoreChangeMetrics
-        assessment_change_metrics = (assessment_changes_with_averages | 'Produce assessment score change metrics' >>
-                                     beam.ParDo(ProduceSupervisionMetricsForAvgMetrics(), **self._pipeline_options))
-
-        # Produce the SupervisionRevocationAnalysisMetrics
-        revocation_analysis_metrics = (revocation_analyses_with_sums |
-                                       'Produce supervision revocation analysis metrics' >>
-                                       beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
-
-        # Produce the SupervisionRevocationViolationTypeAnalysisMetrics
-        revocation_violation_type_analysis_metrics = (
-            revocation_violation_type_analyses_with_sums
-            | 'Produce revocation violation type analysis metrics' >>
-            beam.ParDo(ProduceSupervisionMetricsForSumMetrics(), **self._pipeline_options))
-
-        # Produce SupervisionMetrics for all person-level metrics
-        person_level_metrics = (supervision_metric_combinations.person_level_output |
-                                'Produce person-level SupervisionMetrics' >>
-                                beam.ParDo(ProduceSupervisionMetricsForPersonLevelMetrics(),
-                                           **self._pipeline_options))
-
-        # Merge the metric groups
-        merged_metrics = ((person_level_metrics, population_metrics, revocation_metrics,
-                           success_metrics, sentence_length_metrics, assessment_change_metrics,
-                           revocation_analysis_metrics, revocation_violation_type_analysis_metrics)
-                          | 'Merge all supervision metrics' >>
-                          beam.Flatten())
+        # Produce SupervisionMetrics
+        supervision_metrics = (supervision_metric_combinations |
+                               'Produce SupervisionMetrics' >>
+                               beam.ParDo(ProduceSupervisionMetrics(), **self._pipeline_options))
 
         # Return SupervisionMetrics objects
-        return merged_metrics
+        return supervision_metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
@@ -202,19 +111,11 @@ class GetSupervisionMetrics(beam.PTransform):
                   beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]])
 class ClassifySupervisionTimeBuckets(beam.DoFn):
-    """Classifies time on supervision as years and months with or without revocation, and classifies months of
-    projected completion as either successful or not."""
+    """Classifies time on supervision according to multiple types of measurement."""
 
     #pylint: disable=arguments-differ
-    def process(self,
-                element,
-                ssvr_agent_associations,
-                supervision_period_to_agent_associations,
-                **kwargs):
-        """Identifies instances of revocation and non-revocation time buckets on supervision, and classifies months of
-        projected completion as either successful or not.
-        """
-
+    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations, **kwargs):
+        """Identifies various events related to supervision relevant to calculations."""
         _, person_entities = element
 
         # Get the StateSupervisionSentences as a list
@@ -262,7 +163,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]],
                   beam.typehints.Optional[int], beam.typehints.Dict[SupervisionMetricType, bool])
-@with_output_types(beam.typehints.Tuple[str, Any])
+@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateSupervisionMetricCombinations(beam.DoFn):
     """Calculates supervision metric combinations."""
 
@@ -279,7 +180,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
                 values for whether or not to include that metric type in the calculations
         Yields:
-            Each supervision metric combination, tagged by metric type.
+            Each supervision metric combination.
         """
         person, supervision_time_buckets = element
 
@@ -289,186 +190,73 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
                                                                       metric_inclusions,
                                                                       calculation_month_limit)
 
-        metric_type_output_tags = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: 'assessment_changes',
-            SupervisionMetricType.POPULATION: 'populations',
-            SupervisionMetricType.REVOCATION: 'revocations',
-            SupervisionMetricType.REVOCATION_ANALYSIS: 'revocation_analyses',
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: 'revocation_violation_type_analyses',
-            SupervisionMetricType.SUCCESS: 'successes',
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: 'successful_sentence_lengths',
-        }
-
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
-            output_tag, output = tagged_metric_output(metric_combination, metric_type_output_tags)
-
-            if output_tag and output:
-                yield beam.pvalue.TaggedOutput(output_tag, output)
+            yield metric_combination
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, int], **{'runner': str,
-                                                     'project': str,
-                                                     'job_name': str,
-                                                     'region': str,
-                                                     'job_timestamp': str})
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
+                  **{'runner': str,
+                     'project': str,
+                     'job_name': str,
+                     'region': str,
+                     'job_timestamp': str})
 @with_output_types(SupervisionMetric)
-class ProduceSupervisionMetricsForSumMetrics(beam.DoFn):
-    """Produces SupervisionMetrics ready for persistence that use a SUM aggregation."""
+class ProduceSupervisionMetrics(beam.DoFn):
+    """Produces SupervisionMetrics ready for persistence."""
     def process(self, element, *args, **kwargs):
         pipeline_options = kwargs
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (metric_key, value) = element
+        (dict_metric_key, value) = element
 
         if value is None:
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
         # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        dict_metric_key['count'] = value
-
-        if metric_type == SupervisionMetricType.POPULATION.value:
-            supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION.value:
-            supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS.value:
-            supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        elif metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
-            supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
-            return
-
-        if supervision_metric:
-            yield supervision_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[str, Dict[str, int]], **{'runner': str,
-                                                                'project': str,
-                                                                'job_name': str,
-                                                                'region': str,
-                                                                'job_timestamp': str})
-@with_output_types(SupervisionMetric)
-class ProduceSupervisionMetricsForAvgMetrics(beam.DoFn):
-    """Produces SupervisionMetrics ready for persistence that use an AVERAGE aggregation."""
-    def process(self, element, *args, **kwargs):
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (metric_key, result) = element
-
-        if result is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No result associated with this metric key.")
-
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
-        metric_type = dict_metric_key.get('metric_type')
-
-        if metric_type == SupervisionMetricType.SUCCESS.value:
-            dict_metric_key['successful_completion_count'] = result.sum_of_inputs
-            dict_metric_key['projected_completion_count'] = result.input_count
-
-            supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
-            dict_metric_key['successful_completion_count'] = result.input_count
-            dict_metric_key['average_days_served'] = result.average_of_inputs
-
-            supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        elif metric_type == SupervisionMetricType.ASSESSMENT_CHANGE.value:
-            dict_metric_key['count'] = result.input_count
-            dict_metric_key['average_score_change'] = result.average_of_inputs
-
-            supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
-            return
-
-        if supervision_metric:
-            yield supervision_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Optional[Tuple[str, Any]], **{'runner': str,
-                                                               'project': str,
-                                                               'job_name': str,
-                                                               'region': str,
-                                                               'job_timestamp': str})
-@with_output_types(SupervisionMetric)
-class ProduceSupervisionMetricsForPersonLevelMetrics(beam.DoFn):
-    """Produces SupervisionMetrics ready for persistence that describe a single person."""
-    def process(self, element, *args, **kwargs):
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (metric_key, value) = element
-
-        if value is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No value associated with this metric key.")
-
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
-        metric_type = dict_metric_key.get('metric_type')
-
-        if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE.value:
+        if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
             dict_metric_key['count'] = 1
             dict_metric_key['average_score_change'] = value
 
             supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.POPULATION.value:
+        elif metric_type == SupervisionMetricType.POPULATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION.value:
+        elif metric_type == SupervisionMetricType.REVOCATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS.value:
+        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.SUCCESS.value:
+        elif metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+            dict_metric_key['count'] = value
+
+            supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id
+            )
+        elif metric_type == SupervisionMetricType.SUCCESS:
             dict_metric_key['successful_completion_count'] = value
             dict_metric_key['projected_completion_count'] = 1
 
             supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value:
+        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
             dict_metric_key['successful_completion_count'] = 1
             dict_metric_key['average_days_served'] = value
 
