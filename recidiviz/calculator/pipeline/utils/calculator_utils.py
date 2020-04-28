@@ -158,26 +158,20 @@ def for_characteristics(characteristics) -> List[Dict[str, Any]]:
 
 def add_demographic_characteristics(characteristics: Dict[str, Any],
                                     person: StatePerson,
-                                    inclusions: Dict[str, bool],
                                     event_date: date) -> Dict[str, Any]:
-    """Adds the person's demographic characteristics to the given |characteristics| dictionary, including only the
-    attributes that are explicitly set to be included in the |inclusions| dictionary. For the 'age_bucket' field,
-    calculates the person's age on the |event_date|.
+    """Adds the person's demographic characteristics to the given |characteristics| dictionary. For the 'age_bucket'
+    field, calculates the person's age on the |event_date|.
     """
-    if inclusions.get('age_bucket'):
-        event_age = age_at_date(person, event_date)
-        event_age_bucket = age_bucket(event_age)
-        if event_age_bucket is not None:
-            characteristics['age_bucket'] = event_age_bucket
-    if inclusions.get('gender'):
-        if person.gender is not None:
-            characteristics['gender'] = person.gender
-    if inclusions.get('race'):
-        if person.races:
-            characteristics['race'] = [race_object.race for race_object in person.races]
-    if inclusions.get('ethnicity'):
-        if person.ethnicities:
-            characteristics['ethnicity'] = [ethnicity_object.ethnicity for ethnicity_object in person.ethnicities]
+    event_age = age_at_date(person, event_date)
+    event_age_bucket = age_bucket(event_age)
+    if event_age_bucket is not None:
+        characteristics['age_bucket'] = event_age_bucket
+    if person.gender is not None:
+        characteristics['gender'] = person.gender
+    if person.races:
+        characteristics['race'] = [race_object.race for race_object in person.races]
+    if person.ethnicities:
+        characteristics['ethnicity'] = [ethnicity_object.ethnicity for ethnicity_object in person.ethnicities]
 
     return characteristics
 

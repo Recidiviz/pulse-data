@@ -25,7 +25,7 @@ import json
 import logging
 import sys
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Set
 import datetime
 
 from apache_beam.pvalue import AsDict
@@ -40,9 +40,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationAdmissionMetric, \
-    IncarcerationReleaseMetric, IncarcerationPopulationMetric
-from recidiviz.calculator.pipeline.incarceration.metrics import \
-    IncarcerationMetricType as MetricType
+    IncarcerationReleaseMetric, IncarcerationPopulationMetric, IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
@@ -54,8 +52,7 @@ from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_p
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import json_serializable_metric_key
 
 # Cached job_id value
 _job_id = None
@@ -72,6 +69,73 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 def clear_job_id():
     global _job_id
     _job_id = None
+
+
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IncarcerationEvent]])
+@with_output_types(IncarcerationMetric)
+class GetIncarcerationMetrics(beam.PTransform):
+    """Transforms a StatePerson and IncarcerationEvents into IncarcerationMetrics."""
+
+    def __init__(self, pipeline_options: Dict[str, str],
+                 metric_types: Set[str],
+                 calculation_month_limit: int):
+        super(GetIncarcerationMetrics, self).__init__()
+        self._pipeline_options = pipeline_options
+        self.calculation_month_limit = calculation_month_limit
+
+        self.metric_inclusions: Dict[IncarcerationMetricType, bool] = {}
+
+        for metric_option in IncarcerationMetricType:
+            if metric_option.value in metric_types or 'ALL' in metric_types:
+                self.metric_inclusions[metric_option] = True
+                logging.info("Producing %s metrics", metric_option.value)
+            else:
+                self.metric_inclusions[metric_option] = False
+
+    def expand(self, input_or_inputs):
+        # Calculate incarceration metric combinations from a StatePerson and their IncarcerationEvents
+        incarceration_metric_combinations = (
+            input_or_inputs
+            | 'Map to metric combinations' >>
+            beam.ParDo(CalculateIncarcerationMetricCombinations(),
+                       self.calculation_month_limit, self.metric_inclusions).with_outputs('admissions',
+                                                                                          'populations',
+                                                                                          'releases'))
+
+        admissions_with_sums = (incarceration_metric_combinations.admissions
+                                | 'Calculate admission counts values' >>
+                                beam.CombinePerKey(SumFn()))
+
+        populations_with_sums = (incarceration_metric_combinations.populations
+                                 | 'Calculate population counts values' >>
+                                 beam.CombinePerKey(SumFn()))
+
+        releases_with_sums = (incarceration_metric_combinations.releases
+                              | 'Calculate release counts values' >>
+                              beam.CombinePerKey(SumFn()))
+
+        # Produce the IncarcerationAdmissionMetrics
+        admission_metrics = (admissions_with_sums | 'Produce admission count metrics' >>
+                             beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
+
+        # Produce the IncarcerationPopulationMetrics
+        population_metrics = (populations_with_sums | 'Produce population count metrics' >>
+                              beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
+
+        # Produce the IncarcerationReleaseMetrics
+        release_metrics = (releases_with_sums
+                           | 'Produce release count metrics' >>
+                           beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
+
+        # Merge the metric groups
+        merged_metrics = ((admission_metrics,
+                           population_metrics,
+                           release_metrics)
+                          | 'Merge admission, population, and release metrics' >>
+                          beam.Flatten())
+
+        # Return IncarcerationMetric objects
+        return merged_metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
@@ -110,73 +174,14 @@ class ClassifyIncarcerationEvents(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IncarcerationEvent]])
-@with_output_types(IncarcerationMetric)
-class GetIncarcerationMetrics(beam.PTransform):
-    """Transforms a StatePerson and IncarcerationEvents into IncarcerationMetrics."""
-
-    def __init__(self, pipeline_options: Dict[str, str],
-                 inclusions: Dict[str, bool],
-                 calculation_month_limit: int):
-        super(GetIncarcerationMetrics, self).__init__()
-        self._pipeline_options = pipeline_options
-        self.inclusions = inclusions
-        self.calculation_month_limit = calculation_month_limit
-
-    def expand(self, input_or_inputs):
-        # Calculate incarceration metric combinations from a StatePerson and their IncarcerationEvents
-        incarceration_metric_combinations = (
-            input_or_inputs
-            | 'Map to metric combinations' >>
-            beam.ParDo(CalculateIncarcerationMetricCombinations(),
-                       self.calculation_month_limit, self.inclusions).with_outputs('admissions',
-                                                                                   'populations',
-                                                                                   'releases'))
-
-        admissions_with_sums = (incarceration_metric_combinations.admissions
-                                | 'Calculate admission counts values' >>
-                                beam.CombinePerKey(SumFn()))
-
-        populations_with_sums = (incarceration_metric_combinations.populations
-                                 | 'Calculate population counts values' >>
-                                 beam.CombinePerKey(SumFn()))
-
-        releases_with_sums = (incarceration_metric_combinations.releases
-                              | 'Calculate release counts values' >>
-                              beam.CombinePerKey(SumFn()))
-
-        # Produce the IncarcerationAdmissionMetrics
-        admission_metrics = (admissions_with_sums | 'Produce admission count metrics' >>
-                             beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
-
-        # Produce the IncarcerationPopulationMetrics
-        population_metrics = (populations_with_sums | 'Produce population count metrics' >>
-                              beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
-
-        # Produce the IncarcerationReleaseMetrics
-        release_metrics = (releases_with_sums
-                           | 'Produce release count metrics' >>
-                           beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
-
-        # Merge the metric groups
-        merged_metrics = ((admission_metrics,
-                           population_metrics,
-                           release_metrics)
-                          | 'Merge admission, population, and release metrics' >>
-                          beam.Flatten())
-
-        # Return IncarcerationMetric objects
-        return merged_metrics
-
-
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[IncarcerationEvent]]],
-                  beam.typehints.Optional[int], beam.typehints.Dict[str, bool])
+                  beam.typehints.Optional[int], beam.typehints.Dict[IncarcerationMetricType, bool])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateIncarcerationMetricCombinations(beam.DoFn):
     """Calculates incarceration metric combinations."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, calculation_month_limit, inclusions):
+    def process(self, element, calculation_month_limit, metric_inclusions):
         """Produces various incarceration metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding IncarcerationEvents for mapping all
@@ -185,11 +190,8 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
         Args:
             element: Tuple containing a StatePerson and their IncarcerationEvents
             calculation_month_limit: The number of months to limit the monthly calculation output to.
-            inclusions: This should be a dictionary with values for the following keys:
-                    - age_bucket
-                    - gender
-                    - race
-                    - ethnicity
+            metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
+                flags for whether or not to include that metric type in the calculations
         Yields:
             Each incarceration metric combination, tagged by metric type.
         """
@@ -198,8 +200,14 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
         # Calculate incarceration metric combinations for this person and events
         metric_combinations = calculator.map_incarceration_combinations(person,
                                                                         incarceration_events,
-                                                                        inclusions,
+                                                                        metric_inclusions,
                                                                         calculation_month_limit)
+
+        metric_type_output_tag = {
+            IncarcerationMetricType.ADMISSION: 'admissions',
+            IncarcerationMetricType.POPULATION: 'populations',
+            IncarcerationMetricType.RELEASE: 'releases',
+        }
 
         # Return each of the incarceration metric combinations
         for metric_combination in metric_combinations:
@@ -210,12 +218,11 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
-            if metric_type == MetricType.ADMISSION.value:
-                yield beam.pvalue.TaggedOutput('admissions', (json_key, value))
-            elif metric_type == MetricType.POPULATION.value:
-                yield beam.pvalue.TaggedOutput('populations', (json_key, value))
-            elif metric_type == MetricType.RELEASE.value:
-                yield beam.pvalue.TaggedOutput('releases', (json_key, value))
+            output = (json_key, value)
+            output_tag = metric_type_output_tag.get(metric_type)
+
+            if output_tag:
+                yield beam.pvalue.TaggedOutput(output_tag, output)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -265,17 +272,17 @@ class ProduceIncarcerationMetric(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == MetricType.ADMISSION.value:
+        if metric_type == IncarcerationMetricType.ADMISSION.value:
             dict_metric_key['count'] = value
 
             incarceration_metric = IncarcerationAdmissionMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.POPULATION.value:
+        elif metric_type == IncarcerationMetricType.POPULATION.value:
             dict_metric_key['count'] = value
 
             incarceration_metric = IncarcerationPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == MetricType.RELEASE.value:
+        elif metric_type == IncarcerationMetricType.RELEASE.value:
             dict_metric_key['count'] = value
 
             incarceration_metric = IncarcerationReleaseMetric.build_from_metric_key_group(
@@ -331,6 +338,19 @@ def parse_arguments(argv):
     # Parse arguments
     add_shared_pipeline_arguments(parser)
 
+    parser.add_argument('--metric_types',
+                        dest='metric_types',
+                        type=str,
+                        nargs='+',
+                        choices=[
+                            'ALL',
+                            IncarcerationMetricType.ADMISSION.value,
+                            IncarcerationMetricType.POPULATION.value,
+                            IncarcerationMetricType.RELEASE.value
+                        ],
+                        help='A list of the types of metric to calculate.',
+                        default={'ALL'})
+
     parser.add_argument('--calculation_month_limit',
                         dest='calculation_month_limit',
                         type=calculation_month_limit_arg,
@@ -339,45 +359,6 @@ def parse_arguments(argv):
                         default=1)
 
     return parser.parse_known_args(argv)
-
-
-def dimensions_and_methodologies(known_args) -> \
-        Tuple[Dict[str, bool], List[MetricMethodologyType]]:
-    """Identifies dimensions to include in the output, and the methodologies of counting to use.
-
-        Args:
-            known_args: Arguments identified by the argument parsers.
-
-        Returns: A dictionary containing the dimensions and booleans indicating whether they should be included in the
-            output, and a list of methodologies to use.
-    """
-
-    dimensions: Dict[str, bool] = {}
-
-    filterable_dimensions_map = {
-        'include_age': 'age_bucket',
-        'include_ethnicity': 'ethnicity',
-        'include_gender': 'gender',
-        'include_race': 'race',
-    }
-
-    known_args_dict = vars(known_args)
-
-    for dimension_key in filterable_dimensions_map:
-        if not known_args_dict[dimension_key]:
-            dimensions[filterable_dimensions_map[dimension_key]] = False
-        else:
-            dimensions[filterable_dimensions_map[dimension_key]] = True
-
-    methodologies = []
-
-    if known_args.methodology == 'BOTH':
-        methodologies.append(MetricMethodologyType.EVENT)
-        methodologies.append(MetricMethodologyType.PERSON)
-    else:
-        methodologies.append(MetricMethodologyType[known_args.methodology])
-
-    return dimensions, methodologies
 
 
 def run(argv):
@@ -516,9 +497,6 @@ def run(argv):
         person_events = (person_and_sentence_groups | 'Classify Incarceration Events' >>
                          beam.ParDo(ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
 
-        # Get dimensions to include and methodologies to use
-        inclusions, _ = dimensions_and_methodologies(known_args)
-
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
 
@@ -529,11 +507,14 @@ def run(argv):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        # Get the type of metric to calculate
+        metric_types = set(known_args.metric_types)
+
         # Get IncarcerationMetrics
         incarceration_metrics = (person_events | 'Get Incarceration Metrics' >>
                                  GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
-                                     inclusions=inclusions,
+                                     metric_types=metric_types,
                                      calculation_month_limit=calculation_month_limit))
 
         if person_id_filter_set:

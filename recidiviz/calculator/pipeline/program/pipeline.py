@@ -22,7 +22,7 @@ import datetime
 import json
 import logging
 import sys
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Set
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions
@@ -33,15 +33,14 @@ from more_itertools import one
 from recidiviz.calculator.pipeline.program import identifier, calculator
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramReferralMetric
-from recidiviz.calculator.pipeline.program.metrics import \
-    ProgramMetricType as MetricType
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
     ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    json_serializable_metric_key, MetricMethodologyType
+    json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
 from recidiviz.persistence.database.schema.state import schema
@@ -72,19 +71,28 @@ class GetProgramMetrics(beam.PTransform):
     """Transforms a StatePerson and their ProgramEvents into ProgramMetrics."""
 
     def __init__(self, pipeline_options: Dict[str, str],
-                 inclusions: Dict[str, bool],
+                 metric_types: Set[str],
                  calculation_month_limit: int):
         super(GetProgramMetrics, self).__init__()
         self._pipeline_options = pipeline_options
-        self.inclusions = inclusions
         self.calculation_month_limit = calculation_month_limit
+
+        self.metric_inclusions: Dict[ProgramMetricType, bool] = {}
+
+        for metric_option in ProgramMetricType:
+            if metric_option.value in metric_types or 'ALL' in metric_types:
+                self.metric_inclusions[metric_option] = True
+                logging.info("Producing %s metrics", metric_option.value)
+            else:
+                self.metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
         # Calculate program metric combinations from a StatePerson and their ProgramEvents
         program_metric_combinations = (input_or_inputs | 'Map to metric combinations' >>
                                        beam.ParDo(
                                            CalculateProgramMetricCombinations(),
-                                           self.calculation_month_limit, self.inclusions).with_outputs('referrals'))
+                                           self.calculation_month_limit,
+                                           self.metric_inclusions).with_outputs('referrals'))
 
         referrals_with_sums = (program_metric_combinations.referrals | 'Calculate program referral values' >>
                                beam.CombinePerKey(SumFn()))
@@ -142,13 +150,13 @@ class ClassifyProgramAssignments(beam.DoFn):
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, List[ProgramEvent]],
-                  beam.typehints.Optional[int], beam.typehints.Dict[str, bool])
+                  beam.typehints.Optional[int], beam.typehints.Dict[ProgramMetricType, bool])
 @with_output_types(beam.typehints.Tuple[str, Any])
 class CalculateProgramMetricCombinations(beam.DoFn):
     """Calculates program metric combinations."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, calculation_month_limit, inclusions):
+    def process(self, element, calculation_month_limit, metric_inclusions):
         """Produces various program metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding ProgramEvents for mapping all program
@@ -157,12 +165,8 @@ class CalculateProgramMetricCombinations(beam.DoFn):
         Args:
             element: Tuple containing a StatePerson and their ProgramEvents
             calculation_month_limit: The number of months to limit the monthly calculation output to.
-            inclusions: This should be a dictionary with values for the
-                following keys:
-                    - age_bucket
-                    - gender
-                    - race
-                    - ethnicity
+            metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
+                flags for whether or not to include that metric type in the calculations
         Yields:
             Each program metric combination, tagged by metric type.
         """
@@ -172,7 +176,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
         metric_combinations = \
             calculator.map_program_combinations(person=person,
                                                 program_events=program_events,
-                                                inclusions=inclusions,
+                                                metric_inclusions=metric_inclusions,
                                                 calculation_month_limit=calculation_month_limit)
 
         # Return each of the program metric combinations
@@ -184,7 +188,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
             serializable_dict = json_serializable_metric_key(metric_key)
             json_key = json.dumps(serializable_dict, sort_keys=True)
 
-            if metric_type == MetricType.REFERRAL.value:
+            if metric_type == ProgramMetricType.REFERRAL:
                 yield beam.pvalue.TaggedOutput('referrals', (json_key, value))
 
     def to_runner_api_parameter(self, _):
@@ -217,7 +221,7 @@ class ProduceProgramMetrics(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == MetricType.REFERRAL.value:
+        if metric_type == ProgramMetricType.REFERRAL.value:
             dict_metric_key['count'] = value
 
             program_metric = ProgramReferralMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
@@ -267,6 +271,17 @@ def parse_arguments(argv):
     # Parse arguments
     add_shared_pipeline_arguments(parser)
 
+    parser.add_argument('--metric_types',
+                        dest='metric_types',
+                        type=str,
+                        nargs='+',
+                        choices=[
+                            'ALL',
+                            ProgramMetricType.REFERRAL.value
+                        ],
+                        help='A list of the types of metric to calculate.',
+                        default={'ALL'})
+
     parser.add_argument('--calculation_month_limit',
                         dest='calculation_month_limit',
                         type=calculation_month_limit_arg,
@@ -275,37 +290,6 @@ def parse_arguments(argv):
                         default=1)
 
     return parser.parse_known_args(argv)
-
-
-def dimensions_and_methodologies(known_args) -> \
-        Tuple[Dict[str, bool], List[MetricMethodologyType]]:
-
-    filterable_dimensions_map = {
-        'include_age': 'age_bucket',
-        'include_ethnicity': 'ethnicity',
-        'include_gender': 'gender',
-        'include_race': 'race',
-    }
-
-    known_args_dict = vars(known_args)
-
-    dimensions: Dict[str, bool] = {}
-
-    for dimension_key in filterable_dimensions_map:
-        if not known_args_dict[dimension_key]:
-            dimensions[filterable_dimensions_map[dimension_key]] = False
-        else:
-            dimensions[filterable_dimensions_map[dimension_key]] = True
-
-    methodologies = []
-
-    if known_args.methodology == 'BOTH':
-        methodologies.append(MetricMethodologyType.EVENT)
-        methodologies.append(MetricMethodologyType.PERSON)
-    else:
-        methodologies.append(MetricMethodologyType[known_args.methodology])
-
-    return dimensions, methodologies
 
 
 def run(argv):
@@ -399,9 +383,6 @@ def run(argv):
                          AsDict(supervision_period_to_agent_associations_as_kv))
         )
 
-        # Get dimensions to include and methodologies to use
-        inclusions, _ = dimensions_and_methodologies(known_args)
-
         # Get pipeline job details for accessing job_id
         all_pipeline_options = pipeline_options.get_all_options()
 
@@ -412,11 +393,14 @@ def run(argv):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        # Get the type of metric to calculate
+        metric_types = set(known_args.metric_types)
+
         # Get program metrics
         program_metrics = (person_program_events | 'Get Program Metrics' >>
                            GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
-                               inclusions=inclusions,
+                               metric_types=metric_types,
                                calculation_month_limit=calculation_month_limit))
 
         if person_id_filter_set:

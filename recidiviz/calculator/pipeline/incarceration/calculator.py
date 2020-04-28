@@ -50,7 +50,7 @@ METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
 def map_incarceration_combinations(person: StatePerson,
                                    incarceration_events:
                                    List[IncarcerationEvent],
-                                   inclusions: Dict[str, bool],
+                                   metric_inclusions: Dict[IncarcerationMetricType, bool],
                                    calculation_month_limit: int) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms IncarcerationEvents and a StatePerson into metric combinations.
 
@@ -66,12 +66,8 @@ def map_incarceration_combinations(person: StatePerson,
     Args:
         person: the StatePerson
         incarceration_events: A list of IncarcerationEvents for the given StatePerson.
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
+        metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
+            flags for whether or not to include that metric type in the calculations
         calculation_month_limit: The number of months (including this one) to limit the monthly calculation output to.
             If set to -1, does not limit the calculations.
     Returns:
@@ -111,38 +107,30 @@ def map_incarceration_combinations(person: StatePerson,
             raise ValueError(
                 'No metric type mapped to incarceration event of type {}'.format(type(incarceration_event)))
 
-        characteristic_combos = characteristic_combinations(person, incarceration_event, inclusions, metric_type)
+        if metric_inclusions.get(metric_type):
+            characteristic_combos = characteristic_combinations(person, incarceration_event, metric_type)
 
-        metrics.extend(map_metric_combinations(
-            characteristic_combos, incarceration_event,
-            metric_period_end_date, calculation_month_lower_bound, incarceration_events,
-            periods_and_events, metric_type
-        ))
+            metrics.extend(map_metric_combinations(
+                characteristic_combos, incarceration_event,
+                metric_period_end_date, calculation_month_lower_bound, incarceration_events,
+                periods_and_events, metric_type
+            ))
 
     return metrics
 
 
 def characteristic_combinations(person: StatePerson,
                                 incarceration_event: IncarcerationEvent,
-                                inclusions: Dict[str, bool],
-                                metric_type: IncarcerationMetricType) -> \
-        List[Dict[str, Any]]:
+                                metric_type: IncarcerationMetricType) -> List[Dict[str, Any]]:
     """Calculates all incarceration metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
     IncarcerationEvent. That is, this returns a list of dictionaries where each dictionary is a combination of 0
-    to n unique elements of characteristics, where n is the number of keys in the given inclusions dictionary that are
-    set to True + the dimensions for the given type of event.
+    to n unique elements of characteristics applicable to the given |person| and |incarceration_event|.
 
     Args:
         person: the StatePerson we are picking characteristics from
         incarceration_event: the IncarcerationEvent we are picking characteristics from
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
         metric_type: The IncarcerationMetricType that determines which fields should be added to the characteristics
             dictionary
 
@@ -183,7 +171,8 @@ def characteristic_combinations(person: StatePerson,
 
     event_date = incarceration_event.event_date
 
-    characteristics = add_demographic_characteristics(characteristics, person, inclusions, event_date)
+    if _include_demographic_dimensions_for_metric(metric_type):
+        characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
         all_combinations = for_characteristics_races_ethnicities(characteristics)
@@ -260,7 +249,7 @@ def map_metric_combinations(
     metrics = []
 
     for combo in characteristic_combos:
-        combo['metric_type'] = metric_type.value
+        combo['metric_type'] = metric_type
 
         if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
                                       calculation_month_lower_bound):
@@ -479,3 +468,15 @@ def incarceration_events_in_period(start_date: date,
         [event for event in all_incarceration_events if start_date <= event.event_date <= end_date]
 
     return events_in_period
+
+
+def _include_demographic_dimensions_for_metric(metric_type: IncarcerationMetricType) -> bool:
+    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            IncarcerationMetricType.ADMISSION,
+            IncarcerationMetricType.POPULATION,
+            IncarcerationMetricType.RELEASE
+    ):
+        return True
+
+    raise ValueError(f"IncarcerationMetricType {metric_type} not handled.")

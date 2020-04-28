@@ -616,14 +616,6 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             self.assertEqual('UNSET', most_severe_violation_type_subtype)
 
 
-ALL_INCLUSIONS_DICT = {
-    'age_bucket': True,
-    'gender': True,
-    'race': True,
-    'ethnicity': True,
-}
-
-
 class TestAddDemographicCharacteristics(unittest.TestCase):
     """Tests the add_demographic_characteristics function used by all pipelines."""
     def test_add_demographic_characteristics(self):
@@ -641,10 +633,7 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics,
-                                                                  person,
-                                                                  ALL_INCLUSIONS_DICT,
-                                                                  event_date)
+        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
         expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN], 'gender': Gender.FEMALE}
 
@@ -668,10 +657,7 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics,
-                                                                  person,
-                                                                  ALL_INCLUSIONS_DICT,
-                                                                  event_date)
+        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
         expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN, Race.BLACK], 'gender': Gender.FEMALE}
 
@@ -697,10 +683,7 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics,
-                                                                  person,
-                                                                  ALL_INCLUSIONS_DICT,
-                                                                  event_date)
+        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
         expected_output = {
             'age_bucket': '25-29',
@@ -718,10 +701,7 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics,
-                                                                  person,
-                                                                  ALL_INCLUSIONS_DICT,
-                                                                  event_date)
+        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
         expected_output = {}
 

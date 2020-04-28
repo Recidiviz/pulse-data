@@ -92,11 +92,7 @@ class TestSupervisionPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-        self.all_inclusions_dict: Dict[str, bool] = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
+        self.metric_inclusions_dict: Dict[str, bool] = {
             SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
             SupervisionMetricType.SUCCESS.value: True,
             SupervisionMetricType.REVOCATION.value: True,
@@ -324,7 +320,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
                                    fake_person_id,
                                    fake_supervision_period_id,
                                    fake_svr_id,
@@ -349,7 +344,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
+
                                    fake_person_id,
                                    fake_supervision_period_id,
                                    fake_svr_id,
@@ -359,7 +354,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     @staticmethod
     def run_test_pipeline(dataset: str,
-                          inclusions: Dict[str, bool],
+
                           fake_person_id: int,
                           fake_supervision_period_id: int,
                           fake_svr_id: int,
@@ -609,7 +604,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                                | 'Get Supervision Metrics' >>  # type: ignore
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
-                                   inclusions=inclusions,
                                    metric_types=metric_types,
                                    calculation_month_limit=-1))
 
@@ -848,7 +842,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
+
                                    fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
@@ -1094,7 +1088,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
+
                                    fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
@@ -1329,7 +1323,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
+
                                    fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
@@ -1532,7 +1526,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
-                                   self.all_inclusions_dict,
+
                                    fake_person_id_1,
                                    supervision_period__1.supervision_period_id,
                                    supervision_violation_response.supervision_violation_response_id,
@@ -1544,11 +1538,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
 
     def setUp(self) -> None:
-        self.all_inclusions_dict = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
+        self.metric_inclusions_dict = {
             SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
             SupervisionMetricType.SUCCESS.value: True,
             SupervisionMetricType.REVOCATION.value: True,
@@ -1556,7 +1546,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
             SupervisionMetricType.POPULATION.value: True,
         }
-
 
     def testClassifySupervisionTimeBuckets(self):
         """Tests the ClassifySupervisionTimeBuckets DoFn."""
@@ -2388,17 +2377,13 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
     """Tests the CalculateSupervisionMetricCombinations DoFn in the pipeline."""
 
     def setUp(self) -> None:
-        self.all_inclusions_dict: Dict[str, bool] = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
-            SupervisionMetricType.SUCCESS.value: True,
-            SupervisionMetricType.REVOCATION.value: True,
-            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
-            SupervisionMetricType.POPULATION.value: True,
+        self.metric_inclusions_dict: Dict[SupervisionMetricType, bool] = {
+            SupervisionMetricType.ASSESSMENT_CHANGE: True,
+            SupervisionMetricType.SUCCESS: True,
+            SupervisionMetricType.REVOCATION: True,
+            SupervisionMetricType.REVOCATION_ANALYSIS: True,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
+            SupervisionMetricType.POPULATION: True,
         }
 
     def testCalculateSupervisionMetricCombinations(self):
@@ -2422,7 +2407,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_time_buckets[0], self.all_inclusions_dict, SupervisionMetricType.POPULATION))
+            fake_person, supervision_time_buckets[0], SupervisionMetricType.POPULATION))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -2448,7 +2433,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_month_limit,
-                             self.all_inclusions_dict).with_outputs('populations', 'person_level_output')
+                             self.metric_inclusions_dict).with_outputs('populations', 'person_level_output')
                   )
 
         assert_that(output.populations, AssertMatchers.
@@ -2489,7 +2474,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for revocation counts
         num_combinations_revocation = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], self.all_inclusions_dict,
+                fake_person, supervision_months[0],
                 SupervisionMetricType.REVOCATION))
         assert num_combinations_revocation > 0
 
@@ -2512,7 +2497,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         # Get expected number of combinations for population count
         num_combinations_population = len(
             calculator.characteristic_combinations(
-                fake_person, supervision_months[0], self.all_inclusions_dict, SupervisionMetricType.POPULATION))
+                fake_person, supervision_months[0], SupervisionMetricType.POPULATION))
         assert num_combinations_population > 0
 
         test_pipeline = TestPipeline()
@@ -2524,8 +2509,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_month_limit,
-                             self.all_inclusions_dict).with_outputs('revocations',
-                                                                    'person_level_output')
+                             self.metric_inclusions_dict).with_outputs('revocations',
+                                                                       'person_level_output')
                   )
 
         assert_that(output.revocations, AssertMatchers.
@@ -2553,7 +2538,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, inclusions=self.all_inclusions_dict)
+                             calculation_month_limit=-1, metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))
@@ -2570,7 +2555,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, inclusions=self.all_inclusions_dict)
+                             calculation_month_limit=-1, metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))

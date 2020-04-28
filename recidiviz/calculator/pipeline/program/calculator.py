@@ -41,7 +41,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 def map_program_combinations(person: StatePerson,
                              program_events:
                              List[ProgramEvent],
-                             inclusions: Dict[str, bool],
+                             metric_inclusions: Dict[ProgramMetricType, bool],
                              calculation_month_limit: int) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ProgramEvents and a StatePerson into metric combinations.
 
@@ -57,12 +57,8 @@ def map_program_combinations(person: StatePerson,
     Args:
         person: the StatePerson
         program_events: A list of ProgramEvents for the given StatePerson.
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
+        metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
+            flags for whether or not to include that metric type in the calculations
         calculation_month_limit: The number of months (including this one) to limit the monthly calculation output to.
             If set to -1, does not limit the calculations.
     Returns:
@@ -97,9 +93,8 @@ def map_program_combinations(person: StatePerson,
                     periods_and_events[period] = [program_event]
 
     for program_event in program_events:
-        if isinstance(program_event, ProgramReferralEvent):
-            characteristic_combos = characteristic_combinations(
-                person, program_event, inclusions)
+        if isinstance(program_event, ProgramReferralEvent) and metric_inclusions.get(ProgramMetricType.REFERRAL):
+            characteristic_combos = characteristic_combinations(person, program_event, ProgramMetricType.REFERRAL)
 
             program_referral_metrics_event_based = map_metric_combinations(
                 characteristic_combos, program_event,
@@ -114,27 +109,20 @@ def map_program_combinations(person: StatePerson,
 
 def characteristic_combinations(person: StatePerson,
                                 program_event: ProgramEvent,
-                                inclusions: Dict[str, bool]) -> \
-        List[Dict[str, Any]]:
+                                metric_type: ProgramMetricType) -> List[Dict[str, Any]]:
     """Calculates all program metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
     ProgramEvent. That is, this returns a list of dictionaries where each dictionary is a combination of 0
-    to n unique elements of characteristics, where n is the number of keys in the given inclusions dictionary that are
-    set to True + the dimensions for the given type of event.
+    to n unique elements of characteristics applicable to the given |person| and |program_event|.
 
     Methodology is not included in the output here. It is added into augmented versions of these combinations later.
 
     Args:
         person: the StatePerson we are picking characteristics from
         program_event: the ProgramEvent we are picking characteristics from
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
-
+        metric_type: The ProgramMetricType provided determines which fields should be added to the characteristics
+            dictionary
     Returns:
         A list of dictionaries containing all unique combinations of characteristics.
     """
@@ -166,7 +154,8 @@ def characteristic_combinations(person: StatePerson,
 
     event_date = program_event.event_date
 
-    characteristics = add_demographic_characteristics(characteristics, person, inclusions, event_date)
+    if _include_demographic_dimensions_for_metric(metric_type):
+        characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
         all_combinations = for_characteristics_races_ethnicities(characteristics)
@@ -217,7 +206,7 @@ def map_metric_combinations(
 
     for combo in characteristic_combos:
         if metric_type == ProgramMetricType.REFERRAL and isinstance(program_event, ProgramReferralEvent):
-            combo['metric_type'] = metric_type.value
+            combo['metric_type'] = metric_type
 
             if include_in_monthly_metrics(
                     program_event.event_date.year, program_event.event_date.month, calculation_month_lower_bound):
@@ -390,3 +379,13 @@ def program_events_in_period(start_date: date,
         [event for event in all_program_events if start_date <= event.event_date <= end_date]
 
     return events_in_period
+
+
+def _include_demographic_dimensions_for_metric(metric_type: ProgramMetricType) -> bool:
+    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            ProgramMetricType.REFERRAL,
+    ):
+        return True
+
+    raise ValueError(f"ProgramMetricType {metric_type} not handled.")

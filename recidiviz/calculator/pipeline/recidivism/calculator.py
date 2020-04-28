@@ -54,9 +54,8 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 
 def map_recidivism_combinations(person: StatePerson,
-                                release_events:
-                                Dict[int, List[ReleaseEvent]],
-                                inclusions: Dict[str, bool]) \
+                                release_events: Dict[int, List[ReleaseEvent]],
+                                metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool]) \
         -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ReleaseEvents and a StatePerson into metric combinations.
 
@@ -86,16 +85,8 @@ def map_recidivism_combinations(person: StatePerson,
         person: the StatePerson
         release_events: A dictionary mapping release cohorts to a list of
             ReleaseEvents for the given StatePerson.
-        inclusions: A dictionary containing the following keys that correspond
-            to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-                - release_facility
-                - stay_length_bucket
-            Where the values are boolean flags indicating whether to include
-            the dimension in the calculations.
+        metric_inclusions: A dictionary where the keys are each ReincarcerationRecidivismMetricType, and the values
+            are boolean flags for whether or not to include that metric type in the calculations
     Returns:
         A list of key-value tuples representing specific metric combinations and
         the recidivism value corresponding to that metric.
@@ -108,31 +99,29 @@ def map_recidivism_combinations(person: StatePerson,
     for release_cohort, events in release_events.items():
         for event in events:
             characteristic_combos_rates = \
-                characteristic_combinations(person, event, inclusions)
-            characteristic_combos_counts = deepcopy(
-                characteristic_combos_rates)
-            characteristic_combos_liberty = deepcopy(
-                characteristic_combos_rates)
+                characteristic_combinations(person, event, ReincarcerationRecidivismMetricType.RATE)
+            characteristic_combos_counts = deepcopy(characteristic_combos_rates)
+            characteristic_combos_liberty = deepcopy(characteristic_combos_rates)
 
-            rate_metrics = map_recidivism_rate_combinations(
-                characteristic_combos_rates, release_cohort, event,
-                release_events, all_reincarcerations)
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.RATE):
+                rate_metrics = map_recidivism_rate_combinations(
+                    characteristic_combos_rates, release_cohort, event,
+                    release_events, all_reincarcerations)
 
-            metrics.extend(rate_metrics)
+                metrics.extend(rate_metrics)
 
-            count_metrics = \
-                map_recidivism_count_combinations(characteristic_combos_counts,
-                                                  event,
-                                                  all_reincarcerations,
-                                                  metric_period_end_date)
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.COUNT):
+                count_metrics = map_recidivism_count_combinations(characteristic_combos_counts,
+                                                                  event,
+                                                                  all_reincarcerations,
+                                                                  metric_period_end_date)
+                metrics.extend(count_metrics)
 
-            metrics.extend(count_metrics)
-
-            liberty_metrics = \
-                map_recidivism_liberty_combinations(
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.LIBERTY):
+                liberty_metrics = map_recidivism_liberty_combinations(
                     characteristic_combos_liberty, event, all_reincarcerations)
 
-            metrics.extend(liberty_metrics)
+                metrics.extend(liberty_metrics)
 
     return metrics
 
@@ -512,8 +501,7 @@ def stay_length_bucket(stay_length: Optional[int]) -> Optional[str]:
 
 def characteristic_combinations(person: StatePerson,
                                 event: ReleaseEvent,
-                                inclusions: Dict[str, bool]) -> \
-        List[Dict[str, Any]]:
+                                metric_type: ReincarcerationRecidivismMetricType) -> List[Dict[str, Any]]:
     """Calculates all recidivism metric combinations.
 
     Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
@@ -556,15 +544,8 @@ def characteristic_combinations(person: StatePerson,
     Args:
         person: the StatePerson we are picking characteristics from
         event: the ReleaseEvent we are picking characteristics from
-        inclusions: A dictionary containing the following keys that correspond to characteristic dimensions:
-                - age_bucket
-                - ethnicity
-                - gender
-                - race
-                - release_facility
-                - stay_length_bucket
-            Where the values are boolean flags indicating whether to include the dimension in the calculations.
-
+        metric_type: The ReincarcerationRecidivismMetricType provided determines which fields should be added to the
+            characteristics dictionary
     Returns:
         A list of dictionaries containing all unique combinations of characteristics.
     """
@@ -575,16 +556,15 @@ def characteristic_combinations(person: StatePerson,
     if event.county_of_residence:
         characteristics['county_of_residence'] = event.county_of_residence
 
-    if inclusions.get('release_facility'):
-        if event.release_facility is not None:
-            characteristics['release_facility'] = event.release_facility
-    if inclusions.get('stay_length_bucket'):
-        event_stay_length = stay_length_from_event(event)
-        event_stay_length_bucket = stay_length_bucket(event_stay_length)
-        characteristics['stay_length_bucket'] = event_stay_length_bucket
+    if event.release_facility is not None:
+        characteristics['release_facility'] = event.release_facility
 
-    characteristics = add_demographic_characteristics(
-        characteristics, person, inclusions, event.original_admission_date)
+    event_stay_length = stay_length_from_event(event)
+    event_stay_length_bucket = stay_length_bucket(event_stay_length)
+    characteristics['stay_length_bucket'] = event_stay_length_bucket
+
+    if _include_demographic_dimensions_for_metric(metric_type):
+        characteristics = add_demographic_characteristics(characteristics, person, event.original_admission_date)
 
     if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
         all_combinations = for_characteristics_races_ethnicities(characteristics)
@@ -981,3 +961,15 @@ def recidivism_value_for_metric(
             return 0
 
     return 1
+
+
+def _include_demographic_dimensions_for_metric(metric_type: ReincarcerationRecidivismMetricType) -> bool:
+    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            ReincarcerationRecidivismMetricType.COUNT,
+            ReincarcerationRecidivismMetricType.LIBERTY,
+            ReincarcerationRecidivismMetricType.RATE,
+    ):
+        return True
+
+    raise ValueError(f"ReincarcerationRecidivismMetricType {metric_type} not handled.")

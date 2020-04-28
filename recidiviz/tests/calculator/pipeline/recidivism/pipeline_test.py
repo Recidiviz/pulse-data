@@ -65,6 +65,12 @@ from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = 'county'
 
+ALL_METRIC_INCLUSIONS_DICT = {
+    MetricType.COUNT: True,
+    MetricType.LIBERTY: True,
+    MetricType.RATE: True
+}
+
 
 class TestRecidivismPipeline(unittest.TestCase):
     """Tests the entire recidivism pipeline."""
@@ -400,20 +406,9 @@ class TestRecidivismPipeline(unittest.TestCase):
     def run_test_pipeline(self,
                           dataset: str,
                           fake_person_id_1: int,
-                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+                          unifying_id_field_filter_set: Optional[Set[int]] = None,
+                          metric_types_filter: Optional[Set[str]] = None):
         """Runs a test version of the recidivism pipeline."""
-        inclusions = {
-            'age_bucket': False,
-            'gender': False,
-            'race': False,
-            'ethnicity': False,
-            'release_facility': False,
-            'stay_length_bucket': False
-        }
-
-        methodologies = [MetricMethodologyType.EVENT,
-                         MetricMethodologyType.PERSON]
-
         test_pipeline = TestPipeline()
 
         # Get entities.StatePersons
@@ -534,23 +529,16 @@ class TestRecidivismPipeline(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
+
         # Get recidivism metrics
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>  # type: ignore
                               pipeline.GetRecidivismMetrics(
                                   all_pipeline_options,
-                                  inclusions))
+                                  metric_types))
 
-        filter_metrics_kwargs = {'methodologies': methodologies}
-
-        # Filter out unneeded metrics
-        final_recidivism_metrics = (
-            recidivism_metrics
-            | 'Filter out unwanted metrics' >>
-            beam.ParDo(pipeline.FilterMetrics(), **filter_metrics_kwargs))
-
-        assert_that(final_recidivism_metrics,
-                    AssertMatchers.validate_pipeline_test())
+        assert_that(recidivism_metrics, AssertMatchers.validate_pipeline_test())
 
         test_pipeline.run()
 
@@ -975,18 +963,10 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
                            [first_recidivism_release_event],
                            second_recidivism_release_event.release_date.year:
                                [second_recidivism_release_event]})]
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True,
-            'release_facility': True,
-            'stay_length_bucket': True
-        }
 
         # Get the number of combinations of person-event characteristics, without the person-level combination
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, first_recidivism_release_event, inclusions)) - 1
+            fake_person, first_recidivism_release_event, MetricType.COUNT)) - 1
         assert num_combinations > 0
 
         # We do not track metrics for periods that start after today, so we need to subtract for some number of periods
@@ -1020,7 +1000,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
                   | beam.Create(person_events)
                   | 'Calculate Metric Combinations' >>
                   beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(),
-                             **inclusions).with_outputs('rates', 'counts')
+                             ALL_METRIC_INCLUSIONS_DICT).with_outputs('rates', 'counts')
                   )
 
         assert_that(output.rates, AssertMatchers.
@@ -1050,7 +1030,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create(person_events)
                   | 'Calculate Metric Combinations' >>
-                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations())
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -1068,7 +1048,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create(person_events)
                   | 'Calculate Metric Combinations' >>
-                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations())
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -1370,54 +1350,6 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
                       **all_pipeline_options))
 
         assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-
-class TestFilterMetrics(unittest.TestCase):
-    """Tests for the FilterMetrics DoFn in the pipeline."""
-
-    def testFilterMetrics_ExcludePerson(self):
-        """Tests the FilterMetrics DoFn when the Person-based metrics should
-         be excluded from the output."""
-        methodologies = [MetricMethodologyType.EVENT]
-
-        filter_metrics_kwargs = {'methodologies': methodologies}
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create(MetricGroup.get_list())
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.FilterMetrics(),
-                             **filter_metrics_kwargs))
-
-        assert_that(output,
-                    equal_to(
-                        [MetricGroup.recidivism_metric_event_based]))
-
-        test_pipeline.run()
-
-    def testFilterMetrics_ExcludeEvent(self):
-        """Tests the FilterMetrics DoFn when the Event-based metrics should
-         be excluded from the output."""
-
-        methodologies = [MetricMethodologyType.PERSON]
-
-        filter_metrics_kwargs = {'methodologies': methodologies}
-
-        test_pipeline = TestPipeline()
-
-        output = (test_pipeline
-                  | beam.Create(MetricGroup.get_list())
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(pipeline.FilterMetrics(),
-                             **filter_metrics_kwargs))
-
-        expected_output = MetricGroup.get_list()
-        expected_output.remove(MetricGroup.recidivism_metric_event_based)
-
-        assert_that(output, equal_to(expected_output))
 
         test_pipeline.run()
 
