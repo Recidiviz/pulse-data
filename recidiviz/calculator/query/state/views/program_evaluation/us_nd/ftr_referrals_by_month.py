@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 FTR_REFERRALS_BY_MONTH_VIEW_NAME = \
@@ -37,75 +36,40 @@ FTR_REFERRALS_BY_MONTH_DESCRIPTION = """
 FTR_REFERRALS_BY_MONTH_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, 
-      year, 
-      month, 
-      IFNULL(ref.count, 0) AS count, 
-      pop.count AS total_supervision_count,
+    SELECT
+      state_code,
+      year,
+      month,
+      IFNULL(ref.count, 0) AS count,
+      total_supervision_count,
       supervision_type,
-      supervising_district_external_id AS district 
+      district
     FROM (
-      SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') AS supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id 
-      FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND most_severe_violation_type IS NULL
-        AND most_severe_violation_type_subtype IS NULL
-        AND response_count IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND supervision_level IS NULL
-        AND supervision_level_raw_text IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'SUPERVISION_POPULATION'
+      SELECT
+        state_code, year, month,
+        COUNT(DISTINCT person_id) AS total_supervision_count,
+        supervision_type,
+        district
+      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
-      SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') AS supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') AS supervising_district_external_id  
-      FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND program_id IS NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'PROGRAM_REFERRAL'
+      SELECT
+        state_code, year, month,
+        COUNT(DISTINCT person_id) AS count,
+        supervision_type,
+        district
+      FROM `{project_id}.{reference_dataset}.event_based_program_referrals`
+      GROUP BY state_code, year, month, supervision_type, district
     ) ref
-    USING (state_code, year, month, supervision_type, supervising_district_external_id)
+    USING (state_code, year, month, supervision_type, district)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
+      AND district IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, year, month, district, supervision_type
     """.format(
         description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
     )
 

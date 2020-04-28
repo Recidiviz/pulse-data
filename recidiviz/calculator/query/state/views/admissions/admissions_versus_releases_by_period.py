@@ -18,7 +18,7 @@
 period months.
 """
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -47,49 +47,28 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
     FROM (
       SELECT
         state_code, metric_period_months,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        SUM(count) as admission_count
-      FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND specialized_purpose_for_incarceration IS NULL
-        AND admission_reason IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND admission_date IS NULL
-        AND supervision_type_at_admission IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'INCARCERATION_ADMISSION'
+        district,
+        COUNT(DISTINCT person_id) as admission_count
+      FROM `{project_id}.{reference_dataset}.event_based_admissions`,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, district
     ) admissions
     FULL OUTER JOIN (
       SELECT
         state_code,
         metric_period_months,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        SUM(count) as release_count
-      FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
+        district,
+        COUNT(DISTINCT person_id) as release_count
+      FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND release_reason IS NULL
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension},
+      {metric_period_dimension}
+      WHERE methodology = 'EVENT'
+        AND person_id IS NOT NULL
+        AND m.metric_period_months = 1
+        AND {metric_period_condition}
         AND job.metric_type = 'INCARCERATION_RELEASE'
       GROUP BY state_code, metric_period_months, district
     ) releases
@@ -97,37 +76,33 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
     FULL OUTER JOIN (
       SELECT
         state_code,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        count AS month_end_population,
+        district,
+        COUNT(DISTINCT person_id) AS month_end_population,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
-        UNNEST([1,3,6,12,36]) AS metric_period_months
+      FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND most_serious_offense_ncic_code IS NULL
-        AND most_serious_offense_statute IS NULL
-        AND admission_reason IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND supervision_type_at_admission IS NULL
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension},
+      {metric_period_dimension}
+      WHERE methodology = 'EVENT'
+        AND person_id IS NOT NULL
+        AND m.metric_period_months = 1
+        AND {prior_month_metric_period_dimension}
         AND job.metric_type = 'INCARCERATION_POPULATION'
-        AND year = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL metric_period_months MONTH))
-        AND month = EXTRACT(MONTH FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL metric_period_months MONTH))
+      GROUP BY state_code, district, metric_period_months
     ) inc_pop
     USING (state_code, district, metric_period_months)
+    WHERE district IS NOT NULL
     ORDER BY state_code, metric_period_months, district
 """.format(
         description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
+        prior_month_metric_period_dimension=bq_utils.metric_period_condition(month_offset=0),
     )
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW = bqview.BigQueryView(

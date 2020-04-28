@@ -17,7 +17,7 @@
 """Revocations Matrix Distribution by Violation."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -43,9 +43,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         year,
         month,
         metric_period_months,
-        IFNULL(supervision_type, 'ALL') AS supervision_type,
-        IFNULL(case_type, 'ALL') AS charge_category,
-        IFNULL(supervising_district_external_id, 'ALL') AS district,
+        supervision_type,
+        charge_category,
+        district,
         IF(response_count > 8, 8, response_count) as reported_violations,
         CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
           CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
@@ -70,32 +70,29 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         SUM(IF(violation_count_type = 'VIOLATION', count, 0)) AS violation_count
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-    WHERE (supervision_type IS NULL OR supervision_type IN ('DUAL', 'PAROLE', 'PROBATION'))
-        AND revocation_type = 'REINCARCERATION'
+        USING (state_code, job_id, year, month, metric_period_months),
+    {district_dimension},
+    {supervision_dimension},
+    {charge_category_dimension}
+    WHERE revocation_type = 'REINCARCERATION'
         AND methodology = 'PERSON'
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND response_count IS NOT NULL
-        AND most_severe_violation_type IS NOT NULL
-        AND most_severe_violation_type_subtype IS NOT NULL
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
         AND job.metric_type = 'SUPERVISION_REVOCATION_VIOLATION'
-    GROUP BY state_code, year, month, metric_period_months, supervision_type, case_type, district, response_count, 
+        AND district IS NOT NULL
+    GROUP BY state_code, year, month, metric_period_months, supervision_type, charge_category, district, response_count,
         violation_type
-    ORDER BY year, month, metric_period_months, supervision_type, district, case_type, violation_type, response_count 
+    ORDER BY state_code, year, month, metric_period_months, supervision_type, district, charge_category, violation_type,
+        response_count
     """.format(
         description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
-        )
+        district_dimension=bq_utils.unnest_district(),
+        supervision_dimension=bq_utils.unnest_supervision_type(),
+        charge_category_dimension=bq_utils.unnest_charge_category(),
+    )
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW = bqview.BigQueryView(
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME,

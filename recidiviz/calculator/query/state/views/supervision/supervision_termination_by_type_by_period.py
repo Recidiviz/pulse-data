@@ -17,7 +17,7 @@
 """Successful and unsuccessful terminations of supervision by metric period month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -37,36 +37,44 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY = \
     """
     /*{description}*/
-    SELECT * FROM (
+    SELECT
+        state_code, metric_period_months,
+        SUM(successful_termination) AS successful_termination,
+        SUM(projected_completion_count - successful_termination) AS revocation_termination,
+        supervision_type,
+        district    
+    FROM (
       SELECT 
         state_code, metric_period_months, 
-        successful_completion_count as successful_termination, 
-        (projected_completion_count - successful_completion_count) as revocation_termination, 
-        IFNULL(supervision_type, 'ALL') as supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') as district 
+        -- Only count as success if all completed periods were successful per person
+        MIN(successful_completion_count) as successful_termination,
+        MAX(projected_completion_count) as projected_completion_count,
+        supervision_type,
+        district
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL 
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension},
+      {supervision_dimension},
+      {metric_period_dimension}
+      WHERE methodology = 'EVENT'
+        AND person_id IS NOT NULL
+        AND DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
+                                             INTERVAL metric_period_months - 1 MONTH)
         AND job.metric_type = 'SUPERVISION_SUCCESS'
+      GROUP BY state_code, metric_period_months, supervision_type, district, person_id
     )
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
+    GROUP BY state_code, metric_period_months, supervision_type, district
     ORDER BY state_code, metric_period_months, district, supervision_type
     """.format(
         description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         reference_dataset=REFERENCE_DATASET,
         metrics_dataset=METRICS_DATASET,
+        district_dimension=bq_utils.unnest_district(),
+        supervision_dimension=bq_utils.unnest_supervision_type(),
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
     )
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW = bqview.BigQueryView(

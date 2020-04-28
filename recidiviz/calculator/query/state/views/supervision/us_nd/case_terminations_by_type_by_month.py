@@ -17,7 +17,7 @@
 """Case Terminations by type by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -38,43 +38,27 @@ def _get_query_prep_statement(project_id, reference_dataset):
         WITH case_terminations AS (
           SELECT
             supervision_period.state_code,
-            DATE_TRUNC(termination_date, MONTH) AS termination_month_trunc,
+            EXTRACT(YEAR FROM termination_date) AS year,
+            EXTRACT(MONTH FROM termination_date) AS month,
             supervision_period.termination_reason,
             supervision_period.person_id,
-            supervision_period.supervision_type,
-            agent.district_external_id AS district,
+            supervision_type,
+            district,
             agent.agent_external_id AS officer_external_id
           FROM `{project_id}.state.state_supervision_period` supervision_period
           LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
-            USING (supervision_period_id)
+            USING (supervision_period_id),
+          {district_dimension},
+          {supervision_dimension}
           WHERE termination_date IS NOT NULL
-        ),
-        -- Create 3 extra rows for the 'ALL' supervision_type/district combos
-        case_terminations_expanded AS (
-          SELECT * FROM case_terminations
-          UNION ALL
-          SELECT
-            state_code, termination_month_trunc, termination_reason, person_id,
-            'ALL' AS supervision_type,
-            district,
-            officer_external_id
-          FROM case_terminations
-          UNION ALL
-          SELECT
-            state_code, termination_month_trunc, termination_reason, person_id,
-            supervision_type,
-            'ALL' AS district,
-            officer_external_id
-          FROM case_terminations
-          UNION ALL
-          SELECT
-            state_code, termination_month_trunc, termination_reason, person_id,
-            'ALL' AS supervision_type,
-            'ALL' AS district,
-            officer_external_id
-          FROM case_terminations
         )
-    """.format(project_id=project_id, reference_dataset=reference_dataset)
+    """.format(
+        project_id=project_id,
+        reference_dataset=reference_dataset,
+        district_dimension=bq_utils.unnest_district(district_column='agent.district_external_id'),
+        supervision_dimension=
+        bq_utils.unnest_supervision_type(supervision_type_column='supervision_period.supervision_type'),
+    )
 
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
@@ -82,9 +66,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
     /*{description}*/
     {prep_expression}
     SELECT
-      state_code,
-      EXTRACT(YEAR FROM termination_month_trunc) AS year,
-      EXTRACT(MONTH FROM termination_month_trunc) AS month,
+      state_code, year, month,
       COUNT(DISTINCT absconsion) AS absconsion,
       COUNT(DISTINCT death) AS death,
       COUNT(DISTINCT discharge) AS discharge,
@@ -96,7 +78,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
       district
     FROM (
       SELECT
-        state_code, termination_month_trunc,
+        state_code, year, month,
         CASE WHEN termination_reason = 'ABSCONSION' THEN person_id ELSE NULL END AS absconsion,
         CASE WHEN termination_reason = 'DEATH' THEN person_id ELSE NULL END AS death,
         CASE WHEN termination_reason = 'DISCHARGE' THEN person_id ELSE NULL END AS discharge,
@@ -106,12 +88,11 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
         CASE WHEN termination_reason = 'EXTERNAL_UNKNOWN' THEN person_id ELSE NULL END AS other,
         supervision_type,
         district
-      FROM case_terminations_expanded
+      FROM case_terminations
     )
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
-      AND EXTRACT(YEAR FROM termination_month_trunc) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'),
-                                                                                   INTERVAL 3 YEAR))
-    GROUP BY state_code, termination_month_trunc, supervision_type, district
+      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+    GROUP BY state_code, year, month, supervision_type, district
     ORDER BY state_code, year, month, supervision_type, district
     """.format(
         description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,

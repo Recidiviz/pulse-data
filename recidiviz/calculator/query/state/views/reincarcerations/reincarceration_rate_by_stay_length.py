@@ -22,7 +22,7 @@ release cohort of 2017 is the most recent calendar year where the next year
 (2018) has completed. The follow-up period is 1 year.
 """
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -39,37 +39,31 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = \
 REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, 
-      release_cohort, 
-      follow_up_period, 
-      recidivism_rate, 
-      stay_length_bucket, 
-      IFNULL(county_of_residence, 'ALL') AS district
+    SELECT
+      state_code,
+      release_cohort,
+      follow_up_period,
+      SUM(recidivated_releases)/COUNT(*) AS recidivism_rate,
+      stay_length_bucket,
+      district
     FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id)
+      USING (state_code, job_id),
+    {district_dimension}
     WHERE methodology = 'PERSON'
-      AND age_bucket IS NULL
-      AND race IS NULL
-      AND ethnicity IS NULL
-      AND gender IS NULL
-      AND person_id IS NULL
-      AND person_external_id IS NULL
-      AND return_type IS NULL
-      AND from_supervision_type IS NULL
-      AND source_violation_type IS NULL
-      AND release_facility IS NULL
-      AND stay_length_bucket IS NOT NULL
-      AND release_cohort = EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR))
+      AND person_id IS NOT NULL
       AND follow_up_period = 1
+      AND district IS NOT NULL
+      AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))
       AND job.metric_type = 'RECIDIVISM_RATE'
-    ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket
+    GROUP BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
+    ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     """.format(
         description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET
+        reference_dataset=REFERENCE_DATASET,
+        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
     )
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = bqview.BigQueryView(
