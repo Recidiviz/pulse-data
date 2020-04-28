@@ -171,6 +171,9 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 
+    # For person-level metrics only, the date of the revocation admission
+    revocation_admission_date: date = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionRevocationMetric']:
         """Builds a SupervisionRevocationMetric object from the given arguments."""
