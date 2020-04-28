@@ -30,10 +30,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
-from recidiviz.calculator.pipeline.utils.calculator_utils import for_characteristics_races_ethnicities,\
-    for_characteristics, last_day_of_month, relevant_metric_periods, augmented_combo_list, \
-    get_calculation_month_lower_bound_date, include_in_monthly_metrics, characteristics_with_person_id_fields, \
-    add_demographic_characteristics
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods,\
+    augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_monthly_metrics,\
+    characteristics_with_person_id_fields, add_demographic_characteristics
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
@@ -108,10 +107,10 @@ def map_incarceration_combinations(person: StatePerson,
                 'No metric type mapped to incarceration event of type {}'.format(type(incarceration_event)))
 
         if metric_inclusions.get(metric_type):
-            characteristic_combos = characteristic_combinations(person, incarceration_event, metric_type)
+            characteristic_combo = characteristics_dict(person, incarceration_event, metric_type)
 
             metrics.extend(map_metric_combinations(
-                characteristic_combos, incarceration_event,
+                characteristic_combo, incarceration_event,
                 metric_period_end_date, calculation_month_lower_bound, incarceration_events,
                 periods_and_events, metric_type
             ))
@@ -119,14 +118,10 @@ def map_incarceration_combinations(person: StatePerson,
     return metrics
 
 
-def characteristic_combinations(person: StatePerson,
-                                incarceration_event: IncarcerationEvent,
-                                metric_type: IncarcerationMetricType) -> List[Dict[str, Any]]:
-    """Calculates all incarceration metric combinations.
-
-    Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
-    IncarcerationEvent. That is, this returns a list of dictionaries where each dictionary is a combination of 0
-    to n unique elements of characteristics applicable to the given |person| and |incarceration_event|.
+def characteristics_dict(person: StatePerson,
+                         incarceration_event: IncarcerationEvent,
+                         metric_type: IncarcerationMetricType) -> Dict[str, Any]:
+    """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
         person: the StatePerson we are picking characteristics from
@@ -135,7 +130,7 @@ def characteristic_combinations(person: StatePerson,
             dictionary
 
     Returns:
-        A list of dictionaries containing all unique combinations of characteristics.
+        A dictionary populated with all relevant characteristics.
     """
     characteristics: Dict[str, Any] = {}
 
@@ -169,8 +164,7 @@ def characteristic_combinations(person: StatePerson,
 
     event_date = incarceration_event.event_date
 
-    if _include_demographic_dimensions_for_metric(metric_type):
-        characteristics = add_demographic_characteristics(characteristics, person, event_date)
+    characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     characteristics_with_person_details = add_person_level_characteristics(
         person, incarceration_event, characteristics)
@@ -178,17 +172,7 @@ def characteristic_combinations(person: StatePerson,
     if metric_type == IncarcerationMetricType.ADMISSION:
         characteristics_with_person_details['admission_date'] = incarceration_event.event_date
 
-    if _limit_to_person_level_output_for_metric(metric_type):
-        return [characteristics_with_person_details]
-
-    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
-        all_combinations = for_characteristics_races_ethnicities(characteristics)
-    else:
-        all_combinations = for_characteristics(characteristics)
-
-    all_combinations.append(characteristics_with_person_details)
-
-    return all_combinations
+    return characteristics_with_person_details
 
 
 def add_person_level_characteristics(person, incarceration_event, characteristics):
@@ -218,7 +202,7 @@ def add_person_level_characteristics(person, incarceration_event, characteristic
 
 
 def map_metric_combinations(
-        characteristic_combos: List[Dict[str, Any]],
+        characteristic_combo: Dict[str, Any],
         incarceration_event: IncarcerationEvent,
         metric_period_end_date: date,
         calculation_month_lower_bound: Optional[date],
@@ -233,7 +217,7 @@ def map_metric_combinations(
      implies that the person was counted towards the admission or release for that month.
 
      Args:
-         characteristic_combos: A list of dictionaries containing all unique combinations of characteristics.
+         characteristic_combo: A dictionary containing the characteristics of the person and event
          incarceration_event: The incarceration event from which the combination was derived.
          metric_period_end_date: The day the metric periods end
          calculation_month_lower_bound: The date of the first month to be included in the monthly calculations
@@ -249,18 +233,17 @@ def map_metric_combinations(
 
     metrics = []
 
-    for combo in characteristic_combos:
-        combo['metric_type'] = metric_type
+    characteristic_combo['metric_type'] = metric_type
 
-        if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
-                                      calculation_month_lower_bound):
-            metrics.extend(combination_incarceration_monthly_metrics(
-                combo, incarceration_event, all_incarceration_events))
+    if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
+                                  calculation_month_lower_bound):
+        metrics.extend(combination_incarceration_monthly_metrics(
+            characteristic_combo, incarceration_event, all_incarceration_events))
 
-        metrics.extend(combination_incarceration_metric_period_metrics(
-            combo, incarceration_event, metric_period_end_date,
-            periods_and_events
-        ))
+    metrics.extend(combination_incarceration_metric_period_metrics(
+        characteristic_combo, incarceration_event, metric_period_end_date,
+        periods_and_events
+    ))
 
     return metrics
 
@@ -291,17 +274,16 @@ def combination_incarceration_monthly_metrics(
     event_year = event_date.year
     event_month = event_date.month
 
-    # Add event-based combos for the 1-month period the month of the event
-    event_based_same_month_combos = augmented_combo_list(
+    # Add event-based combo for the 1-month period the month of the event
+    event_based_same_month_combo = augmented_combo_for_calculations(
         combo, incarceration_event.state_code,
         event_year, event_month,
         MetricMethodologyType.EVENT, 1)
 
-    for event_combo in event_based_same_month_combos:
-        metrics.append((event_combo, 1))
+    metrics.append((event_based_same_month_combo, 1))
 
-    # Create the person-based combos for the 1-month period of the month of the event
-    person_based_same_month_combos = augmented_combo_list(
+    # Create the person-based combo for the 1-month period of the month of the event
+    person_based_same_month_combo = augmented_combo_for_calculations(
         combo, incarceration_event.state_code,
         event_year, event_month,
         MetricMethodologyType.PERSON, 1
@@ -339,8 +321,7 @@ def combination_incarceration_monthly_metrics(
             last_day_of_month(event_date),
             events_in_month):
         # Include this event in the person-based count
-        for person_combo in person_based_same_month_combos:
-            metrics.append((person_combo, 1))
+        metrics.append((person_based_same_month_combo, 1))
 
     return metrics
 
@@ -375,7 +356,7 @@ def combination_incarceration_metric_period_metrics(
     for period_length, events_in_period in periods_and_events.items():
         if incarceration_event in events_in_period:
             # This event falls within this metric period
-            person_based_period_combos = augmented_combo_list(
+            person_based_period_combo = augmented_combo_for_calculations(
                 combo, incarceration_event.state_code,
                 period_end_year, period_end_month,
                 MetricMethodologyType.PERSON, period_length
@@ -399,8 +380,7 @@ def combination_incarceration_metric_period_metrics(
                     metric_period_end_date,
                     related_events_in_period):
                 # Include this event in the person-based count for this time period
-                for person_combo in person_based_period_combos:
-                    metrics.append((person_combo, 1))
+                metrics.append((person_based_period_combo, 1))
 
     return metrics
 
@@ -469,27 +449,3 @@ def incarceration_events_in_period(start_date: date,
         [event for event in all_incarceration_events if start_date <= event.event_date <= end_date]
 
     return events_in_period
-
-
-def _include_demographic_dimensions_for_metric(metric_type: IncarcerationMetricType) -> bool:
-    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
-    if metric_type in (
-            IncarcerationMetricType.ADMISSION,
-            IncarcerationMetricType.POPULATION,
-            IncarcerationMetricType.RELEASE
-    ):
-        return True
-
-    raise ValueError(f"IncarcerationMetricType {metric_type} not handled.")
-
-
-def _limit_to_person_level_output_for_metric(metric_type: IncarcerationMetricType) -> bool:
-    """Returns whether the metrics of the given metric_type should be limited to only the person-level output."""
-    if metric_type in (
-            IncarcerationMetricType.ADMISSION,
-            IncarcerationMetricType.POPULATION,
-            IncarcerationMetricType.RELEASE
-    ):
-        return True
-
-    raise ValueError(f"IncarcerationMetricType {metric_type} not handled.")

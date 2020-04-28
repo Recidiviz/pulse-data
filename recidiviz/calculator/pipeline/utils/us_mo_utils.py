@@ -81,12 +81,17 @@ def us_mo_identify_violation_subtype(violation_type: StateSupervisionViolationTy
 
     technical_violations = _get_violations_of_type(violations, StateSupervisionViolationType.TECHNICAL)
 
-    for violation in technical_violations:
-        for condition in violation.supervision_violated_conditions:
-            if condition.condition == _LAW_CITATION_SUBTYPE_STR:
-                return _LAW_CITATION_SUBTYPE_STR
-            if condition.condition == _SUBSTANCE_ABUSE_CONDITION_STR:
-                return _SUBSTANCE_ABUSE_SUBTYPE_STR
+    all_conditions = [
+        condition.condition for violation in technical_violations
+        for condition in violation.supervision_violated_conditions
+    ]
+
+    if _LAW_CITATION_SUBTYPE_STR in all_conditions:
+        return _LAW_CITATION_SUBTYPE_STR
+
+    if _SUBSTANCE_ABUSE_CONDITION_STR in all_conditions:
+        return _SUBSTANCE_ABUSE_SUBTYPE_STR
+
     return None
 
 

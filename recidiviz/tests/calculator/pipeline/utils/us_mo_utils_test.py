@@ -24,7 +24,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violat
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.us_mo_utils import get_ranked_violation_type_and_subtype_counts, \
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP, _LAW_CITATION_SUBTYPE_STR, \
-    _normalize_violations_on_responses_us_mo
+    _normalize_violations_on_responses_us_mo, _SUBSTANCE_ABUSE_CONDITION_STR
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import StateSupervisionViolationResponseType
 from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, \
@@ -103,7 +103,11 @@ class TestUsMoUtils(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
-                        condition=_LAW_CITATION_SUBTYPE_STR)
+                        condition=_SUBSTANCE_ABUSE_CONDITION_STR
+                    ),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        condition=_LAW_CITATION_SUBTYPE_STR
+                    )
                 ]
             ),
             StateSupervisionViolation.new_with_defaults(

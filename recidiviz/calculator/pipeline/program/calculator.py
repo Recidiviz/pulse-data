@@ -27,8 +27,8 @@ from typing import List, Dict, Tuple, Any, Sequence, Optional
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
     ProgramReferralEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import for_characteristics_races_ethnicities, \
-    for_characteristics, last_day_of_month, relevant_metric_periods, augmented_combo_list, include_in_monthly_metrics, \
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
+    augmented_combo_for_calculations, include_in_monthly_metrics, \
     get_calculation_month_lower_bound_date, \
     characteristics_with_person_id_fields, add_demographic_characteristics
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
@@ -49,10 +49,7 @@ def map_program_combinations(person: StatePerson,
     key-value pairs where the key represents a specific metric and the value represents whether or not
     the person should be counted as a positive instance of that metric.
 
-    This translates a particular interaction with a program into many different program metrics. Each metric represents
-    one of many possible combinations of characteristics being tracked for that event. For example,
-    if a White male is referred to a program, there is a metric that corresponds to White people, one to males, one to
-    White males, one to all people, and more depending on other dimensions in the data.
+    This translates a particular interaction with a program into many different program metrics.
 
     Args:
         person: the StatePerson
@@ -94,10 +91,10 @@ def map_program_combinations(person: StatePerson,
 
     for program_event in program_events:
         if isinstance(program_event, ProgramReferralEvent) and metric_inclusions.get(ProgramMetricType.REFERRAL):
-            characteristic_combos = characteristic_combinations(person, program_event, ProgramMetricType.REFERRAL)
+            characteristic_combo = characteristics_dict(person, program_event)
 
             program_referral_metrics_event_based = map_metric_combinations(
-                characteristic_combos, program_event,
+                characteristic_combo, program_event,
                 metric_period_end_date, calculation_month_lower_bound,
                 program_events, periods_and_events, ProgramMetricType.REFERRAL
             )
@@ -107,24 +104,16 @@ def map_program_combinations(person: StatePerson,
     return metrics
 
 
-def characteristic_combinations(person: StatePerson,
-                                program_event: ProgramEvent,
-                                metric_type: ProgramMetricType) -> List[Dict[str, Any]]:
-    """Calculates all program metric combinations.
-
-    Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
-    ProgramEvent. That is, this returns a list of dictionaries where each dictionary is a combination of 0
-    to n unique elements of characteristics applicable to the given |person| and |program_event|.
-
-    Methodology is not included in the output here. It is added into augmented versions of these combinations later.
+def characteristics_dict(person: StatePerson,
+                         program_event: ProgramEvent) -> Dict[str, Any]:
+    """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
         person: the StatePerson we are picking characteristics from
         program_event: the ProgramEvent we are picking characteristics from
-        metric_type: The ProgramMetricType provided determines which fields should be added to the characteristics
-            dictionary
+
     Returns:
-        A list of dictionaries containing all unique combinations of characteristics.
+        A dictionary populated with all relevant characteristics.
     """
     characteristics: Dict[str, Any] = {}
 
@@ -152,26 +141,15 @@ def characteristic_combinations(person: StatePerson,
 
     event_date = program_event.event_date
 
-    if _include_demographic_dimensions_for_metric(metric_type):
-        characteristics = add_demographic_characteristics(characteristics, person, event_date)
+    characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'program')
 
-    if _limit_to_person_level_output_for_metric(metric_type):
-        return [characteristics_with_person_details]
-
-    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
-        all_combinations = for_characteristics_races_ethnicities(characteristics)
-    else:
-        all_combinations = for_characteristics(characteristics)
-
-    all_combinations.append(characteristics_with_person_details)
-
-    return all_combinations
+    return characteristics_with_person_details
 
 
 def map_metric_combinations(
-        characteristic_combos: List[Dict[str, Any]],
+        characteristic_combo: Dict[str, Any],
         program_event: ProgramEvent,
         metric_period_end_date: date,
         calculation_month_lower_bound: Optional[date],
@@ -186,7 +164,7 @@ def map_metric_combinations(
     the person interacted with the program in the way being described.
 
     Args:
-        characteristic_combos: A list of dictionaries containing all unique combinations of characteristics.
+        characteristic_combo: A dictionary describing the person and event.
         program_event: The program event from which the combination was derived.
         metric_period_end_date: The day the metric periods end
         calculation_month_lower_bound: The date of the first month to be included in the monthly calculations
@@ -205,17 +183,17 @@ def map_metric_combinations(
         if isinstance(event, ProgramReferralEvent)
     ]
 
-    for combo in characteristic_combos:
-        if metric_type == ProgramMetricType.REFERRAL and isinstance(program_event, ProgramReferralEvent):
-            combo['metric_type'] = metric_type
+    if metric_type == ProgramMetricType.REFERRAL and isinstance(program_event, ProgramReferralEvent):
+        characteristic_combo['metric_type'] = metric_type
 
-            if include_in_monthly_metrics(
-                    program_event.event_date.year, program_event.event_date.month, calculation_month_lower_bound):
+        if include_in_monthly_metrics(
+                program_event.event_date.year, program_event.event_date.month, calculation_month_lower_bound):
 
-                metrics.extend(combination_referral_monthly_metrics(combo, program_event, all_referral_events))
+            metrics.extend(
+                combination_referral_monthly_metrics(characteristic_combo, program_event, all_referral_events))
 
-            metrics.extend(combination_referral_metric_period_metrics(combo, program_event,
-                                                                      metric_period_end_date, periods_and_events))
+        metrics.extend(combination_referral_metric_period_metrics(characteristic_combo, program_event,
+                                                                  metric_period_end_date, periods_and_events))
 
     return metrics
 
@@ -247,17 +225,16 @@ def combination_referral_monthly_metrics(
     event_year = event_date.year
     event_month = event_date.month
 
-    # Add event-based combos for the 1-month period the month of the event
-    event_based_same_month_combos = augmented_combo_list(
+    # Add event-based combo for the 1-month period the month of the event
+    event_based_same_month_combo = augmented_combo_for_calculations(
         combo, program_event.state_code,
         event_year, event_month,
         MetricMethodologyType.EVENT, 1)
 
-    for event_combo in event_based_same_month_combos:
-        metrics.append((event_combo, 1))
+    metrics.append((event_based_same_month_combo, 1))
 
-    # Create the person-based combos for the 1-month period of the month of the event
-    person_based_same_month_combos = augmented_combo_list(
+    # Create the person-based combo for the 1-month period of the month of the event
+    person_based_same_month_combo = augmented_combo_for_calculations(
         combo, program_event.state_code,
         event_year, event_month,
         MetricMethodologyType.PERSON, 1
@@ -276,8 +253,7 @@ def combination_referral_monthly_metrics(
             last_day_of_month(event_date),
             all_referral_events_in_event_month):
         # Include this event in the person-based count
-        for person_combo in person_based_same_month_combos:
-            metrics.append((person_combo, 1))
+        metrics.append((person_based_same_month_combo, 1))
 
     return metrics
 
@@ -310,7 +286,7 @@ def combination_referral_metric_period_metrics(
     for period_length, events_in_period in periods_and_events.items():
         if program_event in events_in_period:
             # This event falls within this metric period
-            person_based_period_combos = augmented_combo_list(
+            person_based_period_combo = augmented_combo_for_calculations(
                 combo, program_event.state_code,
                 period_end_year, period_end_month,
                 MetricMethodologyType.PERSON, period_length
@@ -327,8 +303,7 @@ def combination_referral_metric_period_metrics(
                     metric_period_end_date,
                     referral_events_in_period):
                 # Include this event in the person-based count for this time period
-                for person_combo in person_based_period_combos:
-                    metrics.append((person_combo, 1))
+                metrics.append((person_based_period_combo, 1))
 
     return metrics
 
@@ -380,23 +355,3 @@ def program_events_in_period(start_date: date,
         [event for event in all_program_events if start_date <= event.event_date <= end_date]
 
     return events_in_period
-
-
-def _include_demographic_dimensions_for_metric(metric_type: ProgramMetricType) -> bool:
-    """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
-    if metric_type in (
-            ProgramMetricType.REFERRAL,
-    ):
-        return True
-
-    raise ValueError(f"ProgramMetricType {metric_type} not handled.")
-
-
-def _limit_to_person_level_output_for_metric(metric_type: ProgramMetricType) -> bool:
-    """Returns whether the metrics of the given metric_type should be limited to only the person-level output."""
-    if metric_type in (
-            ProgramMetricType.REFERRAL,
-    ):
-        return True
-
-    raise ValueError(f"ProgramMetricType {metric_type} not handled.")

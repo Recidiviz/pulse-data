@@ -19,7 +19,6 @@ run.
 """
 import argparse
 import datetime
-import json
 import logging
 import sys
 from typing import Dict, Any, List, Tuple, Set
@@ -35,15 +34,13 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramReferralMetric
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, \
-    ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
-from recidiviz.calculator.pipeline.utils.pipeline_utils import tagged_metric_output
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -93,24 +90,14 @@ class GetProgramMetrics(beam.PTransform):
                                        beam.ParDo(
                                            CalculateProgramMetricCombinations(),
                                            self.calculation_month_limit,
-                                           self.metric_inclusions).with_outputs('referrals', 'person_level_output'))
+                                           self.metric_inclusions))
 
-        referrals_with_sums = (program_metric_combinations.referrals | 'Calculate program referral values' >>
-                               beam.CombinePerKey(SumFn()))
+        # Produce ProgramMetrics
+        program_metrics = (program_metric_combinations |
+                           'Produce ProgramMetrics' >>
+                           beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
 
-        referral_metrics = (referrals_with_sums | 'Produce program referral metrics' >>
-                            beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
-
-        # Produce ProgramMetrics for all person-level metrics
-        person_level_metrics = (program_metric_combinations.person_level_output |
-                                'Produce person-level ProgramMetrics' >>
-                                beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
-
-        merged_metrics = ((referral_metrics, person_level_metrics)
-                          | 'Merge all program metrics' >>
-                          beam.Flatten())
-
-        return merged_metrics
+        return program_metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
@@ -161,7 +148,7 @@ class ClassifyProgramAssignments(beam.DoFn):
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, List[ProgramEvent]],
                   beam.typehints.Optional[int], beam.typehints.Dict[ProgramMetricType, bool])
-@with_output_types(beam.typehints.Tuple[str, Any])
+@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateProgramMetricCombinations(beam.DoFn):
     """Calculates program metric combinations."""
 
@@ -178,7 +165,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
             metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
                 flags for whether or not to include that metric type in the calculations
         Yields:
-            Each program metric combination, tagged by metric type.
+            Each program metric combination.
         """
         person, program_events = element
 
@@ -189,22 +176,15 @@ class CalculateProgramMetricCombinations(beam.DoFn):
                                                 metric_inclusions=metric_inclusions,
                                                 calculation_month_limit=calculation_month_limit)
 
-        metric_type_output_tags = {
-            ProgramMetricType.REFERRAL: 'referrals'
-        }
-
         # Return each of the program metric combinations
         for metric_combination in metric_combinations:
-            output_tag, output = tagged_metric_output(metric_combination, metric_type_output_tags)
-
-            if output_tag and output:
-                yield beam.pvalue.TaggedOutput(output_tag, output)
+            yield metric_combination
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Optional[Tuple[str, int]],
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -213,28 +193,43 @@ class CalculateProgramMetricCombinations(beam.DoFn):
                   )
 @with_output_types(ProgramMetric)
 class ProduceProgramMetrics(beam.DoFn):
-    """Produces ProgramMetrics ready for persistence."""
+    """Produces ProgramMetrics."""
 
     def process(self, element, *args, **kwargs):
+        """Converts a program metric key into a ProgramMetric.
+
+        The pipeline options are sent in as the **kwargs so that the job_id(pipeline_options) function can be called to
+        retrieve the job_id.
+
+        Args:
+            element: A tuple containing the dictionary for the program metric, and the value of that metric.
+            **kwargs: This should be a dictionary with values for the following keys:
+                    - runner: Either 'DirectRunner' or 'DataflowRunner'
+                    - project: GCP project ID
+                    - job_name: Name of the pipeline job
+                    - region: Region where the pipeline job is running
+                    - job_timestamp: Timestamp for the current job, to be used if the job is running locally.
+
+        Yields:
+            The ProgramMetric.
+        """
         pipeline_options = kwargs
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (metric_key, value) = element
+        (dict_metric_key, value) = element
 
         if value is None:
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
         if dict_metric_key.get('person_id') is not None:
             # The count value for all person-level metrics should be 1
             value = 1
 
-        if metric_type == ProgramMetricType.REFERRAL.value:
+        if metric_type == ProgramMetricType.REFERRAL:
             dict_metric_key['count'] = value
 
             program_metric = ProgramReferralMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)

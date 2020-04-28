@@ -16,17 +16,14 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-import json
 from datetime import date
-from itertools import combinations
 from typing import Optional, List, Any, Dict, Tuple
 
 import dateutil
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils import us_mo_utils
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -66,94 +63,6 @@ VIOLATION_TYPE_SEVERITY_ORDER = [
     StateSupervisionViolationType.ESCAPED,
     StateSupervisionViolationType.TECHNICAL
 ]
-
-
-def for_characteristics_races_ethnicities(characteristics: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Produces the list of all combinations of the given metric characteristics, given the fact that there can be
-    multiple races and ethnicities present.
-
-    For example, this function call:
-        for_characteristics_races_ethnicities(characteristics: {
-            'gender': Gender.FEMALE, 'age': '<25', 'race': [Race.BLACK, Race.WHITE],
-            'ethnicity': [Ethnicity.HISPANIC, Ethnicity.NOT_HISPANIC]
-            }
-        )
-
-    First computes all combinations for the given base characteristics, excluding the race and ethnicity values. Then,
-    for each race present, adds a copy of each combination augmented with the race. For each ethnicity present, adds a
-    copy of each combination augmented with the ethnicity. Finally, for every combination of race and ethnicity, adds a
-    copy of each combination augmented with both the race and the ethnicity.
-    """
-    base_characteristics = characteristics.copy()
-
-    # Remove and store the race and ethnicity lists
-    races = base_characteristics.pop('race', [])
-    ethnicities = base_characteristics.pop('ethnicity', [])
-
-    # Initial combinations
-    combos: List[Dict[str, Any]] = for_characteristics(base_characteristics)
-
-    # Race additions
-    race_combos: List[Dict[Any, Any]] = []
-    for race in races:
-        for combo in combos:
-            augmented_combo = combo.copy()
-            augmented_combo['race'] = race
-            race_combos.append(augmented_combo)
-
-    # Ethnicity additions
-    ethnicity_combos: List[Dict[Any, Any]] = []
-    for ethnicity in ethnicities:
-        for combo in combos:
-            augmented_combo = combo.copy()
-            augmented_combo['ethnicity'] = ethnicity
-            ethnicity_combos.append(augmented_combo)
-
-    # Multi-race and ethnicity additions
-    race_ethnicity_combos: List[Dict[Any, Any]] = []
-    for race in races:
-        for ethnicity in ethnicities:
-            for combo in combos:
-                augmented_combo = combo.copy()
-                augmented_combo['race'] = race
-                augmented_combo['ethnicity'] = ethnicity
-                race_ethnicity_combos.append(augmented_combo)
-
-    combos = combos + race_combos + ethnicity_combos + race_ethnicity_combos
-
-    return combos
-
-
-def for_characteristics(characteristics) -> List[Dict[str, Any]]:
-    """Produces the list of all combinations of the given metric
-     characteristics.
-
-    Example:
-        for_characteristics(
-        {'race': Race.BLACK, 'gender': Gender.FEMALE, 'age': '<25'}) =
-            [{},
-            {'age': '<25'}, {'race': Race.BLACK}, {'gender': Gender.FEMALE},
-            {'age': '<25', 'race': Race.BLACK}, {'age': '<25',
-                'gender': Gender.FEMALE},
-            {'race': Race.BLACK, 'gender': Gender.FEMALE},
-            {'age': '<25', 'race': Race.BLACK, 'gender': Gender.FEMALE}]
-
-
-    Args:
-        characteristics: a dictionary of metric characteristics to derive
-            combinations from
-
-    Returns:
-        A list of dictionaries containing all unique combinations of
-        characteristics.
-    """
-    combos: List[Dict[Any, Any]] = [{}]
-    for i in range(len(characteristics)):
-        i_combinations = map(dict,
-                             combinations(characteristics.items(), i + 1))
-        for combo in i_combinations:
-            combos.append(combo)
-    return combos
 
 
 def add_demographic_characteristics(characteristics: Dict[str, Any],
@@ -239,38 +148,6 @@ def augment_combination(characteristic_combo: Dict[str, Any],
         augmented_combo[key] = value
 
     return augmented_combo
-
-
-def convert_event_based_to_person_based_metrics(
-        metrics: List[Tuple[Dict[str, Any], Any]]) -> \
-        List[Tuple[Dict[str, Any], Any]]:
-    """
-    Takes in a set of event-based metrics and converts them to be person-based
-    by removing any duplicate metric dictionaries attributed to this person.
-
-    By eliminating duplicate instances of metric keys, this person will only
-    contribute a +1 to a metric once per metric for all person-based counts.
-    """
-
-    person_based_metrics_set = set()
-
-    for metric, value in metrics:
-        metric['methodology'] = MetricMethodologyType.PERSON
-        # Converting the metric key to a JSON string so it is hashable
-        serializable_dict = json_serializable_metric_key(metric)
-        json_key = json.dumps(serializable_dict, sort_keys=True)
-        # Add the metric to the set
-        person_based_metrics_set.add((json_key, value))
-
-    person_based_metrics: List[Tuple[Dict[str, Any], Any]] = []
-
-    for json_metric, value in person_based_metrics_set:
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(json_metric)
-
-        person_based_metrics.append((dict_metric_key, value))
-
-    return person_based_metrics
 
 
 def first_day_of_month(any_date: datetime.date):
@@ -387,15 +264,13 @@ def relevant_metric_periods(event_date: date,
     return relevant_periods
 
 
-def augmented_combo_list(combo: Dict[str, Any],
-                         state_code: str,
-                         year: int,
-                         month: Optional[int],
-                         methodology: MetricMethodologyType,
-                         metric_period_months: Optional[int]) -> \
-        List[Dict[str, Any]]:
-    """Returns a list of combo dictionaries that have been augmented with
-    necessary parameters.
+def augmented_combo_for_calculations(combo: Dict[str, Any],
+                                     state_code: str,
+                                     year: int,
+                                     month: Optional[int],
+                                     methodology: MetricMethodologyType,
+                                     metric_period_months: Optional[int]) -> Dict[str, Any]:
+    """Augments the given combo dictionary with the given parameters of the calculation.
 
     Args:
         combo: the base combo to be augmented with methodology and period
@@ -406,14 +281,11 @@ def augmented_combo_list(combo: Dict[str, Any],
         metric_period_months: the metric_period_months value to add to each
             combo
 
-    Returns: a list of combos augmented with various parameters
+    Returns: Returns a dictionary that has been augmented with necessary parameters.
     """
-
-    combos = []
     parameters: Dict[str, Any] = {'state_code': state_code,
                                   'methodology': methodology,
-                                  'year': year
-                                  }
+                                  'year': year}
 
     if month:
         parameters['month'] = month
@@ -421,10 +293,7 @@ def augmented_combo_list(combo: Dict[str, Any],
     if metric_period_months:
         parameters['metric_period_months'] = metric_period_months
 
-    base_combo = augment_combination(combo, parameters)
-    combos.append(base_combo)
-
-    return combos
+    return augment_combination(combo, parameters)
 
 
 def person_external_id_to_include(pipeline: str, person: StatePerson) -> Optional[str]:
