@@ -527,8 +527,6 @@ TAK022_TAK023_TAK025_TAK026_OFFENDER_SENTENCE_SUPERVISION = \
            full_supervision_sentence_info.BS$CYC,
            full_supervision_sentence_info.BS$SEO;"""
 
-# TODO(2649) - Finalize the list of Board holdover related releases below and
-#  create enum mappings.
 INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = \
     """
     status_bw AS (

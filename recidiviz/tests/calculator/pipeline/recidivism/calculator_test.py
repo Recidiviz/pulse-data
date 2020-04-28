@@ -33,7 +33,8 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.recidivism.release_event import \
-    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
+    ReincarcerationReturnType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
@@ -169,7 +170,7 @@ def test_releases_in_window_with_revocation_returns():
         'return_type':
             ReincarcerationReturnType.REVOCATION,
         'from_supervision_type':
-            ReincarcerationReturnFromSupervisionType.PAROLE}
+            StateSupervisionPeriodSupervisionType.PAROLE}
 
     new_admission_reincarceration = {
         'return_type': ReincarcerationReturnType.NEW_ADMISSION,
@@ -191,11 +192,11 @@ def test_releases_in_window_with_revocation_returns():
     assert reincarcerations[0].get('return_type') == \
         ReincarcerationReturnType.REVOCATION
     assert reincarcerations[0].get('from_supervision_type') == \
-        ReincarcerationReturnFromSupervisionType.PAROLE
+        StateSupervisionPeriodSupervisionType.PAROLE
     assert reincarcerations[1].get('return_type') == \
         ReincarcerationReturnType.REVOCATION
     assert reincarcerations[1].get('from_supervision_type') == \
-        ReincarcerationReturnFromSupervisionType.PAROLE
+        StateSupervisionPeriodSupervisionType.PAROLE
     assert reincarcerations[2].get('return_type') == \
         ReincarcerationReturnType.NEW_ADMISSION
     assert reincarcerations[2].get('from_supervision_type') is None
@@ -400,11 +401,11 @@ def test_recidivism_value_for_metric_parole_revocation():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PAROLE}
+                 StateSupervisionPeriodSupervisionType.PAROLE}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PAROLE, None)
+        StateSupervisionPeriodSupervisionType.PAROLE, None)
 
     assert value == 1
 
@@ -413,11 +414,11 @@ def test_recidivism_value_for_metric_probation_revocation():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PROBATION}
+                 StateSupervisionPeriodSupervisionType.PROBATION}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PROBATION, None)
+        StateSupervisionPeriodSupervisionType.PROBATION, None)
 
     assert value == 1
 
@@ -426,12 +427,12 @@ def test_recidivism_value_for_metric_parole_revocation_source_violation():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PAROLE,
+                 StateSupervisionPeriodSupervisionType.PAROLE,
              'source_violation_type': StateSupervisionViolationType.TECHNICAL}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PAROLE,
+        StateSupervisionPeriodSupervisionType.PAROLE,
         StateSupervisionViolationType.TECHNICAL)
 
     assert value == 1
@@ -441,12 +442,12 @@ def test_recidivism_value_for_metric_probation_revocation_source_violation():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PROBATION,
+                 StateSupervisionPeriodSupervisionType.PROBATION,
              'source_violation_type': StateSupervisionViolationType.FELONY}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PROBATION,
+        StateSupervisionPeriodSupervisionType.PROBATION,
         StateSupervisionViolationType.FELONY)
 
     assert value == 1
@@ -456,11 +457,11 @@ def test_recidivism_value_for_metric_not_revocation():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PROBATION}
+                 StateSupervisionPeriodSupervisionType.PROBATION}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.NEW_ADMISSION,
-        ReincarcerationReturnFromSupervisionType.PROBATION, None)
+        StateSupervisionPeriodSupervisionType.PROBATION, None)
 
     assert value == 0
 
@@ -469,11 +470,11 @@ def test_recidivism_value_for_metric_not_supervision_type():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PROBATION}
+                 StateSupervisionPeriodSupervisionType.PROBATION}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PAROLE, None)
+        StateSupervisionPeriodSupervisionType.PAROLE, None)
 
     assert value == 0
 
@@ -482,12 +483,12 @@ def test_recidivism_value_for_metric_not_source_violation_type():
     combo = {'age': '<25', 'race': 'black', 'gender': 'female',
              'return_type': ReincarcerationReturnType.REVOCATION,
              'from_supervision_type':
-                 ReincarcerationReturnFromSupervisionType.PROBATION,
+                 StateSupervisionPeriodSupervisionType.PROBATION,
              'source_violation_type': StateSupervisionViolationType.FELONY}
 
     value = calculator.recidivism_value_for_metric(
         combo, ReincarcerationReturnType.REVOCATION,
-        ReincarcerationReturnFromSupervisionType.PAROLE,
+        StateSupervisionPeriodSupervisionType.PAROLE,
         StateSupervisionViolationType.TECHNICAL)
 
     assert value == 0
@@ -961,7 +962,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
-                ReincarcerationReturnFromSupervisionType.PAROLE)]
+                StateSupervisionPeriodSupervisionType.PAROLE)]
         }
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
@@ -978,7 +979,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PROBATION or \
+                    StateSupervisionPeriodSupervisionType.PROBATION or \
                     combination.get('source_violation_type') is not None:
                 assert value == 0
             else:
@@ -1012,7 +1013,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
-                ReincarcerationReturnFromSupervisionType.PROBATION)]
+                StateSupervisionPeriodSupervisionType.PROBATION)]
         }
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
@@ -1027,10 +1028,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.RATE and \
                     combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.NEW_ADMISSION or \
-                    combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PAROLE or \
+                    combination.get('return_type') == ReincarcerationReturnType.NEW_ADMISSION or \
+                    combination.get('from_supervision_type') in {StateSupervisionPeriodSupervisionType.DUAL,
+                                                                 StateSupervisionPeriodSupervisionType.PAROLE} or \
                     combination.get('source_violation_type') is not None:
                 assert value == 0
             else:
@@ -1065,7 +1065,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 date(2014, 5, 12), 'Upstate',
                 ReincarcerationReturnType.REVOCATION,
                 from_supervision_type=
-                ReincarcerationReturnFromSupervisionType.PAROLE,
+                StateSupervisionPeriodSupervisionType.PAROLE,
                 source_violation_type=StateSupervisionViolationType.TECHNICAL)]
         }
 
@@ -1085,11 +1085,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             elif combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PROBATION:
+                    StateSupervisionPeriodSupervisionType.PROBATION:
                 assert value == 0
             elif combination.get('from_supervision_type') is None or \
                     combination.get('from_supervision_type') == \
-                    ReincarcerationReturnFromSupervisionType.PAROLE:
+                    StateSupervisionPeriodSupervisionType.PAROLE:
                 if combination.get('source_violation_type') not in \
                         [None, StateSupervisionViolationType.TECHNICAL]:
                     assert value == 0

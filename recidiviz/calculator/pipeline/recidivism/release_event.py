@@ -24,6 +24,7 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 
@@ -36,14 +37,6 @@ class ReincarcerationReturnType(Enum):
     # revoked. Note this covers all reasons for revocation, including new
     # crimes that may have factored into the revocation decision.
     REVOCATION = 'REVOCATION'
-
-
-class ReincarcerationReturnFromSupervisionType(Enum):
-    # The person returned from being on parole
-    PAROLE = 'PAROLE'
-
-    # The person returned from being on probation
-    PROBATION = 'PROBATION'
 
 
 @attr.s
@@ -87,11 +80,9 @@ class RecidivismReleaseEvent(ReleaseEvent):
     # incarceration this recidivism event describes.
     return_type: ReincarcerationReturnType = attr.ib(default=None)
 
-    # ReincarcerationReturnFromSupervisionType enum for the type of
+    # StateSupervisionPeriodSupervisionType enum for the type of
     # supervision the person was on before they returned to incarceration.
-    from_supervision_type: \
-        Optional[ReincarcerationReturnFromSupervisionType] = \
-        attr.ib(default=None)
+    from_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
     # StateSupervisionViolationType enum for the type of violation that
     # eventually caused the revocation of supervision
