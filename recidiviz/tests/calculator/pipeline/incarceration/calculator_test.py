@@ -89,7 +89,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -151,7 +151,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -192,7 +192,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -231,7 +231,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -278,7 +278,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -326,7 +326,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -376,7 +376,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -428,7 +428,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -471,7 +471,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -514,7 +514,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, 0, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            incarceration_events, 0, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -564,7 +564,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events,
+            incarceration_events,
             len(calculator_utils.METRIC_PERIOD_MONTHS),
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
@@ -616,7 +616,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events,
+            incarceration_events,
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
@@ -669,7 +669,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -721,8 +721,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, incarceration_events,
-            num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
+            incarceration_events, num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -807,8 +806,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [incarceration_event_include],
-            num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
+            [incarceration_event_include], num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -850,7 +848,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=37
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -910,7 +908,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, incarceration_events)
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -948,99 +946,17 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, incarceration_event, IncarcerationMetricType.ADMISSION)
 
-        # 64 combinations of demographics + 1 person-level metric
-        assert len(combinations) == 65
-
-    def test_characteristic_combinations_no_facility(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        incarceration_event = IncarcerationAdmissionEvent(
-            state_code='CA',
-            event_date=date(2018, 9, 13),
-            county_of_residence=_COUNTY_OF_RESIDENCE,
-        )
-
-        combinations = calculator.characteristic_combinations(
-            person, incarceration_event, IncarcerationMetricType.POPULATION)
-
-        # 32 combinations of demographics + 1 person-level metric
-        assert len(combinations) == 33
-
-    def test_characteristic_combinations_no_county(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        incarceration_event = IncarcerationAdmissionEvent(
-            state_code='CA',
-            event_date=date(2018, 9, 13),
-            facility='facility',
-        )
-
-        combinations = calculator.characteristic_combinations(
-            person, incarceration_event, IncarcerationMetricType.RELEASE)
-
-        # 32 combinations of demographics + 1 person-level metric
-        assert len(combinations) == 33
-
-
-def demographic_metric_combos_count_for_person_incarceration(
-        person: StatePerson,
-        inclusions: Dict[str, bool]) -> int:
-    """Returns the number of possible demographic metric combinations for a
-    given person, given the metric metric_inclusions list."""
-
-    total_metric_combos = demographic_metric_combos_count_for_person(
-        person, inclusions
-    )
-
-    return total_metric_combos
+        # 1 person-level metric
+        assert len(combinations) == 1
 
 
 def expected_metric_combos_count(
-        person: StatePerson,
         incarceration_events: List[IncarcerationEvent],
         num_relevant_periods_admissions: int = 0,
         num_relevant_periods_releases: int = 0,
         with_methodologies: bool = True) -> int:
     """Calculates the expected number of characteristic combinations given the person, the incarceration events, and
     the dimensions that should be included in the explosion of feature combinations."""
-
-    # TODO(3058): Remove this once we're limiting the program metrics to only person-level output
-    inclusions = {
-        'age_bucket': True,
-        'gender': True,
-        'race': True,
-        'ethnicity': True
-    }
-
-    demographic_metric_combos = demographic_metric_combos_count_for_person_incarceration(
-        person, inclusions)
-
     # Some test cases above use a different call that doesn't take methodology into account as a dimension
     methodology_multiplier = 1
     if with_methodologies:
@@ -1058,21 +974,6 @@ def expected_metric_combos_count(
 
         stay_months.add((stay_event.event_date.year, stay_event.event_date.month))
 
-    stay_dimension_multiplier = 1
-    if stay_events:
-        first_stay_event = stay_events[0]
-
-        stay_dimensions = [
-            'facility',
-            'county_of_residence',
-            'admission_reason',
-            'supervision_type_at_admission',
-        ]
-
-        for dimension in stay_dimensions:
-            if getattr(first_stay_event, dimension) is not None:
-                stay_dimension_multiplier *= 2
-
     admission_events = [event for event in incarceration_events if isinstance(event, IncarcerationAdmissionEvent)]
 
     num_admission_events = len(admission_events)
@@ -1084,22 +985,6 @@ def expected_metric_combos_count(
             num_duplicated_admission_months += 1
 
         admission_months.add((admission_event.event_date.year, admission_event.event_date.month))
-
-    admission_dimension_multiplier = 1
-    if admission_events:
-        first_admission_event = admission_events[0]
-
-        admission_dimensions = [
-            'facility',
-            'county_of_residence',
-            'admission_reason',
-            'specialized_purpose_for_incarceration',
-            'supervision_type_at_admission',
-        ]
-
-        for dimension in admission_dimensions:
-            if getattr(first_admission_event, dimension) is not None:
-                admission_dimension_multiplier *= 2
 
     release_events = [event for event in incarceration_events if isinstance(event, IncarcerationReleaseEvent)]
 
@@ -1113,58 +998,14 @@ def expected_metric_combos_count(
 
         release_months.add((release_event.event_date.year, release_event.event_date.month))
 
-    release_dimension_multiplier = 1
-    if release_events:
-        first_release_event = release_events[0]
+    admission_combos = (num_admission_events +
+                        (num_admission_events -
+                         num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
 
-        release_dimensions = [
-            'facility',
-            'county_of_residence',
-            'release_reason'
-        ]
+    stay_combos = (num_stay_events + (num_stay_events - num_duplicated_stay_months))
 
-        for dimension in release_dimensions:
-            if getattr(first_release_event, dimension) is not None:
-                release_dimension_multiplier *= 2
-
-    admission_combos = (demographic_metric_combos * methodology_multiplier *
-                        num_admission_events * admission_dimension_multiplier)
-    stay_combos = (demographic_metric_combos * methodology_multiplier *
-                   num_stay_events * stay_dimension_multiplier)
-    release_combos = (demographic_metric_combos * methodology_multiplier *
-                      num_release_events * release_dimension_multiplier)
-
-    if num_relevant_periods_admissions > 0:
-        admission_combos += (demographic_metric_combos *
-                             (len(admission_events) - num_duplicated_admission_months) *
-                             num_relevant_periods_admissions * admission_dimension_multiplier)
-
-    if num_relevant_periods_releases > 0:
-        release_combos += (demographic_metric_combos *
-                           (len(release_events) - num_duplicated_release_months) *
-                           num_relevant_periods_releases * release_dimension_multiplier)
-
-    duplicated_admission_combos = int(demographic_metric_combos * num_duplicated_admission_months
-                                      * admission_dimension_multiplier)
-
-    duplicated_release_combos = int(demographic_metric_combos * num_duplicated_release_months *
-                                    release_dimension_multiplier)
-
-    duplicated_stay_combos = int(demographic_metric_combos * num_duplicated_stay_months *
-                                 stay_dimension_multiplier)
-
-    admission_combos -= duplicated_admission_combos
-    stay_combos -= duplicated_stay_combos
-    release_combos -= duplicated_release_combos
-
-    admission_combos += (num_admission_events +
-                         (num_admission_events -
-                          num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
-
-    stay_combos += (num_stay_events + (num_stay_events - num_duplicated_stay_months))
-
-    release_combos += (num_release_events +
-                       (num_release_events - num_duplicated_release_months)*(num_relevant_periods_releases + 1))
+    release_combos = (num_release_events +
+                      (num_release_events - num_duplicated_release_months)*(num_relevant_periods_releases + 1))
 
     return admission_combos + stay_combos + release_combos
 
@@ -1177,3 +1018,8 @@ class TestIncludeDimensionsFunctions(unittest.TestCase):
         for metric in IncarcerationMetricType:
             # Assert this does not fail for all possible metric types
             _ = calculator._include_demographic_dimensions_for_metric(metric)
+
+    def test_limit_to_person_level_output_for_metric(self):
+        for metric in IncarcerationMetricType:
+            # Assert this does not fail for all possible metric types
+            _ = calculator._limit_to_person_level_output_for_metric(metric)

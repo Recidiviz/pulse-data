@@ -49,6 +49,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calc
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.utils.pipeline_utils import tagged_metric_output
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -100,7 +101,8 @@ class GetIncarcerationMetrics(beam.PTransform):
             beam.ParDo(CalculateIncarcerationMetricCombinations(),
                        self.calculation_month_limit, self.metric_inclusions).with_outputs('admissions',
                                                                                           'populations',
-                                                                                          'releases'))
+                                                                                          'releases',
+                                                                                          'person_level_output'))
 
         admissions_with_sums = (incarceration_metric_combinations.admissions
                                 | 'Calculate admission counts values' >>
@@ -127,11 +129,14 @@ class GetIncarcerationMetrics(beam.PTransform):
                            | 'Produce release count metrics' >>
                            beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
 
+        # Produce IncarcerationMetrics for all person-level metrics
+        person_level_metrics = (incarceration_metric_combinations.person_level_output |
+                                'Produce person-level IncarcerationMetrics' >>
+                                beam.ParDo(ProduceIncarcerationMetric(), **self._pipeline_options))
+
         # Merge the metric groups
-        merged_metrics = ((admission_metrics,
-                           population_metrics,
-                           release_metrics)
-                          | 'Merge admission, population, and release metrics' >>
+        merged_metrics = ((admission_metrics, population_metrics, release_metrics, person_level_metrics)
+                          | 'Merge all incarceration metrics' >>
                           beam.Flatten())
 
         # Return IncarcerationMetric objects
@@ -203,7 +208,7 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
                                                                         metric_inclusions,
                                                                         calculation_month_limit)
 
-        metric_type_output_tag = {
+        metric_type_output_tags = {
             IncarcerationMetricType.ADMISSION: 'admissions',
             IncarcerationMetricType.POPULATION: 'populations',
             IncarcerationMetricType.RELEASE: 'releases',
@@ -211,24 +216,16 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
 
         # Return each of the incarceration metric combinations
         for metric_combination in metric_combinations:
-            metric_key, value = metric_combination
-            metric_type = metric_key.get('metric_type')
+            output_tag, output = tagged_metric_output(metric_combination, metric_type_output_tags)
 
-            # Converting the metric key to a JSON string so it is hashable
-            serializable_dict = json_serializable_metric_key(metric_key)
-            json_key = json.dumps(serializable_dict, sort_keys=True)
-
-            output = (json_key, value)
-            output_tag = metric_type_output_tag.get(metric_type)
-
-            if output_tag:
+            if output_tag and output:
                 yield beam.pvalue.TaggedOutput(output_tag, output)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, Dict[str, int]],
+@with_input_types(beam.typehints.Optional[Tuple[str, Dict[str, int]]],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -272,24 +269,23 @@ class ProduceIncarcerationMetric(beam.DoFn):
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == IncarcerationMetricType.ADMISSION.value:
-            dict_metric_key['count'] = value
+        if dict_metric_key.get('person_id') is not None:
+            # The count value for all person-level metrics should be 1
+            value = 1
 
+        dict_metric_key['count'] = value
+
+        if metric_type == IncarcerationMetricType.ADMISSION.value:
             incarceration_metric = IncarcerationAdmissionMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         elif metric_type == IncarcerationMetricType.POPULATION.value:
-            dict_metric_key['count'] = value
-
             incarceration_metric = IncarcerationPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         elif metric_type == IncarcerationMetricType.RELEASE.value:
-            dict_metric_key['count'] = value
-
             incarceration_metric = IncarcerationReleaseMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
             return
 
         if incarceration_metric:

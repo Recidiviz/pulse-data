@@ -43,6 +43,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.utils.pipeline_utils import tagged_metric_output
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -92,7 +93,7 @@ class GetProgramMetrics(beam.PTransform):
                                        beam.ParDo(
                                            CalculateProgramMetricCombinations(),
                                            self.calculation_month_limit,
-                                           self.metric_inclusions).with_outputs('referrals'))
+                                           self.metric_inclusions).with_outputs('referrals', 'person_level_output'))
 
         referrals_with_sums = (program_metric_combinations.referrals | 'Calculate program referral values' >>
                                beam.CombinePerKey(SumFn()))
@@ -100,7 +101,16 @@ class GetProgramMetrics(beam.PTransform):
         referral_metrics = (referrals_with_sums | 'Produce program referral metrics' >>
                             beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
 
-        return referral_metrics
+        # Produce ProgramMetrics for all person-level metrics
+        person_level_metrics = (program_metric_combinations.person_level_output |
+                                'Produce person-level ProgramMetrics' >>
+                                beam.ParDo(ProduceProgramMetrics(), **self._pipeline_options))
+
+        merged_metrics = ((referral_metrics, person_level_metrics)
+                          | 'Merge all program metrics' >>
+                          beam.Flatten())
+
+        return merged_metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
@@ -179,23 +189,22 @@ class CalculateProgramMetricCombinations(beam.DoFn):
                                                 metric_inclusions=metric_inclusions,
                                                 calculation_month_limit=calculation_month_limit)
 
+        metric_type_output_tags = {
+            ProgramMetricType.REFERRAL: 'referrals'
+        }
+
         # Return each of the program metric combinations
         for metric_combination in metric_combinations:
-            metric_key, value = metric_combination
-            metric_type = metric_key.get('metric_type')
+            output_tag, output = tagged_metric_output(metric_combination, metric_type_output_tags)
 
-            # Converting the metric key to a JSON string so it is hashable
-            serializable_dict = json_serializable_metric_key(metric_key)
-            json_key = json.dumps(serializable_dict, sort_keys=True)
-
-            if metric_type == ProgramMetricType.REFERRAL:
-                yield beam.pvalue.TaggedOutput('referrals', (json_key, value))
+            if output_tag and output:
+                yield beam.pvalue.TaggedOutput(output_tag, output)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, int],
+@with_input_types(beam.typehints.Optional[Tuple[str, int]],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -220,6 +229,10 @@ class ProduceProgramMetrics(beam.DoFn):
         # Convert JSON string to dictionary
         dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
+
+        if dict_metric_key.get('person_id') is not None:
+            # The count value for all person-level metrics should be 1
+            value = 1
 
         if metric_type == ProgramMetricType.REFERRAL.value:
             dict_metric_key['count'] = value

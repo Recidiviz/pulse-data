@@ -86,7 +86,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, program_events)
+        expected_combinations_count = expected_metric_combos_count(program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -125,7 +125,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, program_events)
+        expected_combinations_count = expected_metric_combos_count(program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -164,7 +164,7 @@ class TestMapProgramCombinations(unittest.TestCase):
             person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(person, program_events)
+        expected_combinations_count = expected_metric_combos_count(program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -214,7 +214,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, duplicated_months_different_supervision_types=True)
+            program_events, duplicated_months_different_supervision_types=True)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -272,7 +272,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -322,7 +322,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -374,7 +374,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         relevant_periods = [36, 12]
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, len(relevant_periods),
+            program_events, len(relevant_periods),
             duplicated_months_different_supervision_types=True)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
@@ -433,7 +433,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
+            [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -474,7 +474,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
+            [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -515,30 +515,12 @@ class TestMapProgramCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [same_month_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
+            [same_month_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
-        expected_combinations_count += expected_metric_combos_count(
-            person, [old_month_event], 1)
+        expected_combinations_count += expected_metric_combos_count([old_month_event], 1)
 
         # Subtract the duplicated count for the metric_period_months = 36 person-based dict
         expected_combinations_count -= 1
-
-        # 2 person-level event and 2 person-level person based metrics for each referral event, plus the 4 person-based
-        # events for the 4 relevant metric periods
-        expected_combinations_count -= 8
-
-        # TODO(3058): Remove this once we're limiting the program metrics to only person-level output
-        inclusions = {
-            'age_bucket': True,
-            'gender': True,
-            'race': True,
-            'ethnicity': True
-        }
-
-        # Remove the double counted person-based referral in the 36 metric period window
-        expected_combinations_count -= (demographic_metric_combos_count_for_person_program(person, inclusions) * 2)
-        # Add them back
-        expected_combinations_count += 8
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -572,8 +554,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, ProgramMetricType.REFERRAL)
 
-        # 32 combinations of demographics  + 1 person-level metric
-        assert len(combinations) == 33
+        # 1 person-level metric
+        assert len(combinations) == 1
 
     def test_characteristic_combinations_referral_no_extra_set(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -600,8 +582,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, program_event, ProgramMetricType.REFERRAL)
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, [program_event], with_methodologies=False)
+        expected_combinations_count = expected_metric_combos_count([program_event], with_methodologies=False)
 
         # Subtract the event-based metric dict from the combo count
         expected_combinations_count -= 1
@@ -637,8 +618,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         combinations = calculator.characteristic_combinations(person, program_event, ProgramMetricType.REFERRAL)
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, [program_event], with_methodologies=False)
+        expected_combinations_count = expected_metric_combos_count([program_event], with_methodologies=False)
 
         # Subtract the event-based metric dict from the combo count
         expected_combinations_count -= 1
@@ -812,21 +792,7 @@ class TestIncludeReferralInCount(unittest.TestCase):
         self.assertTrue(include_first)
 
 
-def demographic_metric_combos_count_for_person_program(
-        person: StatePerson,
-        inclusions: Dict[str, bool]) -> int:
-    """Returns the number of possible demographic metric combinations for a
-    given person, given the metric metric_inclusions list."""
-
-    total_metric_combos = demographic_metric_combos_count_for_person(
-        person, inclusions
-    )
-
-    return total_metric_combos
-
-
 def expected_metric_combos_count(
-        person: StatePerson,
         program_events: List[ProgramEvent],
         num_relevant_periods: int = 0,
         with_methodologies: bool = True,
@@ -834,19 +800,6 @@ def expected_metric_combos_count(
     """Calculates the expected number of characteristic combinations given
     the person, the program events, and the dimensions that should
     be included in the explosion of feature combinations."""
-
-    # TODO(3058): Remove this once we're limiting the program metrics to only person-level output
-    inclusions = {
-        'age_bucket': True,
-        'gender': True,
-        'race': True,
-        'ethnicity': True
-    }
-
-    demographic_metric_combos = \
-        demographic_metric_combos_count_for_person_program(
-            person, inclusions)
-
     # Some test cases above use a different call that doesn't take methodology
     # into account as a dimension
     methodology_multiplier = 1
@@ -870,57 +823,9 @@ def expected_metric_combos_count(
             months.add((referral_event.event_date.year,
                         referral_event.event_date.month))
 
-    # Calculate total combos for program referrals
-    referral_dimension_multiplier = 1
-    if referral_events and referral_events[0].program_id:
-        referral_dimension_multiplier *= 2
-    if referral_events and referral_events[0].supervision_type:
-        referral_dimension_multiplier *= 2
-    if referral_events and referral_events[0].assessment_score:
-        referral_dimension_multiplier *= 2
-    if referral_events and referral_events[0].assessment_type:
-        referral_dimension_multiplier *= 2
-    if referral_events and referral_events[0].supervising_officer_external_id:
-        referral_dimension_multiplier *= 2
-    if referral_events and referral_events[0].supervising_district_external_id:
-        referral_dimension_multiplier *= 2
-
-    program_referral_combos = \
-        demographic_metric_combos * methodology_multiplier * \
-        num_referral_events * referral_dimension_multiplier
-
-    if num_relevant_periods > 0:
-        program_referral_combos += \
-            demographic_metric_combos * \
-            (num_referral_events - num_duplicated_referral_months) * \
-            referral_dimension_multiplier * \
-            num_relevant_periods
-
-        if duplicated_months_different_supervision_types:
-            program_referral_combos += \
-             int(demographic_metric_combos *
-                 num_duplicated_referral_months *
-                 referral_dimension_multiplier *
-                 num_relevant_periods / 2)
-
-    # Referral metrics removed in person-based de-duplication
-    duplicated_referral_combos = \
-        int(demographic_metric_combos *
-            num_duplicated_referral_months *
-            referral_dimension_multiplier)
-
-    if duplicated_months_different_supervision_types:
-        # If the duplicated months have different supervision types, then
-        # don't remove the supervision-type-specific combos
-        duplicated_referral_combos = int(duplicated_referral_combos / 2)
-
-    # Remove the combos for the duplicated referral months
-    program_referral_combos -= duplicated_referral_combos
-
-    # Adding person-level metrics
     duplication_multiplier = 0 if duplicated_months_different_supervision_types else 1
 
-    program_referral_combos += (num_referral_events + (
+    program_referral_combos = (num_referral_events + (
         num_referral_events - duplication_multiplier*num_duplicated_referral_months)*(
             num_relevant_periods + 1))
 

@@ -22,7 +22,6 @@ run.
 from __future__ import absolute_import
 
 import argparse
-import json
 import logging
 import sys
 
@@ -41,10 +40,9 @@ from recidiviz.calculator.pipeline.recidivism import calculator
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
-    ReincarcerationRecidivismLibertyMetric, \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import SumFn, AverageFn, ConvertDictToKVTuple, AverageFnResult
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
@@ -100,52 +98,15 @@ class GetRecidivismMetrics(beam.PTransform):
         recidivism_metric_combinations = (
             input_or_inputs
             | 'Map to metric combinations' >>
-            beam.ParDo(CalculateRecidivismMetricCombinations(),
-                       self.metric_inclusions).with_outputs('counts', 'rates', 'liberties'))
+            beam.ParDo(CalculateRecidivismMetricCombinations(), self.metric_inclusions))
 
-        # Calculate the recidivism count values for the metrics combined by key
-        counts_with_sums = (recidivism_metric_combinations.counts
-                            | 'Calculate recidivism counts values' >>
-                            beam.CombinePerKey(SumFn()))
-
-        # Calculate the recidivism rate values for the metrics combined by key
-        rates_with_values = (recidivism_metric_combinations.rates
-                             | 'Calculate recidivism rate values' >>
-                             beam.CombinePerKey(AverageFn()))
-
-        # Calculate the recidivism liberty values for metrics combined by key
-        liberties_with_values = (recidivism_metric_combinations.liberties
-                                 | 'Calculate time at liberty values' >>
-                                 beam.CombinePerKey(AverageFn()))
-
-        # Produce the ReincarcerationRecidivismCountMetrics
-        counts_metrics = (counts_with_sums
-                          | 'Produce recidivism count metrics' >>
-                          beam.ParDo(
-                              ProduceReincarcerationRecidivismCountMetric(),
-                              **self._pipeline_options))
-
-        # Produce the ReincarcerationRecidivismRateMetrics
-        rates_metrics = (rates_with_values
-                         | 'Produce recidivism rate metrics' >>
-                         beam.ParDo(
-                             ProduceReincarcerationRecidivismMetric(),
-                             **self._pipeline_options))
-
-        # Produce the ReincarcerationRecidivismLibertyMetrics
-        liberties_metrics = (liberties_with_values
-                             | 'Produce recidivism liberty metrics' >>
-                             beam.ParDo(
-                                 ProduceReincarcerationRecidivismMetric(),
-                                 **self._pipeline_options))
-
-        # Merge the metric groups
-        merged_metrics = ((counts_metrics, rates_metrics, liberties_metrics)
-                          | 'Merge counts, rates, and liberties metrics' >>
-                          beam.Flatten())
+        # Produce ReincarcerationRecidivismMetrics for all metrics
+        metrics = (recidivism_metric_combinations |
+                   'Produce person-level ReincarcerationRecidivismMetrics' >>
+                   beam.ParDo(ProduceReincarcerationRecidivismMetric(), **self._pipeline_options))
 
         # Return ReincarcerationRecidivismMetric objects
-        return merged_metrics
+        return metrics
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
@@ -205,7 +166,7 @@ class ClassifyReleaseEvents(beam.DoFn):
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[ReleaseEvent]]],
                   beam.typehints.Dict[ReincarcerationRecidivismMetricType, bool])
-@with_output_types(beam.typehints.Tuple[str, Any])
+@with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateRecidivismMetricCombinations(beam.DoFn):
     """Calculates recidivism metric combinations."""
 
@@ -221,39 +182,22 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
             metric_inclusions: A dictionary where the keys are each ReincarcerationRecidivismMetricType, and the values
                 are boolean flags for whether or not to include that metric type in the calculations
         Yields:
-            Each recidivism metric combination, tagged by metric type.
+            Each recidivism metric combination.
         """
         person, release_events = element
 
         # Calculate recidivism metric combinations for this person and events
         metric_combinations = calculator.map_recidivism_combinations(person, release_events, metric_inclusions)
 
-        metric_type_output_tag = {
-            ReincarcerationRecidivismMetricType.RATE: 'rates',
-            ReincarcerationRecidivismMetricType.COUNT: 'counts',
-            ReincarcerationRecidivismMetricType.LIBERTY: 'liberties',
-        }
-
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
-            metric_key, value = metric_combination
-            metric_type = metric_key.get('metric_type')
-
-            # Converting the metric key to a JSON string so it is hashable
-            serializable_dict = json_serializable_metric_key(metric_key)
-            json_key = json.dumps(serializable_dict, sort_keys=True)
-
-            output = (json_key, value)
-            output_tag = metric_type_output_tag.get(metric_type)
-
-            if output_tag:
-                yield beam.pvalue.TaggedOutput(output_tag, output)
+            yield metric_combination
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[str, int],
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
                   **{'runner': str,
                      'project': str,
                      'job_name': str,
@@ -261,12 +205,11 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
                      'job_timestamp': str}
                   )
 @with_output_types(ReincarcerationRecidivismMetric)
-class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
-    """Produces ReincarcerationRecidivismCountMetrics."""
+class ProduceReincarcerationRecidivismMetric(beam.DoFn):
+    """Produces ReincarcerationRecidivismMetrics."""
 
     def process(self, element, *args, **kwargs):
-        """Converts a recidivism metric key into a
-        ReincarcerationRecidivismMetric.
+        """Converts a recidivism metric key into a ReincarcerationRecidivismMetric.
 
         The pipeline options are sent in as the **kwargs so that the
         job_id(pipeline_options) function can be called to retrieve the job_id.
@@ -290,105 +233,31 @@ class ProduceReincarcerationRecidivismCountMetric(beam.DoFn):
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (metric_key, value) = element
+        (dict_metric_key, value) = element
 
         if value is None:
             # Due to how the pipeline arrives at this function, this should be
             # impossible.
             raise ValueError("No value associated with this metric key.")
 
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == ReincarcerationRecidivismMetricType.COUNT.value:
+        if metric_type == ReincarcerationRecidivismMetricType.COUNT:
+            if dict_metric_key.get('person_id') is not None:
+                # The count value for all person-level metrics should be 1
+                value = 1
+
             # For count metrics, the value is the number of returns
             dict_metric_key['returns'] = value
 
-            recidivism_metric = \
-                ReincarcerationRecidivismCountMetric. \
-                build_from_metric_key_group(
-                    dict_metric_key, pipeline_job_id)
-        else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
-            return
-
-        if recidivism_metric:
-            yield recidivism_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(beam.typehints.Tuple[str, AverageFnResult],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str}
-                  )
-@with_output_types(ReincarcerationRecidivismMetric)
-class ProduceReincarcerationRecidivismMetric(beam.DoFn):
-    """Produces ReincarcerationRecidivismMetrics."""
-
-    def process(self, element, *args, **kwargs):
-        """Converts a recidivism metric key into a
-        ReincarcerationRecidivismMetric.
-
-        The pipeline options are sent in as the **kwargs so that the
-        job_id(pipeline_options) function can be called to retrieve the job_id.
-
-        Args:
-            element: A tuple containing string representation of the metric_key
-                for a given recidivism metric, and a dictionary containing the
-                values for the given metric.
-
-                For metrics of type 'rate', the keys are:
-                    - total_releases
-                    - recidivated_releases
-                    - recidivism_rate
-                For metrics of type 'liberty', the keys are:
-                    - returns
-                    - avg_liberty
-            **kwargs: This should be a dictionary with values for the
-                following keys:
-                    - runner: Either 'DirectRunner' or 'DataflowRunner'
-                    - project: GCP project ID
-                    - job_name: Name of the pipeline job
-                    - region: Region where the pipeline job is running
-                    - job_timestamp: Timestamp for the current job, to be used
-                        if the job is running locally.
-
-        Yields:
-            The ReincarcerationRecidivismMetric.
-        """
-        pipeline_options = kwargs
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        (metric_key, result) = element
-
-        if result is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No result associated with this metric key.")
-
-        # Convert JSON string to dictionary
-        dict_metric_key = json.loads(metric_key)
-        metric_type = dict_metric_key.get('metric_type')
-
-        if metric_type == ReincarcerationRecidivismMetricType.RATE.value:
-            dict_metric_key['total_releases'] = result.input_count
-            dict_metric_key['recidivated_releases'] = result.sum_of_inputs
-            dict_metric_key['recidivism_rate'] = result.average_of_inputs
+            recidivism_metric = ReincarcerationRecidivismCountMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
+        elif metric_type == ReincarcerationRecidivismMetricType.RATE:
+            dict_metric_key['total_releases'] = 1
+            dict_metric_key['recidivated_releases'] = value
+            dict_metric_key['recidivism_rate'] = value
 
             recidivism_metric = ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == ReincarcerationRecidivismMetricType.LIBERTY.value:
-            dict_metric_key['returns'] = result.input_count
-            dict_metric_key['avg_liberty'] = result.average_of_inputs
-
-            recidivism_metric = ReincarcerationRecidivismLibertyMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
@@ -429,8 +298,6 @@ class RecidivismMetricWritableDict(beam.DoFn):
             yield beam.pvalue.TaggedOutput('rates', element_dict)
         elif isinstance(element, ReincarcerationRecidivismCountMetric):
             yield beam.pvalue.TaggedOutput('counts', element_dict)
-        elif isinstance(element, ReincarcerationRecidivismLibertyMetric):
-            yield beam.pvalue.TaggedOutput('liberties', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -450,8 +317,7 @@ def parse_arguments(argv):
                         choices=[
                             'ALL',
                             ReincarcerationRecidivismMetricType.COUNT.value,
-                            ReincarcerationRecidivismMetricType.RATE.value,
-                            ReincarcerationRecidivismMetricType.LIBERTY.value
+                            ReincarcerationRecidivismMetricType.RATE.value
                         ],
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
@@ -620,13 +486,11 @@ def run(argv):
         writable_metrics = (recidivism_metrics
                             | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
-                                RecidivismMetricWritableDict()).with_outputs(
-                                    'rates', 'counts', 'liberties'))
+                                RecidivismMetricWritableDict()).with_outputs('rates', 'counts'))
 
         # Write the recidivism metrics to the output tables in BigQuery
         rates_table = known_args.output + '.recidivism_rate_metrics'
         counts_table = known_args.output + '.recidivism_count_metrics'
-        liberty_table = known_args.output + '.recidivism_liberty_metrics'
 
         _ = (writable_metrics.rates
              | f"Write rate metrics to BQ table: {rates_table}" >>
@@ -640,14 +504,6 @@ def run(argv):
              | f"Write count metrics to BQ table: {counts_table}" >>
              beam.io.WriteToBigQuery(
                  table=counts_table,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
-             ))
-
-        _ = (writable_metrics.liberties
-             | f"Write liberty metrics to BQ table: {liberty_table}" >>
-             beam.io.WriteToBigQuery(
-                 table=liberty_table,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
