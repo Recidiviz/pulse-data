@@ -42,10 +42,14 @@ def get_urls_to_download() -> Set[str]:
             # Fix typo in link for ​​October 17, 2019
             if link.endswith('12-17-19.pdf'):
                 link = link.replace('12-17-19', '10-17-19')
-            # Make sure we only take things after Aug 9th 2018 as the format
-            # changed before that.
-            d = parse_date(link)
-            if d >= ACCEPTABLE_DATE:
-                url = BASE_URL.format(link)
-                aggregate_report_urls.add(url)
+            elif link.endswith('09-26-19.pdf'):
+                link = link.replace('09-26-19.pdf', '09-26-19 new.pdf')
+            else:
+                # Make sure we only take things after Aug 9th 2018 as the format
+                # changed before that.
+                d = parse_date(link)
+                if d < ACCEPTABLE_DATE:
+                    continue
+            url = BASE_URL.format(link)
+            aggregate_report_urls.add(url)
     return aggregate_report_urls
