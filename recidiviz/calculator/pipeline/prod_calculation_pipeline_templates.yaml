@@ -4,7 +4,7 @@
 #  If you want to deploy a pipeline just to stage, add it to staging_only_calculation_pipeline_templates.yaml
 
 # Number of pipelines to deploy
-pipeline_count: 7
+pipeline_count: 8
 
 # List of pipelines with their necessary details
 pipelines:
@@ -63,3 +63,13 @@ pipelines:
     output: dataflow_metrics
     state_code: US_ND
     calculation_month_limit: 36
+# Daily US_MO calculations for the dashboard
+  - pipeline: supervision
+    job_name: us-mo-supervision-calculations-36
+    input: state
+    reference_input: reference_tables
+    output: dataflow_metrics
+    state_code: US_MO
+    calculation_month_limit: 36
+    # metric_types must be the last in this list
+    metric_types: POPULATION REVOCATION_ANALYSIS REVOCATION_VIOLATION_TYPE_ANALYSIS
