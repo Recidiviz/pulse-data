@@ -149,7 +149,8 @@ def characteristic_combinations(person: StatePerson,
     Returns:
         A list of dictionaries containing all unique combinations of characteristics.
     """
-
+    # TODO(3058): Limit the output of this function to just the person_level_characteristic_dict dictionary
+    #  for all metrics that currently include person-level output
     characteristics: Dict[str, Any] = {}
 
     # Add characteristics that will be used to generate dictionaries with unique combinations.

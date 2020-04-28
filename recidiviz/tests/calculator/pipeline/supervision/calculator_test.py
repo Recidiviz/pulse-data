@@ -334,8 +334,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            include_revocation_analysis=True)
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
@@ -520,7 +519,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True,
             duplicated_months_mixed_success=True
         )
 
@@ -675,8 +673,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            include_revocation_analysis=True)
+            person, supervision_time_buckets, ALL_INCLUSIONS_DICT)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
@@ -812,7 +809,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -869,7 +865,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -920,8 +915,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            include_revocation_analysis=True,
-            duplicated_months_different_supervision_types=False
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -960,7 +953,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1001,12 +993,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, [relevant_bucket], ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=False
         )
         # Get the expected count for the non-relevant revocation bucket with revocation analysis metrics
         expected_combinations_count_not_relevant = expected_metric_combos_count(
             person, [not_relevant_bucket], ALL_INCLUSIONS_DICT,
-            include_revocation_analysis=True
         )
 
         expected_combinations_count += expected_combinations_count_not_relevant
@@ -1055,7 +1045,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=True
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1198,7 +1187,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
@@ -1331,7 +1319,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=True,
             include_revocation_violation_type_analysis_dimensions=True
         )
 
@@ -1893,7 +1880,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             include_all_metrics=False,
-            include_revocation_analysis=True,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
             metric_to_include=SupervisionMetricType.REVOCATION_ANALYSIS
         )
@@ -1994,7 +1980,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, supervision_time_buckets, ALL_INCLUSIONS_DICT,
             include_all_metrics=False,
-            include_revocation_analysis=True,
             include_revocation_violation_type_analysis_dimensions=True,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
             metric_to_include=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
@@ -2129,7 +2114,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             person, [included_bucket], ALL_INCLUSIONS_DICT,
             num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_analysis=True
         )
 
         self.assertEqual(expected_combinations_count,
@@ -2166,7 +2150,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             person, [included_bucket], ALL_INCLUSIONS_DICT,
-            include_revocation_analysis=True
         )
 
         self.assertEqual(expected_combinations_count,
@@ -2297,8 +2280,34 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, ALL_INCLUSIONS_DICT, metric_type=SupervisionMetricType.POPULATION)
 
-        # 64 combinations of demographics and supervision type + 1 person-level metric
-        self.assertEqual(len(combinations), 65)
+        self.assertEqual(1, len(combinations))
+
+    def test_characteristic_combinations_include_aggregate_metrics(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
+            state_code='US_MO', year=2018, month=3,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            response_count=None, is_on_supervision_last_day_of_month=False
+        )
+
+        combinations = calculator.characteristic_combinations(
+            person, supervision_time_bucket, ALL_INCLUSIONS_DICT,
+            metric_type=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+
+        self.assertEqual(64, len(combinations))
 
     def test_characteristic_combinations_exclude_age(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -2331,8 +2340,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
-        # 128 combinations of demographics, supervision type, and response count + 1 person-level metric
-        self.assertEqual(len(combinations), 129)
+        self.assertEqual(1, len(combinations))
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -2369,8 +2377,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
-        # 256 combinations of demographics, supervision type, and violations
-        self.assertEqual(len(combinations), 257)
+        self.assertEqual(1, len(combinations))
 
         for combo in combinations:
             assert combo.get('gender') is None
@@ -2406,8 +2413,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
-        # 128 combinations of demographics, supervision type, violation type, and response count
-        self.assertEqual(len(combinations), 129)
+        self.assertEqual(1, len(combinations))
 
         for combo in combinations:
             assert combo.get('race') is None
@@ -2442,8 +2448,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
-        # 64 combinations of demographics, supervision type, and response count
-        self.assertEqual(len(combinations), 65)
+        self.assertEqual(1, len(combinations))
 
         for combo in combinations:
             assert combo.get('ethnicity') is None
@@ -2479,8 +2484,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         combinations = calculator.characteristic_combinations(
             person, supervision_time_bucket, inclusions, metric_type=SupervisionMetricType.POPULATION)
 
-        # 32 combinations of demographics, supervision type, and response count
-        self.assertEqual(len(combinations), 33)
+        self.assertEqual(1, len(combinations))
 
         for combo in combinations:
             assert combo.get('age_bucket') is None
@@ -2931,13 +2935,12 @@ def expected_metric_combos_count(
         with_methodologies: bool = True,
         include_all_metrics: bool = True,
         metric_to_include: SupervisionMetricType = None,
-        duplicated_months_different_supervision_types: bool = False,
         duplicated_months_mixed_success: bool = False,
         num_relevant_periods: int = 0,
-        include_revocation_analysis: bool = False,
         include_revocation_violation_type_analysis_dimensions: bool = False) -> int:
     """Calculates the expected number of characteristic combinations given the person, the supervision time buckets,
-    and the dimensions that should be included in the explosion of feature combinations."""
+    and the dimensions that should be included in the explosion of feature combinations for the violation-type
+    analysis metrics."""
 
     combos_for_person = \
         demographic_metric_combos_count_for_person_supervision(person, inclusions)
@@ -2966,6 +2969,8 @@ def expected_metric_combos_count(
     termination_buckets = [
         bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
     ]
+
+    num_termination_buckets = len(termination_buckets)
 
     num_duplicated_population_buckets = 0
     population_months: Set[Tuple[int, int]] = set()
@@ -3031,108 +3036,6 @@ def expected_metric_combos_count(
         if month is not None:
             revocation_months.add((year, month))
 
-    # Calculates how many dimensions are included in the dimensional explosion by seeing which fields are set on the
-    # buckets that populate the characteristic dictionary that gets exploded
-    population_dimension_multiplier = 1
-    if population_buckets:
-        first_population_bucket = population_buckets[0]
-
-        population_dimensions = [
-            'supervision_type',
-            'case_type',
-            'assessment_type',
-            'most_severe_violation_type',
-            'most_severe_violation_type_subtype',
-            'response_count',
-            'supervising_officer_external_id',
-            'supervising_district_external_id',
-            'supervision_level'
-        ]
-
-        for dimension in population_dimensions:
-            if getattr(first_population_bucket, dimension) is not None:
-                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2 (one
-                # set of combinations where that dimension is included, and one where it is not)
-                population_dimension_multiplier *= 2
-
-        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
-        # is always included in the dimensional explosion
-        population_dimension_multiplier *= 2
-
-    supervision_population_combos = (combos_for_person * methodology_multiplier * num_population_buckets
-                                     * population_dimension_multiplier)
-
-    # Supervision population metrics removed in person-based de-duplication
-    duplicated_population_combos = int(combos_for_person * num_duplicated_population_buckets
-                                       * population_dimension_multiplier)
-
-    if duplicated_months_different_supervision_types:
-        # If the duplicated months have different supervision types, then
-        # don't remove the supervision-type-specific combos
-        duplicated_population_combos = int(duplicated_population_combos / 2)
-
-    supervision_population_combos -= duplicated_population_combos
-
-    # Calculate total combos for supervision revocation
-    revocation_dimension_multiplier = 1
-    if with_revocation_dimensions and revocation_buckets:
-        first_revocation_bucket = revocation_buckets[0]
-
-        revocation_dimensions = [
-            'supervision_type',
-            'case_type',
-            'revocation_type',
-            'source_violation_type',
-            'assessment_type',
-            'supervising_officer_external_id',
-            'supervising_district_external_id'
-        ]
-
-        for dimension in revocation_dimensions:
-            if getattr(first_revocation_bucket, dimension) is not None:
-                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2 (one
-                # set of combinations where that dimension is included, and one where it is not)
-                revocation_dimension_multiplier *= 2
-
-        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
-        # is always included in the dimensional explosion
-        revocation_dimension_multiplier *= 2
-
-    supervision_revocation_combos = (combos_for_person * methodology_multiplier * num_revocation_buckets
-                                     * revocation_dimension_multiplier)
-
-    duplicated_revocation_combos = int(combos_for_person * num_duplicated_revocation_buckets
-                                       * revocation_dimension_multiplier)
-
-    supervision_revocation_combos -= duplicated_revocation_combos
-
-    revocation_analysis_dimension_multiplier = revocation_dimension_multiplier
-
-    if with_revocation_dimensions and revocation_buckets:
-        first_revocation_analysis_bucket = revocation_buckets[0]
-
-        revocation_analysis_dimensions = [
-            'most_severe_violation_type',
-            'most_severe_violation_type_subtype',
-            'most_severe_response_decision',
-            'response_count'
-        ]
-
-        for dimension in revocation_analysis_dimensions:
-            if getattr(first_revocation_analysis_bucket, dimension) is not None:
-                revocation_analysis_dimension_multiplier *= 2
-
-    supervision_revocation_analysis_combos = 0
-
-    if include_revocation_analysis:
-        supervision_revocation_analysis_combos += (combos_for_person * methodology_multiplier
-                                                   * num_revocation_buckets * revocation_analysis_dimension_multiplier)
-
-        duplicated_revocation_analysis_combos = int(combos_for_person * num_duplicated_revocation_buckets
-                                                    * revocation_analysis_dimension_multiplier)
-
-        supervision_revocation_analysis_combos -= duplicated_revocation_analysis_combos
-
     revocation_violation_type_analysis_dimension_multiplier = 1
     num_violation_types = 0
     if with_revocation_dimensions and include_revocation_violation_type_analysis_dimensions and revocation_buckets:
@@ -3172,191 +3075,39 @@ def expected_metric_combos_count(
             num_violation_types
         )
 
-    projected_completion_dimension_multiplier = 1
-    if projected_completion_buckets:
-        first_projected_completion_bucket = projected_completion_buckets[0]
-
-        projected_completion_dimensions = [
-            'supervision_type',
-            'supervision_level',
-            'case_type',
-            'supervising_officer_external_id',
-            'supervising_district_external_id'
-        ]
-
-        for dimension in projected_completion_dimensions:
-            if getattr(first_projected_completion_bucket, dimension):
-                projected_completion_dimension_multiplier *= 2
-
-    supervision_success_combos = (combos_for_person * methodology_multiplier
-                                  * num_projected_completion_buckets * projected_completion_dimension_multiplier)
-
-    # Success metrics removed in person-based de-duplication that don't
-    # specify supervision type
-    duplicated_success_combos = int(combos_for_person * num_duplicated_projected_completion_months
-                                    * projected_completion_dimension_multiplier)
-
-    if duplicated_months_different_supervision_types:
-        # If the duplicated months have different supervision types, then
-        # don't remove the supervision-type-specific combos
-        duplicated_success_combos = int(duplicated_success_combos / 2)
-
-    # Remove the combos that don't specify supervision type for the duplicated
-    # projected completion months
-    supervision_success_combos -= duplicated_success_combos
-
-    supervision_successful_sentence_length_combos = (combos_for_person * methodology_multiplier
-                                                     * num_projected_completion_sentence_length_buckets *
-                                                     projected_completion_dimension_multiplier)
-
-    # Successful sentence length metrics removed in person-based de-duplication that don't specify supervision type
-    duplicated_successful_sentence_length_combos = int(combos_for_person
-                                                       * num_duplicated_projected_completion_sentence_length_months
-                                                       * projected_completion_dimension_multiplier)
-
-    if duplicated_months_different_supervision_types and not duplicated_months_mixed_success:
-        # If the duplicated months have different supervision types, then don't remove the supervision-type-specific
-        # combos
-        duplicated_successful_sentence_length_combos = int(duplicated_successful_sentence_length_combos / 2)
-
-    # If the duplicated months have a mix of failure and successful supervision, and the duplicated months are not
-    # of different supervision types, then we will not have any person-based successful sentence length combos
-    exclude_all_person_based_successful_sentence_length_combos = (
-        duplicated_months_mixed_success and not duplicated_months_different_supervision_types
-        and num_projected_completion_buckets == 2
-    )
-
-    if exclude_all_person_based_successful_sentence_length_combos:
-        # Remove all person-based combos
-        supervision_successful_sentence_length_combos = int(supervision_successful_sentence_length_combos / 2)
-
-    # Remove the combos that don't specify supervision type for the duplicated projected completion successful
-    # supervision months
-    supervision_successful_sentence_length_combos -= duplicated_successful_sentence_length_combos
-
-    # Calculate total combos for supervision termination
-    termination_dimension_multiplier = 1
-    if termination_buckets:
-        first_termination_bucket = termination_buckets[0]
-
-        termination_dimensions = [
-            'case_type',
-            'supervision_type',
-            'termination_reason',
-            'assessment_type',
-            'supervising_officer_external_id',
-            'supervising_district_external_id',
-            'supervision_level'
-        ]
-
-        for dimension in termination_dimensions:
-            if getattr(first_termination_bucket, dimension):
-                # Every dimension that is set on the bucket increases the number of combinations by a factor of 2
-                # (one set of combinations where that dimension is included, and one where it is not)
-                termination_dimension_multiplier *= 2
-
-        # assessment_score_bucket is always filled out (set to 'NOT_ASSESSED' if assessment data is missing), so it
-        # is always included in the dimensional explosion
-        termination_dimension_multiplier *= 2
-
-    num_termination_buckets = len(termination_buckets)
-
-    supervision_termination_combos = (combos_for_person * methodology_multiplier
-                                      * num_termination_buckets * termination_dimension_multiplier)
-
-    # Termination metrics removed in person-based de-duplication that don't
-    # specify supervision type
-    duplicated_termination_combos = int(combos_for_person * num_duplicated_termination_buckets
-                                        * termination_dimension_multiplier)
-
-    supervision_termination_combos -= duplicated_termination_combos
-
-    if num_relevant_periods > 0:
-        # Population combos
-        supervision_population_combos += (combos_for_person
-                                          * (len(population_buckets) - num_duplicated_population_buckets)
-                                          * population_dimension_multiplier * num_relevant_periods)
-
-        if duplicated_months_different_supervision_types:
-            supervision_population_combos += int(combos_for_person * num_duplicated_population_buckets
-                                                 * population_dimension_multiplier * num_relevant_periods / 2)
-
-        # Revocation combos
-        supervision_revocation_combos += (combos_for_person * len(revocation_buckets)
-                                          * revocation_dimension_multiplier * num_relevant_periods)
-
-        if include_revocation_analysis:
-            # Other metric buckets
-            supervision_revocation_analysis_combos += (combos_for_person * len(revocation_buckets)
-                                                       * num_relevant_periods
-                                                       * revocation_analysis_dimension_multiplier)
-
-        if include_revocation_violation_type_analysis_dimensions:
+        if num_relevant_periods > 0:
             revocation_violation_type_analysis_combos += (
                 combos_for_person * num_revocation_buckets *
                 revocation_violation_type_analysis_dimension_multiplier * num_violation_types * num_relevant_periods
             )
 
-        # Success combos
-        supervision_success_combos += (combos_for_person
-                                       * (num_projected_completion_buckets - num_duplicated_projected_completion_months)
-                                       * projected_completion_dimension_multiplier * num_relevant_periods)
+    # Person-level metrics for the metric types that limit to only person-output
+    supervision_population_combos = (num_population_buckets +
+                                     (num_population_buckets - num_duplicated_population_buckets)*(
+                                         num_relevant_periods + 1))
+    supervision_revocation_combos = (num_revocation_buckets +
+                                     (num_revocation_buckets - num_duplicated_revocation_buckets)*(
+                                         num_relevant_periods + 1))
+    supervision_success_combos = (num_projected_completion_buckets +
+                                  (num_projected_completion_buckets - num_duplicated_projected_completion_months)*(
+                                      num_relevant_periods + 1))
 
-        if not exclude_all_person_based_successful_sentence_length_combos:
-            # Successful sentence length combos
-            supervision_successful_sentence_length_combos += (
-                combos_for_person
-                * (num_projected_completion_sentence_length_buckets -
-                   num_duplicated_projected_completion_sentence_length_months)
-                * projected_completion_dimension_multiplier * num_relevant_periods)
+    if duplicated_months_mixed_success:
+        # Only add event-based counts for each successful completion bucket
+        supervision_successful_sentence_length_combos = len(successful_completion_sentence_length_buckets)
+    else:
+        supervision_successful_sentence_length_combos = (
+            num_projected_completion_sentence_length_buckets +
+            (num_projected_completion_sentence_length_buckets -
+             num_duplicated_projected_completion_sentence_length_months) *
+            (num_relevant_periods + 1))
 
-        # Termination combos
-        supervision_termination_combos += (combos_for_person
-                                           * (len(termination_buckets) - num_duplicated_termination_buckets)
-                                           * termination_dimension_multiplier * num_relevant_periods)
-
-    # Adding person-level metrics
-    if supervision_population_combos > 0:
-        supervision_population_combos += (num_population_buckets +
-                                          (num_population_buckets - num_duplicated_population_buckets)*(
-                                              num_relevant_periods + 1))
-    if supervision_revocation_combos > 0:
-        supervision_revocation_combos += (num_revocation_buckets +
-                                          (num_revocation_buckets - num_duplicated_revocation_buckets)*(
-                                              num_relevant_periods + 1))
-    if supervision_success_combos > 0:
-        supervision_success_combos += (num_projected_completion_buckets +
-                                       (num_projected_completion_buckets - num_duplicated_projected_completion_months)*(
-                                           num_relevant_periods + 1))
-
-    if supervision_successful_sentence_length_combos > 0:
-        if duplicated_months_mixed_success:
-            # Only add event-based counts for each successful completion bucket
-            supervision_successful_sentence_length_combos += len(successful_completion_sentence_length_buckets)
-        else:
-            supervision_successful_sentence_length_combos += (
-                num_projected_completion_sentence_length_buckets +
-                (num_projected_completion_sentence_length_buckets -
-                 num_duplicated_projected_completion_sentence_length_months) *
-                (num_relevant_periods + 1))
-
-    if supervision_termination_combos > 0:
-        supervision_termination_combos += (num_termination_buckets +
-                                           (num_termination_buckets - num_duplicated_termination_buckets)*(
-                                               num_relevant_periods + 1))
-    if supervision_revocation_analysis_combos > 0:
-        supervision_revocation_analysis_combos += (num_revocation_buckets +
-                                                   (num_revocation_buckets - num_duplicated_revocation_buckets)*(
-                                                       num_relevant_periods + 1))
-
-    if duplicated_months_mixed_success and duplicated_months_different_supervision_types:
-        # If the duplicated months are of mixed success and the duplicated months are of different supervision types,
-        # then that means we want to exclude all of the person-based metrics that don't specify supervision type
-        # because successful sentence length metrics that don't specify supervision type will not include this person
-        # for this month
-        supervision_successful_sentence_length_combos -= int(combos_for_person
-                                                             * num_projected_completion_sentence_length_buckets *
-                                                             (projected_completion_dimension_multiplier / 2))
+    supervision_termination_combos = (num_termination_buckets +
+                                      (num_termination_buckets - num_duplicated_termination_buckets)*(
+                                          num_relevant_periods + 1))
+    supervision_revocation_analysis_combos = (num_revocation_buckets +
+                                              (num_revocation_buckets - num_duplicated_revocation_buckets)*(
+                                                  num_relevant_periods + 1))
 
     # Pick which one is relevant for the test case: some tests above use a different call that only looks at combos for
     # either population or revocation, but not both
@@ -3399,7 +3150,7 @@ class TestIncludeDimensionsFunctions(unittest.TestCase):
     def test_include_person_level_dimensions_for_metric(self):
         for metric in SupervisionMetricType:
             # Assert this does not fail for all possible metric types
-            _ = calculator._include_person_level_dimensions_for_metric(metric)
+            _ = calculator._limit_to_person_level_output_for_metric(metric)
 
     def test_include_revocation_dimensions_for_metric(self):
         for metric in SupervisionMetricType:

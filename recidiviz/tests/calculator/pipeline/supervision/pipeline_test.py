@@ -318,6 +318,9 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
 
+        # We do not expect any aggregate metrics
+        expected_aggregate_metric_types = set()
+
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
@@ -325,7 +328,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    fake_person_id,
                                    fake_supervision_period_id,
                                    fake_svr_id,
-                                   expected_metric_types)
+                                   expected_metric_types,
+                                   expected_aggregate_metric_types)
 
     def testSupervisionPipelineWithFilterSet(self):
         fake_person_id = 12345
@@ -339,6 +343,9 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
 
+        # We do not expect any aggregate metrics
+        expected_aggregate_metric_types = set()
+
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
@@ -347,6 +354,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    fake_supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
+                                   expected_aggregate_metric_types,
                                    unifying_id_field_filter_set={fake_person_id})
 
     @staticmethod
@@ -356,6 +364,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                           fake_supervision_period_id: int,
                           fake_svr_id: int,
                           expected_metric_types: Set[SupervisionMetricType],
+                          expected_aggregate_metric_types: Set[SupervisionMetricType],
                           expected_violation_types: Set[ViolationType] = None,
                           unifying_id_field_filter_set: Optional[Set[int]] = None,
                           metric_types_filter: Optional[Set[str]] = None):
@@ -604,7 +613,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    metric_types=metric_types,
                                    calculation_month_limit=-1))
 
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types))
+        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types,
+                                                                               expected_aggregate_metric_types))
 
         if expected_violation_types:
             for expected_violation_type in expected_violation_types:
@@ -833,6 +843,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.ASSESSMENT_CHANGE
         }
 
+        expected_aggregate_metric_types = {SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
@@ -840,7 +852,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    fake_person_id,
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
-                                   expected_metric_types)
+                                   expected_metric_types,
+                                   expected_aggregate_metric_types)
 
     def testSupervisionPipeline_withTechnicalRevocations(self):
         fake_person_id = 562
@@ -1075,6 +1088,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
         }
 
+        expected_aggregate_metric_types = {SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+
         expected_violation_types = {ViolationType.FELONY, ViolationType.TECHNICAL}
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
@@ -1084,6 +1099,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
+                                   expected_aggregate_metric_types,
                                    expected_violation_types)
 
     @freeze_time('2017-01-31')
@@ -1303,6 +1319,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.ASSESSMENT_CHANGE
         }
 
+        # We do not expect any aggregate metrics
+        expected_aggregate_metric_types = set()
+
         metric_types_filter = {
             metric.value for metric in expected_metric_types
         }
@@ -1315,6 +1334,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    supervision_period.supervision_period_id,
                                    fake_svr_id,
                                    expected_metric_types,
+                                   expected_aggregate_metric_types,
                                    metric_types_filter=metric_types_filter)
 
     def testSupervisionPipelineNoSupervision(self):
@@ -1506,6 +1526,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.REVOCATION_ANALYSIS
         }
 
+        # We do not expect any aggregate metrics
+        expected_aggregate_metric_types = set()
+
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
@@ -1513,7 +1536,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    fake_person_id_1,
                                    supervision_period__1.supervision_period_id,
                                    supervision_violation_response.supervision_violation_response_id,
-                                   expected_metric_types)
+                                   expected_metric_types,
+                                   expected_aggregate_metric_types)
 
 
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
@@ -2699,10 +2723,13 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test(expected_metric_types: Set[SupervisionMetricType]):
-
+    def validate_pipeline_test(expected_metric_types: Set[SupervisionMetricType],
+                               expected_aggregate_metric_types: Set[SupervisionMetricType]):
+        """Asserts that the pipeline produced the expected types of metrics, and that it produced aggregate metrics
+        only for the expected aggregate metric types."""
         def _validate_pipeline_test(output):
             observed_metric_types: Set[SupervisionMetricType] = set()
+            observed_aggregate_metric_types: Set[SupervisionMetricType] = set()
 
             for metric in output:
                 if not isinstance(metric, SupervisionMetric):
@@ -2710,20 +2737,41 @@ class AssertMatchers:
 
                 if isinstance(metric, TerminatedSupervisionAssessmentScoreChangeMetric):
                     observed_metric_types.add(SupervisionMetricType.ASSESSMENT_CHANGE)
+
+                    if metric.person_id is None:
+                        observed_aggregate_metric_types.add(SupervisionMetricType.ASSESSMENT_CHANGE)
                 elif isinstance(metric, SupervisionSuccessMetric):
                     observed_metric_types.add(SupervisionMetricType.SUCCESS)
+
+                    if metric.person_id is None:
+                        observed_aggregate_metric_types.add(SupervisionMetricType.SUCCESS)
                 elif isinstance(metric, SupervisionPopulationMetric):
                     observed_metric_types.add(SupervisionMetricType.POPULATION)
+
+                    if metric.person_id is None:
+                        observed_aggregate_metric_types.add(SupervisionMetricType.POPULATION)
                 elif isinstance(metric, SupervisionRevocationAnalysisMetric):
                     observed_metric_types.add(SupervisionMetricType.REVOCATION_ANALYSIS)
+
+                    if metric.person_id is None:
+                        observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationViolationTypeAnalysisMetric):
                     observed_metric_types.add(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                    observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationMetric):
                     observed_metric_types.add(SupervisionMetricType.REVOCATION)
+
+                    if metric.person_id is None:
+                        observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION)
 
             if observed_metric_types != expected_metric_types:
                 raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
                                           f" observed metric types {observed_metric_types}.")
+
+            if observed_aggregate_metric_types != expected_aggregate_metric_types:
+                raise BeamAssertException(f"Failed assert. Expected aggregate metric types"
+                                          f" {expected_aggregate_metric_types} does"
+                                          f" not equal observed metric types {observed_aggregate_metric_types}.")
 
         return _validate_pipeline_test
 
