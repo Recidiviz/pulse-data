@@ -194,11 +194,15 @@ def characteristic_combinations(person: StatePerson,
                                 inclusions: Dict[str, bool],
                                 metric_type: SupervisionMetricType) -> \
         List[Dict[str, Any]]:
-    """Calculates all supervision metric combinations.
+    """Calculates all supervision metric combinations for the given inputs.
 
-    Returns the list of all combinations of the metric characteristics, of all sizes, given the StatePerson and
-    SupervisionTimeBucket. That is, this returns a list of dictionaries where each dictionary is a combination of 0
-    to n unique elements of characteristics applicable to the given person and supervision_time_bucket.
+    If the |metric_type| is one where we should limit the output to person-level output, then this returns a list
+    containing one dictionary that is populated with information about the |person| and the |supervision_time_bucket|.
+
+    If the |metric_type| is one where we should be producing aggregate output, then this returns the list of all
+    combinations of the metric characteristics, of all sizes, given the StatePerson and SupervisionTimeBucket.
+    That is, this returns a list of dictionaries where each dictionary is a combination of 0
+    to n unique elements of characteristics applicable to the given |person| and |supervision_time_bucket|.
 
     Args:
         person: the StatePerson we are picking characteristics from
@@ -209,26 +213,22 @@ def characteristic_combinations(person: StatePerson,
                 - ethnicity
                 - gender
                 - race
-            Where the values are boolean flags indicating whether to include
-            the dimension in the calculations.
+            Where the values are boolean flags indicating whether to include the dimension in the calculations.
         metric_type: The SupervisionMetricType provided determines which fields should be added to the characteristics
             dictionary
 
     Returns:
-        A list of dictionaries containing all unique combinations of
-        characteristics.
+        A list of dictionaries containing all unique combinations of characteristics to be used in the calculations.
     """
-    # TODO(3058): Limit the output of this function to just the characteristics_with_person_details dictionary
-    #  for all metrics that currently include person-level output
     characteristics: Dict[str, Any] = {}
 
     include_revocation_dimensions = _include_revocation_dimensions_for_metric(metric_type)
     include_assessment_dimensions = _include_assessment_dimensions_for_metric(metric_type)
-    include_person_level_dimensions = _include_person_level_dimensions_for_metric(metric_type)
+    limit_to_person_level_output = _limit_to_person_level_output_for_metric(metric_type)
 
-    if (metric_type == SupervisionMetricType.POPULATION
-            and isinstance(supervision_time_bucket, (RevocationReturnSupervisionTimeBucket,
-                                                     NonRevocationReturnSupervisionTimeBucket))):
+    if (metric_type == SupervisionMetricType.POPULATION and
+            isinstance(supervision_time_bucket, (RevocationReturnSupervisionTimeBucket,
+                                                 NonRevocationReturnSupervisionTimeBucket))):
         if supervision_time_bucket.most_severe_violation_type:
             characteristics['most_severe_violation_type'] = supervision_time_bucket.most_severe_violation_type
         if supervision_time_bucket.most_severe_violation_type_subtype:
@@ -307,41 +307,41 @@ def characteristic_combinations(person: StatePerson,
 
     characteristics = add_demographic_characteristics(characteristics, person, inclusions, event_date)
 
-    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
-        all_combinations = for_characteristics_races_ethnicities(characteristics)
-    else:
-        all_combinations = for_characteristics(characteristics)
-
-    if include_person_level_dimensions:
-        characteristics_with_person_details = characteristics_with_person_id_fields(
-            characteristics, person, 'supervision')
+    if limit_to_person_level_output:
+        person_level_characteristic_dict = characteristics_with_person_id_fields(characteristics, person, 'supervision')
 
         if not include_revocation_dimensions and supervision_time_bucket.supervision_level_raw_text:
-            characteristics_with_person_details['supervision_level_raw_text'] = \
+            person_level_characteristic_dict['supervision_level_raw_text'] = \
                 supervision_time_bucket.supervision_level_raw_text
 
         if metric_type == SupervisionMetricType.POPULATION:
             if isinstance(supervision_time_bucket,
                           (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)):
-                characteristics_with_person_details['is_on_supervision_last_day_of_month'] = \
+                person_level_characteristic_dict['is_on_supervision_last_day_of_month'] = \
                     supervision_time_bucket.is_on_supervision_last_day_of_month
 
         if metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
-            # Only include violation history descriptions on person-level metrics
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
                     and supervision_time_bucket.violation_history_description:
-                characteristics_with_person_details['violation_history_description'] = \
+                person_level_characteristic_dict['violation_history_description'] = \
                     supervision_time_bucket.violation_history_description
+
+        if include_revocation_dimensions and isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
+            person_level_characteristic_dict['revocation_admission_date'] = \
+                supervision_time_bucket.revocation_admission_date
 
         if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
             if isinstance(supervision_time_bucket, SupervisionTerminationBucket):
                 if supervision_time_bucket.termination_date:
                     # Only include termination date on the person-level termination metrics
-                    characteristics_with_person_details['termination_date'] = supervision_time_bucket.termination_date
+                    person_level_characteristic_dict['termination_date'] = supervision_time_bucket.termination_date
 
-        all_combinations.append(characteristics_with_person_details)
+        return [person_level_characteristic_dict]
 
-    return all_combinations
+    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
+        return for_characteristics_races_ethnicities(characteristics)
+
+    return for_characteristics(characteristics)
 
 
 def map_metric_combinations(
@@ -895,8 +895,8 @@ def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType
     raise ValueError(f"SupervisionMetricType {metric_type} not handled.")
 
 
-def _include_person_level_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
-    """Returns whether person-level dimensions should be included in metrics of the given metric_type."""
+def _limit_to_person_level_output_for_metric(metric_type: SupervisionMetricType) -> bool:
+    """Returns whether the metrics of the given metric_type should be limited to only the person-level output."""
     if metric_type in (
             SupervisionMetricType.REVOCATION,
             SupervisionMetricType.REVOCATION_ANALYSIS,
