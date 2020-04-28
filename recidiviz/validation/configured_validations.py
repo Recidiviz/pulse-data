@@ -15,16 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""BigQuery View definition.
+"""Contains configured data validations to perform."""
+from typing import List
 
-Each View consists of a view_id (name) and view_query (query defining its data).
-"""
+from recidiviz.validation.validation_models import DataValidationCheck
 
-import attr
+ALL_DATA_VALIDATIONS: List[DataValidationCheck] = []
+
+STATES_TO_VALIDATE = ['US_MO', 'US_ND']
 
 
-@attr.s(frozen=True)
-class BigQueryView:
-    """View which consists of a name (view_id) and query (view_query)"""
-    view_id: str = attr.ib()
-    view_query: str = attr.ib()
+def get_all_validations() -> List[DataValidationCheck]:
+    return ALL_DATA_VALIDATIONS

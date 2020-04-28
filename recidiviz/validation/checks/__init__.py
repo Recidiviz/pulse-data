@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,17 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""BigQuery View definition.
-
-Each View consists of a view_id (name) and view_query (query defining its data).
-"""
-
-import attr
-
-
-@attr.s(frozen=True)
-class BigQueryView:
-    """View which consists of a name (view_id) and query (view_query)"""
-    view_id: str = attr.ib()
-    view_query: str = attr.ib()
