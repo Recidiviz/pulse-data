@@ -37,11 +37,12 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent, \
-    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType
+    ReincarcerationReturnType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, last_day_of_month,\
     relevant_metric_periods, characteristics_with_person_id_fields, add_demographic_characteristics
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -683,7 +684,7 @@ def recidivism_value_for_metric(
         event_return_type:
         Optional[ReincarcerationReturnType],
         event_from_supervision_type:
-        Optional[ReincarcerationReturnFromSupervisionType],
+        Optional[StateSupervisionPeriodSupervisionType],
         event_source_violation_type: Optional[StateSupervisionViolationType]) \
         -> int:
     """Returns the recidivism value corresponding to the given metric combo and
@@ -693,7 +694,7 @@ def recidivism_value_for_metric(
         combo: metric combination
         event_return_type: the ReincarcerationReturnType of the release event
         event_from_supervision_type:
-            the ReincarcerationReturnFromSupervisionType of the release event
+            the StateSupervisionPeriodSupervisionType of the release event
         event_source_violation_type:
             the StateSupervisionViolationType of the violation that eventually
             resulted in this return

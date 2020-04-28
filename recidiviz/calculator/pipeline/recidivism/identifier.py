@@ -29,8 +29,7 @@ from typing import Dict, List, Optional
 
 from collections import defaultdict
 from recidiviz.calculator.pipeline.recidivism.release_event import \
-    ReincarcerationReturnType, ReincarcerationReturnFromSupervisionType, \
-    ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
+    ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     identify_most_severe_violation_type_and_subtype
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
@@ -41,6 +40,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import \
@@ -409,7 +409,7 @@ def get_return_type(reincarceration_admission_reason: AdmissionReason) -> Reinca
 
 
 def get_from_supervision_type(
-        reincarceration_admission_reason: AdmissionReason) -> Optional[ReincarcerationReturnFromSupervisionType]:
+        reincarceration_admission_reason: AdmissionReason) -> Optional[StateSupervisionPeriodSupervisionType]:
     """If the person returned from supervision, returns the type."""
 
     if reincarceration_admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
@@ -420,12 +420,11 @@ def get_from_supervision_type(
                                             AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
         return None
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
-        return ReincarcerationReturnFromSupervisionType.PAROLE
+        return StateSupervisionPeriodSupervisionType.PAROLE
     if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:
-        # TODO(2647): Return DUAL once this function has been converted to return StateSupervisionPeriodSupervisionType
-        return ReincarcerationReturnFromSupervisionType.PAROLE
+        return StateSupervisionPeriodSupervisionType.DUAL
     if reincarceration_admission_reason == AdmissionReason.PROBATION_REVOCATION:
-        return ReincarcerationReturnFromSupervisionType.PROBATION
+        return StateSupervisionPeriodSupervisionType.PROBATION
     if reincarceration_admission_reason in (AdmissionReason.RETURN_FROM_ESCAPE,
                                             AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
                                             AdmissionReason.TEMPORARY_CUSTODY):
