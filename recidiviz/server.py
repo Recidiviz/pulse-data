@@ -28,11 +28,9 @@ from opencensus.trace import config_integration, file_exporter
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.query.export_manager import export_manager_blueprint
-from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import \
-    dataflow_monitor_blueprint
+from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
-from recidiviz.ingest.aggregate.scrape_aggregate_reports import \
-    scrape_aggregate_reports_blueprint
+from recidiviz.ingest.aggregate.scrape_aggregate_reports import scrape_aggregate_reports_blueprint
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
@@ -41,10 +39,9 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.sqlalchemy_engine_manager import \
-    SQLAlchemyEngineManager
-from recidiviz.utils import (environment, metadata, monitoring,
-                             structured_logging)
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
+from recidiviz.utils import (environment, metadata, monitoring, structured_logging)
+from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
@@ -63,8 +60,8 @@ app.register_blueprint(
 app.register_blueprint(store_single_count_blueprint, url_prefix='/single_count')
 app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
-app.register_blueprint(dataflow_monitor_blueprint,
-                       url_prefix='/dataflow_monitor')
+app.register_blueprint(dataflow_monitor_blueprint, url_prefix='/dataflow_monitor')
+app.register_blueprint(validation_manager_blueprint, url_prefix='/validation_manager')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
