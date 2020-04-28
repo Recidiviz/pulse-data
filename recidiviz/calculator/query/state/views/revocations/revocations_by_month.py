@@ -22,7 +22,6 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_BY_MONTH_VIEW_NAME = 'revocations_by_month'
@@ -32,74 +31,36 @@ REVOCATIONS_BY_MONTH_DESCRIPTION = """ Revocations by month """
 REVOCATIONS_BY_MONTH_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, year, month, 
-      IFNULL(rev.count, 0) as revocation_count, 
-      pop.count as total_supervision_count,
-      supervision_type, 
-      supervising_district_external_id as district 
+    SELECT
+      state_code, year, month,
+      IFNULL(revocation_count, 0) as revocation_count,
+      total_supervision_count,
+      supervision_type,
+      district
     FROM (
       SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') as supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id 
-      FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      INNER JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND most_severe_violation_type IS NULL
-        AND most_severe_violation_type_subtype IS NULL
-        AND response_count IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND supervision_level IS NULL
-        AND supervision_level_raw_text IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'SUPERVISION_POPULATION'
+        state_code, year, month,
+        COUNT(DISTINCT person_id) AS total_supervision_count,
+        supervision_type,
+        district
+      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
       SELECT 
-        state_code, year, month, count, 
-        IFNULL(supervision_type, 'ALL') as supervision_type, 
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id  
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics` rev
-      INNER JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND metric_period_months = 1
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND revocation_type IS NULL
-        AND source_violation_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'SUPERVISION_REVOCATION'
+        state_code, year, month,
+        COUNT(DISTINCT person_id) AS revocation_count,
+        supervision_type,
+        district
+      FROM `{project_id}.{reference_dataset}.event_based_revocations`
+      GROUP BY state_code, year, month, supervision_type, district
     ) rev
-    USING (state_code, year, month, supervision_type, supervising_district_external_id)
+    USING (state_code, year, month, supervision_type, district)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
     ORDER BY state_code, year, month, supervision_type, district
     """.format(
         description=REVOCATIONS_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
         )
 

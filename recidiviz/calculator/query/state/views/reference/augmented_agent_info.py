@@ -49,7 +49,8 @@ AUGMENTED_AGENT_INFO_QUERY = \
         agent_type, 
         external_id, 
         full_name,
-        JSON_EXTRACT(full_name, '$.given_names') AS given_names, JSON_EXTRACT(full_name, '$.surname') AS surname
+        REPLACE(JSON_EXTRACT(full_name, '$.given_names'), '"', '')  AS given_names,
+        REPLACE(JSON_EXTRACT(full_name, '$.surname'), '"', '') AS surname
       FROM `{project_id}.{base_dataset}.state_agent` agent
     ),
     agents AS (

@@ -17,7 +17,7 @@
 """Revocations Matrix Distribution by Race."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -54,14 +54,14 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY = \
         violation_type,
         reported_violations,
         COUNT(DISTINCT person_id) AS total_supervision_count,
-        race,
+        race_or_ethnicity AS race,
         risk_level,
         supervision_type,
         charge_category,
         district,
         metric_period_months    
       FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`,
-        UNNEST (ARRAY_CONCAT(SPLIT(race), SPLIT(ethnicity))) race
+      {race_ethnicity_dimension}
       WHERE current_month
       GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
         district, metric_period_months
@@ -72,29 +72,29 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY = \
         violation_type,
         reported_violations,
         COUNT(DISTINCT person_id) AS population_count,
-        race,
+        race_or_ethnicity AS race,
         risk_level,
         supervision_type,
         charge_category,
         district,
         metric_period_months
       FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`,
-        UNNEST (ARRAY_CONCAT(SPLIT(race), SPLIT(ethnicity))) race
+      {race_ethnicity_dimension}
       WHERE current_month
       GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
         district, metric_period_months
     ) rev
     USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months)
-    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-      AND race NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
+    WHERE race NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
     ORDER BY state_code, district, supervision_type, race, risk_level, metric_period_months, violation_type,
       reported_violations, charge_category
     """.format(
         description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
         project_id=PROJECT_ID,
         reference_dataset=REFERENCE_DATASET,
-        )
+        race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
+    )
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW = bqview.BigQueryView(
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME,

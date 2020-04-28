@@ -17,22 +17,19 @@
 """Revocations by site_id by metric period months."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW_NAME = 'revocations_by_site_id_by_period'
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_DESCRIPTION = """
  Revocations by site_id by metric period months.
- This counts all individuals admitted to prison for a revocation
- of probation or parole, broken down by the site_id of the agent on the
- source_supervision_violation_response, and by the violation type of the
- supervision violation.
+ This counts all individuals admitted to prison for a revocation of supervision, broken down by the site_id of the agent
+ on the source_supervision_violation_response, and by the violation type of the supervision violation.
  """
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY = \
@@ -46,79 +43,54 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY = \
       IFNULL(SAFE_SUBTRACT(all_violation_types_count, (felony_count + technical_count + absconsion_count)), 0) as unknown_count,
       total_supervision_count,
       supervision_type,
-      supervising_district_external_id as district,
+      district,
       metric_period_months
     FROM (
       SELECT
-        state_code, year, month, count AS total_supervision_count,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        supervising_district_external_id,
+        state_code,
+        COUNT(DISTINCT person_id) AS total_supervision_count,
+        supervision_type,
+        district,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND supervising_district_external_id IS NOT NULL
-        AND supervising_officer_external_id IS NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND most_severe_violation_type IS NULL
-        AND most_severe_violation_type_subtype IS NULL
-        AND response_count IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND supervision_level IS NULL
-        AND supervision_level_raw_text IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_POPULATION'
+      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
+      GROUP BY state_code, supervision_type, district, metric_period_months
     ) pop
     LEFT JOIN (
       SELECT
-        state_code, year, month,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        SUM(IF(source_violation_type = 'FELONY', count, 0)) AS felony_count,
-        SUM(IF(source_violation_type = 'TECHNICAL', count, 0)) AS technical_count,
-        SUM(IF(source_violation_type = 'ABSCONDED', count, 0)) AS absconsion_count,
-        SUM(IF(source_violation_type IS NULL, count, 0)) AS all_violation_types_count,
-        supervising_district_external_id,
+        state_code,
+        supervision_type,
+        COUNT(IF(source_violation_type = 'FELONY', person_id, NULL)) AS felony_count,
+        COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
+        COUNT(IF(source_violation_type = 'ABSCONDED', person_id, NULL)) AS absconsion_count,
+        COUNT(person_id) AS all_violation_types_count,
+        district,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND supervising_district_external_id IS NOT NULL
-        AND supervising_officer_external_id IS NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND revocation_type IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_REVOCATION'
-      GROUP BY state_code, year, month, supervision_type, supervising_district_external_id, metric_period_months
+      FROM (
+        SELECT
+          state_code, metric_period_months,
+          person_id, source_violation_type,
+          supervision_type, district,
+          -- Only use most recent revocation per person/supervision_type/metric_period_months
+          ROW_NUMBER() OVER (PARTITION BY state_code, person_id, supervision_type, metric_period_months, district
+                             ORDER BY revocation_admission_date DESC) AS revocation_rank
+        FROM `{project_id}.{reference_dataset}.event_based_revocations`,
+        {metric_period_dimension}
+        WHERE {metric_period_condition}
+      )
+      WHERE revocation_rank = 1
+      GROUP BY state_code, supervision_type, district, metric_period_months
     ) rev
-    USING (state_code, year, month, supervision_type, supervising_district_external_id, metric_period_months)
+    USING (state_code, supervision_type, district, metric_period_months)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
     ORDER BY state_code, district, supervision_type, metric_period_months
     """.format(
         description=REVOCATIONS_BY_SITE_ID_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW = bqview.BigQueryView(
