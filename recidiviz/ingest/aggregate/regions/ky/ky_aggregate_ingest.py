@@ -60,6 +60,9 @@ def _parse_table(location, filename: str) -> pd.DataFrame:
         lattice=True
     )
 
+    if filename.endswith('04-16-20.pdf'):
+        whole_df[323:331] = whole_df[323:331].shift(-1, axis='columns')
+
     # Remove totals separate from parsing since it's a variable length
     totals_start_index = np.where(whole_df['Date'].str.contains('Totals'))[0][0]
     whole_df = whole_df[:totals_start_index]
@@ -148,6 +151,9 @@ def _parse_table(location, filename: str) -> pd.DataFrame:
                             on='facility_name')
     result = result.join(female_df.set_index('facility_name'),
                          on='facility_name')
+
+    if filename.endswith('04-16-20.pdf'):
+        result.loc[result['facility_name'] == 'Lincoln', 'total_jail_beds'] = 72
 
     return result.reset_index(drop=True)
 
