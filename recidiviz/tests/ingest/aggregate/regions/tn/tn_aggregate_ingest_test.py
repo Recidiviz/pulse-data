@@ -38,6 +38,7 @@ from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.utils import fakes
 
 _REPORT_DATE = datetime.date(year=2019, month=1, day=31)
+_NEWER_REPORT_DATE = datetime.date(year=2020, month=3, day=31)
 
 # Cache the parsed pdfs between tests since it's expensive to compute
 @pytest.fixture(scope="class")
@@ -46,6 +47,8 @@ def parsed_pdf(request):
         '', fixtures.as_filepath('_jailjanuary2019.pdf'))
     request.cls.parsed_female_pdf = tn_aggregate_ingest.parse(
         '', fixtures.as_filepath('_jailfemalejanuary2019.pdf'))
+    request.cls.parsed_newer_pdf = tn_aggregate_ingest.parse(
+        '', fixtures.as_filepath('_jailmarch2020.pdf'))
 
 
 @pytest.mark.usefixtures("parsed_pdf")
@@ -162,3 +165,44 @@ class TestTnAggregateIngest(TestCase):
 
         expected_sum_female_jail_population = 5987
         self.assertEqual(result, expected_sum_female_jail_population)
+
+    def testParse_ParsesNewerHeadAndTail(self):
+        result = self.parsed_newer_pdf[TnFacilityAggregate]
+
+        # Assert Head
+        expected_head = pd.DataFrame({
+            'facility_name': ['Anderson', 'Bedford'],
+            'tdoc_backup_population': [126, 17],
+            'local_felons_population': [10, 6],
+            'other_convicted_felons_population': [14, 8],
+            'federal_and_other_population': [0, 2],
+            'convicted_misdemeanor_population': [42, 63],
+            'pretrial_felony_population': [85, 28],
+            'pretrial_misdemeanor_population': [40, 62],
+            'total_jail_population': [317, 186],
+            'total_beds': [499, 110],
+            'fips': ['47001', '47003'],
+            'report_date': 2 * [_NEWER_REPORT_DATE],
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
+        })
+        assert_frame_equal(result.head(n=2), expected_head, check_names=False)
+
+        # Assert Tail
+        expected_tail = pd.DataFrame({
+            'facility_name': ['Williamson', 'Wilson'],
+            'tdoc_backup_population': [17, 87],
+            'local_felons_population': [8, 25],
+            'other_convicted_felons_population': [2, 13],
+            'federal_and_other_population': [0, 0],
+            'convicted_misdemeanor_population': [29, 78],
+            'pretrial_felony_population': [114, 49],
+            'pretrial_misdemeanor_population': [16, 128],
+            'total_jail_population': [186, 380],
+            'total_beds': [454, 458],
+            'fips': ['47187', '47189'],
+            'report_date': 2 * [_NEWER_REPORT_DATE],
+            'aggregation_window': 2 * [enum_strings.daily_granularity],
+            'report_frequency': 2 * [enum_strings.monthly_granularity]
+        }, index=[118, 119])
+        assert_frame_equal(result.tail(n=2), expected_tail, check_names=False)
