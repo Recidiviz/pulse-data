@@ -169,7 +169,7 @@ class UsMoSentenceStatus(BuildableAttr):
         """Calculates what supervision type should be associated with this sentence if this status that is found to be
         the most recent critical status for determining supervision type.
         """
-        if self.is_supervision_out_status or self.is_sentence_termimination_status:
+        if self.is_incarceration_in_status or self.is_supervision_out_status or self.is_sentence_termimination_status:
             return None
 
         if self.status_code in (
@@ -180,21 +180,10 @@ class UsMoSentenceStatus(BuildableAttr):
                 # The term 'Field' does not always exclusively mean probation, but in the case of interstate transfer
                 # statuses, it does.
                 '75I3000',  # MO Field-Interstate Returned
-
-                # TODO(2647): Unsure if this can also happen for a parole sentence - needs confirmation with rerun
-                '40O7000',   # Rel to Field-DAI Other Sent
-
-                # TODO(2647): Might need to implement some sort of lookback to determine whether this was
-                #  probation/parole
-                '95O1040',  # Resentenced
         ):
             return StateSupervisionType.PROBATION
 
         if self.status_code in (
-                # TODO(2647): For some reason MO treats this as Parole even though it's clearly a release that happens
-                #  after a probation commitment for treatment - ask if this is correct.
-                '40O2000',  # Prob Rev-Rel to Field-Spc Cir
-
                 # In July 2008, MO transitioned people in CRC transitional facilities from the control of the DAI
                 # (incarceration) to the parole board. If we see this status it means someone is on parole.
                 '40O6000'   # Converted-CRC DAI to CRC Field
@@ -320,8 +309,20 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
         # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
         # should be given precedence.
-        critical_day_statuses.sort(key=lambda status: status.sentence_status_external_id, reverse=True)
-        return critical_day_statuses[0].supervision_type_status_classification
+        critical_day_statuses.sort(key=lambda s: s.sentence_status_external_id, reverse=True)
+        supervision_type = critical_day_statuses[0].supervision_type_status_classification
+
+        if supervision_type is None or supervision_type != StateSupervisionType.INTERNAL_UNKNOWN:
+            return supervision_type
+
+        # If the most recent status in a day does not give us enough information to tell the supervision type, look to
+        # other statuses on that day.
+        for status in critical_day_statuses:
+            if status.supervision_type_status_classification is not None and \
+                    status.supervision_type_status_classification != StateSupervisionType.INTERNAL_UNKNOWN:
+                return status.supervision_type_status_classification
+
+        return supervision_type
 
     def _get_overlapping_supervision_type_span_index(self, supervision_type_day: date) -> Optional[int]:
         """Returns the index of the span in this sentence's supervision_type_spans list that overlaps in time with the

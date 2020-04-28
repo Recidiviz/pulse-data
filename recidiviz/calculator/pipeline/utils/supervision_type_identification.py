@@ -93,8 +93,6 @@ def get_pre_incarceration_supervision_type_from_incarceration_period(
                      f"{incarceration_period.admission_reason}.")
 
 
-# TODO(2647): Refactor this into a helper function that accepts arbitrary start and end dates, then uses that helper
-#  here and in _get_pre_incarceration_supervision_type_on_date.
 def get_month_supervision_type_default(
         any_date_in_month: datetime.date,
         supervision_sentences: List[StateSupervisionSentence],

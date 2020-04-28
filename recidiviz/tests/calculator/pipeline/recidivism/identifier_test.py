@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     RecidivismReleaseEvent, NonRecidivismReleaseEvent, ReincarcerationReturnType
 from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationReturnFromSupervisionType
+    StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
@@ -113,7 +113,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 reincarceration_date=revocation_incarceration_period.admission_date,
                 reincarceration_facility=None,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                from_supervision_type=ReincarcerationReturnFromSupervisionType.PROBATION,
+                from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 return_type=ReincarcerationReturnType.REVOCATION)],
             release_events_by_cohort[2010])
 
@@ -184,7 +184,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 reincarceration_date=temporary_custody_reincarceration.admission_date,
                 reincarceration_facility=None,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                from_supervision_type=ReincarcerationReturnFromSupervisionType.PROBATION,
+                from_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 return_type=ReincarcerationReturnType.REVOCATION)],
             release_events_by_cohort[2010])
 
@@ -395,7 +395,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             reincarceration_date=first_reincarceration_period.admission_date,
             reincarceration_facility=None,
             return_type=ReincarcerationReturnType.REVOCATION,
-            from_supervision_type=ReincarcerationReturnFromSupervisionType.
+            from_supervision_type=StateSupervisionPeriodSupervisionType.
             PAROLE)]
 
         assert release_events_by_cohort[2014] == [
@@ -453,7 +453,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             reincarceration_facility=None,
             county_of_residence=_COUNTY_OF_RESIDENCE,
             return_type=ReincarcerationReturnType.REVOCATION,
-            from_supervision_type=ReincarcerationReturnFromSupervisionType.
+            from_supervision_type=StateSupervisionPeriodSupervisionType.
             PROBATION)]
 
         assert release_events_by_cohort[2014] == [
@@ -567,7 +567,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             reincarceration_facility=None,
             county_of_residence=_COUNTY_OF_RESIDENCE,
             return_type=ReincarcerationReturnType.REVOCATION,
-            from_supervision_type=ReincarcerationReturnFromSupervisionType.
+            from_supervision_type=StateSupervisionPeriodSupervisionType.
             PROBATION)]
 
         assert release_events_by_cohort[2014] == [
