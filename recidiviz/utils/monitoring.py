@@ -99,11 +99,12 @@ def measurements(tags=None):
 
 
 class TagKey:
+    ENTITY_TYPE = 'entity_type'
+    ERROR = 'error'
+    INGEST_TASK_TAG = 'ingest_task_tag'
+    PERSISTED = 'persisted'
+    REASON = 'reason'
     REGION = 'region'
     SHOULD_PERSIST = 'should_persist'
-    PERSISTED = 'persisted'
-    ERROR = 'error'
-    ENTITY_TYPE = 'entity_type'
     STATUS = 'status'
-    REASON = 'reason'
-    INGEST_TASK_TAG = 'ingest_task_tag'
+    VALIDATION_CHECK_TYPE = 'validation_check_type'

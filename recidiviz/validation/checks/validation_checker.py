@@ -15,16 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""BigQuery View definition.
+"""An interface for validation checkers."""
 
-Each View consists of a view_id (name) and view_query (query defining its data).
-"""
+import abc
+from typing import Generic
 
-import attr
+from recidiviz.validation.validation_models import DataValidationType, DataValidationJob, DataValidationJobResult
 
 
-@attr.s(frozen=True)
-class BigQueryView:
-    """View which consists of a name (view_id) and query (view_query)"""
-    view_id: str = attr.ib()
-    view_query: str = attr.ib()
+class ValidationChecker(Generic[DataValidationType]):
+    """Defines the interface for performing a particular kind of check."""
+
+    @abc.abstractmethod
+    def run_check(self, validation_job: DataValidationJob[DataValidationType]) -> DataValidationJobResult:
+        pass
