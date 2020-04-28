@@ -50,6 +50,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
     get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.utils.pipeline_utils import tagged_metric_output
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -288,7 +289,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
                                                                       metric_inclusions,
                                                                       calculation_month_limit)
 
-        metric_type_output_tag = {
+        metric_type_output_tags = {
             SupervisionMetricType.ASSESSMENT_CHANGE: 'assessment_changes',
             SupervisionMetricType.POPULATION: 'populations',
             SupervisionMetricType.REVOCATION: 'revocations',
@@ -300,20 +301,9 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
-            metric_key, value = metric_combination
-            metric_type = metric_key.get('metric_type')
+            output_tag, output = tagged_metric_output(metric_combination, metric_type_output_tags)
 
-            is_person_level_metric = metric_key.get('person_id') is not None
-
-            # Converting the metric key to a JSON string so it is hashable
-            serializable_dict = json_serializable_metric_key(metric_key)
-            json_key = json.dumps(serializable_dict, sort_keys=True)
-
-            output = (json_key, value)
-
-            output_tag = 'person_level_output' if is_person_level_metric else metric_type_output_tag.get(metric_type)
-
-            if output_tag:
+            if output_tag and output:
                 yield beam.pvalue.TaggedOutput(output_tag, output)
 
     def to_runner_api_parameter(self, _):

@@ -32,7 +32,7 @@ from datetime import date
 
 from mock import patch
 
-from recidiviz.calculator.pipeline.program import pipeline, calculator
+from recidiviz.calculator.pipeline.program import pipeline
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
@@ -297,8 +297,7 @@ class TestProgramPipeline(unittest.TestCase):
                                metric_types=metric_types,
                                calculation_month_limit=-1))
 
-        assert_that(program_metrics,
-                    AssertMatchers.validate_pipeline_test())
+        assert_that(program_metrics, AssertMatchers.validate_pipeline_test())
 
         test_pipeline.run()
 
@@ -752,15 +751,8 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             program_id='program'
         )]
 
-        # Get the number of combinations of person-event characteristics.
-        num_combinations = len(calculator.characteristic_combinations(
-            fake_person, program_events[0], ProgramMetricType.REFERRAL))
-        assert num_combinations > 0
-
-        # Each characteristic combination will be tracked for each of the
-        # months and the two methodology types
-        expected_population_metric_count = \
-            num_combinations * len(program_events) * 2
+        # Each event will be have an output for each methodology type
+        expected_population_metric_count = len(program_events) * 2
 
         expected_combination_counts = \
             {'referrals': expected_population_metric_count}
@@ -771,10 +763,10 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, program_events)])
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
-                             -1, ALL_METRIC_INCLUSIONS_DICT).with_outputs('referrals')
+                             -1, ALL_METRIC_INCLUSIONS_DICT).with_outputs('referrals', 'person_level_output')
                   )
 
-        assert_that(output.referrals, AssertMatchers.
+        assert_that(output.person_level_output, AssertMatchers.
                     count_combinations(expected_combination_counts),
                     'Assert number of metrics is expected value')
 

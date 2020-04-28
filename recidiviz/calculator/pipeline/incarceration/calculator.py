@@ -137,8 +137,6 @@ def characteristic_combinations(person: StatePerson,
     Returns:
         A list of dictionaries containing all unique combinations of characteristics.
     """
-    # TODO(3058): Limit the output of this function to just the person_level_characteristic_dict dictionary
-    #  for all metrics that currently include person-level output
     characteristics: Dict[str, Any] = {}
 
     # Add characteristics that will be used to generate dictionaries with unique combinations.
@@ -174,16 +172,19 @@ def characteristic_combinations(person: StatePerson,
     if _include_demographic_dimensions_for_metric(metric_type):
         characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
-    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
-        all_combinations = for_characteristics_races_ethnicities(characteristics)
-    else:
-        all_combinations = for_characteristics(characteristics)
-
     characteristics_with_person_details = add_person_level_characteristics(
         person, incarceration_event, characteristics)
 
     if metric_type == IncarcerationMetricType.ADMISSION:
         characteristics_with_person_details['admission_date'] = incarceration_event.event_date
+
+    if _limit_to_person_level_output_for_metric(metric_type):
+        return [characteristics_with_person_details]
+
+    if characteristics.get('race') is not None or characteristics.get('ethnicity') is not None:
+        all_combinations = for_characteristics_races_ethnicities(characteristics)
+    else:
+        all_combinations = for_characteristics(characteristics)
 
     all_combinations.append(characteristics_with_person_details)
 
@@ -472,6 +473,18 @@ def incarceration_events_in_period(start_date: date,
 
 def _include_demographic_dimensions_for_metric(metric_type: IncarcerationMetricType) -> bool:
     """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
+    if metric_type in (
+            IncarcerationMetricType.ADMISSION,
+            IncarcerationMetricType.POPULATION,
+            IncarcerationMetricType.RELEASE
+    ):
+        return True
+
+    raise ValueError(f"IncarcerationMetricType {metric_type} not handled.")
+
+
+def _limit_to_person_level_output_for_metric(metric_type: IncarcerationMetricType) -> bool:
+    """Returns whether the metrics of the given metric_type should be limited to only the person-level output."""
     if metric_type in (
             IncarcerationMetricType.ADMISSION,
             IncarcerationMetricType.POPULATION,
