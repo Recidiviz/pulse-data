@@ -24,7 +24,7 @@ from enum import Enum
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 
 
 class MetricMethodologyType(Enum):
@@ -70,11 +70,11 @@ class RecidivizMetric(BuildableAttr):
     # '35-39'
     age_bucket: Optional[str] = attr.ib(default=None)
 
-    # A string representation of the race of the persons the metric describes
-    race: Optional[str] = attr.ib(default=None)
+    # The race of the persons the metric describes
+    race: Optional[List[Race]] = attr.ib(default=None)
 
-    # The string representation of the ethnicity of the persons the metric describes
-    ethnicity: Optional[str] = attr.ib(default=None)
+    # The ethnicity of the persons the metric describes
+    ethnicity: Optional[List[Ethnicity]] = attr.ib(default=None)
 
     # The gender of the persons the metric describes
     gender: Optional[Gender] = attr.ib(default=None)

@@ -18,7 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order
 import unittest
 from datetime import date
-from typing import List, Dict, Set, Tuple
+from typing import List, Set, Tuple
 
 from freezegun import freeze_time
 
@@ -37,8 +37,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
-from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
+from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
     ProgramMetricType.REFERRAL: True
@@ -526,10 +525,10 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
 
-class TestCharacteristicCombinations(unittest.TestCase):
-    """Tests the characteristic_combinations function."""
+class TestCharacteristicsDict(unittest.TestCase):
+    """Tests the characteristics_dict function."""
 
-    def test_characteristic_combinations(self):
+    def test_characteristics_dict(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -551,79 +550,18 @@ class TestCharacteristicCombinations(unittest.TestCase):
             event_date=date(2009, 10, 1)
         )
 
-        combinations = calculator.characteristic_combinations(
-            person, program_event, ProgramMetricType.REFERRAL)
+        characteristic_dict = calculator.characteristics_dict(person, program_event)
 
-        # 1 person-level metric
-        assert len(combinations) == 1
+        expected_output = {
+            'program_id': 'XXX',
+            'age_bucket': '25-29',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345
+        }
 
-    def test_characteristic_combinations_referral_no_extra_set(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramReferralEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, ProgramMetricType.REFERRAL)
-
-        expected_combinations_count = expected_metric_combos_count([program_event], with_methodologies=False)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-    def test_characteristic_combinations_referral(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramReferralEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1),
-            supervision_type=StateSupervisionType.PROBATION,
-            assessment_score=25,
-            assessment_type=StateAssessmentType.LSIR,
-            supervising_officer_external_id='OFFICER',
-            supervising_district_external_id='DISTRICT'
-        )
-
-        combinations = calculator.characteristic_combinations(person, program_event, ProgramMetricType.REFERRAL)
-
-        expected_combinations_count = expected_metric_combos_count([program_event], with_methodologies=False)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
+        self.assertEqual(expected_output, characteristic_dict)
 
 
 class TestIncludeReferralInCount(unittest.TestCase):
@@ -797,9 +735,8 @@ def expected_metric_combos_count(
         num_relevant_periods: int = 0,
         with_methodologies: bool = True,
         duplicated_months_different_supervision_types: bool = False) -> int:
-    """Calculates the expected number of characteristic combinations given
-    the person, the program events, and the dimensions that should
-    be included in the explosion of feature combinations."""
+    """Calculates the expected number of characteristic combinations given the program events, the number of relevant
+    periods, and other indications of what happened."""
     # Some test cases above use a different call that doesn't take methodology
     # into account as a dimension
     methodology_multiplier = 1
@@ -830,13 +767,3 @@ def expected_metric_combos_count(
             num_relevant_periods + 1))
 
     return program_referral_combos
-
-
-class TestIncludeDimensionsFunctions(unittest.TestCase):
-    """Tests the various functions that determine which dimensions should be included for the given metric."""
-
-    # pylint: disable=protected-access
-    def test_include_demographic_dimensions_for_metric(self):
-        for metric in ProgramMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_demographic_dimensions_for_metric(metric)

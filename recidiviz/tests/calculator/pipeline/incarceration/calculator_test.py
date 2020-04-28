@@ -18,7 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order
 import unittest
 from datetime import date
-from typing import List, Dict, Set, Tuple
+from typing import List, Set, Tuple
 
 from freezegun import freeze_time
 
@@ -38,8 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
-from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
+from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
     IncarcerationMetricType.ADMISSION: True,
@@ -917,10 +916,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                    for combo, value in incarceration_combinations if combo.get('person_id') is not None)
 
 
-class TestCharacteristicCombinations(unittest.TestCase):
-    """Tests the characteristic_combinations function."""
+class TestCharacteristicsDict(unittest.TestCase):
+    """Tests the characteristics_dict function."""
 
-    def test_characteristic_combinations(self):
+    def test_characteristics_dict(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -943,11 +942,21 @@ class TestCharacteristicCombinations(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
-        combinations = calculator.characteristic_combinations(
+        characteristic_dict = calculator.characteristics_dict(
             person, incarceration_event, IncarcerationMetricType.ADMISSION)
 
-        # 1 person-level metric
-        assert len(combinations) == 1
+        expected_output = {
+            'facility': 'SAN QUENTIN',
+            'county_of_residence': 'county',
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'admission_date': date(2018, 9, 13)
+        }
+
+        self.assertEqual(expected_output, characteristic_dict)
 
 
 def expected_metric_combos_count(
@@ -955,8 +964,8 @@ def expected_metric_combos_count(
         num_relevant_periods_admissions: int = 0,
         num_relevant_periods_releases: int = 0,
         with_methodologies: bool = True) -> int:
-    """Calculates the expected number of characteristic combinations given the person, the incarceration events, and
-    the dimensions that should be included in the explosion of feature combinations."""
+    """Calculates the expected number of characteristic combinations given the incarceration events and the number of
+    relevant periods."""
     # Some test cases above use a different call that doesn't take methodology into account as a dimension
     methodology_multiplier = 1
     if with_methodologies:
@@ -1008,18 +1017,3 @@ def expected_metric_combos_count(
                       (num_release_events - num_duplicated_release_months)*(num_relevant_periods_releases + 1))
 
     return admission_combos + stay_combos + release_combos
-
-
-class TestIncludeDimensionsFunctions(unittest.TestCase):
-    """Tests the various functions that determine which dimensions should be included for the given metric."""
-
-    # pylint: disable=protected-access
-    def test_include_demographic_dimensions_for_metric(self):
-        for metric in IncarcerationMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_demographic_dimensions_for_metric(metric)
-
-    def test_limit_to_person_level_output_for_metric(self):
-        for metric in IncarcerationMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._limit_to_person_level_output_for_metric(metric)
