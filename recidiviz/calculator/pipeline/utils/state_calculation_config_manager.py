@@ -92,7 +92,6 @@ def get_month_supervision_type(
         any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
 
 
-# TODO(2647): Write full coverage unit tests for this function
 def get_pre_incarceration_supervision_type(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
