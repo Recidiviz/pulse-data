@@ -35,7 +35,6 @@ class ReincarcerationRecidivismMetricType(Enum):
     """The type of reincarceration recidivism metrics."""
 
     COUNT = 'COUNT'
-    LIBERTY = 'LIBERTY'
     RATE = 'RATE'
 
 
@@ -108,6 +107,9 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     # Number of reincarceration returns
     returns: int = attr.ib(default=None)
 
+    # For person-level metrics only, the days at liberty between release and reincarceration
+    days_at_liberty: int = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
                                     job_id: str) -> Optional['ReincarcerationRecidivismCountMetric']:
@@ -124,47 +126,6 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
 
         recidivism_metric = cast(ReincarcerationRecidivismCountMetric,
                                  ReincarcerationRecidivismCountMetric.build_from_dictionary(metric_key))
-
-        return recidivism_metric
-
-
-@attr.s
-class ReincarcerationRecidivismLibertyMetric(ReincarcerationRecidivismMetric):
-    """Subclass of ReincarcerationRecidivismMetric that contains data for the time at liberty.
-
-    A recidivism liberty metric contains the average number of days at liberty for a group of individuals who return in
-    a given time window.
-    """
-    # Required characteristics
-
-    # Starting date of the time window
-    start_date: int = attr.ib(default=None)
-
-    # Ending date of the time window
-    end_date: int = attr.ib(default=None)
-
-    # Number of reincarceration returns in the time window
-    returns: int = attr.ib(default=None)
-
-    # Average days at liberty
-    avg_liberty: float = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> Optional['ReincarcerationRecidivismLibertyMetric']:
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        # Don't create metrics with invalid average liberty values
-        if isnan(metric_key['avg_liberty']):
-            return None
-
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
-
-        recidivism_metric = cast(ReincarcerationRecidivismLibertyMetric,
-                                 ReincarcerationRecidivismLibertyMetric.build_from_dictionary(metric_key))
 
         return recidivism_metric
 

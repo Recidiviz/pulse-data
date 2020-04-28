@@ -717,18 +717,12 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
             )
         ]
 
-        # Get the number of combinations of person-event characteristics.
-        num_combinations = len(calculator.characteristic_combinations(
-            fake_person, incarceration_events[0], IncarcerationMetricType.POPULATION))
-        assert num_combinations > 0
+        # One metric per methodology for each event
+        expected_metric_count = 2
 
-        expected_metric_count = num_combinations * 2
-
-        expected_admission_combination_counts = \
-            {'admissions': expected_metric_count}
-
-        expected_releases_combination_counts = \
-            {'releases': expected_metric_count}
+        expected_combination_counts = \
+            {'admissions': expected_metric_count,
+             'releases': expected_metric_count}
 
         test_pipeline = TestPipeline()
 
@@ -737,16 +731,11 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_METRICS_INCLUSIONS_DICT).with_outputs('admissions', 'releases')
+                      -1, ALL_METRICS_INCLUSIONS_DICT).with_outputs('admissions', 'releases', 'person_level_output')
                   )
 
-        assert_that(output.admissions, AssertMatchers.
-                    count_combinations(expected_admission_combination_counts),
-                    'Assert number of admission metrics is expected value')
-
-        assert_that(output.releases, AssertMatchers.
-                    count_combinations(expected_releases_combination_counts),
-                    'Assert number of release metrics is expected value')
+        assert_that(output.person_level_output, AssertMatchers.
+                    count_combinations(expected_combination_counts), 'Assert number of metrics is expected value')
 
         test_pipeline.run()
 

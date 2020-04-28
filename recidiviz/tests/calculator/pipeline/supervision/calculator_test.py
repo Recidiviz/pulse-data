@@ -2664,28 +2664,6 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         self.assertFalse(include_second_bucket)
 
 
-def demographic_metric_combos_count_for_person_supervision(
-        person: StatePerson,
-        inclusions: Dict[str, bool]) -> int:
-    """Returns the number of possible demographic metric combinations for a given person, given the metric inclusions
-    list."""
-
-    metric_inclusions = []
-
-    for metric_type in SupervisionMetricType:
-        metric_inclusions.append(metric_type.value)
-
-    demographic_inclusions = {}
-
-    for key, value in inclusions.items():
-        if key not in metric_inclusions:
-            demographic_inclusions[key] = value
-
-    total_metric_combos = demographic_metric_combos_count_for_person(person, demographic_inclusions)
-
-    return total_metric_combos
-
-
 def expected_metric_combos_count(
         supervision_time_buckets: List[SupervisionTimeBucket],
         with_revocation_dimensions: bool = True,

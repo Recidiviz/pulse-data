@@ -67,7 +67,6 @@ _COUNTY_OF_RESIDENCE = 'county'
 
 ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.COUNT: True,
-    MetricType.LIBERTY: True,
     MetricType.RATE: True
 }
 
@@ -964,52 +963,38 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
                            second_recidivism_release_event.release_date.year:
                                [second_recidivism_release_event]})]
 
-        # Get the number of combinations of person-event characteristics, without the person-level combination
-        num_combinations = len(calculator.characteristic_combinations(
-            fake_person, first_recidivism_release_event, MetricType.COUNT)) - 1
-        assert num_combinations > 0
-
         # We do not track metrics for periods that start after today, so we need to subtract for some number of periods
         # that go beyond whatever today is.
         periods = relativedelta(date.today(), date(2010, 12, 4)).years + 1
         periods_with_single = 6
         periods_with_double = periods - periods_with_single
 
-        expected_combinations_count_2010 = ((num_combinations * 46 * periods_with_single) +
-                                            (num_combinations * 69 * periods_with_double))
+        expected_combinations_count_2010 = ((2 * periods_with_single) +
+                                            (3 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = (num_combinations * 46 * periods)
-
-        expected_count_metric_combinations = (num_combinations * 46 + num_combinations * 46)
+        expected_combinations_count_2014 = (2 * periods)
 
         # Add person-level counts for the 2 events and 2 methodologies
-        expected_count_metric_combinations += (2 * 2)
+        expected_count_metric_combinations = 4
 
-        expected_combination_counts_rates = {
+        expected_combination_counts = {
             2010: expected_combinations_count_2010,
-            2014: expected_combinations_count_2014
+            2014: expected_combinations_count_2014,
+            'counts': expected_count_metric_combinations
         }
-
-        expected_combination_counts_counts = {'counts': expected_count_metric_combinations}
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create(person_events)
                   | 'Calculate Metric Combinations' >>
-                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(),
-                             ALL_METRIC_INCLUSIONS_DICT).with_outputs('rates', 'counts')
+                  beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )
 
-        assert_that(output.rates, AssertMatchers.
-                    count_combinations(expected_combination_counts_rates),
-                    'Assert number of rates metrics is expected value')
-
-        assert_that(output.counts, AssertMatchers.
-                    count_combinations(expected_combination_counts_counts),
-                    'Assert number of counts metrics is expected value')
+        assert_that(output, AssertMatchers.count_combinations(expected_combination_counts),
+                    'Assert number of metrics is expected value')
 
         test_pipeline.run()
 
@@ -1056,205 +1041,12 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestProduceReincarcerationRecidivismRateMetric(unittest.TestCase):
-    """Tests for the ProduceReincarcerationRecidivismRateMetric DoFn in the
+class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
+    """Tests for the ProduceReincarcerationRecidivismMetric DoFn in the
      pipeline."""
 
-    def testProduceReincarcerationRecidivismRateMetric(self):
+    def testProduceReincarcerationRecidivismMetric_Count(self):
         """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
-         pipeline."""
-        metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'release_cohort': 2014,
-                           'methodology': MetricMethodologyType.PERSON,
-                           'follow_up_period': 1,
-                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
-
-        value = AverageFnResult(
-            input_count=10,
-            sum_of_inputs=7,
-            average_of_inputs=0.7
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Recidivism Rate Metric' >>
-                  beam.ParDo(pipeline.
-                             ProduceReincarcerationRecidivismMetric(),
-                             **all_pipeline_options)
-                  )
-
-        assert_that(output, AssertMatchers.
-                    validate_recidivism_rate_metric(0.7))
-
-        test_pipeline.run()
-
-    def testProduceReincarcerationRecidivismRateMetric_NoReleases(self):
-        """Tests the ProduceRecivismMetric DoFn in the pipeline when the
-        recidivism rate is NaN because there are no releases.
-
-        This should not happen in the pipeline, but we test against it
-        anyways."""
-
-        metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'release_cohort': 2014,
-                           'methodology': MetricMethodologyType.PERSON,
-                           'follow_up_period': 1,
-                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
-
-        value = AverageFnResult(
-            input_count=0,
-            sum_of_inputs=0,
-            average_of_inputs=float('NaN')
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime(
-            '%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismMetric(),
-                      **all_pipeline_options))
-
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-    def testProduceReincarcerationRecidivismLibertyMetric(self):
-        """Tests the ProduceReincarcerationRecidivismLibertyMetric DoFn in the
-         pipeline."""
-
-        metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'start_date': date(2010, 1, 1),
-                           'end_date': date(2010, 12, 31),
-                           'methodology': MetricMethodologyType.PERSON,
-                           'metric_type': MetricType.LIBERTY,
-                           'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
-
-        value = AverageFnResult(
-            input_count=10,
-            sum_of_inputs=3000,
-            average_of_inputs=300
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
-                  )
-
-        assert_that(output, AssertMatchers.validate_recidivism_liberty_metric(300))
-
-        test_pipeline.run()
-
-    def testProduceReincarcerationRecidivismLibertyMetric_NoReturns(self):
-        """Tests the ProduceReincarcerationRecidivismLibertyMetric DoFn in the
-         pipeline when the value for avg_liberty is NaN because the number of
-        returns is 0."""
-
-        metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'start_date': date(2010, 1, 1),
-                           'end_date': date(2010, 12, 31),
-                           'methodology': MetricMethodologyType.PERSON,
-                           'metric_type': MetricType.LIBERTY,
-                           'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
-
-        value = AverageFnResult(
-            input_count=0,
-            sum_of_inputs=0,
-            average_of_inputs=float('NaN')
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
-                  )
-
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-    def testProduceReincarcerationRecidivismLibertyMetric_EmptyMetric(self):
-        """Tests the ProduceReincarcerationRecidivismLibertyMetric DoFn in the
-        pipeline when the metric dictionary is empty.
-
-        This should not happen in the pipeline, but we test against it
-        anyways.
-        """
-
-        metric_key = json.dumps({})
-
-        value = AverageFnResult(
-            input_count=20,
-            sum_of_inputs=10,
-            average_of_inputs=0.5
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime(
-            '%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Recidivism Liberty Metric' >>
-                  beam.ParDo(pipeline.ProduceReincarcerationRecidivismMetric(), **all_pipeline_options)
-                  )
-
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-
-class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
-    """Tests for the ProduceReincarcerationRecidivismCountMetric DoFn in the
-     pipeline."""
-
-    def testProduceReincarcerationRecidivismCountMetric(self):
-        """Tests the ProduceReincarcerationRecidivismCountMetric DoFn in the
         pipeline."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
@@ -1262,9 +1054,6 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
                            'metric_type': MetricType.COUNT, 'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
 
         value = 10
 
@@ -1276,20 +1065,49 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
+                  | beam.Create([(metric_key_dict, value)])
                   | 'Produce Recidivism Metric' >>
                   beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismCountMetric(),
+                      pipeline.ProduceReincarcerationRecidivismMetric(),
                       **all_pipeline_options)
                   )
 
-        assert_that(output, AssertMatchers.
-                    validate_recidivism_count_metric(10))
+        assert_that(output, AssertMatchers.validate_recidivism_count_metric(10))
 
         test_pipeline.run()
 
-    def testProduceReincarcerationRecidivismCountMetric_NoRecidivism(self):
-        """Tests the ProduceReincarcerationRecidivismCountMetric DoFn in the
+    def testProduceReincarcerationRecidivismRateMetric_Rate(self):
+        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
+         pipeline."""
+        metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
+                           'release_cohort': 2014,
+                           'methodology': MetricMethodologyType.PERSON,
+                           'follow_up_period': 1,
+                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
+
+        value = 1
+
+        test_pipeline = TestPipeline()
+
+        all_pipeline_options = PipelineOptions().get_all_options()
+
+        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
+        all_pipeline_options['job_timestamp'] = job_timestamp
+
+        output = (test_pipeline
+                  | beam.Create([(metric_key_dict, value)])
+                  | 'Produce Recidivism Rate Metric' >>
+                  beam.ParDo(pipeline.
+                             ProduceReincarcerationRecidivismMetric(),
+                             **all_pipeline_options)
+                  )
+
+        assert_that(output, AssertMatchers.validate_recidivism_rate_metric(1))
+
+        test_pipeline.run()
+
+    def testProduceReincarcerationRecidivismMetric_NoRecidivism(self):
+        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
         pipeline when the number of returns is 0."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
@@ -1297,9 +1115,6 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
                            'metric_type': MetricType.COUNT, 'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
 
         value = 0
 
@@ -1311,10 +1126,10 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
+                  | beam.Create([(metric_key_dict, value)])
                   | 'Produce Recidivism Metric' >>
                   beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismCountMetric(),
+                      pipeline.ProduceReincarcerationRecidivismMetric(),
                       **all_pipeline_options)
                   )
 
@@ -1322,15 +1137,15 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceReincarcerationRecidivismCountMetric_EmptyMetric(self):
-        """Tests the ProduceReincarcerationRecidivismCountMetric DoFn in the
+    def testProduceReincarcerationRecidivismMetric_EmptyMetric(self):
+        """Tests the ProduceReincarcerationRecidivismMetric DoFn in the
         pipeline when the metric dictionary is empty.
 
         This should not happen in the pipeline, but we test against it
         anyways.
         """
 
-        metric_key = json.dumps({})
+        metric_key_dict = {}
 
         value = 100
 
@@ -1343,10 +1158,10 @@ class TestProduceReincarcerationRecidivismCountMetric(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
+                  | beam.Create([(metric_key_dict, value)])
                   | 'Produce Recidivism Metric' >>
                   beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismCountMetric(),
+                      pipeline.ProduceReincarcerationRecidivismMetric(),
                       **all_pipeline_options))
 
         assert_that(output, equal_to([]))
@@ -1503,14 +1318,12 @@ class AssertMatchers:
                 actual_combination_counts[key] = 0
 
             for result in output:
-                combination, _ = result
+                combination_dict, _ = result
 
-                combination_dict = json.loads(combination)
-
-                if combination_dict.get('metric_type') == MetricType.RATE.value:
+                if combination_dict.get('metric_type') == MetricType.RATE:
                     release_cohort_year = combination_dict['release_cohort']
                     actual_combination_counts[release_cohort_year] = actual_combination_counts[release_cohort_year] + 1
-                elif combination_dict.get('metric_type') == MetricType.COUNT.value:
+                elif combination_dict.get('metric_type') == MetricType.COUNT:
                     actual_combination_counts['counts'] = actual_combination_counts['counts'] + 1
 
             for key in expected_combination_counts:
@@ -1557,26 +1370,6 @@ class AssertMatchers:
                                           'not match expected value.')
 
         return _validate_recidivism_count_metric
-
-    @staticmethod
-    def validate_recidivism_liberty_metric(expected_days_at_liberty):
-        """Asserts that the average days of liberty on the
-        ReincarcerationRecidivismLibertyMetric produced by the pipeline matches
-        the expected count."""
-
-        def _validate_recidivism_liberty_metric(output):
-            if len(output) != 1:
-                raise BeamAssertException('Failed assert. Should be only one '
-                                          'ReincarcerationRecidivismMetric'
-                                          ' returned.')
-
-            recidivism_metric = output[0]
-
-            if recidivism_metric.avg_liberty != expected_days_at_liberty:
-                raise BeamAssertException('Failed assert. Avg_liberty does'
-                                          'not match expected value.')
-
-        return _validate_recidivism_liberty_metric
 
     @staticmethod
     def validate_job_id_on_metric(expected_job_id):
