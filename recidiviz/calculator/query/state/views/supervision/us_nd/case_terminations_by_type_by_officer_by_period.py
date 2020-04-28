@@ -17,7 +17,7 @@
 """Case Terminations by type by officer by period."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_month import \
@@ -64,10 +64,9 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
         officer_external_id,
         district, 
         metric_period_months
-      FROM case_terminations_expanded,
-        UNNEST([1, 3, 6, 12, 36]) AS metric_period_months
-      WHERE termination_month_trunc >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
-                                                INTERVAL metric_period_months - 1 MONTH)
+      FROM case_terminations,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
     )
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
       AND district != 'ALL'
@@ -75,7 +74,9 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
     ORDER BY state_code, supervision_type, district, officer_external_id, metric_period_months
     """.format(
         description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
-        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET)
+        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET),
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = bqview.BigQueryView(

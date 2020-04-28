@@ -16,7 +16,7 @@
 # =============================================================================
 """Reincarcerations by metric period month."""
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -39,61 +39,41 @@ REINCARCERATIONS_BY_PERIOD_QUERY = \
     FROM (
       SELECT
         state_code, metric_period_months,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        sum(count) as total_admissions
-      FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND specialized_purpose_for_incarceration IS NULL
-        AND admission_reason IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND admission_date IS NULL
-        AND supervision_type_at_admission IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'INCARCERATION_ADMISSION'
-      GROUP BY state_code, metric_period_months, county_of_residence
+        district,
+        COUNT(DISTINCT person_id) as total_admissions
+      FROM `{project_id}.{reference_dataset}.event_based_admissions`,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
+      GROUP BY state_code, metric_period_months, district
     ) adm
     LEFT JOIN (
       SELECT
-        state_code,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        metric_period_months,
-        returns
-      FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
+        state_code, metric_period_months,
+        district,
+        COUNT(DISTINCT person_id) AS returns
+      FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension},
+      {metric_period_dimension}
       WHERE methodology = 'PERSON'
-        AND age_bucket IS NULL
-        AND stay_length_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND release_facility IS NULL
-        AND return_type IS NULL
-        AND from_supervision_type IS NULL
-        AND source_violation_type IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
+        AND person_id IS NOT NULL
+        AND m.metric_period_months = 1
+        AND {metric_period_condition}
         AND job.metric_type = 'RECIDIVISM_COUNT'
+      GROUP BY state_code, metric_period_months, district
     ) ret
     USING (state_code, metric_period_months, district)
+    WHERE district IS NOT NULL
     ORDER BY state_code, metric_period_months, district
     """.format(
         description=REINCARCERATIONS_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 REINCARCERATIONS_BY_PERIOD_VIEW = bqview.BigQueryView(

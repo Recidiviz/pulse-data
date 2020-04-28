@@ -16,12 +16,11 @@
 # =============================================================================
 """Admissions by metric period months"""
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_NAME = 'admissions_by_type_by_period'
@@ -32,99 +31,68 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION = \
 ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
     """
     /*{description}*/
-    SELECT
-      state_code,
-      IFNULL(new_admissions, 0) as new_admissions,
-      IFNULL(technicals, 0) as technicals,
-      IFNULL(non_technicals, 0) as non_technicals,
-      IFNULL(unknown_revocations, 0) as unknown_revocations,
-      supervision_type,
-      district,
-      metric_period_months
-    FROM (
+    -- Combine supervision revocations with new admission incarcerations
+    WITH combined_admissions AS (
       SELECT
-        state_code,
-        technicals,
-        (felony_count + absconsion_count) as non_technicals,
-        SAFE_SUBTRACT(all_violation_types_count, (felony_count + technicals + absconsion_count)) as unknown_revocations,
+        state_code, year, month,
+        person_id,
+        revocation_admission_date AS admission_date,
+        source_violation_type,
         supervision_type,
-        supervising_district_external_id as district,
-        metric_period_months
-      FROM (
-        SELECT
-          state_code,
-          SUM(IF(violation_type = 'FELONY', count, 0)) AS felony_count,
-          SUM(IF(violation_type = 'TECHNICAL', count, 0)) AS technicals,
-          SUM(IF(violation_type = 'ABSCONDED', count, 0)) AS absconsion_count,
-          SUM(IF(violation_type = 'ALL_VIOLATION_TYPES', count, 0)) AS all_violation_types_count,
-          supervision_type,
-          supervising_district_external_id,
-          metric_period_months
-        FROM (
-          SELECT
-            state_code, count,
-            IFNULL(source_violation_type, 'ALL_VIOLATION_TYPES') as violation_type,
-            IFNULL(supervision_type, 'ALL') as supervision_type,
-            IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id,
-            metric_period_months
-          FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
-          JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-            USING (state_code, job_id, year, month, metric_period_months)
-          WHERE methodology = 'PERSON'
-            AND month IS NOT NULL
-            AND assessment_score_bucket IS NULL
-            AND assessment_type IS NULL
-            AND supervising_officer_external_id IS NULL
-            AND revocation_type IS NULL
-            AND age_bucket IS NULL
-            AND race IS NULL
-            AND ethnicity IS NULL
-            AND gender IS NULL
-            AND case_type IS NULL
-            AND person_id IS NULL
-            AND person_external_id IS NULL
-            AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-            AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-            AND job.metric_type = 'SUPERVISION_REVOCATION'
-        )
-        GROUP BY state_code, supervision_type, supervising_district_external_id, metric_period_months
-      )
-    ) rev
-    FULL OUTER JOIN (
+        district
+      FROM `{project_id}.{reference_dataset}.event_based_revocations`
+
+      UNION ALL
+
       SELECT
+        state_code, year, month,
+        person_id,
+        admission_date,
+        'NEW_ADMISSION' AS source_violation_type,
+        'ALL' as supervision_type, 'ALL' as district
+      FROM `{project_id}.{reference_dataset}.event_based_admissions`
+      WHERE admission_reason = 'NEW_ADMISSION'
+    ),
+    -- Use the most recent admission per person/supervision/district/period
+    most_recent_admission AS (
+      SELECT
+        state_code, metric_period_months, person_id,
+        source_violation_type, supervision_type, district,
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id, supervision_type, district
+                           ORDER BY admission_date DESC) AS admission_rank
+      FROM combined_admissions,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
+    )
+    SELECT
         state_code,
-        SUM(count) AS new_admissions,
-        'ALL' AS supervision_type, 'ALL' as district,
+        new_admissions,
+        technicals,
+        non_technicals,
+        SAFE_SUBTRACT(all_violation_types_count, (new_admissions + technicals + non_technicals)) as unknown_revocations,
+        supervision_type,
+        district,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND admission_reason = 'NEW_ADMISSION'
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND specialized_purpose_for_incarceration IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND admission_date IS NULL
-        AND supervision_type_at_admission IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'INCARCERATION_ADMISSION'
-      GROUP BY state_code, metric_period_months
-    ) adm
-    USING (state_code, metric_period_months, supervision_type, district)
+    FROM (
+        SELECT
+          state_code, metric_period_months,
+          COUNT(IF(source_violation_type = 'NEW_ADMISSION', person_id, NULL)) AS new_admissions,
+          COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technicals,
+          COUNT(IF(source_violation_type IN ('ABSCONDED', 'FELONY'), person_id, NULL)) AS non_technicals,
+          COUNT(person_id) AS all_violation_types_count,
+          supervision_type,
+          district
+        FROM most_recent_admission
+        WHERE admission_rank = 1
+        GROUP BY state_code, metric_period_months, supervision_type, district
+    )
     ORDER BY state_code, supervision_type, district, metric_period_months
 """.format(
         description=ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         reference_dataset=REFERENCE_DATASET,
-        metrics_dataset=METRICS_DATASET,
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW = bqview.BigQueryView(

@@ -20,7 +20,7 @@ termination to the second LSIR score of the person's supervision.
 """
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -40,36 +40,46 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
     """
     /*{description}*/
-    SELECT 
-      state_code, metric_period_months, 
-      IFNULL(average_score_change, 0.0) as average_change,
-      IFNULL(supervision_type, 'ALL') as supervision_type, 
-      IFNULL(supervising_district_external_id, 'ALL') as district
-    FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`
-    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id, year, month, metric_period_months)
-    WHERE methodology = 'PERSON'
-      AND assessment_score_bucket IS NULL
-      AND assessment_type = 'LSIR'
-      AND age_bucket IS NULL
-      AND race IS NULL
-      AND ethnicity IS NULL
-      AND gender IS NULL
-      AND case_type IS NULL
-      AND person_id IS NULL
-      AND person_external_id IS NULL
-      AND supervising_officer_external_id IS NULL
-      AND termination_reason IS NULL
-      AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-      AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-      AND IFNULL(supervision_type, 'ALL') in ('ALL', 'PAROLE', 'PROBATION')
-      AND job.metric_type = 'SUPERVISION_ASSESSMENT_CHANGE'
+    SELECT
+      state_code, metric_period_months,
+      IFNULL(AVG(average_score_change), 0.0) AS average_change,
+      supervision_type,
+      district
+    FROM (
+      SELECT
+        state_code, metric_period_months,
+        average_score_change,
+        supervision_type,
+        district,
+        -- Use the most recent termination per person/period/supervision/district
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, district, person_id
+                           ORDER BY termination_date DESC) AS supervision_rank
+      FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics` m
+      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension},
+      {supervision_dimension},
+      {metric_period_dimension}
+      WHERE methodology = 'EVENT'
+        AND m.metric_period_months = 1
+        AND assessment_type = 'LSIR'
+        AND person_id IS NOT NULL
+        AND {metric_period_condition}
+        AND job.metric_type = 'SUPERVISION_ASSESSMENT_CHANGE'
+    )
+    WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
+      AND supervision_rank = 1
+    GROUP BY state_code, metric_period_months, supervision_type, district
     ORDER BY state_code, district, supervision_type, metric_period_months
     """.format(
         description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        district_dimension=bq_utils.unnest_district(),
+        supervision_dimension=bq_utils.unnest_supervision_type(),
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = bqview.BigQueryView(

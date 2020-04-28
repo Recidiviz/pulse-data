@@ -16,7 +16,7 @@
 # =============================================================================
 """Admissions minus releases (net change in incarcerated population)"""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -43,50 +43,26 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
     FROM (
       SELECT
         state_code, year, month, 
-        IFNULL(county_of_residence, 'ALL') AS district,
-        SUM(count) AS admission_count
-      FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND specialized_purpose_for_incarceration IS NULL
-        AND admission_reason IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND admission_date IS NULL
-        AND supervision_type_at_admission IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
-        AND job.metric_type = 'INCARCERATION_ADMISSION'
-      GROUP BY state_code, year, month, county_of_residence
+        district,
+        COUNT(DISTINCT person_id) AS admission_count
+      FROM `{project_id}.{reference_dataset}.event_based_admissions`
+      GROUP BY state_code, year, month, district
     ) admissions
     FULL OUTER JOIN (
       SELECT
         state_code, year, month, 
-        IFNULL(county_of_residence, 'ALL') AS district,
-        SUM(count) AS release_count
+        district,
+        COUNT(DISTINCT person_id) AS release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension}
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
-        AND release_reason IS NULL
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL -3 YEAR))
+        AND person_id IS NOT NULL
+        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
         AND job.metric_type = 'INCARCERATION_RELEASE'
-      GROUP BY state_code, year, month, county_of_residence
+      GROUP BY state_code, year, month, district
     ) releases
     USING (state_code, year, month, district)
     FULL OUTER JOIN (
@@ -94,38 +70,31 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         state_code,
         EXTRACT(YEAR FROM incarceration_month_end_date) AS year,
         EXTRACT(MONTH FROM incarceration_month_end_date) AS month,
-        IFNULL(county_of_residence, 'ALL') AS district,
-        count AS month_end_population
+        district,
+        COUNT(DISTINCT person_id) AS month_end_population
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension}
       WHERE methodology = 'PERSON'
         AND metric_period_months = 1
-        AND facility IS NULL
-        AND age_bucket IS NULL
-        AND race IS NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND most_serious_offense_ncic_code IS NULL
-        AND most_serious_offense_statute IS NULL
-        AND admission_reason IS NULL
-        AND admission_reason_raw_text IS NULL
-        AND supervision_type_at_admission IS NULL
-        AND year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL - 4 YEAR))
+        AND person_id IS NOT NULL
+        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 4 YEAR))
         AND job.metric_type = 'INCARCERATION_POPULATION'
+      GROUP BY state_code, year, month, district
     ) inc_pop
     USING (state_code, year, month, district)
-    WHERE year >= EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE(), INTERVAL - 3 YEAR))
+    WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      AND district IS NOT NULL
     ORDER BY state_code, district, year, month 
 """.format(
         description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
         project_id=PROJECT_ID,
         reference_dataset=REFERENCE_DATASET,
         metrics_dataset=METRICS_DATASET,
+        district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
     )
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW = bqview.BigQueryView(

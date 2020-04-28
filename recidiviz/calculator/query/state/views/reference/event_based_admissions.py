@@ -1,7 +1,7 @@
 # Recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2019 Recidiviz, Inc.
 #
-# This program is free software: you can redistribute it AND/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -14,53 +14,55 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Average days at liberty for reincarcerations by month."""
-# pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+"""Event Based Admissions."""
+# pylint: disable=trailing-whitespace, line-too-long
+
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
+REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
-AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_NAME = 'avg_days_at_liberty_by_month'
+EVENT_BASED_ADMISSIONS_VIEW_NAME = 'event_based_admissions'
 
-AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION = \
-    """Average days at liberty for reincarcerations by month """
+EVENT_BASED_ADMISSIONS_DESCRIPTION = """
+ Admission data on the person level with admission district (county of residence), admission date, and admission reason.
 
-AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
+ Expanded Dimensions: district
+ """
+
+EVENT_BASED_ADMISSIONS_QUERY = \
     """
     /*{description}*/
     SELECT
-      state_code, year, month,
-      COUNT(DISTINCT person_id) AS returns,
-      AVG(days_at_liberty) AS avg_liberty
-    FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
+      person_id, state_code, year, month,
+      district,
+      admission_reason, admission_date
+    FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, year, month, metric_period_months, job_id)
-    WHERE methodology = 'PERSON'
+      USING (state_code, job_id, year, month, metric_period_months),
+    {district_dimension}
+    WHERE methodology = 'EVENT'
       AND person_id IS NOT NULL
       AND metric_period_months = 1
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      AND job.metric_type = 'RECIDIVISM_COUNT'
-      -- TODO (#3123): enforce positive days at liberty earlier in the pipeline
-      AND days_at_liberty >= 0
-    GROUP BY state_code, year, month
-    ORDER BY state_code, year, month
+      AND job.metric_type = 'INCARCERATION_ADMISSION'
     """.format(
-        description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
+        description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
     )
 
-AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW = bqview.BigQueryView(
-    view_id=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_NAME,
-    view_query=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY
+EVENT_BASED_ADMISSIONS_VIEW = bqview.BigQueryView(
+    view_id=EVENT_BASED_ADMISSIONS_VIEW_NAME,
+    view_query=EVENT_BASED_ADMISSIONS_QUERY
 )
 
 if __name__ == '__main__':
-    print(AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW.view_id)
-    print(AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW.view_query)
+    print(EVENT_BASED_ADMISSIONS_VIEW.view_id)
+    print(EVENT_BASED_ADMISSIONS_VIEW.view_query)

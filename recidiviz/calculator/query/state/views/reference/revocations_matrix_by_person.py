@@ -17,7 +17,7 @@
 """Revocations Matrix by Person."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query import bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -54,34 +54,22 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY = \
             IFNULL(assessment_score_bucket, 'OVERALL') AS risk_level,
             age_bucket,
             race, ethnicity,
-            IFNULL(supervision_type, 'ALL') AS supervision_type,
-            IFNULL(case_type, 'ALL') AS charge_category,
-            IFNULL(supervising_district_external_id, 'ALL') as district,
+            supervision_type,
+            charge_category,
+            district,
             supervising_officer_external_id AS officer
         FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
         JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+            USING (state_code, job_id, year, month, metric_period_months),
+        {district_dimension},
+        {supervision_dimension},
+        {charge_category_dimension}
         WHERE methodology = 'PERSON'
             AND month IS NOT NULL
             AND revocation_type = 'REINCARCERATION'
             AND person_id IS NOT NULL
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
             AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
-    ),
-    dimension_explosion AS (
-        SELECT
-            state_code, year, month, metric_period_months,
-            violation_type, reported_violations,
-            officer_recommendation, violation_record,
-            supervision_type, charge_category,
-            district, officer,
-            person_id, person_external_id,
-            gender, risk_level, age_bucket,
-            race, ethnicity
-        FROM revocations,
-            UNNEST (['ALL', supervision_type]) supervision_type,
-            UNNEST (['ALL', charge_category]) charge_category,
-            UNNEST (['ALL', district]) district
     )
     SELECT
         state_code, year, month, metric_period_months, 
@@ -89,18 +77,24 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY = \
         officer_recommendation, violation_record,
         supervision_type, charge_category, district, officer,
         person_id, person_external_id,
-        gender, risk_level, age_bucket,
+        gender, age_bucket,
+        -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
+        CASE WHEN risk_level = 'LOW_MEDIUM' THEN 'LOW' ELSE risk_level END AS risk_level,
         race, ethnicity,
         (year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 
             AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))) AS current_month
-    FROM dimension_explosion
+    FROM revocations
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
+        AND district IS NOT NULL
     """.format(
         description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
         project_id=PROJECT_ID,
         metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
-        )
+        district_dimension=bq_utils.unnest_district(),
+        supervision_dimension=bq_utils.unnest_supervision_type(),
+        charge_category_dimension=bq_utils.unnest_charge_category(),
+    )
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW = bqview.BigQueryView(
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,

@@ -188,3 +188,28 @@ def _destination_filename_for_view(view: bqview.BigQueryView,
                                    state_code: str) -> str:
     """Returns the filename that should be used as an export destination."""
     return state_code + '/' + view.view_id + '.json'
+
+
+def unnest_district(district_column='supervising_district_external_id'):
+    return f"UNNEST ([{district_column}, 'ALL']) AS district"
+
+
+def unnest_supervision_type(supervision_type_column='supervision_type'):
+    return f"UNNEST ([{supervision_type_column}, 'ALL']) AS supervision_type"
+
+
+def unnest_charge_category(category_column='case_type'):
+    return f"UNNEST ([{category_column}, 'ALL']) AS charge_category"
+
+
+def unnest_metric_period_months():
+    return "UNNEST ([1, 3, 6, 12, 36]) AS metric_period_months"
+
+
+def unnest_race_and_ethnicity():
+    return "UNNEST (ARRAY_CONCAT(IFNULL(SPLIT(race), []), IFNULL(SPLIT(ethnicity), []))) race_or_ethnicity"
+
+
+def metric_period_condition(month_offset=1):
+    return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
+                                                INTERVAL metric_period_months - {month_offset} MONTH)"""
