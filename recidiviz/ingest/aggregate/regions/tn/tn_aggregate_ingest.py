@@ -198,7 +198,7 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
         # capacity gets misinterpreted as female beds.
         keep_cols = [col for col in df.columns
                      if not df[col].apply(lambda val: isinstance(val, str) and
-                                                      val.endswith('%')).any()]
+                                          val.endswith('%')).any()]
         df = df[keep_cols]
     else:
         df = _drop_bad_columns(df, year)
@@ -245,6 +245,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         '-',
         'Annex',
         'CCA (MDF)',
+        '(closed)',
         'Co. Det. Center',
         'CJC',
         'CWC (CDC',
