@@ -18,7 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order,protected-access
 import unittest
 from datetime import date
-from typing import Dict, List, Tuple, Set
+from typing import List, Tuple, Set
 
 from freezegun import freeze_time
 
@@ -47,8 +47,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity, StatePersonExternalId
-from recidiviz.tests.calculator.calculator_test_utils import \
-    demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
+from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
         SupervisionMetricType.ASSESSMENT_CHANGE: True,
@@ -208,15 +207,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
-
-        # 2 person-level event and 2 person-level person based metrics that aren't affected by the assessment explosion
-        expected_combinations_count -= 4
-
-        # Remove the dimensional explosions for assessment_type (assessment_score_bucket remains as `NOT_ASSESSED`)
-        expected_combinations_count = expected_combinations_count / 2
-
-        # Add them back
-        expected_combinations_count += 4
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
@@ -2218,229 +2208,21 @@ class TestCharacteristicCombinations(unittest.TestCase):
             response_count=None
         )
 
-        combinations = calculator.characteristic_combinations(
+        characteristics_dict = calculator.characteristics_dict(
             person, supervision_time_bucket, metric_type=SupervisionMetricType.POPULATION)
 
-        self.assertEqual(1, len(combinations))
+        expected_output = {
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'assessment_score_bucket': 'NOT_ASSESSED',
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'is_on_supervision_last_day_of_month': True
+        }
 
-    def test_characteristic_combinations_include_aggregate_metrics(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervising_district_external_id='X',
-            supervising_officer_external_id='XX',
-            response_count=None
-        )
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
-
-        # 8 combinations of supervision type, district, and officer
-        self.assertEqual(8, len(combinations))
-
-    def test_characteristic_combinations_revocation(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            revocation_admission_date=date(2010, 3, 1),
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            revocation_type=RevocationType.SHOCK_INCARCERATION,
-            source_violation_type=ViolationType.FELONY)
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket,
-            metric_type=SupervisionMetricType.REVOCATION)
-
-        expected_combinations_count = expected_metric_combos_count(
-            [supervision_time_bucket],
-            with_methodologies=False, include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-    def test_characteristic_combinations_revocation_for_population_metric(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            revocation_admission_date=date(2010, 3, 1),
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            revocation_type=RevocationType.SHOCK_INCARCERATION,
-            source_violation_type=ViolationType.FELONY)
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.POPULATION)
-
-        expected_combinations_count = expected_metric_combos_count(
-            [supervision_time_bucket],
-            with_revocation_dimensions=False, with_methodologies=False,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.POPULATION)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-    def test_characteristic_combinations_revocation_no_revocation_type(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            revocation_admission_date=date(2010, 3, 1),
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            source_violation_type=ViolationType.FELONY)
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.REVOCATION)
-
-        expected_combinations_count = expected_metric_combos_count(
-            [supervision_time_bucket],
-            with_methodologies=False, include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-        for combo in combinations:
-            assert combo.get('revocation_type') is None
-
-    def test_characteristic_combinations_revocation_no_violation_type(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            revocation_admission_date=date(2010, 3, 1),
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            revocation_type=RevocationType.SHOCK_INCARCERATION)
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.REVOCATION)
-
-        expected_combinations_count = expected_metric_combos_count(
-            [supervision_time_bucket],
-            with_methodologies=False, include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-        for combo in combinations:
-            assert combo.get('violation_count_type') is None
-
-    def test_characteristic_combinations_revocation_no_extra_types(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
-            revocation_admission_date=date(2010, 3, 1),
-            is_on_supervision_last_day_of_month=True,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION)
-
-        combinations = calculator.characteristic_combinations(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.REVOCATION)
-
-        # 32 combinations of: 4 demographic dimensions + supervision type
-        expected_combinations_count = expected_metric_combos_count(
-            [supervision_time_bucket],
-            with_methodologies=False, include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION)
-
-        # Subtract the event-based metric dict from the combo count
-        expected_combinations_count -= 1
-
-        self.assertEqual(expected_combinations_count, len(combinations))
-
-        for combo in combinations:
-            assert combo.get('revocation_type') is None
-            assert combo.get('violation_count_type') is None
+        self.assertEqual(expected_output, characteristics_dict)
 
 
 class TestIncludeSupervisionInCount(unittest.TestCase):
@@ -2673,10 +2455,8 @@ def expected_metric_combos_count(
         duplicated_months_mixed_success: bool = False,
         num_relevant_periods: int = 0,
         include_revocation_violation_type_analysis_dimensions: bool = False) -> int:
-    """Calculates the expected number of characteristic combinations given the person, the supervision time buckets,
-    and the dimensions that should be included in the explosion of feature combinations for the violation-type
-    analysis metrics."""
-
+    """Calculates the expected number of characteristic combinations given the supervision time buckets,
+    and the metrics and methodologies that should be included in the counts."""
     combos_for_person = 1
 
     # Some test cases above use a different call that doesn't take methodology into account as a dimension
@@ -2776,22 +2556,6 @@ def expected_metric_combos_count(
         first_revocation_bucket = revocation_buckets[0]
 
         if first_revocation_bucket.violation_type_frequency_counter:
-            violation_type_analysis_dimensions = [
-                'supervision_type',
-                'case_type',
-                'supervision_level',
-                'most_severe_violation_type',
-            ]
-
-            for dimension in violation_type_analysis_dimensions:
-                if getattr(first_revocation_bucket, dimension) is not None:
-                    # Every dimension that is set on the bucket increases the number of combinations by a factor of 2
-                    # (one set of combinations where that dimension is included, and one where it is not)
-                    revocation_violation_type_analysis_dimension_multiplier *= 2
-
-            if first_revocation_bucket.response_count is not None:
-                revocation_violation_type_analysis_dimension_multiplier *= 2
-
             for violation_type_list in first_revocation_bucket.violation_type_frequency_counter:
                 num_violation_types += len(violation_type_list) + 1
 
@@ -2879,7 +2643,7 @@ class TestIncludeDimensionsFunctions(unittest.TestCase):
     def test_limit_to_person_level_dimensions_for_metric(self):
         for metric in SupervisionMetricType:
             # Assert this does not fail for all possible metric types
-            _ = calculator._limit_to_person_level_output_for_metric(metric)
+            _ = calculator._include_person_level_dimensions_for_metric(metric)
 
     def test_include_demographic_dimensions_for_metric(self):
         for metric in SupervisionMetricType:

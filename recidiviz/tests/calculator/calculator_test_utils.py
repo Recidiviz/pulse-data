@@ -20,7 +20,6 @@ from typing import Any, Dict, List
 
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 NormalizedDatabaseDict = Dict[str, Any]
@@ -68,34 +67,6 @@ def remove_relationship_properties(
             database_base.__delattr__(relationship_property)
 
     return database_base
-
-
-def demographic_metric_combos_count_for_person(
-        person: StatePerson,
-        inclusions: Dict[str, bool]) -> int:
-    """Returns the number of possible demographic metric combinations for a
-    given person, given the metric inclusions list."""
-
-    total_metric_combos = 1
-    for key, should_include in inclusions.items():
-        multiplier_for_key = 1  # always one combo where key isn't included
-        if should_include:
-            if key in {'age_bucket',
-                       'gender',
-                       'release_facility',
-                       'stay_length_bucket'}:
-                # A single person can only ever have one of these
-                # characteristics
-                multiplier_for_key += 1
-            elif key == 'race':
-                multiplier_for_key += len(person.races)
-            elif key == 'ethnicity':
-                multiplier_for_key += len(person.ethnicities)
-            else:
-                raise ValueError(f'Unexpected metric key: [{key}]')
-        total_metric_combos *= multiplier_for_key
-
-    return total_metric_combos
 
 
 def combo_has_enum_value_for_key(combo: Dict[str, Any], key: str,

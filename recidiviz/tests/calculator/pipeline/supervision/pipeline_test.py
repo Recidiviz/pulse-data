@@ -17,7 +17,6 @@
 # pylint: disable=wrong-import-order
 
 """Tests for supervision/pipeline.py"""
-import json
 import unittest
 from typing import Set, Optional, Dict, List, Any
 
@@ -33,7 +32,7 @@ from datetime import date
 from freezegun import freeze_time
 from mock import patch
 
-from recidiviz.calculator.pipeline.supervision import pipeline, calculator
+from recidiviz.calculator.pipeline.supervision import pipeline
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
@@ -44,13 +43,11 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import AverageFnResult, ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.recidivism.pipeline import \
-    json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
@@ -1537,16 +1534,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
 
-    def setUp(self) -> None:
-        self.metric_inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
-            SupervisionMetricType.SUCCESS.value: True,
-            SupervisionMetricType.REVOCATION.value: True,
-            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
-            SupervisionMetricType.POPULATION.value: True,
-        }
-
     def testClassifySupervisionTimeBuckets(self):
         """Tests the ClassifySupervisionTimeBuckets DoFn."""
         fake_person_id = 12345
@@ -2405,24 +2392,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             ),
         ]
 
-        # Get the number of combinations of person-event characteristics.
-        num_combinations = len(calculator.characteristic_combinations(
-            fake_person, supervision_time_buckets[0], SupervisionMetricType.POPULATION))
-        assert num_combinations > 0
-
-        # Each characteristic combination will be tracked for each of the
-        # months and the two methodology types
-        expected_population_metric_count = num_combinations * len(supervision_time_buckets) * 2
-
-        expected_person_level_output = 2
-
-        expected_population_metric_count -= expected_person_level_output
+        # Each characteristic combination will be tracked for each of the months and the two methodology types
+        expected_population_metric_count = len(supervision_time_buckets) * 2
 
         expected_population_combination_counts = \
-            {'population': expected_population_metric_count}
-
-        expected_person_level_combination_counts = \
-            {'population': expected_person_level_output}
+            {SupervisionMetricType.POPULATION.value: expected_population_metric_count}
 
         test_pipeline = TestPipeline()
 
@@ -2432,17 +2406,12 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit,
-                             self.metric_inclusions_dict).with_outputs('populations', 'person_level_output')
+                             calculation_month_limit, self.metric_inclusions_dict)
                   )
 
-        assert_that(output.populations, AssertMatchers.
+        assert_that(output, AssertMatchers.
                     count_combinations(expected_population_combination_counts),
                     'Assert number of population metrics is expected value')
-
-        assert_that(output.person_level_output, AssertMatchers.
-                    count_combinations(expected_person_level_combination_counts),
-                    'Assert number of person-level metrics is expected value')
 
         test_pipeline.run()
 
@@ -2471,34 +2440,14 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True),
         ]
 
-        # Get expected number of combinations for revocation counts
-        num_combinations_revocation = len(
-            calculator.characteristic_combinations(
-                fake_person, supervision_months[0],
-                SupervisionMetricType.REVOCATION))
-        assert num_combinations_revocation > 0
-
         # Multiply by the number of months and by 2 (to account for methodology)
-        expected_revocation_metric_count = num_combinations_revocation * len(supervision_months) * 2
+        expected_metric_count = len(supervision_months) * 2
 
-        expected_person_level_output = 4
-
-        expected_revocation_metric_count -= expected_person_level_output
-
-        expected_combination_counts_revocations = {
-            'revocation': expected_revocation_metric_count
+        expected_combination_counts = {
+            SupervisionMetricType.REVOCATION.value: expected_metric_count,
+            SupervisionMetricType.REVOCATION_ANALYSIS.value: expected_metric_count,
+            SupervisionMetricType.POPULATION.value: expected_metric_count
         }
-
-        expected_combination_counts_person_level = {
-            'revocation': 4,
-            'population': 4
-        }
-
-        # Get expected number of combinations for population count
-        num_combinations_population = len(
-            calculator.characteristic_combinations(
-                fake_person, supervision_months[0], SupervisionMetricType.POPULATION))
-        assert num_combinations_population > 0
 
         test_pipeline = TestPipeline()
 
@@ -2509,17 +2458,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_month_limit,
-                             self.metric_inclusions_dict).with_outputs('revocations',
-                                                                       'person_level_output')
+                             self.metric_inclusions_dict)
                   )
 
-        assert_that(output.revocations, AssertMatchers.
-                    count_combinations(expected_combination_counts_revocations),
-                    'Assert number of revocation metrics is expected value')
-
-        assert_that(output.person_level_output, AssertMatchers.
-                    count_combinations(expected_combination_counts_person_level),
-                    'Assert number of person_level metrics is expected value')
+        assert_that(output, AssertMatchers.count_combinations(expected_combination_counts),
+                    'Assert number of metrics is expected value')
 
         test_pipeline.run()
 
@@ -2563,17 +2506,22 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         test_pipeline.run()
 
 
-class TestProduceSupervisionMetricsForSumMetrics(unittest.TestCase):
-    """Tests the ProduceSupervisionMetricsForSumMetrics DoFn in the pipeline."""
+class TestProduceSupervisionMetrics(unittest.TestCase):
+    """Tests the ProduceSupervisionMetrics DoFn in the pipeline."""
 
-    def testProduceSupervisionMetricsForSumMetrics(self):
+    def testProduceSupervisionMetrics(self):
         metric_value_to_metric_type = {
-            SupervisionMetricType.POPULATION.value: SupervisionPopulationMetric,
-            SupervisionMetricType.REVOCATION.value: SupervisionRevocationMetric,
-            SupervisionMetricType.REVOCATION_ANALYSIS.value: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value:
-                SupervisionRevocationViolationTypeAnalysisMetric
+            SupervisionMetricType.ASSESSMENT_CHANGE: TerminatedSupervisionAssessmentScoreChangeMetric,
+            SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
+            SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,
+            SupervisionMetricType.REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: SupervisionRevocationViolationTypeAnalysisMetric,
+            SupervisionMetricType.SUCCESS: SupervisionSuccessMetric,
+            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric
         }
+
+        for metric_type in SupervisionMetricType:
+            assert metric_type in metric_value_to_metric_type.keys()
 
         metric_key_dict = {'gender': Gender.MALE,
                            'methodology': MetricMethodologyType.PERSON,
@@ -2581,7 +2529,7 @@ class TestProduceSupervisionMetricsForSumMetrics(unittest.TestCase):
                            'month': 3,
                            'state_code': 'CA'}
 
-        value = 10
+        value = 1
 
         all_pipeline_options = PipelineOptions().get_all_options()
 
@@ -2591,26 +2539,21 @@ class TestProduceSupervisionMetricsForSumMetrics(unittest.TestCase):
         for metric_value, metric_type in metric_value_to_metric_type.items():
             metric_key_dict['metric_type'] = metric_value
 
-            metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                    sort_keys=True)
-
             test_pipeline = TestPipeline()
 
             output = (test_pipeline
-                      | f"Create PCollection for {metric_value}" >> beam.Create([(metric_key, value)])
+                      | f"Create PCollection for {metric_value}" >> beam.Create([(metric_key_dict, value)])
                       | f"Produce {metric_type}" >>
-                      beam.ParDo(pipeline.ProduceSupervisionMetricsForSumMetrics(), **all_pipeline_options))
+                      beam.ParDo(pipeline.ProduceSupervisionMetrics(), **all_pipeline_options))
 
             assert_that(output, AssertMatchers.validate_metric_is_expected_type(metric_type))
 
             test_pipeline.run()
 
-    def testProduceSupervisionMetricsForSumMetrics_EmptyMetric(self):
+    def testProduceSupervisionMetrics_EmptyMetric(self):
         metric_key_dict = {}
 
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict), sort_keys=True)
-
-        value = 1131
+        value = 1
 
         test_pipeline = TestPipeline()
 
@@ -2620,82 +2563,9 @@ class TestProduceSupervisionMetricsForSumMetrics(unittest.TestCase):
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
+                  | beam.Create([(metric_key_dict, value)])
                   | 'Produce Supervision Metric' >>
-                  beam.ParDo(pipeline.ProduceSupervisionMetricsForSumMetrics(), **all_pipeline_options)
-                  )
-
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-
-class TestProduceSupervisionMetricsForAvgMetrics(unittest.TestCase):
-    """Tests the ProduceSupervisionMetricsForAvgMetrics DoFn in the pipeline."""
-
-    def testProduceSupervisionMetricsForAvgMetrics(self):
-        metric_value_to_metric_type = {
-            SupervisionMetricType.ASSESSMENT_CHANGE.value: TerminatedSupervisionAssessmentScoreChangeMetric,
-            SupervisionMetricType.SUCCESS.value: SupervisionSuccessMetric,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value: SuccessfulSupervisionSentenceDaysServedMetric,
-        }
-
-        metric_key_dict = {'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.PERSON,
-                           'year': 1999,
-                           'month': 3,
-                           'state_code': 'CA'}
-
-        value = AverageFnResult(
-            input_count=10,
-            sum_of_inputs=7,
-            average_of_inputs=0.7
-        )
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        for metric_value, metric_type in metric_value_to_metric_type.items():
-            metric_key_dict['metric_type'] = metric_value
-
-            metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                    sort_keys=True)
-
-            test_pipeline = TestPipeline()
-
-            output = (test_pipeline
-                      | f"Create PCollection for {metric_value}" >> beam.Create([(metric_key, value)])
-                      | f"Produce {metric_type}" >>
-                      beam.ParDo(pipeline.ProduceSupervisionMetricsForAvgMetrics(), **all_pipeline_options))
-
-            assert_that(output, AssertMatchers.validate_metric_is_expected_type(metric_type))
-
-            test_pipeline.run()
-
-    def testProduceSupervisionMetricsForAvgMetrics_EmptyMetric(self):
-        metric_key_dict = {}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict), sort_keys=True)
-
-        value = AverageFnResult(
-            input_count=10,
-            sum_of_inputs=7,
-            average_of_inputs=0.7
-        )
-
-        test_pipeline = TestPipeline()
-
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Supervision Metric' >>
-                  beam.ParDo(pipeline.ProduceSupervisionMetricsForAvgMetrics(), **all_pipeline_options)
+                  beam.ParDo(pipeline.ProduceSupervisionMetrics(), **all_pipeline_options)
                   )
 
         assert_that(output, equal_to([]))
@@ -2785,17 +2655,11 @@ class AssertMatchers:
                 actual_combination_counts[key] = 0
 
             for result in output:
-                combination, _ = result
+                combination_dict, _ = result
 
-                combination_dict = json.loads(combination)
                 metric_type = combination_dict.get('metric_type')
 
-                if metric_type == SupervisionMetricType.POPULATION.value:
-                    actual_combination_counts['population'] = \
-                        actual_combination_counts['population'] + 1
-                elif metric_type == SupervisionMetricType.REVOCATION.value:
-                    actual_combination_counts['revocation'] = \
-                        actual_combination_counts['revocation'] + 1
+                actual_combination_counts[metric_type.value] = actual_combination_counts[metric_type.value] + 1
 
             for key in expected_combination_counts:
                 if expected_combination_counts[key] != \

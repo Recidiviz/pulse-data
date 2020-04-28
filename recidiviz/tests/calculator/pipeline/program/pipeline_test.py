@@ -17,7 +17,6 @@
 # pylint: disable=wrong-import-order
 
 """Tests for program/pipeline.py"""
-import json
 import unittest
 from typing import Optional, Set
 
@@ -38,8 +37,7 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import \
@@ -763,11 +761,10 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, program_events)])
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
-                             -1, ALL_METRIC_INCLUSIONS_DICT).with_outputs('referrals', 'person_level_output')
+                             -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
-        assert_that(output.person_level_output, AssertMatchers.
-                    count_combinations(expected_combination_counts),
+        assert_that(output, AssertMatchers.count_combinations(expected_combination_counts),
                     'Assert number of metrics is expected value')
 
         test_pipeline.run()
@@ -814,16 +811,13 @@ class TestProduceProgramMetric(unittest.TestCase):
     """Tests the ProduceProgramMetric DoFn in the pipeline."""
 
     def testProduceProgramMetric(self):
-        metric_key_dict = {'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.PERSON,
-                           'year': 1999,
-                           'month': 3,
-                           'metric_type':
-                               ProgramMetricType.REFERRAL.value,
-                           'state_code': 'CA'}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
+        metric_key = {'gender': Gender.MALE,
+                      'methodology': MetricMethodologyType.PERSON,
+                      'year': 1999,
+                      'month': 3,
+                      'metric_type':
+                          ProgramMetricType.REFERRAL,
+                      'state_code': 'CA'}
 
         value = 10
 
@@ -848,10 +842,7 @@ class TestProduceProgramMetric(unittest.TestCase):
         test_pipeline.run()
 
     def testProduceProgramMetric_EmptyMetric(self):
-        metric_key_dict = {}
-
-        metric_key = json.dumps(json_serializable_metric_key(metric_key_dict),
-                                sort_keys=True)
+        metric_key = {}
 
         value = 102
 
@@ -905,18 +896,14 @@ class AssertMatchers:
             for result in output:
                 combination, _ = result
 
-                combination_dict = json.loads(combination)
-                metric_type = combination_dict.get('metric_type')
+                metric_type = combination.get('metric_type')
 
-                if metric_type == ProgramMetricType.REFERRAL.value:
-                    actual_combination_counts['referrals'] = \
-                        actual_combination_counts['referrals'] + 1
+                if metric_type == ProgramMetricType.REFERRAL:
+                    actual_combination_counts['referrals'] = actual_combination_counts['referrals'] + 1
 
             for key in expected_combination_counts:
-                if expected_combination_counts[key] != \
-                        actual_combination_counts[key]:
-                    raise BeamAssertException('Failed assert. Count does not'
-                                              'match expected value.')
+                if expected_combination_counts[key] != actual_combination_counts[key]:
+                    raise BeamAssertException('Failed assert. Count does not match expected value.')
 
         return _count_combinations
 
