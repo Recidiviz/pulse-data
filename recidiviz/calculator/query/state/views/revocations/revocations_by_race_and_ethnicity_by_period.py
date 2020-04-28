@@ -16,12 +16,11 @@
 # =============================================================================
 """Revocations by race and ethnicity by metric period months."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.calculator.query import export_config, bqview, bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
 REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
 
@@ -35,141 +34,52 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY = \
     """
     /*{description}*/
     SELECT
-      pop.state_code,
+      state_code,
       race_or_ethnicity,
-      IFNULL(rev.count, 0) AS revocation_count,
-      pop.count AS total_supervision_count,
+      IFNULL(revocation_count, 0) AS revocation_count,
+      total_supervision_count,
       supervision_type,
-      supervising_district_external_id AS district,
+      district,
       metric_period_months
     FROM (
       SELECT
-        state_code, year, month, count,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id,
+        state_code,
+        COUNT(DISTINCT person_id) AS total_supervision_count,
+        supervision_type,
+        district,
         metric_period_months,
-        race as race_or_ethnicity
-      FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race is NOT NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND most_severe_violation_type IS NULL
-        AND most_severe_violation_type_subtype IS NULL
-        AND response_count IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND supervision_level IS NULL
-        AND supervision_level_raw_text IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_POPULATION'
-
-      UNION ALL
-
-      SELECT
-        state_code, year, month, count,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id,
-        metric_period_months,
-        ethnicity as race_or_ethnicity
-      FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race is NULL
-        AND ethnicity IS NOT NULL
-        AND gender IS NULL
-        AND most_severe_violation_type IS NULL
-        AND most_severe_violation_type_subtype IS NULL
-        AND response_count IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND supervision_level IS NULL
-        AND supervision_level_raw_text IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_POPULATION'
+        race_or_ethnicity
+      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      {metric_period_dimension},
+      {race_ethnicity_dimension}
+      WHERE {metric_period_condition}
+      GROUP BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     ) pop
     LEFT JOIN (
       SELECT
-        state_code, year, month, count,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id,
+        state_code,
+        COUNT(DISTINCT person_id) AS revocation_count,
+        supervision_type,
+        district,
         metric_period_months,
-        race as race_or_ethnicity
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND revocation_type IS NULL
-        AND source_violation_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race is NOT NULL
-        AND ethnicity IS NULL
-        AND gender IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_REVOCATION'
-
-      UNION ALL
-
-      SELECT
-        state_code, year, month, count,
-        IFNULL(supervision_type, 'ALL') as supervision_type,
-        IFNULL(supervising_district_external_id, 'ALL') as supervising_district_external_id,
-        metric_period_months,
-        ethnicity as race_or_ethnicity
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
-      WHERE methodology = 'PERSON'
-        AND month IS NOT NULL
-        AND assessment_score_bucket IS NULL
-        AND assessment_type IS NULL
-        AND revocation_type IS NULL
-        AND source_violation_type IS NULL
-        AND supervising_officer_external_id IS NULL
-        AND age_bucket IS NULL
-        AND race is NULL
-        AND ethnicity IS NOT NULL
-        AND gender IS NULL
-        AND case_type IS NULL
-        AND person_id IS NULL
-        AND person_external_id IS NULL
-        AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_REVOCATION'
+        race_or_ethnicity
+      FROM `{project_id}.{reference_dataset}.event_based_revocations`,
+      {metric_period_dimension},
+      {race_ethnicity_dimension}
+      WHERE {metric_period_condition}
+      GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity
     ) rev
-    USING (state_code, year, month, supervision_type, supervising_district_external_id, metric_period_months, race_or_ethnicity)
+    USING (state_code, supervision_type, district, metric_period_months, race_or_ethnicity)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
+        AND race_or_ethnicity NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
     ORDER BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     """.format(
         description=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION,
         project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
         reference_dataset=REFERENCE_DATASET,
+        metric_period_dimension=bq_utils.unnest_metric_period_months(),
+        race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
+        metric_period_condition=bq_utils.metric_period_condition(),
     )
 
 REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW = bqview.BigQueryView(

@@ -75,7 +75,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY = \
     ) rev
     USING (state_code, violation_type, reported_violations, supervision_type, charge_category, district, 
       metric_period_months)
-    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
     ORDER BY state_code, district, supervision_type, metric_period_months, violation_type, reported_violations,
       charge_category
     """.format(

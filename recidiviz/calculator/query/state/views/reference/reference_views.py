@@ -27,6 +27,14 @@ from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association 
     SSVR_TO_AGENT_ASSOCIATION_VIEW
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW
+from recidiviz.calculator.query.state.views.reference.event_based_admissions import \
+    EVENT_BASED_ADMISSIONS_VIEW
+from recidiviz.calculator.query.state.views.reference.event_based_program_referrals import \
+    EVENT_BASED_PROGRAM_REFERRALS_VIEW
+from recidiviz.calculator.query.state.views.reference.event_based_revocations import \
+    EVENT_BASED_REVOCATIONS_VIEW
+from recidiviz.calculator.query.state.views.reference.event_based_supervision import \
+    EVENT_BASED_SUPERVISION_VIEW
 from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import \
     REVOCATIONS_MATRIX_BY_PERSON_VIEW
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import \
@@ -39,6 +47,10 @@ REF_VIEWS = [
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW,
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW,
+    EVENT_BASED_ADMISSIONS_VIEW,
+    EVENT_BASED_PROGRAM_REFERRALS_VIEW,
+    EVENT_BASED_REVOCATIONS_VIEW,
+    EVENT_BASED_SUPERVISION_VIEW,
     REVOCATIONS_MATRIX_BY_PERSON_VIEW,
     SUPERVISION_MATRIX_BY_PERSON_VIEW,
     US_MO_SENTENCE_STATUSES_VIEW,
