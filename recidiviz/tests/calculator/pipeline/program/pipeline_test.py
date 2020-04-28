@@ -56,11 +56,8 @@ from recidiviz.tests.calculator.calculator_test_utils import \
 from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
 from recidiviz.tests.persistence.database import database_test_utils
 
-ALL_INCLUSIONS_DICT = {
-    'age_bucket': True,
-    'gender': True,
-    'race': True,
-    'ethnicity': True
+ALL_METRIC_INCLUSIONS_DICT = {
+    ProgramMetricType.REFERRAL: True
 }
 
 
@@ -195,7 +192,8 @@ class TestProgramPipeline(unittest.TestCase):
     def run_test_pipeline(self,
                           dataset: str,
                           fake_supervision_period_id: int,
-                          unifying_id_field_filter_set: Optional[Set[int]] = None):
+                          unifying_id_field_filter_set: Optional[Set[int]] = None,
+                          metric_types_filter: Optional[Set[str]] = None):
         """Runs a test version of the program pipeline."""
         test_pipeline = TestPipeline()
 
@@ -289,12 +287,14 @@ class TestProgramPipeline(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
+        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
+
         # Get program metrics
         program_metrics = (person_program_events
                            | 'Get Program Metrics' >>  # type: ignore
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
-                               inclusions=ALL_INCLUSIONS_DICT,
+                               metric_types=metric_types,
                                calculation_month_limit=-1))
 
         assert_that(program_metrics,
@@ -754,7 +754,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         # Get the number of combinations of person-event characteristics.
         num_combinations = len(calculator.characteristic_combinations(
-            fake_person, program_events[0], ALL_INCLUSIONS_DICT))
+            fake_person, program_events[0], ProgramMetricType.REFERRAL))
         assert num_combinations > 0
 
         # Each characteristic combination will be tracked for each of the
@@ -771,7 +771,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, program_events)])
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
-                             -1, ALL_INCLUSIONS_DICT).with_outputs('referrals')
+                             -1, ALL_METRIC_INCLUSIONS_DICT).with_outputs('referrals')
                   )
 
         assert_that(output.referrals, AssertMatchers.
@@ -794,7 +794,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_INCLUSIONS_DICT)
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -810,7 +810,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_INCLUSIONS_DICT)
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
