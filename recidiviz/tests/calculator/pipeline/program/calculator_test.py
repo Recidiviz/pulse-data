@@ -23,6 +23,7 @@ from typing import List, Dict, Set, Tuple
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import calculator
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
 from recidiviz.calculator.pipeline.utils import calculator_utils
@@ -39,11 +40,8 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 from recidiviz.tests.calculator.calculator_test_utils import \
     demographic_metric_combos_count_for_person, combo_has_enum_value_for_key
 
-ALL_INCLUSIONS_DICT = {
-    'age_bucket': True,
-    'gender': True,
-    'race': True,
-    'ethnicity': True,
+ALL_METRICS_INCLUSIONS_DICT = {
+    ProgramMetricType.REFERRAL: True
 }
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
@@ -85,11 +83,10 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -125,11 +122,10 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -165,11 +161,10 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
-        expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT)
+        expected_combinations_count = expected_metric_combos_count(person, program_events)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -215,12 +210,11 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT,
-            duplicated_months_different_supervision_types=True)
+            person, program_events, duplicated_months_different_supervision_types=True)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -274,12 +268,11 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT,
-            len(calculator_utils.METRIC_PERIOD_MONTHS))
+            person, program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -325,12 +318,11 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT,
-            len(calculator_utils.METRIC_PERIOD_MONTHS))
+            person, program_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -376,14 +368,13 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
         )
 
         relevant_periods = [36, 12]
 
         expected_combinations_count = expected_metric_combos_count(
-            person, program_events, ALL_INCLUSIONS_DICT,
-            len(relevant_periods),
+            person, program_events, len(relevant_periods),
             duplicated_months_different_supervision_types=True)
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
@@ -438,11 +429,11 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [included_event, not_included_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=1
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            person, [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -479,11 +470,11 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [included_event, not_included_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=36
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [included_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            person, [included_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
@@ -520,14 +511,14 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [same_month_event, old_month_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_INCLUSIONS_DICT, calculation_month_limit=36
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=36
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [same_month_event], ALL_INCLUSIONS_DICT, len(calculator_utils.METRIC_PERIOD_MONTHS))
+            person, [same_month_event], len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         expected_combinations_count += expected_metric_combos_count(
-            person, [old_month_event], ALL_INCLUSIONS_DICT, 1)
+            person, [old_month_event], 1)
 
         # Subtract the duplicated count for the metric_period_months = 36 person-based dict
         expected_combinations_count -= 1
@@ -536,9 +527,16 @@ class TestMapProgramCombinations(unittest.TestCase):
         # events for the 4 relevant metric periods
         expected_combinations_count -= 8
 
+        # TODO(3058): Remove this once we're limiting the program metrics to only person-level output
+        inclusions = {
+            'age_bucket': True,
+            'gender': True,
+            'race': True,
+            'ethnicity': True
+        }
+
         # Remove the double counted person-based referral in the 36 metric period window
-        expected_combinations_count -= (demographic_metric_combos_count_for_person_program(person, ALL_INCLUSIONS_DICT)
-                                        * 2)
+        expected_combinations_count -= (demographic_metric_combos_count_for_person_program(person, inclusions) * 2)
         # Add them back
         expected_combinations_count += 8
 
@@ -572,7 +570,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, program_event, ALL_INCLUSIONS_DICT)
+            person, program_event, ProgramMetricType.REFERRAL)
 
         # 32 combinations of demographics  + 1 person-level metric
         assert len(combinations) == 33
@@ -600,11 +598,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         combinations = calculator.characteristic_combinations(
-            person, program_event, ALL_INCLUSIONS_DICT)
+            person, program_event, ProgramMetricType.REFERRAL)
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [program_event], ALL_INCLUSIONS_DICT,
-            with_methodologies=False)
+            person, [program_event], with_methodologies=False)
 
         # Subtract the event-based metric dict from the combo count
         expected_combinations_count -= 1
@@ -638,199 +635,15 @@ class TestCharacteristicCombinations(unittest.TestCase):
             supervising_district_external_id='DISTRICT'
         )
 
-        combinations = calculator.characteristic_combinations(
-            person, program_event, ALL_INCLUSIONS_DICT)
+        combinations = calculator.characteristic_combinations(person, program_event, ProgramMetricType.REFERRAL)
 
         expected_combinations_count = expected_metric_combos_count(
-            person, [program_event], ALL_INCLUSIONS_DICT,
-            with_methodologies=False)
+            person, [program_event], with_methodologies=False)
 
         # Subtract the event-based metric dict from the combo count
         expected_combinations_count -= 1
 
         self.assertEqual(expected_combinations_count, len(combinations))
-
-    def test_characteristic_combinations_exclude_age(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        inclusions = {
-            **ALL_INCLUSIONS_DICT,
-            'age_bucket': False,
-        }
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, inclusions)
-
-        # 16 combinations of demographics and supervision type  + 1 person-level metric
-        assert len(combinations) == 17
-
-        for combo in combinations:
-            assert combo.get('age_bucket') is None
-
-    def test_characteristic_combinations_exclude_gender(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        inclusions = {
-            **ALL_INCLUSIONS_DICT,
-            'gender': False,
-        }
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, inclusions)
-
-        # 16 combinations of demographics and supervision type + 1 person-level metric
-        assert len(combinations) == 17
-
-        for combo in combinations:
-            assert combo.get('gender') is None
-
-    def test_characteristic_combinations_exclude_race(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        inclusions = {
-            **ALL_INCLUSIONS_DICT,
-            'race': False,
-        }
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, inclusions)
-
-        # 16 combinations of demographics and supervision type + 1 person-level metric
-        assert len(combinations) == 17
-
-        for combo in combinations:
-            assert combo.get('race') is None
-
-    def test_characteristic_combinations_exclude_ethnicity(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        inclusions = {
-            **ALL_INCLUSIONS_DICT,
-            'ethnicity': False,
-        }
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, inclusions)
-
-        # 16 combinations of demographics and supervision type + 1 person-level metric
-        assert len(combinations) == 17
-
-        for combo in combinations:
-            assert combo.get('ethnicity') is None
-
-    def test_characteristic_combinations_exclude_multiple(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        inclusions = {
-            **ALL_INCLUSIONS_DICT,
-            'age_bucket': False,
-            'ethnicity': False,
-        }
-
-        combinations = calculator.characteristic_combinations(
-            person, program_event, inclusions)
-
-        # 8 combinations of demographics and supervision type + 1 person-level metric
-        assert len(combinations) == 9
-
-        for combo in combinations:
-            assert combo.get('age_bucket') is None
-            assert combo.get('ethnicity') is None
 
 
 class TestIncludeReferralInCount(unittest.TestCase):
@@ -1003,7 +816,7 @@ def demographic_metric_combos_count_for_person_program(
         person: StatePerson,
         inclusions: Dict[str, bool]) -> int:
     """Returns the number of possible demographic metric combinations for a
-    given person, given the metric inclusions list."""
+    given person, given the metric metric_inclusions list."""
 
     total_metric_combos = demographic_metric_combos_count_for_person(
         person, inclusions
@@ -1015,13 +828,20 @@ def demographic_metric_combos_count_for_person_program(
 def expected_metric_combos_count(
         person: StatePerson,
         program_events: List[ProgramEvent],
-        inclusions: Dict[str, bool],
         num_relevant_periods: int = 0,
         with_methodologies: bool = True,
         duplicated_months_different_supervision_types: bool = False) -> int:
     """Calculates the expected number of characteristic combinations given
     the person, the program events, and the dimensions that should
     be included in the explosion of feature combinations."""
+
+    # TODO(3058): Remove this once we're limiting the program metrics to only person-level output
+    inclusions = {
+        'age_bucket': True,
+        'gender': True,
+        'race': True,
+        'ethnicity': True
+    }
 
     demographic_metric_combos = \
         demographic_metric_combos_count_for_person_program(
@@ -1105,3 +925,13 @@ def expected_metric_combos_count(
             num_relevant_periods + 1))
 
     return program_referral_combos
+
+
+class TestIncludeDimensionsFunctions(unittest.TestCase):
+    """Tests the various functions that determine which dimensions should be included for the given metric."""
+
+    # pylint: disable=protected-access
+    def test_include_demographic_dimensions_for_metric(self):
+        for metric in ProgramMetricType:
+            # Assert this does not fail for all possible metric types
+            _ = calculator._include_demographic_dimensions_for_metric(metric)
