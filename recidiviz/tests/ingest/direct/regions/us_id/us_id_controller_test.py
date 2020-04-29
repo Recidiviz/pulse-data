@@ -1968,7 +1968,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         self._run_ingest_job_for_filename('ofndr_tst_tst_qstn_rspns_violation_reports.csv')
 
         # Assert
-        self.assert_expected_db_people(expected_people, debug=True)
+        self.assert_expected_db_people(expected_people)
 
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports_old

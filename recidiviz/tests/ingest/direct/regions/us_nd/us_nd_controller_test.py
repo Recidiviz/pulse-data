@@ -575,12 +575,12 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
     def test_populate_data_elite_externalmovements(self):
         incarceration_periods_113377 = [
             StateIncarcerationPeriod(state_incarceration_period_id='113377-2',
-                                     status='OUT',
+                                     status='OUT-Y',
                                      release_date='7/26/18  12:00:00 AM',
                                      facility='NDSP',
                                      release_reason='RPAR'),
             StateIncarcerationPeriod(state_incarceration_period_id='113377-1',
-                                     status='IN',
+                                     status='IN-N',
                                      admission_date='2/28/18  12:00:00 AM',
                                      facility='NDSP',
                                      admission_reason='ADMN')
@@ -589,31 +589,31 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_periods_105640 = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-1',
-                status='IN',
+                status='IN-N',
                 facility='NDSP',
                 admission_date='1/1/19  12:00:00 AM',
                 admission_reason='ADMN'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-3',
-                status='IN',
+                status='IN-N',
                 facility='JRCC',
                 admission_date='2/1/19  12:00:00 AM',
                 admission_reason='INT'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-5',
-                status='IN',
+                status='IN-Y',
                 facility='JRCC',
                 admission_date='4/1/19  12:00:00 AM',
                 admission_reason='HOSPS'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-2',
-                status='OUT',
+                status='OUT-N',
                 facility='NDSP',
                 release_date='2/1/19  12:00:00 AM',
                 release_reason='INT'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='105640-4',
-                status='OUT',
+                status='OUT-N',
                 facility='JRCC',
                 release_date='3/1/19  12:00:00 AM',
                 release_reason='HOSPS')
@@ -622,13 +622,13 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_periods_114909 = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='114909-2',
-                status='OUT',
+                status='OUT-Y',
                 release_date='1/8/19  12:00:00 AM',
                 facility='NDSP',
                 release_reason='RPRB'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='114909-1',
-                status='IN',
+                status='IN-N',
                 admission_date='11/9/18  12:00:00 AM',
                 facility='NDSP',
                 admission_reason='PV')
@@ -637,35 +637,35 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_periods_555555 = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='555555-1',
-                status='IN',
+                status='IN-N',
                 incarceration_type='EXTERNAL_UNKNOWN',
                 admission_date='2/28/18  12:00:00 AM',
                 facility='NTAD',
                 admission_reason='PV'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='555555-2',
-                status='OUT',
+                status='OUT-N',
                 incarceration_type='EXTERNAL_UNKNOWN',
                 release_date='3/1/18  12:00:00 AM',
                 facility='NTAD',
                 release_reason='INT'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='555555-3',
-                status='IN',
+                status='IN-N',
                 incarceration_type='COUNTY_JAIL',
                 admission_date='3/1/18  12:00:00 AM',
                 facility='CJ',
                 admission_reason='PV'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='555555-4',
-                status='OUT',
+                status='OUT-N',
                 incarceration_type='COUNTY_JAIL',
                 release_date='3/8/18  12:00:00 AM',
                 facility='CJ',
                 release_reason='INT'),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='555555-5',
-                status='IN',
+                status='IN-N',
                 admission_date='3/8/18  12:00:00 AM',
                 facility='NDSP',
                 admission_reason='INT'),
@@ -2029,7 +2029,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_113377_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='113377-1|113377-2',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-Y',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='NDSP',
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2051,7 +2051,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_105640_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='105640-1|105640-2',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-N',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='NDSP',
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2065,7 +2065,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_105640_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='105640-3|105640-4',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-N',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='JRCC',
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -2079,7 +2079,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_105640_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='105640-5',
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            status_raw_text='IN',
+            status_raw_text='IN-Y',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='JRCC',
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -2098,7 +2098,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_114909_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='114909-1|114909-2',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-Y',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='NDSP',
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -2129,7 +2129,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_555555_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='555555-1|555555-2',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-N',
             incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
             incarceration_type_raw_text='EXTERNAL_UNKNOWN',
             facility='NTAD',
@@ -2145,7 +2145,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incarceration_period_555555_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='555555-3|555555-4',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text='OUT',
+            status_raw_text='OUT-N',
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             incarceration_type_raw_text='COUNTY_JAIL',
             facility='CJ',
@@ -2160,8 +2160,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             person=incarceration_sentence_555555_ips.person)
         incarceration_period_555555_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='555555-5',
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            status_raw_text='IN',
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            status_raw_text='IN-N',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='NDSP',
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
