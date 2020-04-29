@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for utils/regions.py."""
+from typing import Optional
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -24,6 +25,7 @@ import pytz
 from mock import Mock, PropertyMock, mock_open
 
 from recidiviz.utils import regions
+from recidiviz.utils.regions import Region, get_region_manifest
 
 US_NY_MANIFEST_CONTENTS = """
     agency_name: Department of Corrections and Community Supervision
@@ -228,6 +230,139 @@ class TestRegions(TestCase):
         with pytest.raises(ValueError) as e:
             with_manifest(regions.get_region, 'bad_env_str')
             assert 'environment' in e.message
+
+    @staticmethod
+    def make_sql_preprocessing_flag_region(
+            raw_vs_ingest_file_name_differentiation_enabled_env: Optional[str] = None,
+            raw_data_bq_imports_enabled_env: Optional[str] = None,
+            ingest_view_exports_enabled_env: Optional[str] = None
+    ):
+        region_code = 'us_mo'
+
+        flag_overrides = {
+            'raw_vs_ingest_file_name_differentiation_enabled_env': raw_vs_ingest_file_name_differentiation_enabled_env,
+            'raw_data_bq_imports_enabled_env': raw_data_bq_imports_enabled_env,
+            'ingest_view_exports_enabled_env': ingest_view_exports_enabled_env,
+        }
+
+        kwargs = {
+            **get_region_manifest(region_code, True),
+            **flag_overrides
+        }
+
+        return Region(region_code=region_code, is_direct_ingest=True, **kwargs)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_is_raw_vs_ingest_file_name_detection_enabled_production(self, mock_environment):
+        mock_environment.return_value = 'production'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='staging')
+        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production')
+        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_is_raw_vs_ingest_file_name_detection_enabled_staging(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='staging')
+        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production')
+        self.assertTrue(region.is_raw_vs_ingest_file_name_detection_enabled())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_are_raw_data_bq_imports_enabled_in_env_production(self, mock_environment):
+        mock_environment.return_value = 'production'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='staging',
+                               raw_data_bq_imports_enabled_env='staging')
+        self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_data_bq_imports_enabled_env='production')
+        self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='production')
+        self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_are_raw_data_bq_imports_enabled_in_env_staging(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.are_raw_data_bq_imports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='staging',
+                               raw_data_bq_imports_enabled_env='staging')
+        self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='production')
+        self.assertTrue(region.are_raw_data_bq_imports_enabled_in_env())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_are_ingest_view_exports_enabled_in_env_production(self, mock_environment):
+        mock_environment.return_value = 'production'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.are_ingest_view_exports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='production',
+                               ingest_view_exports_enabled_env='staging')
+        self.assertFalse(region.are_ingest_view_exports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='staging',
+                               raw_data_bq_imports_enabled_env='staging',
+                               ingest_view_exports_enabled_env='production')
+        self.assertFalse(region.are_ingest_view_exports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='production',
+                               ingest_view_exports_enabled_env='production')
+        self.assertTrue(region.are_ingest_view_exports_enabled_in_env())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_are_ingest_view_exports_enabled_in_env_staging(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region)
+        self.assertFalse(region.are_ingest_view_exports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='staging',
+                               ingest_view_exports_enabled_env='staging')
+        self.assertTrue(region.are_ingest_view_exports_enabled_in_env())
+
+        region = with_manifest(self.make_sql_preprocessing_flag_region,
+                               raw_vs_ingest_file_name_differentiation_enabled_env='production',
+                               raw_data_bq_imports_enabled_env='production',
+                               ingest_view_exports_enabled_env='production')
+        self.assertTrue(region.are_ingest_view_exports_enabled_in_env())
 
 
 def mock_manifest_open(filename, *args):
