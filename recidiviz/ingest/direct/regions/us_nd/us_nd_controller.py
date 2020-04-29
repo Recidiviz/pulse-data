@@ -24,7 +24,7 @@ from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -36,7 +36,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentOutcomeType, \
     StateIncarcerationIncidentType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -51,6 +51,7 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists, update_overrides_from_maps
+from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import incarceration_period_status_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, gen_set_is_life_sentence_hook, gen_convert_person_ids_to_external_id_objects, \
     get_normalized_ymd_str
@@ -82,6 +83,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             ingest_directory_path,
             storage_directory_path,
             max_delay_sec_between_files=max_delay_sec_between_files)
+
+        self.enum_overrides = self.generate_enum_overrides()
 
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
             'elite_offenderidentifier': [self._normalize_id_fields],
@@ -342,16 +345,19 @@ class UsNdController(CsvGcsfsDirectIngestController):
                                    _cache: IngestObjectCache):
         """Sets admission- or release-specific fields based on whether this movement represents an admission into or a
         release from a particular facility."""
-        is_admission = row['DIRECTION_CODE'] == 'IN'
+        direction_code = row['DIRECTION_CODE']
+        is_admission = direction_code == 'IN'
         movement_date = row['MOVEMENT_DATE']
         movement_reason = row['MOVEMENT_REASON_CODE']
         to_facility = row['TO_AGY_LOC_ID']
         from_facility = row['FROM_AGY_LOC_ID']
+        active_flag = row['ACTIVE_FLAG']
 
         # TODO(2002): If this edge is a transfer in or out of a hospital or other non-prison facility, create extra
         #  proper edges in and out of those facilities.
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateIncarcerationPeriod):
+                extracted_object.status = f'{direction_code}-{active_flag}'
                 if is_admission:
                     extracted_object.admission_date = movement_date
                     extracted_object.admission_reason = movement_reason
@@ -711,7 +717,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 normalized_code = normalized_judicial_district_code(extracted_object.judicial_district_code)
                 extracted_object.__setattr__('judicial_district_code', normalized_code)
 
-    def get_enum_overrides(self) -> EnumOverrides:
+    def generate_enum_overrides(self) -> EnumOverrides:
         """Provides North Dakota-specific overrides for enum mappings.
 
         The keys herein are raw strings directly from the source data, and the values are the enums that they are
@@ -824,9 +830,18 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateIncarcerationPeriodAdmissionReason: ['COM', 'CONT', 'CONV', 'NTAD'],
             StateIncarcerationPeriodReleaseReason: ['ADMN', 'CONT', 'CONV', 'REC', '4139'],
         }
-        base_overrides = super(UsNdController, self).get_enum_overrides()
-        return update_overrides_from_maps(base_overrides, overrides, ignores, {}, {})
 
+        override_mappers: Dict[EntityEnumMeta, EnumMapper] = {
+            StateIncarcerationPeriodStatus: incarceration_period_status_mapper,
+        }
+
+        ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+
+        base_overrides = super(UsNdController, self).get_enum_overrides()
+        return update_overrides_from_maps(base_overrides, overrides, ignores, override_mappers, ignore_predicates)
+
+    def get_enum_overrides(self) -> EnumOverrides:
+        return self.enum_overrides
 
 def _yaml_filepath(filename):
     return os.path.join(os.path.dirname(__file__), filename)

@@ -1,4 +1,5 @@
 key_mappings:
+  # This is kept here to keep the key mappings from being empty, but gets overwritten in the controller
   DIRECTION_CODE: state_incarceration_period.status
 
 ancestor_keys:

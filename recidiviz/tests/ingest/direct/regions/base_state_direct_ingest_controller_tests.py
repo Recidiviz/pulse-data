@@ -32,7 +32,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import person_has_id, \
-    print_entity_trees, prune_dangling_placeholders_from_tree, print_entity_tree
+    print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     FakeDirectIngestGCSFileSystem, run_task_queues_to_empty, \
@@ -159,16 +159,6 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
 
             print_visible_header_label('EXPECTED')
             print_entity_trees(expected_db_people, print_tree_structure_only=print_tree_structure_only)
-
-            print_visible_header_label('SENTENCE GROUPS')
-            for i, sg in enumerate(found_people[0].sentence_groups):
-                print(sg.external_id)
-                print_visible_header_label('EXPECTED')
-                expected_sg = expected_db_people[0].sentence_groups[i]
-                print_entity_tree(expected_sg, print_tree_structure_only=False)
-                print_visible_header_label('FINAL')
-                print_entity_tree(sg, print_tree_structure_only=False)
-                self.assertCountEqual([sg], [expected_sg])
 
         self.assertCountEqual(found_people, expected_db_people)
 
