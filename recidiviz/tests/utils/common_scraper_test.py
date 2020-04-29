@@ -162,7 +162,11 @@ class CommonScraperTest(IndividualIngestTest):
         print('EXPECTED')
         print(expected_ingest_info)
 
-        assert scrape_data.ingest_info == expected_ingest_info
+        if expected_ingest_info is None and expected_single_counts is None:
+            if scrape_data:
+                self.assertFalse(scrape_data.persist)
+            else:
+                self.assertIsNone(scrape_data)
 
         self.assertCountEqual(scrape_data.single_counts, expected_single_counts or [])
 
