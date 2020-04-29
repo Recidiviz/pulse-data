@@ -41,6 +41,11 @@ def fake_region(*,
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
     region.is_ingest_launched_in_env.return_value = \
         Region.is_ingest_launched_in_env(region)
+    # TODO(3020): Write gcsfs_direct_ingest_controller tests with this enabled to True with a raw files yaml (to come)
+    #   properly populated for this region.
+    region.is_raw_vs_ingest_file_name_detection_enabled.return_value = False
+    region.are_raw_data_bq_imports_enabled_in_env.return_value = False
+    region.are_ingest_view_exports_enabled_in_env.return_value = False
     return region
 
 

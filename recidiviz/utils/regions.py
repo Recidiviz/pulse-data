@@ -93,6 +93,11 @@ class Region:
     is_stoppable: Optional[bool] = attr.ib(default=False)
     is_direct_ingest: Optional[bool] = attr.ib(default=False)
 
+    # TODO(3020): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
+    raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
+    raw_data_bq_imports_enabled_env = attr.ib(default=None)
+    ingest_view_exports_enabled_env = attr.ib(default=None)
+
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:
             raise ValueError(
@@ -140,6 +145,95 @@ class Region:
         """
         return not environment.in_gae_production() \
             or self.environment == environment.get_gae_environment()
+
+    def is_raw_vs_ingest_file_name_detection_enabled(self):
+        """Returns True if this is ready for ingest to differentiate between files with the 'raw' and 'ingest_view'
+        file types in the file name.
+
+        Side effects when enabled:
+        - When new, un-normalized files are dropped in the region's ingest bucket, the file name will be normalized, now
+            with the file type 'raw' added to the name.
+        - Split files will always get created with normalized names with type 'ingest_view'
+        - Ingest file prioritizer will only look at 'ingest_view' type files. We will not move a file with 'raw' in
+            the name through the pre-existing ingest flow.
+        - Files with 'ingest_view' type that have been ingested to Postgres will be moved to
+            <storage-bucket>/<region-code>/ingest_view/<year>/<month>/<day>/ subdirectory
+        - If a 'raw' file is not in the raw data yaml for this region, we will ignore it after normalizing. Otherwise:
+        - If are_raw_data_bq_imports_enabled_in_env() is not True, we will leave this file as 'unprocessed' in the
+            region ingest bucket. If it is False, we will upload the raw file to BQ raw tables.
+
+        Conditions to enable for region:
+        - Existing normalized files in storage or ingest buckets must be moved to include either 'raw' or 'ingest_view'
+            file type in the names.
+        - Any "derived", ingest-ready files (i.e. based on a SQL query on several tables) that get manually uploaded to
+            the bucket after this is enabled must have a pre-normalized name with 'ingest_view' file type.
+        - We are prepared to manually upload ingest-ready files (MO, ID, PA, any other new states) or we are ready to
+            fully enable raw data imports (ND, other launched direct ingest counties).
+
+        If the |raw_vs_ingest_file_name_differentiation_enabled_env| config is unset, returns False. If it is set to
+        'prod', this will also be enabled in staging.
+        """
+        return self.raw_vs_ingest_file_name_differentiation_enabled_env is not None and \
+            (not environment.in_gae_production() or
+             self.raw_vs_ingest_file_name_differentiation_enabled_env == environment.get_gae_environment())
+
+    def are_raw_data_bq_imports_enabled_in_env(self):
+        """Returns true if this regions supports raw data import to BQ.
+
+        Side effects when enabled:
+        - For this region, we will create a us_xx_raw_data BQ dataset on launch to store raw data tables for that region
+            (if it does not already exist).
+        - For this region, we will create a us_xx_raw_data_up_to_date_views BQ dataset on launch to store raw data
+            tables for that region (if it does not already exist).
+        - For every file tag in the region raw data config, auto generate <raw_data_table_name>_by_update_date and
+            <raw_data_table_name>_latest on launch.
+        - Every 'raw' file we encounter that also matches a tag in the raw data yaml config for this region will get
+            uploaded to a BQ raw data table (table will be auto-created if it does not exist)
+        - When a raw file is uploaded to BQ, we will update the raw_file_metadata table with information about this
+            file.
+        - Raw files that have been uploaded to BQ are moved to <storage-bucket>/<region-code>/raw/<year>/<month>/<day>/
+            subdirectory
+        - If are_ingest_view_exports_enabled_in_env() is not True, we will create a copy of the 'raw' file with the
+            'ingest_view' type in the name and save it to the ingest bucket once we're done processing the raw file (if
+            the tag exists in the region's controller ingest tags).
+
+        Conditions to enable for region:
+        - is_raw_vs_ingest_file_name_detection_enabled() is already True for this environment w/ all preconditions met
+        - Region has raw file yaml config with all expected raw files listed and all primary key / expected column
+            configs completed
+
+        If the |raw_data_bq_imports_enabled_env| config is unset, returns False. If it is set to 'prod',
+        BQ import will also be enabled in staging.
+        """
+        return self.is_raw_vs_ingest_file_name_detection_enabled() and \
+            self.raw_data_bq_imports_enabled_env is not None and \
+            (not environment.in_gae_production() or
+             self.raw_data_bq_imports_enabled_env == environment.get_gae_environment())
+
+    def are_ingest_view_exports_enabled_in_env(self):
+        """Returns true if this regions supports export of ingest views to the ingest bucket.
+
+        Side effects when enabled:
+        - For this region, we will create a us_xx_ingest_views BQ dataset on launch to store raw data tables for that
+            region (if it does not already exist).
+        - Once all raw BQ pre-processing complete, we will export a diff of all updated ingest views based on
+            information in the latest_valid_ingest_file_by_view table in BQ
+        - When a view diff is exported, we will update the ingest_file_metadata table in BQ with information about the
+            exported file.
+
+        Conditions to enable for region:
+        - are_raw_data_bq_imports_enabled_in_env() is already True for this environment w/ all preconditions met
+        - Ingest views implemented in an ingest_views/ directory for all ingest file tags the controller expects to see
+
+        If the |ingest_view_exports_enabled_env| config is unset, returns False. If it is set to 'prod',
+        ingest view export will also be enabled in staging.
+        """
+        return self.is_raw_vs_ingest_file_name_detection_enabled() and \
+            self.are_raw_data_bq_imports_enabled_in_env() and \
+            self.ingest_view_exports_enabled_env is not None and \
+            (not environment.in_gae_production() or
+             self.ingest_view_exports_enabled_env == environment.get_gae_environment())
+
 
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS
