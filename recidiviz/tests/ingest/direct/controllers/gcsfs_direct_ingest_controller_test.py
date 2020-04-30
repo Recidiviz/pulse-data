@@ -393,6 +393,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller,
             f'tagC.csv',
             should_normalize=True,
+            # TODO(3020): Write a test where file type differentiation is turned on where we do NOT split a raw file
+            #   that also matches an ingest view file tag
+            # TODO(3020): Write a test where file type differentiation is turned on and we properly split an
+            #  INGEST_VIEW file.
             dt=datetime.datetime.fromisoformat('2019-09-19'))
         controller.fs.test_add_path(file_path, fail_handle_file_call=True)
 
@@ -415,6 +419,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             task_manager.get_process_job_queue_info(controller.region).size())
 
     def test_move_files_from_previous_days_to_storage(self):
+        # TODO(3020): Write version of this with file differentiation enabled
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
@@ -460,6 +465,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue(len(paths_from_prev_date), 1)
         self.assertTrue('tagB' in paths_from_prev_date[0].abs_path())
 
+    # TODO(3020): Write version of this with file differentiation enabled
     def test_move_files_from_previous_days_to_storage_incomplete_current_day(
             self):
         controller = build_gcsfs_controller_for_tests(
@@ -471,14 +477,14 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"FakeDirectIngestGCSFileSystem. Found instead "
                              f"type [{type(controller.fs)}]")
 
-        previous_date = '2019-09-15'
-        current_date = '2019-09-16'
+        prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
+        current_date_datetime = datetime.datetime.fromisoformat('2019-09-16')
 
         file_path_from_prev_day = path_for_fixture_file(
             controller,
             f'tagB.csv',
             should_normalize=True,
-            dt=datetime.datetime.fromisoformat(previous_date))
+            dt=prev_date_datetime)
 
         # pylint:disable=protected-access
         processed_file_from_prev_day = \
@@ -488,13 +494,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller,
             f'Unexpected_Tag.csv',
             should_normalize=True,
-            dt=datetime.datetime.fromisoformat(previous_date))
+            dt=prev_date_datetime)
 
         file_path_from_current_day = path_for_fixture_file(
             controller,
             f'tagA.csv',
             should_normalize=True,
-            dt=datetime.datetime.fromisoformat(current_date))
+            dt=current_date_datetime)
 
         controller.fs.test_add_path(processed_file_from_prev_day)
         controller.fs.test_add_path(unexpected_file_path_from_prev_day)
@@ -517,9 +523,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(len(storage_paths), 1)
 
         expected_storage_dir_str = os.path.join(
-            controller.storage_directory_path.abs_path(), previous_date)
+            controller.storage_directory_path.abs_path(), prev_date_datetime.date().isoformat())
         self.assertTrue(
-            storage_paths[0].abs_path().startswith(expected_storage_dir_str))
+            storage_paths[0].abs_path().startswith(expected_storage_dir_str),
+            f'Path {storage_paths[0].abs_path()} should start with {expected_storage_dir_str}.')
 
         # Path that is moved retains its 'processed_' prefix.
         self.assertEqual(len(processed_paths), 2)

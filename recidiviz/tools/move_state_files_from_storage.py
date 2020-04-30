@@ -19,9 +19,10 @@ Script for moving files from storage back into an ingest bucket to be re-ingeste
 
 Steps:
 1. Pauses ingest queues so we don't ingest partially split files.
-2. Finds all subfolders in storage for dates we want to re-ingest, based on start-date-bound and end-date-bound.
+2. Finds all subfolders in storage for dates we want to re-ingest, based on start-date-bound, end-date-bound, and
+    file-type-to-move.
 3. Finds all files in those subfolders.
-4. Moves all found files to the ingest bucket.
+4. Moves all found files to the ingest bucket, updating the file type to destination-file-type.
 5. Writes moves to a logfile.
 6. Prints instructions for next steps, including how to unpause queues, if necessary.
 
@@ -29,6 +30,7 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.move_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
+    --file-type-to-move unspecified --destination-file-type raw
     --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
     [--file_filter "docstars_offendercases|elite_offender"]
 """
@@ -47,13 +49,15 @@ from typing import Optional, List, Tuple
 from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
+    to_normalized_unprocessed_file_path_from_normalized_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region
+    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
-from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv
-from recidiviz.tools.utils import is_between_date_strs_inclusive, is_date_str
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
 
 
@@ -63,7 +67,7 @@ class MoveFilesFromStorageController:
     """
 
     FILE_TO_MOVE_RE = \
-        re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T.*)')
+        re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)')
 
     QUEUES_TO_PAUSE = {DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2}
 
@@ -76,6 +80,8 @@ class MoveFilesFromStorageController:
     def __init__(self,
                  project_id: str,
                  region: str,
+                 file_type_to_move: GcsfsDirectIngestFileType,
+                 destination_file_type: GcsfsDirectIngestFileType,
                  start_date_bound: Optional[str],
                  end_date_bound: Optional[str],
                  dry_run: bool,
@@ -83,15 +89,25 @@ class MoveFilesFromStorageController:
 
         self.project_id = project_id
         self.region = region
+        self.file_type_to_move = file_type_to_move
+        self.destination_file_type = destination_file_type
+
+        if self.file_type_to_move != self.destination_file_type and \
+                self.file_type_to_move != GcsfsDirectIngestFileType.UNSPECIFIED:
+            raise ValueError(
+                'Args file_type_to_move and destination_file_type must match if type to move is UNSPECIFIED')
+
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
         self.file_filter = file_filter
 
-        self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
-            region, SystemLevel.STATE, project_id=self.project_id)
-        self.ingest_bucket = gcsfs_direct_ingest_directory_path_for_region(
-            region, SystemLevel.STATE, project_id=self.project_id)
+        self.storage_bucket = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_storage_directory_path_for_region(region,
+                                                                  SystemLevel.STATE,
+                                                                  project_id=self.project_id))
+        self.ingest_bucket = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_directory_path_for_region(region, SystemLevel.STATE, project_id=self.project_id))
 
         self.mutex = threading.Lock()
         self.collect_progress: Optional[Bar] = None
@@ -160,22 +176,12 @@ class MoveFilesFromStorageController:
                 logging.info("\t%s", self.queue_console_url(queue_name))
 
     def get_date_subdir_paths(self) -> List[str]:
-        possible_paths = gsutil_ls(f'gs://{self.storage_bucket}')
-
-        result = []
-        for path in possible_paths:
-            last_part = os.path.basename(os.path.normpath(path))
-
-            if not is_date_str(last_part):
-                continue
-
-            if is_between_date_strs_inclusive(
-                    upper_bound_date=self.end_date_bound,
-                    lower_bound_date=self.start_date_bound,
-                    date_of_interest=last_part):
-                result.append(path)
-
-        return result
+        return gsutil_get_storage_subdirs_containing_file_types(
+            storage_bucket_path=self.storage_bucket.abs_path(),
+            file_type=self.file_type_to_move,
+            upper_bound_date=self.end_date_bound,
+            lower_bound_date=self.start_date_bound
+        )
 
     def collect_files_to_move(self, date_subdir_paths: List[str], thread_pool: ThreadPool) -> List[str]:
         """Searches the given list of directory paths for files directly in those directories that should be moved to
@@ -280,13 +286,17 @@ class MoveFilesFromStorageController:
         """Builds the desired path for the given file in the ingest bucket, changing the prefix to 'unprocessed' as is
         necessary.
         """
-        _, file_name = os.path.split(original_file_path)
-        match_result = re.match(self.FILE_TO_MOVE_RE, file_name)
 
-        if not match_result:
+        path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
+            original_file_path,
+            file_type_override=self.destination_file_type)
+
+        _, file_name = os.path.split(path_as_unprocessed)
+
+        if not re.match(self.FILE_TO_MOVE_RE, file_name):
             raise ValueError(f"Invalid file name {file_name}")
 
-        return os.path.join('gs://', self.ingest_bucket, f'unprocessed_{match_result.group(2)}')
+        return os.path.join('gs://', self.ingest_bucket.abs_path(), file_name)
 
     def write_moves_to_log_file(self):
         self.moves_list.sort()
@@ -300,12 +310,24 @@ class MoveFilesFromStorageController:
 
 
 def main():
+    """Runs the move_state_files_to_storage script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--project-id', required=True,
                         help='Which project\'s files should be moved (e.g. recidiviz-123).')
 
     parser.add_argument('--region', required=True, help='E.g. \'us_nd\'')
+
+    parser.add_argument('--file-type-to-move', required=True,
+                        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
+                        help='Defines what type of files to move out of storage.')
+
+    parser.add_argument('--destination-file-type', required=True,
+                        choices=[file_type.value for file_type in {GcsfsDirectIngestFileType.RAW_DATA,
+                                                                   GcsfsDirectIngestFileType.INGEST_VIEW}],
+                        help='Defines what type the files should be after they have been moved. Must match '
+                             'file-type-to-move unless file-type-to-move is \'unspecified\'.'
+                        )
 
     parser.add_argument('--start-date-bound',
                         help='The lower bound date to start from, inclusive. For partial replays of ingested files. '
@@ -327,6 +349,8 @@ def main():
     MoveFilesFromStorageController(
         project_id=args.project_id,
         region=args.region,
+        file_type_to_move=GcsfsDirectIngestFileType(args.file_type_to_move),
+        destination_file_type=GcsfsDirectIngestFileType(args.destination_file_type),
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,
