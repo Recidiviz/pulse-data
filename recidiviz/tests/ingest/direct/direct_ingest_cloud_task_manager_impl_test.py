@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl, CloudTaskQueueInfo, _build_task_id
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
+    GcsfsIngestArgs, GcsfsDirectIngestFileType
 from recidiviz.utils import regions
 
 _REGION = regions.Region(
@@ -56,7 +56,7 @@ class TestCloudTaskQueueInfo(TestCase):
         # Arrange
         info = CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
 
-        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv')
+        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         args = IngestArgs(ingest_time=datetime.datetime.now())
         gcsfs_args = \
             GcsfsIngestArgs(
@@ -75,7 +75,7 @@ class TestCloudTaskQueueInfo(TestCase):
 
     def test_is_task_queued_has_tasks(self):
         # Arrange
-        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv')
+        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         gcsfs_args = \
             GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
@@ -87,7 +87,7 @@ class TestCloudTaskQueueInfo(TestCase):
             queue_name='queue_name',
             task_names=[f'projects/path/to/random_task',
                         f'projects/path/to/{full_task_name}'])
-        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv')
+        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         gcsfs_args = \
             GcsfsIngestArgs(
                 ingest_time=datetime.datetime.now(),
@@ -199,7 +199,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             self, mock_client, mock_uuid, mock_datetime):
         # Arrange
         project_id = 'recidiviz-456'
-        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv')
+        file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         ingest_args = \
             GcsfsIngestArgs(
                 ingest_time=datetime.datetime(year=2019, month=7, day=20),

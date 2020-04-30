@@ -29,7 +29,7 @@ from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    filename_parts_from_path
+    filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsPath, \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
@@ -42,13 +42,20 @@ SPLIT_FILE_STORAGE_SUBDIR = 'split_files'
 def _build_unprocessed_file_name(
         *,
         utc_iso_timestamp_str: str,
-        file_tag: str,
+        file_type: GcsfsDirectIngestFileType,
+        base_file_name: str,
         extension: str) -> str:
 
     file_name_parts = [
         DIRECT_INGEST_UNPROCESSED_PREFIX,
         utc_iso_timestamp_str,
-        file_tag
+    ]
+
+    if file_type != GcsfsDirectIngestFileType.UNSPECIFIED:
+        file_name_parts += [file_type.value]
+
+    file_name_parts += [
+        base_file_name
     ]
 
     return "_".join(file_name_parts) + f".{extension}"
@@ -56,20 +63,49 @@ def _build_unprocessed_file_name(
 
 def to_normalized_unprocessed_file_path(
         original_file_path: str,
+        file_type: GcsfsDirectIngestFileType,
         dt: Optional[datetime.datetime] = None) -> str:
     if not dt:
         dt = datetime.datetime.utcnow()
 
     directory, file_name = os.path.split(original_file_path)
     utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
-    file_tag, extension = file_name.split('.')
+    file_name, extension = file_name.split('.')
 
     updated_relative_path = _build_unprocessed_file_name(
         utc_iso_timestamp_str=utc_iso_timestamp_str,
-        file_tag=file_tag,
+        file_type=file_type,
+        base_file_name=file_name,
         extension=extension)
 
     return os.path.join(directory, updated_relative_path)
+
+
+def to_normalized_unprocessed_file_path_from_normalized_path(
+        original_normalized_file_path: str,
+        file_type_override: Optional[GcsfsDirectIngestFileType] = None
+) -> str:
+    """Moves any normalized path back to an unprocessed path with the same information embedded in the file name. If
+    |file_type_override| is provided, we will always overwrite the original path file type with the override file type.
+    """
+    directory, _ = os.path.split(original_normalized_file_path)
+    parts = filename_parts_from_path(GcsfsFilePath.from_absolute_path(original_normalized_file_path))
+
+    file_type = file_type_override if file_type_override else parts.file_type
+
+    utc_iso_timestamp_str = parts.utc_upload_datetime.strftime('%Y-%m-%dT%H:%M:%S:%f')
+
+    suffix_str = \
+        f'_{parts.filename_suffix}' if parts.filename_suffix else ''
+    base_file_name = f'{parts.file_tag}{suffix_str}'
+
+    path_as_unprocessed = _build_unprocessed_file_name(
+        utc_iso_timestamp_str=utc_iso_timestamp_str,
+        file_type=file_type,
+        base_file_name=base_file_name,
+        extension=parts.extension)
+
+    return os.path.join(directory, path_as_unprocessed)
 
 
 class DirectIngestGCSFileSystem:
@@ -140,56 +176,74 @@ class DirectIngestGCSFileSystem:
             self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory without normalized paths.
         """
-        paths = self._ls_with_file_prefix(directory_path, '')
+        paths = self._ls_with_file_prefix(directory_path, '', file_type_filter=None)
 
         return [path
                 for path in paths if not self.is_normalized_file_path(path)]
 
     def get_unprocessed_file_paths(
-            self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
-        """Returns all paths in the given directory that have yet to be
-        processed.
+            self,
+            directory_path: GcsfsDirectoryPath,
+            file_type_filter: Optional[GcsfsDirectIngestFileType]) -> List[GcsfsFilePath]:
+        """Returns all paths of a given type in the given directory that have yet to be
+        processed. If |file_type_filter| is specified, returns only files with that file type and throws if encountering
+        a file with UNSPECIFIED file type.
         """
         return self._ls_with_file_prefix(
             directory_path,
-            DIRECT_INGEST_UNPROCESSED_PREFIX)
+            DIRECT_INGEST_UNPROCESSED_PREFIX,
+            file_type_filter)
 
     def get_unprocessed_file_paths_for_day(
             self,
             directory_path: GcsfsDirectoryPath,
-            date_str: str) -> List[GcsfsFilePath]:
+            date_str: str,
+            file_type_filter: Optional[GcsfsDirectIngestFileType]) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that were uploaded on the
-        day specified in date_str that have yet to be processed.
+        day specified in date_str that have yet to be processed. If |file_type_filter| is specified, returns only files
+        with that file type and throws if encountering a file with UNSPECIFIED file type.
         """
         return self._ls_with_file_prefix(
             directory_path,
-            f"{DIRECT_INGEST_UNPROCESSED_PREFIX}_{date_str}")
+            f"{DIRECT_INGEST_UNPROCESSED_PREFIX}_{date_str}",
+            file_type_filter)
 
     def get_processed_file_paths(
             self,
-            directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
+            directory_path: GcsfsDirectoryPath,
+            file_type_filter: Optional[GcsfsDirectIngestFileType]) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that have been
-        processed.
+        processed. If |file_type_filter| is specified, returns only files with that file type and throws if encountering
+        a file with UNSPECIFIED file type.
         """
         return self._ls_with_file_prefix(directory_path,
-                                         DIRECT_INGEST_PROCESSED_PREFIX)
+                                         DIRECT_INGEST_PROCESSED_PREFIX,
+                                         file_type_filter)
 
     def get_processed_file_paths_for_day(self,
                                          directory_path: GcsfsDirectoryPath,
-                                         date_str: str) -> List[GcsfsFilePath]:
+                                         date_str: str,
+                                         file_type_filter: Optional[GcsfsDirectIngestFileType]) -> List[GcsfsFilePath]:
         """Returns all paths in the given directory that were uploaded on the
-        day specified in date_str that have been processed.
+        day specified in date_str that have been processed. If |file_type_filter| is specified, returns only files with
+        that file type and throws if encountering a file with UNSPECIFIED file type.
         """
-        return self._ls_with_file_prefix(
-            directory_path,
-            f"{DIRECT_INGEST_PROCESSED_PREFIX}_{date_str}")
+        return self._ls_with_file_prefix(directory_path,
+                                         f"{DIRECT_INGEST_PROCESSED_PREFIX}_{date_str}",
+                                         file_type_filter)
 
     def mv_path_to_normalized_path(self,
                                    path: GcsfsFilePath,
-                                   dt: Optional[datetime.datetime] = None):
+                                   file_type: GcsfsDirectIngestFileType,
+                                   dt: Optional[datetime.datetime] = None) -> GcsfsFilePath:
+        """Renames a file with an unnormalized file name to a file with a normalized file name in the same directory. If
+        |dt| is specified, the file will contain that timestamp, otherwise will contain the current timestamp.
+
+        Returns the new normalized path location of this file after the move completes.
+        """
         updated_file_path = \
             GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(path.abs_path(), dt))
+                to_normalized_unprocessed_file_path(path.abs_path(), file_type, dt))
 
         if self.exists(updated_file_path):
             raise ValueError(
@@ -199,21 +253,34 @@ class DirectIngestGCSFileSystem:
         logging.info("Moving [%s] to normalized path [%s].",
                      path.abs_path(), updated_file_path.abs_path())
         self.mv(path, updated_file_path)
+        return updated_file_path
 
-    def mv_path_to_processed_path(self, path: GcsfsFilePath):
+    def mv_path_to_processed_path(self, path: GcsfsFilePath) -> GcsfsFilePath:
+        """Renames file with an unprocessed file prefix to a path in the same directory with a 'processed' prefix.
+
+        Returns the new processed path location of this file after the move completes.
+        """
+
         processed_path = self._to_processed_file_path(path)
         logging.info("Moving [%s] to processed path [%s].",
                      path.abs_path(), processed_path.abs_path())
         self.mv(path, processed_path)
+        return processed_path
 
     def mv_processed_paths_before_date_to_storage(
             self,
             directory_path: GcsfsDirectoryPath,
             storage_directory_path: GcsfsDirectoryPath,
+            file_type_filter: Optional[GcsfsDirectIngestFileType],
             date_str_bound: str,
             include_bound: bool):
 
-        processed_file_paths = self.get_processed_file_paths(directory_path)
+        """Moves all files with timestamps before the provided |date_str_bound| to the appropriate storage location for
+        that file. If a |file_type_filter| is provided, only moves files of a certain file type and throws if
+        encountering a file of type UNSPECIFIED in the directory path.
+        """
+
+        processed_file_paths = self.get_processed_file_paths(directory_path, file_type_filter)
 
         for file_path in processed_file_paths:
             date_str = filename_parts_from_path(file_path).date_str
@@ -228,16 +295,9 @@ class DirectIngestGCSFileSystem:
     def mv_path_to_storage(self,
                            path: GcsfsFilePath,
                            storage_directory_path: GcsfsDirectoryPath):
-        optional_storage_subdir = None
-        if self.is_split_file(path):
-            optional_storage_subdir = SPLIT_FILE_STORAGE_SUBDIR
-
-        parts = filename_parts_from_path(path)
-        storage_path = self._storage_path(
-            storage_directory_path,
-            optional_storage_subdir,
-            parts.date_str,
-            path.file_name)
+        """Moves a normalized path to it's appropriate storage location based on the date and file type information
+        embedded in the file name."""
+        storage_path = self._storage_path(storage_directory_path, path)
 
         logging.info("Moving [%s] to storage path [%s].",
                      path.abs_path(), storage_path.abs_path())
@@ -245,21 +305,36 @@ class DirectIngestGCSFileSystem:
 
     def _ls_with_file_prefix(self,
                              directory_path: GcsfsDirectoryPath,
-                             file_prefix: str) -> List[GcsfsFilePath]:
-        """Returns absolute paths of files in the directory with the given
-        |file_prefix|.
+                             file_prefix: str,
+                             file_type_filter: Optional[GcsfsDirectIngestFileType]) -> List[GcsfsFilePath]:
+        """Returns absolute paths of files in the directory with the given |file_prefix|.
         """
         blob_prefix = os.path.join(*[directory_path.relative_path, file_prefix])
-        return self._ls_with_blob_prefix(directory_path.bucket_name,
-                                         blob_prefix)
+        blob_paths = self._ls_with_blob_prefix(directory_path.bucket_name, blob_prefix)
+
+        result = []
+        for path in blob_paths:
+            if not isinstance(path, GcsfsFilePath):
+                continue
+
+            if not file_type_filter:
+                result.append(path)
+                continue
+
+            file_type = filename_parts_from_path(path).file_type
+            if file_type == GcsfsDirectIngestFileType.UNSPECIFIED:
+                raise ValueError(f'Found path {path.abs_path()} with unexpected UNSPECIFIED type.')
+
+            if file_type == file_type_filter:
+                result.append(path)
+
+        return result
 
     @abc.abstractmethod
     def _ls_with_blob_prefix(self,
                              bucket_name: str,
-                             blob_prefix: str) -> List[GcsfsFilePath]:
-        """Returns absolute paths of files in the bucket with the given
-        |relative_path|.
-        """
+                             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
+        """Returns absolute paths of objects in the bucket with the given |relative_path|. """
 
     @staticmethod
     def _to_processed_file_path(
@@ -272,23 +347,38 @@ class DirectIngestGCSFileSystem:
 
     def _storage_path(self,
                       storage_directory_path: GcsfsDirectoryPath,
-                      opt_storage_subdir: Optional[str],
-                      date_str: str,
-                      file_name: str) -> GcsfsFilePath:
+                      path: GcsfsFilePath) -> GcsfsFilePath:
         """Returns the storage file path for the input |file_name|,
         |storage_bucket|, and |ingest_date_str|"""
-        if opt_storage_subdir is None:
+
+        parts = filename_parts_from_path(path)
+
+        if self.is_split_file(path):
+            opt_storage_subdir = SPLIT_FILE_STORAGE_SUBDIR
+        else:
             opt_storage_subdir = ''
 
+        if parts.file_type is None or parts.file_type == GcsfsDirectIngestFileType.UNSPECIFIED:
+            file_type_subidr = ''
+            date_subdir = parts.date_str
+        else:
+            file_type_subidr = parts.file_type.value
+            date_subdir = os.path.join(
+                str(parts.utc_upload_datetime.year),
+                str(parts.utc_upload_datetime.month),
+                str(parts.utc_upload_datetime.day)
+            )
+
         for file_num in range(self._RENAME_RETRIES):
-            name, ext = file_name.split('.')
+            name, ext = path.file_name.split('.')
             actual_file_name = \
-                file_name if file_num == 0 else f'{name}-({file_num}).{ext}'
+                path.file_name if file_num == 0 else f'{name}-({file_num}).{ext}'
 
             storage_path_str = os.path.join(
                 storage_directory_path.bucket_name,
                 storage_directory_path.relative_path,
-                date_str,
+                file_type_subidr,
+                date_subdir,
                 opt_storage_subdir,
                 actual_file_name)
             storage_path = GcsfsFilePath.from_absolute_path(storage_path_str)
@@ -301,7 +391,7 @@ class DirectIngestGCSFileSystem:
                 storage_path.abs_path())
 
         raise ValueError(
-            f'Could not find valid storage path for file {file_name}.')
+            f'Could not find valid storage path for file {path.file_name}.')
 
 
 class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
@@ -393,8 +483,8 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         blob.delete(self.storage_client)
 
     def _ls_with_blob_prefix(
-            self, bucket_name: str, blob_prefix: str) -> List[GcsfsFilePath]:
+            self,
+            bucket_name: str,
+            blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
-        return [path
-                for path in [GcsfsPath.from_blob(blob) for blob in blobs]
-                if isinstance(path, GcsfsFilePath)]
+        return [GcsfsPath.from_blob(blob) for blob in blobs]
