@@ -25,17 +25,17 @@ from google.protobuf import timestamp_pb2
 from mock import patch
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     QUEUES_REGION
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    DirectIngestCloudTaskManagerImpl, CloudTaskQueueInfo, _build_task_id
+    DirectIngestCloudTaskManagerImpl, _build_task_id, ProcessIngestJobCloudTaskQueueInfo
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, GcsfsDirectIngestFileType
+    GcsfsIngestArgs, GcsfsDirectIngestFileType, GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs
 from recidiviz.utils import regions
 
 _REGION = regions.Region(
@@ -54,7 +54,7 @@ class TestCloudTaskQueueInfo(TestCase):
 
     def test_is_task_queued_no_tasks(self):
         # Arrange
-        info = CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
+        info = ProcessIngestJobCloudTaskQueueInfo(queue_name='queue_name', task_names=[])
 
         file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         args = IngestArgs(ingest_time=datetime.datetime.now())
@@ -83,7 +83,7 @@ class TestCloudTaskQueueInfo(TestCase):
 
         full_task_name = \
             _build_task_id(_REGION.region_code, gcsfs_args.task_id_tag())
-        info = CloudTaskQueueInfo(
+        info = ProcessIngestJobCloudTaskQueueInfo(
             queue_name='queue_name',
             task_names=[f'projects/path/to/random_task',
                         f'projects/path/to/{full_task_name}'])
@@ -158,7 +158,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Arrange
         project_id = 'recidiviz-456'
         ingest_args = IngestArgs(datetime.datetime(year=2019, month=7, day=20))
-        body = {'ingest_args': ingest_args.to_serializable(),
+        body = {'cloud_task_args': ingest_args.to_serializable(),
                 'args_type': 'IngestArgs'}
         body_encoded = json.dumps(body).encode()
         uuid = 'random-uuid'
@@ -204,7 +204,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             GcsfsIngestArgs(
                 ingest_time=datetime.datetime(year=2019, month=7, day=20),
                 file_path=GcsfsFilePath.from_absolute_path(file_path))
-        body = {'ingest_args': ingest_args.to_serializable(),
+        body = {'cloud_task_args': ingest_args.to_serializable(),
                 'args_type': 'GcsfsIngestArgs'}
         body_encoded = json.dumps(body).encode()
         uuid = 'random-uuid'
@@ -237,3 +237,91 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             project_id, QUEUES_REGION, _REGION.shared_queue)
         mock_client.return_value.create_task.assert_called_with(
             queue_path, task)
+
+
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @freeze_time('2019-07-20')
+    def test_create_direct_ingest_raw_data_import_task(
+            self, mock_client, mock_uuid):
+        # Arrange
+        project_id = 'recidiviz-456'
+        import_args = GcsfsRawDataBQImportArgs(
+            raw_data_file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path('bucket/raw_data_path.csv',
+                                                    file_type=GcsfsDirectIngestFileType.RAW_DATA)))
+        body = {'cloud_task_args': import_args.to_serializable(),
+                'args_type': 'GcsfsRawDataBQImportArgs'}
+        body_encoded = json.dumps(body).encode()
+        uuid = 'random-uuid'
+        mock_uuid.uuid4.return_value = uuid
+        date = '2019-07-20'
+        queue_path = _REGION.shared_queue + '-path'
+
+        task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
+            _REGION.region_code, date, uuid)
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                'http_method': 'POST',
+                'relative_uri':
+                    f'/direct/raw_data_import?region={_REGION.region_code}',
+                'body': body_encoded
+            }
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl(project_id=project_id).create_direct_ingest_raw_data_import_task(_REGION,
+                                                                                                          import_args)
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
+        mock_client.return_value.create_task.assert_called_with(queue_path, task)
+
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @freeze_time('2019-07-20')
+    def test_create_direct_ingest_ingest_view_export_task(
+            self, mock_client, mock_uuid):
+        # Arrange
+        project_id = 'recidiviz-456'
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='my_ingest_view',
+            upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30)
+        )
+        body = {'cloud_task_args': export_args.to_serializable(),
+                'args_type': 'GcsfsIngestViewExportArgs'}
+        body_encoded = json.dumps(body).encode()
+        uuid = 'random-uuid'
+        mock_uuid.uuid4.return_value = uuid
+        date = '2019-07-20'
+        queue_path = _REGION.shared_queue + '-path'
+
+        task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
+            _REGION.region_code, date, uuid)
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                'http_method': 'POST',
+                'relative_uri':
+                    f'/direct/ingest_view_export?region={_REGION.region_code}',
+                'body': body_encoded
+            }
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl(project_id=project_id).create_direct_ingest_ingest_view_export_task(
+            _REGION, export_args)
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
+        mock_client.return_value.create_task.assert_called_with(queue_path, task)

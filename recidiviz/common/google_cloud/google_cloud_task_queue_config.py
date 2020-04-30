@@ -30,7 +30,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, \
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, \
     DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2, BIGQUERY_QUEUE_V2, \
-    JOB_MONITOR_QUEUE_V2, SCRAPER_PHASE_QUEUE_V2
+    JOB_MONITOR_QUEUE_V2, SCRAPER_PHASE_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
@@ -117,6 +117,7 @@ def _build_cloud_task_queue_configs(
     # Direct ingest queues for handling /process_job requests
     for queue_name in [DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
                        DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
+                       DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
                        DIRECT_INGEST_SCHEDULER_QUEUE_V2]:
         queues.append(
             _queue_config_with_name(client_wrapper,

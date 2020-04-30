@@ -343,7 +343,11 @@ def run_task_queues_to_empty(controller: GcsfsDirectIngestController):
                     FakeSynchronousDirectIngestCloudTaskManager):
         tm = controller.cloud_task_manager
         while tm.get_scheduler_queue_info(controller.region).size() \
-                or tm.get_process_job_queue_info(controller.region).size():
+                or tm.get_process_job_queue_info(controller.region).size()\
+                or tm.get_bq_import_export_queue_info(controller.region).size():
+            if tm.get_bq_import_export_queue_info(controller.region).size():
+                tm.test_run_next_bq_import_export_task()
+                tm.test_pop_finished_bq_import_export_task()
             if tm.get_scheduler_queue_info(controller.region).size():
                 tm.test_run_next_scheduler_task()
                 tm.test_pop_finished_scheduler_task()
