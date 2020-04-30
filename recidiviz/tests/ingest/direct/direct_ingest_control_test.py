@@ -24,9 +24,12 @@ from flask import Flask
 from mock import patch, create_autospec, Mock
 
 from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
+    GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
@@ -176,7 +179,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'region': region_code,
         }
         body = {
-            'ingest_args': ingest_args.to_serializable(),
+            'cloud_task_args': ingest_args.to_serializable(),
             'args_type': 'IngestArgs',
         }
         body_encoded = json.dumps(body).encode()
@@ -211,7 +214,7 @@ class TestDirectIngestControl(unittest.TestCase):
             'region': region_code,
         }
         body = {
-            'ingest_args': ingest_args.to_serializable(),
+            'cloud_task_args': ingest_args.to_serializable(),
             'args_type': 'IngestArgs',
         }
         body_encoded = json.dumps(body).encode()
@@ -439,3 +442,81 @@ class TestDirectIngestControl(unittest.TestCase):
                                    headers=headers)
 
         self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    def test_raw_data_import(
+            self, mock_supported, mock_region, mock_environment):
+        mock_supported.return_value = ['us_xx']
+
+        region_code = 'us_xx'
+
+        mock_environment.return_value = 'staging'
+        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_region.return_value = fake_region(
+            region_code=region_code,
+            environment='staging',
+            ingestor=mock_controller)
+
+        import_args = GcsfsRawDataBQImportArgs(
+            raw_data_file_path=GcsfsFilePath.from_absolute_path(
+                to_normalized_unprocessed_file_path('bucket/raw_data_path.csv',
+                                                    file_type=GcsfsDirectIngestFileType.RAW_DATA)))
+        request_args = {
+            'region': region_code,
+        }
+        body = {
+            'cloud_task_args': import_args.to_serializable(),
+            'args_type': 'GcsfsRawDataBQImportArgs',
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        response = self.client.post('/raw_data_import',
+                                    query_string=request_args,
+                                    headers=headers,
+                                    data=body_encoded)
+        self.assertEqual(200, response.status_code)
+        mock_controller.do_raw_data_import.assert_called_with(import_args)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    def test_ingest_view_export(
+            self, mock_supported, mock_region, mock_environment):
+        mock_supported.return_value = ['us_xx']
+
+        region_code = 'us_xx'
+
+        mock_environment.return_value = 'staging'
+        mock_controller = create_autospec(GcsfsDirectIngestController)
+        mock_region.return_value = fake_region(
+            region_code=region_code,
+            environment='staging',
+            ingestor=mock_controller)
+
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='my_ingest_view',
+            upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30)
+        )
+
+        request_args = {
+            'region': region_code,
+        }
+        body = {
+            'cloud_task_args': export_args.to_serializable(),
+            'args_type': 'GcsfsIngestViewExportArgs',
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        response = self.client.post('/ingest_view_export',
+                                    query_string=request_args,
+                                    headers=headers,
+                                    data=body_encoded)
+        self.assertEqual(200, response.status_code)
+        mock_controller.do_ingest_view_export.assert_called_with(export_args)

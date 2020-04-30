@@ -34,10 +34,12 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
+    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType, GcsfsRawDataBQImportArgs, \
+    GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 
 
 class GcsfsFileContentsHandle(IngestContentsHandle[str]):
@@ -162,6 +164,9 @@ class GcsfsDirectIngestController(
             # this function to be re-triggered.
             return
 
+        if self._schedule_any_pre_ingest_tasks():
+            return
+
         ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
             if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
 
@@ -185,9 +190,103 @@ class GcsfsDirectIngestController(
             self.schedule_next_ingest_job_or_wait_if_necessary(
                 just_finished_job=False)
 
+    def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
+        check_is_region_launched_in_env(self.region)
+        if not self.region.are_raw_data_bq_imports_enabled_in_env():
+            raise ValueError(f'Raw data imports not enabled for region [{self.region.region_code}]')
+
+        # TODO(3020): Do actual BQ import, move raw file to storage, if ingest view export not enabled,
+        #  copy raw file to ingest_view type, otherwise trigger another call to handle_files() (or the subset that
+        #  starts with checking for ingest view export jobs?)
+        raise ValueError('Unimplemented!')
+
+    def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
+        check_is_region_launched_in_env(self.region)
+        if not self.region.are_ingest_view_exports_enabled_in_env():
+            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
+
+        # TODO(3020): Implement ingest view export
+        raise ValueError('Unimplemented!')
+
     # ============== #
     # JOB SCHEDULING #
     # ============== #
+
+    def _schedule_any_pre_ingest_tasks(self) -> bool:
+        """Schedules any tasks related to SQL preprocessing of new files in preparation for ingest of those files into
+        our Postgres database.
+
+        Returns True if any jobs were scheduled or if there were already any pre-ingest jobs scheduled. Returns False if
+        there are no remaining ingest jobs to schedule and it is safe to proceed with ingest.
+        """
+        if self._schedule_raw_data_import_tasks():
+            return True
+        # TODO(3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
+        #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
+        #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
+        #  to do view exports.
+        if self._schedule_ingest_view_export_tasks():
+            return True
+        return False
+
+    def _get_import_args_for_unprocessed_raw_files(self) -> List[GcsfsRawDataBQImportArgs]:
+        if not self.region.are_raw_data_bq_imports_enabled_in_env():
+            raise ValueError(f'Cannot fire raw ingest jobs for region [{self.region.region_code}]')
+
+        # TODO(3020): Implement
+        #   - Add per-region yaml for raw file configs
+        #   - Unprocessed files with 'raw' tag that are declared in yaml - add to list of args
+
+        return []
+
+    def _schedule_raw_data_import_tasks(self) -> bool:
+        if not self.region.are_raw_data_bq_imports_enabled_in_env():
+            return False
+
+        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(self.region)
+
+        did_schedule = False
+        tasks_to_schedule = self._get_import_args_for_unprocessed_raw_files()
+        for task_args in tasks_to_schedule:
+            if not queue_info.has_task_already_scheduled(task_args):
+                self.cloud_task_manager.create_direct_ingest_raw_data_import_task(self.region, task_args)
+                did_schedule = True
+
+        # TODO(3020): Write a test that hits this block with new scheduled tasks
+        # TODO(3020): Write a test that hits this block with no remaining tasks to schedule
+        # TODO(3020): Write a test that hits this block with jobs already queued but no new tasks
+        return queue_info.has_raw_data_import_jobs_queued() or did_schedule
+
+    def _get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:
+        if not self.region.are_ingest_view_exports_enabled_in_env():
+            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
+
+        # TODO(3020): Implement actual checking for new export jobs - use file metadata tables to figure out last export
+        #  date and current export date to process.
+
+        return []
+
+    def _schedule_ingest_view_export_tasks(self) -> bool:
+        if not self.region.are_ingest_view_exports_enabled_in_env():
+            return False
+
+        queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(self.region)
+        if queue_info.has_ingest_view_export_jobs_queued():
+            # Since we schedule all export jobs at once, after all raw files have been processed, we wait for all of the
+            # export jobs to be done before checking if we need to schedule more.
+            # TODO(3020): Write a test that early-returns here if we already have ingest view export tasks queues
+            return True
+
+        did_schedule = False
+        tasks_to_schedule = self._get_ingest_view_export_task_args()
+        for task_args in tasks_to_schedule:
+            if not queue_info.has_task_already_scheduled(task_args):
+                self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(self.region, task_args)
+                did_schedule = True
+
+        # TODO(3020): Test that hits this block with newly scheduled tasks
+        # TODO(3020): Test that hits this block without newly scheduled tasks
+        return did_schedule
 
     @abc.abstractmethod
     def _get_file_tag_rank_list(self) -> List[str]:
@@ -331,10 +430,8 @@ class GcsfsDirectIngestController(
         parts = filename_parts_from_path(original_file_path)
 
         rank_str = str(split_num + 1).zfill(5)
-        existing_suffix = \
-            f'_{parts.filename_suffix}' if parts.filename_suffix else ''
         updated_file_name = (
-            f'{parts.file_tag}{existing_suffix}_{rank_str}'
+            f'{parts.stripped_file_name}_{rank_str}'
             f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}'
             f'.{parts.extension}')
 

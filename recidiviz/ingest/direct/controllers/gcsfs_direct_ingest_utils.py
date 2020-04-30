@@ -26,7 +26,7 @@ import attr
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import metadata
@@ -104,16 +104,44 @@ class GcsfsFilenameParts:
     is_file_split: bool = attr.ib()
     file_split_size: Optional[int] = attr.ib()
 
+    # File tag followed by file suffix, if there is one
+    stripped_file_name = attr.ib()
+
+    @stripped_file_name.default
+    def _stripped_file_name(self) -> str:
+        suffix_str = \
+            f'_{self.filename_suffix}' if self.filename_suffix else ''
+        return f'{self.file_tag}{suffix_str}'
+
 
 @attr.s(frozen=True)
 class GcsfsIngestArgs(IngestArgs):
     file_path: GcsfsFilePath = attr.ib()
 
-    def task_id_tag(self) -> Optional[str]:
+    def task_id_tag(self) -> str:
         parts = filename_parts_from_path(self.file_path)
-        suffix_str = \
-            f'_{parts.filename_suffix}' if parts.filename_suffix else ''
-        return f'{parts.file_tag}{suffix_str}_{parts.date_str}'
+        return f'ingest_job_{parts.stripped_file_name}_{parts.date_str}'
+
+
+@attr.s(frozen=True)
+class GcsfsRawDataBQImportArgs(CloudTaskArgs):
+    raw_data_file_path: GcsfsFilePath = attr.ib()
+
+    def task_id_tag(self) -> str:
+        parts = filename_parts_from_path(self.raw_data_file_path)
+        return f'raw_data_import_{parts.stripped_file_name}_{parts.date_str}'
+
+
+@attr.s(frozen=True)
+class GcsfsIngestViewExportArgs(CloudTaskArgs):
+    ingest_view_name: str = attr.ib()
+    upper_bound_datetime_prev: datetime.datetime = attr.ib()
+    upper_bound_datetime_to_export: datetime.datetime = attr.ib()
+
+    def task_id_tag(self) -> str:
+        return \
+            f'ingest_view_export_{self.ingest_view_name}-' \
+            f'{self.upper_bound_datetime_prev.isoformat()}-{self.upper_bound_datetime_to_export.isoformat()}'
 
 
 def gcsfs_direct_ingest_storage_directory_path_for_region(

@@ -18,6 +18,7 @@
 
 BIGQUERY_QUEUE_V2 = 'bigquery-v2'
 DIRECT_INGEST_SCHEDULER_QUEUE_V2 = 'direct-ingest-scheduler-v2'
+DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 = 'direct-ingest-bq-import-export-v2'
 DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2 = \
     'direct-ingest-state-process-job-queue-v2'
 DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = \
