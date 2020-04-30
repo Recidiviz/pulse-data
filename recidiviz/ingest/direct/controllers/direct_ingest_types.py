@@ -25,11 +25,10 @@ import cattr
 
 
 @attr.s(frozen=True)
-class IngestArgs:
-    ingest_time: datetime.datetime = attr.ib()
-
+class CloudTaskArgs:
+    @abc.abstractmethod
     def task_id_tag(self) -> Optional[str]:
-        return None
+        """Tag to add to the name of an associated cloud task."""
 
     def to_serializable(self):
         return cattr.unstructure(self)
@@ -37,6 +36,14 @@ class IngestArgs:
     @classmethod
     def from_serializable(cls, serializable):
         return cattr.structure(serializable, cls)
+
+
+@attr.s(frozen=True)
+class IngestArgs(CloudTaskArgs):
+    ingest_time: datetime.datetime = attr.ib()
+
+    def task_id_tag(self) -> Optional[str]:
+        return None
 
 
 IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)

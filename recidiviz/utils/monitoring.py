@@ -101,6 +101,8 @@ def measurements(tags=None):
 class TagKey:
     ENTITY_TYPE = 'entity_type'
     ERROR = 'error'
+    RAW_DATA_IMPORT_TAG = 'raw_data_import_tag'
+    INGEST_VIEW_EXPORT_TAG = 'ingest_view_export_tag'
     INGEST_TASK_TAG = 'ingest_task_tag'
     PERSISTED = 'persisted'
     REASON = 'reason'
