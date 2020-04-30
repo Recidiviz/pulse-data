@@ -22,7 +22,7 @@ When run in dry-run mode (the default), will only log copies, but will not execu
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.copy_state_files_from_prod_to_staging_storage \
+python -m recidiviz.tools.copy_state_files_from_prod_to_staging_storage --file-type raw \
     --region us_nd --start-date-bound 2019-08-12 --end-date-bound 2019-08-17 --dry-run True
 """
 import argparse
@@ -37,20 +37,28 @@ from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    gcsfs_direct_ingest_storage_directory_path_for_region
-from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_cp
-from recidiviz.tools.utils import is_date_str, is_between_date_strs_inclusive
+    gcsfs_direct_ingest_storage_directory_path_for_region, GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.tools.gsutil_shell_helpers import gsutil_cp, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
 
 
 class CopyFilesFromProdToStagingController:
     """Class with functionality to copy files between prod and staging storage."""
 
-    def __init__(self, region_code: str, start_date_bound: Optional[str], end_date_bound: Optional[str], dry_run: bool):
-        self.prod_storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
-            region_code, SystemLevel.STATE, project_id='recidiviz-123')
-        self.staging_storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
-            region_code, SystemLevel.STATE, project_id='recidiviz-staging')
+    def __init__(self,
+                 region_code: str,
+                 file_type: GcsfsDirectIngestFileType,
+                 start_date_bound: Optional[str],
+                 end_date_bound: Optional[str],
+                 dry_run: bool):
+        self.file_type = file_type
+        self.prod_region_storage_dir_path = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region_code, SystemLevel.STATE, project_id='recidiviz-123'))
+        self.staging_region_storage_dir_path = GcsfsDirectoryPath.from_absolute_path(
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                region_code, SystemLevel.STATE, project_id='recidiviz-staging'))
         self.dry_run = dry_run
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
@@ -67,11 +75,11 @@ class CopyFilesFromProdToStagingController:
         """Main function that will execute the copy."""
         if self.dry_run:
             logging.info("[DRY RUN] Copying files from [%s] to [%s]",
-                         self.prod_storage_bucket,
-                         self.staging_storage_bucket)
+                         self.prod_region_storage_dir_path.abs_path(),
+                         self.staging_region_storage_dir_path.abs_path())
         else:
-            i = input(f"Copying files from [{self.prod_storage_bucket}] to "
-                      f"[{self.staging_storage_bucket}] - continue? [y/n]: ")
+            i = input(f"Copying files from [{self.prod_region_storage_dir_path.abs_path()}] to "
+                      f"[{self.staging_region_storage_dir_path.abs_path()}] - continue? [y/n]: ")
 
             if i.upper() != 'Y':
                 return
@@ -102,25 +110,12 @@ class CopyFilesFromProdToStagingController:
                 self.log_output_path)
 
     def _get_subdirs_to_copy(self) -> List[str]:
-        subdirs = gsutil_ls(f'gs://{self.prod_storage_bucket}')
-
-        subdirs_to_copy = []
-        for subdir in subdirs:
-            if not subdir.endswith('/'):
-                logging.info("Path [%s] is in unexpected format, skipping", subdir)
-                continue
-
-            subdir_name = os.path.basename(os.path.normpath(subdir))
-            if not is_date_str(subdir_name):
-                continue
-
-            if is_between_date_strs_inclusive(
-                    upper_bound_date=self.end_date_bound,
-                    lower_bound_date=self.start_date_bound,
-                    date_of_interest=subdir_name):
-                subdirs_to_copy.append(subdir_name)
-
-        return subdirs_to_copy
+        return gsutil_get_storage_subdirs_containing_file_types(
+            storage_bucket_path=self.prod_region_storage_dir_path.abs_path(),
+            file_type=self.file_type,
+            upper_bound_date=self.end_date_bound,
+            lower_bound_date=self.start_date_bound
+        )
 
     def _write_copies_to_log_file(self):
         self.copy_list.sort()
@@ -132,10 +127,11 @@ class CopyFilesFromProdToStagingController:
 
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.copy_list)
 
-    def _copy_files_for_date(self, date_str: str):
+    def _copy_files_for_date(self, subdir_path_str: str):
+        dir_path = GcsfsDirectoryPath.from_absolute_path(subdir_path_str.rstrip('/'))
 
-        from_path = f'gs://{self.prod_storage_bucket}/{date_str}/*'
-        to_path = f'gs://{self.staging_storage_bucket}/{date_str}/'
+        from_path = f'gs://{self.prod_region_storage_dir_path.bucket_name}/{dir_path.relative_path}*'
+        to_path = f'gs://{self.staging_region_storage_dir_path.bucket_name}/{dir_path.relative_path}'
 
         if not self.dry_run:
             gsutil_cp(from_path=from_path, to_path=to_path)
@@ -158,6 +154,10 @@ def main():
 
     parser.add_argument('--region', required=True, help='E.g. \'us_nd\'')
 
+    parser.add_argument('--file-type', required=True,
+                        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
+                        help='Defines whether we should move raw files or generated ingest_view files')
+
     parser.add_argument('--dry-run', default=True, type=str_to_bool,
                         help='Runs copy in dry-run mode, only prints the file copies it would do.')
 
@@ -175,6 +175,7 @@ def main():
 
     CopyFilesFromProdToStagingController(
         region_code=args.region,
+        file_type=GcsfsDirectIngestFileType(args.file_type),
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run).run()

@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    filename_parts_from_path, GcsfsIngestArgs
+    filename_parts_from_path, GcsfsIngestArgs, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsBucketPath, GcsfsDirectoryPath, GcsfsPath
@@ -155,13 +155,19 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 
     def _ls_with_blob_prefix(self,
                              bucket_name: str,
-                             blob_prefix: str) -> List[GcsfsFilePath]:
+                             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         with self.mutex:
-            return [path for path in self.all_paths
-                    if path.bucket_name == bucket_name
-                    and isinstance(path, GcsfsFilePath)
-                    and path.blob_name
-                    and path.blob_name.startswith(blob_prefix)]
+            result: List[Union[GcsfsDirectoryPath, GcsfsFilePath]] = []
+            for path in self.all_paths:
+                if path.bucket_name != bucket_name:
+                    continue
+                if isinstance(path, GcsfsFilePath) and path.blob_name and path.blob_name.startswith(blob_prefix):
+                    result.append(path)
+                if isinstance(path, GcsfsDirectoryPath) \
+                        and path.relative_path and path.relative_path.startswith(blob_prefix):
+                    result.append(path)
+
+            return result
 
 
 def build_controller_for_tests(controller_cls,
@@ -215,7 +221,10 @@ def ingest_args_for_fixture_file(
         controller: GcsfsDirectIngestController,
         filename: str,
         should_normalize: bool = True) -> GcsfsIngestArgs:
-    file_path = path_for_fixture_file(controller, filename, should_normalize)
+    file_path = path_for_fixture_file(controller,
+                                      filename,
+                                      should_normalize,
+                                      file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
     if not isinstance(file_path, GcsfsFilePath):
         raise ValueError(f'Unexpected type [{file_path}]')
     return GcsfsIngestArgs(
@@ -228,12 +237,18 @@ def path_for_fixture_file(
         controller: GcsfsDirectIngestController,
         filename: str,
         should_normalize: bool,
+        file_type: Optional[GcsfsDirectIngestFileType] = None,
         dt: Optional[datetime.datetime] = None
 ) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
     file_path_str = filename
 
     if should_normalize:
-        file_path_str = to_normalized_unprocessed_file_path(file_path_str, dt)
+        if not file_type:
+            file_type = GcsfsDirectIngestFileType.UNSPECIFIED
+
+        file_path_str = to_normalized_unprocessed_file_path(original_file_path=file_path_str,
+                                                            file_type=file_type,
+                                                            dt=dt)
 
     return GcsfsPath.from_bucket_and_blob_name(
         bucket_name=controller.ingest_directory_path.bucket_name,
@@ -261,11 +276,13 @@ def add_paths_with_tags(controller: GcsfsDirectIngestController,
         raise ValueError(f"Controller fs must have type "
                          f"FakeDirectIngestGCSFileSystem. Found instead "
                          f"type [{type(controller.fs)}]")
+
     for file_tag in file_tags:
         file_path = path_for_fixture_file(
             controller,
             f'{file_tag}.csv',
-            should_normalize=pre_normalize_filename)
+            should_normalize=pre_normalize_filename,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA)
         controller.fs.test_add_path(file_path)
         time.sleep(.05)
 
@@ -307,7 +324,7 @@ def check_all_paths_processed(
             test_case.assertTrue(
                 path.abs_path().startswith(
                     controller.storage_directory_path.abs_path()),
-                f'{path} does not start with expected prefix')
+                f'{path} has not been moved to correct storage directory')
 
             file_tags_processed.add(filename_parts_from_path(path).file_tag)
         else:

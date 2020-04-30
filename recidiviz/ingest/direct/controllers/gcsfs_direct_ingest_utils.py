@@ -19,6 +19,7 @@
 import datetime
 import os
 import re
+from enum import Enum
 from typing import Optional
 
 import attr
@@ -30,15 +31,49 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import metadata
 
+# TODO(3020): Make file_type non-optional once we've added these specifiers to every file
 _FILEPATH_REGEX = \
     re.compile(
         r'(unprocessed|processed)_'  # processed_state
         r'(\d{4}-\d{2}-\d{2}T\d{2}[:_]\d{2}[:_]\d{2}[:_]\d{6})_'  # timestamp
+        r'((raw|ingest_view)_)?'  # file_type
         r'([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)'  # file_tag
-        r'(_(\d+(.*)))?'  # Optional filename_suffix
+        r'(_(\d+([^-]*)))?'  # Optional filename_suffix
+        r'(-\(\d+\))?'    # Optional file conflict suffix (e.g. '-(1)')
         r'\.([A-Za-z]+)')  # Extension
 
 _FILENAME_SUFFIX_REGEX = re.compile(r'.*(_file_split(_size(\d+))?)')
+
+
+class GcsfsDirectIngestFileType(Enum):
+    """Denotes the type of a file encountered by the GcsfsDirectIngestController. Files with types other than
+    UNSPECIFIED will have their type added to the normalized name and this type will be used to determine how to handle
+    the file (import to BigQuery vs ingest directly to Postgres). When moved to storage, files with different file types
+    will live in different subdirectories in a region's storage bucket."""
+
+    # Raw data received directly from state
+    RAW_DATA = 'raw'
+
+    # Ingest-ready file
+    INGEST_VIEW = 'ingest_view'
+
+    # For regions that have not yet been migrated to SQL pre-processing support and do not have raw/ingest_view tags in
+    # file names in the ingest bucket, these files are treated as INGEST_VIEW files. If a region has been configured
+    # to have SQL pre-processing support, we will throw if encountering an UNSPECIFIED file.
+    # TODO(3020): Once all region files are fully migrated to having valid file types, remove this type entirely.
+    UNSPECIFIED = 'unspecified'
+
+    @classmethod
+    def from_string(cls, type_str: Optional[str]) -> 'GcsfsDirectIngestFileType':
+        if type_str is None:
+            return GcsfsDirectIngestFileType.UNSPECIFIED
+        if type_str == GcsfsDirectIngestFileType.RAW_DATA.value:
+            return GcsfsDirectIngestFileType.RAW_DATA
+        if type_str == GcsfsDirectIngestFileType.INGEST_VIEW.value:
+            return GcsfsDirectIngestFileType.INGEST_VIEW
+
+        raise ValueError(f'Unknown direct ingest file type string: [{type_str}]')
+
 
 @attr.s(frozen=True)
 class GcsfsFilenameParts:
@@ -60,6 +95,7 @@ class GcsfsFilenameParts:
     processed_state: str = attr.ib()
     utc_upload_datetime: datetime.datetime = attr.ib()
     date_str: str = attr.ib()
+    file_type: GcsfsDirectIngestFileType = attr.ib()
     # Must only contain letters or the '_' char
     file_tag: str = attr.ib()
     # Must start a number and be separated from the file_tag by a '_' char.
@@ -131,7 +167,9 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     utc_upload_datetime = \
         datetime.datetime.fromisoformat(full_upload_timestamp_str)
 
-    filename_suffix = match.group(6)
+    file_type = GcsfsDirectIngestFileType.from_string(match.group(4))
+
+    filename_suffix = match.group(8)
     is_file_split = False
     file_split_size = None
     if filename_suffix:
@@ -147,9 +185,10 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
         processed_state=match.group(1),
         utc_upload_datetime=utc_upload_datetime,
         date_str=utc_upload_datetime.date().isoformat(),
-        file_tag=match.group(3),
+        file_type=file_type,
+        file_tag=match.group(5),
         filename_suffix=filename_suffix,
-        extension=match.group(8),
+        extension=match.group(11),
         is_file_split=is_file_split,
         file_split_size=file_split_size,
     )

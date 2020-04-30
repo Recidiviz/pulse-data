@@ -22,7 +22,7 @@ import datetime
 from typing import List, Dict, Optional, Set
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, filename_parts_from_path
+    GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
@@ -37,11 +37,14 @@ class GcsfsDirectIngestJobPrioritizer:
     def __init__(self,
                  fs: DirectIngestGCSFileSystem,
                  ingest_directory_path: GcsfsDirectoryPath,
-                 file_tag_rank_list: List[str]):
+                 file_tag_rank_list: List[str],
+                 file_type_filter: Optional[GcsfsDirectIngestFileType]):
         self.fs = fs
         self.ingest_directory_path = ingest_directory_path
-        self.ranks_by_file_tag: Dict[str, str] = \
-            self._build_ranks_by_file_tag(file_tag_rank_list)
+        self.ranks_by_file_tag: Dict[str, str] = self._build_ranks_by_file_tag(file_tag_rank_list)
+
+        # TODO(3020): Remove once this is INGEST_VIEW for all regions, always filter by INGEST_VIEW files internally
+        self.file_type_filter = file_type_filter
 
     def get_next_job_args(
             self,
@@ -98,13 +101,11 @@ class GcsfsDirectIngestJobPrioritizer:
         bucket that should be processed next.
         """
         if date_str:
-            unprocessed_paths = \
-                self.fs.get_unprocessed_file_paths_for_day(
-                    self.ingest_directory_path,
-                    date_str)
+            unprocessed_paths = self.fs.get_unprocessed_file_paths_for_day(self.ingest_directory_path,
+                                                                           date_str,
+                                                                           self.file_type_filter)
         else:
-            unprocessed_paths = \
-                self.fs.get_unprocessed_file_paths(self.ingest_directory_path)
+            unprocessed_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path, self.file_type_filter)
 
         if not unprocessed_paths:
             return None
@@ -167,7 +168,8 @@ class GcsfsDirectIngestJobPrioritizer:
         """
         already_processed_paths = \
             self.fs.get_processed_file_paths_for_day(self.ingest_directory_path,
-                                                     date_str)
+                                                     date_str,
+                                                     file_type_filter=self.file_type_filter)
 
         sort_keys: Set[str] = set()
         for path in already_processed_paths:
