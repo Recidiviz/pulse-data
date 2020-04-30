@@ -55,7 +55,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
@@ -69,7 +69,9 @@ class MoveFilesFromStorageController:
     FILE_TO_MOVE_RE = \
         re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)')
 
-    QUEUES_TO_PAUSE = {DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2}
+    QUEUES_TO_PAUSE = {DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+                       DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+                       DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}
 
     PAUSE_QUEUE_URL = 'https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:pause'
 

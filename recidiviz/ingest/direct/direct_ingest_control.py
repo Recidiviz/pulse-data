@@ -26,13 +26,15 @@ from flask import Blueprint, request
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
+    GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
@@ -146,6 +148,88 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
                     controller.region, can_start_ingest=can_start_ingest)
     return '', HTTPStatus.OK
 
+@direct_ingest_control.route('/raw_data_import', methods=['POST'])
+@authenticate_request
+def raw_data_import() -> Tuple[str, HTTPStatus]:
+    """Imports a single raw direct ingest CSV file from a location in GCS File System to its corresponding raw data
+    table in BQ.
+    """
+    logging.info('Received request to do direct ingest raw data import: [%s]', request.values)
+    region_code = get_str_param_value('region', request.values)
+
+    if not region_code:
+        return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code):
+        json_data = request.get_data(as_text=True)
+        data_import_args = _parse_cloud_task_args(json_data)
+
+        if not data_import_args:
+            raise DirectIngestError(msg=f"raw_data_import was called with no IngestArgs.",
+                                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        if not isinstance(data_import_args, GcsfsRawDataBQImportArgs):
+            raise DirectIngestError(
+                msg=f"raw_data_import was called with incorrect args type [{type(data_import_args)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        with monitoring.push_tags({TagKey.RAW_DATA_IMPORT_TAG: data_import_args.task_id_tag()}):
+            try:
+                controller = controller_for_region_code(region_code)
+            except DirectIngestError as e:
+                if e.is_bad_request():
+                    return str(e), HTTPStatus.BAD_REQUEST
+                raise e
+
+            if not isinstance(controller, GcsfsDirectIngestController):
+                raise DirectIngestError(
+                    msg=f"Unexpected controller type [{type(controller)}].",
+                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+            controller.do_raw_data_import(data_import_args)
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/ingest_view_export', methods=['POST'])
+@authenticate_request
+def ingest_view_export() -> Tuple[str, HTTPStatus]:
+    """Exports an ingest view from BQ to a file in the region's GCS File System ingest bucket that is ready to be
+    processed and ingested into our Recidiviz DB.
+    """
+    logging.info('Received request to do direct ingest view export: [%s]', request.values)
+    region_code = get_str_param_value('region', request.values)
+
+    if not region_code:
+        return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code):
+        json_data = request.get_data(as_text=True)
+        ingest_view_export_args = _parse_cloud_task_args(json_data)
+
+        if not ingest_view_export_args:
+            raise DirectIngestError(msg=f"raw_data_import was called with no IngestArgs.",
+                                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
+            raise DirectIngestError(
+                msg=f"raw_data_import was called with incorrect args type [{type(ingest_view_export_args)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR)
+        with monitoring.push_tags({TagKey.INGEST_VIEW_EXPORT_TAG: ingest_view_export_args.task_id_tag()}):
+            try:
+                controller = controller_for_region_code(region_code)
+            except DirectIngestError as e:
+                if e.is_bad_request():
+                    return str(e), HTTPStatus.BAD_REQUEST
+                raise e
+
+            if not isinstance(controller, GcsfsDirectIngestController):
+                raise DirectIngestError(
+                    msg=f"Unexpected controller type [{type(controller)}].",
+                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+            controller.do_ingest_view_export(ingest_view_export_args)
+    return '', HTTPStatus.OK
+
 
 @direct_ingest_control.route('/process_job', methods=['POST'])
 @authenticate_request
@@ -162,26 +246,27 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
     with monitoring.push_region_tag(region_code):
         json_data = request.get_data(as_text=True)
-        ingest_args = _get_ingest_args(json_data)
+        ingest_args = _parse_cloud_task_args(json_data)
+
+        if not ingest_args:
+            raise DirectIngestError(msg=f"process_job was called with no IngestArgs.",
+                                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+        if not isinstance(ingest_args, IngestArgs):
+            raise DirectIngestError(msg=f"process_job was called with incorrect args type [{type(ingest_args)}].",
+                                    error_type=DirectIngestErrorType.INPUT_ERROR)
 
         if not ingest_args:
             return f'Could not parse ingest args', HTTPStatus.BAD_REQUEST
-        with monitoring.push_tags(
-                {TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
+        with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
-                if not ingest_args:
-                    raise DirectIngestError(
-                        msg=f"process_job was called with no IngestArgs.",
-                        error_type=DirectIngestErrorType.INPUT_ERROR)
-
                 controller = controller_for_region_code(region_code)
             except DirectIngestError as e:
                 if e.is_bad_request():
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
-            controller.run_ingest_job_and_kick_scheduler_on_completion(
-                ingest_args)
+            controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
     return '', HTTPStatus.OK
 
 
@@ -242,10 +327,10 @@ def controller_for_region_code(
     return controller
 
 
-def _get_ingest_args(
+def _parse_cloud_task_args(
         json_data_str: str,
-) -> Optional[IngestArgs]:
+) -> Optional[CloudTaskArgs]:
     if not json_data_str:
         return None
     data = json.loads(json_data_str)
-    return DirectIngestCloudTaskManager.json_to_ingest_args(data)
+    return DirectIngestCloudTaskManager.json_to_cloud_task_args(data)
