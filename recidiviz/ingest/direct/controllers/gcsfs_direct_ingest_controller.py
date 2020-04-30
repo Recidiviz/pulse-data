@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region
+    gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
@@ -94,11 +94,15 @@ class GcsfsDirectIngestController(
         self.storage_directory_path = \
             GcsfsDirectoryPath.from_absolute_path(storage_directory_path)
 
+        ingest_job_file_type_filter = \
+            GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
         self.file_prioritizer = \
             GcsfsDirectIngestJobPrioritizer(
                 self.fs,
                 self.ingest_directory_path,
-                self._get_file_tag_rank_list())
+                self._get_file_tag_rank_list(),
+                ingest_job_file_type_filter)
 
         self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
 
@@ -140,13 +144,15 @@ class GcsfsDirectIngestController(
 
         Should only be called from the scheduler queue.
         """
-        unnormalized_paths = self.fs.get_unnormalized_file_paths(
-            self.ingest_directory_path)
+        unnormalized_paths = self.fs.get_unnormalized_file_paths(self.ingest_directory_path)
+
+        unnormalized_path_file_type = GcsfsDirectIngestFileType.RAW_DATA \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else GcsfsDirectIngestFileType.UNSPECIFIED
 
         for path in unnormalized_paths:
             logging.info("File [%s] is not yet seen, normalizing.",
                          path.abs_path())
-            self.fs.mv_path_to_normalized_path(path)
+            self.fs.mv_path_to_normalized_path(path, file_type=unnormalized_path_file_type)
 
         if unnormalized_paths:
             logging.info(
@@ -156,8 +162,11 @@ class GcsfsDirectIngestController(
             # this function to be re-triggered.
             return
 
-        unprocessed_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_directory_path)
+        ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+
+        unprocessed_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
+                                                               file_type_filter=ingest_file_type_filter)
 
         did_split = False
         for path in unprocessed_paths:
@@ -279,6 +288,11 @@ class GcsfsDirectIngestController(
         """
         parts = filename_parts_from_path(path)
 
+        if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
+                parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
+            raise ValueError(f'Should not be attempting to split files other than ingest view files, found path with '
+                             f'file type: {parts.file_type}')
+
         if parts.file_tag not in self._get_file_tag_rank_list():
             logging.info("File tag [%s] for path [%s] not in rank list - "
                          "not splitting.",
@@ -323,9 +337,14 @@ class GcsfsDirectIngestController(
             f'{parts.file_tag}{existing_suffix}_{rank_str}'
             f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}'
             f'.{parts.extension}')
+
+        file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else GcsfsDirectIngestFileType.UNSPECIFIED
+
         return GcsfsFilePath.from_directory_and_file_name(
             output_dir,
             to_normalized_unprocessed_file_path(updated_file_name,
+                                                file_type=file_type,
                                                 dt=parts.utc_upload_datetime))
 
     @abc.abstractmethod
@@ -384,10 +403,15 @@ class GcsfsDirectIngestController(
             should_move_last_processed_date = \
                 next_date_str != last_processed_date_str
 
+        # Note: at this point, we expect RAW file type files to already have been moved once they were imported to BQ.
+        file_type_to_move = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+
         self.fs.mv_processed_paths_before_date_to_storage(
             self.ingest_directory_path,
             self.storage_directory_path,
-            last_processed_date_str,
+            file_type_filter=file_type_to_move,
+            date_str_bound=last_processed_date_str,
             include_bound=should_move_last_processed_date)
 
     @staticmethod

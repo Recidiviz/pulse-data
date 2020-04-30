@@ -19,6 +19,10 @@ import datetime
 import os
 from unittest import TestCase
 
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
+    to_normalized_unprocessed_file_path_from_normalized_path
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
+    filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
@@ -33,101 +37,194 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
     INGEST_DIR_PATH = GcsfsDirectoryPath(bucket_name='my_bucket')
 
+    def setUp(self) -> None:
+        self.fs = FakeDirectIngestGCSFileSystem()
+
+
     def fully_process_file(self,
-                           test_fs: FakeDirectIngestGCSFileSystem,
                            dt: datetime.datetime,
-                           path: GcsfsFilePath):
+                           path: GcsfsFilePath,
+                           file_type_differentiation_on: bool = False):
         """Mimics all the file system calls for a single file in the direct
         ingest system, from getting added to the ingest bucket, turning to a
         processed file, then getting moved to storage."""
 
-        test_fs.test_add_path(path)
+        self.fs.test_add_path(path)
 
-        start_num_total_files = len(test_fs.all_paths)
+        start_num_total_files = len(self.fs.all_paths)
         # pylint: disable=protected-access
-        start_ingest_paths = test_fs._ls_with_file_prefix(
-            self.INGEST_DIR_PATH, '')
-        start_storage_paths = test_fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH, '')
+        start_ingest_paths = self.fs._ls_with_file_prefix(self.INGEST_DIR_PATH, '', None)
+        start_storage_paths = self.fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '', None)
+        if file_type_differentiation_on:
+            start_raw_storage_paths = self.fs._ls_with_file_prefix(
+                self.STORAGE_DIR_PATH, '', file_type_filter=GcsfsDirectIngestFileType.RAW_DATA)
+            start_ingest_view_storage_paths = self.fs._ls_with_file_prefix(
+                self.STORAGE_DIR_PATH, '', file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW)
+        else:
+            start_raw_storage_paths = []
+            start_ingest_view_storage_paths = []
 
         # File is renamed to normalized path
-        test_fs.mv_path_to_normalized_path(path, dt)
+        file_type = GcsfsDirectIngestFileType.RAW_DATA \
+            if file_type_differentiation_on else GcsfsDirectIngestFileType.UNSPECIFIED
 
-        unprocessed = test_fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH)
-        self.assertEqual(len(unprocessed), 1)
-        self.assertTrue(test_fs.is_seen_unprocessed_file(unprocessed[0]))
+        self.fs.mv_path_to_normalized_path(path, file_type, dt)
 
-        # ... file is processed
+        if file_type_differentiation_on:
+            raw_unprocessed = self.fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH,
+                                                                 file_type_filter=GcsfsDirectIngestFileType.RAW_DATA)
+            self.assertEqual(len(raw_unprocessed), 1)
+            self.assertTrue(self.fs.is_seen_unprocessed_file(raw_unprocessed[0]))
+
+            # ... raw file imported to BQ
+
+            processed_path = self.fs.mv_path_to_processed_path(raw_unprocessed[0])
+
+            processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
+            self.assertEqual(len(processed), 1)
+
+            self.fs.copy(processed_path,
+                         GcsfsFilePath.from_absolute_path(
+                             to_normalized_unprocessed_file_path_from_normalized_path(
+                                 processed_path.abs_path(),
+                                 file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW)))
+            self.fs.mv_path_to_storage(processed_path, self.STORAGE_DIR_PATH)
+
+        ingest_unprocessed_filter = GcsfsDirectIngestFileType.INGEST_VIEW if file_type_differentiation_on else None
+
+        ingest_unprocessed = self.fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH,
+                                                                file_type_filter=ingest_unprocessed_filter)
+        self.assertEqual(len(ingest_unprocessed), 1)
+        self.assertTrue(self.fs.is_seen_unprocessed_file(ingest_unprocessed[0]))
+
+        # ... file is ingested
 
         # File is moved to processed path
-        test_fs.mv_path_to_processed_path(unprocessed[0])
-        processed = test_fs.get_processed_file_paths(self.INGEST_DIR_PATH)
+        self.fs.mv_path_to_processed_path(ingest_unprocessed[0])
+        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
         self.assertEqual(len(processed), 1)
-        self.assertTrue(test_fs.is_processed_file(processed[0]))
+        self.assertTrue(self.fs.is_processed_file(processed[0]))
 
-        unprocessed = test_fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH)
+        unprocessed = self.fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH, None)
         self.assertEqual(len(unprocessed), 0)
 
         # File is moved to storage
-        test_fs.mv_processed_paths_before_date_to_storage(
-            self.INGEST_DIR_PATH, self.STORAGE_DIR_PATH, dt.date().isoformat(),
-            include_bound=True)
+        ingest_move_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if file_type_differentiation_on else None
 
-        end_ingest_paths = test_fs._ls_with_file_prefix(
-            self.INGEST_DIR_PATH, '')
-        end_storage_paths = test_fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH, '')
+        self.fs.mv_processed_paths_before_date_to_storage(
+            self.INGEST_DIR_PATH, self.STORAGE_DIR_PATH, date_str_bound=dt.date().isoformat(),
+            include_bound=True, file_type_filter=ingest_move_type_filter)
 
-        self.assertEqual(len(test_fs.all_paths), start_num_total_files)
+        end_ingest_paths = self.fs._ls_with_file_prefix(self.INGEST_DIR_PATH, '', file_type_filter=None)
+        end_storage_paths = self.fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '', file_type_filter=None)
+        if file_type_differentiation_on:
+            end_raw_storage_paths = self.fs._ls_with_file_prefix(
+                self.STORAGE_DIR_PATH, '', file_type_filter=GcsfsDirectIngestFileType.RAW_DATA)
+            end_ingest_view_storage_paths = self.fs._ls_with_file_prefix(
+                self.STORAGE_DIR_PATH, '', file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW)
+        else:
+            end_raw_storage_paths = []
+            end_ingest_view_storage_paths = []
+
+        # Each file gets re-exported as ingest view
+        splitting_factor = 2 if file_type_differentiation_on else 1
+
+        expected_final_total_files = start_num_total_files + splitting_factor - 1
+        self.assertEqual(len(self.fs.all_paths), expected_final_total_files)
         self.assertEqual(len(end_ingest_paths), len(start_ingest_paths) - 1)
-        self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1)
+        self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1*splitting_factor)
+        if file_type_differentiation_on:
+            self.assertEqual(len(end_raw_storage_paths) + len(end_ingest_view_storage_paths), len(end_storage_paths))
+            self.assertEqual(len(end_raw_storage_paths), len(start_raw_storage_paths) + 1)
+            self.assertEqual(len(end_ingest_view_storage_paths), len(start_ingest_view_storage_paths) + 1)
 
         for sp in end_storage_paths:
-            if sp.abs_path() not in \
-                    {p.abs_path() for p in start_storage_paths}:
-                self.assertTrue(
-                    sp.abs_path().startswith(
-                        self.STORAGE_DIR_PATH.abs_path()))
-                _, storage_file_name = \
-                    os.path.split(sp.abs_path())
+            parts = filename_parts_from_path(sp)
+            if sp.abs_path() not in {p.abs_path() for p in start_storage_paths}:
+                self.assertTrue(sp.abs_path().startswith(self.STORAGE_DIR_PATH.abs_path()))
+                dir_path, storage_file_name = os.path.split(sp.abs_path())
+                if parts.file_type != GcsfsDirectIngestFileType.UNSPECIFIED:
+                    self.assertTrue(parts.file_type.value in dir_path)
                 name, _ = path.file_name.split('.')
                 self.assertTrue(name in storage_file_name)
 
     def test_direct_ingest_file_moves(self):
-        test_fs = FakeDirectIngestGCSFileSystem()
-        self.fully_process_file(test_fs,
-                                datetime.datetime.now(),
+        self.fully_process_file(datetime.datetime.now(),
                                 GcsfsFilePath(bucket_name='my_bucket',
                                               blob_name='test_file.csv'))
 
     def test_direct_ingest_multiple_file_moves(self):
-        test_fs = FakeDirectIngestGCSFileSystem()
-        self.fully_process_file(test_fs,
-                                datetime.datetime.now(),
+        self.fully_process_file(datetime.datetime.now(),
                                 GcsfsFilePath(bucket_name='my_bucket',
                                               blob_name='test_file.csv'))
 
-        self.fully_process_file(test_fs,
-                                datetime.datetime.now(),
+        self.fully_process_file(datetime.datetime.now(),
                                 GcsfsFilePath(bucket_name='my_bucket',
                                               blob_name='test_file_2.csv'))
 
     def test_move_to_storage_with_conflict(self):
-        test_fs = FakeDirectIngestGCSFileSystem()
         dt = datetime.datetime.now()
-        self.fully_process_file(test_fs, dt,
+        self.fully_process_file(dt,
                                 GcsfsFilePath(bucket_name='my_bucket',
                                               blob_name='test_file.csv'))
 
         # Try uploading a file with a duplicate name that has already been
         # moved to storage
-        self.fully_process_file(test_fs, dt,
+        self.fully_process_file(dt,
                                 GcsfsFilePath(bucket_name='my_bucket',
                                               blob_name='test_file.csv'))
 
         # pylint: disable=protected-access
-        storage_paths = test_fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '')
+        storage_paths = self.fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '', file_type_filter=None)
         self.assertEqual(len(storage_paths), 2)
+
+        found_first_file = False
+        found_second_file = False
+        for path in storage_paths:
+            self.assertTrue(filename_parts_from_path(path))
+            if path.abs_path().endswith('test_file.csv'):
+                found_first_file = True
+            if path.abs_path().endswith('test_file-(1).csv'):
+                found_second_file = True
+
+        self.assertTrue(found_first_file)
+        self.assertTrue(found_second_file)
+
+    def test_direct_ingest_file_moves_with_file_types(self):
+        self.fully_process_file(datetime.datetime.now(),
+                                GcsfsFilePath(bucket_name='my_bucket',
+                                              blob_name='test_file.csv'),
+                                file_type_differentiation_on=True)
+
+    def test_direct_ingest_multiple_file_moves_with_file_types(self):
+        self.fully_process_file(datetime.datetime.now(),
+                                GcsfsFilePath(bucket_name='my_bucket',
+                                              blob_name='test_file.csv'),
+                                file_type_differentiation_on=True)
+
+        self.fully_process_file(datetime.datetime.now(),
+                                GcsfsFilePath(bucket_name='my_bucket',
+                                              blob_name='test_file_2.csv'),
+                                file_type_differentiation_on=True)
+
+    def test_move_to_storage_with_conflict_with_file_types(self):
+        dt = datetime.datetime.now()
+        self.fully_process_file(dt,
+                                GcsfsFilePath(bucket_name='my_bucket',
+                                              blob_name='test_file.csv'),
+                                file_type_differentiation_on=True)
+
+        # Try uploading a file with a duplicate name that has already been
+        # moved to storage
+        self.fully_process_file(dt,
+                                GcsfsFilePath(bucket_name='my_bucket',
+                                              blob_name='test_file.csv'),
+                                file_type_differentiation_on=True)
+
+        # pylint: disable=protected-access
+        storage_paths = self.fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '', file_type_filter=None)
+        self.assertEqual(len(storage_paths), 4)
 
         found_first_file = False
         found_second_file = False

@@ -15,11 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for calling gsutil commands inside of Python scripts."""
+import os
 import subprocess
-from typing import List
+from typing import List, Optional
+
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
+from recidiviz.tools.utils import is_between_date_strs_inclusive, is_date_str
 
 
-def gsutil_ls(gs_path: str) -> List[str]:
+def gsutil_ls(gs_path: str,
+              directories_only: bool = False) -> List[str]:
     """Returns list of paths returned by 'gsutil ls <gs_path>.
     E.g.
     gsutil_ls('gs://recidiviz-123-state-storage') ->
@@ -37,7 +42,12 @@ def gsutil_ls(gs_path: str) -> List[str]:
     if stderr:
         raise ValueError(stderr.decode('utf-8'))
 
-    return stdout.decode('utf-8').splitlines()
+    result_paths = [p for p in stdout.decode('utf-8').splitlines() if p != gs_path]
+
+    if not directories_only:
+        return result_paths
+
+    return [p for p in result_paths if p.endswith('/')]
 
 
 def gsutil_cp(from_path: str, to_path: str) -> None:
@@ -74,3 +84,59 @@ def gsutil_mv(from_path: str, to_path: str) -> None:
 
     if stderr:
         raise ValueError(stderr.decode('utf-8'))
+
+
+def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
+    """Returns the date in ISO format corresponding to the storage subdir path."""
+    parts = date_subdir_path.rstrip('/').split('/')
+    return f'{parts[-3]}-{parts[-2]}-{parts[-1]}'
+
+
+def dfs_get_date_subdirs(paths_to_search: List[str], depth: int = 0) -> List[str]:
+    """Traverses down through year/month/day subdirectories to contain list of all date subdirectories that contain
+    files for a given day."""
+    if depth == 3:
+        return [p for p in paths_to_search if is_date_str(_date_str_from_date_subdir_path(p))]
+
+    date_subdirs = []
+    for p in paths_to_search:
+        sub_paths = gsutil_ls(p, directories_only=True)
+        date_subdirs.extend(dfs_get_date_subdirs(sub_paths, depth=depth+1))
+
+    return date_subdirs
+
+
+def gsutil_get_storage_subdirs_containing_file_types(storage_bucket_path: str,
+                                                     file_type: GcsfsDirectIngestFileType,
+                                                     upper_bound_date: Optional[str],
+                                                     lower_bound_date: Optional[str]) -> List[str]:
+    """Returns all subdirs containing files of type |file_type| in the provided |storage_bucket_path| for a given
+    region."""
+    subdirs = gsutil_ls(f'gs://{storage_bucket_path}', directories_only=True)
+
+    subdirs_containing_files = []
+    for outer_subdir_path in subdirs:
+        outer_subdir_name = os.path.basename(os.path.normpath(outer_subdir_path))
+        if outer_subdir_name == file_type.value:
+            date_subdirs = dfs_get_date_subdirs([outer_subdir_path])
+
+            for date_path in date_subdirs:
+                if is_between_date_strs_inclusive(
+                        upper_bound_date=upper_bound_date,
+                        lower_bound_date=lower_bound_date,
+                        date_of_interest=_date_str_from_date_subdir_path(date_path)):
+                    subdirs_containing_files.append(date_path)
+
+        elif file_type == GcsfsDirectIngestFileType.UNSPECIFIED:
+            # TODO(3020): For now we assume that all files not in raw/ or ingest_view/ storage subdirs are 'raw'
+            #  files. Once all files have been migrated to raw/ and ingest_view/ subdirs, delete this part.
+            if not is_date_str(outer_subdir_name):
+                continue
+
+            if is_between_date_strs_inclusive(
+                    upper_bound_date=upper_bound_date,
+                    lower_bound_date=lower_bound_date,
+                    date_of_interest=outer_subdir_name):
+                subdirs_containing_files.append(outer_subdir_path)
+
+    return subdirs_containing_files

@@ -20,6 +20,7 @@ Google Cloud Storage.
 """
 import abc
 import os
+import re
 from typing import Union
 from urllib.parse import unquote
 
@@ -33,6 +34,8 @@ class GcsfsPath:
     Abstract class representing path information about buckets/objects in
     Google Cloud Storage.
     """
+
+    PATH_REGEX = re.compile(r'(gs://)?(.+)')
 
     # Name of the bucket for this path in Cloud Storage
     bucket_name: str = attr.ib()
@@ -93,7 +96,12 @@ class GcsfsDirectoryPath(GcsfsPath):
 
     @classmethod
     def from_absolute_path(cls, path_str: str) -> 'GcsfsDirectoryPath':
-        split = path_str.split('/', 1)
+        match = re.match(cls.PATH_REGEX, path_str)
+
+        if not match:
+            raise ValueError(f'Path [{path_str}] does not match expected pattern')
+
+        split = match.group(2).split('/', 1)
 
         if not split:
             raise ValueError(f"No items in split of path [{path_str}]")
@@ -172,7 +180,12 @@ class GcsfsFilePath(GcsfsPath):
 
     @classmethod
     def from_absolute_path(cls, path_str: str) -> 'GcsfsFilePath':
-        split = path_str.split('/', 1)
+        match = re.match(cls.PATH_REGEX, path_str)
+
+        if not match:
+            raise ValueError(f'Path [{path_str}] does not match expected pattern')
+
+        split = match.group(2).split('/', 1)
 
         if len(split) != 2:
             raise ValueError(

@@ -37,10 +37,14 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    gcsfs_direct_ingest_storage_directory_path_for_region
+    gcsfs_direct_ingest_storage_directory_path_for_region, GcsfsDirectIngestFileType
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 
 
+# TODO(3020): This script will need to be changed once we have SQL preprocessing flow to import raw data into BQ.
+#  Our flow for files we don't want to ingest yet should be just dropped into the ingest bucket as raw files, imported
+#  to BQ without actually having an ingest view built on top of that data. We will want to change this script to allow
+#  us to upload to the *ingest* bucket with a certain date timestamp for backfills etc.
 class CheckStateFileIntoStorageController:
     """Class with functionality to upload a file or files to storage."""
 
@@ -53,7 +57,7 @@ class CheckStateFileIntoStorageController:
         self.paths = paths
         self.project_id = project_id
         self.region = region.lower()
-        self.date = date
+        self.datetime = datetime.datetime.fromisoformat(date)
 
         self.storage_bucket = \
             gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -62,7 +66,12 @@ class CheckStateFileIntoStorageController:
                 project_id=self.project_id)
 
     def _copy_to_storage(self, path: str, normalized_file_name: str) -> None:
-        storage_dir_path = f'gs://{self.storage_bucket}/{self.date}'
+        storage_dir_path = os.path.join('gs://',
+                                        self.storage_bucket,
+                                        GcsfsDirectIngestFileType.RAW_DATA.value,
+                                        str(self.datetime.year),
+                                        str(self.datetime.month),
+                                        str(self.datetime.day))
 
         logging.info("Copying [%s] to [%s]", path, storage_dir_path)
 
@@ -71,9 +80,9 @@ class CheckStateFileIntoStorageController:
 
     def _do_check_in_for_file(self, path: str) -> None:
         normalized_file_name = os.path.basename(
-            to_normalized_unprocessed_file_path(
-                path,
-                dt=datetime.datetime.fromisoformat(self.date)))
+            to_normalized_unprocessed_file_path(path,
+                                                file_type=GcsfsDirectIngestFileType.RAW_DATA,
+                                                dt=self.datetime))
         self._copy_to_storage(path, normalized_file_name)
 
     def do_check_in(self) -> None:

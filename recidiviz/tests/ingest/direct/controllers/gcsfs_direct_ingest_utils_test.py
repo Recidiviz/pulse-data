@@ -24,7 +24,7 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path
+    gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.errors import DirectIngestError
 
 
@@ -63,7 +63,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
                 'us_nd', SystemLevel.STATE),
             'recidiviz-staging-direct-ingest-state-us-nd')
 
-    def test_filename_parts_from_path(self):
+    def test_filename_parts_from_path_unspecified_file_type(self):
         with self.assertRaises(DirectIngestError):
             filename_parts_from_path(
                 GcsfsFilePath.from_absolute_path(
@@ -76,6 +76,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'unprocessed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'elite_offenders')
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(parts.utc_upload_datetime,
@@ -92,6 +93,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'elite_offenders')
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(parts.utc_upload_datetime,
@@ -108,6 +110,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'elite_offenders')
         self.assertEqual(parts.filename_suffix, '1split')
         self.assertEqual(parts.utc_upload_datetime,
@@ -126,6 +129,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'elite_offenders')
         self.assertEqual(parts.filename_suffix, '002_file_split')
         self.assertEqual(parts.utc_upload_datetime,
@@ -143,6 +147,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'elite_offenders')
         self.assertEqual(parts.filename_suffix, '002_file_split_size300')
         self.assertEqual(parts.utc_upload_datetime,
@@ -160,6 +165,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'BrazosCounty')
         self.assertEqual(parts.filename_suffix, '2019_09_25')
         self.assertEqual(parts.utc_upload_datetime,
@@ -177,6 +183,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'processed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'BrazosCounty')
         self.assertEqual(parts.filename_suffix,
                          '2019_09_25_002_file_split_size300')
@@ -195,6 +202,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'unprocessed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
         self.assertEqual(parts.file_tag, 'tak001_offender_identification')
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(parts.utc_upload_datetime,
@@ -212,6 +220,227 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.processed_state, 'unprocessed')
         self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
+        self.assertEqual(parts.file_tag, 'tak001_offender_identification')
+        self.assertEqual(parts.filename_suffix, '002_file_split_size300')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, True)
+        self.assertEqual(parts.file_split_size, 300)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'storage_bucket/region_subdir/2020-04-29/processed_2020-04-29T18:02:41:789323_test_file-(1).csv')
+        )
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.UNSPECIFIED)
+        self.assertEqual(parts.file_tag, 'test_file')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2020-04-29T18:02:41:789323'))
+        self.assertEqual(parts.date_str, '2020-04-29')
+
+        self.assertEqual(parts.is_file_split, False)
+
+    def test_filename_parts_from_path_with_file_type(self):
+        with self.assertRaises(DirectIngestError):
+            filename_parts_from_path(
+                GcsfsFilePath.from_absolute_path(
+                    'bucket/us_ca_sf/elite_offenders.csv'))
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/unprocessed_2019-08-07T22:09:18:770655_'
+                'raw_elite_offenders.csv'))
+
+        self.assertEqual(parts.processed_state, 'unprocessed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-08-07T22:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-08-07')
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'ingest_view_elite_offenders.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'raw_elite_offenders_1split.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, '1split')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        # Needs the actual file_split suffix to be a file split
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'ingest_view_elite_offenders_002_file_split.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, '002_file_split')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, True)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'raw_elite_offenders_002_file_split_size300.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'elite_offenders')
+        self.assertEqual(parts.filename_suffix, '002_file_split_size300')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, True)
+        self.assertEqual(parts.file_split_size, 300)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'ingest_view_BrazosCounty_2019_09_25.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.assertEqual(parts.file_tag, 'BrazosCounty')
+        self.assertEqual(parts.filename_suffix, '2019_09_25')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-nd/processed_2019-09-07T00:09:18:770655_'
+                'raw_BrazosCounty_2019_09_25_002_file_split_size300.csv'))
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'BrazosCounty')
+        self.assertEqual(parts.filename_suffix,
+                         '2019_09_25_002_file_split_size300')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, True)
+        self.assertEqual(parts.file_split_size, 300)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-mo/unprocessed_2019-09-07T00:09:18:770655_'
+                'ingest_view_tak001_offender_identification.csv'))
+
+        self.assertEqual(parts.processed_state, 'unprocessed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.assertEqual(parts.file_tag, 'tak001_offender_identification')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-mo/unprocessed_2019-09-07T00:09:18:770655_'
+                'raw_tak001_offender_identification_002_file_split_size300.csv'))
+
+        self.assertEqual(parts.processed_state, 'unprocessed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'tak001_offender_identification')
+        self.assertEqual(parts.filename_suffix, '002_file_split_size300')
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2019-09-07T00:09:18:770655'))
+        self.assertEqual(parts.date_str, '2019-09-07')
+
+        self.assertEqual(parts.is_file_split, True)
+        self.assertEqual(parts.file_split_size, 300)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'storage_bucket/raw/2020/04/29/processed_2020-04-29T18:02:41:789323_raw_test_file-(1).csv')
+        )
+
+        self.assertEqual(parts.processed_state, 'processed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, 'test_file')
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(parts.utc_upload_datetime,
+                         datetime.datetime.fromisoformat(
+                             '2020-04-29T18:02:41:789323'))
+        self.assertEqual(parts.date_str, '2020-04-29')
+
+        self.assertEqual(parts.is_file_split, False)
+
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                'bucket-us-mo/unprocessed_2019-09-07T00:09:18:770655_'
+                'raw_tak001_offender_identification_002_file_split_size300-(5).csv'))
+
+        self.assertEqual(parts.processed_state, 'unprocessed')
+        self.assertEqual(parts.extension, 'csv')
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
         self.assertEqual(parts.file_tag, 'tak001_offender_identification')
         self.assertEqual(parts.filename_suffix, '002_file_split_size300')
         self.assertEqual(parts.utc_upload_datetime,
