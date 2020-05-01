@@ -31,7 +31,10 @@ def fake_region(*,
                 environment: str = 'local',
                 jurisdiction_id: str = 'unknown',
                 ingestor: Optional[Union[BaseScraper,
-                                         BaseDirectIngestController]] = None):
+                                         BaseDirectIngestController]] = None,
+                is_raw_vs_ingest_file_name_detection_enabled: bool = False,
+                are_raw_data_bq_imports_enabled_in_env: bool = False,
+                are_ingest_view_exports_enabled_in_env: bool = False):
     region = create_autospec(Region)
     region.region_code = region_code
     region.agency_type = agency_type
@@ -43,9 +46,9 @@ def fake_region(*,
         Region.is_ingest_launched_in_env(region)
     # TODO(3020): Write gcsfs_direct_ingest_controller tests with this enabled to True with a raw files yaml (to come)
     #   properly populated for this region.
-    region.is_raw_vs_ingest_file_name_detection_enabled.return_value = False
-    region.are_raw_data_bq_imports_enabled_in_env.return_value = False
-    region.are_ingest_view_exports_enabled_in_env.return_value = False
+    region.is_raw_vs_ingest_file_name_detection_enabled.return_value = is_raw_vs_ingest_file_name_detection_enabled
+    region.are_raw_data_bq_imports_enabled_in_env.return_value = are_raw_data_bq_imports_enabled_in_env
+    region.are_ingest_view_exports_enabled_in_env.return_value = are_ingest_view_exports_enabled_in_env
     return region
 
 
