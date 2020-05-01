@@ -27,7 +27,8 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     drop_placeholder_periods, \
     validate_admission_data, validate_release_data, \
     prepare_incarceration_periods_for_calculations, \
-    collapse_temporary_custody_and_revocation_periods, drop_periods_not_under_state_custodial_authority
+    collapse_temporary_custody_and_revocation_periods, drop_periods_not_under_state_custodial_authority, \
+    _infer_missing_dates_and_statuses
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel
@@ -977,10 +978,9 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(validated_incarceration_periods, input_incarceration_periods)
 
-    def test_prepare_incarceration_periods_for_calculations_empty_admission_data_us_nd(self):
-        """Tests that the incarceration periods are correctly collapsed when
-        there's an empty admission_date and admission_reason following a
-        transfer out, where the incarceration periods are from 'US_ND'.
+    def test_prepare_incarceration_periods_for_calculations_empty_admission_data(self):
+        """Tests that the incarceration periods are correctly collapsed when there's an empty admission_date and
+        admission_reason following a transfer out..
         """
         first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1022,41 +1022,6 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 release_date=date(2010, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
         ])
-
-    def test_prepare_incarceration_periods_for_calculations_empty_admission_data_not_us_nd(self):
-        """Tests that the validator does not call the state-specific code to
-        set empty admission data when the state code is not 'US_ND'.
-        """
-        first_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                external_id='99983-1|99983-2',
-                incarceration_period_id=1111,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='US_CA',
-                admission_date=date(2004, 1, 3),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2008, 4, 14),
-                release_reason=ReleaseReason.TRANSFER)
-
-        second_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                external_id='99983-3',
-                incarceration_period_id=2222,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='US_CA',
-                admission_date=None,
-                admission_reason=None,
-                release_date=date(2010, 4, 14),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
-
-        input_incarceration_periods = [first_incarceration_period, second_incarceration_period]
-
-        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(input_incarceration_periods)
-
-        self.assertEqual([first_incarceration_period], collapsed_incarceration_periods)
-
 
     def test_prepare_incarceration_periods_for_calculations_temporary_between_valid(self):
         valid_incarceration_period_1 = \
@@ -1142,6 +1107,90 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
             first_reincarceration_period,
             second_reincarceration_period])
 
+    def test_sort_incarceration_periods_empty_release_dates(self):
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        first_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2011, 3, 4),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        second_reincarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=3333,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2012, 2, 4),
+                admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        input_incarceration_periods = [
+            initial_incarceration_period, second_reincarceration_period, first_reincarceration_period]
+
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(input_incarceration_periods)
+
+        self.assertEqual(validated_incarceration_periods, [
+            initial_incarceration_period,
+            first_reincarceration_period,
+            second_reincarceration_period])
+
+    def test_sort_incarceration_periods_two_admissions_same_day(self):
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 11, 20),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        third_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=3333,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2012, 2, 4),
+                admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        input_incarceration_periods = [third_incarceration_period, second_incarceration_period,
+                                       initial_incarceration_period]
+
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(input_incarceration_periods)
+
+        self.assertEqual(validated_incarceration_periods, [
+            initial_incarceration_period,
+            second_incarceration_period,
+            third_incarceration_period])
+
     def test_collapse_incarceration_periods(self):
         initial_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1187,38 +1236,35 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         ])
 
     def test_collapse_incarceration_periods_missing_transfer_in(self):
-        initial_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                admission_date=date(2003, 1, 2),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2007, 4, 4),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
+        initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2003, 1, 2),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2007, 4, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        first_reincarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=2222,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                admission_date=date(2008, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2010, 12, 4),
-                release_reason=ReleaseReason.TRANSFER)
+        first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
 
-        second_reincarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=3333,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                admission_date=None,
-                admission_reason=None,
-                release_date=date(2014, 4, 14),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
+        second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=None,
+            admission_reason=None,
+            release_date=date(2014, 4, 14),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
 
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period,
@@ -1226,7 +1272,18 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
-        self.assertEqual([initial_incarceration_period, first_reincarceration_period], collapsed_incarceration_periods)
+        expected_collapsed_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2014, 4, 14),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        self.assertEqual([initial_incarceration_period, expected_collapsed_period], collapsed_incarceration_periods)
 
     def test_prepare_incarceration_periods_for_calculations_multiple_jail_and_valid(self):
         jail_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1537,3 +1594,674 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         validated_incarceration_periods = prepare_incarceration_periods_for_calculations(incarceration_periods)
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
+
+
+class TestInferMissingDatesAndStatuses(unittest.TestCase):
+    """Tests the _infer_missing_dates_and_statuses."""
+    def test_infer_missing_dates_and_statuses(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 4),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 24),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 24),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        # Invalid open period with same admission date as valid_incarceration_period_1
+        invalid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.TRANSFER,
+        )
+
+        incarceration_periods = [valid_incarceration_period_3,
+                                 valid_incarceration_period_1,
+                                 valid_incarceration_period_2,
+                                 invalid_open_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.TRANSFER,
+            # Release date set to the admission date of valid_incarceration_period_1
+            release_date=valid_incarceration_period_1.admission_date,
+            release_reason=ReleaseReason.INTERNAL_UNKNOWN
+        )
+
+        self.assertListEqual([
+            updated_open_period,
+            valid_incarceration_period_1,
+            valid_incarceration_period_2,
+            valid_incarceration_period_3
+        ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_all_valid(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='4',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 4),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 24),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 24),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        # Valid open period
+        valid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2015, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+        )
+
+        incarceration_periods = [valid_open_period,
+                                 valid_incarceration_period_1,
+                                 valid_incarceration_period_2,
+                                 valid_incarceration_period_3]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_only_open(self):
+        valid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2015, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+        )
+
+        incarceration_periods = [valid_open_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_only_one_closed(self):
+        closed_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            release_date=date(2015, 11, 20),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [closed_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2015, 11, 20),
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2015, 11, 20),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertListEqual([updated_period], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_missing_admission(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 4),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 24),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 24),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        # Invalid period without an admission_date, where the release_date is the same as the release_date on
+        # valid_incarceration_period_3
+        invalid_period_no_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_periods = [valid_incarceration_period_3,
+                                 valid_incarceration_period_1,
+                                 valid_incarceration_period_2,
+                                 invalid_period_no_admission]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=valid_incarceration_period_3.release_date,
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        self.assertListEqual([
+            valid_incarceration_period_1,
+            valid_incarceration_period_2,
+            valid_incarceration_period_3,
+            updated_period
+        ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_mismatch_admission_release(self):
+        # Open incarceration period with no release_date
+        invalid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 24),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        # Invalid period without an admission_date
+        invalid_closed_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_periods = [invalid_closed_period, invalid_open_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 24),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.INTERNAL_UNKNOWN
+        )
+
+        updated_closed_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2012, 12, 30),
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2012, 12, 30),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        self.assertListEqual([
+            updated_open_period,
+            updated_closed_period
+        ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_valid_open_admission(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2011, 11, 20),
+            release_reason=ReleaseReason.TRANSFER)
+
+        # Invalid open period with same admission date as valid_incarceration_period_1
+        valid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='0',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.TRANSFER,
+        )
+
+        incarceration_periods = [valid_incarceration_period_1, valid_open_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_two_open_two_invalid_closed(self):
+        open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 11),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        closed_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.TRANSFER)
+
+        closed_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=4444,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='4',
+            state_code='US_ND',
+            release_date=date(2001, 7, 17),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [open_incarceration_period_1,
+                                 open_incarceration_period_2,
+                                 closed_incarceration_period_1,
+                                 closed_incarceration_period_2]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 11),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        updated_open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.INTERNAL_UNKNOWN
+        )
+
+        updated_closed_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        updated_closed_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=4444,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='4',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2001, 7, 17),
+            release_reason=ReleaseReason.TRANSFER)
+
+        self.assertListEqual([
+            updated_open_incarceration_period_1,
+            updated_open_incarceration_period_2,
+            updated_closed_incarceration_period_1,
+            updated_closed_incarceration_period_2
+        ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_multiple_open_periods(self):
+        open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        open_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER)
+
+        incarceration_periods = [open_incarceration_period_1,
+                                 open_incarceration_period_2,
+                                 open_incarceration_period_3]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='1',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        updated_open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='2',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER
+        )
+
+        updated_open_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2001, 6, 19),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2001, 6, 19),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        self.assertListEqual([
+            updated_open_incarceration_period_3,
+            updated_open_incarceration_period_1,
+            updated_open_incarceration_period_2
+        ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_no_periods(self):
+        incarceration_periods = []
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertEqual(updated_incarceration_periods, [])
+
+    def test_infer_missing_dates_and_statuses_set_missing_admission_data_after_transfer(self):
+        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2008, 4, 14),
+            release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=None,
+            admission_reason=None,
+            release_date=date(2010, 4, 14),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [first_incarceration_period,
+                                 second_incarceration_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertEqual(updated_incarceration_periods, [
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='1',
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                admission_date=date(2004, 1, 3),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 4, 14),
+                release_reason=ReleaseReason.TRANSFER),
+            StateIncarcerationPeriod.new_with_defaults(
+                external_id='2',
+                incarceration_period_id=2222,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                admission_date=date(2008, 4, 14),
+                admission_reason=AdmissionReason.TRANSFER,
+                release_date=date(2010, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+        ])
+
+    def test_infer_missing_dates_and_statuses_same_dates_sort_by_external_id(self):
+        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2008, 4, 14),
+            release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2008, 4, 14),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [second_incarceration_period,
+                                 first_incarceration_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_order = [first_incarceration_period, second_incarceration_period]
+
+        self.assertEqual(updated_incarceration_periods, updated_order)
+
+    def test_infer_missing_dates_and_statuses_same_admission_dates_sort_by_external_id(self):
+        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        incarceration_periods = [second_incarceration_period,
+                                 first_incarceration_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2004, 1, 3),
+            release_reason=ReleaseReason.INTERNAL_UNKNOWN
+        )
+
+        expected_output = [updated_first_incarceration_period, second_incarceration_period]
+
+        self.assertEqual(expected_output, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_same_admission_dates_sort_by_statuses(self):
+        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        incarceration_periods = [second_incarceration_period,
+                                 first_incarceration_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2004, 1, 3),
+            release_reason=ReleaseReason.INTERNAL_UNKNOWN
+        )
+
+        expected_output = [updated_second_incarceration_period, first_incarceration_period]
+
+        self.assertEqual(expected_output, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_no_admission_dates(self):
+        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            release_date=date(2004, 1, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            release_date=date(2004, 1, 10),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [second_incarceration_period,
+                                 first_incarceration_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2004, 1, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2004, 1, 3),
+            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2004, 1, 10),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        expected_output = [updated_first_incarceration_period, second_incarceration_period]
+
+        self.assertEqual(expected_output, updated_incarceration_periods)

@@ -27,6 +27,7 @@ Attributes:
     FOLLOW_UP_PERIODS: a list of integers, the follow-up periods that we measure
         recidivism over, from 1 to 10.
 """
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import datetime
@@ -312,20 +313,19 @@ def returned_within_follow_up_period(event: ReleaseEvent, period: int) -> bool:
     return False
 
 
-def days_at_liberty(event: ReleaseEvent) -> int:
-    """Returns the number of days between a release and a reincarceration.
-
-    If the event is not an instance of recidivism, returns -1.
-    """
+def days_at_liberty(event: RecidivismReleaseEvent) -> int:
+    """Returns the number of days between a release and a reincarceration."""
     release_date = event.release_date
 
-    if isinstance(event, RecidivismReleaseEvent):
-        return_date = event.reincarceration_date
+    return_date = event.reincarceration_date
 
-        delta = return_date - release_date
-        return delta.days
+    delta = return_date - release_date
 
-    return -1
+    if delta.days < 0:
+        logging.warning("Release date on RecidivismReleaseEvent is before admission date: %s."
+                        "The identifier step is not properly classifying releases.", event)
+
+    return delta.days
 
 
 def earliest_recidivated_follow_up_period(

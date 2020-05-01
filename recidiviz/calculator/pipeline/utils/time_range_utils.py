@@ -22,6 +22,7 @@ from typing import List, Tuple, Optional
 import attr
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import first_day_of_next_month
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod
 
 
@@ -49,12 +50,17 @@ class TimeRange:
         """Generates a TimeRange for the time covered by the incarceration period.  Since TimeRange is never open,
         if the incarceration period is still active, then the exclusive upper bound of the range is set to tomorrow.
         """
-        ip_upper_bound_exclusive_date = incarceration_period.release_date \
-            if incarceration_period.release_date else (date.today() + timedelta(days=1))
-
         if not incarceration_period.admission_date:
             raise ValueError(
                 f'Expected start date for period {incarceration_period.incarceration_period_id}, found None')
+
+        if (not incarceration_period.release_date and
+                incarceration_period.status != StateIncarcerationPeriodStatus.IN_CUSTODY):
+            raise ValueError("Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
+                             " setting missing dates.")
+
+        ip_upper_bound_exclusive_date = incarceration_period.release_date \
+            if incarceration_period.release_date else (date.today() + timedelta(days=1))
 
         return TimeRange(lower_bound_inclusive_date=incarceration_period.admission_date,
                          upper_bound_exclusive_date=ip_upper_bound_exclusive_date)

@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType
 
@@ -157,6 +158,12 @@ def find_end_of_month_state_prison_stays(
     release_date = incarceration_period.release_date
 
     if release_date is None:
+        if incarceration_period.status != StateIncarcerationPeriodStatus.IN_CUSTODY:
+            # This should not happen after validation.
+            raise ValueError("Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
+                             " setting missing dates.")
+
+        # This person is in custody for this period. Set the release date for today.
         release_date = date.today()
 
     if admission_date is None:

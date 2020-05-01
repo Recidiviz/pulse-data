@@ -20,12 +20,14 @@ import unittest
 from datetime import date, timedelta
 from typing import List
 
+import pytest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateIncarcerationPeriodReleaseReason as ReleaseReason
+    StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
+    StateIncarcerationPeriodReleaseReason as ReleaseReason, StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -59,6 +61,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip1',
                 state_code='US_XX',
@@ -69,6 +72,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         second_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip2',
                 state_code='US_XX',
@@ -94,6 +98,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip1',
                 state_code='US_XX',
@@ -104,6 +109,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         second_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip2',
                 state_code='US_XX',
@@ -346,6 +352,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=444,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 external_id='ip4',
                 state_code='US_XX',
                 admission_date=date(2007, 12, 1),
@@ -367,6 +374,21 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
         }
 
         self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+
+    @freeze_time('2008-04-01')
+    def test_period_no_release_date_not_in_custody(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=444,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                external_id='ip4',
+                state_code='US_XX',
+                admission_date=date(2007, 12, 1),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+            )
+
+        with pytest.raises(ValueError):
+            _ = IncarcerationPeriodIndex([incarceration_period])
 
     def test_multiple_periods(self):
         incarceration_period = \
@@ -469,6 +491,7 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
 
         incarceration_period_mulitple_months = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 incarceration_period_id=444,
                 external_id='ip4',
                 state_code='US_XX',
@@ -480,6 +503,7 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
 
         incarceration_period_mulitple_months_2 = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 incarceration_period_id=555,
                 external_id='ip5',
                 state_code='US_XX',
@@ -491,6 +515,7 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
 
         incarceration_period_unterminated = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_period_id=666,
                 external_id='ip6',
                 state_code='US_XX',

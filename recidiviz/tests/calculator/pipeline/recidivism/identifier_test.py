@@ -79,7 +79,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_ND',
-            admission_date=date(2014, 4, 14),
+            admission_date=date(2020, 4, 14),
             admission_reason=AdmissionReason.PROBATION_REVOCATION)
 
         temporary_custody_reincarceration_standalone = StateIncarcerationPeriod.new_with_defaults(
@@ -153,22 +153,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             admission_date=date(2014, 4, 14),
             admission_reason=AdmissionReason.PROBATION_REVOCATION)
 
-        temporary_custody_reincarceration_standalone = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4444,
-            external_id='4',
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
-            admission_date=date(2019, 4, 5),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2019, 4, 14),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
-
         incarceration_periods = [
             initial_incarceration_period,
             temporary_custody_reincarceration,
-            revocation_incarceration_period,
-            temporary_custody_reincarceration_standalone]
+            revocation_incarceration_period]
 
         release_events_by_cohort = identifier.find_release_events_by_cohort_year(
             incarceration_periods, _COUNTY_OF_RESIDENCE)
@@ -318,6 +306,40 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 _COUNTY_OF_RESIDENCE)
 
         assert not release_events_by_cohort
+
+    def test_find_release_events_by_cohort_year_invalid_open_period(self):
+        """Tests the find_release_events_by_cohort_year function where the person has an open IN_CUSTODY period that is
+        invalid because the person was released elsewhere after the admission to the period."""
+        invalid_open_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION)
+
+        closed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 3, 14),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [invalid_open_incarceration_period, closed_incarceration_period],
+                _COUNTY_OF_RESIDENCE)
+
+        assert release_events_by_cohort[2009] == [
+            NonRecidivismReleaseEvent(
+                state_code='TX',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                original_admission_date=closed_incarceration_period.admission_date,
+                release_date=closed_incarceration_period.release_date,
+                release_facility=None)]
 
     def test_find_release_events_by_cohort_year_no_recid_cond_release(self):
         """Tests the find_release_events_by_cohort_year function when the person
