@@ -93,7 +93,7 @@ class Region:
     is_stoppable: Optional[bool] = attr.ib(default=False)
     is_direct_ingest: Optional[bool] = attr.ib(default=False)
 
-    # TODO(3020): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
+    # TODO(3162): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
     raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
     raw_data_bq_imports_enabled_env = attr.ib(default=None)
     ingest_view_exports_enabled_env = attr.ib(default=None)

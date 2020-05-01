@@ -213,7 +213,7 @@ class GcsfsDirectIngestController(
         self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path)
 
         if not self.region.are_ingest_view_exports_enabled_in_env():
-            # TODO(3020) This is a stopgap measure for regions that have only partially launched. Delete once SQL
+            # TODO(3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
             #  pre-processing is enabled for all direct ingest regions.
             parts = filename_parts_from_path(data_import_args.raw_data_file_path)
             ingest_file_tags = self._get_file_tag_rank_list()
@@ -275,9 +275,6 @@ class GcsfsDirectIngestController(
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(self.region, task_args)
                 did_schedule = True
 
-        # TODO(3020): Write a test that hits this block with new scheduled tasks
-        # TODO(3020): Write a test that hits this block with no remaining tasks to schedule
-        # TODO(3020): Write a test that hits this block with jobs already queued but no new tasks
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
     def _get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:

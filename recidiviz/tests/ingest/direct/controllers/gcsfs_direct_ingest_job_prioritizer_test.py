@@ -32,7 +32,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
     FakeDirectIngestGCSFileSystem
 
 
-# TODO(3020): Delete this test class once is_raw_vs_ingest_file_name_detection_enabled() is true for all regions
+# TODO(3162): Delete this test class once is_raw_vs_ingest_file_name_detection_enabled() is true for all regions
 class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
     """Tests for the GcsfsDirectIngestJobPrioritizer."""
 
