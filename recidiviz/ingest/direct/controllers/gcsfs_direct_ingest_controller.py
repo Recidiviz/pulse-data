@@ -26,7 +26,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX
+    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
@@ -107,6 +108,11 @@ class GcsfsDirectIngestController(
                 ingest_job_file_type_filter)
 
         self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
+
+        self.raw_file_import_manager = DirectIngestRawFileImportManager(
+            region=self.region,
+            fs=self.fs,
+            ingest_directory_path=self.ingest_directory_path)
 
     # ================= #
     # NEW FILE HANDLING #
@@ -191,14 +197,40 @@ class GcsfsDirectIngestController(
                 just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
+        """Process a raw incoming file by importing it to BQ, tracking it in our metadata tables, and moving it to
+        storage on completion.
+        """
         check_is_region_launched_in_env(self.region)
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
             raise ValueError(f'Raw data imports not enabled for region [{self.region.region_code}]')
 
-        # TODO(3020): Do actual BQ import, move raw file to storage, if ingest view export not enabled,
-        #  copy raw file to ingest_view type, otherwise trigger another call to handle_files() (or the subset that
-        #  starts with checking for ingest view export jobs?)
-        raise ValueError('Unimplemented!')
+        if not self.fs.exists(data_import_args.raw_data_file_path):
+            logging.warning(
+                "File path [%s] no longer exists - might have already been "
+                "processed or deleted", data_import_args.raw_data_file_path)
+            return
+
+        self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path)
+
+        if not self.region.are_ingest_view_exports_enabled_in_env():
+            # TODO(3020) This is a stopgap measure for regions that have only partially launched. Delete once SQL
+            #  pre-processing is enabled for all direct ingest regions.
+            parts = filename_parts_from_path(data_import_args.raw_data_file_path)
+            ingest_file_tags = self._get_file_tag_rank_list()
+
+            if parts.file_tag in ingest_file_tags:
+                self.fs.copy(
+                    data_import_args.raw_data_file_path,
+                    GcsfsFilePath.from_absolute_path(to_normalized_unprocessed_file_path_from_normalized_path(
+                        data_import_args.raw_data_file_path.abs_path(),
+                        file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW
+                    ))
+                )
+
+        # TODO(3020): Technically moving to the processed path here will trigger the handle_new_files() call we need to
+        # now check for ingest view export jobs - consider doing something more explicit, intentional here.
+        processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
+        self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
 
     def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         check_is_region_launched_in_env(self.region)
@@ -229,16 +261,6 @@ class GcsfsDirectIngestController(
             return True
         return False
 
-    def _get_import_args_for_unprocessed_raw_files(self) -> List[GcsfsRawDataBQImportArgs]:
-        if not self.region.are_raw_data_bq_imports_enabled_in_env():
-            raise ValueError(f'Cannot fire raw ingest jobs for region [{self.region.region_code}]')
-
-        # TODO(3020): Implement
-        #   - Add per-region yaml for raw file configs
-        #   - Unprocessed files with 'raw' tag that are declared in yaml - add to list of args
-
-        return []
-
     def _schedule_raw_data_import_tasks(self) -> bool:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
             return False
@@ -246,7 +268,8 @@ class GcsfsDirectIngestController(
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(self.region)
 
         did_schedule = False
-        tasks_to_schedule = self._get_import_args_for_unprocessed_raw_files()
+        tasks_to_schedule = [GcsfsRawDataBQImportArgs(path)
+                             for path in self.raw_file_import_manager.get_unprocessed_raw_files_to_import()]
         for task_args in tasks_to_schedule:
             if not queue_info.has_task_already_scheduled(task_args):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(self.region, task_args)

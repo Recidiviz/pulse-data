@@ -1,0 +1,109 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2020 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests that each regions direct ingest directory is set up properly."""
+import os
+import re
+import unittest
+from typing import List, Callable
+
+import yaml
+from mock import create_autospec
+
+import recidiviz
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.utils.regions import get_region
+
+_REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
+
+_REGION_REGEX = re.compile(r'us_[a-z]{2}(_[a-z]+)?')
+
+
+class DirectIngestRegionDirStructureTest(unittest.TestCase):
+    """Tests that each regions direct ingest directory is set up properly."""
+
+    def _get_existing_region_dir_paths(self):
+        return [os.path.join(_REGIONS_DIR, d) for d in self._get_existing_region_dir_names()]
+
+    def _get_existing_region_dir_names(self) -> List[str]:
+        return [d for d in os.listdir(_REGIONS_DIR)
+                if os.path.isdir(os.path.join(_REGIONS_DIR, d)) and not d.startswith('__')]
+
+    def test_region_dirname_matches_pattern(self):
+        for d in self._get_existing_region_dir_names():
+            self.assertIsNotNone(re.match(_REGION_REGEX, d),
+                                 f'Region [{d}] does not match expected region pattern.')
+
+    def run_check_valid_yamls_exist_in_all_regions(self,
+                                                   generate_yaml_name_fn: Callable[[str], str],
+                                                   validate_contents_fn: Callable[[str, object], None]):
+        for dir_path in self._get_existing_region_dir_paths():
+            region_code = os.path.basename(dir_path)
+
+            yaml_path = os.path.join(dir_path, generate_yaml_name_fn(region_code))
+            self.assertTrue(os.path.exists(yaml_path), f'Path [{yaml_path}] does not exist.')
+            with open(yaml_path, 'r') as ymlfile:
+                file_contents = yaml.full_load(ymlfile)
+                self.assertTrue(file_contents)
+                validate_contents_fn(yaml_path, file_contents)
+
+    def test_manifest_yaml_format(self):
+        def validate_manifest_contents(file_path: str, file_contents: object):
+
+            if not isinstance(file_contents, dict):
+                self.fail(f'File contents type [{type(file_contents)}], expected dict.')
+
+            manifest_yaml_required_keys = [
+                'agency_name',
+                'agency_type',
+                'timezone',
+                'environment',
+                'shared_queue',
+                'jurisdiction_id',
+            ]
+
+            for k in manifest_yaml_required_keys:
+                self.assertTrue(k in file_contents, f'Key [{k}] not in [{file_path}]')
+                self.assertTrue(file_contents[k], f'Contents of key [{k}] are falsy')
+
+        self.run_check_valid_yamls_exist_in_all_regions(lambda region_code: 'manifest.yaml',
+                                                        validate_manifest_contents)
+
+    def test_region_controller_exists(self):
+        for dir_path in self._get_existing_region_dir_paths():
+            region_code = os.path.basename(dir_path)
+            controller_path = os.path.join(dir_path, f'{region_code}_controller.py')
+            self.assertTrue(os.path.exists(controller_path), f'Path [{controller_path}] does not exist.')
+
+            region = get_region(region_code, is_direct_ingest=True)
+            self.assertIsNotNone(region.get_ingestor_class())
+
+    def test_raw_files_yaml_parses_all_regions(self):
+        for region_code in self._get_existing_region_dir_names():
+            region = get_region(region_code, is_direct_ingest=True)
+
+            raw_file_manager = DirectIngestRawFileImportManager(
+                region=region,
+                fs=create_autospec(DirectIngestGCSFileSystem),
+                ingest_directory_path=create_autospec(GcsfsDirectoryPath))
+
+            if region.raw_data_bq_imports_enabled_env is not None:
+                self.assertTrue(raw_file_manager.raw_file_configs)
+
+            for config in raw_file_manager.raw_file_configs:
+                self.assertTrue(config.primary_key_cols)

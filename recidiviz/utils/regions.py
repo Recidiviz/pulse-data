@@ -105,8 +105,8 @@ class Region:
         if self.environment not in {*environment.GAE_ENVIRONMENTS, False}:
             raise ValueError('Invalid environment: {}'.format(self.environment))
 
-    def get_ingestor(self):
-        """Retrieve an ingest object for a particular region
+    def get_ingestor_class(self):
+        """Retrieve the class for the ingest object for a particular region
 
         Returns:
             An instance of the region's ingest class (e.g., UsNyScraper)
@@ -120,6 +120,16 @@ class Region:
         module = importlib.import_module(module_name)
         ingest_class = getattr(
             module, get_ingestor_name(self.region_code, ingest_type_name))
+
+        return ingest_class
+
+    def get_ingestor(self):
+        """Retrieve an ingest object for a particular region
+
+        Returns:
+            An instance of the region's ingest class (e.g., UsNyScraper)
+        """
+        ingest_class = self.get_ingestor_class()
 
         return ingest_class()
 
