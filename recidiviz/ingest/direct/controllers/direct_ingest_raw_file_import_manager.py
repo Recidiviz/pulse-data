@@ -44,7 +44,7 @@ class DirectIngestRawFileConfig:
         )
 
 
-@attr.s(frozen=True)
+@attr.s
 class DirectIngestRawFileImportManager:
     """Class that parses and stores raw data import configs for a region, with functionality for executing an
     import of a specific file.
@@ -67,6 +67,9 @@ class DirectIngestRawFileImportManager:
     raw_file_configs: List[DirectIngestRawFileConfig] = attr.ib()
 
     @raw_file_configs.default
+    def _raw_data_file_configs(self) -> List[DirectIngestRawFileConfig]:
+        return self._get_raw_data_file_configs()
+
     def _get_raw_data_file_configs(self) -> List[DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
         with open(self.yaml_config_file_path, 'r') as yaml_file:
