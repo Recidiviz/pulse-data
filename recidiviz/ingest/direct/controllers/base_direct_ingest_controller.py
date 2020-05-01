@@ -95,8 +95,9 @@ class BaseDirectIngestController(Ingestor,
                 self._job_tag(next_job_args))
             return
 
-        # TODO(3020): Add similar logic between the raw data BQ import and ingest view export tasks, then delete this
-        #  wait logic from here once all regions have been transitioned to a SQL preprocessing model.
+        # TODO(3020): Add similar logic between the raw data BQ import and ingest view export tasks
+        # TODO(3162): Delete this wait logic from here once all regions have been transitioned to a SQL
+        #  preprocessing model.
         wait_time_sec = self._wait_time_sec_for_next_args(next_job_args)
         logging.info("Found next ingest job to run [%s] with wait time [%s].",
                      self._job_tag(next_job_args), wait_time_sec)

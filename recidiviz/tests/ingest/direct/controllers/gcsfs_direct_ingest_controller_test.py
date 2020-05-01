@@ -37,16 +37,16 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, filename_parts_from_path
+    GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
-    run_task_queues_to_empty, check_all_paths_processed
+    run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
-    TEST_COUNTY_REGION
+    TEST_COUNTY_REGION, fake_region
 
 
 class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
@@ -114,7 +114,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     FIXTURE_PATH_PREFIX = 'direct/controllers'
 
-    def run_async_file_order_test_for_controller_cls(self, controller_cls):
+    TEST_BQ_IMPORT_ENABLED_REGION = fake_region(
+        region_code='us_xx',
+        is_raw_vs_ingest_file_name_detection_enabled=True,
+        are_raw_data_bq_imports_enabled_in_env=True
+    )
+
+    def run_async_file_order_test_for_controller_cls(self, controller_cls) -> GcsfsDirectIngestController:
         """Writes all expected files to the mock fs, then kicks the controller
         and ensures that all jobs are run to completion in the proper order."""
 
@@ -132,11 +138,22 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                               BaseTestCsvGcsfsDirectIngestController)
         self.assertFalse(controller.has_temp_paths_in_disk())
 
+        return controller
+
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_STATE_REGION))
     def test_state_runs_files_in_order(self):
         self.run_async_file_order_test_for_controller_cls(
             StateTestGcsfsDirectIngestController)
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_state_runs_files_in_order_bq_import_enabled(self):
+
+        controller = self.run_async_file_order_test_for_controller_cls(
+            StateTestGcsfsDirectIngestController)
+
+        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
+        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_COUNTY_REGION))
@@ -163,6 +180,51 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_state_unexpected_tag_bq_imports_enabled(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
+
+        file_tags = ['tagA', 'Unexpected_Tag', 'tagB', 'tagC']
+        unexpected_tags = ['Unexpected_Tag']
+
+        add_paths_with_tags_and_process(
+            self, controller, file_tags, unexpected_tags)
+
+        split_paths = {path
+                       for path in controller.fs.all_paths
+                       if controller.fs.is_split_file(path)}
+        self.assertFalse(split_paths)
+
+        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
+        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
+
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_state_tag_we_import_but_do_not_ingest(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
+
+        file_tags = ['tagA', 'tagWeDoNotIngest', 'tagB', 'tagC']
+        unexpected_tags = []
+
+        add_paths_with_tags_and_process(
+            self, controller, file_tags, unexpected_tags)
+
+        split_paths = {path
+                       for path in controller.fs.all_paths
+                       if controller.fs.is_split_file(path)}
+        self.assertFalse(split_paths)
+
+        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
+        self.assertEqual(4, len(controller.raw_file_import_manager.imported_paths))
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_queue_same_job_twice(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -216,6 +278,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             1,
             task_manager.get_process_job_queue_info(controller.region).size())
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_next_schedule_runs_before_process_job_clears(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -270,6 +333,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_schedule_more_than_one_delayed_scheduler_job(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -311,6 +375,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_process_already_normalized_paths(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -342,6 +407,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 return True
         return False
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_process_file_that_needs_splitting(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -373,6 +439,75 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(found_suffixes, {'00001_file_split_size1',
                                           '00002_file_split_size1'})
 
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_process_ingest_view_file_that_needs_splitting_bq_import_enabled(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
+
+        # Set line limit to 1
+        controller.file_split_line_limit = 1
+
+        # pylint:disable=protected-access
+        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+
+        add_paths_with_tags_and_process(self,
+                                        controller,
+                                        file_tags,
+                                        pre_normalize_filename=True,
+                                        file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
+
+        processed_split_file_paths = defaultdict(list)
+        for path in controller.fs.all_paths:
+            if self._path_in_split_file_storage_subdir(path, controller):
+                file_tag = filename_parts_from_path(path).file_tag
+                processed_split_file_paths[file_tag].append(path)
+
+        self.assertEqual(1, len(processed_split_file_paths.keys()))
+        self.assertEqual(2, len(processed_split_file_paths['tagC']))
+
+        found_suffixes = {filename_parts_from_path(p).filename_suffix
+                          for p in processed_split_file_paths['tagC']}
+        self.assertEqual(found_suffixes, {'00001_file_split_size1',
+                                          '00002_file_split_size1'})
+
+
+    @patch("recidiviz.utils.regions.get_region",
+           Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_process_raw_file_that_gets_imported_but_not_ingested_never_split(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
+
+        # Set line limit to 1
+        controller.file_split_line_limit = 1
+
+        # pylint:disable=protected-access
+        file_tags = ['tagWeDoNotIngest']
+
+        add_paths_with_tags_and_process(self,
+                                        controller,
+                                        file_tags,
+                                        pre_normalize_filename=True,
+                                        file_type=GcsfsDirectIngestFileType.RAW_DATA)
+
+        processed_split_file_paths = defaultdict(list)
+        for path in controller.fs.all_paths:
+            if self._path_in_split_file_storage_subdir(path, controller):
+                file_tag = filename_parts_from_path(path).file_tag
+                processed_split_file_paths[file_tag].append(path)
+
+        self.assertEqual(0, len(processed_split_file_paths.keys()))
+
+        for path in controller.fs.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                continue
+            self.assertTrue('file_split' not in path.file_name)
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_failing_to_process_a_file_that_needs_splitting_no_loop(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -393,10 +528,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller,
             f'tagC.csv',
             should_normalize=True,
-            # TODO(3020): Write a test where file type differentiation is turned on where we do NOT split a raw file
-            #   that also matches an ingest view file tag
-            # TODO(3020): Write a test where file type differentiation is turned on and we properly split an
-            #  INGEST_VIEW file.
             dt=datetime.datetime.fromisoformat('2019-09-19'))
         controller.fs.test_add_path(file_path, fail_handle_file_call=True)
 
@@ -418,8 +549,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_move_files_from_previous_days_to_storage(self):
-        # TODO(3020): Write version of this with file differentiation enabled
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
@@ -465,7 +596,61 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue(len(paths_from_prev_date), 1)
         self.assertTrue('tagB' in paths_from_prev_date[0].abs_path())
 
-    # TODO(3020): Write version of this with file differentiation enabled
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_move_files_from_previous_days_to_storage_bq_import_enabled(self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+
+        prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
+        file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'tagB.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            dt=prev_date_datetime)
+
+        # pylint:disable=protected-access
+        processed_file_from_prev_day = \
+            controller.fs._to_processed_file_path(file_path_from_prev_day)
+
+        unexpected_file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'Unexpected_Tag.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            dt=prev_date_datetime)
+
+        controller.fs.test_add_path(processed_file_from_prev_day)
+        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+
+        # pylint:disable=protected-access
+        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+
+        # This will test that all paths get moved to storage,
+        # except the unexpected tag.
+        add_paths_with_tags_and_process(self,
+                                        controller,
+                                        file_tags,
+                                        unexpected_tags=['Unexpected_Tag'])
+
+        paths_from_prev_date = []
+        for path in controller.fs.all_paths:
+            parts = filename_parts_from_path(path)
+            expected_storage_dir_str = os.path.join(
+                controller.storage_directory_path.abs_path(),
+                parts.file_type.value,
+                str(prev_date_datetime.year),
+                str(prev_date_datetime.month),
+                str(prev_date_datetime.day))
+            if path.abs_path().startswith(expected_storage_dir_str):
+                paths_from_prev_date.append(path)
+
+        self.assertTrue(len(paths_from_prev_date), 1)
+        self.assertTrue('tagB' in paths_from_prev_date[0].abs_path())
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_move_files_from_previous_days_to_storage_incomplete_current_day(
             self):
         controller = build_gcsfs_controller_for_tests(
@@ -543,6 +728,92 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller.ingest_directory_path.abs_path()))
         self.assertTrue('tagA' in processed_path_str)
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
+    def test_move_files_from_previous_days_to_storage_incomplete_current_day_bq_import_enabled(
+            self):
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
+        current_date_datetime = datetime.datetime.fromisoformat('2019-09-16')
+
+        file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'tagB.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            dt=prev_date_datetime)
+
+        # pylint:disable=protected-access
+        processed_file_from_prev_day = \
+            controller.fs._to_processed_file_path(file_path_from_prev_day)
+
+        unexpected_file_path_from_prev_day = path_for_fixture_file(
+            controller,
+            f'Unexpected_Tag.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            dt=prev_date_datetime)
+
+        file_path_from_current_day = path_for_fixture_file(
+            controller,
+            f'tagA.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            dt=current_date_datetime)
+
+        controller.fs.test_add_path(processed_file_from_prev_day)
+        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.test_add_path(file_path_from_current_day)
+
+        run_task_queues_to_empty(controller)
+
+        self.assertTrue(len(controller.fs.all_paths), 3)
+
+        storage_paths = []
+        processed_paths = []
+        for path in controller.fs.all_paths:
+            if self._path_in_storage_dir(path, controller):
+                if 'Unexpected_Tag' in path.abs_path():
+                    self.fail('Unexpected tag found in storage dir')
+                storage_paths.append(path)
+            if controller.fs.is_processed_file(path):
+                processed_paths.append(path)
+
+        self.assertEqual(len(storage_paths), 1)
+
+        expected_storage_dir_str = os.path.join(
+            controller.storage_directory_path.abs_path(),
+            GcsfsDirectIngestFileType.INGEST_VIEW.value,
+            str(prev_date_datetime.year),
+            str(prev_date_datetime.month),
+            str(prev_date_datetime.day))
+        self.assertTrue(
+            storage_paths[0].abs_path().startswith(expected_storage_dir_str),
+            f'Path {storage_paths[0].abs_path()} should start with {expected_storage_dir_str}.')
+
+        # Path that is moved retains its 'processed_' prefix.
+        self.assertEqual(len(processed_paths), 2)
+
+        processed_paths_not_in_storage = \
+            [path
+             for path in processed_paths
+             if not self._path_in_storage_dir(path, controller)]
+
+        self.assertEqual(len(processed_paths_not_in_storage), 1)
+
+        processed_path_str = processed_paths_not_in_storage[0].abs_path()
+        self.assertTrue(processed_path_str.startswith(
+            controller.ingest_directory_path.abs_path()))
+        self.assertTrue('tagA' in processed_path_str)
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_cloud_function_fails_on_new_file(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -589,6 +860,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                   ['tagA', 'tagB', 'tagC'],
                                   unexpected_tags=[])
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_cloud_function_fails_on_new_file_rename_later_with_cron(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
@@ -640,6 +912,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         for path in controller.fs.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
 
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_processing_continues_if_there_are_subfolders_in_ingest_dir(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
