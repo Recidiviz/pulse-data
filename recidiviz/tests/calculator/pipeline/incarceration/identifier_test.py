@@ -23,6 +23,7 @@ from datetime import date
 import unittest
 from typing import List
 
+import pytest
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
@@ -643,7 +644,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='TX',
                 facility='PRISON3',
                 admission_date=date(2018, 1, 20),
@@ -671,7 +672,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         self.assertEqual(expected_month_count, len(incarceration_events))
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_end_of_month_state_prison_stays_no_admission(self):
+    def test_find_end_of_month_state_prison_stays_no_admission_or_release(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -680,12 +681,9 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 state_code='TX',
                 facility='PRISON3')
 
-        incarceration_events = \
-            self._run_find_end_of_month_state_prison_stays_with_no_sentences(
+        with pytest.raises(ValueError):
+            _ = self._run_find_end_of_month_state_prison_stays_with_no_sentences(
                 incarceration_period, _COUNTY_OF_RESIDENCE)
-
-        self.assertEqual(0, len(incarceration_events))
-        self.assertEqual([], incarceration_events)
 
     def test_find_end_of_month_state_prison_stays_no_release_reason(self):
         incarceration_period = \
