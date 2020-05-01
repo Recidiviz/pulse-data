@@ -4476,6 +4476,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
 
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip1',
                 state_code='US_ND',
@@ -4552,6 +4553,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2018, 5, 10),
@@ -4627,6 +4629,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2003, 10, 10),
@@ -4859,6 +4862,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
 
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 incarceration_period_id=111,
                 external_id='ip1',
                 state_code='US_ND',

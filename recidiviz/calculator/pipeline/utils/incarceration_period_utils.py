@@ -21,13 +21,13 @@ import logging
 from copy import deepcopy
 
 from datetime import date
+from functools import cmp_to_key
 from typing import List
 
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
     drop_temporary_custody_incarceration_periods_for_state
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.calculator.pipeline.utils import us_nd_utils
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason
@@ -50,12 +50,6 @@ def validate_admission_data(
 
     Returns the valid incarceration periods.
     """
-    # TODO(2995): Formalize state-specific calc logic
-    if incarceration_periods and incarceration_periods[0].state_code == 'US_ND':
-        # If these are North Dakota incarceration periods, send to the
-        # state-specific ND data validation function
-        incarceration_periods = us_nd_utils.set_missing_admission_data(incarceration_periods)
-
     validated_incarceration_periods: List[StateIncarcerationPeriod] = []
 
     for incarceration_period in incarceration_periods:
@@ -260,7 +254,7 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
 def prepare_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
         collapse_temporary_custody_periods_with_revocation: bool = False,
-        collapse_transfers: bool = True
+        collapse_transfers: bool = True,
 ) -> List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
 
@@ -269,29 +263,175 @@ def prepare_incarceration_periods_for_calculations(
     StateIncarcerationPeriods by admission_date, and collapses the ones connected by a transfer.
     """
 
-    filtered_periods = _filter_incarceration_periods_for_calculations(incarceration_periods)
-    filtered_periods.sort(key=lambda b: b.admission_date)
+    updated_periods = _filter_and_update_incarceration_periods_for_calculations(incarceration_periods)
+
+    # First sort by release date. Any periods without release dates will be at the end.
+    updated_periods.sort(key=lambda b: (b.release_date is None, b.release_date))
+
+    # Then sort by admission date. All admission dates will be set by this point. Python sort is a stable sort so
+    # periods with the same admission date will be sorted by release date.
+    updated_periods.sort(key=lambda b: b.admission_date)
+
     collapsed_periods = _collapse_incarceration_periods_for_calculations(
-        filtered_periods, collapse_temporary_custody_periods_with_revocation, collapse_transfers)
+        updated_periods, collapse_temporary_custody_periods_with_revocation, collapse_transfers)
     return collapsed_periods
 
 
-def _filter_incarceration_periods_for_calculations(
+def _filter_and_update_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
-    """Returns a filtered subset of the provided |incarceration_periods| list so that all remaining periods have the
-    the fields necessary for calculations.
+    """Returns a modified and filtered subset of the provided |incarceration_periods| list so that all remaining
+    periods have the the fields necessary for calculations.
     """
     if not incarceration_periods:
         return []
 
     filtered_incarceration_periods = drop_placeholder_periods(incarceration_periods)
 
+    filtered_incarceration_periods = _infer_missing_dates_and_statuses(filtered_incarceration_periods)
+
     filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(filtered_incarceration_periods)
 
     filtered_incarceration_periods = validate_admission_data(filtered_incarceration_periods)
 
     filtered_incarceration_periods = validate_release_data(filtered_incarceration_periods)
+
     return filtered_incarceration_periods
+
+
+def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]):
+    """Sorts incarceration periods chronologically by the admission and release dates according to this logic:
+        - Sorts by admission_date, if set, else by release_date
+        - For periods with the same admission_date:
+            - If neither have a release_date, sorts by custody status
+            - Else, sorts by release_date, with unset release_dates before set release_dates
+    """
+    def _sort_by_external_id(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        if ip_a.external_id is None or ip_b.external_id is None:
+            raise ValueError("Expect no placeholder periods in this function.")
+
+        # Alphabetic sort by external_id
+        return -1 if ip_a.external_id < ip_b.external_id else 1
+
+    def _sort_by_nonnull_release_dates(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        if not ip_a.release_date or not ip_b.release_date:
+            raise ValueError('Expected nonnull release dates')
+        if ip_a.release_date != ip_b.release_date:
+            return (ip_a.release_date - ip_b.release_date).days
+        # They have the same admission and release dates. Sort by external_id.
+        return _sort_by_external_id(ip_a, ip_b)
+
+    def _sort_by_custody_status(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        normalized_status_a = (StateIncarcerationPeriodStatus.IN_CUSTODY
+                               if ip_a.status == StateIncarcerationPeriodStatus.IN_CUSTODY
+                               else StateIncarcerationPeriodStatus.NOT_IN_CUSTODY)
+        normalized_status_b = (StateIncarcerationPeriodStatus.IN_CUSTODY
+                               if ip_b.status == StateIncarcerationPeriodStatus.IN_CUSTODY
+                               else StateIncarcerationPeriodStatus.NOT_IN_CUSTODY)
+        if normalized_status_a == normalized_status_b:
+            return _sort_by_external_id(ip_a, ip_b)
+        # Sort by custody status. Order IN_CUSTODY after all other statuses.
+        if normalized_status_a == StateIncarcerationPeriodStatus.IN_CUSTODY:
+            return 1
+        if normalized_status_b == StateIncarcerationPeriodStatus.IN_CUSTODY:
+            return -1
+        raise ValueError('One status should have IN_CUSTODY at this point')
+
+    def _sort_equal_admission_date(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        if ip_a.admission_date != ip_b.admission_date:
+            raise ValueError('Expected equal admission dates')
+        if ip_a.release_date and ip_b.release_date:
+            return _sort_by_nonnull_release_dates(ip_a, ip_b)
+        if ip_a.admission_date is None or ip_b.admission_date is None:
+            raise ValueError(
+                f'Admission reasons expected to be equal and nonnull at this point otherwise we would have a'
+                f'period that has a null release and null admission reason.')
+        if ip_a.release_date is None and ip_b.release_date is None:
+            return _sort_by_custody_status(ip_a, ip_b)
+        # Sort by release dates, with unset release dates coming first if the following period is greater than 0 days
+        # long (we assume in this case that we forgot to close this open period).
+        if ip_a.release_date:
+            return 1 if (ip_a.release_date - ip_a.admission_date).days else -1
+        if ip_b.release_date:
+            return -1 if (ip_b.release_date - ip_b.admission_date).days else 1
+        raise ValueError("At least one of the periods is expected to have a release_date at this point.")
+
+    def _sort_function(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        if ip_a.admission_date == ip_b.admission_date:
+            return _sort_equal_admission_date(ip_a, ip_b)
+
+        # Sort by admission_date, if set, or release_date if not set
+        date_a = ip_a.admission_date if ip_a.admission_date else ip_a.release_date
+        date_b = ip_b.admission_date if ip_b.admission_date else ip_b.release_date
+        if not date_a:
+            raise ValueError(f'Found period with no admission or release date {ip_a}')
+        if not date_b:
+            raise ValueError(f'Found period with no admission or release date {ip_b}')
+        if date_a == date_b:
+            if ip_a.release_date and ip_b.release_date:
+                # These share a release date. Sort by external_id.
+                return _sort_by_external_id(ip_a, ip_b)
+
+            # One has an admission date and the other has a release date on the same day. Order the admission before
+            # the release.
+            return -1 if ip_a.admission_date else 1
+        return (date_a - date_b).days
+
+    incarceration_periods.sort(key=cmp_to_key(_sort_function))
+
+
+def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        List[StateIncarcerationPeriod]:
+    """First, sorts the incarceration_periods in chronological order of the admission and release dates. Then, for any
+    periods missing dates and statuses, infers this information given the other incarceration periods.
+    """
+    _sort_ips_by_set_dates_and_statuses(incarceration_periods)
+
+    for index, ip in enumerate(incarceration_periods):
+        if ip.release_date is None:
+            if index == len(incarceration_periods) - 1:
+                # This is the last incarceration period in the list.
+                if ip.status != StateIncarcerationPeriodStatus.IN_CUSTODY:
+                    # If the person is no longer in custody on this period, set the release date to the admission date.
+                    ip.release_date = ip.admission_date
+                    ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
+            else:
+                # This is not the last incarceration period in the list. Set the release date to the next admission or
+                # release date.
+                next_ip = incarceration_periods[index + 1]
+
+                ip.release_date = next_ip.admission_date if next_ip.admission_date else next_ip.release_date
+
+                if ip.release_reason is None:
+                    if next_ip.admission_reason == AdmissionReason.TRANSFER:
+                        # If they were transferred into the next period, infer that this release was a transfer
+                        ip.release_reason = ReleaseReason.TRANSFER
+                    else:
+                        # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
+                        ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
+
+                ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+
+        if ip.admission_date is None:
+            if index == 0:
+                # If the admission date is not set, and this is the first incarceration period, then set the
+                # admission_date to be the same as the release_date
+                ip.admission_date = ip.release_date
+                ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+            else:
+                # If the admission date is not set, and this is not the first incarceration period, then set the
+                # admission_date to be the same as the release_date or admission_date of the preceding period
+                previous_ip = incarceration_periods[index - 1]
+                ip.admission_date = previous_ip.release_date if previous_ip.release_date else ip.admission_date
+
+                if ip.admission_reason is None:
+                    if previous_ip.release_reason == ReleaseReason.TRANSFER:
+                        # If they were transferred out of the previous period, infer that this admission was a transfer
+                        ip.admission_reason = AdmissionReason.TRANSFER
+                    else:
+                        # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
+                        ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+
+    return incarceration_periods
 
 
 def drop_periods_not_under_state_custodial_authority(incarceration_periods: List[StateIncarcerationPeriod]) \
