@@ -26,7 +26,7 @@ from recidiviz.utils.regions import Region
 
 
 def fake_region(*,
-                region_code: str = 'us_ca',
+                region_code: str = 'us_xx',
                 agency_type: str = 'prison',
                 environment: str = 'local',
                 jurisdiction_id: str = 'unknown',
@@ -44,13 +44,11 @@ def fake_region(*,
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
     region.is_ingest_launched_in_env.return_value = \
         Region.is_ingest_launched_in_env(region)
-    # TODO(3020): Write gcsfs_direct_ingest_controller tests with this enabled to True with a raw files yaml (to come)
-    #   properly populated for this region.
     region.is_raw_vs_ingest_file_name_detection_enabled.return_value = is_raw_vs_ingest_file_name_detection_enabled
     region.are_raw_data_bq_imports_enabled_in_env.return_value = are_raw_data_bq_imports_enabled_in_env
     region.are_ingest_view_exports_enabled_in_env.return_value = are_ingest_view_exports_enabled_in_env
     return region
 
 
-TEST_STATE_REGION = fake_region(region_code='us_nd', agency_type='prison')
-TEST_COUNTY_REGION = fake_region(region_code='us_tx_brazos', agency_type='jail')
+TEST_STATE_REGION = fake_region(region_code='us_xx', agency_type='prison')
+TEST_COUNTY_REGION = fake_region(region_code='us_xx_yyyyy', agency_type='jail')

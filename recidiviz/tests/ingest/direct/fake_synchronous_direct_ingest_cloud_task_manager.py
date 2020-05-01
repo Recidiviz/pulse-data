@@ -202,7 +202,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
                 self.controller.do_ingest_view_export(ingest_view_export_args=args)
             else:
                 raise ValueError(f'Unexpected task id [{task_id}]')
-        self.num_finished_scheduler_tasks += 1
+        self.num_finished_bq_import_export_tasks += 1
 
     def test_pop_finished_process_job_task(self) -> None:
         """Removes most recently run process job task from the queue."""
