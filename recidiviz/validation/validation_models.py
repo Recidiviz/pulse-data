@@ -32,6 +32,7 @@ VALIDATION_VIEWS_DATASET = 'validation_views'
 
 class ValidationCheckType(Enum):
     EXISTENCE = 'EXISTENCE'
+    SAMENESS = 'SAMENESS'
 
 
 @attr.s(frozen=True)
@@ -61,7 +62,7 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     """Models a specific data validation that is to be performed for a specific region."""
 
     # The config for the validation to run (what we're going to check for)
-    validation: DataValidationCheck = attr.ib()
+    validation: DataValidationType = attr.ib()
 
     # The region we're going to validate (who we're going to check)
     region_code: str = attr.ib()

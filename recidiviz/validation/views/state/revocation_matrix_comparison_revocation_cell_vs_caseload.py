@@ -1,0 +1,74 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2020 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""A view which provides a comparison of total revocation counts in the initial, unfiltered view of the
+Revocation Analysis Tool: the grid cells and the corresponding caseload chart across all filter combinations."""
+
+# pylint: disable=trailing-whitespace
+from recidiviz.calculator.query import bqview
+from recidiviz.calculator.query.state import view_config
+
+from recidiviz.utils import metadata
+
+PROJECT_ID = metadata.project_id()
+VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
+
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME = \
+    'revocation_matrix_comparison_revocation_cell_vs_caseload'
+
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION = """ 
+Revocation matrix comparison of summed revocation counts between the grid cells and the month chart """
+
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY = \
+    """
+    /*{description}*/
+    WITH cell_counts AS (
+      SELECT 
+        state_code as region_code, metric_period_months, district, charge_category, supervision_type,
+        SUM(total_revocations) as total_revocations
+      FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
+      GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
+    ),
+    caseload_counts AS (
+      SELECT 
+        state_code as region_code, metric_period_months, district, charge_category, supervision_type,
+        COUNT(DISTINCT state_id) as total_revocations
+      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
+    )
+    SELECT 
+      region_code, metric_period_months, district, charge_category, supervision_type, 
+      IFNULL(c.total_revocations, 0) as cell_sum,
+      IFNULL(cl.total_revocations, 0) as caseload_sum
+    FROM cell_counts c 
+    FULL OUTER JOIN caseload_counts cl
+    USING (region_code, metric_period_months, district, charge_category, supervision_type)
+    ORDER BY region_code, metric_period_months, district, charge_category, supervision_type
+""".format(
+        description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION,
+        project_id=PROJECT_ID,
+        view_dataset=VIEWS_DATASET,
+    )
+
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW = bqview.BigQueryView(
+    view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME,
+    view_query=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY
+)
+
+if __name__ == '__main__':
+    print(REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW.view_id)
+    print(REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW.view_query)
