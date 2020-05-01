@@ -22,19 +22,19 @@ from unittest import TestCase
 from mock import patch
 
 from recidiviz.calculator.query.bqview import BigQueryView
-from recidiviz.validation.checks.existence_check import ExistenceValidationChecker
-from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob, DataValidationCheck, \
-    DataValidationJobResult
+from recidiviz.validation.checks.existence_check import ExistenceValidationChecker, ExistenceDataValidationCheck
+from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob, DataValidationJobResult
 
 
-class TestExistenceCheck(TestCase):
+class TestExistenceValidationChecker(TestCase):
+    """Tests for the ExistenceValidationChecker."""
 
     @patch("recidiviz.validation.validation_queries.run_query")
     def test_existence_check_no_failures(self, mock_query):
         mock_query.return_value = []
 
         job = DataValidationJob(region_code='US_VA',
-                                validation=DataValidationCheck(
+                                validation=ExistenceDataValidationCheck(
                                     validation_type=ValidationCheckType.EXISTENCE,
                                     view=BigQueryView('test_view', 'select * from literally_anything')
                                 ))
@@ -48,7 +48,7 @@ class TestExistenceCheck(TestCase):
         mock_query.return_value = ['some result row', 'some other result row']
 
         job = DataValidationJob(region_code='US_VA',
-                                validation=DataValidationCheck(
+                                validation=ExistenceDataValidationCheck(
                                     validation_type=ValidationCheckType.EXISTENCE,
                                     view=BigQueryView('test_view', 'select * from literally_anything')
                                 ))

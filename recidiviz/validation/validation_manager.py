@@ -95,3 +95,7 @@ def _emit_failures(failed_validations: List[DataValidationJobResult]):
             monitoring_tags[monitoring.TagKey.REGION] = result.validation_job.region_code
             monitoring_tags[monitoring.TagKey.VALIDATION_CHECK_TYPE] = result.validation_job.validation.validation_type
             measurements.measure_int_put(m_failed_validations, 1)
+
+
+if __name__ == '__main__':
+    handle_validation_request()
