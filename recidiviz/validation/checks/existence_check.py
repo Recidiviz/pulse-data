@@ -31,7 +31,7 @@ class ExistenceDataValidationCheck(DataValidationCheck):
     """A type of validation check which identifies validation issues through the existence of any row returned by the
     validation query."""
 
-    validation_type = ValidationCheckType.EXISTENCE
+    validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.EXISTENCE)
 
 
 class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]):
