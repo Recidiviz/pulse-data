@@ -16,15 +16,24 @@
 # =============================================================================
 
 """Utilities for resolving the appropriate validation checker to use."""
+from typing import Dict
 
 from recidiviz.validation.checks.existence_check import ExistenceValidationChecker
+from recidiviz.validation.checks.sameness_check import SamenessValidationChecker
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob
 
 
+_CHECKER_FOR_TYPE: Dict[ValidationCheckType, ValidationChecker] = {
+    ValidationCheckType.EXISTENCE: ExistenceValidationChecker(),
+    ValidationCheckType.SAMENESS: SamenessValidationChecker()
+}
+
+
 def _checker_for_type(check_type: ValidationCheckType) -> ValidationChecker:
-    if check_type is ValidationCheckType.EXISTENCE:
-        return ExistenceValidationChecker()
+    checker = _CHECKER_FOR_TYPE.get(check_type, None)
+    if checker:
+        return checker
 
     raise ValueError(f'No checker implementation enabled for check type {check_type}')
 

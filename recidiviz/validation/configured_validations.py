@@ -18,12 +18,40 @@
 """Contains configured data validations to perform."""
 from typing import List
 
+from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
 from recidiviz.validation.validation_models import DataValidationCheck
+from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
+    INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW
+from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW
+from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
+    INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW
+from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import \
+    REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW
+from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import \
+    REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW
+from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
+    REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW
+from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
+    SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW
 
-ALL_DATA_VALIDATIONS: List[DataValidationCheck] = []
+_ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
+    ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW),
+    ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_NULLS_VIEW),
+    ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW),
+    ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW),
 
-STATES_TO_VALIDATE = ['US_MO', 'US_ND']
+    SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW,
+                                comparison_columns=['cell_sum', 'caseload_sum']),
+    SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW,
+                                comparison_columns=['cell_sum', 'month_sum'],
+                                max_allowed_error=0.03),
+    SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW,
+                                comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum'])
+]
+
+STATES_TO_VALIDATE = ['UD_ID', 'US_MO', 'US_ND']
 
 
 def get_all_validations() -> List[DataValidationCheck]:
-    return ALL_DATA_VALIDATIONS
+    return _ALL_DATA_VALIDATIONS
