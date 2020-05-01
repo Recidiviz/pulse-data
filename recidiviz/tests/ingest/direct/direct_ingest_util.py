@@ -312,6 +312,8 @@ def check_all_paths_processed(
                          f"FakeDirectIngestGCSFileSystem. Found instead "
                          f"type [{type(controller.fs)}]")
 
+    # TODO(3020): Update this test and add new tests to differentiate between new behavior expected for: 1) files in raw
+    #  yaml AND ingest file tags, 2) files just in raw, 3) files with tags we've never seen (still unprocessed)
     file_tags_processed = set()
     for path in controller.fs.all_paths:
         if isinstance(path, GcsfsDirectoryPath):

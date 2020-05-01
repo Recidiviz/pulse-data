@@ -1,0 +1,15 @@
+# This file enumerates the list of raw data files we expect to receive from this region that should be imported directly
+# into raw data tables in BigQuery.
+#
+# This file should follow the following format for each file that should be imported as raw data to BigQuery.
+#
+#      raw_files:
+#        - file_tag: this_file_tag
+#          # These columns constitute a unique key within a given dump and will remain the
+#          # same if other fields are updated.
+#          primary_key_cols:
+#            - col_name_1
+#            - col_name_2
+#        - file_tag: ...
+
+raw_files: []
