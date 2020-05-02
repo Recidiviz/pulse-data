@@ -18,7 +18,10 @@
 """Helper functions for creating and updating BigQuery datasets/tables/views."""
 
 import logging
+from concurrent import futures
+from typing import List, Optional
 
+import attr
 from google.cloud import bigquery, exceptions
 
 # Importing only for typing.
@@ -87,93 +90,135 @@ def create_or_update_table_from_view(
         dataset_ref: bigquery.dataset.DatasetReference,
         view: bqview.BigQueryView,
         query: str,
-        output_table: str):
+        output_table: str) -> Optional[bigquery.QueryJob]:
     """Queries data in a view and loads it into a table.
 
     If the table exists, overwrites existing data. Creates the table if it does
     not exist.
 
-    This is a synchronous function that waits for the query job to complete
-    before returning.
+    It is the callers responsibility to wait for the resulting job to complete.
 
     Args:
         dataset_ref: The BigQuery dataset where the view is.
         view: The View to query.
         query: The query to run.
         output_table: The name of the table to create or update.
+    Returns:
+        The QueryJob that was started.
     """
-    if table_exists(dataset_ref, view.view_id):
-        job_config = bigquery.QueryJobConfig()
-        job_config.destination = \
-            client().dataset(dataset_ref.dataset_id).table(output_table)
-        job_config.write_disposition = \
-            bigquery.job.WriteDisposition.WRITE_TRUNCATE
-
-        logging.info("Querying table: %s with query: %s", output_table, query)
-
-        query_job = client().query(
-            query=query,
-            location=LOCATION,
-            job_config=job_config,
-        )
-        # Waits for job to complete
-        query_job.result()
-    else:
+    if not table_exists(dataset_ref, view.view_id):
         logging.error(
             "View [%s] does not exist in dataset [%s]",
             view.view_id, str(dataset_ref))
+        return None
+    job_config = bigquery.QueryJobConfig()
+    job_config.destination = \
+        client().dataset(dataset_ref.dataset_id).table(output_table)
+    job_config.write_disposition = \
+        bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
+    logging.info("Querying table: %s with query: %s", output_table, query)
+
+    return client().query(
+        query=query,
+        location=LOCATION,
+        job_config=job_config,
+    )
 
 
 def export_to_cloud_storage(dataset_ref: bigquery.dataset.DatasetReference,
-                            bucket: str, table_name: str, filename: str):
-    """Exports the table corresponding to the given view to the bucket.
+                            bucket: str, table_name: str, filename: str) -> Optional[bigquery.ExtractJob]:
+    """Exports the table to bucket with the given filename.
 
     Extracts the entire table and exports in JSON format to the given bucket in
     Cloud Storage.
 
-    This is a synchronous function that waits for the query job to complete
-    before returning.
+    Note that BigQuery does not support exporting views, they must first be
+    materialized into tables.
+
+    It is the callers responsibility to wait for the resulting job to complete.
 
     Args:
-        dataset_ref: The dataset where the view and table exist.
+        dataset_ref: The dataset where the table exists.
         bucket: The bucket in Cloud Storage where the export should go.
-        table_name: The table or view to export.
+        table_name: The table to export.
         filename: The name of the file to write to.
+    Returns:
+        The ExtractJob that was started.
     """
-    if table_exists(dataset_ref, table_name):
-        destination_uri = "gs://{}/{}".format(bucket, filename)
-
-        table_ref = dataset_ref.table(table_name)
-
-        job_config = bigquery.ExtractJobConfig()
-        job_config.destination_format = \
-            bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
-
-        extract_job = client().extract_table(
-            table_ref,
-            destination_uri,
-            # Location must match that of the source table.
-            location=LOCATION,
-            job_config=job_config
-        )
-        # Waits for job to complete
-        extract_job.result()
-    else:
+    if not table_exists(dataset_ref, table_name):
         logging.error(
             "Table [%s] does not exist in dataset [%s]",
             table_name, str(dataset_ref))
+        return None
+    destination_uri = "gs://{}/{}".format(bucket, filename)
+
+    table_ref = dataset_ref.table(table_name)
+
+    job_config = bigquery.ExtractJobConfig()
+    job_config.destination_format = \
+        bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+
+    return client().extract_table(
+        table_ref,
+        destination_uri,
+        # Location must match that of the source table.
+        location=LOCATION,
+        job_config=job_config
+    )
 
 
-def _table_name_for_view(view: bqview.BigQueryView,
-                         state_code: str) -> str:
-    """Returns the name of the table where the view's contents are."""
-    return view.view_id + '_table_' + state_code
+@attr.s(frozen=True)
+class ExportViewConfig:
+    """Specification for how to export a particular view."""
+
+    # The view to export.
+    view: bqview.BigQueryView = attr.ib()
+
+    # The name of the intermediate table to create/update.
+    intermediate_table_name: str = attr.ib()
+
+    # The query to use to build the intermediate table.
+    intermediate_table_query: str = attr.ib()
+
+    # The desired name of the output file.
+    filename: str = attr.ib()
 
 
-def _destination_filename_for_view(view: bqview.BigQueryView,
-                                   state_code: str) -> str:
-    """Returns the filename that should be used as an export destination."""
-    return state_code + '/' + view.view_id + '.json'
+def export_views_to_cloud_storage(
+        dataset_ref: bigquery.dataset.DatasetReference, bucket: str,
+        export_configs: List[ExportViewConfig]):
+    """Exports the views to cloud storage according to the given configs.
+
+    This is a two-step process. First, for each view, the view query is executed
+    and the entire result is loaded into a table in BigQuery. Then, for each
+    table, the contents are exported to the cloud storage bucket in JSON format.
+    This has to be a two-step process because BigQuery doesn't support exporting
+    a view directly, it must be materialized in a table first.
+
+    Args:
+        dataset_ref: The dataset where the views exist.
+        bucket: The bucket in Cloud Storage where the export should go.
+        export_configs: List of views along with how to export them.
+    """
+    query_jobs = []
+    for export_config in export_configs:
+        query_job = create_or_update_table_from_view(
+            dataset_ref, export_config.view,
+            export_config.intermediate_table_query,
+            export_config.intermediate_table_name)
+        if query_job is not None:
+            query_jobs.append(query_job)
+    futures.wait(query_jobs)
+
+    extract_jobs = []
+    for export_config in export_configs:
+        extract_job = export_to_cloud_storage(
+            dataset_ref, bucket, export_config.intermediate_table_name,
+            export_config.filename)
+        if extract_job is not None:
+            extract_jobs.append(extract_job)
+    futures.wait(extract_jobs)
 
 
 def unnest_district(district_column='supervising_district_external_id'):

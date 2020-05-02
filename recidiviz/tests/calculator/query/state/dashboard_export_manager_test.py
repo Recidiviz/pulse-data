@@ -18,6 +18,7 @@
 """Tests for export_manager.py."""
 
 # pylint: disable=protected-access
+from concurrent import futures
 import unittest
 from unittest import mock
 
@@ -68,7 +69,12 @@ class DashboardExportManagerTest(unittest.TestCase):
 
     @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.view_config')
     def test_export_dashboard_data_to_cloud_storage(self, mock_view_config):
-        """Tests that both _export_views_to_table and _export_view_tables_to_cloud_storage are executed."""
+        """Tests the table is created from the view and then extracted."""
+        done_future = futures.Future()
+        done_future.set_result('foo')
+        self.mock_client.query.return_value = done_future
+        self.mock_client.extract_table.return_value = done_future
+
         dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket='bucket')
 
         mock_view_config.DASHBOARD_VIEWS_DATASET.return_value = 'dataset'
@@ -77,18 +83,4 @@ class DashboardExportManagerTest(unittest.TestCase):
             self.mock_view_manager.VIEWS_TO_UPDATE
         )
         self.mock_client.query.assert_called()
-        self.mock_client.extract_table.assert_called()
-
-    def test_export_views_to_table(self):
-        """Tests that the views are queried."""
-        dashboard_export_manager._export_views_to_tables(
-            self.mock_dataset,
-            self.mock_export_config.VIEWS_TO_EXPORT)
-        self.mock_client.query.assert_called()
-
-    def test_export_view_tables_to_cloud_storage(self):
-        """Tests that the tables are extracted."""
-        dashboard_export_manager._export_view_tables_to_cloud_storage(
-            self.mock_dataset, self.mock_export_config.VIEWS_TO_EXPORT,
-            'bucket')
         self.mock_client.extract_table.assert_called()
