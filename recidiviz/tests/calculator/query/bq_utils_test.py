@@ -17,13 +17,13 @@
 
 """Tests for bq_utils.py."""
 
+from concurrent import futures
 import unittest
 from unittest import mock
 
-from google.cloud import bigquery
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.calculator.query import bq_utils, bqview
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -93,8 +93,8 @@ class BqUtilsTest(unittest.TestCase):
     def test_create_or_update_table_from_view(self):
         """create_or_update_table_from_view queries a view and loads the result
         into a table."""
-        bq_utils.create_or_update_table_from_view(
-            self.mock_dataset, self.mock_view, "query", self.mock_table_id)
+        self.assertIsNotNone(bq_utils.create_or_update_table_from_view(
+            self.mock_dataset, self.mock_view, "query", self.mock_table_id))
         self.mock_client.query.assert_called()
 
     def test_create_or_update_table_from_view_no_view(self):
@@ -102,16 +102,16 @@ class BqUtilsTest(unittest.TestCase):
         view does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
-            bq_utils.create_or_update_table_from_view(
-                self.mock_dataset, self.mock_view, "query", self.mock_table_id)
+            self.assertIsNone(bq_utils.create_or_update_table_from_view(
+                self.mock_dataset, self.mock_view, "query", self.mock_table_id))
             self.mock_client.query.assert_not_called()
 
     def test_export_to_cloud_storage(self):
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
         bucket = self.mock_project_id + '-bucket'
-        bq_utils.export_to_cloud_storage(
-            self.mock_dataset, bucket, self.mock_table_id, 'view.json')
+        self.assertIsNotNone(bq_utils.export_to_cloud_storage(
+            self.mock_dataset, bucket, self.mock_table_id, 'view.json'))
         self.mock_client.extract_table.assert_called()
 
     def test_export_to_cloud_storage_no_table(self):
@@ -120,6 +120,20 @@ class BqUtilsTest(unittest.TestCase):
         bucket = self.mock_project_id + '-bucket'
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
-            bq_utils.export_to_cloud_storage(
-                self.mock_dataset, bucket, self.mock_table_id, 'view.json')
+            self.assertIsNone(bq_utils.export_to_cloud_storage(
+                self.mock_dataset, bucket, self.mock_table_id, 'view.json'))
             self.mock_client.extract_table.assert_not_called()
+
+    def test_export_views_to_cloud_storage(self):
+        """export_views_to_cloud_storage creates the table from the view and
+        extracts the table"""
+        bucket = self.mock_project_id + '-bucket'
+        done_future = futures.Future()
+        done_future.set_result('foo')
+        self.mock_client.query.return_value = done_future
+        self.mock_client.extract_table.return_value = done_future
+        bq_utils.export_views_to_cloud_storage(
+            self.mock_dataset, bucket, [bq_utils.ExportViewConfig(
+                self.mock_view, 'query', self.mock_table_id, 'view.json')])
+        self.mock_client.query.assert_called()
+        self.mock_client.extract_table.assert_called()
