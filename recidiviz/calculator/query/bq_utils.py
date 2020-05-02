@@ -19,12 +19,10 @@
 
 import logging
 
-from google.cloud import bigquery
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 
 # Importing only for typing.
 from recidiviz.calculator.query import bqview
-from recidiviz.utils import metadata
 
 # Location of the GCP project that must be the same for bigquery.Client calls
 LOCATION = 'US'
@@ -88,8 +86,9 @@ def create_or_update_view(
 def create_or_update_table_from_view(
         dataset_ref: bigquery.dataset.DatasetReference,
         view: bqview.BigQueryView,
-        state_code: str):
-    """Queries data in a view for a given state_code and loads it into a table.
+        query: str,
+        output_table: str):
+    """Queries data in a view and loads it into a table.
 
     If the table exists, overwrites existing data. Creates the table if it does
     not exist.
@@ -100,25 +99,17 @@ def create_or_update_table_from_view(
     Args:
         dataset_ref: The BigQuery dataset where the view is.
         view: The View to query.
-        state_code: The state code to query for.
+        query: The query to run.
+        output_table: The name of the table to create or update.
     """
     if table_exists(dataset_ref, view.view_id):
-        view_output_table = _table_name_for_view(view, state_code)
-
         job_config = bigquery.QueryJobConfig()
         job_config.destination = \
-            client().dataset(dataset_ref.dataset_id).table(view_output_table)
+            client().dataset(dataset_ref.dataset_id).table(output_table)
         job_config.write_disposition = \
             bigquery.job.WriteDisposition.WRITE_TRUNCATE
-        query = "SELECT * FROM `{project_id}.{dataset}.{table}`" \
-                "WHERE state_code = '{state_code}'"\
-            .format(project_id=metadata.project_id(),
-                    dataset=dataset_ref.dataset_id,
-                    table=view.view_id,
-                    state_code=state_code)
 
-        logging.info("Querying table: %s with query: %s", view_output_table,
-                     query)
+        logging.info("Querying table: %s with query: %s", output_table, query)
 
         query_job = client().query(
             query=query,
@@ -134,9 +125,7 @@ def create_or_update_table_from_view(
 
 
 def export_to_cloud_storage(dataset_ref: bigquery.dataset.DatasetReference,
-                            bucket: str,
-                            view: bqview.BigQueryView,
-                            state_code: str):
+                            bucket: str, table_name: str, filename: str):
     """Exports the table corresponding to the given view to the bucket.
 
     Extracts the entire table and exports in JSON format to the given bucket in
@@ -148,16 +137,13 @@ def export_to_cloud_storage(dataset_ref: bigquery.dataset.DatasetReference,
     Args:
         dataset_ref: The dataset where the view and table exist.
         bucket: The bucket in Cloud Storage where the export should go.
-        view: The view whose corresponding table to export.
-        state_code: The state code of the data being exported.
+        table_name: The table or view to export.
+        filename: The name of the file to write to.
     """
-    source_tablename = _table_name_for_view(view, state_code)
+    if table_exists(dataset_ref, table_name):
+        destination_uri = "gs://{}/{}".format(bucket, filename)
 
-    if table_exists(dataset_ref, source_tablename):
-        destination_filename = _destination_filename_for_view(view, state_code)
-        destination_uri = "gs://{}/{}".format(bucket, destination_filename)
-
-        table_ref = dataset_ref.table(source_tablename)
+        table_ref = dataset_ref.table(table_name)
 
         job_config = bigquery.ExtractJobConfig()
         job_config.destination_format = \
@@ -175,7 +161,7 @@ def export_to_cloud_storage(dataset_ref: bigquery.dataset.DatasetReference,
     else:
         logging.error(
             "Table [%s] does not exist in dataset [%s]",
-            source_tablename, str(dataset_ref))
+            table_name, str(dataset_ref))
 
 
 def _table_name_for_view(view: bqview.BigQueryView,
