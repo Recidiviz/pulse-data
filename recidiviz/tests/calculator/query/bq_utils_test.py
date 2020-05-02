@@ -93,26 +93,25 @@ class BqUtilsTest(unittest.TestCase):
     def test_create_or_update_table_from_view(self):
         """create_or_update_table_from_view queries a view and loads the result
         into a table."""
-        bq_utils.create_or_update_table_from_view(self.mock_dataset,
-                                                  self.mock_view, 'US_CA')
+        bq_utils.create_or_update_table_from_view(
+            self.mock_dataset, self.mock_view, "query", self.mock_table_id)
         self.mock_client.query.assert_called()
 
-    def test_creat_or_update_table_from_view_no_view(self):
+    def test_create_or_update_table_from_view_no_view(self):
         """create_or_update_table_from_view does not run a query if the source
         view does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
-            bq_utils.create_or_update_table_from_view(self.mock_dataset,
-                                                      self.mock_view,
-                                                      'US_ND')
+            bq_utils.create_or_update_table_from_view(
+                self.mock_dataset, self.mock_view, "query", self.mock_table_id)
             self.mock_client.query.assert_not_called()
 
     def test_export_to_cloud_storage(self):
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
         bucket = self.mock_project_id + '-bucket'
-        bq_utils.export_to_cloud_storage(self.mock_dataset, bucket,
-                                         self.mock_view, 'US_TX')
+        bq_utils.export_to_cloud_storage(
+            self.mock_dataset, bucket, self.mock_table_id, 'view.json')
         self.mock_client.extract_table.assert_called()
 
     def test_export_to_cloud_storage_no_table(self):
@@ -121,6 +120,6 @@ class BqUtilsTest(unittest.TestCase):
         bucket = self.mock_project_id + '-bucket'
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
-            bq_utils.export_to_cloud_storage(self.mock_dataset, bucket,
-                                             self.mock_view, 'US_MT')
+            bq_utils.export_to_cloud_storage(
+                self.mock_dataset, bucket, self.mock_table_id, 'view.json')
             self.mock_client.extract_table.assert_not_called()

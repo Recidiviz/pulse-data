@@ -21,9 +21,9 @@ from typing import List
 from google.cloud import bigquery
 
 from recidiviz.calculator.query import bqview, bq_utils
-
 from recidiviz.calculator.query.state import view_manager, view_config, \
     dashboard_export_config
+from recidiviz.utils import metadata
 
 
 def export_dashboard_data_to_cloud_storage(bucket: str):
@@ -52,7 +52,14 @@ def _export_views_to_tables(dataset_ref: bigquery.dataset.DatasetReference,
                             views_to_export: List[bqview.BigQueryView]):
     for state in dashboard_export_config.STATES_TO_EXPORT:
         for view in views_to_export:
-            bq_utils.create_or_update_table_from_view(dataset_ref, view, state)
+            query = "SELECT * FROM `{project_id}.{dataset}.{table}`" \
+                        "WHERE state_code = '{state_code}'"\
+                    .format(project_id=metadata.project_id(),
+                            dataset=dataset_ref.dataset_id,
+                            table=view.view_id,
+                            state_code=state)
+            bq_utils.create_or_update_table_from_view(
+                dataset_ref, view, query, _table_name_for_view(view, state))
 
 
 def _export_view_tables_to_cloud_storage(
@@ -60,7 +67,20 @@ def _export_view_tables_to_cloud_storage(
         List[bqview.BigQueryView], bucket: str):
     for state in dashboard_export_config.STATES_TO_EXPORT:
         for view in views_to_export:
-            bq_utils.export_to_cloud_storage(dataset_ref, bucket, view, state)
+            bq_utils.export_to_cloud_storage(
+                dataset_ref, bucket, _table_name_for_view(view, state), _destination_filename_for_view(view, state))
+
+
+def _table_name_for_view(view: bqview.BigQueryView,
+                         state_code: str) -> str:
+    """Returns the name of the table where the view's contents are."""
+    return view.view_id + '_table_' + state_code
+
+
+def _destination_filename_for_view(view: bqview.BigQueryView,
+                                   state_code: str) -> str:
+    """Returns the filename that should be used as an export destination."""
+    return state_code + '/' + view.view_id + '.json'
 
 
 if __name__ == '__main__':
