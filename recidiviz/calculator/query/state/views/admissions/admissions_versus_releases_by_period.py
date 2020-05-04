@@ -18,7 +18,8 @@
 period months.
 """
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -105,7 +106,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
         prior_month_metric_period_dimension=bq_utils.metric_period_condition(month_offset=0),
     )
 
-ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW = bqview.BigQueryView(
+ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW = BigQueryView(
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME,
     view_query=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY
 )

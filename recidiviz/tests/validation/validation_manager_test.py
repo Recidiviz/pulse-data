@@ -23,7 +23,7 @@ from unittest import TestCase
 from flask import Flask
 from mock import patch
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.configured_validations import get_all_validations, STATES_TO_VALIDATE

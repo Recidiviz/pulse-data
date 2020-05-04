@@ -16,8 +16,7 @@
 # =============================================================================
 """Resident population counts by race and gender for each year-fips."""
 
-from recidiviz.calculator.query import bqview
-
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
 
 from recidiviz.utils import metadata
@@ -113,7 +112,7 @@ ORDER BY year DESC, fips, race, gender
     iob_race_gender_pop_table=vera_view_constants.IOB_RACE_GENDER_POP_TABLE
 )
 
-RESIDENT_POPULATION_COUNTS_VIEW = bqview.BigQueryView(
+RESIDENT_POPULATION_COUNTS_VIEW = BigQueryView(
     view_id=RESIDENT_POPULATION_COUNTS_VIEW_NAME,
     view_query=RESIDENT_POPULATION_COUNTS_QUERY
 )

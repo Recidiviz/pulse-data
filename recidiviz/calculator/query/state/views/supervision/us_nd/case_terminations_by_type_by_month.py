@@ -17,7 +17,8 @@
 """Case Terminations by type by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -99,7 +100,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
         prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET)
     )
 
-CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW = bqview.BigQueryView(
+CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY
 )

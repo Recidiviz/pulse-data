@@ -14,24 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Utilities for performing validation-related queries against BigQuery."""
-
-from google.cloud import bigquery
-
-
-DATASET = 'validation_views'
-_client = None
-
-
-def client() -> bigquery.Client:
-    global _client
-    if not _client:
-        _client = bigquery.Client()
-    return _client
-
-
-def run_query(validation_query: str) -> bigquery.job.QueryJob:
-    """Returns the result set from querying the given validation query string."""
-
-    return client().query(validation_query)

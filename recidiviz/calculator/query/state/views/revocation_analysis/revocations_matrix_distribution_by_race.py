@@ -17,7 +17,8 @@
 """Revocations Matrix Distribution by Race."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -96,7 +97,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY = \
         race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     )
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW = bqview.BigQueryView(
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW = BigQueryView(
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME,
     view_query=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY
 )

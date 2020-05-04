@@ -19,7 +19,7 @@
 between two views in the Revocation Analysis Matrix tool: the grid cells and the month-over-month chart."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -57,7 +57,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY = \
         view_dataset=VIEWS_DATASET,
     )
 
-REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW = bqview.BigQueryView(
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW = BigQueryView(
     view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME,
     view_query=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY
 )

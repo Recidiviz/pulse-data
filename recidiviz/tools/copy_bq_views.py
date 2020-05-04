@@ -30,7 +30,8 @@ import logging
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query import bq_utils
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryView
 
 
 def main(*, source_project_id, source_dataset_id, destination_project_id, destination_dataset_id):
@@ -38,32 +39,26 @@ def main(*, source_project_id, source_dataset_id, destination_project_id, destin
     destination_project_id.destination_dataset_id."""
 
     # Construct a BigQuery client with the source_project_id
-    source_client = bigquery.Client(project=source_project_id)
+    source_client = BigQueryClientImpl(project_id=source_project_id)
 
-    # Construct a BigQuery client with the destination_project_id if it differs from the source_project_id
-    destination_client = (bigquery.Client(project=destination_project_id)
-                          if source_project_id != destination_project_id else source_client)
+    # Construct a BigQuery client with the destination_project_id
+    destination_client = BigQueryClientImpl(project_id=destination_project_id)
 
     destination_dataset = bigquery.DatasetReference(destination_project_id, destination_dataset_id)
 
-    # Create the destination dataset if it doesn't yet exist
-    bq_utils.create_dataset_if_necessary(destination_dataset)
+    tables_in_source_dataset = source_client.list_tables(source_dataset_id)
 
-    views_to_copy = source_client.list_tables(source_dataset_id)
-
-    for view_ref in views_to_copy:
-        # Retrieve all of the information about the view
-        view = source_client.get_table(view_ref)
-        view_query = view.view_query
+    for table_ref in tables_in_source_dataset:
+        table = source_client.client.get_table(table_ref)
 
         # Only copy this view if there is a view_query to replicate and the view doesn't already exist in the
         # destination dataset
-        if not bq_utils.table_exists(destination_dataset, view_ref.table_id) and view_query:
-            new_view_ref = destination_dataset.table(view_ref.table_id)
-            new_view = bigquery.Table(new_view_ref)
-            new_view.view_query = view_query.format(destination_project_id, destination_dataset_id, view_ref.table_id)
-            destination_client.create_table(new_view)
-            logging.info("Created %s", new_view_ref)
+        if table.view_query and not destination_client.table_exists(destination_dataset, table_id=table.table_id):
+            # Retrieve all of the information about the view
+            source_client.copy_view(view=BigQueryView(view_id=table.table_id,
+                                                      view_query=table.view_query),
+                                    destination_client=destination_client,
+                                    destination_dataset_ref=destination_dataset)
 
 
 if __name__ == '__main__':

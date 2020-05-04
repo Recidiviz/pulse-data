@@ -16,7 +16,7 @@
 # =============================================================================
 """Average days at liberty for reincarcerations by month."""
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -56,7 +56,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY = \
         reference_dataset=REFERENCE_DATASET,
     )
 
-AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW = bqview.BigQueryView(
+AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW = BigQueryView(
     view_id=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_NAME,
     view_query=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY
 )

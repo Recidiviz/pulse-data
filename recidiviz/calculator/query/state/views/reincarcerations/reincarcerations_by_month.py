@@ -16,7 +16,8 @@
 # =============================================================================
 """Reincarcerations by month."""
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -71,7 +72,7 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
         district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
     )
 
-REINCARCERATIONS_BY_MONTH_VIEW = bqview.BigQueryView(
+REINCARCERATIONS_BY_MONTH_VIEW = BigQueryView(
     view_id=REINCARCERATIONS_BY_MONTH_VIEW_NAME,
     view_query=REINCARCERATIONS_BY_MONTH_QUERY
 )

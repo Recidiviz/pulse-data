@@ -16,8 +16,7 @@
 # =============================================================================
 """View that combines county name, state name, and FIPS from Vera's ITP data."""
 
-from recidiviz.calculator.query import bqview
-
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
 
 from recidiviz.utils import metadata
@@ -54,7 +53,7 @@ ORDER BY fips
     incarceration_trends_table=INCARCERATION_TRENDS_TABLE
 )
 
-COUNTY_NAMES_VIEW = bqview.BigQueryView(
+COUNTY_NAMES_VIEW = BigQueryView(
     view_id=COUNTY_NAMES_VIEW_NAME,
     view_query=COUNTY_NAMES_VIEW_QUERY
 )

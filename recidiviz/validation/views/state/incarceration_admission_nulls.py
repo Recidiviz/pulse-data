@@ -18,7 +18,8 @@
 """A view revealing when incarceration periods have null admission dates."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, export_config
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 
 from recidiviz.utils import metadata
 
@@ -43,7 +44,7 @@ INCARCERATION_ADMISSION_NULLS_QUERY = \
         state_dataset=BASE_DATASET,
     )
 
-INCARCERATION_ADMISSION_NULLS_VIEW = bqview.BigQueryView(
+INCARCERATION_ADMISSION_NULLS_VIEW = BigQueryView(
     view_id=INCARCERATION_ADMISSION_NULLS_VIEW_NAME,
     view_query=INCARCERATION_ADMISSION_NULLS_QUERY
 )

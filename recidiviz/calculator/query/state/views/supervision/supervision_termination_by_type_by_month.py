@@ -17,7 +17,8 @@
 """Successful and unsuccessful terminations of supervision by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -78,7 +79,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
         supervision_dimension=bq_utils.unnest_supervision_type()
     )
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW = bqview.BigQueryView(
+SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
     view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY
 )

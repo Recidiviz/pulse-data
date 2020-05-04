@@ -22,7 +22,7 @@ from typing import Optional, TypeVar, Generic
 
 import attr
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.utils import metadata
 

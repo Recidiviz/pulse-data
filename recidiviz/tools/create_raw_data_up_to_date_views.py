@@ -30,9 +30,8 @@ import argparse
 import logging
 from typing import List
 
-from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.bq_utils import create_or_update_view
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.utils.params import str_to_bool
 
 US_ID_RAW_TABLES_TO_PKS = [
@@ -155,10 +154,11 @@ def create_or_update_view_for_table(
                      by_update_date_view.view_id, by_update_date_view.view_query)
         return
 
-    views_dataset_ref = bq_utils.client().dataset(views_dataset, project=project_id)
-    create_or_update_view(dataset_ref=views_dataset_ref, view=by_update_date_view)
+    bq_client = BigQueryClientImpl(project_id=project_id)
+    views_dataset_ref = bq_client.dataset_ref_for_id(views_dataset)
+    bq_client.create_or_update_view(dataset_ref=views_dataset_ref, view=by_update_date_view)
     logging.info('Created/Updated view %s', by_update_date_view.view_id)
-    create_or_update_view(dataset_ref=views_dataset_ref, view=latest_view)
+    bq_client.create_or_update_view(dataset_ref=views_dataset_ref, view=latest_view)
     logging.info('Created/Updated view %s', latest_view.view_id)
 
 

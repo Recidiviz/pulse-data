@@ -16,7 +16,8 @@
 # =============================================================================
 """Every person with their last known address that is not a prison facility or a P&P office."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.utils import metadata
 
 PROJECT_ID = metadata.project_id()
@@ -77,7 +78,7 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY = \
         base_dataset=BASE_DATASET,
     )
 
-PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = bqview.BigQueryView(
+PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = BigQueryView(
     view_id=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME,
     view_query=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY
 )

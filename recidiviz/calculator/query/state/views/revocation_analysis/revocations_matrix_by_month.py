@@ -17,7 +17,7 @@
 """Revocations Matrix by month."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -49,7 +49,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY = \
         reference_dataset=REFERENCE_DATASET,
         )
 
-REVOCATIONS_MATRIX_BY_MONTH_VIEW = bqview.BigQueryView(
+REVOCATIONS_MATRIX_BY_MONTH_VIEW = BigQueryView(
     view_id=REVOCATIONS_MATRIX_BY_MONTH_VIEW_NAME,
     view_query=REVOCATIONS_MATRIX_BY_MONTH_QUERY
 )

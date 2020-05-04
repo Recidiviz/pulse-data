@@ -17,7 +17,8 @@
 """Booking counts by day, fips, and most_severe_charge."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import \
     CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
@@ -111,7 +112,7 @@ ORDER BY day DESC, fips
     county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = bqview.BigQueryView(
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
     view_id=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME,
     view_query=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY
 )

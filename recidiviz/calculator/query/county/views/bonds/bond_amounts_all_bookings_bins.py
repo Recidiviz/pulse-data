@@ -17,7 +17,7 @@
 """Add categorical bins to bond_amounts_all_bookings."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings \
     import BOND_AMOUNTS_ALL_BOOKINGS_VIEW
@@ -150,7 +150,7 @@ ORDER BY day DESC, fips, bond_amount_category
     county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW = bqview.BigQueryView(
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW = BigQueryView(
     view_id=BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME,
     view_query=BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY
 )

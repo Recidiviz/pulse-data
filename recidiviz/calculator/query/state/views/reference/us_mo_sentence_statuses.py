@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """BQ View containing US_MO state statuses from TAK026"""
-from recidiviz.calculator.query import bqview, export_config
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -74,7 +75,7 @@ US_MO_SENTENCE_STATUSES_QUERY = \
         reference_tables_dataset=REFERENCE_TABLES_DATASET,
     )
 
-US_MO_SENTENCE_STATUSES_VIEW = bqview.BigQueryView(
+US_MO_SENTENCE_STATUSES_VIEW = BigQueryView(
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
     view_query=US_MO_SENTENCE_STATUSES_QUERY
 )

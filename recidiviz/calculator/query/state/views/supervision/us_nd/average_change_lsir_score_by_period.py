@@ -20,7 +20,8 @@ termination to the second LSIR score of the person's supervision.
 """
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -82,7 +83,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
         metric_period_condition=bq_utils.metric_period_condition(),
     )
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = bqview.BigQueryView(
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = BigQueryView(
     view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
     view_query=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY
 )

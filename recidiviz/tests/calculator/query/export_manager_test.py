@@ -25,6 +25,7 @@ from unittest import mock
 
 import flask
 from google.cloud import bigquery
+from google.cloud.bigquery import DatasetReference
 
 from recidiviz.calculator.query import export_manager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
@@ -49,8 +50,7 @@ class ExportManagerTestCounty(unittest.TestCase):
             'recidiviz.calculator.query.export_manager.bq_load')
         self.mock_bq_load = self.bq_load_patcher.start()
 
-        self.client_patcher = mock.patch(
-            'recidiviz.calculator.query.export_manager.bq_utils.client')
+        self.client_patcher = mock.patch('recidiviz.calculator.query.export_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
         self.cloudsql_export_patcher = mock.patch(
@@ -114,7 +114,7 @@ class ExportManagerTestCounty(unittest.TestCase):
 
     def test_export_then_load_all_sequentially(self):
         """Test that tables are exported then loaded sequentially."""
-        default_dataset = self.mock_client.dataset(
+        default_dataset = self.mock_client.dataset_ref_for_id(
             self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
 
         # Suppose all exports succeed.
@@ -145,12 +145,14 @@ class ExportManagerTestCounty(unittest.TestCase):
         with self.assertLogs(level='ERROR'):
             export_manager.export_then_load_all_sequentially('nonsense')
 
-
-    def test_export_all_then_load_all(self):
+    @mock.patch('recidiviz.utils.metadata.project_id')
+    def test_export_all_then_load_all(self, mock_project_id):
         """Test that export_all_then_load_all exports all tables then loads all
             tables.
         """
-        default_dataset = self.mock_client.dataset(
+        mock_project_id.return_value = 'test-project'
+
+        default_dataset = self.mock_client.dataset_ref_for_id(
             self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
 
         mock_parent = mock.Mock()
@@ -180,19 +182,18 @@ class ExportManagerTestCounty(unittest.TestCase):
             export_manager.export_all_then_load_all('nonsense')
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch(
-        'recidiviz.calculator.query.export_manager.export_table_then_load_table')
+    @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_county(self, mock_export, mock_project_id):
         """Tests that the export is called for a given table and module when
         the /export_manager/export endpoint is hit for a table in the COUNTY
         module."""
-        self.mock_client.dataset.return_value = 'dataset'
         mock_export.return_value = True
 
         mock_project_id.return_value = 'test-project'
+        self.mock_client.dataset_ref_for_id.return_value = DatasetReference(mock_project_id.return_value,
+                                                                            self.mock_dataset_name)
         table = 'fake_table'
         module = 'JAILS'
-        dataset_ref = 'dataset'
         route = '/export'
         data = {"table_name": table, "schema_type": module}
 
@@ -202,7 +203,10 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table, dataset_ref, SchemaType.JAILS)
+        mock_export.assert_called_with(table,
+                                       DatasetReference.from_string(self.mock_dataset_name,
+                                                                    mock_project_id.return_value),
+                                       SchemaType.JAILS)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
@@ -210,13 +214,15 @@ class ExportManagerTestCounty(unittest.TestCase):
         """Tests that the export is called for a given table and module when
         the /export_manager/export endpoint is hit for a table in the STATE
         module."""
-        self.mock_client.dataset.return_value = 'dataset'
         mock_export.return_value = True
+        self.mock_export_config.STATE_BASE_TABLES_BQ_DATASET.return_value = 'state'
 
         mock_project_id.return_value = 'test-project'
+        self.mock_client.dataset_ref_for_id.return_value = \
+            DatasetReference.from_string('dataset', 'test-project')
+
         table = 'fake_table'
         module = 'STATE'
-        dataset_ref = 'dataset'
         route = '/export'
         data = {"table_name": table, "schema_type": module}
 
@@ -226,7 +232,9 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table, dataset_ref, SchemaType.STATE)
+        mock_export.assert_called_with(table, DatasetReference.from_string('dataset',
+                                                                           'test-project'),
+                                       SchemaType.STATE)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')

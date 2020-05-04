@@ -18,7 +18,7 @@
 to Free Through Recovery."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -73,7 +73,7 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
         reference_dataset=REFERENCE_DATASET,
     )
 
-FTR_REFERRALS_BY_MONTH_VIEW = bqview.BigQueryView(
+FTR_REFERRALS_BY_MONTH_VIEW = BigQueryView(
     view_id=FTR_REFERRALS_BY_MONTH_VIEW_NAME,
     view_query=FTR_REFERRALS_BY_MONTH_QUERY
 )

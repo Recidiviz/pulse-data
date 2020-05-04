@@ -17,7 +17,7 @@
 """Single count data used for stitch"""
 
 import os
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.export_config import \
     COUNTY_BASE_TABLES_BQ_DATASET
 from recidiviz.utils import metadata
