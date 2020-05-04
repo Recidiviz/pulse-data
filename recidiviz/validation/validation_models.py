@@ -83,3 +83,14 @@ class DataValidationJobResult(BuildableAttr):
 
     # Description of failure, if there was a failure
     failure_description: Optional[str] = attr.ib()
+
+    def __str__(self):
+        return f'DataValidationJobResult[' \
+               f'\n\twas_successful: {self.was_successful},' \
+               f'\n\tfailure_description: {self.failure_description},' \
+               f'\n\tvalidation[' \
+               f'\n\t\tregion_code: {self.validation_job.region_code},' \
+               f'\n\t\tcheck_type: {self.validation_job.validation.validation_type},' \
+               f'\n\t\tview_id: {self.validation_job.validation.view.view_id},' \
+               f'\n\t]' \
+               f'\n]'
