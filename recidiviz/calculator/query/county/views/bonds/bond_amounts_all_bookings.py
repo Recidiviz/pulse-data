@@ -17,7 +17,8 @@
 """For every Booking, total bond amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import BOND_AMOUNTS_BY_BOOKING_VIEW
 from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
@@ -109,7 +110,7 @@ ON
     county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_VIEW = bqview.BigQueryView(
+BOND_AMOUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
     view_id=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME,
     view_query=BOND_AMOUNTS_ALL_BOOKINGS_QUERY
 )

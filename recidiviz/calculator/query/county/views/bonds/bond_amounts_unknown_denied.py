@@ -17,7 +17,8 @@
 """View that creates a Bond table with amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 
 from recidiviz.common.constants.enum_canonical_strings import bond_status_posted
 from recidiviz.common.constants.enum_canonical_strings import bond_status_revoked
@@ -112,7 +113,7 @@ FROM (
     bond_table=Bond.__tablename__
 )
 
-BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = bqview.BigQueryView(
+BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = BigQueryView(
     view_id=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME,
     view_query=BOND_AMOUNTS_UNKNOWN_DENIED_QUERY
 )

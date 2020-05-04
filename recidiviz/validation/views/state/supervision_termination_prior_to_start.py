@@ -18,7 +18,8 @@
 """A view revealing when state supervision periods have termination dates prior to start dates."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, export_config
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 
 from recidiviz.utils import metadata
 
@@ -44,7 +45,7 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY = \
         state_dataset=BASE_DATASET,
     )
 
-SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW = bqview.BigQueryView(
+SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW = BigQueryView(
     view_id=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME,
     view_query=SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY
 )

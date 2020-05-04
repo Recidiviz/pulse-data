@@ -18,7 +18,8 @@
 """A view revealing when state incarceration periods have release dates prior to admission dates."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, export_config
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 
 from recidiviz.utils import metadata
 
@@ -44,7 +45,7 @@ INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY = \
         state_dataset=BASE_DATASET,
     )
 
-INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW = bqview.BigQueryView(
+INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW = BigQueryView(
     view_id=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME,
     view_query=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY
 )

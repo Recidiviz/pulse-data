@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dashboard export configuration."""
+"""BigQuery View definition.
 
-from typing import List
+Each View consists of a view_id (name) and view_query (query defining its data).
+"""
 
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_manager
-from recidiviz.calculator.query.state.views.reference import reference_views
+import attr
 
-STATES_TO_EXPORT = ['US_MO', 'US_ND']
 
-VIEWS_TO_EXCLUDE_FROM_EXPORT: List[BigQueryView] = \
-    reference_views.REF_VIEWS
-
-VIEWS_TO_EXPORT = [
-    view for view_list in view_manager.VIEWS_TO_UPDATE.values() for view in view_list
-    if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
-]
+@attr.s(frozen=True)
+class BigQueryView:
+    """View which consists of a name (view_id) and query (view_query)"""
+    view_id: str = attr.ib()
+    view_query: str = attr.ib()

@@ -17,7 +17,7 @@
 
 """Tests for validation/checks/check_resolver.py."""
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks import check_resolver
 from recidiviz.validation.checks.existence_check import ExistenceValidationChecker
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationCheck, ValidationCheckType

@@ -21,7 +21,7 @@ from typing import List
 
 import attr
 
-from recidiviz.validation import validation_queries
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import ValidationCheckType, \
     DataValidationCheck, DataValidationJob, DataValidationJobResult
@@ -52,7 +52,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         comparison_columns = validation_job.validation.comparison_columns
         max_allowed_error = validation_job.validation.max_allowed_error
 
-        query_job = validation_queries.run_query(validation_job.query_str())
+        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str())
 
         for row in query_job:
             comparison_values = [row[column] for column in comparison_columns]

@@ -19,16 +19,14 @@
 import unittest
 
 from recidiviz.calculator.query.state import dashboard_export_config
-from recidiviz.calculator.query import bqview
-
-
+from recidiviz.big_query.big_query_view import BigQueryView
 class DashboardExportConfigTest(unittest.TestCase):
     """Tests for dashboard_export_config.py."""
 
     def test_VIEWS_TO_EXPORT_types(self):
         """Make sure that all VIEWS_TO_EXPORT are of type BigQueryView."""
         for view in dashboard_export_config.VIEWS_TO_EXPORT:
-            self.assertIsInstance(view, bqview.BigQueryView)
+            self.assertIsInstance(view, BigQueryView)
 
     def test_VIEWS_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
         """Make sure a view is excluded from VIEWS_TO_EXPORT if listed in
