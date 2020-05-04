@@ -17,7 +17,8 @@
 """Event Based Program Referrals."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -61,7 +62,7 @@ EVENT_BASED_PROGRAM_REFERRALSS_QUERY = \
         supervision_dimension=bq_utils.unnest_supervision_type(),
     )
 
-EVENT_BASED_PROGRAM_REFERRALS_VIEW = bqview.BigQueryView(
+EVENT_BASED_PROGRAM_REFERRALS_VIEW = BigQueryView(
     view_id=EVENT_BASED_PROGRAM_REFERRALS_VIEW_NAME,
     view_query=EVENT_BASED_PROGRAM_REFERRALSS_QUERY
 )

@@ -16,7 +16,7 @@
 # =============================================================================
 """Most recent calculate job_id by metric and state code."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -92,7 +92,7 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
         metrics_dataset=METRICS_DATASET,
     )
 
-MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = bqview.BigQueryView(
+MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = BigQueryView(
     view_id=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME,
     view_query=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY
 )

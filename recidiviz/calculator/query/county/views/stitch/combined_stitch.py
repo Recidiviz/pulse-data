@@ -16,7 +16,7 @@
 # =============================================================================
 """Define views for combining scraper & state-reports & ITP."""
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \

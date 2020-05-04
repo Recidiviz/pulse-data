@@ -22,9 +22,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query import bqview
-
-
+from recidiviz.big_query.big_query_view import BigQueryView
 class ViewManagerTest(unittest.TestCase):
     """Tests for view_manager.py."""
 
@@ -36,23 +34,25 @@ class ViewManagerTest(unittest.TestCase):
             {'view_id': 'my_other_fake_view',
              'view_query': 'SELECT NULL LIMIT 0'},
         ]
-        self.mock_views = [bqview.BigQueryView(**view) for view in sample_views]
-        self.mock_project_id = 'fake-recidiviz-project'
+        self.mock_views = [BigQueryView(**view) for view in sample_views]
+        project_id = 'fake-recidiviz-project'
         self.mock_view_dataset_name = 'my_views_dataset'
         self.mock_dataset = bigquery.dataset.DatasetReference(
-            self.mock_project_id, self.mock_view_dataset_name)
+            project_id, self.mock_view_dataset_name)
 
-        self.bq_utils_patcher = mock.patch(
-            'recidiviz.calculator.query.state.view_manager.bq_utils')
-        self.mock_bq_utils = self.bq_utils_patcher.start()
+        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = project_id
 
-        self.client_patcher = mock.patch(
-            'recidiviz.calculator.query.state.view_manager.bq_utils.client')
-        self.mock_client = self.client_patcher.start().return_value
+        self.bq_client_patcher = mock.patch(
+            'recidiviz.calculator.query.state.view_manager.BigQueryClientImpl')
+        self.mock_client = self.bq_client_patcher.start().return_value
+
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
 
     def tearDown(self):
-        self.bq_utils_patcher.stop()
-        self.client_patcher.stop()
+        self.bq_client_patcher.stop()
+        self.metadata_patcher.stop()
 
     def test_create_dataset_and_update_views(self):
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
@@ -68,8 +68,8 @@ class ViewManagerTest(unittest.TestCase):
 
         view_manager.create_dataset_and_update_views({self.mock_view_dataset_name: self.mock_views})
 
-        self.mock_bq_utils.create_dataset_if_necessary.assert_called_with(self.mock_dataset)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(self.mock_dataset)
 
-        self.mock_bq_utils.create_or_update_view.assert_has_calls(
+        self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(self.mock_dataset, view) for view in self.mock_views]
         )

@@ -16,7 +16,8 @@
 # =============================================================================
 """Admissions minus releases (net change in incarcerated population)"""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -97,7 +98,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
         district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
     )
 
-ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW = bqview.BigQueryView(
+ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW = BigQueryView(
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME,
     view_query=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY
 )

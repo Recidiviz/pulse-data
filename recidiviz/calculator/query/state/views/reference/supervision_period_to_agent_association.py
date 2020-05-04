@@ -17,7 +17,8 @@
 """Links SupervisionPeriods and their associated supervising agent."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -54,7 +55,7 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY = \
         reference_tables_dataset=REFERENCE_TABLES_DATASET,
     )
 
-SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW = bqview.BigQueryView(
+SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW = BigQueryView(
     view_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
     view_query=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY
 )

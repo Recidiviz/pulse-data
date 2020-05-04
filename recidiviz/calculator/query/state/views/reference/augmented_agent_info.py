@@ -21,7 +21,8 @@ in static tables.
 
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -87,7 +88,7 @@ AUGMENTED_AGENT_INFO_QUERY = \
         reference_tables_dataset=REFERENCE_TABLES_DATASET,
     )
 
-AUGMENTED_AGENT_INFO_VIEW = bqview.BigQueryView(
+AUGMENTED_AGENT_INFO_VIEW = BigQueryView(
     view_id=AUGMENTED_AGENT_INFO_VIEW_NAME,
     view_query=AUGMENTED_AGENT_INFO_QUERY
 )

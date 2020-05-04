@@ -25,8 +25,8 @@ from flask import request
 # Importing only for typing.
 from google.cloud import bigquery
 
-from recidiviz.calculator.query import export_config, cloudsql_export,\
-    bq_utils, bq_load
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.calculator.query import export_config, cloudsql_export, bq_load
 from recidiviz.calculator.query.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
@@ -98,13 +98,15 @@ def export_then_load_all_sequentially(schema_type: SchemaType):
     There is no reason to load sequentially, but we must export sequentially
     because Cloud SQL can only support one export operation at a time.
     """
+
+    bq_client = BigQueryClientImpl()
     if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        dataset_ref = bq_utils.client().dataset(
+        dataset_ref = bq_client.dataset_ref_for_id(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
     elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        dataset_ref = bq_utils.client().dataset(
+        dataset_ref = bq_client.dataset_ref_for_id(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
     else:
         logging.error("Invalid schema_type requested. Must be either"
@@ -128,14 +130,16 @@ def export_all_then_load_all(schema_type: SchemaType):
     3. Export Table C
     4. Load Tables A, B, C in parallel.
     """
+
+    bq_client = BigQueryClientImpl()
     if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_utils.client().dataset(
+        base_tables_dataset_ref = bq_client.dataset_ref_for_id(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
     elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_utils.client().dataset(
+        base_tables_dataset_ref = bq_client.dataset_ref_for_id(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
     else:
@@ -172,13 +176,14 @@ def handle_bq_export_task():
     table_name = data['table_name']
     schema_type_str = data['schema_type']
 
+    bq_client = BigQueryClientImpl()
     if schema_type_str == SchemaType.JAILS.value:
         schema_type = SchemaType.JAILS
-        dataset_ref = bq_utils.client().dataset(
+        dataset_ref = bq_client.dataset_ref_for_id(
             export_config.COUNTY_BASE_TABLES_BQ_DATASET)
     elif schema_type_str == SchemaType.STATE.value:
         schema_type = SchemaType.STATE
-        dataset_ref = bq_utils.client().dataset(
+        dataset_ref = bq_client.dataset_ref_for_id(
             export_config.STATE_BASE_TABLES_BQ_DATASET)
     else:
         return '', HTTPStatus.INTERNAL_SERVER_ERROR

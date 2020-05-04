@@ -21,7 +21,7 @@ from unittest import TestCase
 
 from mock import patch
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks.existence_check import ExistenceValidationChecker, ExistenceDataValidationCheck
 from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob, DataValidationJobResult
 
@@ -29,9 +29,21 @@ from recidiviz.validation.validation_models import ValidationCheckType, DataVali
 class TestExistenceValidationChecker(TestCase):
     """Tests for the ExistenceValidationChecker."""
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_existence_check_no_failures(self, mock_query):
-        mock_query.return_value = []
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'project-id'
+
+        self.client_patcher = patch(
+            'recidiviz.validation.checks.existence_check.BigQueryClientImpl')
+        self.mock_client = self.client_patcher.start().return_value
+
+    def tearDown(self):
+        self.client_patcher.stop()
+        self.metadata_patcher.stop()
+
+    def test_existence_check_no_failures(self):
+        self.mock_client.run_query_async.return_value = []
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=ExistenceDataValidationCheck(
@@ -43,9 +55,8 @@ class TestExistenceValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_existence_check_failures(self, mock_query):
-        mock_query.return_value = ['some result row', 'some other result row']
+    def test_existence_check_failures(self):
+        self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=ExistenceDataValidationCheck(

@@ -17,7 +17,8 @@
 """Case Terminations by type by officer by period."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_month import \
@@ -79,7 +80,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
         metric_period_condition=bq_utils.metric_period_condition(),
     )
 
-CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = bqview.BigQueryView(
+CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = BigQueryView(
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME,
     view_query=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY
 )

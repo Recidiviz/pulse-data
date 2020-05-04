@@ -20,7 +20,7 @@ in a given validation result set."""
 
 import attr
 
-from recidiviz.validation import validation_queries
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import ValidationCheckType, \
     DataValidationCheck, DataValidationJob, DataValidationJobResult
@@ -41,7 +41,7 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
     def run_check(cls, validation_job: DataValidationJob[ExistenceDataValidationCheck]) -> DataValidationJobResult:
         was_successful = True
         invalid_rows = 0
-        query_job = validation_queries.run_query(validation_job.query_str())
+        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str())
 
         # We need to iterate over the collection to initialize the query result set
         for _ in query_job:

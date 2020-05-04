@@ -24,7 +24,8 @@ variable.
 
 from typing import Dict, List
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryView
 
 from recidiviz.calculator.query.state import view_config
 from recidiviz.calculator.query.state.views.admissions import admissions_views
@@ -38,7 +39,7 @@ from recidiviz.calculator.query.state.views.revocation_analysis import \
 from recidiviz.calculator.query.state.views.revocations import revocations_views
 from recidiviz.calculator.query.state.views.supervision import supervision_views
 
-VIEWS_TO_UPDATE: Dict[str, List[bqview.BigQueryView]] = {
+VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
     view_config.REFERENCE_TABLES_DATASET: reference_views.REF_VIEWS,
     view_config.DASHBOARD_VIEWS_DATASET: (
         admissions_views.ADMISSIONS_VIEWS +
@@ -51,22 +52,23 @@ VIEWS_TO_UPDATE: Dict[str, List[bqview.BigQueryView]] = {
 }
 
 
-def create_dataset_and_update_views(views_to_update: Dict[str, List[bqview.BigQueryView]]):
+def create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]):
     """Create and update Views and their parent Dataset.
 
     Create a parent Views dataset if it does not exist, and creates or updates the underlying Views as defined in
-    recidiviz.calculator.bq.views.bqview
+    recidiviz.calculator.query.state.views.
 
     Args:
         views_to_update: Dict of BigQuery dataset name to list of view objects to be created or updated.
             Dataset is created if it does not already exist.
     """
+    bq_client = BigQueryClientImpl()
     for dataset_name, view_list in views_to_update.items():
-        views_dataset_ref = bq_utils.client().dataset(dataset_name)
-        bq_utils.create_dataset_if_necessary(views_dataset_ref)
+        views_dataset_ref = bq_client.dataset_ref_for_id(dataset_name)
+        bq_client.create_dataset_if_necessary(views_dataset_ref)
 
         for view in view_list:
-            bq_utils.create_or_update_view(views_dataset_ref, view)
+            bq_client.create_or_update_view(views_dataset_ref, view)
 
 
 if __name__ == '__main__':

@@ -16,7 +16,8 @@
 # =============================================================================
 """Assigns a 'most_severe_charge' to each Booking."""
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.charges.charges_and_severity import CHARGES_AND_SEVERITY_VIEW
 
@@ -75,7 +76,7 @@ ON BookingsWithCharges.booking_id = Booking.booking_id
     booking_table=Booking.__tablename__
 )
 
-CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = bqview.BigQueryView(
+CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = BigQueryView(
     view_id=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME,
     view_query=CHARGE_SEVERITY_ALL_BOOKINGS_QUERY
 )

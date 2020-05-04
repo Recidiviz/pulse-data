@@ -17,10 +17,10 @@
 """Export data from BigQuery to JSON files in Cloud Storage."""
 import logging
 
-from recidiviz.calculator.query import bq_utils, bqview
-from recidiviz.calculator.query.state import (dashboard_export_config,
-                                              view_config, view_manager)
-from recidiviz.utils import metadata
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportViewConfig
+
+from recidiviz.calculator.query.state import view_manager, view_config, \
+    dashboard_export_config
 
 
 def export_dashboard_data_to_cloud_storage(bucket: str):
@@ -30,36 +30,20 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
         bucket: The cloud storage location where the exported data should go.
     """
     view_manager.create_dataset_and_update_views(view_manager.VIEWS_TO_UPDATE)
-    dataset_ref = bq_utils.client().dataset(view_config.DASHBOARD_VIEWS_DATASET)
+
+    bq_client = BigQueryClientImpl()
+    dataset_ref = bq_client.dataset_ref_for_id(view_config.DASHBOARD_VIEWS_DATASET)
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
 
-    bq_utils.export_views_to_cloud_storage(
-        dataset_ref, bucket,
-        [bq_utils.ExportViewConfig(
+    bq_client.export_views_to_cloud_storage(
+        dataset_ref,
+        [ExportViewConfig(
             view=view,
-            intermediate_table_query=\
-            "SELECT * FROM `{project_id}.{dataset}.{table}`" \
-            " WHERE state_code = '{state_code}'"\
-                        .format(project_id=metadata.project_id(),
-                                dataset=dataset_ref.dataset_id,
-                                table=view.view_id,
-                                state_code=state),
-            intermediate_table_name=_table_name_for_view(view, state),
-            filename=_destination_filename_for_view(view, state))
+            view_filter_clause=f" WHERE state_code = '{state}'",
+            intermediate_table_name=f"{view.view_id}_table_{state}",
+            output_uri=f"gs://{bucket}/{state}/{view.view_id}.json")
          for state in dashboard_export_config.STATES_TO_EXPORT
          for view in views_to_export])
-
-
-def _table_name_for_view(view: bqview.BigQueryView,
-                         state_code: str) -> str:
-    """Returns the name of the table where the view's contents are."""
-    return view.view_id + '_table_' + state_code
-
-
-def _destination_filename_for_view(view: bqview.BigQueryView,
-                                   state_code: str) -> str:
-    """Returns the filename that should be used as an export destination."""
-    return state_code + '/' + view.view_id + '.json'
 
 
 if __name__ == '__main__':

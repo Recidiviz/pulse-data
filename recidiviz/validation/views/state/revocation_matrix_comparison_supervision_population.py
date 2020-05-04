@@ -19,7 +19,7 @@
 in all of the views that support the Revocation Analysis Matrix tool."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -69,7 +69,7 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY = \
         view_dataset=VIEWS_DATASET,
     )
 
-REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW = bqview.BigQueryView(
+REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW = BigQueryView(
     view_id=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME,
     view_query=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY
 )

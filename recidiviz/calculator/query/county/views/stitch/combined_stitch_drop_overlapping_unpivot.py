@@ -17,7 +17,7 @@
 # pylint: disable=line-too-long
 """Unpivot stitch data"""
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping \
     import COMBINED_STITCH_DROP_OVERLAPPING_VIEW
 from recidiviz.calculator.query.county.view_config import VIEWS_DATASET

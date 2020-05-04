@@ -17,7 +17,8 @@
 """Assigns a severity to each Charge record."""
 # pylint: disable=line-too-long
 
-from recidiviz.calculator.query import export_config, bqview
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW
 
@@ -68,7 +69,7 @@ ON
     charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id
 )
 
-CHARGES_AND_SEVERITY_VIEW = bqview.BigQueryView(
+CHARGES_AND_SEVERITY_VIEW = BigQueryView(
     view_id=CHARGES_AND_SEVERITY_VIEW_NAME,
     view_query=CHARGES_AND_SEVERITY_QUERY
 )

@@ -21,7 +21,7 @@ from unittest import TestCase
 
 from mock import patch
 
-from recidiviz.calculator.query.bqview import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks.sameness_check import SamenessValidationChecker, SamenessDataValidationCheck
 from recidiviz.validation.validation_models import ValidationCheckType, DataValidationJob, \
     DataValidationJobResult
@@ -30,9 +30,21 @@ from recidiviz.validation.validation_models import ValidationCheckType, DataVali
 class TestSamenessValidationChecker(TestCase):
     """Tests for the SamenessValidationChecker."""
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_sameness_check_same_values(self, mock_query):
-        mock_query.return_value = [{'a': 10, 'b': 10, 'c': 10}]
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'project-id'
+
+        self.client_patcher = patch(
+            'recidiviz.validation.checks.sameness_check.BigQueryClientImpl')
+        self.mock_client = self.client_patcher.start().return_value
+
+    def tearDown(self):
+        self.client_patcher.stop()
+        self.metadata_patcher.stop()
+
+    def test_sameness_check_same_values(self):
+        self.mock_client.run_query_async.return_value = [{'a': 10, 'b': 10, 'c': 10}]
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=SamenessDataValidationCheck(
@@ -45,9 +57,8 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_sameness_check_different_values_no_allowed_error(self, mock_query):
-        mock_query.return_value = [{'a': 98, 'b': 100, 'c': 99}]  # TODO Mock not working as expected
+    def test_sameness_check_different_values_no_allowed_error(self):
+        self.mock_client.run_query_async.return_value = [{'a': 98, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=SamenessDataValidationCheck(
@@ -66,9 +77,8 @@ class TestSamenessValidationChecker(TestCase):
                                                  'errors as high as 0.02.',
                          ))
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_sameness_check_different_values_within_margin(self, mock_query):
-        mock_query.return_value = [{'a': 98, 'b': 100, 'c': 99}]
+    def test_sameness_check_different_values_within_margin(self):
+        self.mock_client.run_query_async.return_value = [{'a': 98, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=SamenessDataValidationCheck(
@@ -82,9 +92,8 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_sameness_check_different_values_above_margin(self, mock_query):
-        mock_query.return_value = [{'a': 97, 'b': 100, 'c': 99}]
+    def test_sameness_check_different_values_above_margin(self):
+        self.mock_client.run_query_async.return_value = [{'a': 97, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=SamenessDataValidationCheck(
@@ -104,9 +113,8 @@ class TestSamenessValidationChecker(TestCase):
                                                  'errors as high as 0.03.',
                          ))
 
-    @patch("recidiviz.validation.validation_queries.run_query")
-    def test_sameness_check_multiple_rows_above_margin(self, mock_query):
-        mock_query.return_value = [{'a': 97, 'b': 100, 'c': 99}, {'a': 14, 'b': 21, 'c': 14}]
+    def test_sameness_check_multiple_rows_above_margin(self):
+        self.mock_client.run_query_async.return_value = [{'a': 97, 'b': 100, 'c': 99}, {'a': 14, 'b': 21, 'c': 14}]
 
         job = DataValidationJob(region_code='US_VA',
                                 validation=SamenessDataValidationCheck(

@@ -20,7 +20,8 @@ incarceration period, i.e. one which has no release date yet, is followed by ano
 admission date."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, export_config
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import export_config
 
 from recidiviz.utils import metadata
 
@@ -50,7 +51,7 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY = \
         state_dataset=BASE_DATASET,
     )
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = bqview.BigQueryView(
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = BigQueryView(
     view_id=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME,
     view_query=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY
 )

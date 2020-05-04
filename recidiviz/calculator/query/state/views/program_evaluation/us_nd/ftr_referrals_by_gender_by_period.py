@@ -20,7 +20,8 @@ period months, broken down by gender.
 """
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -85,7 +86,7 @@ FTR_REFERRALS_BY_GENDER_BY_PERIOD_QUERY = \
         metric_period_condition=bq_utils.metric_period_condition(),
     )
 
-FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW = bqview.BigQueryView(
+FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW = BigQueryView(
     view_id=FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW_NAME,
     view_query=FTR_REFERRALS_BY_GENDER_BY_PERIOD_QUERY
 )

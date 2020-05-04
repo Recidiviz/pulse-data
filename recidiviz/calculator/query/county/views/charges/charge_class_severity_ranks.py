@@ -16,8 +16,7 @@
 # =============================================================================
 """Creates a View that has a list of charge classes and their severity rank."""
 
-from recidiviz.calculator.query import bqview
-
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.constants.county.enum_canonical_strings import (
     charge_class_civil,
     charge_class_felony,
@@ -67,7 +66,7 @@ ORDER BY severity
     charge_classes_by_severity_list=str(CHARGE_CLASSES_BY_SEVERITY)
 )
 
-CHARGE_CLASS_SEVERITY_RANKS_VIEW = bqview.BigQueryView(
+CHARGE_CLASS_SEVERITY_RANKS_VIEW = BigQueryView(
     view_id=CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME,
     view_query=CHARGE_CLASS_SEVERITY_RANKS_QUERY
 )
