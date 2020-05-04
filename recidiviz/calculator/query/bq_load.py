@@ -28,7 +28,8 @@ from google.cloud import exceptions
 # Importing only for typing.
 import sqlalchemy
 
-from recidiviz.calculator.query import export_config, bq_utils
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.calculator.query import export_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
@@ -36,8 +37,7 @@ _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
 def start_table_load(
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str, schema_type: SchemaType) -> \
-        Optional[Tuple[bigquery.job.LoadJob, bigquery.table.TableReference]]:
+        table_name: str, schema_type: SchemaType) -> Optional[bigquery.job.LoadJob]:
     """Loads a table from CSV data in GCS to BigQuery.
 
     Given a table name, retrieve the export URI and schema from export_config,
@@ -70,10 +70,7 @@ def start_table_load(
         logging.exception("Unknown schema type: %s", schema_type)
         return None
 
-    bq_utils.create_dataset_if_necessary(dataset_ref)
-
     uri = export_config.gcs_export_uri(table_name)
-    table_ref = dataset_ref.table(table_name)
 
     try:
         bq_schema = [
@@ -87,32 +84,22 @@ def start_table_load(
             "the TABLES_TO_EXPORT for the %s module?", schema_type, table_name)
         return None
 
-    job_config = bigquery.LoadJobConfig()
-    job_config.schema = bq_schema
-    job_config.source_format = bigquery.SourceFormat.CSV
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-
-    load_job = bq_utils.client().load_table_from_uri(
-        uri,
-        table_ref,
-        job_config=job_config
+    bq_client = BigQueryClientImpl()
+    load_job = bq_client.load_table_from_cloud_storage_async(
+        source_uri=uri,
+        destination_dataset_ref=dataset_ref,
+        destination_table_id=table_name,
+        destination_table_schema=bq_schema
     )
 
-    logging.info("Started load job %s for table %s.%s.%s",
-                 load_job.job_id,
-                 table_ref.project, table_ref.dataset_id, table_ref.table_id)
-
-    return load_job, table_ref
+    return load_job
 
 
-def wait_for_table_load(
-        load_job: bigquery.job.LoadJob,
-        table_ref: bigquery.table.TableReference) -> bool:
+def wait_for_table_load(load_job: bigquery.job.LoadJob) -> bool:
     """Wait for a table LoadJob to finish, and log its status.
 
     Args:
         load_job: BigQuery LoadJob whose result to wait for.
-        table_ref: TableReference to retrieve final table status.
     Returns:
         True if no errors were raised, else False.
     """
@@ -121,24 +108,23 @@ def wait_for_table_load(
         load_job.result(_BQ_LOAD_WAIT_TIMEOUT_SECONDS)
         logging.info("Load job %s for table %s.%s.%s completed successfully.",
                      load_job.job_id,
-                     table_ref.project,
-                     table_ref.dataset_id,
-                     table_ref.table_id)
+                     load_job.destination.project,
+                     load_job.destination.dataset_id,
+                     load_job.destination.table_id)
 
-        destination_table = bq_utils.client().get_table(table_ref)
         logging.info("Loaded %d rows in table %s.%s.%s",
-                     destination_table.num_rows,
-                     destination_table.project,
-                     destination_table.dataset_id,
-                     destination_table.table_id)
+                     load_job.destination.num_rows,
+                     load_job.destination.project,
+                     load_job.destination.dataset_id,
+                     load_job.destination.table_id)
         return True
     except (exceptions.NotFound,
             exceptions.BadRequest,
             concurrent.futures.TimeoutError): # type: ignore
         logging.exception("Failed to load table %s.%s.%s",
-                          table_ref.project,
-                          table_ref.dataset_id,
-                          table_ref.table_id)
+                          load_job.destination.project,
+                          load_job.destination.dataset_id,
+                          load_job.destination.table_id)
         return False
 
 
@@ -153,10 +139,9 @@ def start_table_load_and_wait(
         True if no errors were raised, else False.
     """
 
-    load_job_started = start_table_load(dataset_ref, table_name, schema_type)
-    if load_job_started:
-        load_job, table_ref = load_job_started
-        table_load_success = wait_for_table_load(load_job, table_ref)
+    load_job = start_table_load(dataset_ref, table_name, schema_type)
+    if load_job:
+        table_load_success = wait_for_table_load(load_job)
 
         return table_load_success
 
@@ -178,7 +163,6 @@ def load_all_tables_concurrently(
     ]
 
     # Wait for all jobs to finish, log results.
-    for load_job_started in load_jobs:
-        if load_job_started:
-            load_job, table_ref = load_job_started
-            wait_for_table_load(load_job, table_ref)
+    for load_job in load_jobs:
+        if load_job:
+            wait_for_table_load(load_job)

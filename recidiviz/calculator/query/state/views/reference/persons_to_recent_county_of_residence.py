@@ -17,7 +17,7 @@
 """Persons to their most recent county of residence."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
 from recidiviz.utils import metadata
@@ -62,7 +62,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY = \
         reference_tables_dataset=REFERENCE_TABLES_DATASET,
     )
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = bqview.BigQueryView(
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
     view_query=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY
 )

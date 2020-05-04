@@ -17,7 +17,7 @@
 """Revocations Matrix Distribution by Risk Level."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -88,7 +88,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
         reference_dataset=REFERENCE_DATASET
         )
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW = bqview.BigQueryView(
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW = BigQueryView(
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME,
     view_query=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY
 )

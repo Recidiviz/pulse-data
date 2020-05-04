@@ -17,14 +17,12 @@
 
 """Tests for export_manager.py."""
 
-# pylint: disable=protected-access
-from concurrent import futures
 import unittest
 from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import dashboard_export_manager
 
 
@@ -32,15 +30,22 @@ class DashboardExportManagerTest(unittest.TestCase):
     """Tests for dashboard_export_manager.py."""
 
     def setUp(self):
-        self.mock_project_id = 'fake-recidiviz-project'
+        project_id = 'fake-recidiviz-project'
         self.mock_dataset_name = 'base_dataset'
         self.mock_dataset = bigquery.dataset.DatasetReference(
-            self.mock_project_id, self.mock_dataset_name)
+            project_id, self.mock_dataset_name)
 
-        self.client_patcher = mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.bq_utils.client')
+        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = project_id
+
+        self.client_patcher = mock.patch(
+            'recidiviz.calculator.query.state.dashboard_export_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
-        self.mock_view = bqview.BigQueryView(view_id='test_view', view_query='SELECT NULL LIMIT 0')
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
+
+        self.mock_view = BigQueryView(view_id='test_view', view_query='SELECT NULL LIMIT 0')
 
         views_to_export = [self.mock_view]
         dashboard_export_config_values = {
@@ -66,14 +71,11 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.client_patcher.stop()
         self.dashboard_export_config_patcher.stop()
         self.view_manager_config_patcher.stop()
+        self.metadata_patcher.stop()
 
     @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.view_config')
     def test_export_dashboard_data_to_cloud_storage(self, mock_view_config):
         """Tests the table is created from the view and then extracted."""
-        done_future = futures.Future()
-        done_future.set_result('foo')
-        self.mock_client.query.return_value = done_future
-        self.mock_client.extract_table.return_value = done_future
 
         dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket='bucket')
 
@@ -82,5 +84,5 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.mock_view_manager.create_dataset_and_update_views.assert_called_with(
             self.mock_view_manager.VIEWS_TO_UPDATE
         )
-        self.mock_client.query.assert_called()
-        self.mock_client.extract_table.assert_called()
+
+        self.mock_client.export_views_to_cloud_storage.assert_called()

@@ -16,7 +16,7 @@
 # =============================================================================
 """Total population, admissions, releases by day-fips."""
 
-from recidiviz.calculator.query import bqview
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county import view_config
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
@@ -58,7 +58,7 @@ ORDER BY day DESC, fips
     population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id
 )
 
-POPULATION_ADMISSIONS_RELEASES_VIEW = bqview.BigQueryView(
+POPULATION_ADMISSIONS_RELEASES_VIEW = BigQueryView(
     view_id=POPULATION_ADMISSIONS_RELEASES_VIEW_NAME,
     view_query=POPULATION_ADMISSIONS_RELEASES_QUERY
 )

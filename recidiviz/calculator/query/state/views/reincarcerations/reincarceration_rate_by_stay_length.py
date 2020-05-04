@@ -22,7 +22,8 @@ release cohort of 2017 is the most recent calendar year where the next year
 (2018) has completed. The follow-up period is 1 year.
 """
 # pylint: disable=trailing-whitespace
-from recidiviz.calculator.query import bqview, bq_utils
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 from recidiviz.utils import metadata
 
@@ -66,7 +67,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY = \
         district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
     )
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = bqview.BigQueryView(
+REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = BigQueryView(
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY
 )
