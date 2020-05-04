@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Matchers for convenient unit testing in ingest."""
-
-
+"""Matchers for convenient unit testing."""
+import collections
 import json
 
 import callee
@@ -37,3 +36,18 @@ class DeserializedJson(callee.Matcher):
 
     def match(self, value):
         return json.loads(value) == self.comparison
+
+
+class UnorderedCollection(callee.Matcher):
+    """An argument Matcher which can match against unordered collections.
+
+    That is, if you want to assert that a mock
+    was called with a collection and you don't care about, or can't guarantee, the order of elements, this will
+    assert that the collection consists of the correct elements.
+    """
+
+    def __init__(self, comparison_collection):
+        self.comparison = comparison_collection
+
+    def match(self, value):
+        return collections.Counter(value) == collections.Counter(self.comparison)

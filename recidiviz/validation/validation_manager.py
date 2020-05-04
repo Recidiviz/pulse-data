@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Contains the API for automated data validation."""
-
+from concurrent import futures
 from http import HTTPStatus
 import logging
 from typing import List, Dict, Any
@@ -57,11 +57,17 @@ def handle_validation_request():
 
     # Perform all validations and track failures
     failed_validations: List[DataValidationJobResult] = []
-    for job in validation_jobs:
-        validation_checker = checker_for_validation(job)
-        result = validation_checker.run_check(job)
-        if not result.was_successful:
-            failed_validations.append(result)
+    with futures.ThreadPoolExecutor() as executor:
+        future_to_jobs = {executor.submit(_run_job, job): job for job in validation_jobs}
+
+        for future in futures.as_completed(future_to_jobs):
+            job = future_to_jobs[future]
+            try:
+                result = future.result()
+                if not result.was_successful:
+                    failed_validations.append(result)
+            except Exception as e:
+                logging.error('Failed to execute asynchronous query for validation job [%s] due to error: %s', job, e)
 
     if failed_validations:
         logging.error('Found a total of %s failures. Emitting results...', len(failed_validations))
@@ -73,6 +79,11 @@ def handle_validation_request():
 
     logging.info('Validation run complete. Analyzed a total of %s jobs.', len(validation_jobs))
     return f"Validation failures identified: {len(failed_validations) > 0}", HTTPStatus.OK
+
+
+def _run_job(job: DataValidationJob) -> DataValidationJobResult:
+    validation_checker = checker_for_validation(job)
+    return validation_checker.run_check(job)
 
 
 def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
