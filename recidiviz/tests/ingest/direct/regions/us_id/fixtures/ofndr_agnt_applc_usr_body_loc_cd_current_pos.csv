@@ -1,4 +1,4 @@
-ofndr_num,agnt_id,usr_id,name,ofndr_agent_agcy,applc_usr_agcy,agnt_strt_dt,end_dt,usr_typ_cd,updt_usr_id,updt_dt,lan_id,body_loc_cd,body_loc_desc,loc_typ_cd,body_loc_cd_id
-1111,po1,po1,NAME1,29,86,01/01/2020,,C,,,,1,D4 OFFICE,F,
-2222,po1,po1,NAME1,29,29,01/01/2008,,C,,,,2,D4 OFFICE,F,
-3333,po2,po2,NAME2,29,29,01/01/2015,,C,,,,3,D5 OFFICE,F,
+ofndr_num,agnt_id,usr_id,name,ofndr_agent_agcy,applc_usr_agcy,agnt_strt_dt,end_dt,usr_typ_cd,lan_id,body_loc_cd,body_loc_desc,loc_typ_cd,body_loc_cd_id
+1111,po1,po1,NAME1,29,86,01/01/2020,,C,,1,D4 OFFICE,F,
+2222,po1,po1,NAME1,29,29,01/01/2008,,C,,2,D4 OFFICE,F,
+3333,po2,po2,NAME2,29,29,01/01/2015,,C,,3,D5 OFFICE,F,

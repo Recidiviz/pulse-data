@@ -61,23 +61,31 @@ def _build_unprocessed_file_name(
     return "_".join(file_name_parts) + f".{extension}"
 
 
+def to_normalized_unprocessed_file_name(
+        file_name: str,
+        file_type: GcsfsDirectIngestFileType,
+        dt: Optional[datetime.datetime] = None) -> str:
+    if not dt:
+        dt = datetime.datetime.utcnow()
+
+    utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
+    file_name, extension = file_name.split('.')
+
+    return _build_unprocessed_file_name(
+        utc_iso_timestamp_str=utc_iso_timestamp_str,
+        file_type=file_type,
+        base_file_name=file_name,
+        extension=extension)
+
+
 def to_normalized_unprocessed_file_path(
         original_file_path: str,
         file_type: GcsfsDirectIngestFileType,
         dt: Optional[datetime.datetime] = None) -> str:
     if not dt:
         dt = datetime.datetime.utcnow()
-
     directory, file_name = os.path.split(original_file_path)
-    utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
-    file_name, extension = file_name.split('.')
-
-    updated_relative_path = _build_unprocessed_file_name(
-        utc_iso_timestamp_str=utc_iso_timestamp_str,
-        file_type=file_type,
-        base_file_name=file_name,
-        extension=extension)
-
+    updated_relative_path = to_normalized_unprocessed_file_name(file_name=file_name, file_type=file_type, dt=dt)
     return os.path.join(directory, updated_relative_path)
 
 
