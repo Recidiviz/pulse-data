@@ -34,32 +34,19 @@ import datetime
 import logging
 import os
 import string
-from typing import Optional, Tuple, List, Dict
+from typing import List, Dict
 
-import attr
 import pandas as pd
 from google.cloud import bigquery
-from google.cloud.bigquery import Table
-from more_itertools import one
 
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_name
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
+from recidiviz.tools.utils import to_datetime, add_row_to_raw_metadata, get_file_id_and_processed_status_for_file, \
+    mark_existing_metadata_row_as_processed, MetadataType, get_next_available_file_id
 from recidiviz.utils.params import str_to_bool
 
 _FILE_ID_COL = 'file_id'
 _UPDATE_DATETIME_COL = 'update_datetime'
-
-
-@attr.s
-class RawMetadataRow:
-    state_code: str = attr.ib()
-    file_id: int = attr.ib()
-    file_tag: str = attr.ib()
-    normalized_file_name: str = attr.ib()
-    import_time: Optional[datetime.datetime] = attr.ib()
-    processed_time: Optional[datetime.datetime] = attr.ib()
-    datetimes_contained_lower_bound_inclusive: Optional[datetime.datetime] = attr.ib()
-    datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = attr.ib()
 
 
 class UploadRawDataFilesToBqController:
@@ -87,58 +74,6 @@ class UploadRawDataFilesToBqController:
         self.encoding = encoding
         self.client = bigquery.Client()
 
-    def _get_table(self, dataset: str, table_name: str) -> Optional[Table]:
-        """Returns a Table object found in BQ from the provided |project_id|, |dataset|, and |table_name|."""
-        table_id = f'{self.project_id}.{dataset}.{table_name}'
-        table = Table.from_string(table_id)
-        return self.client.get_table(table)
-
-    def _add_row_to_raw_metadata(
-            self,
-            file_id: int,
-            file_tag: str,
-            normalized_file_name: str,
-            processed_time: Optional[datetime.datetime] = None,
-            datetimes_contained_lower_bound_inclusive: Optional[datetime.datetime] = None,
-            datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None):
-        """Adds a row to the raw_file_metadata table with the input args."""
-        table = self._get_table(dataset='direct_ingest_processing_metadata', table_name='raw_file_metadata')
-        row = RawMetadataRow(state_code=self.state_code,
-                             file_id=file_id,
-                             file_tag=file_tag,
-                             normalized_file_name=normalized_file_name,
-                             import_time=self.import_time,
-                             processed_time=processed_time,
-                             datetimes_contained_lower_bound_inclusive=datetimes_contained_lower_bound_inclusive,
-                             datetimes_contained_upper_bound_inclusive=datetimes_contained_upper_bound_inclusive)
-        row_dict = row.__dict__
-
-        if self.dry_run:
-            logging.info('[DRY RUN] would have appended rows to table %s:\n%s\n', file_tag, [row_dict])
-            return
-
-        errors = self.client.insert_rows(table, [row_dict])
-        if errors:
-            raise ValueError(f'Encountered errors: {errors}')
-        logging.info('Appended rows to table %s:\n%s\n', file_tag, [row])
-
-    def _mark_existing_row_as_processed(self, file_id: int, processed_time: datetime.datetime):
-        query = f"""
-            UPDATE 
-                `{self.project_id}.direct_ingest_processing_metadata.raw_file_metadata` 
-            SET 
-                processed_time = DATETIME "{processed_time}" 
-            WHERE
-                file_id = {file_id}
-        """
-        if self.dry_run:
-            logging.info('[DRY RUN] Would have run query to mark as processed: %s', query)
-            return
-
-        query_job = self.client.query(query)
-        query_job.result()
-        logging.info('Ran query to mark as processed: %s', query)
-
     def _mark_file_as_processed(
             self,
             file_id: int,
@@ -149,25 +84,26 @@ class UploadRawDataFilesToBqController:
         """Marks the provided |normalized_file_name| as processed in the raw_file_metadata table."""
         # TODO(3020): Fill in lower_bound_inclusive once we're not just receiving historical refreshes.
         if not file_exists_in_metadata:
-            self._add_row_to_raw_metadata(
+            add_row_to_raw_metadata(
+                client=self.client,
                 file_id=file_id,
                 file_tag=file_tag,
+                state_code=self.state_code,
+                import_time=self.import_time,
+                project_id=self.project_id,
+                dry_run=self.dry_run,
                 normalized_file_name=normalized_file_name,
                 processed_time=processed_time,
                 datetimes_contained_upper_bound_inclusive=self.import_time)
         else:
-            self._mark_existing_row_as_processed(file_id=file_id, processed_time=processed_time)
+            mark_existing_metadata_row_as_processed(
+                metadata_type=MetadataType.RAW,
+                project_id=self.project_id,
+                dry_run=self.dry_run,
+                client=self.client,
+                file_id=file_id,
+                processed_time=processed_time)
 
-    def _get_next_available_file_id(self) -> int:
-        """Retrieves the next available file_id in the raw_file_metadata table."""
-        query = f"""SELECT MAX(file_id) AS max_file_id
-                    FROM `{self.project_id}.direct_ingest_processing_metadata.raw_file_metadata`"""
-        query_job = self.client.query(query)
-        rows = query_job.result()
-        max_file_id = one(rows).get('max_file_id')
-        if max_file_id is None:
-            return 1
-        return max_file_id + 1
 
     def _append_df_to_table(self, dataset: str, table_name: str, df: pd.DataFrame):
         """Uploads the provided |df| into the relevant append-only BQ table. If the table does not already exist in BQ,
@@ -207,34 +143,6 @@ class UploadRawDataFilesToBqController:
             schema.append({'name': name, 'type': typ_str, 'mode': mode})
         return schema
 
-    def _get_file_id_and_processed_status_for_file(self, normalized_file_name: str) -> Tuple[Optional[int], bool]:
-        """Checks to see if the provided |normalized_file_name| has been registered in the raw_data_metadata table. If
-        it has, it returns the file's file_id and whether or not the file has already been processed. If it has not,
-        returns None, False
-        """
-        table_id = f'{self.project_id}.direct_ingest_processing_metadata.raw_file_metadata'
-        query = f"""SELECT file_id, processed_time FROM `{table_id}`
-                 WHERE state_code = '{self.state_code}' AND normalized_file_name = '{normalized_file_name}'"""
-        query_job = self.client.query(query)
-        rows = query_job.result()
-
-        if rows.total_rows > 1:
-            raise ValueError(
-                f'Expected there to only be one row per combination of {self.state_code} and {normalized_file_name}')
-
-        if not rows.total_rows:
-            logging.info(
-                '\nNo found row for %s and %s in raw_file_metadata.', normalized_file_name, self.state_code)
-            # TODO(3020): Once metadata tables are in postgres (and we don't have any limits on UPDATE queries), insert
-            #  a row here that will have the processed_time filled in later.
-            return None, False
-
-        row = one(rows)
-        file_id = row.get('file_id')
-        processed_time = row.get('processed_time')
-        logging.info('Found row for %s and %s with values file_id: %s and processed_time: %s',
-                     normalized_file_name, self.state_code, file_id, processed_time)
-        return file_id, processed_time
 
     def _get_dataframe_from_csv_with_extra_cols(self, file_id: int, local_file_path: str) -> pd.DataFrame:
         """Parses the provided |local_file_path| into a dataframe. Adds file_id and update_time columns to the dataframe
@@ -268,14 +176,19 @@ class UploadRawDataFilesToBqController:
         _, file_name = os.path.split(local_file_path)
         file_tag, _ = os.path.splitext(file_name)
 
-        normalized_file_name = to_normalized_unprocessed_file_path(
-            local_file_path, GcsfsDirectIngestFileType.RAW_DATA, self.import_time)
-        file_id_processed_tuple = self._get_file_id_and_processed_status_for_file(
+        normalized_file_name = to_normalized_unprocessed_file_name(
+            file_name=file_name, file_type=GcsfsDirectIngestFileType.RAW_DATA, dt=self.import_time)
+        file_id_processed_tuple = get_file_id_and_processed_status_for_file(
+            metadata_type=MetadataType.RAW,
+            state_code=self.state_code,
+            client=self.client,
+            project_id=self.project_id,
             normalized_file_name=normalized_file_name)
 
         file_in_metadata = file_id_processed_tuple[0] is not None
-        file_id = file_id_processed_tuple[0] \
-            if file_id_processed_tuple[0] is not None else self._get_next_available_file_id()
+        file_id = file_id_processed_tuple[0] if file_id_processed_tuple[0] is not None \
+            else get_next_available_file_id(
+                metadata_type=MetadataType.RAW, client=self.client, project_id=self.project_id)
         file_already_processed = file_id_processed_tuple[1]
 
         if file_already_processed:
@@ -319,10 +232,6 @@ class UploadRawDataFilesToBqController:
 
         logging.info('Succeeded in uploading files [%s]', succeeded_files)
         logging.info('Failed in uploading files [%s]', failed_files)
-
-
-def _to_datetime(date_str: str) -> datetime.datetime:
-    return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M')
 
 
 def remove_non_allowable_bq_column_chars(str_to_normalize: str) -> str:
@@ -377,7 +286,7 @@ if __name__ == '__main__':
         dry_run=args.dry_run,
         project_id=args.project_id,
         state_code=args.state_code,
-        import_time=_to_datetime(args.import_time),
+        import_time=to_datetime(args.import_time),
         paths=args.paths,
         separator=args.separator,
         chunk_size=args.chunk_size,

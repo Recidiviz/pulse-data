@@ -1,4 +1,4 @@
-docno,lnam,title,fnam,mnam,sex_cd,ethnic_cd,activ_flg,sealed_flg,noter_fac,fbi_nbr,sid_nbr,felony_arr,misdem_arr,probations,prob_revokes,paroles,par_absconds,par_revokes,off_docket_no,incrno,move_srl,fac_cd,lu_cd,loc_cd,perm_fac_cd,move_dtd,move_typ,move_pod,move_tier,move_cell,move_bunk,cnty_cd,empl_cd,bank_cd,ofndr_num,dob,st,birth_ctry_cd,birth_city,updt_usr_id,updt_dt
-1111,LAST_1,,FIRST_1,MIDDLE_1,M,W,H,,,FBI_1,,,,,,,,,,1,,HS,HS,0,,2002-01-01 13:00,H,,,,,,,1,1111,01/01/75,,,,,
-2222,LAST_2,,FIRST_2,MIDDLE_2,F,H,H,,,FBI_2,,,,,,,,,,2,,HS,HS,0,,2004-01-01 13:00,H,,,,,,,1,2222,01/01/85,,,,,
-3333,LAST_3,,FIRST_3,MIDDLE_3,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/95,,,,,
+docno,lnam,title,fnam,mnam,sex_cd,ethnic_cd,activ_flg,sealed_flg,noter_fac,fbi_nbr,sid_nbr,felony_arr,misdem_arr,probations,prob_revokes,paroles,par_absconds,par_revokes,off_docket_no,incrno,move_srl,fac_cd,lu_cd,loc_cd,perm_fac_cd,move_dtd,move_typ,move_pod,move_tier,move_cell,move_bunk,cnty_cd,empl_cd,bank_cd,ofndr_num,dob,st,birth_ctry_cd,birth_city
+1111,LAST_1,,FIRST_1,MIDDLE_1,M,W,H,,,FBI_1,,,,,,,,,,1,,HS,HS,0,,2002-01-01 13:00,H,,,,,,,1,1111,01/01/75,,,
+2222,LAST_2,,FIRST_2,MIDDLE_2,F,H,H,,,FBI_2,,,,,,,,,,2,,HS,HS,0,,2004-01-01 13:00,H,,,,,,,1,2222,01/01/85,,,
+3333,LAST_3,,FIRST_3,MIDDLE_3,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/95,,,

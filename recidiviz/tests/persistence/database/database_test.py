@@ -1095,6 +1095,7 @@ class TestDatabase(TestCase):
 
         # Bond should still be associated with booking, even though it is no
         # longer associated with the charge
+        # pylint: disable=W0143
         bonds = assert_session.query(Bond) \
             .filter(Bond.booking_id == persisted_booking_id) \
             .all()
@@ -1149,6 +1150,7 @@ class TestDatabase(TestCase):
 
         # Sentence should still be associated with booking, even though it is no
         # longer associated with the charge
+        # pylint: disable=W0143
         sentences = assert_session.query(Sentence) \
             .filter(Sentence.booking_id == persisted_booking_id) \
             .all()

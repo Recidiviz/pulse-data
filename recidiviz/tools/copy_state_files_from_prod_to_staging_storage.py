@@ -42,6 +42,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
 
+# pylint: disable=not-callable
+
 
 class CopyFilesFromProdToStagingController:
     """Class with functionality to copy files between prod and staging storage."""
