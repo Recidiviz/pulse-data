@@ -20,10 +20,25 @@
 # TODO(3020): Move queries into BQ once ingestion flow supports querying directly from BQ.
 from typing import List, Tuple, Optional
 
-from recidiviz.ingest.direct.query_utils import output_sql_queries
+from recidiviz.ingest.direct.query_utils import output_sql_queries, create_date_bound_query_for_raw_table, \
+    LATEST_VIEW_QUERY
 from recidiviz.utils import metadata
 
+
+# TODO(3020): Create class(es) to contain state queries so that we don't have to update global vars when running locally
 project_id = metadata.project_id()
+# Update to `False` if using this script to print queries locally (rather than querying through the API)
+parameterized_query = True
+
+
+def _create_date_bounded_query(raw_table_name):
+    if parameterized_query:
+        return create_date_bound_query_for_raw_table(
+            project_id=project_id,
+            state_code='us_id',
+            raw_table_name=raw_table_name)
+    return LATEST_VIEW_QUERY.format(
+        project_id=project_id, state_code='us_id', raw_table_name=raw_table_name)
 
 
 def create_sentence_query_fragment(add_supervision_args: bool = False) -> str:
@@ -90,12 +105,16 @@ def create_sentence_query_fragment(add_supervision_args: bool = False) -> str:
 OFFENDER_OFNDR_DOB = \
     f"""
     -- offender_ofndr_dob
+    WITH
+    offender AS ({_create_date_bounded_query('offender')}),
+    dob AS ({_create_date_bounded_query('ofndr_dob')})
     SELECT
         *
+        EXCEPT(updt_dt, updt_usr_id)  # Seem to update every week? (table is generated)
     FROM
-        `{project_id}.us_id_raw_data.offender` offender
+        offender
     LEFT JOIN
-        `{project_id}.us_id_raw_data.ofndr_dob` dob
+        dob
     ON
       offender.docno = dob.ofndr_num
     """
@@ -103,21 +122,24 @@ OFFENDER_OFNDR_DOB = \
 OFNDR_TST_OFNDR_TST_CERT_QUERY = \
     f"""
     -- ofndr_tst_ofndr_tst_cert
+    WITH
+    ofndr_tst AS ({_create_date_bounded_query('ofndr_tst')}),
+    ofndr_tst_cert AS ({_create_date_bounded_query('ofndr_tst_cert')})
     SELECT
         *
     EXCEPT
         (updt_usr_id, updt_dt)
     FROM
-        `{project_id}.us_id_raw_data.ofndr_tst`  tst
+        ofndr_tst
     LEFT JOIN
-        `{project_id}.us_id_raw_data.ofndr_tst_cert` tst_cert
+        ofndr_tst_cert
     USING
         (ofndr_tst_id, assess_tst_id)
     WHERE
-        tst.assess_tst_id = '2'  # LSIR assessments
-        AND tst_cert.cert_pass_flg = 'Y'  # Test score has been certified
+        ofndr_tst.assess_tst_id = '2'  # LSIR assessments
+        AND ofndr_tst_cert.cert_pass_flg = 'Y'  # Test score has been certified
     ORDER BY
-        tst.ofndr_num
+        ofndr_tst.ofndr_num
     """
 
 # Gets all probation sentences
@@ -125,10 +147,10 @@ PROBATION_SENTENCES_QUERY = f"""
     SELECT
         *
     FROM
-        `{project_id}.us_id_raw_data.sentence`
+        sentence
     # Inner join against sentences that are supervision sentences.
     JOIN
-        `{project_id}.us_id_raw_data.sentprob` sentprob
+        sentprob
     USING
         (mitt_srl, sent_no)
     ORDER BY
@@ -141,16 +163,16 @@ INCARCERATION_SENTENCES_QUERY = f"""
     SELECT
         *
     FROM
-        `{project_id}.us_id_raw_data.sentence`
+        sentence
     JOIN
         # Inner join against sentences that are incarceration sentences.
         (SELECT
             mitt_srl,
             sent_no
         FROM
-            `{project_id}.us_id_raw_data.sentence`
+            sentence
         LEFT JOIN
-            `{project_id}.us_id_raw_data.sentprob` sentprob
+            sentprob
         USING
             (mitt_srl, sent_no)
         WHERE
@@ -167,13 +189,20 @@ INCARCERATION_SENTENCES_QUERY = f"""
 # has multiple amendments, the last amendment is trusted over all others.
 UP_TO_DATE_SENTENCE_QUERY_FRAGMENT = """
 # Get all sentences, either probation or incarceration
-WITH sentences AS ({sentence_query}),
+WITH 
+sentence AS ({date_bounded_sentence}),
+sentprob AS ({date_bounded_sentprob}),
+mittimus AS ({date_bounded_mittimus}),
+county AS ({date_bounded_county}),
+judge AS ({date_bounded_judge}),
+offense AS ({date_bounded_offense}),
+relevant_sentences AS ({sentence_query}),
 # Only non-amended sentences
 non_amended_sentences AS (
     SELECT
         * 
       FROM
-      sentences
+      relevant_sentences
     WHERE sent_disp != 'A'
 ),
 # Only amended sentences with an added amendment_number.
@@ -183,7 +212,7 @@ amended_sentences AS (
         ROW_NUMBER() 
           OVER (PARTITION BY mitt_srl, am_sent_no ORDER BY sent_no DESC) AS amendment_number    
       FROM
-      sentences
+      relevant_sentences
     WHERE sent_disp = 'A'
 ),
 # Keep only the most recent amended sentence. We assume this has the most up to date information.
@@ -214,9 +243,9 @@ up_to_date_sentences AS (
 SELECT
     *
 FROM
-    `{project_id}.us_id_raw_data.mittimus`
+    mittimus
 LEFT JOIN
-    `{project_id}.us_id_raw_data.county`
+    county
 USING
     (cnty_cd)
 # Only ignore jud_cd because already present in `county` table
@@ -225,7 +254,7 @@ LEFT JOIN
             judge_cd,
             judge_name
     FROM
-        `{project_id}.us_id_raw_data.judge`)
+        judge)
 USING
     (judge_cd)
 JOIN
@@ -233,7 +262,7 @@ JOIN
 USING
     (mitt_srl)
 LEFT JOIN
-    `{project_id}.us_id_raw_data.offense`
+    offense
 USING
     (off_cat, off_cd, off_deg)
 ORDER BY
@@ -244,12 +273,24 @@ ORDER BY
 MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_SUPERVISION_SENTENCES_QUERY = f"""
 {UP_TO_DATE_SENTENCE_QUERY_FRAGMENT.format(project_id=project_id,
                                            sentence_query=PROBATION_SENTENCES_QUERY,
+                                           date_bounded_sentence=_create_date_bounded_query('sentence'),
+                                           date_bounded_sentprob=_create_date_bounded_query('sentprob'),
+                                           date_bounded_mittimus=_create_date_bounded_query('mittimus'),
+                                           date_bounded_county=_create_date_bounded_query('county'),
+                                           date_bounded_offense=_create_date_bounded_query('offense'),
+                                           date_bounded_judge=_create_date_bounded_query('judge'),
                                            sentence_args=create_sentence_query_fragment(add_supervision_args=True))}
 """
 
 MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = f"""
 {UP_TO_DATE_SENTENCE_QUERY_FRAGMENT.format(project_id=project_id,
                                            sentence_query=INCARCERATION_SENTENCES_QUERY,
+                                           date_bounded_sentence=_create_date_bounded_query('sentence'),
+                                           date_bounded_sentprob=_create_date_bounded_query('sentprob'),
+                                           date_bounded_mittimus=_create_date_bounded_query('mittimus'),
+                                           date_bounded_county=_create_date_bounded_query('county'),
+                                           date_bounded_offense=_create_date_bounded_query('offense'),
+                                           date_bounded_judge=_create_date_bounded_query('judge'),
                                            sentence_args=create_sentence_query_fragment(add_supervision_args=False))}
 """
 
@@ -280,9 +321,9 @@ FACILITY_PERIOD_FRAGMENT = f"""
               ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)))
             AS previous_fac_cd
         FROM 
-          `{project_id}.us_id_raw_data.movement` m
+          movement m
         LEFT JOIN 
-           `{project_id}.us_id_raw_data.facility` f
+           facility f
         USING (fac_cd)
     ),
     # This query here only keeps rows from `facilities_with_datetime` that represent a movement of a person between
@@ -409,7 +450,7 @@ ALL_PERIODS_FRAGMENT = f"""
         COALESCE(PARSE_DATE('%x', stat_rls_dtd), CAST('9999-12-31' AS DATE)) AS end_date,
         stat_strt_typ, 
         stat_rls_typ, 
-      FROM `{project_id}.us_id_raw_data.offstat`
+      FROM offstat
     ),
     # Time spans that a person spent on a rider
     rider_periods AS ({OFFSTAT_STATUS_FRAGMENT.format(stat_cd='I', strt_typ='RJ')}),
@@ -560,7 +601,11 @@ ALL_PERIODS_FRAGMENT = f"""
 """
 
 MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
-    WITH {ALL_PERIODS_FRAGMENT}
+    WITH 
+    movement AS ({_create_date_bounded_query('movement')}),
+    facility AS ({_create_date_bounded_query('facility')}),
+    offstat AS ({_create_date_bounded_query('offstat')}),
+    {ALL_PERIODS_FRAGMENT}
 
     # Filter to just incarceration periods
 
@@ -577,7 +622,11 @@ MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
 """
 
 MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS_QUERY = f"""
-    WITH {ALL_PERIODS_FRAGMENT}
+    WITH 
+    movement AS ({_create_date_bounded_query('movement')}),
+    facility AS ({_create_date_bounded_query('facility')}),
+    offstat AS ({_create_date_bounded_query('offstat')}),
+    {ALL_PERIODS_FRAGMENT}
 
     # Filter to just supervision periods
 
@@ -605,13 +654,13 @@ QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT = """
         CONCAT(assess_qstn_num, '-', tst_sctn_num) AS qstn_num, 
         STRING_AGG(qstn_choice_desc) AS qstn_answer
       FROM 
-        `{project_id}.us_id_raw_data.ofndr_tst`
+        ofndr_tst
       LEFT JOIN 
-        `{project_id}.us_id_raw_data.tst_qstn_rspns`
+        tst_qstn_rspns
       USING 
         (ofndr_tst_id, assess_tst_id)
       LEFT JOIN 
-        `{project_id}.us_id_raw_data.assess_qstn_choice`
+        assess_qstn_choice
       USING 
         (assess_tst_id, tst_sctn_num, qstn_choice_num, assess_qstn_num)
       WHERE 
@@ -635,7 +684,11 @@ VIOLATION_REPORT_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT = \
 
 
 OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY = f"""
-    WITH {VIOLATION_REPORT_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
+    WITH 
+    ofndr_tst AS ({_create_date_bounded_query('ofndr_tst')}),
+    tst_qstn_rspns AS ({_create_date_bounded_query('tst_qstn_rspns')}),
+    assess_qstn_choice AS ({_create_date_bounded_query('assess_qstn_choice')}),
+    {VIOLATION_REPORT_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
     SELECT 
       ofndr_num,
       body_loc_cd,
@@ -664,7 +717,11 @@ OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY = f"""
 """
 
 OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
-  WITH {VIOLATION_REPORT_OLD_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
+  WITH 
+    ofndr_tst AS ({_create_date_bounded_query('ofndr_tst')}),
+    tst_qstn_rspns AS ({_create_date_bounded_query('tst_qstn_rspns')}),
+    assess_qstn_choice AS ({_create_date_bounded_query('assess_qstn_choice')}),
+    {VIOLATION_REPORT_OLD_QSTN_NUMS_WITH_DESCRIPTIVE_ANSWERS_FRAGMENT}
     SELECT 
       ofndr_num,
       body_loc_cd,
@@ -696,6 +753,11 @@ OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
 OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
     # TODO(2999): Integrate PO assignments into supervision query once we have a loss-less table with POs and their 
     #  assignments through history.
+    WITH
+    ofndr_agnt AS ({_create_date_bounded_query('ofndr_agnt')}),
+    applc_usr AS ({_create_date_bounded_query('applc_usr')}),
+    # added '_table' extension to differentiate with column 'body_loc_cd' in this table
+    body_loc_cd_table AS ({_create_date_bounded_query('body_loc_cd')})
     SELECT 
       ofndr_num, 
       agnt_id,
@@ -707,8 +769,8 @@ OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
       agnt_strt_dt,
       end_dt,
       usr_typ_cd,
-      updt_usr_id,
-      updt_dt,
+      # updt_usr_id,
+      # updt_dt,
       lan_id,
       st_id_num,
       body_loc_cd,
@@ -716,13 +778,13 @@ OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
       loc_typ_cd,
       body_loc_cd_id
     FROM 
-      `{project_id}.us_id_raw_data.ofndr_agnt` a
+      ofndr_agnt a
     LEFT JOIN 
-      `{project_id}.us_id_raw_data.applc_usr` u
+      applc_usr u
     ON 
       (agnt_id = usr_id)
     LEFT JOIN 
-      `{project_id}.us_id_raw_data.body_loc_cd`
+      body_loc_cd_table
     USING
       (body_loc_cd)
 """
@@ -733,13 +795,13 @@ INCARCERATION_SENTENCE_IDS_QUERY = f"""
           incrno,
           sent_no
       FROM
-          `{project_id}.us_id_raw_data.sentence`
+          sentence
       LEFT JOIN
-          `{project_id}.us_id_raw_data.mittimus`
+          mittimus
       USING
           (mitt_srl)
       LEFT JOIN
-          `{project_id}.us_id_raw_data.sentprob` sentprob
+          sentprob
       USING
           (mitt_srl, sent_no)
       WHERE
@@ -753,13 +815,13 @@ PROBATION_SENTENCE_IDS_QUERY = f"""
           incrno,
           sent_no
       FROM
-          `{project_id}.us_id_raw_data.sentence`
+          sentence
       LEFT JOIN
-          `{project_id}.us_id_raw_data.mittimus`
+          mittimus
       USING
           (mitt_srl)
       LEFT JOIN
-          `{project_id}.us_id_raw_data.sentprob` sentprob
+          sentprob
       USING
           (mitt_srl, sent_no)
       WHERE
@@ -768,9 +830,15 @@ PROBATION_SENTENCE_IDS_QUERY = f"""
 
 EARLY_DISCHARGE_QUERY = """
     WITH 
-    relevant_sentences AS ({relevant_sentence_query}
-    ),
-    early_discharge AS (
+    early_discharge AS ({date_bounded_early_discharge}),
+    early_discharge_form_typ AS ({date_bounded_early_discharge_form_typ}),
+    jurisdiction_decision_code AS ({date_bounded_jurisdiction_decision_code}),
+    early_discharge_sent AS ({date_bounded_early_discharge_sent}),
+    sentence AS ({date_bounded_sentence}),
+    mittimus AS ({date_bounded_mittimus}),
+    sentprob AS ({date_bounded_sentprob}),
+    relevant_sentences AS ({relevant_sentence_query}),
+    filtered_early_discharge AS (
       SELECT 
         * 
       EXCEPT (
@@ -778,28 +846,28 @@ EARLY_DISCHARGE_QUERY = """
         supervisor_review_date,
         jurisdiction_authize_date)  # Ignore fields which are always NULL.
       FROM 
-      `{project_id}.us_id_raw_data.early_discharge`
+        early_discharge
     ),
     form_type AS (
       SELECT 
         early_discharge_form_typ_id,
         early_discharge_form_typ_desc,
       FROM 
-        `{project_id}.us_id_raw_data.early_discharge_form_typ`
+        early_discharge_form_typ
     ),
     jurisdiction_code AS (
       SELECT
         jurisdiction_decision_code_id,
         jurisdiction_decision_description
       FROM 
-       `{project_id}.us_id_raw_data.jurisdiction_decision_code`
+       jurisdiction_decision_code
     )
     SELECT 
       *
     FROM 
-      `{project_id}.us_id_raw_data.early_discharge_sent`
+      early_discharge_sent
     LEFT JOIN 
-      early_discharge
+      filtered_early_discharge
     USING 
       (early_discharge_id)
     LEFT JOIN 
@@ -822,13 +890,29 @@ EARLY_DISCHARGE_QUERY = """
 
 EARLY_DISCHARGE_INCARCERATION_SENTENCE_QUERY = f"""
     {EARLY_DISCHARGE_QUERY.format(
-        relevant_sentence_query=INCARCERATION_SENTENCE_IDS_QUERY.format(project_id=project_id), project_id=project_id)}
+        relevant_sentence_query=INCARCERATION_SENTENCE_IDS_QUERY.format(project_id=project_id),
+        date_bounded_early_discharge=_create_date_bounded_query('early_discharge'),
+        date_bounded_jurisdiction_decision_code=_create_date_bounded_query('jurisdiction_decision_code'),
+        date_bounded_early_discharge_sent=_create_date_bounded_query('early_discharge_sent'),
+        date_bounded_early_discharge_form_typ=_create_date_bounded_query('early_discharge_form_typ'),
+        date_bounded_sentence=_create_date_bounded_query('sentence'),
+        date_bounded_mittimus=_create_date_bounded_query('mittimus'),
+        date_bounded_sentprob=_create_date_bounded_query('sentprob'),
+        project_id=project_id)}
 """
 
 
 EARLY_DISCHARGE_SUPERVISION_SENTENCE_QUERY = f"""
     {EARLY_DISCHARGE_QUERY.format(
-        relevant_sentence_query=PROBATION_SENTENCE_IDS_QUERY.format(project_id=project_id), project_id=project_id)}
+        relevant_sentence_query=PROBATION_SENTENCE_IDS_QUERY.format(project_id=project_id),
+        date_bounded_early_discharge=_create_date_bounded_query('early_discharge'),
+        date_bounded_jurisdiction_decision_code=_create_date_bounded_query('jurisdiction_decision_code'),
+        date_bounded_early_discharge_sent=_create_date_bounded_query('early_discharge_sent'),
+        date_bounded_early_discharge_form_typ=_create_date_bounded_query('early_discharge_form_typ'),
+        date_bounded_sentence=_create_date_bounded_query('sentence'),
+        date_bounded_mittimus=_create_date_bounded_query('mittimus'),
+        date_bounded_sentprob=_create_date_bounded_query('sentprob'),
+        project_id=project_id)}
 """
 
 

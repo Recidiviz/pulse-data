@@ -48,5 +48,3 @@ keys_to_ignore:
   - st                  # Unused - birth state (mostly null)
   - birth_ctry_cd       # Unused - birth country code (mostly null)
   - birth_city          # Unused - birth city (mostly null)
-  - updt_usr_id         # Unused - who last updated this row
-  - updt_dt             # Unused - row update date.

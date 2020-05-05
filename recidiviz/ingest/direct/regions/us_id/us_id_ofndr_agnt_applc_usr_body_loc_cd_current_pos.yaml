@@ -18,8 +18,6 @@ keys_to_ignore:
   - agnt_strt_dt        # Unused - start date of this agent's assignment
   - end_dt              # Unused - agent's end date (always null)
   - usr_typ_cd          # Unused - user type code
-  - updt_usr_id         # Unused - user that updated this row
-  - updt_dt             # Unused - row update date
   - lan_id              # Unused - TODO(2999): Understand what this column means
   - st_id_num           # Unused - TODO(2999): Understand what type of state id this is.
   - body_loc_cd         # Unused - agent's district code

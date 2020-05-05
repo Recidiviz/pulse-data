@@ -60,6 +60,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
 
+# pylint: disable=not-callable
+
 
 class MoveFilesFromStorageController:
     """Class that executes file moves from a direct ingest Google Cloud Storage bucket to the appropriate ingest

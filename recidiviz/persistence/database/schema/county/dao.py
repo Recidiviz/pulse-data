@@ -122,6 +122,7 @@ def _query_people_and_open_bookings(session, region) -> Query:
         session: Transaction to read from
         region: The region to match against.
     """
+    # pylint: disable=W0143
     return session.query(Person, Booking) \
         .filter(Person.person_id == Booking.person_id) \
         .filter(Person.region == region) \
