@@ -20,19 +20,13 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
-REFERENCE_TABLES_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = \
     'persons_to_recent_county_of_residence'
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = \
     """Persons to their most recent county of residence."""
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY = \
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
     """
 /*{description}*/
     SELECT 
@@ -55,16 +49,15 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY = \
 
     WHERE 
       state_code IN ('ND', 'MO')
-""".format(
-        description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
-        project_id=PROJECT_ID,
-        views_dataset=VIEWS_DATASET,
-        reference_tables_dataset=REFERENCE_TABLES_DATASET,
-    )
+"""
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-    view_query=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY
+    view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
+    description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
+    views_dataset=view_config.DASHBOARD_VIEWS_DATASET,
+    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

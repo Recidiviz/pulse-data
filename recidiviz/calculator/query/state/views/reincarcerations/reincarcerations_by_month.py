@@ -19,17 +19,11 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-
 REINCARCERATIONS_BY_MONTH_VIEW_NAME = 'reincarcerations_by_month'
 
 REINCARCERATIONS_BY_MONTH_DESCRIPTION = """ Reincarcerations by month """
 
-REINCARCERATIONS_BY_MONTH_QUERY = \
+REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -64,17 +58,16 @@ REINCARCERATIONS_BY_MONTH_QUERY = \
     USING (state_code, year, month, district)
     WHERE district IS NOT NULL
     ORDER BY state_code, year, month, district
-    """.format(
-        description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
-    )
+    """
 
 REINCARCERATIONS_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATIONS_BY_MONTH_VIEW_NAME,
-    view_query=REINCARCERATIONS_BY_MONTH_QUERY
+    view_query_template=REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE,
+    description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
 )
 
 if __name__ == '__main__':

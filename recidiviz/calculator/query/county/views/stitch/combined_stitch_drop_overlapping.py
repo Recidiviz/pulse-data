@@ -17,6 +17,7 @@
 """Define views for combining scraper & state-reports & ITP."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.stitch import combined_stitch
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
@@ -24,11 +25,6 @@ from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_su
     import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW
-from recidiviz.calculator.query.county.view_config import VIEWS_DATASET
-from recidiviz.utils import metadata
-
-PROJECT_ID: str = metadata.project_id()
-
 _DESCRIPTION = """
 Combine {itp}, {state}, {scraper} into one unified view. When overlapping data
 exists, we select {state} data first. We then select any {itp} data that exists
@@ -42,7 +38,7 @@ points are plotted using valid_from.
            scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
            itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id)
 
-_QUERY = """
+_QUERY_TEMPLATE = """
 /*{description}*/
 
 WITH StateCutoffs AS (
@@ -129,13 +125,15 @@ WHERE
   Data.data_source = 'state_aggregates' OR
   (Data.data_source = 'incarceration_trends' AND Data.valid_from < StateCutoffs.min_valid_from) OR
   (Data.data_source = 'scraped' AND StateCutoffs.min_valid_from < Data.valid_from)
-""".format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
-           description=_DESCRIPTION)
+"""
 
 COMBINED_STITCH_DROP_OVERLAPPING_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='combined_stitch_drop_overlapping',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    views_dataset=view_config.VIEWS_DATASET,
+    combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

@@ -46,8 +46,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_view = BigQueryView(
+            dataset_id='dataset',
             view_id='test_view',
-            view_query='SELECT NULL LIMIT 0'
+            view_query_template='SELECT NULL LIMIT 0'
         )
 
         self.bq_client = BigQueryClientImpl()

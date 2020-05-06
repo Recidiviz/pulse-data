@@ -20,12 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME = 'supervision_matrix_by_person'
 
 SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
@@ -34,7 +28,7 @@ SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
  violations and the most severe violation while on supervision.
  """
 
-SUPERVISION_MATRIX_BY_PERSON_QUERY = \
+SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH supervision_matrix AS (
@@ -83,19 +77,18 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY = \
     FROM supervision_matrix
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
         AND district IS NOT NULL
-    """.format(
-        description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(),
-        supervision_dimension=bq_utils.unnest_supervision_type(),
-        charge_category_dimension=bq_utils.unnest_charge_category(),
-    )
+    """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME,
-    view_query=SUPERVISION_MATRIX_BY_PERSON_QUERY
+    view_query_template=SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE,
+    description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(),
+    supervision_dimension=bq_utils.unnest_supervision_type(),
+    charge_category_dimension=bq_utils.unnest_charge_category(),
 )
 
 if __name__ == '__main__':

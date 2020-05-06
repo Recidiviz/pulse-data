@@ -17,6 +17,7 @@
 """Define views for combining scraper & state-reports & ITP."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \
@@ -25,11 +26,6 @@ from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
     import SINGLE_COUNT_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW
-from recidiviz.calculator.query.county.view_config import VIEWS_DATASET
-from recidiviz.utils import metadata
-
-PROJECT_ID: str = metadata.project_id()
-
 _DESCRIPTION = """
 Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
 {incarceration_trends_aggregate}, and {single_count} into one unified view
@@ -42,7 +38,7 @@ Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
            incarceration_trends_aggregate=
            INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id)
 
-_QUERY = """
+_QUERY_TEMPLATE = """
 /*{description}*/
 
 SELECT * FROM `{project_id}.{views_dataset}.{interpolated_state_aggregate}`
@@ -52,19 +48,21 @@ UNION ALL
 SELECT * FROM `{project_id}.{views_dataset}.{scraper_data_aggregated}`
 UNION ALL
 SELECT * FROM `{project_id}.{views_dataset}.{incarceration_trends_aggregate}`
-""".format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           interpolated_state_aggregate=
-           STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id,
-           single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
-           scraper_data_aggregated=
-           SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
-           incarceration_trends_aggregate=
-           INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id,
-           description=_DESCRIPTION)
+"""
 
 COMBINED_STITCH_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='combined_stitch',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    views_dataset=view_config.VIEWS_DATASET,
+    interpolated_state_aggregate=
+    STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id,
+    single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
+    scraper_data_aggregated=
+    SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
+    incarceration_trends_aggregate=
+    INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

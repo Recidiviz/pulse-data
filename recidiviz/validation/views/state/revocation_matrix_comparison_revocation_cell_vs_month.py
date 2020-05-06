@@ -22,9 +22,8 @@ between two views in the Revocation Analysis Matrix tool: the grid cells and the
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
-PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME = \
@@ -33,7 +32,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME = \
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_DESCRIPTION = """ 
 Revocation matrix comparison of summed revocation counts between the grid cells and the month chart """
 
-REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY = \
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH cell_counts AS (
@@ -51,15 +50,14 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY = \
     )
     SELECT c.region_code, c.total_revocations as cell_sum, m.total_revocations as month_sum
     FROM cell_counts c JOIN month_counts m on c.region_code = m.region_code
-""".format(
-        description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        view_dataset=VIEWS_DATASET,
-    )
+"""
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME,
-    view_query=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY
+    view_query_template=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY_TEMPLATE,
+    description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_DESCRIPTION,
+    view_dataset=VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

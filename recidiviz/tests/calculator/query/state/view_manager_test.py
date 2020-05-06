@@ -27,18 +27,20 @@ class ViewManagerTest(unittest.TestCase):
     """Tests for view_manager.py."""
 
     def setUp(self):
-
-        sample_views = [
-            {'view_id': 'my_fake_view',
-             'view_query': 'SELECT NULL LIMIT 0'},
-            {'view_id': 'my_other_fake_view',
-             'view_query': 'SELECT NULL LIMIT 0'},
-        ]
-        self.mock_views = [BigQueryView(**view) for view in sample_views]
         project_id = 'fake-recidiviz-project'
         self.mock_view_dataset_name = 'my_views_dataset'
         self.mock_dataset = bigquery.dataset.DatasetReference(
             project_id, self.mock_view_dataset_name)
+
+        sample_views = [
+            {'dataset_id': self.mock_dataset.dataset_id,
+             'view_id': 'my_fake_view',
+             'view_query_template': 'SELECT NULL LIMIT 0'},
+            {'dataset_id': self.mock_dataset.dataset_id,
+             'view_id': 'my_other_fake_view',
+             'view_query_template': 'SELECT NULL LIMIT 0'},
+        ]
+        self.mock_views = [BigQueryView(**view) for view in sample_views]
 
         self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()

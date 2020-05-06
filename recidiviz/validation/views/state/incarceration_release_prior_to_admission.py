@@ -21,16 +21,13 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
 INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME = 'incarceration_release_prior_to_admission'
 
 INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION = """ Incarceration release dates prior to admission dates """
 
-INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY = \
+INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT *, state_code as region_code
@@ -39,15 +36,14 @@ INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY = \
     AND release_date < admission_date
     AND external_id is NOT NULL
     ORDER BY admission_date, region_code, external_id
-""".format(
-        description=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION,
-        project_id=PROJECT_ID,
-        state_dataset=BASE_DATASET,
-    )
+"""
 
 INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME,
-    view_query=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY
+    view_query_template=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE,
+    description=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION,
+    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
 )
 
 if __name__ == '__main__':

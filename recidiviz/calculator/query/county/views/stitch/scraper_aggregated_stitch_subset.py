@@ -18,18 +18,14 @@
 # pylint:disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.population import \
     population_admissions_releases
-from recidiviz.calculator.query.county.view_config import VIEWS_DATASET
-from recidiviz.utils import metadata
-
-PROJECT_ID: str = metadata.project_id()
-
 _DESCRIPTION = """
 Aggregate individual scraper data by summing person_count for each condition
 """
 
-_QUERY = """
+_QUERY_TEMPLATE = """
 /*{description}*/
 
 SELECT
@@ -71,13 +67,15 @@ SELECT
   SUM(IF(gender = 'EXTERNAL_UNKNOWN' AND race = 'EXTERNAL_UNKNOWN', person_count, null)) AS unknown_gender_unknown_race
 FROM `{project_id}.{views_dataset}.{population_admissions_releases_race_gender}` RaceGender
 GROUP BY fips, RaceGender.day
-""".format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id,
-           description=_DESCRIPTION)
+"""
 
 SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='scraper_aggregated_stitch_subset',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    views_dataset=view_config.VIEWS_DATASET,
+    population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

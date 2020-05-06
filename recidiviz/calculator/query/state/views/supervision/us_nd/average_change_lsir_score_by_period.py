@@ -23,12 +23,6 @@ termination to the second LSIR score of the person's supervision.
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = \
     'average_change_lsir_score_by_period'
 
@@ -38,7 +32,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
     termination to the second LSIR score of the person's supervision.
 """
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -72,20 +66,19 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY = \
       AND supervision_rank = 1
     GROUP BY state_code, metric_period_months, supervision_type, district
     ORDER BY state_code, district, supervision_type, metric_period_months
-    """.format(
-        description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(),
-        supervision_dimension=bq_utils.unnest_supervision_type(),
-        metric_period_dimension=bq_utils.unnest_metric_period_months(),
-        metric_period_condition=bq_utils.metric_period_condition(),
-    )
+    """
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
-    view_query=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY
+    view_query_template=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE,
+    description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(),
+    supervision_dimension=bq_utils.unnest_supervision_type(),
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(),
 )
 
 if __name__ == '__main__':

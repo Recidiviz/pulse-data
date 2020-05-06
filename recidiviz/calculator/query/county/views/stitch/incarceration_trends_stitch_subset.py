@@ -17,18 +17,15 @@
 """ITP data used for stitch"""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import \
     VERA_DATASET, INCARCERATION_TRENDS_TABLE
-from recidiviz.utils import metadata
-
-PROJECT_ID: str = metadata.project_id()
-
 _DESCRIPTION = """
 Select ITP data in a format that can be combined with other aggregate data.
 SELECT NULL for unmapped columns to ensure we SELECT the same num of columns.
 """
 
-_QUERY = """
+_QUERY_TEMPLATE = """
 /*{description}*/
 
 SELECT
@@ -76,13 +73,15 @@ SELECT
   NULL AS unknown_gender_unknown_race
 FROM
   `{project_id}.{vera_dataset}.{incarceration_trends}`
-""".format(project_id=PROJECT_ID, vera_dataset=VERA_DATASET,
-           incarceration_trends=INCARCERATION_TRENDS_TABLE,
-           description=_DESCRIPTION)
+"""
 
 INCARCERATION_TRENDS_STITCH_SUBSET_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='incarceration_trends_stitch_subset',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    vera_dataset=VERA_DATASET,
+    incarceration_trends=INCARCERATION_TRENDS_TABLE,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

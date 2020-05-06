@@ -20,12 +20,8 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
 from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_month import \
     _get_query_prep_statement
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'case_terminations_by_type_by_officer_by_period'
 
@@ -34,10 +30,10 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
     and metric period months (1, 3, 6, 12, 36).
 """
 
-CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
-    """
-    /*{description}*/
-    {prep_expression}
+CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
+    f"""
+    /*{{description}}*/
+    {_get_query_prep_statement(reference_dataset=view_config.REFERENCE_TABLES_DATASET)}
     SELECT
       state_code,
       COUNT(DISTINCT absconsion) AS absconsion,
@@ -66,23 +62,22 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY = \
         district, 
         metric_period_months
       FROM case_terminations,
-      {metric_period_dimension}
-      WHERE {metric_period_condition}
+      {{metric_period_dimension}}
+      WHERE {{metric_period_condition}}
     )
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
       AND district != 'ALL'
     GROUP BY state_code, metric_period_months, supervision_type, officer_external_id, district
     ORDER BY state_code, supervision_type, district, officer_external_id, metric_period_months
-    """.format(
-        description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
-        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET),
-        metric_period_dimension=bq_utils.unnest_metric_period_months(),
-        metric_period_condition=bq_utils.metric_period_condition(),
-    )
+    """
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME,
-    view_query=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY
+    view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE,
+    description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(),
 )
 
 if __name__ == '__main__':

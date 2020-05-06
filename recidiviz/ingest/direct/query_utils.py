@@ -18,6 +18,8 @@
 import os
 from typing import List, Tuple, Optional
 
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig
+
 
 def output_sql_queries(query_name_to_query_list: List[Tuple[str, str]], dir_path: Optional[str] = None):
     """If |dir_path| is unspecified, prints the provided |query_name_to_query_list| to the console. Otherwise
@@ -46,75 +48,12 @@ def _print_all_queries_to_console(query_name_to_query_list: List[Tuple[str, str]
         print(query_str)
 
 
-UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
-
-LATEST_VIEW_QUERY = """
-SELECT 
-  *, 
-FROM 
-  `{project_id}.{state_code}_raw_data_up_to_date_views.{raw_table_name}_latest`
-"""
-
-_LATEST_UPLOAD_DATE_QUERY = "(SELECT MAX(update_datetime) FROM `{project_id}.{dataset}.{table_name}`)"
-
-_RAW_DATA_VIEW_QUERY_TEMPLATE = """
-WITH rows_with_recency_rank AS (
-   SELECT 
-      *, 
-      ROW_NUMBER() OVER (PARTITION BY {primary_keys} ORDER BY update_datetime DESC) AS recency_rank
-   FROM 
-      `{project_id}.{dataset}.{table_name}`
-   WHERE 
-       update_datetime <= {update_datetime}
-)
-
-SELECT * 
-EXCEPT (file_id, recency_rank, update_datetime)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
-"""
-
-
-def create_date_bound_query_for_raw_table(project_id, state_code, raw_table_name):
-    """Returns a parameterized query for the given |raw_table_name|. The caller is responsible for filling out the
-    parameter. When used, this query will load all rows in the provided table up to the date of the provided date
-    parameter.
-    """
-    primary_key_str = get_primary_key_str_for_table_name(state_code, raw_table_name)
-    raw_dataset = _get_raw_data_dataset_name_for_state_code(state_code)
-    parameterized_variable = '@' + UPDATE_DATETIME_PARAM_NAME
-    by_update_date_query = _RAW_DATA_VIEW_QUERY_TEMPLATE.format(
-        primary_keys=primary_key_str,
-        project_id=project_id,
-        dataset=raw_dataset,
-        table_name=raw_table_name,
-        update_datetime=parameterized_variable,
+def get_raw_table_config(region_code: str,
+                         raw_table_name: str):
+    return DirectIngestRawFileConfig(
+        file_tag=raw_table_name,
+        primary_key_cols=get_primary_keys_for_table_name(region_code, raw_table_name)
     )
-    return by_update_date_query
-
-
-def create_latest_query_for_raw_table(state_code, project_id, raw_table_name):
-    """Returns a query for the given |raw_table_name|, which when used will load the most up-to-date values of all rows
-    in that table.
-    """
-    primary_key_str = get_primary_key_str_for_table_name(state_code, raw_table_name)
-    raw_dataset = _get_raw_data_dataset_name_for_state_code(state_code)
-    latest_query = _RAW_DATA_VIEW_QUERY_TEMPLATE.format(
-        primary_keys=primary_key_str,
-        project_id=project_id,
-        dataset=raw_dataset,
-        table_name=raw_table_name,
-        update_datetime=_LATEST_UPLOAD_DATE_QUERY.format(
-            project_id=project_id,
-            dataset=raw_dataset,
-            table_name=raw_table_name)
-    )
-    return latest_query
-
-
-def _get_raw_data_dataset_name_for_state_code(state_code):
-    return f'{state_code}_raw_data'
-
 
 # TODO(3020): Move all PK logic into Raw Yaml class
 US_ID_RAW_TABLES_TO_PKS = [

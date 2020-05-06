@@ -24,13 +24,6 @@ from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAM
 
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME = 'population_admissions_releases_race_gender'
 
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_DESCRIPTION = \
@@ -39,7 +32,7 @@ For each day-fips combination,
 compute the total population, admissions, and releases by race and gender.
 """
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_QUERY = \
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_QUERY_TEMPLATE = \
 """
 /*{description}*/
 WITH
@@ -113,19 +106,18 @@ JOIN
 ON
   PersonCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips, race, gender
-""".format(
+"""
+
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME,
+    view_query_template=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_QUERY_TEMPLATE,
     description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_DESCRIPTION,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
-    views_dataset=VIEWS_DATASET,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     county_names_view=COUNTY_NAMES_VIEW.view_id,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__
-)
-
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW = BigQueryView(
-    view_id=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME,
-    view_query=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_QUERY
 )
 
 if __name__ == '__main__':

@@ -55,8 +55,9 @@ def main(*, source_project_id, source_dataset_id, destination_project_id, destin
         # destination dataset
         if table.view_query and not destination_client.table_exists(destination_dataset, table_id=table.table_id):
             # Retrieve all of the information about the view
-            source_client.copy_view(view=BigQueryView(view_id=table.table_id,
-                                                      view_query=table.view_query),
+            source_client.copy_view(view=BigQueryView(dataset_id=table_ref.dataset_id,
+                                                      view_id=table.table_id,
+                                                      view_query_template=table.view_query),
                                     destination_client=destination_client,
                                     destination_dataset_ref=destination_dataset)
 

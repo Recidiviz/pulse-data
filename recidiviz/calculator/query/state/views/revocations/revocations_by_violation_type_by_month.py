@@ -18,18 +18,13 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_NAME = \
     'revocations_by_violation_type_by_month'
 
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION = \
     """ Revocations by violation type by month """
 
-REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
+REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -75,15 +70,14 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY = \
     USING (state_code, year, month, supervision_type, district)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
     ORDER BY state_code, year, month, district, supervision_type
-    """.format(
-        description=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        )
+    """
 
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_NAME,
-    view_query=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY
+    view_query_template=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE,
+    description=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

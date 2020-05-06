@@ -20,11 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'case_terminations_by_type_by_month'
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
@@ -32,7 +27,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
 """
 
 
-def _get_query_prep_statement(project_id, reference_dataset):
+def _get_query_prep_statement(reference_dataset):
     """Return the Common Table Expression used to gather the termination case data"""
     return """
         -- Gather supervision period case termination data
@@ -46,15 +41,14 @@ def _get_query_prep_statement(project_id, reference_dataset):
             supervision_type,
             district,
             agent.agent_external_id AS officer_external_id
-          FROM `{project_id}.state.state_supervision_period` supervision_period
-          LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
+          FROM `{{project_id}}.state.state_supervision_period` supervision_period
+          LEFT JOIN `{{project_id}}.{reference_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),
           {district_dimension},
           {supervision_dimension}
           WHERE termination_date IS NOT NULL
         )
     """.format(
-        project_id=project_id,
         reference_dataset=reference_dataset,
         district_dimension=bq_utils.unnest_district(district_column='agent.district_external_id'),
         supervision_dimension=
@@ -62,10 +56,10 @@ def _get_query_prep_statement(project_id, reference_dataset):
     )
 
 
-CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
-    """
-    /*{description}*/
-    {prep_expression}
+CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
+    f"""
+    /*{{description}}*/
+    {_get_query_prep_statement(reference_dataset=view_config.REFERENCE_TABLES_DATASET)}
     SELECT
       state_code, year, month,
       COUNT(DISTINCT absconsion) AS absconsion,
@@ -95,14 +89,13 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY = \
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
     GROUP BY state_code, year, month, supervision_type, district
     ORDER BY state_code, year, month, supervision_type, district
-    """.format(
-        description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
-        prep_expression=_get_query_prep_statement(project_id=PROJECT_ID, reference_dataset=REFERENCE_DATASET)
-    )
+    """
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
-    view_query=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY
+    view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
+    description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
 )
 
 

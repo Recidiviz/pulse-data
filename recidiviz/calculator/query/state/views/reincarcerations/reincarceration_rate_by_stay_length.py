@@ -25,19 +25,13 @@ release cohort of 2017 is the most recent calendar year where the next year
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME = \
     'reincarceration_rate_by_stay_length'
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = \
     """Reincarceration rate by stay length."""
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY = \
+REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -59,17 +53,16 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY = \
       AND job.metric_type = 'RECIDIVISM_RATE'
     GROUP BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
-    """.format(
-        description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
-    )
+    """
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
-    view_query=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY
+    view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
+    description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
 )
 
 if __name__ == '__main__':

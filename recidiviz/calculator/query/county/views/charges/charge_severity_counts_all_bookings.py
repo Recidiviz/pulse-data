@@ -26,13 +26,6 @@ from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAM
 
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_counts_all_bookings'
 
 CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION = \
@@ -41,7 +34,7 @@ Counts the total number of active, admitted, and released Bookings
 on each day and FIPS by their `most_severe_charge`.
 """
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY = \
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 WITH
@@ -101,20 +94,19 @@ JOIN
 ON
   BookingCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips
-""".format(
+"""
+
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME,
+    view_query_template=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE,
     description=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
-    views_dataset=VIEWS_DATASET,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id,
     county_names_view=COUNTY_NAMES_VIEW.view_id
-)
-
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
-    view_id=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME,
-    view_query=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY
 )
 
 if __name__ == '__main__':
