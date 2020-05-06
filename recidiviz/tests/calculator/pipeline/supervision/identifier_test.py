@@ -6872,7 +6872,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_history.violation_history_description, '1fel;1tech')
         self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY'], ['TECHNICAL_NO_CONDITIONS']])
 
-    def test_get_violation_and_response_history_with_subtype(self):
+    def test_get_violation_and_response_history_with_us_mo_subtype(self):
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code='US_MO',
@@ -6892,6 +6892,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_subtype='INI',
             state_code='US_MO',
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
@@ -6956,6 +6957,57 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
                          violation_history.most_severe_response_decision)
         self.assertEqual(1, violation_history.response_count)
+        self.assertIsNone(violation_history.violation_history_description)
+        self.assertIsNone(violation_history.violation_type_frequency_counter)
+
+    def test_get_violation_and_response_history_us_mo_response_subtype_filter(self):
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2009, 1, 3),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.TECHNICAL),
+            ],
+            supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    condition='DRG'),
+                StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    condition='OTHER'),
+            ]
+        )
+
+        # This should be filtered out in the state-specific filter
+        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_subtype='SUP',
+            state_code='US_MO',
+            response_date=date(2009, 1, 7),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        revocation_date = date(2009, 2, 13)
+
+        violation_history = \
+            identifier.get_violation_and_response_history(
+                revocation_date, [supervision_violation_response])
+
+        self.assertIsNone(violation_history.most_severe_violation_type)
+        self.assertEqual(
+            'UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertIsNone(violation_history.most_severe_response_decision)
+        self.assertEqual(0, violation_history.response_count)
         self.assertIsNone(violation_history.violation_history_description)
         self.assertIsNone(violation_history.violation_type_frequency_counter)
 
@@ -7239,6 +7291,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_response_id=_DEFAULT_SSVR_ID,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
                 response_date=date(2009, 1, 10),
                 is_draft=False,
                 supervision_violation_response_decisions=[
@@ -7353,6 +7406,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_response_id=_DEFAULT_SSVR_ID,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='ITR',
                 response_date=date(2009, 1, 7),
                 is_draft=False,
                 supervision_violation_response_decisions=[

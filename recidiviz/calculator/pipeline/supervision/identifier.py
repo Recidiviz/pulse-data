@@ -40,13 +40,13 @@ from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import
     default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
     get_pre_incarceration_supervision_type, \
     terminating_supervision_period_supervision_type, \
-    supervision_period_counts_towards_supervision_population_in_date_range_state_specific
+    supervision_period_counts_towards_supervision_population_in_date_range_state_specific, \
+    filter_violation_responses_before_revocation
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     _get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
-from recidiviz.calculator.pipeline.utils.us_mo_utils import _normalize_violations_on_responses_us_mo
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -570,7 +570,7 @@ def get_violation_and_response_history(
     for response in responses_in_window:
         # TODO(2995): Formalize state-specific calc logic
         if response.state_code == 'US_MO':
-            updated_responses.append(_normalize_violations_on_responses_us_mo(response))
+            updated_responses.append(us_mo_utils.normalize_violations_on_responses(response))
         else:
             updated_responses.append(response)
 
@@ -629,6 +629,8 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
                                        StateSupervisionViolationResponseType.CITATION)
         and response.response_date <= revocation_date
     ]
+
+    responses_before_revocation = filter_violation_responses_before_revocation(responses_before_revocation)
 
     if not responses_before_revocation:
         logging.warning("No recorded responses before the revocation date.")

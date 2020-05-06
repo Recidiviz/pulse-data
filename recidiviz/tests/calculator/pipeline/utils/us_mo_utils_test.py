@@ -24,7 +24,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violat
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.us_mo_utils import get_ranked_violation_type_and_subtype_counts, \
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP, _LAW_CITATION_SUBTYPE_STR, \
-    _normalize_violations_on_responses_us_mo, _SUBSTANCE_ABUSE_CONDITION_STR
+    _SUBSTANCE_ABUSE_CONDITION_STR, us_mo_filter_violation_responses, normalize_violations_on_responses
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import StateSupervisionViolationResponseType
 from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, \
@@ -229,7 +229,7 @@ class TestUsMoUtils(unittest.TestCase):
             )
 
         # Act
-        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+        _ = normalize_violations_on_responses(supervision_violation_response)
 
         # Assert
         self.assertEqual(supervision_violation.supervision_violation_types, [
@@ -258,7 +258,7 @@ class TestUsMoUtils(unittest.TestCase):
             )
 
         # Act
-        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+        _ = normalize_violations_on_responses(supervision_violation_response)
 
         # Assert
         self.assertEqual([
@@ -288,7 +288,7 @@ class TestUsMoUtils(unittest.TestCase):
             )
 
         # Act
-        _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+        _ = normalize_violations_on_responses(supervision_violation_response)
 
         # Assert
         self.assertEqual(supervision_violation.supervision_violation_types, [])
@@ -316,4 +316,94 @@ class TestUsMoUtils(unittest.TestCase):
         # Act and Assert
         with pytest.raises(ValueError):
             # This function should only be called for responses from US_MO
-            _ = _normalize_violations_on_responses_us_mo(supervision_violation_response)
+            _ = normalize_violations_on_responses(supervision_violation_response)
+
+    def test_filter_violation_responses_INI(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI'  # Should be included
+            )
+        ]
+
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+
+        self.assertEqual(supervision_violation_responses, filtered_responses)
+
+    def test_filter_violation_responses_ITR(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='ITR'  # Should be included
+            )
+        ]
+
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+
+        self.assertEqual(supervision_violation_responses, filtered_responses)
+
+    def test_filter_violation_responses_do_not_include(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='SUP'  # Should not be included
+            )
+        ]
+
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+
+        expected_output = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            )
+        ]
+
+        self.assertEqual(expected_output, filtered_responses)
+
+    def test_filter_violation_responses_none_valid(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='SUP'  # Should not be included
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='HOF'  # Should not be included
+            )
+        ]
+
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+
+        expected_output = []
+
+        self.assertEqual(expected_output, filtered_responses)
+
+    def test_filter_violation_responses_unexpected_subtype(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='XXX'  # Not one we expect to see
+            )
+        ]
+
+        with pytest.raises(ValueError):
+            _ = us_mo_filter_violation_responses(supervision_violation_responses)

@@ -25,9 +25,10 @@ from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, Time
 from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
+from recidiviz.calculator.pipeline.utils.us_mo_utils import us_mo_filter_violation_responses
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
-    StateSupervisionPeriod, StateIncarcerationPeriod
+    StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse
 
 
 def supervision_types_distinct_for_state(state_code: str) -> bool:
@@ -172,3 +173,13 @@ def terminating_supervision_period_supervision_type(
 
     return get_month_supervision_type_default(
         supervision_period.termination_date, supervision_sentences, incarceration_sentences, supervision_period)
+
+
+def filter_violation_responses_before_revocation(violation_responses: List[StateSupervisionViolationResponse]) -> \
+        List[StateSupervisionViolationResponse]:
+    """State-specific filtering of the violation responses that should be included in pre-revocation analysis."""
+    if violation_responses:
+        state_code = violation_responses[0].state_code
+        if state_code == 'US_MO':
+            return us_mo_filter_violation_responses(violation_responses)
+    return violation_responses

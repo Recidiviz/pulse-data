@@ -41,6 +41,28 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP = OrderedDict([
 ])
 
 
+def us_mo_filter_violation_responses(violation_responses: List[StateSupervisionViolationResponse]) -> \
+        List[StateSupervisionViolationResponse]:
+    """Filters out VIOLATION_REPORT responses that are not of type INI (Initial) or ITR (Inter district)."""
+    filtered_responses = [
+        response for response in violation_responses
+        if response.response_type != StateSupervisionViolationResponseType.VIOLATION_REPORT
+        or _get_violation_report_subtype_should_be_included_in_calculations(response.response_subtype)
+    ]
+
+    return filtered_responses
+
+
+def _get_violation_report_subtype_should_be_included_in_calculations(response_subtype: Optional[str]) -> bool:
+    """Returns whether a VIOLATION_REPORT with the given response_subtype should be included in calculations."""
+    if response_subtype in ['INI', 'ITR']:
+        return True
+    if response_subtype is None or response_subtype in ['HOF', 'MOS', 'ORI', 'SUP']:
+        return False
+
+    raise ValueError(f"Unexpected violation response subtype {response_subtype} for a US_MO VIOLATION_REPORT.")
+
+
 def us_mo_identify_most_severe_violation_type(violations: List[StateSupervisionViolation],
                                               violation_type_severity_order: List[StateSupervisionViolationType]) -> \
         Optional[StateSupervisionViolationType]:
@@ -139,7 +161,7 @@ def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisi
     return ranked_shorthand_counts
 
 
-def _normalize_violations_on_responses_us_mo(response: StateSupervisionViolationResponse) -> \
+def normalize_violations_on_responses(response: StateSupervisionViolationResponse) -> \
         StateSupervisionViolationResponse:
     """For responses that are not of type CITATION or don't have an associated violation, does nothing. Responses of
     type CITATION do not have violation types on their violations, so the violation types and conditions violated on
