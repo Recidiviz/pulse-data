@@ -20,11 +20,8 @@ Revocation Analysis Tool: the grid cells and the corresponding caseload chart ac
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_config
-
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
-
-VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME = \
     'revocation_matrix_comparison_revocation_cell_vs_caseload'
@@ -64,7 +61,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW = BigQueryView(
     view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION,
-    view_dataset=VIEWS_DATASET,
+    view_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME = 'supervision_termination_by_type_by_period'
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
@@ -65,12 +66,12 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
     """
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),

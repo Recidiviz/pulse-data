@@ -18,7 +18,7 @@
 # pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import BOND_AMOUNTS_UNKNOWN_DENIED_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
@@ -62,11 +62,11 @@ FROM (
 """
 
 BOND_AMOUNTS_BY_BOOKING_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_BY_BOOKING_VIEW_NAME,
     view_query_template=BOND_AMOUNTS_BY_BOOKING_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_BY_BOOKING_DESCRIPTION,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     bond_amounts_unknown_denied_view=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_id
 )
 

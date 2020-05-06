@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to supervision."""
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state.views.supervision.supervision_termination_by_type_by_period import \
     SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW
 from recidiviz.calculator.query.state.views.supervision.us_nd.average_change_lsir_score_by_month import \
@@ -28,7 +31,7 @@ from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_
 from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_officer_by_period import \
     CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW
 
-SUPERVISION_VIEWS = [
+SUPERVISION_VIEWS: List[BigQueryView] = [
     AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW,
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW,
     CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW,

@@ -18,7 +18,8 @@
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 REINCARCERATIONS_BY_MONTH_VIEW_NAME = 'reincarcerations_by_month'
 
 REINCARCERATIONS_BY_MONTH_DESCRIPTION = """ Reincarcerations by month """
@@ -61,12 +62,12 @@ REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
     """
 
 REINCARCERATIONS_BY_MONTH_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATIONS_BY_MONTH_VIEW_NAME,
     view_query_template=REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE,
     description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
 )
 

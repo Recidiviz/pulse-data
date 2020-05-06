@@ -18,8 +18,7 @@
 
 import os
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 
 SINGLE_COUNT_AGGREGATE_VIEW_ID: str = 'single_count_aggregate'
 
@@ -31,10 +30,10 @@ with open(os.path.splitext(__file__)[0] + '.sql') as fp:
     _QUERY_TEMPLATE = fp.read()
 
 SINGLE_COUNT_STITCH_SUBSET_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='single_count_stitch_subset',
     view_query_template=_QUERY_TEMPLATE,
-    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    base_dataset=dataset_config.COUNTY_BASE_DATASET,
     single_count_aggregate=SINGLE_COUNT_AGGREGATE_VIEW_ID,
     description=_DESCRIPTION
 )

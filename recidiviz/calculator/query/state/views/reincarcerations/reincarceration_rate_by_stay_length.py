@@ -24,7 +24,8 @@ release cohort of 2017 is the most recent calendar year where the next year
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME = \
     'reincarceration_rate_by_stay_length'
 
@@ -56,12 +57,12 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
     """
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
 )
 

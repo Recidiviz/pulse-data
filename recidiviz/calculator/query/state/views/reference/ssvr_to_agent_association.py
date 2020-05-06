@@ -20,8 +20,7 @@ agent.
 # pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 
 SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME = \
     'ssvr_to_agent_association'
@@ -58,12 +57,12 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
 """
 
 SSVR_TO_AGENT_ASSOCIATION_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
     view_query_template=SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
     description=SSVR_TO_AGENT_ASSOCIATION_DESCRIPTION,
-    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
-    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

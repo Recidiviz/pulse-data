@@ -17,7 +17,7 @@
 """View that combines county name, state name, and FIPS from Vera's ITP data."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
 
 VERA_DATASET = vera_view_constants.VERA_DATASET
@@ -44,8 +44,8 @@ GROUP BY fips, state, county_name
 ORDER BY fips
 """
 
-COUNTY_NAMES_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+COUNTY_NAMES_VIEW: BigQueryView = BigQueryView(
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=COUNTY_NAMES_VIEW_NAME,
     view_query_template=COUNTY_NAMES_VIEW_QUERY_TEMPLATE,
     description=COUNTY_NAMES_VIEW_DESCRIPTION,

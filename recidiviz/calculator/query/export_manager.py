@@ -29,6 +29,8 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query import export_config, cloudsql_export, bq_load
 from recidiviz.calculator.query.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
+from recidiviz.calculator.query.county import dataset_config as county_dataset_config
+from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
@@ -102,12 +104,10 @@ def export_then_load_all_sequentially(schema_type: SchemaType):
     bq_client = BigQueryClientImpl()
     if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+        dataset_ref = bq_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
     elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.STATE_BASE_TABLES_BQ_DATASET)
+        dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
     else:
         logging.error("Invalid schema_type requested. Must be either"
                       " SchemaType.JAILS or SchemaType.STATE.")
@@ -134,13 +134,11 @@ def export_all_then_load_all(schema_type: SchemaType):
     bq_client = BigQueryClientImpl()
     if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+        base_tables_dataset_ref = bq_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
     elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.STATE_BASE_TABLES_BQ_DATASET)
+        base_tables_dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
     else:
         logging.error("Invalid schema_type requested. Must be either"
@@ -179,12 +177,10 @@ def handle_bq_export_task():
     bq_client = BigQueryClientImpl()
     if schema_type_str == SchemaType.JAILS.value:
         schema_type = SchemaType.JAILS
-        dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+        dataset_ref = bq_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
     elif schema_type_str == SchemaType.STATE.value:
         schema_type = SchemaType.STATE
-        dataset_ref = bq_client.dataset_ref_for_id(
-            export_config.STATE_BASE_TABLES_BQ_DATASET)
+        dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
     else:
         return '', HTTPStatus.INTERNAL_SERVER_ERROR
 

@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to revocations of supervision."""
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state.views.revocations.revocations_by_month import \
     REVOCATIONS_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.revocations.revocations_by_officer_by_period import \
@@ -31,7 +34,7 @@ from recidiviz.calculator.query.state.views.revocations.revocations_by_violation
     REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW
 
 
-REVOCATIONS_VIEWS = [
+REVOCATIONS_VIEWS: List[BigQueryView] = [
     REVOCATIONS_BY_MONTH_VIEW,
     REVOCATIONS_BY_PERIOD_VIEW,
     REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW,

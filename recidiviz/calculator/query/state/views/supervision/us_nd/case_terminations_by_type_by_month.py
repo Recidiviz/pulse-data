@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'case_terminations_by_type_by_month'
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
@@ -59,7 +60,7 @@ def _get_query_prep_statement(reference_dataset):
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     f"""
     /*{{description}}*/
-    {_get_query_prep_statement(reference_dataset=view_config.REFERENCE_TABLES_DATASET)}
+    {_get_query_prep_statement(reference_dataset=dataset_config.REFERENCE_TABLES_DATASET)}
     SELECT
       state_code, year, month,
       COUNT(DISTINCT absconsion) AS absconsion,
@@ -92,7 +93,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     """
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
     description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,

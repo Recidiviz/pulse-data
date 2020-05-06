@@ -18,9 +18,10 @@
 # pylint:disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.state_aggregates import \
     state_aggregate_collapsed_to_fips
+
 _DESCRIPTION = """
 First select combined aggregate data then interpolate it over the given
 aggregation_window for each row. We SELECT NULL for unmapped columns to ensure
@@ -78,10 +79,10 @@ FROM
 """
 
 STATE_AGGREGATE_STITCH_SUBSET_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='state_aggregate_stitch_subset',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS.view_id,
     description=_DESCRIPTION
 )

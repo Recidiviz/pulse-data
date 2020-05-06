@@ -28,6 +28,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
 from recidiviz.calculator.query import export_manager
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo
@@ -60,7 +61,6 @@ class ExportManagerTestCounty(unittest.TestCase):
         Table = collections.namedtuple('Table', ['name'])
         test_tables = [Table('first_table'), Table('second_table')]
         export_config_values = {
-            'COUNTY_BASE_TABLES_BQ_DATASET': self.mock_dataset_name,
             'COUNTY_TABLES_TO_EXPORT': test_tables,
             'COUNTY_TABLE_EXPORT_QUERIES': {
                 self.mock_table_id: self.mock_table_query,
@@ -114,8 +114,7 @@ class ExportManagerTestCounty(unittest.TestCase):
 
     def test_export_then_load_all_sequentially(self):
         """Test that tables are exported then loaded sequentially."""
-        default_dataset = self.mock_client.dataset_ref_for_id(
-            self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+        default_dataset = self.mock_client.dataset_ref_for_id(dataset_config.COUNTY_BASE_DATASET)
 
         # Suppose all exports succeed.
         self.mock_cloudsql_export.export_table.side_effect = (
@@ -152,8 +151,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         """
         mock_project_id.return_value = 'test-project'
 
-        default_dataset = self.mock_client.dataset_ref_for_id(
-            self.mock_export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+        default_dataset = self.mock_client.dataset_ref_for_id(dataset_config.COUNTY_BASE_DATASET)
 
         mock_parent = mock.Mock()
         mock_parent.attach_mock(

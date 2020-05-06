@@ -17,8 +17,7 @@
 """Assigns a 'most_severe_charge' to each Booking."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charges_and_severity import CHARGES_AND_SEVERITY_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
@@ -34,7 +33,7 @@ which defines the severity of its most severe charge.
 See `{views_dataset}.{charges_and_severity_view}` for details.
 Bookings without charges have most_severe_charge listed as 'EXTERNAL_UNKNOWN'.
 """.format(
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id
 )
 
@@ -62,13 +61,13 @@ ON BookingsWithCharges.booking_id = Booking.booking_id
 """
 
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME,
     view_query_template=CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE,
     description=CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION,
     external_unknown=external_unknown,
-    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
-    views_dataset=view_config.VIEWS_DATASET,
+    base_dataset=dataset_config.COUNTY_BASE_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id,
     booking_table=Booking.__tablename__
 )

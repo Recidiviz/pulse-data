@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = \
     'persons_to_recent_county_of_residence'
@@ -52,12 +52,12 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
 """
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
-    views_dataset=view_config.DASHBOARD_VIEWS_DATASET,
-    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
+    views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

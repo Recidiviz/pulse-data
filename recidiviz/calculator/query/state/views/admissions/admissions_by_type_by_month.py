@@ -17,7 +17,7 @@
 """Admissions by type by month"""
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'admissions_by_type_by_month'
 
@@ -82,11 +82,11 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
 """
 
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
     description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

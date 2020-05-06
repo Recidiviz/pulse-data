@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 EVENT_BASED_REVOCATIONS_VIEW_NAME = 'event_based_revocations'
 
 EVENT_BASED_REVOCATIONS_DESCRIPTION = """
@@ -53,12 +54,12 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
     """
 
 EVENT_BASED_REVOCATIONS_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=EVENT_BASED_REVOCATIONS_VIEW_NAME,
     view_query_template=EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
 )

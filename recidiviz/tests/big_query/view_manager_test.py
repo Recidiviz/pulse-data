@@ -1,0 +1,65 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""Tests for view_manager.py."""
+
+import unittest
+from unittest import mock
+from unittest.mock import patch
+
+from google.cloud import bigquery
+
+from recidiviz.big_query import view_manager
+from recidiviz.big_query.big_query_view import BigQueryView
+
+
+_PROJECT_ID = 'fake-recidiviz-project'
+_DATASET_NAME = 'my_views_dataset'
+
+
+class ViewManagerTest(unittest.TestCase):
+    """Tests for view_manager.py."""
+
+    def setUp(self):
+        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = _PROJECT_ID
+
+        self.client_patcher = patch(
+            'recidiviz.big_query.view_manager.BigQueryClientImpl')
+        self.mock_client = self.client_patcher.start().return_value
+
+    def tearDown(self):
+        self.metadata_patcher.stop()
+
+    def test_create_dataset_and_update_views(self):
+        """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+
+        sample_views = [
+            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+            {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+        ]
+        mock_views = [BigQueryView(dataset_id=_DATASET_NAME, view_query_template='a', **view) for view in sample_views]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        view_manager.create_dataset_and_update_views({_DATASET_NAME: mock_views})
+
+        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_or_update_view.assert_has_calls([mock.call(dataset, view) for view in mock_views])

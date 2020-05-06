@@ -17,7 +17,7 @@
 """Define views for combining scraper & state-reports & ITP."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \
@@ -26,6 +26,7 @@ from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
     import SINGLE_COUNT_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW
+
 _DESCRIPTION = """
 Combine {interpolated_state_aggregate}, {scraper_data_aggregated},
 {incarceration_trends_aggregate}, and {single_count} into one unified view
@@ -50,11 +51,11 @@ UNION ALL
 SELECT * FROM `{project_id}.{views_dataset}.{incarceration_trends_aggregate}`
 """
 
-COMBINED_STITCH_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+COMBINED_STITCH_VIEW: BigQueryView = BigQueryView(
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_stitch',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     interpolated_state_aggregate=
     STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id,
     single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW.view_id,
