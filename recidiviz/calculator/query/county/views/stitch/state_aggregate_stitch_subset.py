@@ -18,20 +18,16 @@
 # pylint:disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.state_aggregates import \
     state_aggregate_collapsed_to_fips
-from recidiviz.calculator.query.county.view_config import VIEWS_DATASET
-from recidiviz.utils import metadata
-
-PROJECT_ID: str = metadata.project_id()
-
 _DESCRIPTION = """
 First select combined aggregate data then interpolate it over the given
 aggregation_window for each row. We SELECT NULL for unmapped columns to ensure
 we SELECT the same num of columns.
 """
 
-_QUERY = """
+_QUERY_TEMPLATE = """
 /*{description}*/
 
 SELECT
@@ -79,13 +75,15 @@ SELECT
   NULL AS unknown_gender_unknown_race
 FROM
   `{project_id}.{views_dataset}.{combined_state_aggregates}`
-""".format(project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-           combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS.view_id,
-           description=_DESCRIPTION)
+"""
 
 STATE_AGGREGATE_STITCH_SUBSET_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='state_aggregate_stitch_subset',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    views_dataset=view_config.VIEWS_DATASET,
+    combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS.view_id,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

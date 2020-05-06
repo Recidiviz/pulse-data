@@ -22,17 +22,13 @@ admission date."""
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
-
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME = 'incarceration_admission_after_open_period'
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION = """ Incarceration admissions after open periods """
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY = \
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH periods_with_next_admission AS (
@@ -45,15 +41,14 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY = \
     )
     SELECT * FROM periods_with_next_admission
     WHERE release_date IS NULL AND next_admission_date IS NOT NULL
-""".format(
-        description=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        state_dataset=BASE_DATASET,
-    )
+"""
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME,
-    view_query=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY
+    view_query_template=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE,
+    description=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION,
+    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
 )
 
 if __name__ == '__main__':

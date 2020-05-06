@@ -25,13 +25,6 @@ from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAM
 from recidiviz.persistence.database.schema.county.schema import Booking, \
     Charge, Person
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 CHARGE_TEXT_COUNTS_VIEW_NAME = 'charge_text_counts'
 
 CHARGE_TEXT_COUNTS_DESCRIPTION = \
@@ -40,7 +33,7 @@ Counts the number of bookings associated with each charge text
 for every day-fips combination.
 """
 
-CHARGE_TEXT_COUNTS_QUERY = \
+CHARGE_TEXT_COUNTS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 WITH
@@ -107,20 +100,19 @@ JOIN
   `{project_id}.{views_dataset}.{county_names_view}` CountyNames
 ON
   PersonCountTable.fips = CountyNames.fips
-""".format(
+"""
+
+CHARGE_TEXT_COUNTS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=CHARGE_TEXT_COUNTS_VIEW_NAME,
+    view_query_template=CHARGE_TEXT_COUNTS_QUERY_TEMPLATE,
     description=CHARGE_TEXT_COUNTS_DESCRIPTION,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
-    views_dataset=VIEWS_DATASET,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     charge_table=Charge.__tablename__,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     county_names_view=COUNTY_NAMES_VIEW.view_id
-)
-
-CHARGE_TEXT_COUNTS_VIEW = BigQueryView(
-    view_id=CHARGE_TEXT_COUNTS_VIEW_NAME,
-    view_query=CHARGE_TEXT_COUNTS_QUERY
 )
 
 if __name__ == '__main__':

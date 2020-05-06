@@ -23,12 +23,6 @@ from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied i
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 BOND_AMOUNTS_BY_BOOKING_VIEW_NAME = 'bond_amounts_by_booking'
 
 BOND_AMOUNTS_BY_BOOKING_DESCRIPTION = \
@@ -47,7 +41,7 @@ If a Bond is {bond_type_denied} or UNKNOWN, its `total_bond_dollars` must be NUL
     bond_type_denied=bond_type_denied
 )
 
-BOND_AMOUNTS_BY_BOOKING_QUERY = \
+BOND_AMOUNTS_BY_BOOKING_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT BondAmounts.booking_id,
@@ -65,16 +59,15 @@ FROM (
   FROM `{project_id}.{views_dataset}.{bond_amounts_unknown_denied_view}` Bond
   GROUP BY booking_id
 ) BondAmounts
-""".format(
-    description=BOND_AMOUNTS_BY_BOOKING_DESCRIPTION,
-    project_id=PROJECT_ID,
-    views_dataset=VIEWS_DATASET,
-    bond_amounts_unknown_denied_view=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_id
-)
+"""
 
 BOND_AMOUNTS_BY_BOOKING_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_BY_BOOKING_VIEW_NAME,
-    view_query=BOND_AMOUNTS_BY_BOOKING_QUERY
+    view_query_template=BOND_AMOUNTS_BY_BOOKING_QUERY_TEMPLATE,
+    description=BOND_AMOUNTS_BY_BOOKING_DESCRIPTION,
+    views_dataset=view_config.VIEWS_DATASET,
+    bond_amounts_unknown_denied_view=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_id
 )
 
 if __name__ == '__main__':

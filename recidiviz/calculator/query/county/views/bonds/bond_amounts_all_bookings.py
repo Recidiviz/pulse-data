@@ -27,12 +27,6 @@ from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME = 'bond_amounts_all_bookings'
 
 BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION = \
@@ -63,7 +57,7 @@ plus all the Bookings whose booking_id is not in Bonds.
     bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW.view_id
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_QUERY = \
+BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT
@@ -99,20 +93,19 @@ JOIN
   `{project_id}.{views_dataset}.{county_names_view}` CountyNames
 ON
   SUBSTR(Person.jurisdiction_id, 0, 5) = CountyNames.fips
-""".format(
+"""
+
+BOND_AMOUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME,
+    view_query_template=BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION,
-    project_id=PROJECT_ID,
-    views_dataset=VIEWS_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW.view_id,
-    base_dataset=BASE_DATASET,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     county_names_view=COUNTY_NAMES_VIEW.view_id
-)
-
-BOND_AMOUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
-    view_id=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME,
-    view_query=BOND_AMOUNTS_ALL_BOOKINGS_QUERY
 )
 
 if __name__ == '__main__':

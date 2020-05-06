@@ -36,6 +36,12 @@ class DirectIngestRawFileConfig:
     file_tag: str = attr.ib(validator=attr.validators.instance_of(str))
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
+    primary_key_str = attr.ib()
+
+    @primary_key_str.default
+    def _primary_key_str(self):
+        return ", ".join(self.primary_key_cols)
+
     @classmethod
     def from_dict(cls, file_config_dict: Dict[str, Any]) -> 'DirectIngestRawFileConfig':
         return DirectIngestRawFileConfig(

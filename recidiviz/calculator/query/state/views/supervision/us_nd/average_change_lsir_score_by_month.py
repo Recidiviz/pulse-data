@@ -24,12 +24,6 @@ LSIR score of the person's supervision.
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME = 'average_change_lsir_score_by_month'
 
 AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION = """
@@ -38,7 +32,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION = """
     second LSIR score of the person's supervision.
 """
 
-AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
+AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -72,18 +66,17 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY = \
       AND supervision_rank = 1
     GROUP BY state_code, termination_year, termination_month, supervision_type, district
     ORDER BY state_code, termination_year, termination_month, district, supervision_type
-    """.format(
-        description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(),
-        supervision_dimension=bq_utils.unnest_supervision_type(),
-    )
+    """
 
 AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_NAME,
-    view_query=AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY
+    view_query_template=AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE,
+    description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(),
+    supervision_dimension=bq_utils.unnest_supervision_type(),
 )
 
 if __name__ == '__main__':

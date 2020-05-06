@@ -17,12 +17,8 @@
 """Resident population counts by race and gender for each year-fips."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
-
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
 
 RESIDENT_POPULATION_COUNTS_VIEW_NAME = 'resident_population_counts'
 
@@ -45,7 +41,7 @@ Similarly, Race: 'ALL' sums every race for each gender.
 DO NOT sum along race or gender, or you will double-count by including 'ALL'.
 """
 
-RESIDENT_POPULATION_COUNTS_QUERY = \
+RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 
@@ -105,16 +101,15 @@ ON
   CombinedRaceGender.year = TotalPop.year AND CombinedRaceGender.fips = TotalPop.fips
 
 ORDER BY year DESC, fips, race, gender
-""".format(
-    description=RESIDENT_POPULATION_COUNTS_DESCRIPTION,
-    project_id=PROJECT_ID,
-    vera_dataset=vera_view_constants.VERA_DATASET,
-    iob_race_gender_pop_table=vera_view_constants.IOB_RACE_GENDER_POP_TABLE
-)
+"""
 
 RESIDENT_POPULATION_COUNTS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=RESIDENT_POPULATION_COUNTS_VIEW_NAME,
-    view_query=RESIDENT_POPULATION_COUNTS_QUERY
+    view_query_template=RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE,
+    description=RESIDENT_POPULATION_COUNTS_DESCRIPTION,
+    vera_dataset=vera_view_constants.VERA_DATASET,
+    iob_race_gender_pop_table=vera_view_constants.IOB_RACE_GENDER_POP_TABLE
 )
 
 if __name__ == '__main__':
