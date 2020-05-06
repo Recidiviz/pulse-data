@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -131,6 +131,8 @@ def characteristics_dict(person: StatePerson,
                 characteristics['assessment_score_bucket'] = assessment_bucket
                 characteristics['assessment_type'] = program_event.assessment_type
 
+        if program_event.participation_status:
+            characteristics['participation_status'] = program_event.participation_status
         if program_event.supervising_officer_external_id:
             characteristics['supervising_officer_external_id'] = program_event.supervising_officer_external_id
         if program_event.supervising_district_external_id:
