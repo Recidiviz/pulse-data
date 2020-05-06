@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=line-too-long
-"""Views used for stitch"""
 
+"""Views used for stitch"""
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.stitch.combined_stitch import \
     COMBINED_STITCH_VIEW
 from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping \
@@ -32,7 +34,7 @@ from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset\
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW
 
-STITCH_VIEWS = [
+STITCH_VIEWS: List[BigQueryView] = [
     INCARCERATION_TRENDS_STITCH_SUBSET_VIEW,
     SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW,
     SINGLE_COUNT_STITCH_SUBSET_VIEW,

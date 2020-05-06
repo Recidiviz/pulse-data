@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Export data from BigQuery to JSON files in Cloud Storage."""
+
 import logging
 
+from recidiviz.big_query import view_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportViewConfig
 
-from recidiviz.calculator.query.state import view_manager, view_config, \
-    dashboard_export_config
+from recidiviz.calculator.query.state import dataset_config, dashboard_export_config, view_config
 
 
 def export_dashboard_data_to_cloud_storage(bucket: str):
@@ -29,10 +30,10 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
     Args:
         bucket: The cloud storage location where the exported data should go.
     """
-    view_manager.create_dataset_and_update_views(view_manager.VIEWS_TO_UPDATE)
+    view_manager.create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
 
     bq_client = BigQueryClientImpl()
-    dataset_ref = bq_client.dataset_ref_for_id(view_config.DASHBOARD_VIEWS_DATASET)
+    dataset_ref = bq_client.dataset_ref_for_id(dataset_config.DASHBOARD_VIEWS_DATASET)
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
 
     bq_client.export_views_to_cloud_storage(

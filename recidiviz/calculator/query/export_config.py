@@ -56,8 +56,6 @@ COUNTY_COLUMNS_TO_EXCLUDE = {
     'person': ['full_name', 'birthdate', 'birthdate_inferred_from_age']
 }
 
-COUNTY_BASE_TABLES_BQ_DATASET = 'census'
-
 ######### STATE EXPORT VALUES #########
 
 # History tables that should be included in the export
