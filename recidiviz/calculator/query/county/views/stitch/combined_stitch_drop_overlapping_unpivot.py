@@ -18,9 +18,10 @@
 """Unpivot stitch data"""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping \
     import COMBINED_STITCH_DROP_OVERLAPPING_VIEW
+
 _DESCRIPTION = """
 Unpivot stitch data by breaking out gender & race counts.
 """
@@ -347,10 +348,10 @@ SELECT * FROM unknown_gender_unknown_race
 # TODO(#1578): Export this query once COMBINED_STITCH_DROP_OVERLAPPING_VIEW
 #  is materialized
 COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_stitch_drop_overlapping_unpivot',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     combined_stitch_drop_overlapping=
     COMBINED_STITCH_DROP_OVERLAPPING_VIEW.view_id,
     description=_DESCRIPTION

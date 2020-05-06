@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views interacting with Vera data."""
-from typing import List
+"""Dashboard dataset configuration."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county.views.vera import county_names
+# Where the actual, final dashboard views live
+DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
 
-VERA_VIEWS: List[BigQueryView] = [
-    county_names.COUNTY_NAMES_VIEW
-]
+# Where the metrics that Dataflow jobs produce live
+DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
+
+# Where static reference tables live
+REFERENCE_TABLES_DATASET: str = 'reference_tables'
+
+# Where the base tables for the state schema live
+STATE_BASE_DATASET: str = 'state'

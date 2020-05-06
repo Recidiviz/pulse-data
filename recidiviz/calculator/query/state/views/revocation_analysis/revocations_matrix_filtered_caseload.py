@@ -18,7 +18,8 @@
 # pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME = 'revocations_matrix_filtered_caseload'
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
@@ -60,12 +61,12 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
     """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

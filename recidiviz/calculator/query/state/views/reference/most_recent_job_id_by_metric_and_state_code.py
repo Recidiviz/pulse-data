@@ -17,7 +17,8 @@
 """Most recent calculate job_id by metric and state code."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = \
     'most_recent_job_id_by_metric_and_state_code'
 
@@ -81,11 +82,11 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     """
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME,
     view_query_template=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE,
     description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
 )
 
 if __name__ == '__main__':

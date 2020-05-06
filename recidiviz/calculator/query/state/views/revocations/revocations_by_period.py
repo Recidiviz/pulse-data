@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 REVOCATIONS_BY_PERIOD_VIEW_NAME = 'revocations_by_period'
 
 REVOCATIONS_BY_PERIOD_DESCRIPTION = """ Revocations by metric month period """
@@ -62,11 +63,11 @@ REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE = \
     """
 
 REVOCATIONS_BY_PERIOD_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_PERIOD_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE,
     description=REVOCATIONS_BY_PERIOD_DESCRIPTION,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )

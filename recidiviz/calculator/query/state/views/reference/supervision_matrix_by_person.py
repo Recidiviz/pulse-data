@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME = 'supervision_matrix_by_person'
 
 SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
@@ -80,12 +81,12 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
-    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

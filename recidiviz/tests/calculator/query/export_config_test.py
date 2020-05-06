@@ -24,6 +24,7 @@ from unittest import mock
 import sqlalchemy
 
 from recidiviz.calculator.query import export_config
+from recidiviz.calculator.query.county import dataset_config
 
 
 class ExportConfigTest(unittest.TestCase):
@@ -64,23 +65,22 @@ class ExportConfigTest(unittest.TestCase):
         for table in export_config.STATE_TABLES_TO_EXPORT:
             self.assertIsInstance(table, sqlalchemy.Table)
 
-    def test_COUNTY_BASE_TABLES_BQ_DATASET(self):
-        """Make sure COUNTY_BASE_TABLES_BQ_DATASET is defined correctly.
+    def test_COUNTY_BASE_DATASET(self):
+        """Make sure COUNTY_BASE_DATASET is defined correctly.
 
         Checks that it is a string, checks that it has characters,
         and checks that those characters are letters, numbers, or _.
         """
-        self.assertIsInstance(export_config.COUNTY_BASE_TABLES_BQ_DATASET, str)
+        self.assertIsInstance(dataset_config.COUNTY_BASE_DATASET, str)
 
-        self.assertTrue(len(export_config.COUNTY_BASE_TABLES_BQ_DATASET) > 0)
+        self.assertTrue(len(dataset_config.COUNTY_BASE_DATASET) > 0)
 
         allowed_characters = set(string.ascii_letters + string.digits + '_')
         self.assertTrue(
-            set(export_config.COUNTY_BASE_TABLES_BQ_DATASET)
+            set(dataset_config.COUNTY_BASE_DATASET)
             .issubset(allowed_characters),
             msg='BigQuery Dataset names must only contain letters, numbers,'
-            ' and underscores. Check `export_config.'
-            'COUNTY_BASE_TABLES_BQ_DATASET`.'
+            ' and underscores. Check `dataset_config.COUNTY_BASE_DATASET`.'
         )
 
     def test_STATE_BASE_TABLES_BQ_DATASET(self):

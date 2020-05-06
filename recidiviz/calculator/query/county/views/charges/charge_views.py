@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """"Views related to Charges."""
-#pylint: disable=line-too-long
 
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.charges.charge_text_counts import \
     CHARGE_TEXT_COUNTS_VIEW
 from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import \
@@ -28,7 +30,7 @@ from recidiviz.calculator.query.county.views.charges.charge_severity_all_booking
 from recidiviz.calculator.query.county.views.charges.charge_severity_counts_all_bookings import \
     CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW
 
-CHARGE_VIEWS = [
+CHARGE_VIEWS: List[BigQueryView] = [
     CHARGE_TEXT_COUNTS_VIEW,
     CHARGE_CLASS_SEVERITY_RANKS_VIEW,
     CHARGES_AND_SEVERITY_VIEW,

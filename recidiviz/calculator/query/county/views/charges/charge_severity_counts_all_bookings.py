@@ -18,8 +18,7 @@
 # pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import \
     CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
 from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
@@ -97,12 +96,12 @@ ORDER BY day DESC, fips
 """
 
 CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME,
     view_query_template=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE,
     description=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION,
-    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
-    views_dataset=view_config.VIEWS_DATASET,
+    base_dataset=dataset_config.COUNTY_BASE_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id,

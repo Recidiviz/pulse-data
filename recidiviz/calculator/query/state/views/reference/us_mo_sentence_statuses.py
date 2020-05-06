@@ -16,8 +16,7 @@
 # =============================================================================
 """BQ View containing US_MO state statuses from TAK026"""
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 
 US_MO_SENTENCE_STATUSES_VIEW_NAME = \
     'us_mo_sentence_statuses'
@@ -65,12 +64,12 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
 """
 
 US_MO_SENTENCE_STATUSES_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
     view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
     description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
-    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
-    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

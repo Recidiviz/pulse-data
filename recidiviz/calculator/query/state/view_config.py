@@ -17,10 +17,27 @@
 """Dashboard view configuration."""
 
 # Where the dashboard views and materialized tables live
-DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
+from typing import Dict, List
 
-# Where the metrics that Dataflow jobs produce live
-DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DASHBOARD_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.admissions import admissions_views
+from recidiviz.calculator.query.state.views.program_evaluation import program_evaluation_views
+from recidiviz.calculator.query.state.views.reference import reference_views
+from recidiviz.calculator.query.state.views.reincarcerations import reincarcerations_views
+from recidiviz.calculator.query.state.views.revocation_analysis import revocation_analysis_views
+from recidiviz.calculator.query.state.views.revocations import revocations_views
+from recidiviz.calculator.query.state.views.supervision import supervision_views
 
-# Where static reference tables live.
-REFERENCE_TABLES_DATASET: str = 'reference_tables'
+
+VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
+    REFERENCE_TABLES_DATASET: reference_views.REF_VIEWS,
+    DASHBOARD_VIEWS_DATASET: (
+        admissions_views.ADMISSIONS_VIEWS +
+        reincarcerations_views.REINCARCERATIONS_VIEWS +
+        revocations_views.REVOCATIONS_VIEWS +
+        supervision_views.SUPERVISION_VIEWS +
+        program_evaluation_views.PROGRAM_EVALUATION_VIEWS +
+        revocation_analysis_views.REVOCATION_ANALYSIS_VIEWS
+    )
+}

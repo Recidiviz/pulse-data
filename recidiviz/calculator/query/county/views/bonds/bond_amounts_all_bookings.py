@@ -18,8 +18,7 @@
 # pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import BOND_AMOUNTS_BY_BOOKING_VIEW
 from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
 
@@ -96,13 +95,13 @@ ON
 """
 
 BOND_AMOUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_NAME,
     view_query_template=BOND_AMOUNTS_ALL_BOOKINGS_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_ALL_BOOKINGS_DESCRIPTION,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW.view_id,
-    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    base_dataset=dataset_config.COUNTY_BASE_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
     county_names_view=COUNTY_NAMES_VIEW.view_id

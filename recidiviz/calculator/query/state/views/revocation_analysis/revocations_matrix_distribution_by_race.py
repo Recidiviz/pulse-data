@@ -19,7 +19,8 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
+
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME = 'revocations_matrix_distribution_by_race'
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
@@ -87,11 +88,11 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW = BigQueryView(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
 )
 

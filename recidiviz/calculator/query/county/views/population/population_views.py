@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """"Views related to jail population."""
+from typing import List
 
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import \
@@ -28,7 +30,7 @@ from recidiviz.calculator.query.county.views.population.jail_pop_and_resident_po
     JAIL_POP_AND_RESIDENT_POP_VIEW
 
 
-POPULATION_VIEWS = [
+POPULATION_VIEWS: List[BigQueryView] = [
     RESIDENT_POPULATION_COUNTS_VIEW,
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW,
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW,

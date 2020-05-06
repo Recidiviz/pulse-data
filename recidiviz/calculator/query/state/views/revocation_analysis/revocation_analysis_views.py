@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views related to revocation analysis."""
-# pylint:disable=line-too-long
+
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state.views.revocation_analysis.revocations_matrix_by_month import \
     REVOCATIONS_MATRIX_BY_MONTH_VIEW
 from recidiviz.calculator.query.state.views.revocation_analysis.revocations_matrix_cells import \
@@ -32,10 +35,11 @@ from recidiviz.calculator.query.state.views.revocation_analysis.revocations_matr
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW
 from recidiviz.calculator.query.state.views.revocation_analysis.revocations_matrix_filtered_caseload import \
     REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW
+# pylint:disable=line-too-long
 from recidiviz.calculator.query.state.views.revocation_analysis.revocations_matrix_supervision_distribution_by_district import \
     REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_VIEW
 
-REVOCATION_ANALYSIS_VIEWS = [
+REVOCATION_ANALYSIS_VIEWS: List[BigQueryView] = [
     REVOCATIONS_MATRIX_BY_MONTH_VIEW,
     REVOCATIONS_MATRIX_CELLS_VIEW,
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW,

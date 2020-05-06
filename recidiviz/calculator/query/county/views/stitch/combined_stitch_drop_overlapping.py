@@ -17,7 +17,7 @@
 """Define views for combining scraper & state-reports & ITP."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch import combined_stitch
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
     import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
@@ -25,6 +25,7 @@ from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_su
     import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW
+
 _DESCRIPTION = """
 Combine {itp}, {state}, {scraper} into one unified view. When overlapping data
 exists, we select {state} data first. We then select any {itp} data that exists
@@ -128,10 +129,10 @@ WHERE
 """
 
 COMBINED_STITCH_DROP_OVERLAPPING_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_stitch_drop_overlapping',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
     description=_DESCRIPTION
 )
