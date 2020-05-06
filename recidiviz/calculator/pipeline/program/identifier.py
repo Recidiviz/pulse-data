@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.persistence.entity.entity_utils import is_placeholder
@@ -111,6 +112,7 @@ def find_program_referrals(
                 program_assignment.state_code,
                 program_id,
                 referral_date,
+                program_assignment.participation_status,
                 assessment_score,
                 assessment_type,
                 relevant_supervision_periods,
@@ -144,6 +146,7 @@ def find_supervision_periods_during_referral(
 
 def referrals_for_supervision_periods(
         state_code: str, program_id: str, referral_date: date,
+        participation_status: Optional[StateProgramAssignmentParticipationStatus],
         assessment_score: Optional[int],
         assessment_type: Optional[StateAssessmentType],
         supervision_periods: Optional[List[StateSupervisionPeriod]],
@@ -165,15 +168,11 @@ def referrals_for_supervision_periods(
             supervising_district_external_id = None
 
             if supervision_period.supervision_period_id:
-                agent_info = \
-                    supervision_period_to_agent_associations.get(
-                        supervision_period.supervision_period_id)
+                agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
 
                 if agent_info is not None:
-                    supervising_officer_external_id = agent_info.get(
-                        'agent_external_id')
-                    supervising_district_external_id = agent_info.get(
-                        'district_external_id')
+                    supervising_officer_external_id = agent_info.get('agent_external_id')
+                    supervising_district_external_id = agent_info.get('district_external_id')
 
             if supervision_period.supervision_type not in \
                     supervision_types_represented:
@@ -182,18 +181,16 @@ def referrals_for_supervision_periods(
                         state_code=state_code,
                         program_id=program_id,
                         event_date=referral_date,
+                        participation_status=participation_status,
                         assessment_score=assessment_score,
                         assessment_type=assessment_type,
                         supervision_type=supervision_period.supervision_type,
-                        supervising_officer_external_id=
-                        supervising_officer_external_id,
-                        supervising_district_external_id=
-                        supervising_district_external_id
+                        supervising_officer_external_id=supervising_officer_external_id,
+                        supervising_district_external_id=supervising_district_external_id
                     )
                 )
 
-            supervision_types_represented.add(
-                supervision_period.supervision_type)
+            supervision_types_represented.add(supervision_period.supervision_type)
     else:
         # Return a ProgramReferralEvent without any supervision details
         return [
@@ -201,6 +198,7 @@ def referrals_for_supervision_periods(
                 state_code=state_code,
                 program_id=program_id,
                 event_date=referral_date,
+                participation_status=participation_status,
                 assessment_score=assessment_score,
                 assessment_type=assessment_type
             )

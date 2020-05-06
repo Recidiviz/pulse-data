@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
@@ -528,21 +529,25 @@ class TestMapProgramCombinations(unittest.TestCase):
 class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
-    def test_characteristics_dict(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+    @classmethod
+    def setUpClass(cls):
+        """Initialize the test person for the characteristics dict."""
+        cls.person = StatePerson.new_with_defaults(person_id=12345,
+                                                   birthdate=date(1984, 8, 31),
+                                                   gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
-        person.races = [race]
+        cls.person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
             state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
-        person.ethnicities = [ethnicity]
+        cls.person.ethnicities = [ethnicity]
+
+    def test_characteristics_dict_program_event(self):
 
         program_event = ProgramEvent(
             state_code='US_ND',
@@ -550,7 +555,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             event_date=date(2009, 10, 1)
         )
 
-        characteristic_dict = calculator.characteristics_dict(person, program_event)
+        characteristic_dict = calculator.characteristics_dict(self.person, program_event)
 
         expected_output = {
             'program_id': 'XXX',
@@ -559,6 +564,39 @@ class TestCharacteristicsDict(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345
+        }
+
+        self.assertEqual(expected_output, characteristic_dict)
+
+    def test_characteristics_dict_program_referral_event(self):
+
+        program_referral_event = ProgramReferralEvent(
+            state_code='US_ND',
+            program_id='XXX',
+            event_date=date(2009, 10, 1),
+            supervision_type=StateSupervisionType.PAROLE,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            assessment_score=23,
+            assessment_type=StateAssessmentType.LSIR,
+            supervising_officer_external_id='OFFICER',
+            supervising_district_external_id='DISTRICT',
+        )
+
+        characteristic_dict = calculator.characteristics_dict(self.person, program_referral_event)
+
+        expected_output = {
+            'program_id': 'XXX',
+            'age_bucket': '25-29',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'supervision_type': StateSupervisionType.PAROLE,
+            'participation_status': StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            'assessment_score_bucket': '0-23',
+            'assessment_type': StateAssessmentType.LSIR,
+            'supervising_officer_external_id': 'OFFICER',
+            'supervising_district_external_id': 'DISTRICT'
         }
 
         self.assertEqual(expected_output, characteristic_dict)

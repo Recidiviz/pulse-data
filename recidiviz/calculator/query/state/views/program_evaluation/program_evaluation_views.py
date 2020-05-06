@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referra
     FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW
 from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_lsir_by_period import \
     FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW
+from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_participation_status import \
+    FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW
 from recidiviz.calculator.query.state.views.program_evaluation.us_nd.ftr_referrals_by_period import \
     FTR_REFERRALS_BY_PERIOD_VIEW
 # pylint: disable=line-too-long
@@ -39,4 +41,5 @@ PROGRAM_EVALUATION_VIEWS: List[BigQueryView] = [
     FTR_REFERRALS_BY_GENDER_BY_PERIOD_VIEW,
     FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW,
     FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW,
+    FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW
 ]

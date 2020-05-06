@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,9 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
 @attr.s(frozen=True)
@@ -52,6 +51,9 @@ class ProgramReferralEvent(ProgramEvent):
     # The type of supervision the person was on
     # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+
+    # Program participation status
+    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
 
     # Most recent assessment score at the time of referral
     assessment_score: Optional[int] = attr.ib(default=None)

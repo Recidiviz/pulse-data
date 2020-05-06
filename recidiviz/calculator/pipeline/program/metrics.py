@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,10 +23,9 @@ from typing import Optional, Dict, Any, cast
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
-from recidiviz.common.constants.state.state_supervision import \
-    StateSupervisionType
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
 class ProgramMetricType(Enum):
@@ -94,6 +93,9 @@ class ProgramReferralMetric(ProgramMetric):
     # Supervision Type
     # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+
+    # Program participation status
+    participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
 
     # Assessment score of the people this metric describes
     assessment_score_bucket: Optional[str] = attr.ib(default=None)

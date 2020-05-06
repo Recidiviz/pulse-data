@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -49,7 +50,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -86,6 +88,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type
@@ -119,7 +122,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
         assessment_1 = StateAssessment.new_with_defaults(
@@ -163,6 +167,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             assessment_score=29,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type
@@ -172,7 +177,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
         assessment_1 = StateAssessment.new_with_defaults(
@@ -204,6 +210,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS
         )], program_referrals)
@@ -212,7 +219,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.PENDING,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -263,6 +271,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     state_code=program_assignment.state_code,
                     program_id=program_assignment.program_id,
                     event_date=program_assignment.referral_date,
+                    participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS,
                     supervision_type=supervision_period_1.supervision_type
@@ -271,6 +280,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     state_code=program_assignment.state_code,
                     program_id=program_assignment.program_id,
                     event_date=program_assignment.referral_date,
+                    participation_status=program_assignment.participation_status,
                     assessment_score=33,
                     assessment_type=StateAssessmentType.ORAS,
                     supervision_type=supervision_period_2.supervision_type
@@ -282,7 +292,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -329,6 +340,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
@@ -433,11 +445,11 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             state_code='UT',
             program_id='XXX',
             referral_date=date(2009, 3, 12),
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=[supervision_period],
-            supervision_period_to_agent_associations=
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(1, len(program_referrals))
@@ -447,10 +459,10 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 program_id='XXX',
                 event_date=date(2009, 3, 12),
+                participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
-                supervision_type=
-                supervision_period.supervision_type
+                supervision_type=supervision_period.supervision_type
             )
         ], program_referrals)
 
@@ -485,11 +497,11 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             state_code='UT',
             program_id='XXX',
             referral_date=date(2009, 3, 19),
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
-            supervision_period_to_agent_associations=
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(1, len(program_referrals))
@@ -499,10 +511,10 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
+                participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
-                supervision_type=
-                StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION
             )
         ], program_referrals)
 
@@ -537,11 +549,11 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             state_code='UT',
             program_id='XXX',
             referral_date=date(2009, 3, 19),
+            participation_status=StateProgramAssignmentParticipationStatus.DENIED,
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
-            supervision_period_to_agent_associations=
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
         self.assertEqual(2, len(program_referrals))
@@ -551,18 +563,18 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
+                participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
-                supervision_type=
-                supervision_period_1.supervision_type
+                supervision_type=supervision_period_1.supervision_type
             ),
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
+                participation_status=StateProgramAssignmentParticipationStatus.DENIED,
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
-                supervision_type=
-                supervision_period_2.supervision_type
+                supervision_type=supervision_period_2.supervision_type
             )
         ], program_referrals)
