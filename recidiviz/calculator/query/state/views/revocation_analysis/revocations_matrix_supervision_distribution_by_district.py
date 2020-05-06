@@ -19,11 +19,6 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_VIEW_NAME = \
     'revocations_matrix_supervision_distribution_by_district'
 
@@ -33,7 +28,7 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION = """
  supervision, the most severe violation, the district, and the metric period. 
  """
 
-REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
+REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -52,15 +47,14 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY = \
       metric_period_months
     ORDER BY state_code, metric_period_months, district, supervision_type, reported_violations, charge_category,
       violation_type
-    """.format(
-        description=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET
-        )
+    """
 
 REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY
+    view_query_template=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

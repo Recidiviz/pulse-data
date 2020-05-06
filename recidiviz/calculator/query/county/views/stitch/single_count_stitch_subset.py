@@ -18,12 +18,9 @@
 
 import os
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.export_config import \
-    COUNTY_BASE_TABLES_BQ_DATASET
-from recidiviz.utils import metadata
+from recidiviz.calculator.query import export_config
+from recidiviz.calculator.query.county import view_config
 
-PROJECT_ID: str = metadata.project_id()
-VIEWS_DATASET: str = COUNTY_BASE_TABLES_BQ_DATASET
 SINGLE_COUNT_AGGREGATE_VIEW_ID: str = 'single_count_aggregate'
 
 _DESCRIPTION = """
@@ -31,14 +28,15 @@ Copy single count data to a format for stitching.
 """
 
 with open(os.path.splitext(__file__)[0] + '.sql') as fp:
-    _QUERY = fp.read().format(
-        project_id=PROJECT_ID, views_dataset=VIEWS_DATASET,
-        single_count_aggregate=SINGLE_COUNT_AGGREGATE_VIEW_ID,
-        description=_DESCRIPTION)
+    _QUERY_TEMPLATE = fp.read()
 
 SINGLE_COUNT_STITCH_SUBSET_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='single_count_stitch_subset',
-    view_query=_QUERY
+    view_query_template=_QUERY_TEMPLATE,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    single_count_aggregate=SINGLE_COUNT_AGGREGATE_VIEW_ID,
+    description=_DESCRIPTION
 )
 
 if __name__ == '__main__':

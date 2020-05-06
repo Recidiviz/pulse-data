@@ -20,12 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME = 'revocations_matrix_distribution_by_violation'
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
@@ -36,7 +30,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  """
 
 # TODO(2853): Handle unset violation type in the calc step
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -85,19 +79,18 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY = \
         violation_type
     ORDER BY state_code, year, month, metric_period_months, supervision_type, district, charge_category, violation_type,
         response_count
-    """.format(
-        description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(),
-        supervision_dimension=bq_utils.unnest_supervision_type(),
-        charge_category_dimension=bq_utils.unnest_charge_category(),
-    )
+    """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY
+    view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(),
+    supervision_dimension=bq_utils.unnest_supervision_type(),
+    charge_category_dimension=bq_utils.unnest_charge_category(),
 )
 
 if __name__ == '__main__':

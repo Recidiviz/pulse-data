@@ -20,12 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 EVENT_BASED_ADMISSIONS_VIEW_NAME = 'event_based_admissions'
 
 EVENT_BASED_ADMISSIONS_DESCRIPTION = """
@@ -34,7 +28,7 @@ EVENT_BASED_ADMISSIONS_DESCRIPTION = """
  Expanded Dimensions: district
  """
 
-EVENT_BASED_ADMISSIONS_QUERY = \
+EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -51,17 +45,16 @@ EVENT_BASED_ADMISSIONS_QUERY = \
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
       AND job.metric_type = 'INCARCERATION_ADMISSION'
-    """.format(
-        description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
-    )
+    """
 
 EVENT_BASED_ADMISSIONS_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=EVENT_BASED_ADMISSIONS_VIEW_NAME,
-    view_query=EVENT_BASED_ADMISSIONS_QUERY
+    view_query_template=EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE,
+    description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
 )
 
 if __name__ == '__main__':

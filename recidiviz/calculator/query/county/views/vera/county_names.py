@@ -17,12 +17,8 @@
 """View that combines county name, state name, and FIPS from Vera's ITP data."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
-
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
 
 VERA_DATASET = vera_view_constants.VERA_DATASET
 INCARCERATION_TRENDS_TABLE = vera_view_constants.INCARCERATION_TRENDS_TABLE
@@ -36,7 +32,7 @@ fips, state name, and county name from
 Vera's Incarceration Trends dataset.
 """
 
-COUNTY_NAMES_VIEW_QUERY = \
+COUNTY_NAMES_VIEW_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT
@@ -46,16 +42,15 @@ SELECT
 FROM `{project_id}.{vera_dataset}.{incarceration_trends_table}`
 GROUP BY fips, state, county_name
 ORDER BY fips
-""".format(
-    description=COUNTY_NAMES_VIEW_DESCRIPTION,
-    project_id=PROJECT_ID,
-    vera_dataset=VERA_DATASET,
-    incarceration_trends_table=INCARCERATION_TRENDS_TABLE
-)
+"""
 
 COUNTY_NAMES_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=COUNTY_NAMES_VIEW_NAME,
-    view_query=COUNTY_NAMES_VIEW_QUERY
+    view_query_template=COUNTY_NAMES_VIEW_QUERY_TEMPLATE,
+    description=COUNTY_NAMES_VIEW_DESCRIPTION,
+    vera_dataset=VERA_DATASET,
+    incarceration_trends_table=INCARCERATION_TRENDS_TABLE
 )
 
 if __name__ == '__main__':

@@ -19,19 +19,13 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME = 'revocations_matrix_filtered_caseload'
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
  Person-level violation and caseload information for all of the people revoked to prison from supervision.
  """
 
-REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY = \
+REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -63,16 +57,15 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY = \
       AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
       AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
     ORDER BY metric_period_months, violation_record
-    """.format(
-        description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        )
+    """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY
+    view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

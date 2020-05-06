@@ -18,18 +18,14 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
-
+from recidiviz.calculator.query.state import view_config
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME = 'persons_with_last_known_address'
 
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_DESCRIPTION = \
     """Persons with their last known address that is not a prison facility or a P&P office."""
 
 # TODO(2843): Update to support multiple states
-PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY = \
+PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
 
@@ -72,15 +68,14 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY = \
     WHERE recency_rank = 1) people_with_last_known_address
     ON person.person_id = people_with_last_known_address.person_id
     ORDER BY person_id ASC
-    """.format(
-        description=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_DESCRIPTION,
-        project_id=PROJECT_ID,
-        base_dataset=BASE_DATASET,
-    )
+    """
 
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME,
-    view_query=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY
+    view_query_template=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE,
+    description=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_DESCRIPTION,
+    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
 )
 
 if __name__ == '__main__':

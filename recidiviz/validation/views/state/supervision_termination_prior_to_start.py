@@ -21,16 +21,13 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME = 'supervision_termination_prior_to_start'
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION = """ Supervision termination dates prior to start dates """
 
-SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY = \
+SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT *, state_code as region_code
@@ -39,15 +36,14 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY = \
     AND termination_date < start_date
     AND external_id IS NOT NULL
     ORDER BY start_date, region_code, external_id
-""".format(
-        description=SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION,
-        project_id=PROJECT_ID,
-        state_dataset=BASE_DATASET,
-    )
+"""
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME,
-    view_query=SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY
+    view_query_template=SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE,
+    description=SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION,
+    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
 )
 
 if __name__ == '__main__':

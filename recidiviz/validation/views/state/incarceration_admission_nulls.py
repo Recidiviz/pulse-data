@@ -21,16 +21,13 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
 INCARCERATION_ADMISSION_NULLS_VIEW_NAME = 'incarceration_admission_nulls'
 
 INCARCERATION_ADMISSION_NULLS_DESCRIPTION = """ Incarceration admissions with null admission dates """
 
-INCARCERATION_ADMISSION_NULLS_QUERY = \
+INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT *, state_code as region_code
@@ -38,15 +35,14 @@ INCARCERATION_ADMISSION_NULLS_QUERY = \
     WHERE admission_date IS NULL
     AND external_id is NOT NULL
     ORDER BY region_code, external_id, admission_date
-""".format(
-        description=INCARCERATION_ADMISSION_NULLS_DESCRIPTION,
-        project_id=PROJECT_ID,
-        state_dataset=BASE_DATASET,
-    )
+"""
 
 INCARCERATION_ADMISSION_NULLS_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=INCARCERATION_ADMISSION_NULLS_VIEW_NAME,
-    view_query=INCARCERATION_ADMISSION_NULLS_QUERY
+    view_query_template=INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE,
+    description=INCARCERATION_ADMISSION_NULLS_DESCRIPTION,
+    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
 )
 
 if __name__ == '__main__':

@@ -30,8 +30,9 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.ingest.direct.query_utils import get_raw_tables_for_state, create_latest_query_for_raw_table
+from recidiviz.ingest.direct.query_utils import get_raw_tables_for_state, get_raw_table_config
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+    DirectIngestRawDataTableLatestBigQueryView
 from recidiviz.utils.params import str_to_bool
 
 
@@ -43,10 +44,10 @@ def create_or_update_views_for_table(
         dry_run: bool):
     """Creates/Updates views corresponding to the provided |raw_table_name|."""
     logging.info('===================== CREATING QUERIES FOR %s  =======================', raw_table_name)
-    latest_view_id = f'{raw_table_name}_latest'
-    latest_query = create_latest_query_for_raw_table(
-        project_id=project_id, state_code=state_code, raw_table_name=raw_table_name)
-    latest_view = BigQueryView(view_id=latest_view_id, view_query=latest_query)
+    latest_view = DirectIngestRawDataTableLatestBigQueryView(
+        region_code=state_code,
+        raw_file_config=get_raw_table_config(region_code=state_code,
+                                             raw_table_name=raw_table_name))
 
     if dry_run:
         logging.info('[DRY RUN] would have created/updated view %s with query:\n %s',

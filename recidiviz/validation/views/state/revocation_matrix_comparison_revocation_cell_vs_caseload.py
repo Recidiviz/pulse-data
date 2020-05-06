@@ -22,9 +22,8 @@ Revocation Analysis Tool: the grid cells and the corresponding caseload chart ac
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
-PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME = \
@@ -33,7 +32,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME = \
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION = """ 
 Revocation matrix comparison of summed revocation counts between the grid cells and the month chart """
 
-REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY = \
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH cell_counts AS (
@@ -58,15 +57,14 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY = \
     FULL OUTER JOIN caseload_counts cl
     USING (region_code, metric_period_months, district, charge_category, supervision_type)
     ORDER BY region_code, metric_period_months, district, charge_category, supervision_type
-""".format(
-        description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        view_dataset=VIEWS_DATASET,
-    )
+"""
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME,
-    view_query=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY
+    view_query_template=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE,
+    description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION,
+    view_dataset=VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

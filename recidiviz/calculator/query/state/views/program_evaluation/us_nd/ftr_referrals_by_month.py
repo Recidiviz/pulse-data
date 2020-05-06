@@ -20,11 +20,6 @@ to Free Through Recovery."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 FTR_REFERRALS_BY_MONTH_VIEW_NAME = \
     'ftr_referrals_by_month'
 
@@ -33,7 +28,7 @@ FTR_REFERRALS_BY_MONTH_DESCRIPTION = """
  to Free Through Recovery.
 """
 
-FTR_REFERRALS_BY_MONTH_QUERY = \
+FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -67,15 +62,14 @@ FTR_REFERRALS_BY_MONTH_QUERY = \
       AND district IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, year, month, district, supervision_type
-    """.format(
-        description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-    )
+    """
 
 FTR_REFERRALS_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_MONTH_VIEW_NAME,
-    view_query=FTR_REFERRALS_BY_MONTH_QUERY
+    view_query_template=FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE,
+    description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

@@ -20,19 +20,13 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME = \
     'admissions_versus_releases_by_month'
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION = \
     """ Monthly admissions versus releases """
 
-ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
+ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -90,17 +84,16 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY = \
     WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
       AND district IS NOT NULL
     ORDER BY state_code, district, year, month 
-""".format(
-        description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        metrics_dataset=METRICS_DATASET,
-        district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
-    )
+"""
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_NAME,
-    view_query=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY
+    view_query_template=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE,
+    description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence')
 )
 
 if __name__ == '__main__':

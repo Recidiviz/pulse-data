@@ -14,16 +14,66 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""BigQuery View definition.
+"""An implementation of bigquery.TableReference with extra functionality related to views."""
+from typing import Optional, Dict
 
-Each View consists of a view_id (name) and view_query (query defining its data).
-"""
+from google.cloud import bigquery
 
-import attr
+from recidiviz.utils import metadata, environment
+
+PROJECT_ID_KEY = 'project_id'
 
 
-@attr.s(frozen=True)
-class BigQueryView:
-    """View which consists of a name (view_id) and query (view_query)"""
-    view_id: str = attr.ib()
-    view_query: str = attr.ib()
+@environment.test_only
+def test_only_project_id() -> str:
+    return 'test-only-project'
+
+
+class BigQueryView(bigquery.TableReference):
+    """An implementation of bigquery.TableReference with extra functionality related to views."""
+    def __init__(self,
+                 *,
+                 project_id: Optional[str] = None,
+                 dataset_id: str,
+                 view_id: str,
+                 view_query_template: str,
+                 **query_format_kwargs):
+
+        if project_id is None:
+            project_id = metadata.project_id()
+
+            if not project_id:
+                # BigQueryViews are sometimes declared as top-level objects that are instantiated with file load. This
+                # means this constructor might execute inside of an import and before a test has a chance to mock the
+                # project id. This keeps us from constructing a DatasetReference with a None project_id, which will
+                # throw.
+                project_id = test_only_project_id()
+
+        dataset_ref = bigquery.DatasetReference.from_string(dataset_id,
+                                                            default_project=project_id)
+        super().__init__(dataset_ref, view_id)
+        self._view_id = view_id
+        self._view_query = view_query_template.format(**self._query_format_args(**query_format_kwargs))
+
+    def _query_format_args(self, **query_format_kwargs) -> Dict[str, str]:
+        return {
+            PROJECT_ID_KEY: self.project,
+            **query_format_kwargs
+        }
+
+    @property
+    def view_id(self) -> str:
+        return self.table_id
+
+    @property
+    def view_query(self) -> str:
+        return self._view_query
+
+    @property
+    def select_query(self) -> str:
+        return f'SELECT * FROM `{self.project}.{self.dataset_id}.{self.view_id}`'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(' \
+            f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
+            f'view_query=\'{self.view_query}\')'

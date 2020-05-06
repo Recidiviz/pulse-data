@@ -19,16 +19,11 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'admissions_by_type_by_month'
 
 ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """ Admissions by type by month """
 
-ADMISSIONS_BY_TYPE_BY_MONTH_QUERY = \
+ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     -- Combine supervision revocations with new admission incarcerations
@@ -84,15 +79,14 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY = \
         GROUP BY state_code, year, month, supervision_type, district
     )
     ORDER BY state_code, year, month, district, supervision_type
-""".format(
-        description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-    )
+"""
 
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
-    view_query=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY
+    view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
+    description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

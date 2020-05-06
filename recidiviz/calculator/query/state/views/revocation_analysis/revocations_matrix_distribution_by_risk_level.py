@@ -19,11 +19,6 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME = 'revocations_matrix_distribution_by_risk_level'
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION = """
@@ -32,7 +27,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION = """
  violations leading up to the revocation, the most severe violation, risk level and the metric period.
  """
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -82,15 +77,14 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY = \
       charge_category, district, metric_period_months)
     ORDER BY state_code, district, supervision_type, risk_level, metric_period_months, violation_type,
       reported_violations, charge_category
-    """.format(
-        description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET
-        )
+    """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY
+    view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

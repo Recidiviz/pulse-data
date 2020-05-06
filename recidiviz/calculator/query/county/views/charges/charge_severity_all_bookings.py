@@ -25,13 +25,6 @@ from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Booking
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_all_bookings'
 
 CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION = \
@@ -41,11 +34,11 @@ which defines the severity of its most severe charge.
 See `{views_dataset}.{charges_and_severity_view}` for details.
 Bookings without charges have most_severe_charge listed as 'EXTERNAL_UNKNOWN'.
 """.format(
-    views_dataset=VIEWS_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id
 )
 
-CHARGE_SEVERITY_ALL_BOOKINGS_QUERY = \
+CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT Booking.booking_id, COALESCE(most_severe_charge, '{external_unknown}') AS most_severe_charge
@@ -66,19 +59,18 @@ FROM (
 RIGHT JOIN
   `{project_id}.{base_dataset}.{booking_table}` Booking
 ON BookingsWithCharges.booking_id = Booking.booking_id
-""".format(
-    description=CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION,
-    external_unknown=external_unknown,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
-    views_dataset=VIEWS_DATASET,
-    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id,
-    booking_table=Booking.__tablename__
-)
+"""
 
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME,
-    view_query=CHARGE_SEVERITY_ALL_BOOKINGS_QUERY
+    view_query_template=CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE,
+    description=CHARGE_SEVERITY_ALL_BOOKINGS_DESCRIPTION,
+    external_unknown=external_unknown,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
+    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id,
+    booking_table=Booking.__tablename__
 )
 
 if __name__ == '__main__':

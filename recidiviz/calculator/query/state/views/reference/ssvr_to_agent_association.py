@@ -23,12 +23,6 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_TABLES_DATASET = view_config.REFERENCE_TABLES_DATASET
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
-
 SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME = \
     'ssvr_to_agent_association'
 
@@ -37,7 +31,7 @@ SSVR_TO_AGENT_ASSOCIATION_DESCRIPTION = \
     agent.
     """
 
-SSVR_TO_AGENT_ASSOCIATION_QUERY = \
+SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT 
@@ -61,16 +55,15 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY = \
       )
     )
     WHERE rownum = 1
-""".format(
-        description=SSVR_TO_AGENT_ASSOCIATION_DESCRIPTION,
-        project_id=PROJECT_ID,
-        base_dataset=BASE_DATASET,
-        reference_tables_dataset=REFERENCE_TABLES_DATASET,
-    )
+"""
 
 SSVR_TO_AGENT_ASSOCIATION_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
-    view_query=SSVR_TO_AGENT_ASSOCIATION_QUERY
+    view_query_template=SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
+    description=SSVR_TO_AGENT_ASSOCIATION_DESCRIPTION,
+    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
+    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

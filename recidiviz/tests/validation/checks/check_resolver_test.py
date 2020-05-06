@@ -27,7 +27,9 @@ def test_check_happy_path_existence():
     job = DataValidationJob(region_code='US_VA',
                             validation=DataValidationCheck(
                                 validation_type=ValidationCheckType.EXISTENCE,
-                                view=BigQueryView('test_view', 'select * from literally_anything')
+                                view=BigQueryView(dataset_id='my_dataset',
+                                                  view_id='test_view',
+                                                  view_query_template='select * from literally_anything')
                             ))
     check_class = check_resolver.checker_for_validation(job)
 

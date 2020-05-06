@@ -25,12 +25,6 @@ from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAM
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME = 'bond_amounts_all_bookings_bins'
 
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION = \
@@ -51,7 +45,7 @@ day-fips-category grouping.
     bond_type_denied=bond_type_denied
 )
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY = \
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 
@@ -142,17 +136,16 @@ JOIN
 ON
   PersonCountTable.fips = CountyNames.fips
 ORDER BY day DESC, fips, bond_amount_category
-""".format(
-    description=BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION,
-    project_id=PROJECT_ID,
-    views_dataset=VIEWS_DATASET,
-    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW.view_id,
-    county_names_view=COUNTY_NAMES_VIEW.view_id
-)
+"""
 
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME,
-    view_query=BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY
+    view_query_template=BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE,
+    description=BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION,
+    views_dataset=view_config.VIEWS_DATASET,
+    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW.view_id,
+    county_names_view=COUNTY_NAMES_VIEW.view_id
 )
 
 if __name__ == '__main__':

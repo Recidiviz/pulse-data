@@ -46,7 +46,7 @@ SELECT
   NULL AS unknown_gender_unknown_race
 
 FROM
-  `{project_id}.{views_dataset}.{single_count_aggregate}`
+  `{project_id}.{base_dataset}.{single_count_aggregate}`
 
 WHERE
   ethnicity IS NULL AND

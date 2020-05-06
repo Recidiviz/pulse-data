@@ -22,9 +22,8 @@ in all of the views that support the Revocation Analysis Matrix tool."""
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
+from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
 
-PROJECT_ID = metadata.project_id()
 VIEWS_DATASET = view_config.DASHBOARD_VIEWS_DATASET
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME = 'revocation_matrix_comparison_supervision_population'
@@ -32,7 +31,7 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME = 'revocation_matr
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION = """ 
 Revocation matrix comparison of summed supervision population counts """
 
-REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY = \
+REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH by_district as (
@@ -63,15 +62,14 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY = \
     FROM by_district bd JOIN by_risk_level brl on bd.region_code = brl.region_code
     JOIN by_gender bg on brl.region_code = bg.region_code
     JOIN by_race br on bg.region_code = br.region_code
-""".format(
-        description=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION,
-        project_id=PROJECT_ID,
-        view_dataset=VIEWS_DATASET,
-    )
+"""
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW = BigQueryView(
+    dataset_id=VALIDATION_VIEWS_DATASET,
     view_id=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME,
-    view_query=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY
+    view_query_template=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE,
+    description=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION,
+    view_dataset=VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

@@ -22,19 +22,13 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME = \
     'admissions_versus_releases_by_period'
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION = \
     """Monthly admissions versus releases by metric month period."""
 
-ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
+ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -95,20 +89,19 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY = \
     USING (state_code, district, metric_period_months)
     WHERE district IS NOT NULL
     ORDER BY state_code, metric_period_months, district
-""".format(
-        description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-        reference_dataset=REFERENCE_DATASET,
-        district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
-        metric_period_dimension=bq_utils.unnest_metric_period_months(),
-        metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
-        prior_month_metric_period_dimension=bq_utils.metric_period_condition(month_offset=0),
-    )
+"""
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME,
-    view_query=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY
+    view_query_template=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE,
+    description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
+    prior_month_metric_period_dimension=bq_utils.metric_period_condition(month_offset=0),
 )
 
 if __name__ == '__main__':

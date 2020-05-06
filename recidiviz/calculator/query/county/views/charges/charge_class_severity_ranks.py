@@ -17,6 +17,7 @@
 """Creates a View that has a list of charge classes and their severity rank."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.common.constants.county.enum_canonical_strings import (
     charge_class_civil,
     charge_class_felony,
@@ -51,7 +52,7 @@ A View of all charge classes and their severity ranks.
 Severity is ranked where 0 is most severe, and 7 is least severe.
 """
 
-CHARGE_CLASS_SEVERITY_RANKS_QUERY = \
+CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT severity, charge_class
@@ -61,14 +62,14 @@ FROM
 WITH OFFSET
   AS severity
 ORDER BY severity
-""".format(
-    description=CHARGE_CLASS_SEVERITY_RANKS_DESCRIPTION,
-    charge_classes_by_severity_list=str(CHARGE_CLASSES_BY_SEVERITY)
-)
+"""
 
 CHARGE_CLASS_SEVERITY_RANKS_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME,
-    view_query=CHARGE_CLASS_SEVERITY_RANKS_QUERY
+    view_query_template=CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE,
+    description=CHARGE_CLASS_SEVERITY_RANKS_DESCRIPTION,
+    charge_classes_by_severity_list=str(CHARGE_CLASSES_BY_SEVERITY)
 )
 
 if __name__ == '__main__':

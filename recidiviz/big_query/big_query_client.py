@@ -105,6 +105,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_or_update_view(self,
+                              # TODO(3020): BigQueryView now encodes dataset information, remove this parameter.
                               dataset_ref: bigquery.DatasetReference,
                               view: BigQueryView) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
@@ -121,6 +122,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def export_view_to_table_async(self,
+                                   # TODO(3020): BigQueryView now encodes dataset information, remove this parameter.
                                    view_dataset_ref: bigquery.DatasetReference,
                                    view: BigQueryView,
                                    view_filter_clause: str,
@@ -308,8 +310,7 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.create_table(table, exists_ok=False)
 
     def create_or_update_view(self, dataset_ref: bigquery.DatasetReference, view: BigQueryView) -> bigquery.Table:
-        view_ref = dataset_ref.table(view.view_id)
-        bq_view = bigquery.Table(view_ref)
+        bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
 
         if self.table_exists(dataset_ref, view.view_id):
@@ -333,11 +334,8 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.destination = output_table_dataset_ref.table(output_table_id)
         job_config.write_disposition = \
             bigquery.job.WriteDisposition.WRITE_TRUNCATE
-        query = "SELECT * FROM `{project_id}.{dataset}.{table}` {filter_clause}" \
-            .format(project_id=metadata.project_id(),
-                    dataset=view_dataset_ref.dataset_id,
-                    table=view.view_id,
-                    filter_clause=view_filter_clause)
+        query = "{select_query} {filter_clause}".format(select_query=view.select_query,
+                                                        filter_clause=view_filter_clause)
 
         logging.info("Querying table: %s with query: %s", view.view_id, query)
 

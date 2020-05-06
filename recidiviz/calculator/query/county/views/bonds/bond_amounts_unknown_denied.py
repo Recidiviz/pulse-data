@@ -19,6 +19,7 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
+from recidiviz.calculator.query.county import view_config
 
 from recidiviz.common.constants.enum_canonical_strings import bond_status_posted
 from recidiviz.common.constants.enum_canonical_strings import bond_status_revoked
@@ -28,12 +29,6 @@ from recidiviz.common.constants.enum_canonical_strings import bond_type_secured
 from recidiviz.common.constants.enum_canonical_strings import present_without_info
 
 from recidiviz.persistence.database.schema.county.schema import Bond
-
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 
 BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = 'bond_amounts_unknown_denied'
 
@@ -75,7 +70,7 @@ as an enum unknown_or_denied column, then broken out into BOOL columns.
     bond_status_revoked=bond_status_revoked
 )
 
-BOND_AMOUNTS_UNKNOWN_DENIED_QUERY = \
+BOND_AMOUNTS_UNKNOWN_DENIED_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT NewBond.booking_id, NewBond.bond_type, NewBond.status, NewBond.amount_dollars,
@@ -100,7 +95,12 @@ FROM (
     IF((Bond.bond_type = '{bond_type_not_required}' OR Bond.status = '{bond_status_posted}'), 0, Bond.amount_dollars) AS amount_dollars
     FROM `{project_id}.{base_dataset}.{bond_table}` Bond
 ) NewBond
-""".format(
+"""
+
+BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME,
+    view_query_template=BOND_AMOUNTS_UNKNOWN_DENIED_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_UNKNOWN_DENIED_DESCRIPTION,
     bond_type_secured=bond_type_secured,
     bond_type_not_required=bond_type_not_required,
@@ -108,14 +108,8 @@ FROM (
     bond_type_denied=bond_type_denied,
     bond_status_revoked=bond_status_revoked,
     bond_status_posted=bond_status_posted,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
     bond_table=Bond.__tablename__
-)
-
-BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = BigQueryView(
-    view_id=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME,
-    view_query=BOND_AMOUNTS_UNKNOWN_DENIED_QUERY
 )
 
 if __name__ == '__main__':

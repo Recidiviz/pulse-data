@@ -20,8 +20,9 @@
 # TODO(3020): Move queries into BQ once ingestion flow supports querying directly from BQ.
 from typing import List, Tuple, Optional
 
-from recidiviz.ingest.direct.query_utils import output_sql_queries, create_date_bound_query_for_raw_table, \
-    LATEST_VIEW_QUERY
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+    DirectIngestRawDataTableUpToDateBigQueryView, DirectIngestRawDataTableLatestBigQueryView
+from recidiviz.ingest.direct.query_utils import output_sql_queries, get_raw_table_config
 from recidiviz.utils import metadata
 
 
@@ -30,15 +31,19 @@ project_id = metadata.project_id()
 # Update to `False` if using this script to print queries locally (rather than querying through the API)
 parameterized_query = True
 
+STATE_CODE = 'us_id'
 
-def _create_date_bounded_query(raw_table_name):
+
+def _create_date_bounded_query(raw_table_name) -> str:
     if parameterized_query:
-        return create_date_bound_query_for_raw_table(
-            project_id=project_id,
-            state_code='us_id',
-            raw_table_name=raw_table_name)
-    return LATEST_VIEW_QUERY.format(
-        project_id=project_id, state_code='us_id', raw_table_name=raw_table_name)
+        return DirectIngestRawDataTableUpToDateBigQueryView(
+            region_code=STATE_CODE,
+            raw_file_config=get_raw_table_config(region_code=STATE_CODE,
+                                                 raw_table_name=raw_table_name)).view_query
+    return DirectIngestRawDataTableLatestBigQueryView(
+        region_code=STATE_CODE,
+        raw_file_config=get_raw_table_config(region_code=STATE_CODE,
+                                             raw_table_name=raw_table_name)).select_query
 
 
 def create_sentence_query_fragment(add_supervision_args: bool = False) -> str:

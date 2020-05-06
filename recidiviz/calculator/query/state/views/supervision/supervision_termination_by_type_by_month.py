@@ -20,12 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME = 'supervision_termination_by_type_by_month'
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION = """
@@ -35,7 +29,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION = """
  supervision ended because of a revocation or successful completion.
 """
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
+SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -70,18 +64,17 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY = \
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
     GROUP BY state_code, projected_year, projected_month, supervision_type, district
     ORDER BY state_code, projected_year, projected_month, district, supervision_type
-    """.format(
-        description=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        metrics_dataset=METRICS_DATASET,
-        district_dimension=bq_utils.unnest_district(),
-        supervision_dimension=bq_utils.unnest_supervision_type()
-    )
+    """
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME,
-    view_query=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY
+    view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
+    description=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
+    district_dimension=bq_utils.unnest_district(),
+    supervision_dimension=bq_utils.unnest_supervision_type()
 )
 
 if __name__ == '__main__':

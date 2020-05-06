@@ -26,13 +26,6 @@ from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Charge
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-BASE_DATASET = export_config.COUNTY_BASE_TABLES_BQ_DATASET
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 CHARGES_AND_SEVERITY_VIEW_NAME = 'charges_and_severity'
 
 CHARGES_AND_SEVERITY_DESCRIPTION = \
@@ -41,10 +34,10 @@ Assigns a numeric column "severity" to each charge.
 Charge class severity is defined in `{views_dataset}.charge_class_severity_ranks`.
 The lower the number, the more severe the charge class (1 is most severe, 8 is least).
 """.format(
-    views_dataset=VIEWS_DATASET
+    views_dataset=view_config.VIEWS_DATASET
 )
 
-CHARGES_AND_SEVERITY_QUERY = \
+CHARGES_AND_SEVERITY_QUERY_TEMPLATE = \
 """
 /*{description}*/
 SELECT charge_id, booking_id, class, severity
@@ -59,19 +52,18 @@ LEFT JOIN
   `{project_id}.{views_dataset}.{charge_class_severity_ranks_view}` ChargeClassSeverity
 ON
   Charge.class = ChargeClassSeverity.charge_class
-""".format(
-    description=CHARGES_AND_SEVERITY_DESCRIPTION,
-    external_unknown=external_unknown,
-    project_id=PROJECT_ID,
-    base_dataset=BASE_DATASET,
-    views_dataset=VIEWS_DATASET,
-    charge_table=Charge.__tablename__,
-    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id
-)
+"""
 
 CHARGES_AND_SEVERITY_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=CHARGES_AND_SEVERITY_VIEW_NAME,
-    view_query=CHARGES_AND_SEVERITY_QUERY
+    view_query_template=CHARGES_AND_SEVERITY_QUERY_TEMPLATE,
+    description=CHARGES_AND_SEVERITY_DESCRIPTION,
+    external_unknown=external_unknown,
+    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
+    charge_table=Charge.__tablename__,
+    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id
 )
 
 if __name__ == '__main__':

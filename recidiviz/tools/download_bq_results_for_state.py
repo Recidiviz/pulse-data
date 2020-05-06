@@ -43,7 +43,7 @@ from google.cloud import bigquery, bigquery_storage_v1beta1
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_name
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.query_utils import UPDATE_DATETIME_PARAM_NAME
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import UPDATE_DATETIME_PARAM_NAME
 from recidiviz.ingest.direct.regions.us_id import us_id_sql_queries
 from recidiviz.tools.utils import to_datetime, get_file_id_and_processed_status_for_file, MetadataType, \
     add_row_to_ingest_metadata, get_next_available_file_id

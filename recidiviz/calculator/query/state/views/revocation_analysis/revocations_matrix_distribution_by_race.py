@@ -20,12 +20,6 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME = 'revocations_matrix_distribution_by_race'
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
@@ -34,7 +28,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
  violations leading up to the revocation, the most severe violation, race, and the metric period.
  """
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY = \
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -90,16 +84,15 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY = \
     WHERE race NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
     ORDER BY state_code, district, supervision_type, race, risk_level, metric_period_months, violation_type,
       reported_violations, charge_category
-    """.format(
-        description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    )
+    """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY
+    view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
 )
 
 if __name__ == '__main__':

@@ -19,12 +19,6 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import export_config
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_TABLES_DATASET = view_config.REFERENCE_TABLES_DATASET
-BASE_DATASET = export_config.STATE_BASE_TABLES_BQ_DATASET
-
 US_MO_SENTENCE_STATUSES_VIEW_NAME = \
     'us_mo_sentence_statuses'
 
@@ -32,7 +26,7 @@ US_MO_SENTENCE_STATUSES_DESCRIPTION = \
     """Provides time-based sentence status information for US_MO.
     """
 
-US_MO_SENTENCE_STATUSES_QUERY = \
+US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -68,16 +62,15 @@ US_MO_SENTENCE_STATUSES_QUERY = \
     ON
         incarceration_sentences.external_id = sentence_external_id
     WHERE (incarceration_sentences.person_id IS NOT NULL OR supervision_sentences.person_id IS NOT NULL);
-""".format(
-        description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
-        project_id=PROJECT_ID,
-        base_dataset=BASE_DATASET,
-        reference_tables_dataset=REFERENCE_TABLES_DATASET,
-    )
+"""
 
 US_MO_SENTENCE_STATUSES_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
-    view_query=US_MO_SENTENCE_STATUSES_QUERY
+    view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
+    description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
+    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
+    reference_tables_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':
