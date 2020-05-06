@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import view_manager
+from recidiviz.calculator.query.state.view_config import VIEWS_TO_UPDATE
 from recidiviz.calculator.query.state.views.reference import reference_views
 
 STATES_TO_EXPORT = ['US_MO', 'US_ND']
@@ -28,6 +28,6 @@ VIEWS_TO_EXCLUDE_FROM_EXPORT: List[BigQueryView] = \
     reference_views.REF_VIEWS
 
 VIEWS_TO_EXPORT = [
-    view for view_list in view_manager.VIEWS_TO_UPDATE.values() for view in view_list
+    view for view_list in VIEWS_TO_UPDATE.values() for view in view_list
     if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
 ]

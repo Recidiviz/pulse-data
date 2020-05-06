@@ -17,7 +17,7 @@
 """Total population, admissions, releases by day-fips and race-gender."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW
@@ -68,11 +68,11 @@ WHERE EXTRACT(YEAR FROM day) > {cutoff_year}
 """
 
 JAIL_POP_AND_RESIDENT_POP_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=JAIL_POP_AND_RESIDENT_POP_VIEW_NAME,
     view_query_template=JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE,
     description=JAIL_POP_AND_RESIDENT_POP_DESCRIPTION,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     population_admissions_releases_race_gender_all_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW.view_id,
     resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW.view_id,
     cutoff_year=CUTOFF_YEAR

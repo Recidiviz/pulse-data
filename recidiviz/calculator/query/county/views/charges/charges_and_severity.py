@@ -18,8 +18,7 @@
 # pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW
 
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
@@ -34,7 +33,7 @@ Assigns a numeric column "severity" to each charge.
 Charge class severity is defined in `{views_dataset}.charge_class_severity_ranks`.
 The lower the number, the more severe the charge class (1 is most severe, 8 is least).
 """.format(
-    views_dataset=view_config.VIEWS_DATASET
+    views_dataset=dataset_config.VIEWS_DATASET
 )
 
 CHARGES_AND_SEVERITY_QUERY_TEMPLATE = \
@@ -55,13 +54,13 @@ ON
 """
 
 CHARGES_AND_SEVERITY_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGES_AND_SEVERITY_VIEW_NAME,
     view_query_template=CHARGES_AND_SEVERITY_QUERY_TEMPLATE,
     description=CHARGES_AND_SEVERITY_DESCRIPTION,
     external_unknown=external_unknown,
-    base_dataset=export_config.COUNTY_BASE_TABLES_BQ_DATASET,
-    views_dataset=view_config.VIEWS_DATASET,
+    base_dataset=dataset_config.COUNTY_BASE_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     charge_table=Charge.__tablename__,
     charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id
 )

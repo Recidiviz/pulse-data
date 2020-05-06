@@ -17,7 +17,7 @@
 """Total population, admissions, releases by day-fips."""
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW
@@ -48,11 +48,11 @@ ORDER BY day DESC, fips
 """
 
 POPULATION_ADMISSIONS_RELEASES_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=POPULATION_ADMISSIONS_RELEASES_VIEW_NAME,
     view_query_template=POPULATION_ADMISSIONS_RELEASES_QUERY_TEMPLATE,
     description=POPULATION_ADMISSIONS_RELEASES_DESCRIPTION,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id
 )
 

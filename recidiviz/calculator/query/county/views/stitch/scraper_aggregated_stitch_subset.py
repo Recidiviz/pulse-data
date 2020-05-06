@@ -18,9 +18,10 @@
 # pylint:disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.population import \
     population_admissions_releases
+
 _DESCRIPTION = """
 Aggregate individual scraper data by summing person_count for each condition
 """
@@ -70,10 +71,10 @@ GROUP BY fips, RaceGender.day
 """
 
 SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='scraper_aggregated_stitch_subset',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id,
     description=_DESCRIPTION
 )

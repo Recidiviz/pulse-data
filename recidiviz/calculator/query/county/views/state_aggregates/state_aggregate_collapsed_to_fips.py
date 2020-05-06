@@ -18,9 +18,10 @@
 # pylint:disable=line-too-long
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config
+from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.state_aggregates.combined_state_aggregate import \
     COMBINED_STATE_AGGREGATE_VIEW
+
 _DESCRIPTION = """
 Select {combined_state_aggregates} and SUM each field around fips, report_date
 and aggregation_window. This has the effect of collapsing records around a
@@ -91,10 +92,10 @@ GROUP BY
 """
 
 STATE_AGGREGATES_COLLAPSED_TO_FIPS: BigQueryView = BigQueryView(
-    dataset_id=view_config.VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id='state_aggregates_collapsed_to_fips',
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=view_config.VIEWS_DATASET,
+    views_dataset=dataset_config.VIEWS_DATASET,
     combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW.view_id,
     description=_DESCRIPTION
 )

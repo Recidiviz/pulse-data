@@ -17,8 +17,7 @@
 """Every person with their last known address that is not a prison facility or a P&P office."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME = 'persons_with_last_known_address'
 
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_DESCRIPTION = \
@@ -71,11 +70,11 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     """
 
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = BigQueryView(
-    dataset_id=view_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME,
     view_query_template=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE,
     description=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_DESCRIPTION,
-    base_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == '__main__':

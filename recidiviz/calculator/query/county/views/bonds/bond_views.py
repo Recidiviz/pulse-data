@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=line-too-long
-""""Views related to Bonds."""
 
+""""Views related to Bonds."""
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied \
     import BOND_AMOUNTS_UNKNOWN_DENIED_VIEW
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking \
@@ -26,7 +28,7 @@ from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings \
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings_bins import \
     BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW
 
-BOND_VIEWS = [
+BOND_VIEWS: List[BigQueryView] = [
     BOND_AMOUNTS_UNKNOWN_DENIED_VIEW,
     BOND_AMOUNTS_BY_BOOKING_VIEW,
     BOND_AMOUNTS_ALL_BOOKINGS_VIEW,
