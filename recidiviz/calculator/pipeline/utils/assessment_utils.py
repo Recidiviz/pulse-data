@@ -25,6 +25,7 @@ from recidiviz.persistence.entity.state.entities import StateAssessment
 
 ASSESSMENT_TYPES_TO_INCLUDE = {
     'program': {
+        'US_ID': [StateAssessmentType.LSIR],
         'US_MO': [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
@@ -32,6 +33,7 @@ ASSESSMENT_TYPES_TO_INCLUDE = {
         'US_ND': [StateAssessmentType.LSIR],
     },
     'supervision': {
+        'US_ID': [StateAssessmentType.LSIR],
         'US_MO': [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
@@ -173,7 +175,9 @@ def include_assessment_in_metric(pipeline: str, state_code: str, assessment_type
         if assessment_types_to_include:
             return assessment_type is not None and assessment_type in assessment_types_to_include
 
-        raise ValueError(f"Unsupported state_code:{state_code} for pipeline type: {pipeline}."
-                         " Update ASSESSMENT_TYPES_TO_INCLUDE.")
+        logging.warning("Unsupported state_code: %s for pipeline type: %s."
+                        " Update ASSESSMENT_TYPES_TO_INCLUDE.", state_code, pipeline)
 
-    raise ValueError(f"Unsupported pipeline type: {pipeline}. Update ASSESSMENT_TYPES_TO_INCLUDE.")
+    logging.warning("Unsupported pipeline type: %s for state_code: %s. Update ASSESSMENT_TYPES_TO_INCLUDE.",
+                    pipeline, state_code)
+    return False
