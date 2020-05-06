@@ -34,19 +34,27 @@ from recidiviz.validation.validation_models import DataValidationJob, DataValida
 _TEST_VALIDATIONS: List[DataValidationJob] = [
     DataValidationJob(region_code='US_UT',
                       validation=ExistenceDataValidationCheck(
-                          view=BigQueryView('test_1', 'select * from literally_anything')
+                          view=BigQueryView(dataset_id='my_dataset',
+                                            view_id='test_1',
+                                            view_query_template='select * from literally_anything')
                       )),
     DataValidationJob(region_code='US_UT',
                       validation=ExistenceDataValidationCheck(
-                          view=BigQueryView('test_2', 'select * from literally_anything')
+                          view=BigQueryView(dataset_id='my_dataset',
+                                            view_id='test_2',
+                                            view_query_template='select * from literally_anything')
                       )),
     DataValidationJob(region_code='US_VA',
                       validation=ExistenceDataValidationCheck(
-                          view=BigQueryView('test_1', 'select * from literally_anything')
+                          view=BigQueryView(dataset_id='my_dataset',
+                                            view_id='test_1',
+                                            view_query_template='select * from literally_anything')
                       )),
     DataValidationJob(region_code='US_VA',
                       validation=ExistenceDataValidationCheck(
-                          view=BigQueryView('test_2', 'select * from literally_anything')
+                          view=BigQueryView(dataset_id='my_dataset',
+                                            view_id='test_2',
+                                            view_query_template='select * from literally_anything')
                       )),
 ]
 

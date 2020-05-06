@@ -22,12 +22,6 @@ from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_NAME = 'population_admissions_releases_race_gender_all'
 
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION = \
@@ -44,7 +38,7 @@ Similarly, Race: 'ALL' sums every race for each gender.
 DO NOT sum along race or gender, or you will double-count by including 'ALL'.
 """
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY = \
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY_TEMPLATE = \
 """
 /*{description}*/
 
@@ -115,16 +109,15 @@ LEFT JOIN
 ON
   AllRaceGender.fips = TotalJailPop.fips AND AllRaceGender.day = TotalJailPop.day
 ORDER BY day DESC, fips, race, gender
-""".format(
-    description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION,
-    project_id=PROJECT_ID,
-    views_dataset=VIEWS_DATASET,
-    population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id
-)
+"""
 
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_NAME,
-    view_query=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY
+    view_query_template=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_QUERY_TEMPLATE,
+    description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_DESCRIPTION,
+    views_dataset=view_config.VIEWS_DATASET,
+    population_admissions_releases_race_gender_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id
 )
 
 if __name__ == '__main__':

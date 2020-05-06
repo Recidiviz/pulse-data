@@ -45,7 +45,9 @@ class DashboardExportManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
 
-        self.mock_view = BigQueryView(view_id='test_view', view_query='SELECT NULL LIMIT 0')
+        self.mock_view = BigQueryView(dataset_id=self.mock_dataset.dataset_id,
+                                      view_id='test_view',
+                                      view_query_template='SELECT NULL LIMIT 0')
 
         views_to_export = [self.mock_view]
         dashboard_export_config_values = {

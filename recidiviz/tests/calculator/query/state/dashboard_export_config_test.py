@@ -18,10 +18,26 @@
 
 import unittest
 
-from recidiviz.calculator.query.state import dashboard_export_config
+from mock import patch
+
+from recidiviz.calculator.query.state import dashboard_export_config, view_manager as state_view_manager
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.tests.utils import fakes
+
+
 class DashboardExportConfigTest(unittest.TestCase):
     """Tests for dashboard_export_config.py."""
+
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'recidiviz-456'
+
+        fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self):
+        self.metadata_patcher.stop()
 
     def test_VIEWS_TO_EXPORT_types(self):
         """Make sure that all VIEWS_TO_EXPORT are of type BigQueryView."""
@@ -35,3 +51,10 @@ class DashboardExportConfigTest(unittest.TestCase):
 
         for view in dashboard_export_config.VIEWS_TO_EXCLUDE_FROM_EXPORT:
             self.assertNotIn(view, dashboard_export_config.VIEWS_TO_EXPORT)
+
+    def test_view_dataset_ids(self):
+        for dataset_id, views in state_view_manager.VIEWS_TO_UPDATE.items():
+            for view in views:
+                if view.dataset_id != dataset_id:
+                    self.fail(f'{view.view_id} has dataset id {view.dataset_id} that does not match '
+                              f'VIEWS_TO_UPDATE id {dataset_id}')

@@ -18,11 +18,6 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-METRICS_DATASET = view_config.DATAFLOW_METRICS_DATASET
-
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = \
     'most_recent_job_id_by_metric_and_state_code'
 
@@ -34,7 +29,7 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = \
     run locally and run on Dataflow.
     """
 
-MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
+MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT metric_type, state_code, year, month, metric_period_months, job_id
@@ -43,9 +38,6 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
         FROM (
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'RECIDIVISM_COUNT' as metric_type
             FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`)
-            UNION ALL
-            (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, 'RECIDIVISM_LIBERTY' as metric_type
-            FROM `{project_id}.{metrics_dataset}.recidivism_liberty_metrics`)
             UNION ALL
             (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, 'RECIDIVISM_RATE' as metric_type
             FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`)
@@ -86,15 +78,14 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY = \
     )
     WHERE recency_rank = 1
     ORDER BY metric_type, state_code, year, month, metric_period_months
-    """.format(
-        description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
-        project_id=PROJECT_ID,
-        metrics_dataset=METRICS_DATASET,
-    )
+    """
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = BigQueryView(
+    dataset_id=view_config.REFERENCE_TABLES_DATASET,
     view_id=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME,
-    view_query=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY
+    view_query_template=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE,
+    description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
+    metrics_dataset=view_config.DATAFLOW_METRICS_DATASET,
 )
 
 if __name__ == '__main__':

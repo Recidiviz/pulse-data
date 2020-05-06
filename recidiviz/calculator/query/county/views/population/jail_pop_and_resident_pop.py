@@ -24,12 +24,6 @@ from recidiviz.calculator.query.county.views.population.population_admissions_re
 from recidiviz.calculator.query.county.views.population.resident_population_counts import \
     RESIDENT_POPULATION_COUNTS_VIEW
 
-from recidiviz.utils import metadata
-
-
-PROJECT_ID = metadata.project_id()
-VIEWS_DATASET = view_config.VIEWS_DATASET
-
 # Exclude all data <= CUTOFF_YEAR.
 CUTOFF_YEAR = 1999
 
@@ -45,7 +39,7 @@ All years <= {cutoff_year} are excluded.
     cutoff_year=CUTOFF_YEAR
 )
 
-JAIL_POP_AND_RESIDENT_POP_QUERY = \
+JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE = \
 """
 /*{description}*/
 
@@ -71,18 +65,17 @@ ON
     AND PopulationRaceGender.race = ResidentPopulation.race
     AND PopulationRaceGender.gender = ResidentPopulation.gender
 WHERE EXTRACT(YEAR FROM day) > {cutoff_year}
-""".format(
+"""
+
+JAIL_POP_AND_RESIDENT_POP_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
+    view_id=JAIL_POP_AND_RESIDENT_POP_VIEW_NAME,
+    view_query_template=JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE,
     description=JAIL_POP_AND_RESIDENT_POP_DESCRIPTION,
-    project_id=PROJECT_ID,
-    views_dataset=VIEWS_DATASET,
+    views_dataset=view_config.VIEWS_DATASET,
     population_admissions_releases_race_gender_all_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW.view_id,
     resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW.view_id,
     cutoff_year=CUTOFF_YEAR
-)
-
-JAIL_POP_AND_RESIDENT_POP_VIEW = BigQueryView(
-    view_id=JAIL_POP_AND_RESIDENT_POP_VIEW_NAME,
-    view_query=JAIL_POP_AND_RESIDENT_POP_QUERY
 )
 
 if __name__ == '__main__':

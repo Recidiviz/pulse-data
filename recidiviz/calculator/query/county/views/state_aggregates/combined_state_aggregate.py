@@ -20,20 +20,16 @@ import sqlalchemy
 
 from recidiviz.calculator.query import export_config
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.calculator.query.county import view_config
 from recidiviz.calculator.query.county.views.state_aggregates import \
     state_aggregate_mappings
 from recidiviz.persistence.database import schema_utils
-from recidiviz.utils import metadata
-
-
 def _to_bq_table(query_str: str) -> str:
     """Rename schema table_names with supported BQ syntax."""
-    project_id = metadata.project_id()
     base_dataset = export_config.COUNTY_BASE_TABLES_BQ_DATASET
 
     for table in schema_utils.get_aggregate_table_classes():
-        bq_table_name = '`{project_id}.{base_dataset}.{table_name}`'.format(
-            project_id=project_id,
+        bq_table_name = '`{{project_id}}.{base_dataset}.{table_name}`'.format(
             base_dataset=base_dataset,
             table_name=table.name
         )
@@ -44,7 +40,7 @@ def _to_bq_table(query_str: str) -> str:
 
 _QUERIES = [m.to_query() for m in state_aggregate_mappings.MAPPINGS]
 _UNIONED_STATEMENT = sqlalchemy.union_all(*_QUERIES)
-_BQ_UNIONED_STATEMENT = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
+_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
 
 # This view is the concatenation of all "state-reported aggregate reports" after
 # mapping each column to a shared column_name. The next logical derivation from
@@ -52,6 +48,7 @@ _BQ_UNIONED_STATEMENT = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
 # to the same shared column_names. Both of these views should be aggregated to
 # the same level (eg. jurisdiction level via jurisdiction_id).
 COMBINED_STATE_AGGREGATE_VIEW = BigQueryView(
+    dataset_id=view_config.VIEWS_DATASET,
     view_id='combined_state_aggregates',
-    view_query=_BQ_UNIONED_STATEMENT
+    view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE
 )

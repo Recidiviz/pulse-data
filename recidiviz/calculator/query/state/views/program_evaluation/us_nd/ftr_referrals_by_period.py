@@ -23,11 +23,6 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
 
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 FTR_REFERRALS_BY_PERIOD_VIEW_NAME = 'ftr_referrals_by_period'
 
 FTR_REFERRAL_DESCRIPTION = \
@@ -36,7 +31,7 @@ FTR_REFERRAL_DESCRIPTION = \
     """
 
 # TODO(2549): Filter by FTR specifically once the metadata exists.
-FTR_REFERRAL_QUERY = \
+FTR_REFERRAL_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -73,17 +68,16 @@ FTR_REFERRAL_QUERY = \
       AND district IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, district, supervision_type, metric_period_months
-""".format(
-        description=FTR_REFERRAL_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        metric_period_dimension=bq_utils.unnest_metric_period_months(),
-        metric_period_condition=bq_utils.metric_period_condition(),
-    )
+"""
 
 FTR_REFERRALS_BY_PERIOD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_PERIOD_VIEW_NAME,
-    view_query=FTR_REFERRAL_QUERY
+    view_query_template=FTR_REFERRAL_QUERY_TEMPLATE,
+    description=FTR_REFERRAL_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(),
 )
 
 if __name__ == '__main__':

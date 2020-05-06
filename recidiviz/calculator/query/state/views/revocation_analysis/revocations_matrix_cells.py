@@ -19,11 +19,6 @@
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 REVOCATIONS_MATRIX_CELLS_VIEW_NAME = 'revocations_matrix_cells'
 
 REVOCATIONS_MATRIX_CELLS_DESCRIPTION = """
@@ -32,7 +27,7 @@ REVOCATIONS_MATRIX_CELLS_DESCRIPTION = """
  violations leading up to the revocation and the most severe violation. 
  """
 
-REVOCATIONS_MATRIX_CELLS_QUERY = \
+REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
@@ -50,15 +45,14 @@ REVOCATIONS_MATRIX_CELLS_QUERY = \
         metric_period_months
     ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type,
         charge_category
-    """.format(
-        description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        )
+    """
 
 REVOCATIONS_MATRIX_CELLS_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_CELLS_VIEW_NAME,
-    view_query=REVOCATIONS_MATRIX_CELLS_QUERY
+    view_query_template=REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE,
+    description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

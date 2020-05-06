@@ -19,17 +19,12 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils import metadata
-
-PROJECT_ID = metadata.project_id()
-REFERENCE_DATASET = view_config.REFERENCE_TABLES_DATASET
-
 ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_NAME = 'admissions_by_type_by_period'
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION = \
     """Admissions by type by metric period months."""
 
-ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
+ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
     -- Combine supervision revocations with new admission incarcerations
@@ -88,17 +83,16 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY = \
         GROUP BY state_code, metric_period_months, supervision_type, district
     )
     ORDER BY state_code, supervision_type, district, metric_period_months
-""".format(
-        description=ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION,
-        project_id=PROJECT_ID,
-        reference_dataset=REFERENCE_DATASET,
-        metric_period_dimension=bq_utils.unnest_metric_period_months(),
-        metric_period_condition=bq_utils.metric_period_condition(),
-    )
+"""
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW = BigQueryView(
+    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_NAME,
-    view_query=ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY
+    view_query_template=ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE,
+    description=ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION,
+    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(),
 )
 
 if __name__ == '__main__':

@@ -48,7 +48,9 @@ class TestExistenceValidationChecker(TestCase):
         job = DataValidationJob(region_code='US_VA',
                                 validation=ExistenceDataValidationCheck(
                                     validation_type=ValidationCheckType.EXISTENCE,
-                                    view=BigQueryView('test_view', 'select * from literally_anything')
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything')
                                 ))
         result = ExistenceValidationChecker.run_check(job)
 
@@ -61,7 +63,9 @@ class TestExistenceValidationChecker(TestCase):
         job = DataValidationJob(region_code='US_VA',
                                 validation=ExistenceDataValidationCheck(
                                     validation_type=ValidationCheckType.EXISTENCE,
-                                    view=BigQueryView('test_view', 'select * from literally_anything')
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything')
                                 ))
         result = ExistenceValidationChecker.run_check(job)
 
