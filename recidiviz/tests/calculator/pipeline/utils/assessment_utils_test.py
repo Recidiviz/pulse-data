@@ -18,8 +18,6 @@
 import unittest
 from datetime import date
 
-import pytest
-
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -310,17 +308,19 @@ class TestIncludeAssessmentInMetric(unittest.TestCase):
         self.assertFalse(include_assessment)
 
     def test_include_assessment_in_metric_unsupported_pipeline(self):
-        pipeline = 'incarceration'
+        pipeline = 'not_supported_pipeline'
         state_code = 'US_MO'
         assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
 
-        with pytest.raises(ValueError):
-            assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+        self.assertFalse(include_assessment)
 
     def test_include_assessment_in_metric_unsupported_state_code(self):
         pipeline = 'supervision'
-        state_code = 'US_KY'
+        state_code = 'US_XX'
         assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
 
-        with pytest.raises(ValueError):
-            assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
+
+        self.assertFalse(include_assessment)
