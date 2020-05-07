@@ -31,12 +31,14 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = \
     SELECT
       state_code, year, month,
       supervision_type, district,
-      participation_status,
-      COUNT(DISTINCT person_id) AS referral_count
+      COUNT(DISTINCT IF(participation_status = 'IN_PROGRESS', person_id, NULL)) AS in_progress,
+      COUNT(DISTINCT IF(participation_status = 'DISCHARGED', person_id, NULL)) AS discharged,
+      COUNT(DISTINCT IF(participation_status = 'DENIED', person_id, NULL)) AS denied,
+      COUNT(DISTINCT IF(participation_status = 'PENDING', person_id, NULL)) AS pending
     FROM `{project_id}.{reference_dataset}.event_based_program_referrals`
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND state_code = 'US_ND'
-    GROUP BY state_code, year, month, supervision_type, district, participation_status
+    GROUP BY state_code, year, month, district, supervision_type
     ORDER BY state_code, year, month, district, supervision_type
     """
 
