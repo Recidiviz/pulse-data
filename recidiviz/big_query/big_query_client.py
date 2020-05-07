@@ -257,14 +257,20 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str) -> bigquery.QueryJob:
-        """Creates a table at the given location with the output from the given query. If the table already exists and
-        contains data, a 'duplicate' error is returned in the job result.
+    def create_table_from_query_async(self,
+                                      dataset_id: str,
+                                      table_id: str,
+                                      query: str,
+                                      overwrite: Optional[bool] = False) -> bigquery.QueryJob:
+        """Creates a table at the given location with the output from the given query. If overwrite is False, a
+        'duplicate' error is returned in the job result if the table already exists and contains data. If overwrite is
+        True, overwrites the table if it already exists.
 
         Args:
             dataset_id: The name of the dataset where the table should be created.
             table_id: The name of the table to be created.
             query: The query to run. The result will be loaded into the new table.
+            overwrite: Whether or not to overwrite an existing table.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -304,6 +310,16 @@ class BigQueryClient:
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def materialize_view_to_table(self, view: BigQueryView) -> None:
+        """Materializes the result of a view's view_query into a table. The view's materialized_view_table_id must be
+        set. The resulting table is put in the same project and dataset as the view, and it overwrites any previous
+        materialization of the view.
+
+        Args:
+            view: The BigQueryView to materialize into a table.
         """
 
 
@@ -501,15 +517,22 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Created %s", new_view_ref)
         return table
 
-    def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str) -> bigquery.QueryJob:
+    def create_table_from_query_async(self,
+                                      dataset_id: str,
+                                      table_id: str,
+                                      query: str,
+                                      overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         self.create_dataset_if_necessary(dataset_ref)
 
         job_config = bigquery.QueryJobConfig()
         job_config.destination = dataset_ref.table(table_id)
-        # Errors if the table already exists and contains data
-        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_EMPTY
+
+        # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
+        # it already exists.
+        job_config.write_disposition = (bigquery.job.WriteDisposition.WRITE_TRUNCATE if overwrite
+                                        else bigquery.job.WriteDisposition.WRITE_EMPTY)
 
         logging.info("Creating table: %s with query: %s", table_id, query)
 
@@ -562,3 +585,14 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Deleting data from %s.%s matching this filter: %s", dataset_id, table_id, filter_clause)
 
         return self.client.query(delete_query)
+
+    def materialize_view_to_table(self, view: BigQueryView) -> None:
+        if view.materialized_view_table_id is None:
+            raise ValueError("Trying to materialize a view that does not have a set materialized_view_table_id.")
+
+        logging.info("Materializing %s into a table with the table_id: %s",
+                     view.view_id, view.materialized_view_table_id)
+
+        create_job = self.create_table_from_query_async(
+            view.dataset_id, view.materialized_view_table_id, view.select_query, overwrite=True)
+        create_job.result()
