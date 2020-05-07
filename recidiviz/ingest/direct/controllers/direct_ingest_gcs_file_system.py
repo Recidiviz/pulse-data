@@ -23,11 +23,12 @@ import datetime
 import logging
 import os
 import uuid
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Iterator
 
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsPath, \
@@ -116,6 +117,27 @@ def to_normalized_unprocessed_file_path_from_normalized_path(
     return os.path.join(directory, path_as_unprocessed)
 
 
+class GcsfsFileContentsHandle(IngestContentsHandle[str]):
+    def __init__(self, local_file_path: str):
+        self.local_file_path = local_file_path
+
+    def get_contents_iterator(self) -> Iterator[str]:
+        """Lazy function (generator) to read a file line by line."""
+        with open(self.local_file_path, encoding='utf-8') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                yield line
+
+    def __del__(self):
+        """This ensures that the file contents on local disk are deleted when
+        this handle is garbage collected.
+        """
+        if os.path.exists(self.local_file_path):
+            os.remove(self.local_file_path)
+
+
 class DirectIngestGCSFileSystem:
     """An abstraction built on top of the GCSFileSystem class with helpers for
     manipulating files and filenames expected by direct ingest.
@@ -127,10 +149,10 @@ class DirectIngestGCSFileSystem:
         """Returns True if the object exists in the fs, False otherwise."""
 
     @abc.abstractmethod
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         """Generates a new file in a temporary directory on the local file
         system (App Engine VM when in prod/staging), and downloads file contents
-        from the provided GCS path into that file, returning the path to temp
+        from the provided GCS path into that file, returning a handle to temp
         file on the local App Engine VM file system, or None if the GCS file is
         not found.
         """
@@ -431,7 +453,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         return os.path.join(temp_dir, str(uuid.uuid4()))
 
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
         if not blob:
@@ -440,8 +462,14 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         temp_file_path = self._generate_random_temp_path()
 
         try:
+            logging.info(
+                "Started download of file [{%s}] to local file [%s].",
+                path.abs_path(), temp_file_path)
             blob.download_to_filename(temp_file_path)
-            return temp_file_path
+            logging.info(
+                "Completed download of file [{%s}] to local file [%s].",
+                path.abs_path(), temp_file_path)
+            return GcsfsFileContentsHandle(temp_file_path)
         except NotFound:
             logging.info(
                 "File path [%s] no longer exists - might have already "
