@@ -31,9 +31,9 @@ from recidiviz.common.serialization import attr_to_json_dict, \
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    SPLIT_FILE_STORAGE_SUBDIR
+    SPLIT_FILE_STORAGE_SUBDIR, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController, GcsfsFileContentsHandle
+    GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \

@@ -31,7 +31,7 @@ from mock import Mock, patch
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
+    DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRawFileImportManager, DirectIngestRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
@@ -94,7 +94,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 
         return os.path.join(temp_dir, str(uuid.uuid4()))
 
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[str]:
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         """Downloads file contents into local temporary_file, returning path to
         temp file, or None if the path no-longer exists in the GCS file system.
         """
@@ -102,7 +102,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
             return None
 
         if path.abs_path() in self.uploaded_test_path_to_actual:
-            return self.uploaded_test_path_to_actual[path.abs_path()]
+            return GcsfsFileContentsHandle(self.uploaded_test_path_to_actual[path.abs_path()])
 
         directory_path, _ = os.path.split(path.abs_path())
 
@@ -116,8 +116,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 
         tempfile_path = self.generate_random_temp_path()
 
-        return shutil.copyfile(actual_fixture_file_path,
-                               tempfile_path)
+        return GcsfsFileContentsHandle(shutil.copyfile(actual_fixture_file_path, tempfile_path))
 
     def upload_from_string(self,
                            path: GcsfsFilePath,
