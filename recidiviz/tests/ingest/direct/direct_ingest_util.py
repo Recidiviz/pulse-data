@@ -175,28 +175,41 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
 
 @attr.s
 class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
+    """Fake implementation of DirectIngestRawFileImportManager for tests."""
 
     imported_paths: List[GcsfsFilePath] = attr.ib(factory=list)
 
-    def _get_raw_data_file_configs(self) -> List[DirectIngestRawFileConfig]:
-        return [
-            DirectIngestRawFileConfig(
+    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
+        return {
+            'tagA': DirectIngestRawFileConfig(
                 file_tag='tagA',
-                primary_key_cols=[]
+                primary_key_cols=[],
+                encoding='UTF-8',
+                separator=',',
+                ignore_quotes=False,
             ),
-            DirectIngestRawFileConfig(
+            'tagB': DirectIngestRawFileConfig(
                 file_tag='tagB',
-                primary_key_cols=[]
+                primary_key_cols=[],
+                encoding='UTF-8',
+                separator=',',
+                ignore_quotes=False,
             ),
-            DirectIngestRawFileConfig(
+            'tagC': DirectIngestRawFileConfig(
                 file_tag='tagC',
-                primary_key_cols=[]
+                primary_key_cols=[],
+                encoding='UTF-8',
+                separator=',',
+                ignore_quotes=False,
             ),
-            DirectIngestRawFileConfig(
+            'tagWeDoNotIngest': DirectIngestRawFileConfig(
                 file_tag='tagWeDoNotIngest',
-                primary_key_cols=[]
+                primary_key_cols=[],
+                encoding='UTF-8',
+                separator=',',
+                ignore_quotes=False,
             )
-        ]
+        }
 
     def import_raw_file_to_big_query(self, path: GcsfsFilePath) -> None:
         self.imported_paths.append(path)

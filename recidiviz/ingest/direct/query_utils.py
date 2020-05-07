@@ -52,7 +52,13 @@ def get_raw_table_config(region_code: str,
                          raw_table_name: str):
     return DirectIngestRawFileConfig(
         file_tag=raw_table_name,
-        primary_key_cols=get_primary_keys_for_table_name(region_code, raw_table_name)
+        primary_key_cols=get_primary_keys_for_table_name(region_code, raw_table_name),
+        # TODO(3020): None of the stop-gap utils that use get_raw_table_config() actually use these fields below, so we
+        #   just include arbitrary default values. This function should be eliminated entirely once SQL preprocessing
+        #   work is complete.
+        separator=',',
+        encoding='UTF-8',
+        ignore_quotes=False
     )
 
 # TODO(3020): Move all PK logic into Raw Yaml class

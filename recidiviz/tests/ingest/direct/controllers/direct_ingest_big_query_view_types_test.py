@@ -43,7 +43,10 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
-                primary_key_cols=['col1', 'col2']
+                primary_key_cols=['col1', 'col2'],
+                encoding='any-encoding',
+                separator='@',
+                ignore_quotes=False
             )
         )
 
@@ -68,7 +71,10 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
-                primary_key_cols=['col1']
+                primary_key_cols=['col1'],
+                encoding='any-encoding',
+                separator='@',
+                ignore_quotes=False
             )
         )
 

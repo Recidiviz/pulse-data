@@ -45,12 +45,20 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual(2, len(import_manager.raw_file_configs))
 
-        tag_to_config = {config.file_tag: config for config in import_manager.raw_file_configs}
+        self.assertEqual({'file_tag_first', 'file_tag_second'}, import_manager.raw_file_configs.keys())
 
-        self.assertEqual({'file_tag_first', 'file_tag_second'}, tag_to_config.keys())
+        config_1 = import_manager.raw_file_configs['file_tag_first']
+        self.assertEqual('file_tag_first', config_1.file_tag)
+        self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
+        self.assertEqual('ISO-456-7', config_1.encoding)
+        self.assertEqual(',', config_1.separator)
 
-        self.assertEqual(['col_name_1a', 'col_name_1b'], tag_to_config['file_tag_first'].primary_key_cols)
-        self.assertEqual(['col_name_2a'], tag_to_config['file_tag_second'].primary_key_cols)
+        config_2 = import_manager.raw_file_configs['file_tag_second']
+        self.assertEqual('file_tag_second', config_2.file_tag)
+        self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
+        self.assertEqual('UTF-8', config_2.encoding)
+        self.assertEqual('$', config_2.separator)
+
 
     def test_parse_empty_yaml_throws(self):
         with self.assertRaises(ValueError):
