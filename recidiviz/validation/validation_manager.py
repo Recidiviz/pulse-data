@@ -23,14 +23,17 @@ from typing import List, Dict, Any
 
 from opencensus.stats import aggregation, measure, view
 
-import flask
+from flask import Blueprint, request
 
+from recidiviz.big_query import view_manager
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.params import get_bool_param_value
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
 from recidiviz.validation.configured_validations import get_all_validations, STATES_TO_VALIDATE
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
+from recidiviz.validation.views import view_config
 
 m_failed_validations = measure.MeasureInt("validation/num_failures", "The number of failed validations", "1")
 
@@ -43,13 +46,18 @@ failed_validations_view = view.View("recidiviz/validation/num_failures",
 monitoring.register_views([failed_validations_view])
 
 
-validation_manager_blueprint = flask.Blueprint('validation_manager', __name__)
+validation_manager_blueprint = Blueprint('validation_manager', __name__)
 
 
-@validation_manager_blueprint.route('/validate', methods=['POST'])
+@validation_manager_blueprint.route('/validate')
 @authenticate_request
 def handle_validation_request():
     """API endpoint to service data validation requests."""
+
+    should_update_views = get_bool_param_value('should_update_views', request.args, default=False)
+    if should_update_views:
+        logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
+        view_manager.create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform()

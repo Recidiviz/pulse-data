@@ -20,8 +20,8 @@ between two views in the Revocation Analysis Matrix tool: the grid cells and the
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
+from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.validation.views import dataset_config
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME = \
     'revocation_matrix_comparison_revocation_cell_vs_month'
@@ -50,11 +50,11 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY_TEMPLATE = \
 """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW = BigQueryView(
-    dataset_id=VALIDATION_VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_NAME,
     view_query_template=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_DESCRIPTION,
-    view_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

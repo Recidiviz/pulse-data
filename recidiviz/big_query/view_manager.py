@@ -47,5 +47,5 @@ def create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView
 
 if __name__ == '__main__':
     # To run this locally, replace the argument below with a some dictionary mapping datasets to views, e.g.:
-    # create_dataset_and_update_views(recidiviz.calculator.query.county.view_config.VIEWS_TO_UPDATE)
+    # create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
     create_dataset_and_update_views({})
