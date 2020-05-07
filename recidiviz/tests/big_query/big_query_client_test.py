@@ -49,7 +49,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_view = BigQueryView(
             dataset_id='dataset',
             view_id='test_view',
-            view_query_template='SELECT NULL LIMIT 0'
+            view_query_template='SELECT NULL LIMIT 0',
+            materialized_view_table_id='test_view_table'
         )
 
         self.bq_client = BigQueryClientImpl()
@@ -221,4 +222,23 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
         with pytest.raises(ValueError):
             self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="x > y")
+        self.mock_client.query.assert_not_called()
+
+    def test_materialize_view_to_table(self):
+        """Tests that the materialize_view_to_table function calls the function to create a table from a query."""
+        self.bq_client.materialize_view_to_table(self.mock_view)
+        self.mock_client.query.assert_called()
+
+    def test_materialize_view_to_table_no_materialized_view_table_id(self):
+        """Tests that the materialize_view_to_table function does not call the function to create a table from a
+        query if there is no set materialized_view_table_id on the view."""
+        invalid_view = BigQueryView(
+            dataset_id='dataset',
+            view_id='test_view',
+            view_query_template='SELECT NULL LIMIT 0',
+            materialized_view_table_id=None
+        )
+
+        with pytest.raises(ValueError):
+            self.bq_client.materialize_view_to_table(invalid_view)
         self.mock_client.query.assert_not_called()

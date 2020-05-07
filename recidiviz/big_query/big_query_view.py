@@ -37,6 +37,7 @@ class BigQueryView(bigquery.TableReference):
                  dataset_id: str,
                  view_id: str,
                  view_query_template: str,
+                 materialized_view_table_id: Optional[str] = None,
                  **query_format_kwargs):
 
         if project_id is None:
@@ -54,6 +55,7 @@ class BigQueryView(bigquery.TableReference):
         super().__init__(dataset_ref, view_id)
         self._view_id = view_id
         self._view_query = view_query_template.format(**self._query_format_args(**query_format_kwargs))
+        self._materialized_view_table_id = materialized_view_table_id
 
     def _query_format_args(self, **query_format_kwargs) -> Dict[str, str]:
         return {
@@ -72,6 +74,11 @@ class BigQueryView(bigquery.TableReference):
     @property
     def select_query(self) -> str:
         return f'SELECT * FROM `{self.project}.{self.dataset_id}.{self.view_id}`'
+
+    @property
+    def materialized_view_table_id(self) -> Optional[str]:
+        """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
+        return self._materialized_view_table_id
 
     def __repr__(self):
         return f'{self.__class__.__name__}(' \
