@@ -31,7 +31,8 @@ from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
-    GcsfsDirectIngestController, GcsfsFileContentsHandle
+    GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \

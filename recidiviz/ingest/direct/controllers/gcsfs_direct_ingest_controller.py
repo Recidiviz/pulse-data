@@ -18,18 +18,16 @@
 import abc
 import datetime
 import logging
-import os
-from typing import Optional, List, Iterator
+from typing import Optional, List
 
 from recidiviz import IngestInfo
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path
+    to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
+    GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
-from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -41,27 +39,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
-
-
-class GcsfsFileContentsHandle(IngestContentsHandle[str]):
-    def __init__(self, local_file_path: str):
-        self.local_file_path = local_file_path
-
-    def get_contents_iterator(self) -> Iterator[str]:
-        """Lazy function (generator) to read a file line by line."""
-        with open(self.local_file_path, encoding='utf-8') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                yield line
-
-    def __del__(self):
-        """This ensures that the file contents on local disk are deleted when
-        this handle is garbage collected.
-        """
-        if os.path.exists(self.local_file_path):
-            os.remove(self.local_file_path)
 
 
 class GcsfsDirectIngestController(
@@ -356,27 +333,7 @@ class GcsfsDirectIngestController(
 
     def _get_contents_handle_from_path(
             self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
-        if not self.fs.exists(path):
-            logging.warning(
-                "File path [%s] no longer exists - might have already been "
-                "processed or deleted", path)
-            return None
-
-        logging.info("Starting download of file [{%s}].",
-                     path.abs_path())
-        temp_file_path = self.fs.download_to_temp_file(path)
-
-        if not temp_file_path:
-            logging.warning(
-                "Download of file [{%s}] to local file failed.",
-                path.abs_path())
-            return None
-
-        logging.info(
-            "Completed download of file [{%s}] to local file [%s].",
-            path.abs_path(), temp_file_path)
-
-        return GcsfsFileContentsHandle(temp_file_path)
+        return self.fs.download_to_temp_file(path)
 
     @abc.abstractmethod
     def _are_contents_empty(self,
