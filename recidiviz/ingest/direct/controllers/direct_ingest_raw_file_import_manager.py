@@ -33,9 +33,23 @@ from recidiviz.utils.regions import Region
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
 
+    # The file tag / table name that this file will get written to
     file_tag: str = attr.ib(validator=attr.validators.instance_of(str))
+
+    # A list of columns that constitute the primary key for this file
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
+    # String encoding for this file (e.g. UTF-8)
+    encoding: str = attr.ib()
+
+    # The separator character used to denote columns (e.g. ',' or '|').
+    separator: str = attr.ib()
+
+    # If true, quoted strings are ignored and separators inside of quotes are treated as column separators. This should
+    # NOT be used on any file that has free text fields.
+    ignore_quotes: bool = attr.ib()
+
+    # A comma-separated string representation of the primary keys
     primary_key_str = attr.ib()
 
     @primary_key_str.default
@@ -46,7 +60,10 @@ class DirectIngestRawFileConfig:
     def from_dict(cls, file_config_dict: Dict[str, Any]) -> 'DirectIngestRawFileConfig':
         return DirectIngestRawFileConfig(
             file_tag=file_config_dict['file_tag'],
-            primary_key_cols=file_config_dict['primary_key_cols']
+            primary_key_cols=file_config_dict['primary_key_cols'],
+            encoding=file_config_dict['encoding'],
+            separator=file_config_dict['separator'],
+            ignore_quotes=file_config_dict.get('ignore_quotes', False)
         )
 
 
@@ -70,13 +87,13 @@ class DirectIngestRawFileImportManager:
                             f'{self.region.region_code}',
                             f'{self.region.region_code}_raw_data_files.yaml')
 
-    raw_file_configs: List[DirectIngestRawFileConfig] = attr.ib()
+    raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
     @raw_file_configs.default
-    def _raw_data_file_configs(self) -> List[DirectIngestRawFileConfig]:
+    def _raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         return self._get_raw_data_file_configs()
 
-    def _get_raw_data_file_configs(self) -> List[DirectIngestRawFileConfig]:
+    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
         with open(self.yaml_config_file_path, 'r') as yaml_file:
             file_contents = yaml.full_load(yaml_file)
@@ -84,8 +101,22 @@ class DirectIngestRawFileImportManager:
                 raise ValueError(
                     f'File contents for [{self.yaml_config_file_path}] have unexpected type [{type(file_contents)}].')
 
-            raw_data_configs = [DirectIngestRawFileConfig.from_dict(file_info)
-                                for file_info in file_contents['raw_files']]
+            raw_data_configs = {}
+            default_encoding = file_contents['default_encoding']
+            default_separator = file_contents['default_separator']
+            for file_info in file_contents['raw_files']:
+                file_tag = file_info['file_tag']
+
+                if file_tag in raw_data_configs:
+                    raise ValueError(f'Found duplicate file tag [{file_tag}] in [{self.yaml_config_file_path}]')
+
+                config = {
+                    'encoding': default_encoding,
+                    'separator': default_separator,
+                    **file_info
+                }
+
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_dict(config)
 
         return raw_data_configs
 
@@ -93,7 +124,7 @@ class DirectIngestRawFileImportManager:
 
     @raw_file_tags.default
     def _raw_file_tags(self):
-        return {config.file_tag for config in self.raw_file_configs}
+        return set(self.raw_file_configs.keys())
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():

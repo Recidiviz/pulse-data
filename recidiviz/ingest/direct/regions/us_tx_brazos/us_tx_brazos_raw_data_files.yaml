@@ -3,6 +3,8 @@
 #
 # This file should follow the following format for each file that should be imported as raw data to BigQuery.
 #
+#      default_encoding: UTF-8
+#      default_separator: ','
 #      raw_files:
 #        - file_tag: this_file_tag
 #          # These columns constitute a unique key within a given dump and will remain the
@@ -10,6 +12,14 @@
 #          primary_key_cols:
 #            - col_name_1
 #            - col_name_2
-#        - file_tag: ...
+#        - file_tag: other_file_tag
+#          primary_key_cols:
+#            - col_a
+#          # Can override encoding and separator fields for an individual file
+#          encoding: ISO-8859-1
+#          separator: '|'
+#          ignore_quotes: True
 
+default_encoding: UTF-8
+default_separator: ','
 raw_files: []
