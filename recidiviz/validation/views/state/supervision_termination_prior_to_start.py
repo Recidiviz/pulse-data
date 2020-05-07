@@ -19,9 +19,8 @@
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-
-from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
+from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.validation.views import dataset_config
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME = 'supervision_termination_prior_to_start'
 
@@ -39,11 +38,11 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE = \
 """
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW = BigQueryView(
-    dataset_id=VALIDATION_VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION,
-    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
+    state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == '__main__':
