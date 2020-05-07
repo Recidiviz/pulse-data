@@ -27,6 +27,7 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
 from opencensus.trace import config_integration, file_exporter
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
+from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
 from recidiviz.calculator.query.export_manager import export_manager_blueprint
 from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
@@ -62,6 +63,7 @@ app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 app.register_blueprint(dataflow_monitor_blueprint, url_prefix='/dataflow_monitor')
 app.register_blueprint(validation_manager_blueprint, url_prefix='/validation_manager')
+app.register_blueprint(calculation_data_storage_manager_blueprint, url_prefix='/calculation_data_storage_manager')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
