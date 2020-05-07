@@ -25,9 +25,7 @@ import attr
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.utils import metadata
-
-
-VALIDATION_VIEWS_DATASET = 'validation_views'
+from recidiviz.validation.views import dataset_config
 
 
 class ValidationCheckType(Enum):
@@ -49,7 +47,7 @@ class DataValidationCheck(BuildableAttr):
         return "SELECT * FROM `{project_id}.{dataset}.{table}` " \
                " WHERE region_code = '{region_code}'" \
             .format(project_id=metadata.project_id(),
-                    dataset=VALIDATION_VIEWS_DATASET,
+                    dataset=dataset_config.VIEWS_DATASET,
                     table=self.view.view_id,
                     region_code=region_code)
 

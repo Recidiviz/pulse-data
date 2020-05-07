@@ -21,8 +21,8 @@ admission date."""
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query import export_config
-from recidiviz.validation.validation_models import VALIDATION_VIEWS_DATASET
+from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.validation.views import dataset_config
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME = 'incarceration_admission_after_open_period'
 
@@ -44,11 +44,11 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = \
 """
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = BigQueryView(
-    dataset_id=VALIDATION_VIEWS_DATASET,
+    dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME,
     view_query_template=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE,
     description=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION,
-    state_dataset=export_config.STATE_BASE_TABLES_BQ_DATASET,
+    state_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == '__main__':

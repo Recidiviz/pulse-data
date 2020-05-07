@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Exposes API to parse and store state aggregates."""
+"""Exposes API endpoints invoked by Cloud Functions."""
 import logging
 import os
 import tempfile
