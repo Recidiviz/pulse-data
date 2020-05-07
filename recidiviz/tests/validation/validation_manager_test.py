@@ -29,7 +29,7 @@ from recidiviz.validation.checks.existence_check import ExistenceDataValidationC
 from recidiviz.validation.configured_validations import get_all_validations, STATES_TO_VALIDATE
 from recidiviz.validation.validation_manager import validation_manager_blueprint, _fetch_validation_jobs_to_perform
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
-
+from recidiviz.validation.views import view_config
 
 _TEST_VALIDATIONS: List[DataValidationJob] = [
     DataValidationJob(region_code='US_UT',
@@ -77,7 +77,7 @@ class TestHandleRequest(TestCase):
             validation_job=_TEST_VALIDATIONS[0], was_successful=True, failure_description=None)
 
         headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.post('/validate', headers=headers)
+        response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual("Validation failures identified: False", response.get_data().decode())
@@ -108,7 +108,7 @@ class TestHandleRequest(TestCase):
         ]
 
         headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.post('/validate', headers=headers)
+        response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual("Validation failures identified: True", response.get_data().decode())
@@ -129,13 +129,34 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.post('/validate', headers=headers)
+        response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual("Validation failures identified: False", response.get_data().decode())
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_called_with([])
+
+    @patch("recidiviz.big_query.view_manager.create_dataset_and_update_views")
+    @patch("recidiviz.validation.validation_manager._emit_failures")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    def test_handle_request_happy_path_should_update_views(self,
+                                                           mock_fetch_validations,
+                                                           mock_run_job,
+                                                           mock_emit_failures,
+                                                           mock_update_views):
+        mock_fetch_validations.return_value = []
+
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/validate?should_update_views=true', headers=headers)
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Validation failures identified: False", response.get_data().decode())
+
+        mock_run_job.assert_not_called()
+        mock_emit_failures.assert_called_with([])
+        mock_update_views.assert_called_with(view_config.VIEWS_TO_UPDATE)
 
 
 class TestFetchValidations(TestCase):
