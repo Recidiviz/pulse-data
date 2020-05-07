@@ -20,6 +20,9 @@ from typing import List, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions
 
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DATAFLOW_METRICS_DATASET, \
+    STATE_BASE_DATASET
+
 
 def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     """Adds argument configs to the |parser| for shared pipeline args that do not get passed through to Apache Beam."""
@@ -27,12 +30,12 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--input',
                         type=str,
                         help='BigQuery dataset to query.',
-                        default='state')
+                        default=STATE_BASE_DATASET)
 
     parser.add_argument('--reference_input',
                         type=str,
                         help='BigQuery reference dataset to query.',
-                        default='reference_tables')
+                        default=REFERENCE_TABLES_DATASET)
 
     parser.add_argument('--state_code',
                         dest='state_code',
@@ -42,7 +45,7 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--output',
                         type=str,
                         help='Output dataset to write results to.',
-                        default='dataflow_metrics')
+                        default=DATAFLOW_METRICS_DATASET)
 
     parser.add_argument('--person_filter_ids', type=int, nargs='+',
                         help='An optional list of DB person_id values. When present, the pipeline will only calculate '

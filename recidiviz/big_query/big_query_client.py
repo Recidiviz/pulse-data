@@ -128,7 +128,7 @@ class BigQueryClient:
                                    view_filter_clause: str,
                                    output_table_dataset_ref: bigquery.DatasetReference,
                                    output_table_id: str) -> Optional[bigquery.QueryJob]:
-        """Queries data in a view filtered by the provided |filter_clause| and loads it into a table.
+        """Queries data in a view filtered by the provided |view_filter_clause| and loads it into a table.
 
         If the table exists, overwrites existing data. Creates the table if it does not exist.
 
@@ -254,6 +254,56 @@ class BigQueryClient:
         Returns:
             The Table (view) just created.
 
+        """
+
+    @abc.abstractmethod
+    def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str) -> bigquery.QueryJob:
+        """Creates a table at the given location with the output from the given query. If the table already exists and
+        contains data, a 'duplicate' error is returned in the job result.
+
+        Args:
+            dataset_id: The name of the dataset where the table should be created.
+            table_id: The name of the table to be created.
+            query: The query to run. The result will be loaded into the new table.
+
+        Returns:
+            A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def insert_into_table_from_table_async(self,
+                                           source_dataset_id: str,
+                                           source_table_id: str,
+                                           destination_dataset_id: str,
+                                           destination_table_id: str,
+                                           source_data_filter_clause: Optional[str]) -> bigquery.QueryJob:
+        """Inserts rows from the source table into the destination table, with an optional filter clause to only insert
+        a subset of rows into the destination table.
+
+        Args:
+            source_dataset_id: The name of the source dataset.
+            source_table_id: The name of the source table from which to query.
+            destination_dataset_id: The name of the destination dataset.
+            destination_table_id: The name of the table to insert into.
+            source_data_filter_clause: An optional clause to filter the contents of the source table that are inserted
+                into the destination table. Must start with "WHERE".
+
+        Returns:
+            A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
+        """Deletes rows from the given table that match the filter clause.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to delete from.
+            filter_clause: A clause that filters the contents of the table to determine which rows should be deleted.
+                Must start with "WHERE".
+
+        Returns:
+            A QueryJob which will contain the results once the query is complete.
         """
 
 
@@ -450,3 +500,65 @@ class BigQueryClientImpl(BigQueryClient):
         table = destination_client.create_table(new_view)
         logging.info("Created %s", new_view_ref)
         return table
+
+    def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str) -> bigquery.QueryJob:
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+
+        self.create_dataset_if_necessary(dataset_ref)
+
+        job_config = bigquery.QueryJobConfig()
+        job_config.destination = dataset_ref.table(table_id)
+        # Errors if the table already exists and contains data
+        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_EMPTY
+
+        logging.info("Creating table: %s with query: %s", table_id, query)
+
+        return self.client.query(
+            query=query,
+            location=self.LOCATION,
+            job_config=job_config,
+        )
+
+    def insert_into_table_from_table_async(self,
+                                           source_dataset_id: str,
+                                           source_table_id: str,
+                                           destination_dataset_id: str,
+                                           destination_table_id: str,
+                                           source_data_filter_clause: Optional[str] = None) -> bigquery.QueryJob:
+
+        destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
+
+        if not self.table_exists(destination_dataset_ref, destination_table_id):
+            raise ValueError(f"Destination table [{self.project_id}.{destination_dataset_id}.{destination_table_id}]"
+                             f" does not exist!")
+
+        insert_query = \
+            """INSERT INTO `{project_id}.{destination_dataset_id}.{destination_table_id}`
+            SELECT * FROM `{project_id}.{source_dataset_id}.{source_table_id}`""".format(
+                project_id=self.project_id,
+                destination_dataset_id=destination_dataset_id,
+                destination_table_id=destination_table_id,
+                source_dataset_id=source_dataset_id,
+                source_table_id=source_table_id
+            )
+
+        if source_data_filter_clause:
+            if not source_data_filter_clause.startswith('WHERE'):
+                raise ValueError("Cannot filter a SELECT without a valid filter clause starting with WHERE.")
+
+            insert_query = f"{insert_query} {source_data_filter_clause}"
+
+        logging.info("Copying data from: %s.%s to: %s.%s", source_dataset_id, source_table_id,
+                     destination_dataset_id, destination_table_id)
+
+        return self.client.query(insert_query)
+
+    def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
+        if not filter_clause.startswith('WHERE'):
+            raise ValueError("Cannot delete from a table without a valid filter clause starting with WHERE.")
+
+        delete_query = f"DELETE FROM `{self.project_id}.{dataset_id}.{table_id}` {filter_clause}"
+
+        logging.info("Deleting data from %s.%s matching this filter: %s", dataset_id, table_id, filter_clause)
+
+        return self.client.query(delete_query)
