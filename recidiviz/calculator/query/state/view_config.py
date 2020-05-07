@@ -29,7 +29,6 @@ from recidiviz.calculator.query.state.views.revocation_analysis import revocatio
 from recidiviz.calculator.query.state.views.revocations import revocations_views
 from recidiviz.calculator.query.state.views.supervision import supervision_views
 
-
 VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
     REFERENCE_TABLES_DATASET: reference_views.REF_VIEWS,
     DASHBOARD_VIEWS_DATASET: (

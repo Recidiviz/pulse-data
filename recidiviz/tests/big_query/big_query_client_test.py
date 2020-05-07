@@ -19,6 +19,7 @@ from concurrent import futures
 import unittest
 from unittest import mock
 
+import pytest
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField
 
@@ -186,3 +187,38 @@ class BigQueryClientImplTest(unittest.TestCase):
                 output_uri=f'gs://{bucket}/view.json')])
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
+
+    def test_create_table_from_query(self):
+        """Tests that the create_table_from_query function calls the function to create a table from a query."""
+        self.bq_client.create_table_from_query_async(self.mock_dataset_id, self.mock_table_id,
+                                                     query="SELECT * FROM some.fake.table")
+        self.mock_client.query.assert_called()
+
+    def test_insert_into_table_from_table(self):
+        """Tests that the insert_into_table_from_table function runs a query."""
+        self.bq_client.insert_into_table_from_table_async('fake_source_dataset_id', 'fake_table_id',
+                                                          self.mock_dataset_id, self.mock_table_id)
+        self.mock_client.get_table.assert_called()
+        self.mock_client.query.assert_called()
+
+    def test_insert_into_table_from_table_invalid_destination(self):
+        """Tests that the insert_into_table_from_table function does not run the query if the destination table does
+        not exist."""
+        self.mock_client.get_table.side_effect = exceptions.NotFound('!')
+
+        with pytest.raises(ValueError):
+            self.bq_client.insert_into_table_from_table_async(self.mock_dataset_id, self.mock_table_id,
+                                                              'fake_source_dataset_id', 'fake_table_id')
+        self.mock_client.get_table.assert_called()
+        self.mock_client.query.assert_not_called()
+
+    def test_delete_from_table(self):
+        """Tests that the delete_from_table function runs a query."""
+        self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="WHERE x > y")
+        self.mock_client.query.assert_called()
+
+    def test_delete_from_table_invalid_filter_clause(self):
+        """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
+        with pytest.raises(ValueError):
+            self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="x > y")
+        self.mock_client.query.assert_not_called()
