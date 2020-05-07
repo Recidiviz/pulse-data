@@ -62,14 +62,14 @@ class DownloadBqResultsForStateController:
                  *,
                  dry_run: bool,
                  project_id: str,
-                 state_code: str,
+                 region_code: str,
                  local_dir: str,
                  encoding: str,
                  start_date: datetime.datetime,
                  end_date: datetime.datetime):
         self.dry_run = dry_run
         self.project_id = project_id
-        self.state_code = state_code
+        self.region_code = region_code
         self.local_dir = local_dir
         self.encoding = encoding
         self.start_date = start_date
@@ -120,7 +120,7 @@ class DownloadBqResultsForStateController:
         file_id_processed_tuple = get_file_id_and_processed_status_for_file(
             metadata_type=self.metadata_type,
             project_id=self.project_id,
-            state_code=self.state_code,
+            region_code=self.region_code,
             client=self.bqclient,
             normalized_file_name=normalized_file_name)
         file_in_metadata = file_id_processed_tuple[0] is not None
@@ -145,7 +145,7 @@ class DownloadBqResultsForStateController:
         add_row_to_ingest_metadata(
             client=self.bqclient,
             project_id=self.project_id,
-            state_code=self.state_code,
+            region_code=self.region_code,
             export_time=self.end_date,
             dry_run=self.dry_run,
             file_id=file_id,
@@ -155,7 +155,7 @@ class DownloadBqResultsForStateController:
             datetimes_contained_upper_bound_inclusive=self.end_date)
 
     def download_queries_to_csvs(self) -> None:
-        all_queries = DATE_BOUND_QUERIES_BY_STATE.get(self.state_code)
+        all_queries = DATE_BOUND_QUERIES_BY_STATE.get(self.region_code)
         if not all_queries:
             logging.error('Provided state code [%s] does not have queries in ALL_QUERIES_BY_STATE')
             return
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                         help='Runs copy in dry-run mode, only prints downloads that the script woould do.')
     parser.add_argument('--local-dir', required=True, help='The local directory for store all written csvs.')
     parser.add_argument('--project-id', required=True, help='The project_id for the data to download')
-    parser.add_argument('--state-code', required=True, help='The relevant state to download query results for.')
+    parser.add_argument('--region-code', required=True, help='The relevant state to download query results for.')
     parser.add_argument('--separator', required=False, default=',', help='Separator for the csv. Defaults to \',\'')
     parser.add_argument('--encoding', required=False, default='utf-8',
                         help='Encoding for the file to be written Defaults to utf-8')
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     DownloadBqResultsForStateController(
         dry_run=args.dry_run,
         project_id=args.project_id,
-        state_code=args.state_code.lower(),
+        region_code=args.region_code.lower(),
         start_date=to_datetime(args.start_date),
         end_date=to_datetime(args.end_date),
         local_dir=args.local_dir,
