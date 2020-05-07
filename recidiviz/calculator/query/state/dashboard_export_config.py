@@ -21,6 +21,8 @@ from typing import List
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state.view_config import VIEWS_TO_UPDATE
 from recidiviz.calculator.query.state.views.reference import reference_views
+from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
 
 STATES_TO_EXPORT = ['US_MO', 'US_ND']
 
@@ -30,4 +32,8 @@ VIEWS_TO_EXCLUDE_FROM_EXPORT: List[BigQueryView] = \
 VIEWS_TO_EXPORT = [
     view for view_list in VIEWS_TO_UPDATE.values() for view in view_list
     if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
+]
+
+VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT = [
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
 ]

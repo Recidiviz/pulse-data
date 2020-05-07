@@ -20,6 +20,9 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state import dataset_config
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = \
+    'most_recent_job_id_by_metric_and_state_code_view'
+
+MATERIALIZED_VIEW_TABLE_NAME = \
     'most_recent_job_id_by_metric_and_state_code'
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = \
@@ -84,6 +87,7 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = BigQueryView(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME,
+    materialized_view_table_id=MATERIALIZED_VIEW_TABLE_NAME,
     view_query_template=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE,
     description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,

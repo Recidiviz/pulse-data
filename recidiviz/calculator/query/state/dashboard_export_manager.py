@@ -34,7 +34,13 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
 
     bq_client = BigQueryClientImpl()
     dataset_ref = bq_client.dataset_ref_for_id(dataset_config.DASHBOARD_VIEWS_DATASET)
+    views_to_materialize = dashboard_export_config.VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
+
+    # This step has to happen before the export because some views in views_to_export depend on the materialized
+    # version of a view
+    for view in views_to_materialize:
+        bq_client.materialize_view_to_table(view)
 
     bq_client.export_views_to_cloud_storage(
         dataset_ref,
