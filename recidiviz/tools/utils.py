@@ -72,7 +72,7 @@ _MetadataRowType = TypeVar('_MetadataRowType', '_RawMetadataRow', '_IngestMetada
 
 @attr.s
 class _RawMetadataRow:
-    state_code: str = attr.ib()
+    region_code: str = attr.ib()
     file_id: int = attr.ib()
     file_tag: str = attr.ib()
     normalized_file_name: str = attr.ib()
@@ -84,7 +84,7 @@ class _RawMetadataRow:
 
 @attr.s
 class _IngestMetadataRow:
-    state_code: str = attr.ib()
+    region_code: str = attr.ib()
     file_id: int = attr.ib()
     file_tag: str = attr.ib()
     normalized_file_name: str = attr.ib()
@@ -134,7 +134,7 @@ def add_row_to_raw_metadata(
         *,
         client: bigquery.Client,
         project_id: str,
-        state_code: str,
+        region_code: str,
         import_time: datetime.datetime,
         dry_run: bool,
         file_id: int,
@@ -144,7 +144,7 @@ def add_row_to_raw_metadata(
         datetimes_contained_lower_bound_inclusive: Optional[datetime.datetime] = None,
         datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None):
     """Adds a row to the raw_file_metadata table with the input args."""
-    row = _RawMetadataRow(state_code=state_code,
+    row = _RawMetadataRow(region_code=region_code,
                           file_id=file_id,
                           file_tag=file_tag,
                           normalized_file_name=normalized_file_name,
@@ -165,7 +165,7 @@ def add_row_to_ingest_metadata(
         *,
         client: bigquery.Client,
         project_id: str,
-        state_code: str,
+        region_code: str,
         export_time: datetime.datetime,
         dry_run: bool,
         file_id: int,
@@ -176,7 +176,7 @@ def add_row_to_ingest_metadata(
         datetimes_contained_lower_bound_exclusive: Optional[datetime.datetime] = None,
         datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None):
     row = _IngestMetadataRow(
-        state_code=state_code,
+        region_code=region_code,
         file_id=file_id,
         file_tag=file_tag,
         normalized_file_name=normalized_file_name,
@@ -241,7 +241,7 @@ def get_file_id_and_processed_status_for_file(
         *,
         metadata_type: MetadataType,
         project_id: str,
-        state_code: str,
+        region_code: str,
         client: bigquery.Client,
         normalized_file_name: str) -> Tuple[Optional[int], bool]:
     """Checks to see if the provided |normalized_file_name| has been registered in the raw_data_metadata table. If
@@ -251,26 +251,26 @@ def get_file_id_and_processed_status_for_file(
     table_name = get_table_name_for_type(metadata_type=metadata_type)
     table_id = f'{project_id}.direct_ingest_processing_metadata.{table_name}'
     query = f"""SELECT file_id, processed_time FROM `{table_id}`
-             WHERE state_code = '{state_code}' AND normalized_file_name = '{normalized_file_name}'"""
+             WHERE region_code = '{region_code}' AND normalized_file_name = '{normalized_file_name}'"""
     query_job = client.query(query)
     rows = query_job.result()
 
     if rows.total_rows > 1:
         raise ValueError(
-            f'Expected there to only be one row per combination of {state_code} and {normalized_file_name}')
+            f'Expected there to only be one row per combination of {region_code} and {normalized_file_name}')
 
     if not rows.total_rows:
         # TODO(3020): Once metadata tables are in postgres (and we don't have any limits on UPDATE queries), insert
         #  a row here that will have the processed_time filled in later.
         logging.info(
-            '\nNo found row for %s and %s in %s.', normalized_file_name, state_code, table_id)
+            '\nNo found row for %s and %s in %s.', normalized_file_name, region_code, table_id)
         return None, False
 
     row = one(rows)
     file_id = row.get('file_id')
     processed_time = row.get('processed_time')
     logging.info('Found row for %s and %s with values file_id: %s and processed_time: %s',
-                 normalized_file_name, state_code, file_id, processed_time)
+                 normalized_file_name, region_code, file_id, processed_time)
     return file_id, processed_time
 
 

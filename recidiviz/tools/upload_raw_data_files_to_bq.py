@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Uploads raw_data file(s) received from states into BQ. In doing this, it updates the required metadata table and
+Uploads raw_data file(s) received from regions into BQ. In doing this, it updates the required metadata table and
 append only tables in BQ. This script should only be used before our ingest flow supports SQL preprocessing (#3020).
 
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.upload_raw_data_files_to_bq \
     --paths ~/local/ \
-    --state-code US_ID \
+    --region-code US_ID \
     --import-time 2020-04-27 \
     --project-id recidiviz-staging \
     --separator '|' \
@@ -56,7 +56,7 @@ class UploadRawDataFilesToBqController:
             self,
             dry_run: bool,
             project_id: str,
-            state_code: str,
+            region_code: str,
             paths: List[str],
             import_time: datetime.datetime,
             separator: str,
@@ -65,7 +65,7 @@ class UploadRawDataFilesToBqController:
             encoding: str):
         self.dry_run = dry_run
         self.project_id = project_id
-        self.state_code = state_code
+        self.region_code = region_code
         self.paths = paths
         self.import_time = import_time
         self.separator = separator
@@ -88,7 +88,7 @@ class UploadRawDataFilesToBqController:
                 client=self.client,
                 file_id=file_id,
                 file_tag=file_tag,
-                state_code=self.state_code,
+                region_code=self.region_code,
                 import_time=self.import_time,
                 project_id=self.project_id,
                 dry_run=self.dry_run,
@@ -180,7 +180,7 @@ class UploadRawDataFilesToBqController:
             file_name=file_name, file_type=GcsfsDirectIngestFileType.RAW_DATA, dt=self.import_time)
         file_id_processed_tuple = get_file_id_and_processed_status_for_file(
             metadata_type=MetadataType.RAW,
-            state_code=self.state_code,
+            region_code=self.region_code,
             client=self.client,
             project_id=self.project_id,
             normalized_file_name=normalized_file_name)
@@ -197,7 +197,7 @@ class UploadRawDataFilesToBqController:
 
         df = self._get_dataframe_from_csv_with_extra_cols(local_file_path=local_file_path, file_id=file_id)
 
-        raw_data_dataset = f'{self.state_code.lower()}_raw_data'
+        raw_data_dataset = f'{self.region_code.lower()}_raw_data'
         logging.info('\n\nLoaded dataframe has %d rows\n', df.shape[0])
         logging.info('\n\nLoaded dataframe with intent of uploading to %s.%s: \n\n%s',
                      raw_data_dataset, file_tag, str(df.head()))
@@ -265,7 +265,7 @@ if __name__ == '__main__':
                         help='Runs copy in dry-run mode, only prints the file copies it would do.')
     parser.add_argument('--paths', metavar='PATH', nargs='+',
                         help='Path to files to to upload to BQ, either single file path or directory path.')
-    parser.add_argument('--state-code', required=True, default='', help='The state code for the uploaded file(s)')
+    parser.add_argument('--region-code', required=True, default='', help='The region code for the uploaded file(s)')
     parser.add_argument('--import-time', required=True, help='The time the file was received by Recidiviz. Expected in '
                                                              'format %Y-%m-%d %H:%M')
     parser.add_argument('--separator', required=False, default=',', help='Separator for the csv. Defaults to \',\'')
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     UploadRawDataFilesToBqController(
         dry_run=args.dry_run,
         project_id=args.project_id,
-        state_code=args.state_code,
+        region_code=args.region_code,
         import_time=to_datetime(args.import_time),
         paths=args.paths,
         separator=args.separator,
