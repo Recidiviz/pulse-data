@@ -105,5 +105,5 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
             if region.raw_data_bq_imports_enabled_env is not None:
                 self.assertTrue(raw_file_manager.raw_file_configs)
 
-            for config in raw_file_manager.raw_file_configs:
+            for config in raw_file_manager.raw_file_configs.values():
                 self.assertTrue(config.primary_key_cols)
