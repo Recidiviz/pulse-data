@@ -19,7 +19,7 @@ tables and views.
 """
 import abc
 import logging
-from typing import List, Optional, Iterator
+from typing import List, Optional, Iterator, Dict, Any
 
 import attr
 from google.cloud import bigquery, exceptions
@@ -86,6 +86,21 @@ class BigQueryClient:
 
         Returns:
             True if the table or view exists, False otherwise.
+        """
+
+    @abc.abstractmethod
+    def get_table(
+            self,
+            dataset_ref: bigquery.DatasetReference,
+            table_id: str) -> bigquery.Table:
+        """Fetches the Table for a BigQuery Table or View in the dataset. Throws if it does not exist.
+
+        Args:
+            dataset_ref: The BigQuery dataset to search
+            table_id: The string table name of the table to return
+
+        Returns:
+            A bigquery.Table instance.
         """
 
     @abc.abstractmethod
@@ -277,6 +292,22 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def insert_rows_into_table(self,
+                               dataset_id: str,
+                               table_id: str,
+                               rows: List[Dict[str, Any]]) -> None:
+        """Inserts (appends) rows into a table in BigQuery. Existing rows will not be overwritten. A table with name
+        |table_id| will be created if they do not exist, and updated if it does exist.
+
+        This completes synchronously.
+
+        Args:
+            dataset_id: The string BigQuery dataset name of the table to create/update with the data.
+            table_id: The string table name of the table we're adding to create/update with the data.
+            rows: A list of dictionaries containing the data to upload
+        """
+
+    @abc.abstractmethod
     def insert_into_table_from_table_async(self,
                                            source_dataset_id: str,
                                            source_table_id: str,
@@ -371,6 +402,13 @@ class BigQueryClientImpl(BigQueryClient):
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
+
+    def get_table(
+            self,
+            dataset_ref: bigquery.DatasetReference,
+            table_id: str) -> bigquery.Table:
+        table_ref = dataset_ref.table(table_id)
+        return self.client.get_table(table_ref)
 
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
         return self.client.create_table(table, exists_ok=False)
@@ -541,6 +579,19 @@ class BigQueryClientImpl(BigQueryClient):
             location=self.LOCATION,
             job_config=job_config,
         )
+
+    def insert_rows_into_table(self,
+                               dataset_id: str,
+                               table_id: str,
+                               rows: List[Dict[str, Any]]):
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+        table = self.get_table(dataset_ref, table_id)
+
+        logging.info('Inserting [%d] row(s) into [%s]', len(rows), table.full_table_id)
+        errors = self.client.insert_rows(table, rows)
+        if errors:
+            raise ValueError(f'Encountered errors inserting rows into {dataset_id}.{table_id}: {errors}')
+        logging.info('Done inserting [%d] row(s) into [%s].', len(rows), table.full_table_id)
 
     def insert_into_table_from_table_async(self,
                                            source_dataset_id: str,
