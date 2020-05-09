@@ -21,9 +21,12 @@ import logging
 from typing import Optional, List
 
 from recidiviz import IngestInfo
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import \
+    BigQueryDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
     GcsfsFileContentsHandle
@@ -86,6 +89,10 @@ class GcsfsDirectIngestController(
 
         self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
 
+        self.file_metadata_manager = BigQueryDirectIngestFileMetadataManager(
+            region_code=self.region.region_code,
+            big_query_client=BigQueryClientImpl())
+
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
@@ -115,6 +122,13 @@ class GcsfsDirectIngestController(
                              "with correct size, kicking scheduler.",
                              path.abs_path())
                 return
+
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled():
+                if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA or (
+                        parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW and
+                        self.region.are_ingest_view_exports_enabled_in_env()
+                ):
+                    self.file_metadata_manager.register_new_file(path)
 
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -187,7 +201,15 @@ class GcsfsDirectIngestController(
                 "processed or deleted", data_import_args.raw_data_file_path)
             return
 
-        self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path)
+        file_metadata = self.file_metadata_manager.get_file_metadata(data_import_args.raw_data_file_path)
+
+        if file_metadata.processed_time:
+            logging.warning('File [%s] is already marked as processed. Skipping file processing.',
+                            data_import_args.raw_data_file_path.file_name)
+            return
+
+        self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path,
+                                                                  file_metadata)
 
         if not self.region.are_ingest_view_exports_enabled_in_env():
             # TODO(3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
@@ -207,6 +229,10 @@ class GcsfsDirectIngestController(
         # TODO(3020): Technically moving to the processed path here will trigger the handle_new_files() call we need to
         # now check for ingest view export jobs - consider doing something more explicit, intentional here.
         processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
+        self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path,
+                                                          metadata=file_metadata,
+                                                          processed_time=datetime.datetime.now())
+
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
 
     def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
@@ -215,6 +241,7 @@ class GcsfsDirectIngestController(
             raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
 
         # TODO(3020): Implement ingest view export
+        # TODO(3020): Write rows for new files to the metadata table when we export here
         raise ValueError('Unimplemented!')
 
     # ============== #
@@ -431,6 +458,9 @@ class GcsfsDirectIngestController(
 
     def _do_cleanup(self, args: GcsfsIngestArgs):
         self.fs.mv_path_to_processed_path(args.file_path)
+
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            raise ValueError('Must implement metadata update to mark as processed here.')
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(
