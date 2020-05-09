@@ -22,6 +22,7 @@ from typing import List, Dict, Any, Set
 import attr
 import yaml
 
+from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
@@ -143,7 +144,9 @@ class DirectIngestRawFileImportManager:
 
         return paths_to_import
 
-    def import_raw_file_to_big_query(self, path: GcsfsFilePath) -> None:
+    def import_raw_file_to_big_query(self,
+                                     path: GcsfsFilePath,
+                                     file_metadata: GcsfsDirectIngestFileMetadata) -> None:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
             raise ValueError(f'Cannot import raw files for region [{self.region.region_code}]')
 
