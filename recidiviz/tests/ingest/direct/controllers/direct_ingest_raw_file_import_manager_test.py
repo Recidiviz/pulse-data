@@ -17,6 +17,9 @@
 """Tests for DirectIngestRawFileImportManager."""
 import unittest
 
+from mock import create_autospec
+
+from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
@@ -58,7 +61,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
         self.assertEqual('UTF-8', config_2.encoding)
         self.assertEqual('$', config_2.separator)
-
 
     def test_parse_empty_yaml_throws(self):
         with self.assertRaises(ValueError):
@@ -104,7 +106,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         file_path = GcsfsFilePath.from_absolute_path(file_path_str)
 
         with self.assertRaises(ValueError):
-            import_manager.import_raw_file_to_big_query(file_path)
+            import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
 
     def test_import_bq_file_with_ingest_view_file(self):
         import_manager = DirectIngestRawFileImportManager(
@@ -119,7 +121,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         file_path = GcsfsFilePath.from_absolute_path(file_path_str)
 
         with self.assertRaises(ValueError):
-            import_manager.import_raw_file_to_big_query(file_path)
+            import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
 
     def test_import_bq_file_with_unspecified_type_file(self):
         import_manager = DirectIngestRawFileImportManager(
@@ -134,7 +136,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         file_path = GcsfsFilePath.from_absolute_path(file_path_str)
 
         with self.assertRaises(ValueError):
-            import_manager.import_raw_file_to_big_query(file_path)
+            import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
 
     def test_import_bq_file_feature_not_released_throws(self):
         import_manager = DirectIngestRawFileImportManager(
@@ -150,4 +152,4 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         file_path = GcsfsFilePath.from_absolute_path(file_path_str)
 
         with self.assertRaises(ValueError):
-            import_manager.import_raw_file_to_big_query(file_path)
+            import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))

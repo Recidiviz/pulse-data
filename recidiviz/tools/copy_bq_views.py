@@ -49,7 +49,8 @@ def main(*, source_project_id, source_dataset_id, destination_project_id, destin
     tables_in_source_dataset = source_client.list_tables(source_dataset_id)
 
     for table_ref in tables_in_source_dataset:
-        table = source_client.client.get_table(table_ref)
+        table = source_client.get_table(source_client.dataset_ref_for_id(table_ref.dataset_id),
+                                        table_ref.table_id)
 
         # Only copy this view if there is a view_query to replicate and the view doesn't already exist in the
         # destination dataset

@@ -213,6 +213,23 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_not_called()
 
+    def test_insert_rows_into_table(self):
+        self.mock_client.insert_rows.return_value = None
+
+        self.bq_client.insert_rows_into_table(self.mock_dataset_id, self.mock_table_id, [{'col1': 1, 'col2': 'a'}])
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.insert_rows.assert_called()
+
+    def test_insert_rows_into_table_with_errors(self):
+        self.mock_client.insert_rows.return_value = [{'error1': 'An error'}]
+
+        with self.assertRaises(ValueError):
+            self.bq_client.insert_rows_into_table(self.mock_dataset_id, self.mock_table_id, [{'col1': 1, 'col2': 'a'}])
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.insert_rows.assert_called()
+
     def test_delete_from_table(self):
         """Tests that the delete_from_table function runs a query."""
         self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="WHERE x > y")
