@@ -39,7 +39,9 @@ m_failed_validations = measure.MeasureInt("validation/num_failures", "The number
 
 failed_validations_view = view.View("recidiviz/validation/num_failures",
                                     "The sum of failed validations",
-                                    [monitoring.TagKey.REGION, monitoring.TagKey.VALIDATION_CHECK_TYPE],
+                                    [monitoring.TagKey.REGION,
+                                     monitoring.TagKey.VALIDATION_CHECK_TYPE,
+                                     monitoring.TagKey.VALIDATION_VIEW_ID],
                                     m_failed_validations,
                                     aggregation.SumAggregation())
 
@@ -86,7 +88,7 @@ def handle_validation_request():
     _emit_failures(failed_validations)
 
     logging.info('Validation run complete. Analyzed a total of %s jobs.', len(validation_jobs))
-    return f"Validation failures identified: {len(failed_validations) > 0}", HTTPStatus.OK
+    return _readable_response(failed_validations), HTTPStatus.OK
 
 
 def _run_job(job: DataValidationJob) -> DataValidationJobResult:
@@ -106,15 +108,22 @@ def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
 
 
 def _emit_failures(failed_validations: List[DataValidationJobResult]):
-    monitoring_tags: Dict[str, Any] = {}
-    with monitoring.measurements(monitoring_tags) as measurements:
-        for result in failed_validations:
-            logging.error("Failed data validation: %s", result)
+    for result in failed_validations:
+        logging.error("Failed data validation: %s", result)
 
-            monitoring_tags[monitoring.TagKey.REGION] = result.validation_job.region_code
-            monitoring_tags[monitoring.TagKey.VALIDATION_CHECK_TYPE] = result.validation_job.validation.validation_type
+        monitoring_tags: Dict[str, Any] = {
+            monitoring.TagKey.REGION: result.validation_job.region_code,
+            monitoring.TagKey.VALIDATION_CHECK_TYPE: result.validation_job.validation.validation_type,
+            monitoring.TagKey.VALIDATION_VIEW_ID: result.validation_job.validation.view.view_id
+        }
+        with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_validations, 1)
 
 
+def _readable_response(failed_validations: List[DataValidationJobResult]) -> str:
+    readable_output = "\n".join([f.__str__() for f in failed_validations])
+    return f'Failed validations:\n{readable_output}'
+
+
 if __name__ == '__main__':
-    handle_validation_request()
+    print(handle_validation_request()[0])
