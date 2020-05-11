@@ -1303,6 +1303,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         matched_entities = entity_matching.match(session, _US_ND, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session, debug=True)
+        self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)

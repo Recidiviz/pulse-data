@@ -530,13 +530,190 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_person), person_id=None,
             external_ids=[external_id],
             sentence_groups=[sentence_group])
+        expected_unmatched_person = attr.evolve(self.to_entity(db_person))
 
         # Act 1 - Match
+        session = self._session()
         matched_entities = entity_matching.match(
-            self._session(), _STATE_CODE, ingested_people=[person])
+            session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        self.assertEqual([], matched_entities.people)
+        self.assert_people_match_pre_and_post_commit(
+            [], matched_entities.people, session,
+            expected_unmatched_db_people=[expected_unmatched_person])
+        self.assertEqual(1, matched_entities.total_root_entities)
+        self.assertEqual(1, matched_entities.error_count)
+        self.assertEqual(0, matched_entities.database_cleanup_error_count)
+
+    # TODO(3194): Uncomment asserts once the bug is fixed.
+    def test_matchPersons_replaceSingularChildFromMatchedParent(self):
+        """Tests that if we have a singular placeholder child (ex StateCharge.court_case) in the DB, we properly update
+        that child entity to no longer be a placeholder in the case that we have match an ingested parent with a
+        non-placeholder child.
+        """
+        # When our DB is in a strange state and has an entity has a singluar placeholder child, we throw an error
+        # when that child entity is updated. This test has logic that needs to be uncommented once this bug is resolved.
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID)
+        db_placeholder_court_case = generate_court_case(court_case_id=_ID, person=db_person, state_code=_STATE_CODE)
+        db_charge = generate_charge(
+            charge_id=_ID,
+            person=db_person,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            court_case=db_placeholder_court_case)
+        db_supervision_sentence = generate_supervision_sentence(
+            supervision_sentence_id=_ID,
+            person=db_person,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID,
+            charges=[db_charge],
+            state_code=_STATE_CODE)
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            supervision_sentences=[db_supervision_sentence])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+        self._commit_to_db(db_person)
+
+        # New court case should overwrite the existing placeholder.
+        court_case = attr.evolve(
+            self.to_entity(db_placeholder_court_case), court_case_id=None, external_id=_EXTERNAL_ID)
+        charge = attr.evolve(self.to_entity(db_charge), charge_id=None, external_id=_EXTERNAL_ID, court_case=court_case)
+        sentence = attr.evolve(self.to_entity(db_supervision_sentence), supervision_sentence_id=None, charges=[charge])
+        sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group), sentence_group_id=None, supervision_sentences=[sentence])
+        external_id = attr.evolve(self.to_entity(db_external_id), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person), person_id=None, external_ids=[external_id], sentence_groups=[sentence_group])
+
+        expected_updated_court_case = attr.evolve(court_case, court_case_id=db_placeholder_court_case.court_case_id)
+        expected_charge = attr.evolve(self.to_entity(db_charge), court_case=expected_updated_court_case)
+        expected_supervision_sentence = attr.evolve(
+            self.to_entity(db_supervision_sentence), charges=[expected_charge])
+        expected_sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group), supervision_sentences=[expected_supervision_sentence])
+        expected_external_id = attr.evolve(self.to_entity(db_external_id))
+        _expected_person = attr.evolve(
+            self.to_entity(db_person), external_ids=[expected_external_id], sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        session = self._session()
+        _matched_entities = entity_matching.match(session, _STATE_CODE, ingested_people=[person])
+
+        # Assert 1 - Match
+        # TODO(3194): Uncomment once resolved
+        # self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
+        # self.assertEqual(1, matched_entities.total_root_entities)
+        # self.assertEqual(0, matched_entities.error_count)
+        # self.assertEqual(0, matched_entities.database_cleanup_error_count)
+
+    def test_matchPersons_partialUpdateBeforeError(self):
+        """Tests that if a DB person tree is partially updated before an error occurs, that we properly set
+        backedges on all entities of the person tree, even though an error occurred. This is important when the partial
+        merge added a new entity to the DB tree.
+        """
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID)
+        db_placeholder_charge = generate_charge(
+            charge_id=_ID,
+            person=db_person,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
+        db_supervision_sentence = generate_supervision_sentence(
+            supervision_sentence_id=_ID,
+            person=db_person,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID,
+            charges=[db_placeholder_charge],
+            state_code=_STATE_CODE)
+
+        db_court_case_2 = generate_court_case(
+            court_case_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            person=db_person,
+            state_code=_STATE_CODE)
+        db_charge_2 = generate_charge(
+            charge_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            person=db_person,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            court_case=db_court_case_2)
+        db_supervision_sentence_2 = generate_supervision_sentence(
+            supervision_sentence_id=_ID_2,
+            person=db_person,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID_2,
+            state_code=_STATE_CODE,
+            charges=[db_charge_2])
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            supervision_sentences=[db_supervision_sentence, db_supervision_sentence_2])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            id_type=_ID_TYPE)
+        db_person.sentence_groups = [db_sentence_group]
+        db_person.external_ids = [db_external_id]
+        self._commit_to_db(db_person)
+
+        charge_1 = attr.evolve(
+            self.to_entity(db_placeholder_charge), charge_id=None, external_id=_EXTERNAL_ID)
+        sentence_1 = attr.evolve(
+            self.to_entity(db_supervision_sentence), supervision_sentence_id=None, charges=[charge_1])
+
+        # court case conflicts with existing court case in DB, throws error.
+        conflicting_court_case = attr.evolve(self.to_entity(db_court_case_2), external_id=_EXTERNAL_ID_3)
+        charge_2 = StateCharge.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            charge_id=None, court_case=conflicting_court_case)
+        sentence_2 = StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            external_id=_EXTERNAL_ID_2,
+            charges=[charge_2])
+        sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group), sentence_group_id=None, supervision_sentences=[sentence_1, sentence_2])
+        external_id = attr.evolve(self.to_entity(db_external_id), person_external_id_id=None)
+        person = attr.evolve(
+            self.to_entity(db_person), person_id=None, external_ids=[external_id], sentence_groups=[sentence_group])
+
+        expected_placeholder_charge = attr.evolve(self.to_entity(db_placeholder_charge))
+        expected_charge_1 = attr.evolve(charge_1)
+        expected_supervision_sentence = attr.evolve(
+            self.to_entity(db_supervision_sentence),
+            charges=[expected_placeholder_charge, expected_charge_1])
+        expected_unchanged_court_case = attr.evolve(self.to_entity(db_court_case_2))
+        expected_charge_2 = attr.evolve(self.to_entity(db_charge_2), court_case=expected_unchanged_court_case)
+        expected_supervision_sentence_2 = attr.evolve(
+            self.to_entity(db_supervision_sentence_2), charges=[expected_charge_2])
+        expected_sentence_group = attr.evolve(
+            self.to_entity(db_sentence_group),
+            supervision_sentences=[expected_supervision_sentence, expected_supervision_sentence_2])
+        expected_external_id = attr.evolve(self.to_entity(db_external_id))
+        expected_person = attr.evolve(
+            self.to_entity(db_person), external_ids=[expected_external_id], sentence_groups=[expected_sentence_group])
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(session, _STATE_CODE, ingested_people=[person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [], matched_entities.people, session, expected_unmatched_db_people=[expected_person])
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
         self.assertEqual(0, matched_entities.database_cleanup_error_count)
@@ -597,6 +774,52 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(3, matched_entities.total_root_entities)
         self.assertEqual(1, matched_entities.error_count)
         self.assertEqual(1, matched_entities.database_cleanup_error_count)
+
+    def test_ingestedTreeHasDuplicateEntitiesInParentsAndChildrenEntities(self):
+        """This tests an edge case in the interaction of `merge_multiparent_entities` and
+        `_merge_new_parent_child_links`. Here we ingest duplicate supervision sentences with duplicate charge children.
+        In entity matching, the charge children get merged by `merge_multiparent_entities`, and the
+        supervision sentences get merged as a part of `merge_new_parent_child_links`. This test ensures that in
+        this second step, we do NOT accidentally make the charge children placeholder objects.
+        """
+        # Arrange 1 - Match
+        external_id = StatePersonExternalId.new_with_defaults(
+            external_id=_EXTERNAL_ID, id_type=_ID_TYPE, state_code=_STATE_CODE)
+        charge = StateCharge.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.DROPPED)
+        charge_dup = attr.evolve(charge)
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge])
+        supervision_sentence_dup = attr.evolve(supervision_sentence, charges=[charge_dup])
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE,
+            supervision_sentences=[supervision_sentence, supervision_sentence_dup])
+        person = StatePerson.new_with_defaults(
+            full_name=_FULL_NAME, external_ids=[external_id], sentence_groups=[sentence_group])
+
+        expected_charge = attr.evolve(charge)
+        expected_supervision_sentence = attr.evolve(supervision_sentence, charges=[expected_charge])
+        expected_placeholder_supervision_sentence = attr.evolve(supervision_sentence_dup, external_id=None, charges=[])
+        expected_external_id = attr.evolve(external_id)
+        expected_sentence_group = attr.evolve(
+            sentence_group,
+            supervision_sentences=[expected_supervision_sentence, expected_placeholder_supervision_sentence])
+        expected_person = attr.evolve(
+            person, sentence_groups=[expected_sentence_group], external_ids=[expected_external_id])
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(session, _STATE_CODE, [person])
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
 
     def test_matchPersons_matchesTwoDbPeople_mergeDbPeopleMoveChildren(self):
         """Tests that our system correctly handles the situation where we have
@@ -2622,7 +2845,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_parentChildLinkAtRootDiscoveredAfterBothWritten(self):
         # Arrange 1 - Match
-        self.maxDiff = None
         db_sentence_group = generate_sentence_group(
             sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -3167,7 +3389,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self._session(), _STATE_CODE, ingested_people=[person])
 
         # Assert
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session, debug=True)
+        self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)

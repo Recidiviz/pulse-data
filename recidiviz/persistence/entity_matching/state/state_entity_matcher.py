@@ -111,7 +111,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         # Set this to True if you want counts on all entities read from the
         # DB to be logged.
-        self.log_entity_counts = True
+        self.log_entity_counts = False
 
         self.entities_to_convert_to_placeholder_or_expunge:\
             List[DatabaseEntity] = []
@@ -327,7 +327,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 "matched persons", len(matched_entities_builder.people))
 
             logging.info("[Entity matching] Matching post-processing")
-            self._perform_match_postprocessing(matched_entities_builder.people)
+            self._perform_match_postprocessing(matched_entities_builder.people, db_persons)
         return matched_entities_builder
 
     def _perform_match_preprocessing(
@@ -348,7 +348,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _perform_match_postprocessing(
             self,
-            matched_persons: List[schema.StatePerson]) -> None:
+            matched_persons: List[schema.StatePerson],
+            db_persons: List[schema.StatePerson]) -> None:
         # TODO(1868): Remove any placeholders in graph without children after
         # write
         logging.info("[Entity matching] Merge multi-parent entities")
@@ -357,8 +358,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self.state_matching_delegate.perform_match_postprocessing(
             matched_persons)
 
+        # TODO(2894): Create long term strategy for dealing with/rolling back partially updated DB entities.
+        # Make sure person ids are added to all entities in the matched persons and also to all read DB people. We
+        # populate back edges on DB people as a precaution in case entity matching failed for any of these people
+        # after some updates had already taken place.
         logging.info("[Entity matching] Populate indirect person backedges")
-        self._populate_person_backedges(matched_persons)
+        new_people = [p for p in matched_persons if p.person_id is None]
+        self._populate_person_backedges(new_people)
+        self._populate_person_backedges(db_persons)
 
     def _perform_database_cleanup(
             self, matched_persons: List[schema.StatePerson]) -> int:
@@ -1118,9 +1125,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # Clear flat fields off of the ingested entity after entity matching
         # is complete. This ensures that if this `ingested_entity` has
         # multiple parents, each time we reach this entity, we'll correctly
-        # match it to the correct `db_entity`.
-        self.entities_to_convert_to_placeholder_or_expunge.append(
-            ingested_entity)
+        # match it to the correct `db_entity`. It is possible that the ingested and db
+        # entities are the same object (when `match_trees` is called on entities within
+        # the same person tree in post processing). In this case, do not clear flat fields.
+        if id(ingested_entity) != id(db_entity):
+            self.entities_to_convert_to_placeholder_or_expunge.append(ingested_entity)
 
         return IndividualMatchResult(
             merged_entity_trees=[merged_entity_tree],
