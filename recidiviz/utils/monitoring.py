@@ -110,3 +110,4 @@ class TagKey:
     SHOULD_PERSIST = 'should_persist'
     STATUS = 'status'
     VALIDATION_CHECK_TYPE = 'validation_check_type'
+    VALIDATION_VIEW_ID = 'validation_view_id'
