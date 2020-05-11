@@ -59,6 +59,9 @@ _TEST_VALIDATIONS: List[DataValidationJob] = [
 ]
 
 
+_API_RESPONSE_IF_NO_FAILURES = "Failed validations:\n"
+
+
 class TestHandleRequest(TestCase):
     """Tests for the Validation Manager API endpoint."""
 
@@ -80,7 +83,7 @@ class TestHandleRequest(TestCase):
         response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual("Validation failures identified: False", response.get_data().decode())
+        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         self.assertEqual(4, mock_run_job.call_count)
         for job in _TEST_VALIDATIONS:
@@ -111,7 +114,7 @@ class TestHandleRequest(TestCase):
         response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual("Validation failures identified: True", response.get_data().decode())
+        self.assertNotEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         self.assertEqual(4, mock_run_job.call_count)
         for job in _TEST_VALIDATIONS:
@@ -132,7 +135,7 @@ class TestHandleRequest(TestCase):
         response = self.client.get('/validate', headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual("Validation failures identified: False", response.get_data().decode())
+        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_called_with([])
@@ -152,7 +155,7 @@ class TestHandleRequest(TestCase):
         response = self.client.get('/validate?should_update_views=true', headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual("Validation failures identified: False", response.get_data().decode())
+        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_called_with([])
