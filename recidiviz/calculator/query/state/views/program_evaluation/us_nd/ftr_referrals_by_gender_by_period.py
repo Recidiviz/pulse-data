@@ -72,6 +72,7 @@ FTR_REFERRALS_BY_GENDER_BY_PERIOD_QUERY_TEMPLATE = \
     USING (state_code, supervision_type, district, metric_period_months, gender)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
+      AND gender IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, gender, district, supervision_type, metric_period_months
     """

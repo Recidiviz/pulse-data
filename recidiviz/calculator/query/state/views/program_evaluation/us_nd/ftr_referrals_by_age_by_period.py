@@ -99,6 +99,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = \
     USING (state_code, supervision_type, district, metric_period_months, age_bucket)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
+      AND age_bucket IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, age_bucket, district, supervision_type, metric_period_months
     """
