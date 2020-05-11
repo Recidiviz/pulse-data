@@ -78,9 +78,14 @@ def add_demographic_characteristics(characteristics: Dict[str, Any],
     if person.gender is not None:
         characteristics['gender'] = person.gender
     if person.races:
-        characteristics['race'] = [race_object.race for race_object in person.races]
+        races = [race_object.race for race_object in person.races if race_object.race is not None]
+        if races:
+            characteristics['race'] = races
     if person.ethnicities:
-        characteristics['ethnicity'] = [ethnicity_object.ethnicity for ethnicity_object in person.ethnicities]
+        ethnicities = [ethnicity_object.ethnicity for ethnicity_object in person.ethnicities
+                       if ethnicity_object.ethnicity is not None]
+        if ethnicities:
+            characteristics['ethnicity'] = ethnicities
 
     return characteristics
 
