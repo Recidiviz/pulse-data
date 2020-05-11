@@ -401,6 +401,33 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         self.assertEqual(updated_characteristics, expected_output)
 
+    def test_add_demographic_characteristics_EmptyRaceEthnicity(self):
+        characteristics = {}
+
+        person = StatePerson.new_with_defaults(
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                )
+            ])
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+
+        expected_output = {
+            'age_bucket': '25-29',
+            'gender': Gender.FEMALE
+        }
+
+        self.assertEqual(updated_characteristics, expected_output)
+
     def test_add_demographic_characteristics_NoAttributes(self):
         characteristics = {}
 

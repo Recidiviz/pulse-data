@@ -83,6 +83,26 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
         self.assertEqual(expected_output, updated_metric_key)
 
+    def test_json_serializable_metric_key_RaceEthnicityNone(self):
+        # This should never happen due to the way this dictionary is constructed.
+        metric_key = {'gender': Gender.MALE,
+                      'race': [None],
+                      'ethnicity': [None],
+                      'methodology': MetricMethodologyType.PERSON,
+                      'year': 1999,
+                      'month': 3,
+                      'state_code': 'CA'}
+
+        expected_output = {'gender': 'MALE',
+                           'methodology': 'PERSON',
+                           'year': 1999,
+                           'month': 3,
+                           'state_code': 'CA'}
+
+        updated_metric_key = json_serializable_metric_key(metric_key)
+
+        self.assertEqual(expected_output, updated_metric_key)
+
     def test_json_serializable_metric_key_InvalidList(self):
         metric_key = {'invalid_list_key': ['list', 'values']}
 
