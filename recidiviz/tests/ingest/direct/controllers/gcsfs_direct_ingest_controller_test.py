@@ -720,9 +720,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
                 parts.file_type.value,
-                str(prev_date_datetime.year),
-                str(prev_date_datetime.month),
-                str(prev_date_datetime.day))
+                f'{prev_date_datetime.year:04}',
+                f'{prev_date_datetime.month:02}',
+                f'{prev_date_datetime.day:02}')
             if path.abs_path().startswith(expected_storage_dir_str):
                 paths_from_prev_date.append(path)
 
@@ -873,9 +873,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         expected_storage_dir_str = os.path.join(
             controller.storage_directory_path.abs_path(),
             GcsfsDirectIngestFileType.INGEST_VIEW.value,
-            str(prev_date_datetime.year),
-            str(prev_date_datetime.month),
-            str(prev_date_datetime.day))
+            f'{prev_date_datetime.year:04}',
+            f'{prev_date_datetime.month:02}',
+            f'{prev_date_datetime.day:02}')
         self.assertTrue(
             storage_paths[0].abs_path().startswith(expected_storage_dir_str),
             f'Path {storage_paths[0].abs_path()} should start with {expected_storage_dir_str}.')
