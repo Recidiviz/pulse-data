@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager imp
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
-    DirectIngestRawFileImportManager, DirectIngestRawFileConfig
+    DirectIngestRawFileImportManager, DirectIngestRawFileConfig, DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -51,6 +51,7 @@ from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.utils.regions import Region
 
 
 class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
@@ -207,10 +208,7 @@ class FakeDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
 
 @attr.s
-class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
-    """Fake implementation of DirectIngestRawFileImportManager for tests."""
-
-    imported_paths: List[GcsfsFilePath] = attr.ib(factory=list)
+class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
 
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         return {
@@ -243,6 +241,24 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
                 ignore_quotes=False,
             )
         }
+
+
+class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
+    """Fake implementation of DirectIngestRawFileImportManager for tests."""
+
+    def __init__(self,
+                 *,
+                 region: Region,
+                 fs: DirectIngestGCSFileSystem,
+                 ingest_directory_path: GcsfsDirectoryPath,
+                 big_query_client: BigQueryClient):
+
+        super().__init__(region=region,
+                         fs=fs,
+                         ingest_directory_path=ingest_directory_path,
+                         big_query_client=big_query_client,
+                         region_raw_file_config=FakeDirectIngestRegionRawFileConfig(region.region_code))
+        self.imported_paths: List[GcsfsFilePath] = []
 
     def import_raw_file_to_big_query(self,
                                      path: GcsfsFilePath,

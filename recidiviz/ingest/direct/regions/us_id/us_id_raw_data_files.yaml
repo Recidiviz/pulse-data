@@ -22,4 +22,190 @@
 
 default_encoding: ISO-8859-1
 default_separator: '|'
-raw_files: []
+raw_files:
+  - file_tag: applc_usr
+    primary_key_cols:
+      - usr_id
+    separator: ','
+  - file_tag: assess_qstn
+    primary_key_cols:
+      - assess_qstn_num
+      - tst_sctn_num
+      - assess_tst_id
+  - file_tag: assess_qstn_choice
+    primary_key_cols:
+      - qstn_choice_num
+      - assess_qstn_num
+      - tst_sctn_num
+      - assess_tst_id
+  - file_tag: assess_tst
+    primary_key_cols:
+      - assess_tst_id
+  - file_tag: behavior_evaluation_source_cd
+    primary_key_cols:
+      - behavior_evaluation_source_cd
+  - file_tag: body_loc_cd
+    primary_key_cols:
+      - body_loc_cd
+  - file_tag: casemgr
+    primary_key_cols:
+      - move_srl
+      - case_dtd
+  - file_tag: cis_codepersonnamesuffix
+    primary_key_cols:
+      - id
+    separator: ','
+  - file_tag: cis_codepersonnametype
+    primary_key_cols:
+      - id
+    separator: ','
+  - file_tag: cis_offender
+    primary_key_cols:
+      - id
+  - file_tag: cis_personname
+    primary_key_cols:
+      - id
+    ignore_quotes: True
+  - file_tag: clssfctn_cust_lvl
+    primary_key_cols:
+      - clssfctn_cust_lvl_cd
+  - file_tag: cntc_rslt_cd
+    primary_key_cols:
+      - cntc_rslt_cd
+  - file_tag: cntc_typ_cd
+    primary_key_cols:
+      - cntc_typ_cd
+  - file_tag: cntc_typ_subtyp_cd
+    primary_key_cols:
+      - cntc_typ_cd
+      - cnt_subtyp_cd
+  - file_tag: county
+    primary_key_cols:
+      - cnty_cd
+    separator: ','
+  - file_tag: early_discharge
+    primary_key_cols:
+      - early_discharge_id
+  - file_tag: early_discharge_form_typ
+    primary_key_cols:
+      - early_discharge_form_typ_id
+  - file_tag: early_discharge_sent
+    primary_key_cols:
+      - early_discharge_sent_id
+  - file_tag: ethnic
+    primary_key_cols:
+      - ethnic_cd
+  - file_tag: facility
+    primary_key_cols:
+      - fac_cd
+  - file_tag: hrchy
+    primary_key_cols:
+      - staff_usr_id
+  - file_tag: judge
+    primary_key_cols:
+      - judge_cd
+  - file_tag: jurisdiction_decision_code
+    primary_key_cols:
+      - jurisdiction_decision_code_id
+    separator: ','
+  - file_tag: lawcd
+    primary_key_cols:
+      - law_cd
+  - file_tag: lgl_stat_cd
+    primary_key_cols:
+      - lgl_stat_cd
+  - file_tag: loc_typ_cd
+    primary_key_cols:
+      - loc_typ_cd
+  - file_tag: location
+    primary_key_cols:
+      - loc_cd
+  - file_tag: lvgunit
+    primary_key_cols:
+      - fac_cd
+      - lu_cd
+  - file_tag: mittimus
+    primary_key_cols:
+      - mitt_srl
+  - file_tag: movement
+    primary_key_cols:
+      - move_srl
+  - file_tag: offender
+    primary_key_cols:
+      - docno
+  - file_tag: offense
+    primary_key_cols:
+      - off_cat
+      - off_cd
+      - off_deg
+  - file_tag: offstat
+    primary_key_cols:
+      - docno
+      - incrno
+      - statno
+  - file_tag: ofndr_agnt
+    primary_key_cols:
+      - ofndr_num
+  - file_tag: ofndr_behavior_evaluation
+    primary_key_cols:
+      - ofndr_behavior_evaluation_id
+  - file_tag: ofndr_classifications
+    primary_key_cols:
+      - classification_id
+  - file_tag: ofndr_dob
+    primary_key_cols:
+      - ofndr_num
+  - file_tag: ofndr_sctn_eval
+    primary_key_cols:
+      - ofndr_tst_id
+      - tst_sctn_num
+      - assess_tst_id
+  - file_tag: ofndr_tst
+    primary_key_cols:
+      - ofndr_tst_id
+    ignore_quotes: True
+  - file_tag: ofndr_tst_cert
+    primary_key_cols:
+      - ofndr_tst_id
+  - file_tag: ofndr_wrkld
+    primary_key_cols:
+      - ofndr_wrkld_id
+  - file_tag: sentdisp
+    primary_key_cols:
+      - sent_disp
+  - file_tag: reldest
+    primary_key_cols:
+      - rel_dest_cd
+  - file_tag: sentence
+    primary_key_cols:
+      - mitt_srl
+      - sent_no
+  - file_tag: sentprob
+    primary_key_cols:
+      - mitt_srl
+      - sent_no
+  - file_tag: sentretn
+    primary_key_cols:
+      - mitt_srl
+      - sent_no
+      - retn_no
+  - file_tag: sexcod
+    primary_key_cols:
+      - sex_cd
+  - file_tag: sprvsn_cntc
+    primary_key_cols:
+      - sprvsn_cntc_id
+  - file_tag: statrls
+    primary_key_cols:
+      - stat_rls_typ
+      - stat_cd
+  - file_tag: statstrt
+    primary_key_cols:
+      - stat_strt_typ
+  - file_tag: tst_qstn_rspns
+    primary_key_cols:
+      - tst_qstn_rspns_id
+    ignore_quotes: True
+  - file_tag: wrkld_cat
+    primary_key_cols:
+      - wrkld_cat_id

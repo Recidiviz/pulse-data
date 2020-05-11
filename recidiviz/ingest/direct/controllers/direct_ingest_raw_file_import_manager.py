@@ -17,11 +17,12 @@
 """Classes for performing direct ingest raw file imports to BigQuery."""
 import logging
 import os
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Optional
 
 import attr
 import yaml
 
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
@@ -68,16 +69,13 @@ class DirectIngestRawFileConfig:
         )
 
 
+
+
 @attr.s
-class DirectIngestRawFileImportManager:
-    """Class that parses and stores raw data import configs for a region, with functionality for executing an
-    import of a specific file.
-    """
+class DirectIngestRegionRawFileConfig:
+    """Class that parses and stores raw data import configs for a region"""
 
-    region: Region = attr.ib()
-    fs: DirectIngestGCSFileSystem = attr.ib()
-    ingest_directory_path: GcsfsDirectoryPath = attr.ib()
-
+    region_code: str = attr.ib()
     yaml_config_file_path: str = attr.ib()
 
     @yaml_config_file_path.default
@@ -85,8 +83,8 @@ class DirectIngestRawFileImportManager:
         return os.path.join(os.path.dirname(__file__),
                             '..',
                             'regions',
-                            f'{self.region.region_code}',
-                            f'{self.region.region_code}_raw_data_files.yaml')
+                            f'{self.region_code.lower()}',
+                            f'{self.region_code.lower()}_raw_data_files.yaml')
 
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
@@ -127,6 +125,27 @@ class DirectIngestRawFileImportManager:
     def _raw_file_tags(self):
         return set(self.raw_file_configs.keys())
 
+
+class DirectIngestRawFileImportManager:
+    """Class that stores raw data import configs for a region, with functionality for executing an import of a specific
+    file.
+    """
+
+    def __init__(self,
+                 *,
+                 region: Region,
+                 fs: DirectIngestGCSFileSystem,
+                 ingest_directory_path: GcsfsDirectoryPath,
+                 big_query_client: BigQueryClient,
+                 region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None):
+
+        self.region = region
+        self.fs = fs
+        self.ingest_directory_path = ingest_directory_path
+        self.big_query_client = big_query_client
+        self.region_raw_file_config = region_raw_file_config \
+            if region_raw_file_config else DirectIngestRegionRawFileConfig(region_code=self.region.region_code)
+
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
             raise ValueError(f'Cannot import raw files for region [{self.region.region_code}]')
@@ -136,7 +155,7 @@ class DirectIngestRawFileImportManager:
         paths_to_import = []
         for path in unprocessed_paths:
             parts = filename_parts_from_path(path)
-            if parts.file_tag in self.raw_file_tags:
+            if parts.file_tag in self.region_raw_file_config.raw_file_tags:
                 paths_to_import.append(path)
             else:
                 logging.warning('Unrecognized raw file tag [%s] for region [%s].',
@@ -151,7 +170,7 @@ class DirectIngestRawFileImportManager:
             raise ValueError(f'Cannot import raw files for region [{self.region.region_code}]')
 
         parts = filename_parts_from_path(path)
-        if parts.file_tag not in self.raw_file_tags:
+        if parts.file_tag not in self.region_raw_file_config.raw_file_tags:
             raise ValueError(
                 f'Attempting to import raw file with tag [{parts.file_tag}] unspecified by [{self.region.region_code}] '
                 f'config.')
