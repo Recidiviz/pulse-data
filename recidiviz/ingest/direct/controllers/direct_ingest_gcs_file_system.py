@@ -394,9 +394,9 @@ class DirectIngestGCSFileSystem:
         else:
             file_type_subidr = parts.file_type.value
             date_subdir = os.path.join(
-                str(parts.utc_upload_datetime.year),
-                str(parts.utc_upload_datetime.month),
-                str(parts.utc_upload_datetime.day)
+                f'{parts.utc_upload_datetime.year:04}',
+                f'{parts.utc_upload_datetime.month:02}',
+                f'{parts.utc_upload_datetime.day:02}'
             )
 
         for file_num in range(self._RENAME_RETRIES):
