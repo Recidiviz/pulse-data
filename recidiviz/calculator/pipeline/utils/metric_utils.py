@@ -133,7 +133,7 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
         elif isinstance(v, List):
             # These are the only two metric fields that support lists
             if key in ('race', 'ethnicity'):
-                values = [f"{entry.value}" for entry in v]
+                values = [f"{entry.value}" for entry in v if entry is not None]
 
                 if values:
                     serializable_dict[key] = ','.join(filter(None, values))
