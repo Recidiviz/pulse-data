@@ -96,7 +96,9 @@ class GcsfsDirectIngestController(
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path)
+            ingest_directory_path=self.ingest_directory_path,
+            big_query_client=BigQueryClientImpl()
+        )
 
     # ================= #
     # NEW FILE HANDLING #

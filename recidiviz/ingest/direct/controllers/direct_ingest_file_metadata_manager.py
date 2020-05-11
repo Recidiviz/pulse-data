@@ -153,7 +153,6 @@ class BigQueryDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         raise ValueError(f'Unexpected file type [{parts.file_type}] for file [{path.abs_path()}]')
 
     def _add_row_to_metadata_table(self, *, metadata: GcsfsDirectIngestFileMetadata) -> None:
-
         if not metadata.normalized_file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX):
             raise ValueError('We should only be adding rows for unprocessed paths.')
 
