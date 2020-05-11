@@ -19,14 +19,48 @@ import unittest
 
 from mock import create_autospec
 
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
+    DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
+
+class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
+    """Tests for DirectIngestRegionRawFileConfig."""
+
+    def test_parse_yaml(self):
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        self.assertEqual(2, len(region_config.raw_file_configs))
+
+        self.assertEqual({'file_tag_first', 'file_tag_second'}, region_config.raw_file_configs.keys())
+
+        config_1 = region_config.raw_file_configs['file_tag_first']
+        self.assertEqual('file_tag_first', config_1.file_tag)
+        self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
+        self.assertEqual('ISO-456-7', config_1.encoding)
+        self.assertEqual(',', config_1.separator)
+
+        config_2 = region_config.raw_file_configs['file_tag_second']
+        self.assertEqual('file_tag_second', config_2.file_tag)
+        self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
+        self.assertEqual('UTF-8', config_2.encoding)
+        self.assertEqual('$', config_2.separator)
+
+    def test_parse_empty_yaml_throws(self):
+        with self.assertRaises(ValueError):
+            _ = DirectIngestRegionRawFileConfig(
+                region_code='us_xx',
+                yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
+            )
 
 
 class DirectIngestRawFileImportManagerTest(unittest.TestCase):
@@ -38,45 +72,18 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.fs = FakeDirectIngestGCSFileSystem()
         self.ingest_directory_path = GcsfsDirectoryPath(bucket_name='my_bucket')
 
-    def test_parse_yaml(self):
-        import_manager = DirectIngestRawFileImportManager(
-            region=self.test_region,
-            fs=self.fs,
-            ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+        self.region_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
-
-        self.assertEqual(2, len(import_manager.raw_file_configs))
-
-        self.assertEqual({'file_tag_first', 'file_tag_second'}, import_manager.raw_file_configs.keys())
-
-        config_1 = import_manager.raw_file_configs['file_tag_first']
-        self.assertEqual('file_tag_first', config_1.file_tag)
-        self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
-        self.assertEqual('ISO-456-7', config_1.encoding)
-        self.assertEqual(',', config_1.separator)
-
-        config_2 = import_manager.raw_file_configs['file_tag_second']
-        self.assertEqual('file_tag_second', config_2.file_tag)
-        self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
-        self.assertEqual('UTF-8', config_2.encoding)
-        self.assertEqual('$', config_2.separator)
-
-    def test_parse_empty_yaml_throws(self):
-        with self.assertRaises(ValueError):
-            _ = DirectIngestRawFileImportManager(
-                region=self.test_region,
-                fs=self.fs,
-                ingest_directory_path=self.ingest_directory_path,
-                yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml')
-            )
 
     def test_get_unprocessed_raw_files_to_import(self):
         import_manager = DirectIngestRawFileImportManager(
             region=self.test_region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+            region_raw_file_config=self.region_raw_file_config,
+            big_query_client=create_autospec(BigQueryClient)
         )
 
         self.assertEqual([], import_manager.get_unprocessed_raw_files_to_import())
@@ -98,7 +105,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region=self.test_region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+            region_raw_file_config=self.region_raw_file_config,
+            big_query_client=create_autospec(BigQueryClient)
         )
 
         file_path_str = to_normalized_unprocessed_file_path('bucket/this_path_tag_not_in_yaml.csv',
@@ -113,7 +121,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region=self.test_region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+            region_raw_file_config=self.region_raw_file_config,
+            big_query_client=create_autospec(BigQueryClient)
         )
 
         file_path_str = to_normalized_unprocessed_file_path('bucket/file_tag_first.csv',
@@ -128,7 +137,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region=self.test_region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+            region_raw_file_config=self.region_raw_file_config,
+            big_query_client=create_autospec(BigQueryClient)
         )
 
         file_path_str = to_normalized_unprocessed_file_path('bucket/file_tag_first.csv',
@@ -144,7 +154,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                are_raw_data_bq_imports_enabled_in_env=False),
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml')
+            region_raw_file_config=self.region_raw_file_config,
+            big_query_client=create_autospec(BigQueryClient)
         )
 
         file_path_str = to_normalized_unprocessed_file_path('bucket/file_tag_first.csv',

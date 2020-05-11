@@ -24,6 +24,7 @@ import yaml
 from mock import create_autospec
 
 import recidiviz
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
@@ -100,10 +101,12 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
             raw_file_manager = DirectIngestRawFileImportManager(
                 region=region,
                 fs=create_autospec(DirectIngestGCSFileSystem),
-                ingest_directory_path=create_autospec(GcsfsDirectoryPath))
+                ingest_directory_path=create_autospec(GcsfsDirectoryPath),
+                big_query_client=create_autospec(BigQueryClient)
+            )
 
             if region.raw_data_bq_imports_enabled_env is not None:
-                self.assertTrue(raw_file_manager.raw_file_configs)
+                self.assertTrue(raw_file_manager.region_raw_file_config.raw_file_configs)
 
-            for config in raw_file_manager.raw_file_configs.values():
+            for config in raw_file_manager.region_raw_file_config.raw_file_configs.values():
                 self.assertTrue(config.primary_key_cols)
