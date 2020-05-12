@@ -25,7 +25,7 @@ from flask import request
 # Importing only for typing.
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
 from recidiviz.calculator.query import export_config, cloudsql_export, bq_load
 from recidiviz.calculator.query.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
@@ -37,6 +37,7 @@ from recidiviz.utils import pubsub_helper
 
 
 def export_table_then_load_table(
+        big_query_client: BigQueryClient,
         table: str,
         dataset_ref: bigquery.dataset.DatasetReference,
         schema_type: SchemaType) -> bool:
@@ -45,6 +46,7 @@ def export_table_then_load_table(
     Waits until the BigQuery load is completed.
 
     Args:
+        big_query_client: A BigQueryClient.
         table: Table to export then import. Table must be defined
             in the TABLES_TO_EXPORT for its corresponding schema.
         dataset_ref: The BigQuery dataset to load the table into.
@@ -73,9 +75,8 @@ def export_table_then_load_table(
     export_success = cloudsql_export.export_table(schema_type,
                                                   table,
                                                   export_query)
-    if export_success: # pylint: disable=no-else-return
-        load_success = bq_load.start_table_load_and_wait(dataset_ref, table,
-                                                         schema_type)
+    if export_success:  # pylint: disable=no-else-return
+        load_success = bq_load.start_table_load_and_wait(big_query_client, dataset_ref, table, schema_type)
         return load_success
     else:
         logging.error("Skipping BigQuery load of table [%s], "
@@ -83,41 +84,7 @@ def export_table_then_load_table(
         return False
 
 
-def export_then_load_all_sequentially(schema_type: SchemaType):
-    """Exports then loads each table sequentially.
-
-    No operations for a new table happen until all operations for
-    the previous table have completed.
-
-    For example, for Tables A, B, C:
-    1. Export Table A
-    2. Load Table A
-    3. Export Table B
-    4. Load Table B
-    5. Export Table C
-    6. Load Table C
-
-    There is no reason to load sequentially, but we must export sequentially
-    because Cloud SQL can only support one export operation at a time.
-    """
-
-    bq_client = BigQueryClientImpl()
-    if schema_type == SchemaType.JAILS:
-        tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        dataset_ref = bq_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
-    elif schema_type == SchemaType.STATE:
-        tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
-    else:
-        logging.error("Invalid schema_type requested. Must be either"
-                      " SchemaType.JAILS or SchemaType.STATE.")
-        return
-
-    for table in tables_to_export:
-        export_table_then_load_table(table.name, dataset_ref, schema_type)
-
-
-def export_all_then_load_all(schema_type: SchemaType):
+def export_all_then_load_all(big_query_client: BigQueryClient, schema_type: SchemaType):
     """Export all tables from Cloud SQL in the given schema, then load all
     tables to BigQuery.
 
@@ -131,14 +98,13 @@ def export_all_then_load_all(schema_type: SchemaType):
     4. Load Tables A, B, C in parallel.
     """
 
-    bq_client = BigQueryClientImpl()
     if schema_type == SchemaType.JAILS:
         tables_to_export = export_config.COUNTY_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
+        base_tables_dataset_ref = big_query_client.dataset_ref_for_id(county_dataset_config.COUNTY_BASE_DATASET)
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
     elif schema_type == SchemaType.STATE:
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
-        base_tables_dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
+        base_tables_dataset_ref = big_query_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
     else:
         logging.error("Invalid schema_type requested. Must be either"
@@ -152,7 +118,7 @@ def export_all_then_load_all(schema_type: SchemaType):
 
     logging.info("Beginning BQ table load")
     bq_load.load_all_tables_concurrently(
-        base_tables_dataset_ref, tables_to_export, schema_type)
+        big_query_client, base_tables_dataset_ref, tables_to_export, schema_type)
 
 
 export_manager_blueprint = flask.Blueprint('export_manager', __name__)
@@ -186,7 +152,7 @@ def handle_bq_export_task():
 
     logging.info("Starting BQ export task for table: %s", table_name)
 
-    success = export_table_then_load_table(table_name, dataset_ref, schema_type)
+    success = export_table_then_load_table(bq_client, table_name, dataset_ref, schema_type)
 
     return ('', HTTPStatus.OK if success else HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -268,4 +234,4 @@ if __name__ == '__main__':
 
     local_export_schema_type = SchemaType.STATE
 
-    export_all_then_load_all(local_export_schema_type)
+    export_all_then_load_all(BigQueryClientImpl(), local_export_schema_type)
