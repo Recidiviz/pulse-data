@@ -17,7 +17,8 @@
 
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
+    DirectIngestRawFileImportManager
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
@@ -66,7 +67,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                  view_query_template: str,
                  raw_file_config: DirectIngestRawFileConfig):
         view_dataset_id = f'{region_code.lower()}_raw_data_up_to_date_views'
-        raw_table_dataset_id = f'{region_code.lower()}_raw_data'
+        raw_table_dataset_id = DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
         super().__init__(project_id=project_id,
                          dataset_id=view_dataset_id,
                          view_id=view_id,

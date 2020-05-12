@@ -90,7 +90,7 @@ class BigQueryDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
     REGION_CODE_COL_NAME = 'region_code'
 
     def __init__(self, *, region_code: str, big_query_client: BigQueryClient):
-        self.region_code = region_code
+        self.region_code = region_code.upper()
 
         # TODO(3020): Once metadata tables are in postgres, this class will not need a BigQueryClient
         self.big_query_client = big_query_client

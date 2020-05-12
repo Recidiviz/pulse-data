@@ -44,6 +44,10 @@ class GcsfsPath:
     def abs_path(self) -> str:
         """Builds full path as a string."""
 
+    def uri(self) -> str:
+        """Builds a Google Cloud Storage URI (e.g. the absolute path with 'gs://' prepended."""
+        return f'gs://{self.abs_path()}'
+
     @classmethod
     def from_blob(
             cls,
