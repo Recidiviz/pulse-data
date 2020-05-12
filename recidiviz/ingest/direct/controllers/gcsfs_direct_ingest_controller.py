@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType, GcsfsRawDataBQImportArgs, \
-    GcsfsIngestViewExportArgs
+    GcsfsIngestViewExportArgs, gcsfs_direct_ingest_temporary_output_directory_path
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
@@ -97,6 +97,8 @@ class GcsfsDirectIngestController(
             region=self.region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
+            temp_output_directory_path=GcsfsDirectoryPath.from_absolute_path(
+                gcsfs_direct_ingest_temporary_output_directory_path()),
             big_query_client=BigQueryClientImpl()
         )
 

@@ -330,6 +330,32 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def insert_into_table_from_cloud_storage_async(
+            self,
+            source_uri: str,
+            destination_dataset_ref: bigquery.DatasetReference,
+            destination_table_id: str,
+            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        """Inserts rows from CSV data in GCS into a table in BigQuery.
+
+        Given a desired table name, source data URI and destination schema, inserts the data into the BigQuery table.
+
+        This starts the job, but does not wait until it completes.
+
+        Tables are created if they do not exist, and rows are merely appended if they do exist.
+
+        Args:
+            source_uri: The path in Google Cloud Storage to read contents from (starts with 'gs://').
+            destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
+                if it does not already exist.
+            destination_table_id: String name of the table to import.
+            destination_table_schema: Defines a list of field schema information for each expected column in the input
+                file.
+        Returns:
+            The LoadJob object containing job details.
+        """
+
+    @abc.abstractmethod
     def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
         """Deletes rows from the given table that match the filter clause.
 
@@ -456,6 +482,20 @@ class BigQueryClientImpl(BigQueryClient):
             destination_table_id: str,
             destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
 
+        return self._load_table_from_cloud_storage_async(source_uri=source_uri,
+                                                         destination_dataset_ref=destination_dataset_ref,
+                                                         destination_table_id=destination_table_id,
+                                                         destination_table_schema=destination_table_schema,
+                                                         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+
+    def _load_table_from_cloud_storage_async(
+            self,
+            source_uri: str,
+            destination_dataset_ref: bigquery.DatasetReference,
+            destination_table_id: str,
+            destination_table_schema: List[bigquery.SchemaField],
+            write_disposition: bigquery.WriteDisposition) -> bigquery.job.LoadJob:
+
         self.create_dataset_if_necessary(destination_dataset_ref)
 
         destination_table_ref = destination_dataset_ref.table(destination_table_id)
@@ -463,7 +503,7 @@ class BigQueryClientImpl(BigQueryClient):
         job_config = bigquery.LoadJobConfig()
         job_config.schema = destination_table_schema
         job_config.source_format = bigquery.SourceFormat.CSV
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+        job_config.write_disposition = write_disposition
 
         load_job = self.client.load_table_from_uri(
             source_uri,
@@ -471,7 +511,7 @@ class BigQueryClientImpl(BigQueryClient):
             job_config=job_config
         )
 
-        logging.info("Started load job %s for table %s.%s.%s",
+        logging.info("Started load job [%s] for table [%s.%s.%s]",
                      load_job.job_id,
                      destination_table_ref.project, destination_table_ref.dataset_id, destination_table_ref.table_id)
 
@@ -626,6 +666,18 @@ class BigQueryClientImpl(BigQueryClient):
                      destination_dataset_id, destination_table_id)
 
         return self.client.query(insert_query)
+
+    def insert_into_table_from_cloud_storage_async(
+            self,
+            source_uri: str,
+            destination_dataset_ref: bigquery.DatasetReference,
+            destination_table_id: str,
+            destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        return self._load_table_from_cloud_storage_async(source_uri=source_uri,
+                                                         destination_dataset_ref=destination_dataset_ref,
+                                                         destination_table_id=destination_table_id,
+                                                         destination_table_schema=destination_table_schema,
+                                                         write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
 
     def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
         if not filter_clause.startswith('WHERE'):

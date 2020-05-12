@@ -144,6 +144,15 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
             f'{self.upper_bound_datetime_prev.isoformat()}-{self.upper_bound_datetime_to_export.isoformat()}'
 
 
+def gcsfs_direct_ingest_temporary_output_directory_path(project_id: Optional[str] = None) -> str:
+    if project_id is None:
+        project_id = metadata.project_id()
+        if not project_id:
+            raise ValueError("Project id not set")
+
+    return f'{project_id}-direct-ingest-temporary-files'
+
+
 def gcsfs_direct_ingest_storage_directory_path_for_region(
         region_code: str,
         system_level: SystemLevel,

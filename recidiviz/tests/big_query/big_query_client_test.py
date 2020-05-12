@@ -213,6 +213,18 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_not_called()
 
+    def test_insert_into_table_from_cloud_storage_async(self):
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
+
+        self.bq_client.insert_into_table_from_cloud_storage_async(
+            destination_dataset_ref=self.mock_dataset,
+            destination_table_id=self.mock_table_id,
+            destination_table_schema=[SchemaField('my_column', 'STRING', 'NULLABLE', None, ())],
+            source_uri='gs://bucket/export-uri')
+
+        self.mock_client.create_dataset.assert_called()
+        self.mock_client.load_table_from_uri.assert_called()
+
     def test_insert_rows_into_table(self):
         self.mock_client.insert_rows.return_value = None
 

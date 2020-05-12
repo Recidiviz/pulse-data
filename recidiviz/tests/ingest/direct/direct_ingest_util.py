@@ -251,11 +251,13 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
                  region: Region,
                  fs: DirectIngestGCSFileSystem,
                  ingest_directory_path: GcsfsDirectoryPath,
+                 temp_output_directory_path: GcsfsDirectoryPath,
                  big_query_client: BigQueryClient):
 
         super().__init__(region=region,
                          fs=fs,
                          ingest_directory_path=ingest_directory_path,
+                         temp_output_directory_path=temp_output_directory_path,
                          big_query_client=big_query_client,
                          region_raw_file_config=FakeDirectIngestRegionRawFileConfig(region.region_code))
         self.imported_paths: List[GcsfsFilePath] = []
@@ -345,6 +347,22 @@ def path_for_fixture_file(
         file_type: Optional[GcsfsDirectIngestFileType] = None,
         dt: Optional[datetime.datetime] = None
 ) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
+    return path_for_fixture_file_in_test_gcs_directory(
+        directory=controller.ingest_directory_path,
+        filename=filename,
+        should_normalize=should_normalize,
+        file_type=file_type,
+        dt=dt)
+
+
+def path_for_fixture_file_in_test_gcs_directory(
+        *,
+        directory: GcsfsDirectoryPath,
+        filename: str,
+        should_normalize: bool,
+        file_type: Optional[GcsfsDirectIngestFileType] = None,
+        dt: Optional[datetime.datetime] = None
+) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
     file_path_str = filename
 
     if should_normalize:
@@ -356,9 +374,8 @@ def path_for_fixture_file(
                                                             dt=dt)
 
     return GcsfsPath.from_bucket_and_blob_name(
-        bucket_name=controller.ingest_directory_path.bucket_name,
-        blob_name=os.path.join(controller.ingest_directory_path.relative_path,
-                               file_path_str))
+        bucket_name=directory.bucket_name,
+        blob_name=os.path.join(directory.relative_path, file_path_str))
 
 
 def add_paths_with_tags_and_process(test_case: unittest.TestCase,
