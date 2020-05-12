@@ -18,7 +18,6 @@
 
 import collections
 from http import HTTPStatus
-from itertools import chain
 import json
 import unittest
 from unittest import mock
@@ -91,13 +90,10 @@ class ExportManagerTestCounty(unittest.TestCase):
         table = 'first_table'
         dataset = self.mock_client.dataset('random_dataset')
 
-        export_manager.export_table_then_load_table(table,
-                                                    dataset,
-                                                    self.schema_type)
+        export_manager.export_table_then_load_table(self.mock_client, table, dataset, self.schema_type)
 
         self.mock_bq_load.start_table_load_and_wait.assert_called_with(
-            dataset, table, self.schema_type)
-
+            self.mock_client, dataset, table, self.schema_type)
 
     def test_export_table_then_load_table_doesnt_load(self):
         """Test that export_table_then_load_table doesn't load if export fails.
@@ -105,44 +101,10 @@ class ExportManagerTestCounty(unittest.TestCase):
         self.mock_cloudsql_export.export_table.return_value = False
 
         with self.assertLogs(level='ERROR'):
-            export_manager.export_table_then_load_table('random-table',
-                                                        self.mock_dataset,
-                                                        self.schema_type)
+            export_manager.export_table_then_load_table(
+                self.mock_client, 'random-table', self.mock_dataset, self.schema_type)
 
         self.mock_bq_load.assert_not_called()
-
-
-    def test_export_then_load_all_sequentially(self):
-        """Test that tables are exported then loaded sequentially."""
-        default_dataset = self.mock_client.dataset_ref_for_id(dataset_config.COUNTY_BASE_DATASET)
-
-        # Suppose all exports succeed.
-        self.mock_cloudsql_export.export_table.side_effect = (
-            [True]*len(self.mock_export_config.COUNTY_TABLES_TO_EXPORT))
-
-        mock_parent = mock.Mock()
-        mock_parent.attach_mock(
-            self.mock_cloudsql_export.export_table, 'export')
-        mock_parent.attach_mock(
-            self.mock_bq_load.start_table_load_and_wait, 'load')
-
-        export_then_load_calls = list(chain.from_iterable([
-            (mock.call.export(self.schema_type,
-                              table.name,
-                              self.mock_export_config.
-                              COUNTY_TABLE_EXPORT_QUERIES[table.name]),
-             mock.call.load(default_dataset, table.name, self.schema_type))
-            for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT
-        ]))
-
-        export_manager.export_then_load_all_sequentially(self.schema_type)
-
-        mock_parent.assert_has_calls(export_then_load_calls)
-
-
-    def test_export_then_load_all_sequentially_fails_invalid_module(self):
-        with self.assertLogs(level='ERROR'):
-            export_manager.export_then_load_all_sequentially('nonsense')
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     def test_export_all_then_load_all(self, mock_project_id):
@@ -165,19 +127,20 @@ class ExportManagerTestCounty(unittest.TestCase):
                 self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
                 self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES),
             mock.call.load_all(
+                self.mock_client,
                 default_dataset,
                 self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
                 self.schema_type)
         ]
 
-        export_manager.export_all_then_load_all(self.schema_type)
+        export_manager.export_all_then_load_all(self.mock_client, self.schema_type)
 
         mock_parent.assert_has_calls(export_all_then_load_all_calls)
 
 
     def test_export_all_then_load_all_fails_invalid_module(self):
         with self.assertLogs(level='ERROR'):
-            export_manager.export_all_then_load_all('nonsense')
+            export_manager.export_all_then_load_all(self.mock_client, 'nonsense')
 
     @mock.patch('recidiviz.utils.metadata.project_id')
     @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
@@ -201,7 +164,8 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table,
+        mock_export.assert_called_with(self.mock_client,
+                                       table,
                                        DatasetReference.from_string(self.mock_dataset_name,
                                                                     mock_project_id.return_value),
                                        SchemaType.JAILS)
@@ -230,8 +194,9 @@ class ExportManagerTestCounty(unittest.TestCase):
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_export.assert_called_with(table, DatasetReference.from_string('dataset',
-                                                                           'test-project'),
+        mock_export.assert_called_with(self.mock_client,
+                                       table,
+                                       DatasetReference.from_string('dataset', 'test-project'),
                                        SchemaType.STATE)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
