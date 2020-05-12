@@ -28,7 +28,7 @@ from google.cloud import exceptions
 # Importing only for typing.
 import sqlalchemy
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.calculator.query import export_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
@@ -36,8 +36,10 @@ _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
 
 def start_table_load(
+        big_query_client: BigQueryClient,
         dataset_ref: bigquery.dataset.DatasetReference,
-        table_name: str, schema_type: SchemaType) -> Optional[bigquery.job.LoadJob]:
+        table_name: str,
+        schema_type: SchemaType) -> Optional[bigquery.job.LoadJob]:
     """Loads a table from CSV data in GCS to BigQuery.
 
     Given a table name, retrieve the export URI and schema from export_config,
@@ -51,6 +53,7 @@ def start_table_load(
     data will be completely wiped and overwritten with the contents of the CSV.
 
     Args:
+        big_query_client: A BigQueryClient.
         dataset_ref: The BigQuery dataset to load the table into. Gets created
             if it does not already exist.
         table_name: Table to import. Table must be defined
@@ -84,8 +87,7 @@ def start_table_load(
             "the TABLES_TO_EXPORT for the %s module?", schema_type, table_name)
         return None
 
-    bq_client = BigQueryClientImpl()
-    load_job = bq_client.load_table_from_cloud_storage_async(
+    load_job = big_query_client.load_table_from_cloud_storage_async(
         source_uri=uri,
         destination_dataset_ref=dataset_ref,
         destination_table_id=table_name,
@@ -95,10 +97,12 @@ def start_table_load(
     return load_job
 
 
-def wait_for_table_load(load_job: bigquery.job.LoadJob) -> bool:
+def wait_for_table_load(big_query_client: BigQueryClient,
+                        load_job: bigquery.job.LoadJob) -> bool:
     """Wait for a table LoadJob to finish, and log its status.
 
     Args:
+        big_query_client: A BigQueryClient for querying the result table
         load_job: BigQuery LoadJob whose result to wait for.
     Returns:
         True if no errors were raised, else False.
@@ -112,8 +116,11 @@ def wait_for_table_load(load_job: bigquery.job.LoadJob) -> bool:
                      load_job.destination.dataset_id,
                      load_job.destination.table_id)
 
+        destination_table = big_query_client.get_table(
+            big_query_client.dataset_ref_for_id(load_job.destination.dataset_id),
+            load_job.destination.table_id)
         logging.info("Loaded %d rows in table %s.%s.%s",
-                     load_job.destination.num_rows,
+                     destination_table.num_rows,
                      load_job.destination.project,
                      load_job.destination.dataset_id,
                      load_job.destination.table_id)
@@ -129,6 +136,7 @@ def wait_for_table_load(load_job: bigquery.job.LoadJob) -> bool:
 
 
 def start_table_load_and_wait(
+        big_query_client: BigQueryClient,
         dataset_ref: bigquery.dataset.DatasetReference,
         table_name: str, schema_type: SchemaType) -> bool:
     """Loads a table from CSV data in GCS to BigQuery, waits until completion.
@@ -139,9 +147,9 @@ def start_table_load_and_wait(
         True if no errors were raised, else False.
     """
 
-    load_job = start_table_load(dataset_ref, table_name, schema_type)
+    load_job = start_table_load(big_query_client, dataset_ref, table_name, schema_type)
     if load_job:
-        table_load_success = wait_for_table_load(load_job)
+        table_load_success = wait_for_table_load(big_query_client, load_job)
 
         return table_load_success
 
@@ -149,6 +157,7 @@ def start_table_load_and_wait(
 
 
 def load_all_tables_concurrently(
+        big_query_client: BigQueryClient,
         dataset_ref: bigquery.dataset.DatasetReference,
         tables: Tuple[sqlalchemy.Table, ...],
         schema_type: SchemaType):
@@ -158,11 +167,11 @@ def load_all_tables_concurrently(
 
     # Kick off all table LoadJobs at the same time.
     load_jobs = [
-        start_table_load(dataset_ref, table.name, schema_type)
+        start_table_load(big_query_client, dataset_ref, table.name, schema_type)
         for table in tables
     ]
 
     # Wait for all jobs to finish, log results.
     for load_job in load_jobs:
         if load_job:
-            wait_for_table_load(load_job)
+            wait_for_table_load(big_query_client, load_job)
