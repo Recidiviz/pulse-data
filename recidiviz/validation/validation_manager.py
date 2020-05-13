@@ -55,8 +55,14 @@ validation_manager_blueprint = Blueprint('validation_manager', __name__)
 @authenticate_request
 def handle_validation_request():
     """API endpoint to service data validation requests."""
-
     should_update_views = get_bool_param_value('should_update_views', request.args, default=False)
+    failed_validations = execute_validation(should_update_views=should_update_views)
+
+    return _readable_response(failed_validations), HTTPStatus.OK
+
+
+def execute_validation(should_update_views: bool) -> List[DataValidationJobResult]:
+    """Executes all validation checks."""
     if should_update_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
         view_manager.create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
@@ -88,7 +94,7 @@ def handle_validation_request():
     _emit_failures(failed_validations)
 
     logging.info('Validation run complete. Analyzed a total of %s jobs.', len(validation_jobs))
-    return _readable_response(failed_validations), HTTPStatus.OK
+    return failed_validations
 
 
 def _run_job(job: DataValidationJob) -> DataValidationJobResult:
@@ -126,4 +132,4 @@ def _readable_response(failed_validations: List[DataValidationJobResult]) -> str
 
 
 if __name__ == '__main__':
-    print(handle_validation_request()[0])
+    execute_validation(should_update_views=True)
