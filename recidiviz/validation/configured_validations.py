@@ -25,6 +25,8 @@ from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERR
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW
+from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
+    INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import \
@@ -45,6 +47,8 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
     SamenessDataValidationCheck(view=FTR_REFERRALS_COMPARISON_VIEW,
                                 comparison_columns=['age_bucket_sum', 'risk_level_sum', 'gender_sum', 'race_sum'],
                                 max_allowed_error=0.06),
+    SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW,
+                                comparison_columns=['external_population_count', 'internal_population_count']),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW,
                                 comparison_columns=['cell_sum', 'caseload_sum']),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW,
