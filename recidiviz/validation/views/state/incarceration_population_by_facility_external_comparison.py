@@ -26,8 +26,8 @@ from recidiviz.validation.views import dataset_config
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_NAME = \
     'incarceration_population_by_facility_external_comparison'
 
-INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = """ 
-Comparison of internal and external incarceration population counts by facility """
+INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = \
+    """ Comparison of internal and external incarceration population counts by facility """
 
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
@@ -45,16 +45,19 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
         FULL OUTER JOIN
       (SELECT * FROM
          -- Only compare states and months for which we have external validation data
-        (SELECT
-          state_code, year, month
-         FROM
-            `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
-         GROUP BY state_code, year, month)
+        (SELECT DISTINCT state_code, year, month FROM
+         `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`)
        LEFT JOIN
-          (SELECT state_code, year, month, facility, COUNT(DISTINCT(person_id)) as internal_population_count
+          (SELECT
+            state_code, year, month,
+            IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
+            COUNT(DISTINCT(person_id)) as internal_population_count
           FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
+          JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+            USING (state_code, job_id, year, month, metric_period_months)
           WHERE metric_period_months = 1
           AND methodology = 'PERSON'
+          AND job.metric_type = 'INCARCERATION_POPULATION'
           GROUP BY state_code, year, month, facility)
       USING(state_code, year, month))
     USING (state_code, year, month, facility)
