@@ -34,6 +34,8 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW
+from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
+    SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW
 
@@ -47,6 +49,7 @@ VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW,
         REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW,
+        SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW,
         SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW,
     ]
 }

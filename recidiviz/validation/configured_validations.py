@@ -19,7 +19,7 @@
 from typing import List
 
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
-from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
+from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.validation_models import DataValidationCheck
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
@@ -35,6 +35,8 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW
+from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
+    SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW
 
@@ -46,16 +48,25 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
 
     SamenessDataValidationCheck(view=FTR_REFERRALS_COMPARISON_VIEW,
                                 comparison_columns=['age_bucket_sum', 'risk_level_sum', 'gender_sum', 'race_sum'],
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 max_allowed_error=0.06),
     SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW,
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 comparison_columns=['external_population_count', 'internal_population_count']),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW,
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 comparison_columns=['cell_sum', 'caseload_sum']),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW,
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 comparison_columns=['cell_sum', 'month_sum'],
                                 max_allowed_error=0.03),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW,
-                                comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum'])
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                                comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum']),
+    SamenessDataValidationCheck(view=SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW,
+                                sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+                                comparison_columns=['external_district', 'internal_district'],
+                                max_allowed_error=0.01)
 ]
 
 STATES_TO_VALIDATE = ['UD_ID', 'US_MO', 'US_ND']
