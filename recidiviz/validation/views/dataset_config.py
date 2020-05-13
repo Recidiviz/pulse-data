@@ -18,3 +18,5 @@
 """Validation dataset configuration."""
 
 VIEWS_DATASET: str = 'validation_views'
+
+EXTERNAL_ACCURACY_DATASET: str = 'validation_external_accuracy_tables'

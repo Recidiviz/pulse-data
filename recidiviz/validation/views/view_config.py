@@ -24,6 +24,8 @@ from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW
+from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
+    INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import \
@@ -40,6 +42,7 @@ VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
     VIEWS_DATASET: [
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW,
         INCARCERATION_ADMISSION_NULLS_VIEW,
+        INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW,
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW,
