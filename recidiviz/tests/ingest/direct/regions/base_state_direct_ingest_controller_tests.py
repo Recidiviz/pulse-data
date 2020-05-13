@@ -26,6 +26,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
@@ -68,6 +69,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         return StateBase
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
+        """Runs ingest for a the ingest view file with the given unnormalized file name."""
         get_region_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
             "base_state_matching_delegate.get_region")
@@ -79,9 +81,13 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         )
         environ_patcher.start()
 
+        file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+
         file_path = path_for_fixture_file(self.controller,
                                           filename,
-                                          should_normalize=False)
+                                          file_type=file_type,
+                                          should_normalize=True)
 
         if not isinstance(self.controller.fs, FakeDirectIngestGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
