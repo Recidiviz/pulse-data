@@ -107,7 +107,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
             ],
-            'movement_facility_offstat_incarceration_periods': [
+            'movement_facility_location_offstat_incarceration_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._override_facilities,
                 self._set_generated_ids,
@@ -118,7 +118,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._incarceration_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
             ],
-            'movement_facility_offstat_supervision_periods': [
+            'movement_facility_location_offstat_supervision_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
                 self._clear_max_dates,
@@ -152,8 +152,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
             'early_discharge_incarceration_sentence': [],
             'early_discharge_supervision_sentence': [],
-            'movement_facility_offstat_incarceration_periods': [],
-            'movement_facility_offstat_supervision_periods': [],
+            'movement_facility_location_offstat_incarceration_periods': [],
+            'movement_facility_location_offstat_supervision_periods': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports_old': [],
             'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
@@ -173,8 +173,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
         'early_discharge_incarceration_sentence',
         'early_discharge_supervision_sentence',
-        'movement_facility_offstat_incarceration_periods',
-        'movement_facility_offstat_supervision_periods',
+        'movement_facility_location_offstat_incarceration_periods',
+        'movement_facility_location_offstat_supervision_periods',
         'ofndr_tst_tst_qstn_rspns_violation_reports',
         'ofndr_tst_tst_qstn_rspns_violation_reports_old',
     ]
@@ -355,8 +355,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 'ofndr_tst_ofndr_tst_cert',
                 'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
                 'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
-                'movement_facility_offstat_incarceration_periods',
-                'movement_facility_offstat_supervision_periods',
+                'movement_facility_location_offstat_incarceration_periods',
+                'movement_facility_location_offstat_supervision_periods',
                 'ofndr_tst_tst_qstn_rspns_violation_reports',
                 'ofndr_tst_tst_qstn_rspns_violation_reports_old',
         ]:
