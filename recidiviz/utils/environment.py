@@ -40,6 +40,10 @@ class GaeEnvironment(Enum):
     PRODUCTION = 'production'
 
 
+GAE_PROJECT_STAGING = 'recidiviz-staging'
+GAE_PROJECT_PRODUCTION = 'recidiviz-123'
+
+
 GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
 
 
