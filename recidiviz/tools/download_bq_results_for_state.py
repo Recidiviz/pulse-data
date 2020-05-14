@@ -36,7 +36,7 @@ import argparse
 import datetime
 import logging
 import os
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 import pandas as pd
 from google.cloud import bigquery, bigquery_storage_v1beta1
@@ -65,7 +65,7 @@ class DownloadBqResultsForStateController:
                  region_code: str,
                  local_dir: str,
                  encoding: str,
-                 start_date: datetime.datetime,
+                 start_date: Optional[datetime.datetime],
                  end_date: datetime.datetime):
         self.dry_run = dry_run
         self.project_id = project_id
@@ -131,15 +131,22 @@ class DownloadBqResultsForStateController:
         file_id = get_next_available_file_id(
             metadata_type=self.metadata_type, client=self.bqclient, project_id=self.project_id)
 
-        before_df = self._download_query_for_date(
-            query=query,
-            query_name=query_name,
-            query_date=datetime.datetime(year=2020, month=2, day=27))
-        after_df = self._download_query_for_date(
-            query=query,
-            query_name=query_name,
-            query_date=datetime.datetime(year=2020, month=4, day=27))
-        update_df = self._filter_seen_rows(old_df=before_df, new_df=after_df)
+        if not self.start_date:
+            update_df = self._download_query_for_date(
+                query=query,
+                query_name=query_name,
+                query_date=self.end_date)
+        else:
+            before_df = self._download_query_for_date(
+                query=query,
+                query_name=query_name,
+                query_date=self.start_date)
+            after_df = self._download_query_for_date(
+                query=query,
+                query_name=query_name,
+                query_date=self.end_date)
+            update_df = self._filter_seen_rows(old_df=before_df, new_df=after_df)
+
         logging.info('\n\nUpdated dataframe has %d rows\n', update_df.shape[0])
         self._write_dataframe_to_csv(df=update_df, file_path=local_file_path)
         add_row_to_ingest_metadata(
@@ -168,6 +175,7 @@ class DownloadBqResultsForStateController:
         failed_downloads = []
         for query_name, query in all_queries:
             try:
+                logging.info('Beginning process for query %s', query_name)
                 self.download_query_to_csv(query=query, query_name=query_name)
                 succeeded_downloads.append(query_name)
             except Exception:
@@ -190,7 +198,9 @@ if __name__ == '__main__':
     parser.add_argument('--separator', required=False, default=',', help='Separator for the csv. Defaults to \',\'')
     parser.add_argument('--encoding', required=False, default='utf-8',
                         help='Encoding for the file to be written Defaults to utf-8')
-    parser.add_argument('--start-date', required=True, help='Expected in the format %Y-%m-%d %H:%M')
+    parser.add_argument('--start-date', required=False, help='Expected in the format %Y-%m-%d %H:%M. If null, '
+                                                             'generates complete historical files as of the provided '
+                                                             '|end_date|.')
     parser.add_argument('--end-date', required=True, help='Expected in the format %Y-%m-%d %H:%M')
 
     args = parser.parse_args()
@@ -200,7 +210,7 @@ if __name__ == '__main__':
         dry_run=args.dry_run,
         project_id=args.project_id,
         region_code=args.region_code.lower(),
-        start_date=to_datetime(args.start_date),
+        start_date=to_datetime(args.start_date) if args.start_date else None,
         end_date=to_datetime(args.end_date),
         local_dir=args.local_dir,
         encoding=args.encoding).download_queries_to_csvs()

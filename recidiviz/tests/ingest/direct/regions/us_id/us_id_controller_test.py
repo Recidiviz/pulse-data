@@ -532,7 +532,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'early_discharge_supervision_sentence')
 
-    def test_populate_data_movement_facility_offstat_incarceration_periods(self):
+    def test_populate_data_movement_facility_location_offstat_incarceration_periods(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -636,9 +636,9 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, 'movement_facility_offstat_incarceration_periods')
+        self.run_parse_file_test(expected, 'movement_facility_location_offstat_incarceration_periods')
 
-    def test_populate_data_movement_facility_offstat_supervision_periods(self):
+    def test_populate_data_movement_facility_location_offstat_supervision_periods(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -770,7 +770,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, 'movement_facility_offstat_supervision_periods')
+        self.run_parse_file_test(expected, 'movement_facility_location_offstat_supervision_periods')
 
     # TODO(2999): Associate VRs by date to SPs
     def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports(self):
@@ -1617,7 +1617,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         sg_2222_1.incarceration_sentences.append(is_2222_1_placeholder)
 
         # Act
-        self._run_ingest_job_for_filename('movement_facility_offstat_incarceration_periods.csv')
+        self._run_ingest_job_for_filename('movement_facility_location_offstat_incarceration_periods.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -1782,7 +1782,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         ss_3333_1.supervision_periods.extend([sp_3333_1, sp_3333_2])
 
         # Act
-        self._run_ingest_job_for_filename('movement_facility_offstat_supervision_periods.csv')
+        self._run_ingest_job_for_filename('movement_facility_location_offstat_supervision_periods.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
