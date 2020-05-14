@@ -31,10 +31,16 @@ keys_to_ignore:
                             #                 determine if a person is in interstate probation.
   - fac_typ                 # Facility type - handled manually in controller for periods of absconscion.
 
+  - loc_cd                  # Unused - location code.
+  - loc_ldesc               # Unused - Location name, used sometimes in place of fac_ldesc - handled manually in controller.
   - next_fac_ldesc          # Unused - next facility name
+  - next_loc_cd             # Unused - next location code
+  - next_loc_ldesc          # Unused - next location name
   - next_investigative      # Unused - Whether the person is being investigated (pre sentence) in the next facility
   - next_parole_violator    # Unused - Whether the person is a parole violator in the next facility
   - next_rider              # Unused - Whether the person is on a rider in the next facility
   - prev_fac_cd             # Unused - previous facility code
   - prev_fac_ldesc          # Unused - previous facility name
+  - prev_loc_cd             # Unused - previous location code
+  - prev_loc_ldesc          # Unused - previous location name
   - prev_rider              # Unused - Whether the person was on a rider in the last facility.

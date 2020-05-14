@@ -20,7 +20,8 @@ enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
-  - investigative           # Whether the person is being investigated (pre sentence)- handled manually in controller.
+  - investigative           # Whether the person is being investigated (pre sentence) - handled manually in controller.
+  - loc_ldesc               # Location name, used sometimes in place of fac_ldesc - handled manually in controller.
   - next_fac_cd             # Next facility code - handled manually in controller.
   - rider                   # Whether the person is on a rider - handled manually in the controller.
   - parole_violator         # Whether the person has a parole violator status - handled manually in the controller.
@@ -30,10 +31,15 @@ keys_to_ignore:
 
   - fac_cd                  # Unused - facility code - analogous to fac_ldesc used above.
   - fac_typ                 # Unused - always 'I' for incarcerated
+  - loc_cd                  # Unused - location code - analogous to loc_ldesc
   - next_fac_ldesc          # Unused - next facility name
-  - next_investigative      # Unused - Whether the person is being investigated (pre sentence) in the next facility
-  - next_parole_violator    # Unused - Whether the person is a parole violator in the next facility
-  - next_rider              # Unused - Whether the person is on a rider in the next facility
+  - next_investigative      # Unused - whether the person is being investigated (pre sentence) in the next facility
+  - next_loc_cd             # Unused - next location code
+  - next_loc_ldesc          # Unused - next location name
+  - next_parole_violator    # Unused - whether the person is a parole violator in the next facility
+  - next_rider              # Unused - whether the person is on a rider in the next facility
   - prev_fac_cd             # Unused - previous facility code
   - prev_fac_ldesc          # Unused - previous facility name
-  - prev_rider              # Unused - Whether the person was on a rider in the last facility.
+  - prev_loc_cd             # Unused - previous location code
+  - prev_loc_ldesc          # Unused - previous location name
+  - prev_rider              # Unused - whether the person was on a rider in the last facility.
