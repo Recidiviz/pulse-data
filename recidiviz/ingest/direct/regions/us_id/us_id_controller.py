@@ -40,12 +40,13 @@ from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, so
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
-    JAIL_FACILITY_CODES, VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
+    VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
     SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_TYPE, PREVIOUS_INVESTIGATION, PREVIOUS_FACILITY_CODE, \
     NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE, CURRENT_INVESTIGATION, PREVIOUS_PAROLE_VIOLATOR, \
     CURRENT_PAROLE_VIOLATOR, CURRENT_RIDER
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
-    incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper
+    incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
+    is_jail_facility
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
@@ -108,6 +109,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             ],
             'movement_facility_offstat_incarceration_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
+                self._override_facilities,
                 self._set_generated_ids,
                 self._clear_max_dates,
                 self._add_rider_treatment,
@@ -442,6 +444,24 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 obj.supervision_type = StateSupervisionType.PROBATION.value
 
     @staticmethod
+    def _override_facilities(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Overrides the recorded facility for the person if IDOC data indicates that the person is at another
+        location.
+        """
+        location_cd = row.get('loc_cd', '')
+        location_name = row.get('loc_ldesc', '')
+        if not (location_cd and location_name) or location_cd == '001':   # Present at facility
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.facility = location_name
+
+    @staticmethod
     def _set_generated_ids(
             _file_tag: str,
             row: Dict[str, str],
@@ -539,11 +559,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                # TODO(2999): Validate with ID that these are the only county jail facilities.
-                if obj.facility in JAIL_FACILITY_CODES:
+                if obj.facility is not None and is_jail_facility(obj.facility):
                     obj.incarceration_type = StateIncarcerationType.COUNTY_JAIL.value
                 else:
                     obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
+
 
     @staticmethod
     def _clear_max_dates(

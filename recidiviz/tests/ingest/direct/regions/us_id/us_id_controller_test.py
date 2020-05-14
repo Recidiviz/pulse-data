@@ -558,7 +558,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                         StateIncarcerationPeriod(
                                             state_incarceration_period_id='1111-2',
                                             incarceration_type='COUNTY_JAIL',
-                                            facility='COUNTY JAIL',
+                                            facility='SHERIFF DEPT 1',
                                             admission_reason='I',
                                             admission_date='2008-10-01',
                                             release_reason='H',
@@ -611,8 +611,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                     state_incarceration_periods=[
                                         StateIncarcerationPeriod(
                                             state_incarceration_period_id='2222-1',
-                                            facility='FACILITY 3',
-                                            incarceration_type='STATE_PRISON',
+                                            facility='SHERIFF DEPT 2',
+                                            incarceration_type='COUNTY_JAIL',
                                             admission_reason='TEMPORARY_CUSTODY',
                                             admission_date='2010-01-01',
                                             release_reason='RELEASED_FROM_TEMPORARY_CUSTODY',
@@ -1516,7 +1516,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         ip_1111_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
-            facility='COUNTY JAIL',
+            facility='SHERIFF DEPT 1',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             incarceration_type_raw_text='COUNTY_JAIL',
@@ -1584,10 +1584,10 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         ip_2222_1 = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
-            facility='FACILITY 3',
+            facility='SHERIFF DEPT 2',
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text='COUNTY_JAIL',
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_reason_raw_text='TEMPORARY_CUSTODY',
             admission_date=datetime.date(year=2010, month=1, day=1),
