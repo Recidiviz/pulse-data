@@ -21,7 +21,7 @@
 from typing import List, Tuple, Optional
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
-    DirectIngestRawDataTableUpToDateBigQueryView, DirectIngestRawDataTableLatestBigQueryView
+    DirectIngestRawDataTableUpToDateView, DirectIngestRawDataTableLatestView
 from recidiviz.ingest.direct.query_utils import output_sql_queries, get_raw_table_config
 from recidiviz.utils import metadata
 
@@ -36,11 +36,11 @@ STATE_CODE = 'us_id'
 
 def _create_date_bounded_query(raw_table_name) -> str:
     if parameterized_query:
-        return DirectIngestRawDataTableUpToDateBigQueryView(
+        return DirectIngestRawDataTableUpToDateView(
             region_code=STATE_CODE,
             raw_file_config=get_raw_table_config(region_code=STATE_CODE,
                                                  raw_table_name=raw_table_name)).view_query
-    return DirectIngestRawDataTableLatestBigQueryView(
+    return DirectIngestRawDataTableLatestView(
         region_code=STATE_CODE,
         raw_file_config=get_raw_table_config(region_code=STATE_CODE,
                                              raw_table_name=raw_table_name)).select_query

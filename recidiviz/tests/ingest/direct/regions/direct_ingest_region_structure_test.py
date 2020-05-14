@@ -102,3 +102,6 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
 
             for config in raw_file_manager.raw_file_configs.values():
                 self.assertTrue(config.primary_key_cols)
+
+    # TODO(3020): Write a test that collects and builds all DirectIngestPreProcessedIngestViewBuilder instances for
+    #   each region to make sure there are no queries that don't parse.

@@ -137,6 +137,7 @@ _FILE_ID_COL_NAME = 'file_id'
 _UPDATE_DATETIME_COL_NAME = 'update_datetime'
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 500000
 
+
 class DirectIngestRawFileImportManager:
     """Class that stores raw data import configs for a region, with functionality for executing an import of a specific
     file.
