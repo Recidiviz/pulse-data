@@ -21,6 +21,7 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason
+from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES
 
 
 def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
@@ -70,3 +71,7 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
     if label == 'F':    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
     return None
+
+
+def is_jail_facility(facility: str):
+    return facility in JAIL_FACILITY_CODES or 'SHERIFF' in facility
