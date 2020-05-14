@@ -32,7 +32,7 @@ import logging
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.query_utils import get_raw_tables_for_state, get_raw_table_config
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
-    DirectIngestRawDataTableLatestBigQueryView
+    DirectIngestRawDataTableLatestView
 from recidiviz.utils.params import str_to_bool
 
 
@@ -44,7 +44,7 @@ def create_or_update_views_for_table(
         dry_run: bool):
     """Creates/Updates views corresponding to the provided |raw_table_name|."""
     logging.info('===================== CREATING QUERIES FOR %s  =======================', raw_table_name)
-    latest_view = DirectIngestRawDataTableLatestBigQueryView(
+    latest_view = DirectIngestRawDataTableLatestView(
         region_code=state_code,
         raw_file_config=get_raw_table_config(region_code=state_code,
                                              raw_table_name=raw_table_name))

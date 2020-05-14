@@ -48,16 +48,23 @@ def _print_all_queries_to_console(query_name_to_query_list: List[Tuple[str, str]
         print(query_str)
 
 
-RAW_TABLE_CONFIGS_BY_STATE = {
-    'us_id': DirectIngestRegionRawFileConfig('us_id'),
-}
+_RAW_TABLE_CONFIGS_BY_STATE = {}
+
+
+def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileConfig:
+    region_code_lower = region_code.lower()
+    global _RAW_TABLE_CONFIGS_BY_STATE
+    if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
+        _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower] = DirectIngestRegionRawFileConfig(region_code_lower)
+
+    return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
 
 
 def get_raw_table_config(region_code: str,
                          raw_table_name: str):
-    return RAW_TABLE_CONFIGS_BY_STATE[region_code].raw_file_configs[raw_table_name]
+    return get_region_raw_file_config(region_code).raw_file_configs[raw_table_name]
 
 
-def get_raw_tables_for_state(state_code: str) -> Set[str]:
+def get_raw_tables_for_state(region_code: str) -> Set[str]:
     """Returns the names of all raw data tables for the given |state_code|."""
-    return RAW_TABLE_CONFIGS_BY_STATE[state_code].raw_file_tags
+    return get_region_raw_file_config(region_code).raw_file_tags
