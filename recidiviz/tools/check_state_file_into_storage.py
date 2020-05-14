@@ -45,6 +45,9 @@ from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 #  Our flow for files we don't want to ingest yet should be just dropped into the ingest bucket as raw files, imported
 #  to BQ without actually having an ingest view built on top of that data. We will want to change this script to allow
 #  us to upload to the *ingest* bucket with a certain date timestamp for backfills etc.
+from recidiviz.utils.params import str_to_bool
+
+
 class CheckStateFileIntoStorageController:
     """Class with functionality to upload a file or files to storage."""
 
@@ -52,12 +55,14 @@ class CheckStateFileIntoStorageController:
                  paths: str,
                  project_id: str,
                  region: str,
-                 date: str):
+                 date: str,
+                 dry_run: bool):
 
         self.paths = paths
         self.project_id = project_id
         self.region = region.lower()
         self.datetime = datetime.datetime.fromisoformat(date)
+        self.dry_run = dry_run
 
         self.storage_bucket = \
             gcsfs_direct_ingest_storage_directory_path_for_region(
@@ -69,13 +74,16 @@ class CheckStateFileIntoStorageController:
         storage_dir_path = os.path.join('gs://',
                                         self.storage_bucket,
                                         GcsfsDirectIngestFileType.RAW_DATA.value,
-                                        str(self.datetime.year),
-                                        str(self.datetime.month),
-                                        str(self.datetime.day))
-
-        logging.info("Copying [%s] to [%s]", path, storage_dir_path)
+                                        f'{self.datetime.year:04}',
+                                        f'{self.datetime.month:02}',
+                                        f'{self.datetime.day:02}')
 
         full_file_storage_path = f'{storage_dir_path}/{normalized_file_name}'
+
+        if self.dry_run:
+            logging.info("[DRY RUN] Would copy [%s] to [%s]", path, full_file_storage_path)
+            return
+        logging.info("Copying [%s] to [%s]", path, full_file_storage_path)
         gsutil_cp(path, full_file_storage_path)
 
     def _do_check_in_for_file(self, path: str) -> None:
@@ -91,7 +99,6 @@ class CheckStateFileIntoStorageController:
             if os.path.isdir(path):
                 for filename in os.listdir(path):
                     path_candidates.append(os.path.join(path, filename))
-                    self._do_check_in_for_file(os.path.join(path, filename))
             elif os.path.isfile(path):
                 path_candidates.append(path)
 
@@ -101,7 +108,7 @@ class CheckStateFileIntoStorageController:
 
         for path in path_candidates:
             _, ext = os.path.splitext(path)
-            if not ext or ext != '.csv':
+            if not ext or ext not in ('.csv', '.txt'):
                 logging.info("Skipping file [%s] - invalid extension", path)
                 continue
             self._do_check_in_for_file(path)
@@ -125,6 +132,10 @@ def main():
     parser.add_argument('--date', required=True,
                         help='The date to be associated with this file.')
 
+    parser.add_argument('--dry-run',
+                        type=str_to_bool,
+                        default=True,
+                        help='Whether or not to run this script in dry run (log only) mode.')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -132,7 +143,8 @@ def main():
     CheckStateFileIntoStorageController(paths=args.paths,
                                         project_id=args.project_id,
                                         region=args.region,
-                                        date=args.date).do_check_in()
+                                        date=args.date,
+                                        dry_run=args.dry_run).do_check_in()
 
 
 if __name__ == '__main__':
