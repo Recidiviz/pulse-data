@@ -632,12 +632,11 @@ ALL_PERIODS_FRAGMENT = f"""
     )
 """
 
-MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
+MOVEMENT_FACILITY_LOCATION_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
     WITH 
     movement AS ({_create_date_bounded_query('movement')}),
     facility AS ({_create_date_bounded_query('facility')}),
     location AS ({_create_date_bounded_query('location')}),
-    lvgunit AS ({_create_date_bounded_query('lvgunit')}),
     offstat AS ({_create_date_bounded_query('offstat')}),
     {ALL_PERIODS_FRAGMENT}
 
@@ -655,10 +654,11 @@ MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
     ORDER BY docno, incrno, start_date, end_date
 """
 
-MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS_QUERY = f"""
+MOVEMENT_FACILITY_LOCATION_OFFSTAT_SUPERVISION_PERIODS_QUERY = f"""
     WITH 
     movement AS ({_create_date_bounded_query('movement')}),
     facility AS ({_create_date_bounded_query('facility')}),
+    location AS ({_create_date_bounded_query('location')}),
     offstat AS ({_create_date_bounded_query('offstat')}),
     {ALL_PERIODS_FRAGMENT}
 
@@ -960,8 +960,10 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
          MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY),
         ('early_discharge_incarceration_sentence', EARLY_DISCHARGE_INCARCERATION_SENTENCE_QUERY),
         ('early_discharge_supervision_sentence', EARLY_DISCHARGE_SUPERVISION_SENTENCE_QUERY),
-        ('movement_facility_offstat_incarceration_periods', MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY),
-        ('movement_facility_offstat_supervision_periods', MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS_QUERY),
+        ('movement_facility_location_offstat_incarceration_periods',
+         MOVEMENT_FACILITY_LOCATION_OFFSTAT_INCARCERATION_PERIODS_QUERY),
+        ('movement_facility_location_offstat_supervision_periods',
+         MOVEMENT_FACILITY_LOCATION_OFFSTAT_SUPERVISION_PERIODS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_QUERY),
         ('ofndr_tst_tst_qstn_rspns_violation_reports_old', OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY),
         ('ofndr_agnt_applc_usr_body_loc_cd_current_pos', OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY),
