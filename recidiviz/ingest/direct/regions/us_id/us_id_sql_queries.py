@@ -317,6 +317,8 @@ FACILITY_PERIOD_FRAGMENT = f"""
           m.fac_cd,
           f.fac_typ,
           f.fac_ldesc,
+          loc.loc_cd,
+          loc.loc_ldesc,
           m.move_srl,
           DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)) AS move_dtd,
           LAG(m.fac_cd) 
@@ -324,15 +326,25 @@ FACILITY_PERIOD_FRAGMENT = f"""
               m.docno,
               m.incrno
               ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)))
-            AS previous_fac_cd
+            AS previous_fac_cd,
+          LAG(loc.loc_cd) 
+            OVER (PARTITION BY 
+              m.docno,
+              m.incrno
+              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)))
+          AS previous_loc_cd
         FROM 
           movement m
         LEFT JOIN 
            facility f
         USING (fac_cd)
+        LEFT JOIN 
+           location loc
+        USING (loc_cd)
     ),
     # This query here only keeps rows from `facilities_with_datetime` that represent a movement of a person between
-    # facilities (and not a movement within a single facility).
+    # facilities and locations (but not a movement within a single facility/location). If we ever need to track
+    # movements between living units, we can delete this subquery
     collapsed_facilities AS (
       SELECT 
         * 
@@ -340,9 +352,10 @@ FACILITY_PERIOD_FRAGMENT = f"""
       FROM 
         facilities_with_datetime 
       WHERE 
-        # Default values in equality check if nulls are provided. Without this any null in fac_cd
-        # or previous_fac_cd results in the row being ignored
+        # Default values in equality check if nulls are provided. Without this any null values result in the row being 
+        # ignored
         (IFNULL(fac_cd, '') != IFNULL(previous_fac_cd, ''))
+        OR (IFNULL(loc_cd, '') != IFNULL(previous_loc_cd, ''))
     ), 
     # This query transforms the `collapsed_facilities` table, which contains a facility and the date that a person
     # entered that facility, and transforms it into a table which has a start and end date for the given facility. We
@@ -358,7 +371,9 @@ FACILITY_PERIOD_FRAGMENT = f"""
           CAST('9999-12-31' AS DATE)) AS end_date,
         fac_cd,
         fac_typ,
-        fac_ldesc
+        fac_ldesc,
+        loc_cd,
+        loc_ldesc
       FROM collapsed_facilities
     )
 """
@@ -529,6 +544,8 @@ ALL_PERIODS_FRAGMENT = f"""
         f.fac_cd,
         f.fac_typ,
         f.fac_ldesc,
+        f.loc_cd,
+        f.loc_ldesc
       FROM 
         all_periods a
       # Inner join to only get periods of time where there is a matching facility
@@ -576,6 +593,10 @@ ALL_PERIODS_FRAGMENT = f"""
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_typ,
           LAG(fac_ldesc)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_ldesc,
+          LAG(loc_cd)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_cd,
+          LAG(loc_ldesc)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_ldesc,
           LAG(rider)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_rider,
           LAG(parole_violator)
@@ -585,6 +606,8 @@ ALL_PERIODS_FRAGMENT = f"""
           fac_cd,
           fac_typ,
           fac_ldesc,
+          loc_cd,
+          loc_ldesc,
           rider,
           parole_violator,
           investigative,
@@ -594,6 +617,10 @@ ALL_PERIODS_FRAGMENT = f"""
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
           LEAD(fac_ldesc)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_ldesc,
+          LEAD(loc_cd)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_cd,
+          LEAD(loc_ldesc)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_ldesc,
           LEAD(rider)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_rider,
           LEAD(parole_violator)
@@ -609,6 +636,8 @@ MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS_QUERY = f"""
     WITH 
     movement AS ({_create_date_bounded_query('movement')}),
     facility AS ({_create_date_bounded_query('facility')}),
+    location AS ({_create_date_bounded_query('location')}),
+    lvgunit AS ({_create_date_bounded_query('lvgunit')}),
     offstat AS ({_create_date_bounded_query('offstat')}),
     {ALL_PERIODS_FRAGMENT}
 
