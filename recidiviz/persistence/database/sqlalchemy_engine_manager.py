@@ -24,13 +24,14 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import JailsBase, \
-    StateBase
+    StateBase, OperationsBase
 from recidiviz.utils import secrets, environment
 
 @enum.unique
 class SchemaType(enum.Enum):
     JAILS = 'JAILS'
     STATE = 'STATE'
+    OPERATIONS = 'OPERATIONS'
 
 
 class SQLAlchemyEngineManager:
@@ -41,11 +42,13 @@ class SQLAlchemyEngineManager:
     _SCHEMA_TO_INSTANCE_ID_KEY: Dict[SchemaType, str] = {
         SchemaType.JAILS: 'cloudsql_instance_id',
         SchemaType.STATE: 'state_cloudsql_instance_id',
+        SchemaType.OPERATIONS: 'operations_cloudsql_instance_id',
     }
 
     _SCHEMA_TO_DB_NAME_KEY: Dict[SchemaType, str] = {
         SchemaType.JAILS: 'sqlalchemy_db_name',
         SchemaType.STATE: 'state_db_name',
+        SchemaType.OPERATIONS: 'operations_db_name',
     }
 
     @classmethod
@@ -71,6 +74,11 @@ class SQLAlchemyEngineManager:
         cls.init_engine_for_db_instance(
             db_url=cls._get_state_server_postgres_instance_url(),
             schema_base=StateBase)
+
+        # Initialize Operations database instance
+        cls.init_engine_for_db_instance(
+            db_url=cls._get_operations_server_postgres_instance_url(),
+            schema_base=OperationsBase)
 
     @classmethod
     def get_engine_for_schema_base(
@@ -132,6 +140,15 @@ class SQLAlchemyEngineManager:
             db_name_key=cls.get_db_name_key(SchemaType.JAILS),
             cloudsql_instance_id_key=
             cls.get_cloudql_instance_id_key(SchemaType.JAILS))
+
+    @classmethod
+    def _get_operations_server_postgres_instance_url(cls) -> str:
+        return cls._get_server_postgres_instance_url(
+            db_user_key='operations_db_user',
+            db_password_key='operations_db_password',
+            db_name_key=cls.get_db_name_key(SchemaType.OPERATIONS),
+            cloudsql_instance_id_key=
+            cls.get_cloudql_instance_id_key(SchemaType.OPERATIONS))
 
     @classmethod
     def _get_server_postgres_instance_url(cls,
