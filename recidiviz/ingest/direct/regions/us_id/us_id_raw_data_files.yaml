@@ -69,9 +69,15 @@ raw_files:
   - file_tag: clssfctn_cust_lvl
     primary_key_cols:
       - clssfctn_cust_lvl_cd
+  - file_tag: cntc_loc_cd
+    primary_key_cols:
+      - cntc_loc_cd
   - file_tag: cntc_rslt_cd
     primary_key_cols:
       - cntc_rslt_cd
+  - file_tag: cntc_title_cd
+    primary_key_cols:
+      - cntc_title_cd
   - file_tag: cntc_typ_cd
     primary_key_cols:
       - cntc_typ_cd
@@ -202,6 +208,9 @@ raw_files:
   - file_tag: statstrt
     primary_key_cols:
       - stat_strt_typ
+  - file_tag: substance
+    primary_key_cols:
+      - sbstnc_cd
   - file_tag: tst_qstn_rspns
     primary_key_cols:
       - tst_qstn_rspns_id
