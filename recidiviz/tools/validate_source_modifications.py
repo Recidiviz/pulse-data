@@ -39,6 +39,9 @@ from recidiviz.persistence.database.schema.aggregate import \
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.migrations.jails import \
     versions as jails_versions
+from recidiviz.persistence.database.migrations.operations import \
+    versions as operations_versions
+from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.migrations.state import \
     versions as state_versions
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -72,6 +75,12 @@ MODIFIED_FILE_ASSERTIONS = frozenset((
         os.path.relpath(county_schema.__file__),  # county schema
         os.path.relpath(
             jails_versions.__file__[:-len('__init__.py')])  # versions
+    )),
+    # operations schema
+    frozenset((
+        os.path.relpath(operations_schema.__file__),  # operations schema
+        os.path.relpath(
+            operations_versions.__file__[:-len('__init__.py')])  # versions
     )),
     # state schema
     frozenset((

@@ -28,3 +28,8 @@ JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
 # Defines the base class for all table classes in the state schema.
 # For actual schema definitions, see /state/schema.py.
 StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+
+
+# Defines the base class for all table classes in the shared operations schema.
+# For actual schema definitions, see /operations/schema.py.
+OperationsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
