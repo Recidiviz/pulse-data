@@ -25,7 +25,7 @@ from functools import cmp_to_key
 from typing import List
 
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
-    drop_temporary_custody_incarceration_periods_for_state
+    temporary_custody_periods_under_state_authority, non_prison_periods_under_state_authority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -441,10 +441,11 @@ def drop_periods_not_under_state_custodial_authority(incarceration_periods: List
     """
     # TODO(2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
     state_code = get_single_state_code(incarceration_periods)
-    if drop_temporary_custody_incarceration_periods_for_state(state_code):
-        filtered_incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
-    else:
-        filtered_incarceration_periods = _drop_non_prison_periods(incarceration_periods)
+    filtered_incarceration_periods = incarceration_periods
+    if not temporary_custody_periods_under_state_authority(state_code):
+        filtered_incarceration_periods = drop_temporary_custody_periods(filtered_incarceration_periods)
+    if not non_prison_periods_under_state_authority(state_code):
+        filtered_incarceration_periods = _drop_non_prison_periods(filtered_incarceration_periods)
     return filtered_incarceration_periods
 
 
