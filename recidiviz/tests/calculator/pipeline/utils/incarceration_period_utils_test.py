@@ -134,6 +134,75 @@ class TestDropPeriods(unittest.TestCase):
 
         self.assertCountEqual([new_admission_prison], validated_incarceration_periods)
 
+    def test_dropPeriodsNotUnderStateCustodialAuthority_usMo(self):
+        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_MO',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_MO',
+            admission_date=date(2008, 12, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2008, 12, 24),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_MO',
+            admission_date=date(2016, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2017, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_periods = [temporary_custody_jail, temporary_custody_prison, new_admission_prison]
+
+        validated_incarceration_periods = drop_periods_not_under_state_custodial_authority(incarceration_periods)
+
+        self.assertCountEqual([temporary_custody_prison, new_admission_prison], validated_incarceration_periods)
+
+    def test_dropPeriodsNotUnderStateCustodialAuthority_usId(self):
+        temporary_custody_jail = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ID',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        temporary_custody_prison = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=112,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ID',
+            admission_date=date(2008, 12, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2008, 12, 24),
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+        new_admission_prison = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ID',
+            admission_date=date(2016, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2017, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+        incarceration_periods = [temporary_custody_jail, temporary_custody_prison, new_admission_prison]
+
+        validated_incarceration_periods = drop_periods_not_under_state_custodial_authority(incarceration_periods)
+
+        self.assertCountEqual(
+            [temporary_custody_jail, temporary_custody_prison, new_admission_prison], validated_incarceration_periods)
+
 
 class TestValidateAdmissionData(unittest.TestCase):
     """Tests the validate_admission_data function."""
