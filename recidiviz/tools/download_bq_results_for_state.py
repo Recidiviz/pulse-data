@@ -113,10 +113,10 @@ class DownloadBqResultsForStateController:
 
     def download_query_to_csv(self, query_name, query):
         """Downloads the provided |query| into a CSV file with the name |query_name|."""
-        output_file_name = query_name + '.csv'
-        local_file_path = os.path.join(self.local_dir, output_file_name)
+        file_name_and_extension = query_name + '.csv'
         normalized_file_name = to_normalized_unprocessed_file_name(
-            file_name=output_file_name, file_type=GcsfsDirectIngestFileType.INGEST_VIEW, dt=self.end_date)
+            file_name=file_name_and_extension, file_type=GcsfsDirectIngestFileType.INGEST_VIEW, dt=self.end_date)
+        local_file_path = os.path.join(self.local_dir, normalized_file_name)
         file_id_processed_tuple = get_file_id_and_processed_status_for_file(
             metadata_type=self.metadata_type,
             project_id=self.project_id,
