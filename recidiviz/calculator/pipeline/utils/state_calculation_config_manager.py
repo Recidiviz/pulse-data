@@ -35,6 +35,7 @@ def supervision_types_distinct_for_state(state_code: str) -> bool:
     """For some states, we want to track DUAL supervision as distinct from both PAROLE and PROBATION. For others, a
     person can be on multiple types of supervision simultaneously and contribute to counts for both types.
 
+        - US_ID: False
         - US_MO: True
         - US_ND: False
 
@@ -47,24 +48,32 @@ def default_to_supervision_period_officer_for_revocation_details_for_state(state
     """For some states, if there's no officer information coming from the source_supervision_violation_response,
     we should default to the officer information on the overlapping supervision period for the revocation details.
 
+        - US_ID: True
         - US_MO: True
         - US_ND: False
 
     Returns whether our calculations should use supervising officer information for revocation details.
     """
-    return state_code.upper() == 'US_MO'
+    return state_code.upper() in ('US_MO', 'US_ID')
 
 
-def drop_temporary_custody_incarceration_periods_for_state(state_code: str) -> bool:
-    """For some states, we should always disregard incarceration periods of temporary custody in the calculation
-    pipelines.
+def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
+    """Whether or not periods of temporary custody are considered a part of state authority.
 
-        - US_MO: False
-        - US_ND: True
-
-    Returns whether our calculations should drop temporary custody periods for the given state.
+        - US_ID: True
+        - US_MO: True
+        - US_ND: False
     """
-    return state_code.upper() == 'US_ND'
+    return state_code.upper() != 'US_ND'
+
+
+def non_prison_periods_under_state_authority(state_code: str) -> bool:
+    """Whether or not incarceration periods that aren't in a STATE_PRISON are considered under the state authority.
+    - US_ID: True
+    - US_MO: False
+    - US_ND: True
+    """
+    return state_code.upper() in ('US_ID', 'US_ND')
 
 
 def get_month_supervision_type(
