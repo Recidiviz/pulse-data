@@ -21,7 +21,7 @@ from unittest import mock
 
 import pandas as pd
 from google.cloud import bigquery
-from mock import create_autospec, call
+from mock import create_autospec, call, patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -114,10 +114,16 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             big_query_client=self.mock_big_query_client
         )
 
+        self.time_patcher = patch('recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager.time')
+        self.mock_time = self.time_patcher.start()
+
         def fake_get_dataset_ref(dataset_id: str) -> bigquery.DatasetReference:
             return bigquery.DatasetReference(project=self.project_id, dataset_id=dataset_id)
 
         self.mock_big_query_client.dataset_ref_for_id = fake_get_dataset_ref
+
+    def tearDown(self) -> None:
+        self.time_patcher.stop()
 
     def mock_import_raw_file_to_big_query(self,
                                           *,
@@ -308,6 +314,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         ]
 
         self.assertEqual(expected_insert_calls, self.mock_big_query_client.method_calls)
+        self.assertEqual(len(expected_insert_calls) - 1, self.mock_time.sleep.call_count)
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
@@ -343,5 +350,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         ]
 
         self.assertEqual(expected_insert_calls, self.mock_big_query_client.method_calls)
+        self.assertEqual(len(expected_insert_calls) - 1, self.mock_time.sleep.call_count)
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()

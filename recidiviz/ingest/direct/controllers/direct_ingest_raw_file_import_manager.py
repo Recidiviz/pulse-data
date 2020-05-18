@@ -19,6 +19,7 @@ import csv
 import logging
 import os
 import string
+import time
 from typing import List, Dict, Any, Set, Optional, Iterator, Tuple
 
 import attr
@@ -136,6 +137,10 @@ class DirectIngestRegionRawFileConfig:
 _FILE_ID_COL_NAME = 'file_id'
 _UPDATE_DATETIME_COL_NAME = 'update_datetime'
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 500000
+
+# The number of seconds of spacing we need to have between each table load operation to avoid going over the
+# "5 operations every 10 seconds per table" rate limit (with a little buffer): https://cloud.google.com/bigquery/quotas
+_PER_TABLE_UPDATE_RATE_LIMITING_SEC = 2.5
 
 
 class DirectIngestRawFileImportManager:
@@ -256,6 +261,14 @@ class DirectIngestRawFileImportManager:
 
         try:
             for i, (temp_output_path, columns) in enumerate(temp_paths_with_columns):
+                if i > 0:
+                    # Note: If this sleep becomes a serious performance issue, we could refactor to intersperse reading
+                    # chunks to temp paths with starting each load job. In this case, we'd have to be careful to delete
+                    # any partially uploaded uploaded portion of the file if we fail to parse a chunk in the middle.
+                    logging.info('Sleeping for [%s] seconds to avoid exceeding per-table update rate quotas.',
+                                 _PER_TABLE_UPDATE_RATE_LIMITING_SEC)
+                    time.sleep(_PER_TABLE_UPDATE_RATE_LIMITING_SEC)
+
                 parts = filename_parts_from_path(path)
                 load_job = self.big_query_client.insert_into_table_from_cloud_storage_async(
                     source_uri=temp_output_path.uri(),
