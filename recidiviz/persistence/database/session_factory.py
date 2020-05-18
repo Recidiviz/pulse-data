@@ -20,6 +20,10 @@ Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.schema.operations.session_listener import (
+    session_listener as operations_session_listener
+)
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager
 from recidiviz.persistence.database.session import Session
@@ -32,4 +36,11 @@ class SessionFactory:
         if engine is None:
             raise ValueError(f"No engine set for base [{schema_base.__name__}]")
 
-        return Session(bind=engine)
+        session = Session(bind=engine)
+        cls._apply_session_listener_for_schema_base(schema_base, session)
+        return session
+
+    @classmethod
+    def _apply_session_listener_for_schema_base(cls, schema_base: DeclarativeMeta, session):
+        if schema_base == OperationsBase:
+            operations_session_listener(session)

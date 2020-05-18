@@ -38,6 +38,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata, DirectIngestIngestFileMetadata
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
@@ -151,6 +152,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             parts = filename_parts_from_path(GcsfsFilePath.from_absolute_path(f'bucket/{file_name}'))
             for file_type, metadata in type_to_metadata.items():
                 file_tags_in_metadata_with_type.add((parts.file_tag, file_type))
+
+                if not isinstance(metadata, (DirectIngestRawFileMetadata, DirectIngestIngestFileMetadata)):
+                    self.fail(f'Unexpected metadata type: [{type(metadata)}]')
 
                 self.assertEqual(file_name, metadata.normalized_file_name)
                 if file_type == GcsfsDirectIngestFileType.INGEST_VIEW and \
