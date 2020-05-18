@@ -24,7 +24,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
-    gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path, GcsfsDirectIngestFileType
+    gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path, GcsfsDirectIngestFileType, \
+    GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.errors import DirectIngestError
 
 
@@ -450,3 +451,25 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.is_file_split, True)
         self.assertEqual(parts.file_split_size, 300)
+
+    def test_gcsfs_ingest_view_export_args(self):
+        dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
+        dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
+
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='my_file_tag',
+            upper_bound_datetime_prev=None,
+            upper_bound_datetime_to_export=dt_upper
+        )
+
+        self.assertEqual('ingest_view_export_my_file_tag-None-2019_11_22_11_22_33_444444',
+                         args.task_id_tag())
+
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='my_file_tag',
+            upper_bound_datetime_prev=dt_lower,
+            upper_bound_datetime_to_export=dt_upper
+        )
+
+        self.assertEqual('ingest_view_export_my_file_tag-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444',
+                         args.task_id_tag())

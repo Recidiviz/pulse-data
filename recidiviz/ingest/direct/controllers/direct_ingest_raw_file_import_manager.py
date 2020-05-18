@@ -28,12 +28,12 @@ from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
     GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.utils.regions import Region
 
 
@@ -185,7 +185,7 @@ class DirectIngestRawFileImportManager:
 
     def import_raw_file_to_big_query(self,
                                      path: GcsfsFilePath,
-                                     file_metadata: GcsfsDirectIngestFileMetadata) -> None:
+                                     file_metadata: DirectIngestFileMetadata) -> None:
         """Import a raw data file at the given path to the appropriate raw data table in BigQuery."""
 
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
@@ -216,7 +216,7 @@ class DirectIngestRawFileImportManager:
     def _upload_contents_to_temp_gcs_paths(
             self,
             path: GcsfsFilePath,
-            file_metadata: GcsfsDirectIngestFileMetadata,
+            file_metadata: DirectIngestFileMetadata,
             contents_handle: GcsfsFileContentsHandle) -> List[Tuple[GcsfsFilePath, List[str]]]:
         temp_paths_with_columns = []
         logging.info('Starting chunked upload of contents to GCS')
@@ -326,7 +326,7 @@ class DirectIngestRawFileImportManager:
 
     @staticmethod
     def _augment_raw_data_with_metadata_columns(path: GcsfsFilePath,
-                                                file_metadata: GcsfsDirectIngestFileMetadata,
+                                                file_metadata: DirectIngestFileMetadata,
                                                 raw_data_df: pd.DataFrame) -> pd.DataFrame:
         """Add file_id and update_datetime columns to all rows in the dataframe."""
 
