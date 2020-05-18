@@ -29,6 +29,8 @@ from recidiviz.persistence.database.schema_entity_converter.county.\
         CountyEntityToSchemaConverter,
         CountySchemaToEntityConverter,
     )
+from recidiviz.persistence.database.schema_entity_converter.operations.schema_entity_converter import \
+    OperationsSchemaToEntityConverter, OperationsEntityToSchemaConverter
 from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import (
         StateEntityToSchemaConverter,
@@ -37,6 +39,8 @@ from recidiviz.persistence.database.schema_entity_converter.state.\
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.entity.operations import entities as operations_entities
+from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -70,11 +74,18 @@ def convert_entities_to_schema(
         return _is_obj_in_module(obj, state_entities) and \
             issubclass(obj.__class__, Entity)
 
+    def _is_operations_entity(obj: Any) -> bool:
+        return _is_obj_in_module(obj, operations_entities) and \
+            issubclass(obj.__class__, Entity)
+
     if all(_is_county_entity(obj) for obj in entities):
         return list(CountyEntityToSchemaConverter().convert_all(
             entities, populate_back_edges))
     if all(_is_state_entity(obj) for obj in entities):
         return StateEntityToSchemaConverter().convert_all(
+            entities, populate_back_edges)
+    if all(_is_operations_entity(obj) for obj in entities):
+        return OperationsEntityToSchemaConverter().convert_all(
             entities, populate_back_edges)
 
     raise ValueError(f"Expected all types to belong to the same schema, one of "
@@ -92,13 +103,20 @@ def convert_schema_objects_to_entity(
         return _is_obj_in_module(obj, state_schema) and \
             issubclass(obj.__class__, DatabaseEntity)
 
+    def _is_operations_schema_object(obj: Any) -> bool:
+        return _is_obj_in_module(obj, operations_schema) and \
+            issubclass(obj.__class__, DatabaseEntity)
+
     if all(_is_county_schema_object(obj) for obj in schema_objects):
         return CountySchemaToEntityConverter().convert_all(schema_objects)
     if all(_is_state_schema_object(obj) for obj in schema_objects):
         return StateSchemaToEntityConverter().convert_all(
             schema_objects, populate_back_edges)
+    if all(_is_operations_schema_object(obj) for obj in schema_objects):
+        return OperationsSchemaToEntityConverter().convert_all(
+            schema_objects, populate_back_edges)
     raise ValueError(f"Expected all types to belong to the same schema, one of "
-                     f"[{county_schema.__name__}] or [{state_schema.__name__}]")
+                     f"[{county_schema.__name__}], [{state_schema.__name__}], or [{operations_schema.__name__}]")
 
 
 def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
