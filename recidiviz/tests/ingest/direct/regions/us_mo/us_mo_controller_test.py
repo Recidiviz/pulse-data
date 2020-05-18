@@ -706,7 +706,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         vr_110035_20010414_2 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
             decision='REVOCATION',
-            revocation_type='S'
+            revocation_type='X'
         )
 
         vr_710448_20010414_3 = StateSupervisionViolationResponse(
@@ -769,7 +769,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             admission_reason='40I2000,50N1010',
             release_date='20121102',
             release_reason='IT-BP',
-            specialized_purpose_for_incarceration='S',
+            specialized_purpose_for_incarceration='X',
             source_supervision_violation_response=vr_110035_20010414_2
         )
         ip_110035_20010414_4_0 = StateIncarcerationPeriod(
@@ -2574,7 +2574,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             release_date=datetime.date(year=2012, month=11, day=2),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text='IT-BP',
-            specialized_purpose_for_incarceration_raw_text='S',
+            specialized_purpose_for_incarceration_raw_text='X',
             person=person_110035,
             incarceration_sentences=[sis_110035_20010414_1]
         )
@@ -2584,8 +2584,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             response_type_raw_text='PERMANENT_DECISION',
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text='S',
+            revocation_type=None,
+            revocation_type_raw_text='X',
             person=person_110035,
         )
         ip_110035_20010414_2_0.source_supervision_violation_response = vr_110035_20010414_2
