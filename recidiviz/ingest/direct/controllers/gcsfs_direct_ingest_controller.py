@@ -25,8 +25,6 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import \
-    BigQueryDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
     GcsfsFileContentsHandle
@@ -41,6 +39,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
+    PostgresDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 
 
@@ -89,9 +89,8 @@ class GcsfsDirectIngestController(
 
         self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
 
-        self.file_metadata_manager = BigQueryDirectIngestFileMetadataManager(
-            region_code=self.region.region_code,
-            big_query_client=BigQueryClientImpl())
+        self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
+            region_code=self.region.region_code)
 
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
@@ -234,8 +233,7 @@ class GcsfsDirectIngestController(
         # now check for ingest view export jobs - consider doing something more explicit, intentional here.
         processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
         self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path,
-                                                          metadata=file_metadata,
-                                                          processed_time=datetime.datetime.now())
+                                                          metadata=file_metadata)
 
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
 

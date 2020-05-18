@@ -15,7 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Utils for parsing dates."""
+import datetime
 import re
+
+
+def snake_case_datetime(dt: datetime.datetime) -> str:
+    """Converts a datetime to snake case format, e.g '2020_05_17_10_31_08_693498'. Friendly for BQ table names or cloud
+    task ids."""
+    return dt.strftime('%Y_%m_%d_%H_%M_%S_%f')
 
 
 def munge_date_string(date_string: str) -> str:

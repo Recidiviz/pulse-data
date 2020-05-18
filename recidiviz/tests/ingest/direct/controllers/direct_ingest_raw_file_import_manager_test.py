@@ -25,12 +25,12 @@ from mock import create_autospec, call
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import GcsfsDirectIngestFileMetadata
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import FakeDirectIngestGCSFileSystem, \
     path_for_fixture_file_in_test_gcs_directory
@@ -137,13 +137,12 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         return mock.MagicMock()
 
-    def _metadata_for_unprocessed_file_path(self, path: GcsfsFilePath) -> GcsfsDirectIngestFileMetadata:
+    def _metadata_for_unprocessed_file_path(self, path: GcsfsFilePath) -> DirectIngestFileMetadata:
         parts = filename_parts_from_path(path)
-        return GcsfsDirectIngestFileMetadata(
+        return DirectIngestFileMetadata(
             region_code=self.test_region.region_code,
             file_tag=parts.file_tag,
             file_id=123,
-            normalized_file_name=path.file_name,
             processed_time=None
         )
 
@@ -180,7 +179,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
+            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
     def test_import_bq_file_with_ingest_view_file(self):
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -190,7 +189,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
 
         with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
+            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
     def test_import_bq_file_with_unspecified_type_file(self):
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -200,7 +199,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.UNSPECIFIED)
 
         with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
+            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
     def test_import_bq_file_feature_not_released_throws(self):
         self.import_manager = DirectIngestRawFileImportManager(
@@ -220,7 +219,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         with self.assertRaises(ValueError):
-            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(GcsfsDirectIngestFileMetadata))
+            self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
     def test_import_bq_file_with_raw_file(self):
         file_path = path_for_fixture_file_in_test_gcs_directory(

@@ -24,6 +24,7 @@ from typing import Optional
 
 import attr
 
+from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
@@ -135,13 +136,17 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
 @attr.s(frozen=True)
 class GcsfsIngestViewExportArgs(CloudTaskArgs):
     ingest_view_name: str = attr.ib()
-    upper_bound_datetime_prev: datetime.datetime = attr.ib()
+    upper_bound_datetime_prev: Optional[datetime.datetime] = attr.ib()
     upper_bound_datetime_to_export: datetime.datetime = attr.ib()
 
     def task_id_tag(self) -> str:
-        return \
-            f'ingest_view_export_{self.ingest_view_name}-' \
-            f'{self.upper_bound_datetime_prev.isoformat()}-{self.upper_bound_datetime_to_export.isoformat()}'
+        tag = f'ingest_view_export_{self.ingest_view_name}'
+        if self.upper_bound_datetime_prev:
+            tag += f'-{snake_case_datetime(self.upper_bound_datetime_prev)}'
+        else:
+            tag += f'-None'
+        tag += f'-{snake_case_datetime(self.upper_bound_datetime_to_export)}'
+        return tag
 
 
 def gcsfs_direct_ingest_temporary_output_directory_path(project_id: Optional[str] = None) -> str:
