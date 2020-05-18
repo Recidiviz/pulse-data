@@ -419,6 +419,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision: [
             'NOREC',  # No Recommendation
         ],
+        StateSupervisionViolationResponseRevocationType: [
+            # In the incarceration_period files, we use F1$PFI (StateSpecializedPurposeForIncarceration) to derive the
+            # StateSupervisionViolationResponseRevocationType. The PFI field is occasionally X (unknown).
+            'X'
+        ]
     }
 
     def __init__(self,
