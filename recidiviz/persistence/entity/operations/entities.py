@@ -65,6 +65,7 @@ class DirectIngestRawFileMetadata(DirectIngestFileMetadata):
 class DirectIngestIngestFileMetadata(DirectIngestFileMetadata):
     """Metadata about a SQL-preprocessed, persistence-ready direct ingest files."""
     is_invalidated: bool = attr.ib()
+    is_file_split: bool = attr.ib()
     job_creation_time: datetime.datetime = attr.ib()
     datetimes_contained_lower_bound_exclusive: Optional[datetime.datetime] = attr.ib()
     datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
