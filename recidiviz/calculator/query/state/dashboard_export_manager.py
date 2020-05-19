@@ -18,10 +18,12 @@
 
 import logging
 
-from recidiviz.big_query import view_manager
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportViewConfig
+from google.cloud import bigquery
 
-from recidiviz.calculator.query.state import dataset_config, dashboard_export_config, view_config
+from recidiviz.big_query import view_manager
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
+
+from recidiviz.calculator.query.state import dashboard_export_config, view_config
 
 
 def export_dashboard_data_to_cloud_storage(bucket: str):
@@ -33,7 +35,6 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
     view_manager.create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
 
     bq_client = BigQueryClientImpl()
-    dataset_ref = bq_client.dataset_ref_for_id(dataset_config.DASHBOARD_VIEWS_DATASET)
     views_to_materialize = dashboard_export_config.VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
     views_to_export = dashboard_export_config.VIEWS_TO_EXPORT
 
@@ -42,18 +43,17 @@ def export_dashboard_data_to_cloud_storage(bucket: str):
     for view in views_to_materialize:
         bq_client.materialize_view_to_table(view)
 
-    bq_client.export_views_to_cloud_storage(
-        dataset_ref,
-        [ExportViewConfig(
+    bq_client.export_query_results_to_cloud_storage(
+        [ExportQueryConfig.from_view_query(
             view=view,
             view_filter_clause=f" WHERE state_code = '{state}'",
             intermediate_table_name=f"{view.view_id}_table_{state}",
-            output_uri=f"gs://{bucket}/{state}/{view.view_id}.json")
+            output_uri=f"gs://{bucket}/{state}/{view.view_id}.json",
+            output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
          for state in dashboard_export_config.STATES_TO_EXPORT
          for view in views_to_export])
 
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-
     export_dashboard_data_to_cloud_storage('ENTER-BUCKET-HERE')
