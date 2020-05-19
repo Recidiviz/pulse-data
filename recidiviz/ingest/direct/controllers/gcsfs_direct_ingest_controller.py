@@ -42,6 +42,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import \
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
     PostgresDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
+from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata
 
 
 class GcsfsDirectIngestController(
@@ -117,6 +118,17 @@ class GcsfsDirectIngestController(
 
         if self.fs.is_normalized_file_path(path):
             parts = filename_parts_from_path(path)
+
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled():
+                if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA or (
+                        parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW and
+                        self.region.are_ingest_view_exports_enabled_in_env()
+                ):
+                    # TODO(3020): Design/handle/write tests for case where this is a file we've moved from storage for a
+                    #  rerun. Right now we will crash here because we'll try to set a discovery time that comes after
+                    #  the processed time.
+                    self.file_metadata_manager.register_new_file(path)
+
             if parts.is_file_split and \
                     parts.file_split_size and \
                     parts.file_split_size <= self.file_split_line_limit:
@@ -125,13 +137,6 @@ class GcsfsDirectIngestController(
                              "with correct size, kicking scheduler.",
                              path.abs_path())
                 return
-
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled():
-                if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA or (
-                        parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW and
-                        self.region.are_ingest_view_exports_enabled_in_env()
-                ):
-                    self.file_metadata_manager.register_new_file(path)
 
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -426,7 +431,43 @@ class GcsfsDirectIngestController(
         logging.info("Proceeding to file splitting for path [%s].",
                      path.abs_path())
 
-        self._split_file(path, file_contents_handle)
+        split_contents_handles = self._split_file(path, file_contents_handle)
+
+        original_metadata = None
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            original_metadata = self.file_metadata_manager.get_file_metadata(path)
+
+        output_dir = GcsfsDirectoryPath.from_file_path(path)
+        for i, split_contents_handle in enumerate(split_contents_handles):
+            upload_path = self._create_split_file_path(path, output_dir, split_num=i)
+
+            ingest_file_metadata = None
+
+            if self.region.are_ingest_view_exports_enabled_in_env():
+                if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
+                    raise ValueError('Attempting to split a non-ingest view type file')
+
+                ingest_file_metadata = self.file_metadata_manager.register_ingest_file_split(original_metadata,
+                                                                                             upload_path)
+            logging.info("Writing file split [%s] to Cloud Storage.", upload_path.abs_path())
+            self.fs.upload_from_contents_handle(upload_path, split_contents_handle, self._contents_type())
+
+            if self.region.are_ingest_view_exports_enabled_in_env():
+                if not ingest_file_metadata:
+                    raise ValueError(f'Split file metadata for path unexpectedly none [{upload_path.abs_path()}]')
+
+                self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
+
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            if not original_metadata:
+                raise ValueError(f'Original file metadata for path unexpectedly none [{path.abs_path()}]')
+            self.file_metadata_manager.mark_file_as_processed(path, original_metadata)
+
+        logging.info("Done splitting file [%s] into [%s] paths, moving it to storage.",
+                     path.abs_path(), len(split_contents_handles))
+
+        self.fs.mv_path_to_storage(path, self.storage_directory_path)
+
         return True
 
     def _create_split_file_path(self,
@@ -453,16 +494,23 @@ class GcsfsDirectIngestController(
     @abc.abstractmethod
     def _split_file(self,
                     path: GcsfsFilePath,
-                    file_contents_handle: GcsfsFileContentsHandle) -> None:
-        """Should be implemented by subclasses to split files that are too large
-        and write the new split files to Google Cloud Storage.
-        """
+                    file_contents_handle: GcsfsFileContentsHandle) -> List[GcsfsFileContentsHandle]:
+        """Should be implemented by subclasses to split a file accessible via the provided contents handle into multiple
+        files in separate contents handles. """
+
+    @abc.abstractmethod
+    def _contents_type(self) -> str:
+        """Returns the contents type for the contents this controller handles, e.g. 'text/csv'."""
 
     def _do_cleanup(self, args: GcsfsIngestArgs):
         self.fs.mv_path_to_processed_path(args.file_path)
 
         if self.region.are_ingest_view_exports_enabled_in_env():
             raise ValueError('Must implement metadata update to mark as processed here.')
+
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            self.file_metadata_manager.mark_file_as_processed(
+                args.file_path, self.file_metadata_manager.get_file_metadata(args.file_path))
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(
