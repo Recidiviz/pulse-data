@@ -20,7 +20,6 @@ GCSFileSystem.
 
 import abc
 import inspect
-import logging
 import os
 from typing import List, Optional, Callable
 
@@ -32,11 +31,11 @@ from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle, \
+    DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
-    GcsfsDirectoryPath
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
@@ -80,31 +79,21 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
     def _split_file(self,
                     path: GcsfsFilePath,
-                    file_contents_handle: GcsfsFileContentsHandle) -> None:
+                    file_contents_handle: GcsfsFileContentsHandle) -> List[GcsfsFileContentsHandle]:
 
-        output_dir = GcsfsDirectoryPath.from_file_path(path)
+        split_contents_handles = []
+        for df in pd.read_csv(file_contents_handle.local_file_path,
+                              dtype=str,
+                              chunksize=self.file_split_line_limit,
+                              keep_default_na=False):
+            local_file_path = DirectIngestGCSFileSystem.generate_random_temp_path()
+            df.to_csv(local_file_path, index=False)
+            split_contents_handles.append(GcsfsFileContentsHandle(local_file_path))
 
-        upload_paths_and_df = []
-        for i, df in enumerate(pd.read_csv(
-                file_contents_handle.local_file_path,
-                dtype=str,
-                chunksize=self.file_split_line_limit,
-                keep_default_na=False)):
-            upload_path = self._create_split_file_path(
-                path, output_dir, split_num=i)
-            upload_paths_and_df.append((upload_path, df))
+        return split_contents_handles
 
-        for output_path, df in upload_paths_and_df:
-            logging.info("Writing file split [%s] to Cloud Storage.",
-                         output_path.abs_path())
-
-            self.fs.upload_from_string(
-                output_path, df.to_csv(index=False), 'text/csv')
-
-        logging.info("Done splitting file [%s] into [%s] paths, returning.",
-                     path.abs_path(), len(upload_paths_and_df))
-
-        self.fs.mv_path_to_storage(path, self.storage_directory_path)
+    def _contents_type(self) -> str:
+        return 'text/csv'
 
     def _yaml_filepath(self, file_tag):
         return os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
