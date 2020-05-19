@@ -168,6 +168,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 if parts.file_tag not in expected_unprocessed_with_type:
                     self.assertIsNotNone(metadata.processed_time, f'{metadata}')
 
+        # TODO(3020): Update this to better test that metadata for split files gets properly registered
         if controller.region.is_raw_vs_ingest_file_name_detection_enabled():
             all_tags = set(expected_tags_in_metadata_with_type).union(set(expected_unprocessed_tags_with_type))
 

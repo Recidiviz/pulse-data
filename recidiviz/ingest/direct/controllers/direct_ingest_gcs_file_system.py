@@ -22,6 +22,7 @@ import abc
 import datetime
 import logging
 import os
+import tempfile
 import uuid
 from typing import List, Optional, Union, Iterator
 
@@ -163,6 +164,13 @@ class DirectIngestGCSFileSystem:
                            contents: str,
                            content_type: str):
         """Uploads string contents to a file path."""
+
+    @abc.abstractmethod
+    def upload_from_contents_handle(self,
+                                    path: GcsfsFilePath,
+                                    contents_handle: GcsfsFileContentsHandle,
+                                    content_type: str):
+        """Uploads contents in handle to a file path."""
 
     def mv(self,
            src_path: GcsfsFilePath,
@@ -423,6 +431,15 @@ class DirectIngestGCSFileSystem:
         raise ValueError(
             f'Could not find valid storage path for file {path.file_name}.')
 
+    @classmethod
+    def generate_random_temp_path(cls) -> str:
+        temp_dir = os.path.join(tempfile.gettempdir(), 'direct_ingest')
+
+        if not os.path.exists(temp_dir):
+            os.mkdir(temp_dir)
+
+        return os.path.join(temp_dir, str(uuid.uuid4()))
+
 
 class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     """An implementation of the DirectIngestGCSFileSystem built on top of a real
@@ -444,22 +461,13 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
 
-    @staticmethod
-    def _generate_random_temp_path() -> str:
-        temp_dir = os.path.join('/tmp', 'direct_ingest')
-
-        if not os.path.exists(temp_dir):
-            os.mkdir(temp_dir)
-
-        return os.path.join(temp_dir, str(uuid.uuid4()))
-
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
         if not blob:
             raise ValueError(f'Blob at path [{path.abs_path()}] does not exist')
 
-        temp_file_path = self._generate_random_temp_path()
+        temp_file_path = self.generate_random_temp_path()
 
         try:
             logging.info(
@@ -482,6 +490,14 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         bucket = self.storage_client.get_bucket(path.bucket_name)
         bucket.blob(path.blob_name).upload_from_string(
             contents, content_type=content_type)
+
+    def upload_from_contents_handle(self,
+                                    path: GcsfsFilePath,
+                                    contents_handle: GcsfsFileContentsHandle,
+                                    content_type: str):
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        bucket.blob(path.blob_name).upload_from_filename(
+            contents_handle.local_file_path, content_type=content_type)
 
     def copy(self,
              src_path: GcsfsFilePath,

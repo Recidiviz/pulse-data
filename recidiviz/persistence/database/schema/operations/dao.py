@@ -69,16 +69,19 @@ def get_file_metadata_row_for_path(
     else:
         raise ValueError(f'Unexpected path type: {parts.file_type}')
 
+    if len(results) != 1:
+        raise ValueError(f'Unexpected number of metadata results for path {path.abs_path()}')
+
     return one(results)
 
 
-def get_ingest_view_metadata_for_job(
+def get_ingest_view_metadata_for_export_job(
         session: Session,
         region_code: str,
         file_tag: str,
         datetimes_contained_lower_bound_exclusive: Optional[datetime.datetime],
         datetimes_contained_upper_bound_inclusive: datetime.datetime
-) -> schema.DirectIngestIngestFileMetadata:
+) -> Optional[schema.DirectIngestIngestFileMetadata]:
     """Returns the ingest file metadata row corresponding to the export job with the provided args. Throws if such a
     row does not exist.
     """
@@ -87,9 +90,13 @@ def get_ingest_view_metadata_for_job(
         region_code=region_code,
         file_tag=file_tag,
         is_invalidated=False,
+        is_file_split=False,
         datetimes_contained_lower_bound_exclusive=datetimes_contained_lower_bound_exclusive,
         datetimes_contained_upper_bound_inclusive=datetimes_contained_upper_bound_inclusive
     ).all()
+
+    if not results:
+        return None
 
     return one(results)
 
@@ -105,6 +112,7 @@ def get_ingest_view_metadata_for_most_recent_valid_job(
     results = session.query(schema.DirectIngestIngestFileMetadata).filter_by(
         region_code=region_code,
         is_invalidated=False,
+        is_file_split=False,
         file_tag=file_tag
     ).order_by(schema.DirectIngestIngestFileMetadata.job_creation_time.desc()).limit(1).all()
 
@@ -123,6 +131,7 @@ def get_ingest_view_metadata_pending_export(
     return session.query(schema.DirectIngestIngestFileMetadata).filter_by(
         region_code=region_code,
         is_invalidated=False,
+        is_file_split=False,
         export_time=None
     ).all()
 

@@ -44,8 +44,8 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(OperationsBase)
-        self.metadata_manager = PostgresDirectIngestFileMetadataManager(region_code='US_XX')
-        self.metadata_manager_other_region = PostgresDirectIngestFileMetadataManager(region_code='US_YY')
+        self.metadata_manager = PostgresDirectIngestFileMetadataManager(region_code='us_xx')
+        self.metadata_manager_other_region = PostgresDirectIngestFileMetadataManager(region_code='us_yy')
 
         def fake_eq(e1, e2) -> bool:
             def _should_ignore_field_cb(_: Type, field_name: str) -> bool:
@@ -229,6 +229,18 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                                                                    GcsfsDirectIngestFileType.INGEST_VIEW)
         self.run_ingest_view_file_progression(args, self.metadata_manager, ingest_view_unprocessed_path)
 
+    def test_ingest_view_file_progression_discovery_before_export_recorded(self):
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='file_tag',
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3)
+        )
+
+        ingest_view_unprocessed_path = self._make_unprocessed_path('bucket/file_tag.csv',
+                                                                   GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.run_ingest_view_file_progression(args, self.metadata_manager, ingest_view_unprocessed_path,
+                                              discovery_before_export_recorded=True)
+
     def test_ingest_view_file_progression_two_regions(self):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name='file_tag',
@@ -286,7 +298,6 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                                                                    dt=datetime.datetime.now())
         self.run_ingest_view_file_progression(args, self.metadata_manager, ingest_view_unprocessed_path)
 
-
     def test_ingest_view_file_progression_two_files_same_tag(self):
 
         args = GcsfsIngestViewExportArgs(
@@ -323,17 +334,20 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     def run_ingest_view_file_progression(self,
                                          export_args: GcsfsIngestViewExportArgs,
                                          metadata_manager: PostgresDirectIngestFileMetadataManager,
-                                         ingest_view_unprocessed_path: GcsfsFilePath):
+                                         ingest_view_unprocessed_path: GcsfsFilePath,
+                                         discovery_before_export_recorded: bool = False,
+                                         split_file: bool = False):
         """Runs through the full progression of operations we expect to run on an individual ingest view file."""
         with freeze_time('2015-01-02T03:05:05'):
             metadata_manager.register_ingest_file_export_job(export_args)
 
-        ingest_file_metadata = metadata_manager.get_ingest_view_metadata_for_job(export_args)
+        ingest_file_metadata = metadata_manager.get_ingest_view_metadata_for_export_job(export_args)
 
         expected_metadata = DirectIngestIngestFileMetadata.new_with_defaults(
             region_code=metadata_manager.region_code,
             file_tag=export_args.ingest_view_name,
             is_invalidated=False,
+            is_file_split=False,
             job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
@@ -346,20 +360,54 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.assertEqual(expected_metadata, ingest_file_metadata)
 
         with freeze_time('2015-01-02T03:06:06'):
-            metadata_manager.mark_ingest_view_exported(ingest_file_metadata, ingest_view_unprocessed_path)
-
-        expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 6)
+            self.metadata_manager.register_ingest_view_export_file_name(ingest_file_metadata,
+                                                                        ingest_view_unprocessed_path)
         expected_metadata.normalized_file_name = ingest_view_unprocessed_path.file_name
 
         metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
         self.assertEqual(expected_metadata, metadata)
 
-        with freeze_time('2015-01-02T03:07:07'):
-            metadata_manager.register_new_file(ingest_view_unprocessed_path)
+        # ... export actually performed in here
+        if discovery_before_export_recorded:
+            with freeze_time('2015-01-02T03:06:07'):
+                metadata_manager.register_new_file(ingest_view_unprocessed_path)
 
-        expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 7, 7)
+            expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
+            expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
+
+            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            self.assertEqual(expected_metadata, metadata)
+
+        with freeze_time('2015-01-02T03:06:08'):
+            self.metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
+
+        expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 8)
+
         metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
         self.assertEqual(expected_metadata, metadata)
+
+        if not discovery_before_export_recorded:
+            with freeze_time('2015-01-02T03:07:07'):
+                metadata_manager.register_new_file(ingest_view_unprocessed_path)
+
+            expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 7, 7)
+            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            self.assertEqual(expected_metadata, metadata)
+
+        split_file_paths_and_metadata = []
+        if split_file:
+            metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
+            if not isinstance(metadata, DirectIngestIngestFileMetadata):
+                self.fail(f'Unexpected metadata type {type(metadata)}')
+
+            for i in range(2):
+                split_file_path = self._make_unprocessed_path(f'bucket/split{i}.csv',
+                                                              GcsfsDirectIngestFileType.INGEST_VIEW)
+                self.run_split_ingest_file_progression_pre_processing(
+                    metadata_manager, metadata, split_file_path, discovery_before_export_recorded)
+
+                split_file_paths_and_metadata.append((split_file_path,
+                                                      metadata_manager.get_file_metadata(split_file_path)))
 
         with freeze_time('2015-01-02T03:08:08'):
             metadata_manager.mark_file_as_processed(ingest_view_unprocessed_path, metadata)
@@ -369,6 +417,100 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
 
         self.assertEqual(expected_metadata, metadata)
+
+        for split_file_path, split_file_metadata in split_file_paths_and_metadata:
+            expected_metadata = split_file_metadata
+            with freeze_time('2015-01-02T03:09:09'):
+                metadata_manager.mark_file_as_processed(split_file_path, split_file_metadata)
+
+            expected_metadata.processed_time = datetime.datetime(2015, 1, 2, 3, 9, 9)
+
+            metadata = metadata_manager.get_file_metadata(split_file_path)
+
+            self.assertEqual(expected_metadata, metadata)
+
+    def run_split_ingest_file_progression_pre_processing(
+            self,
+            metadata_manager: PostgresDirectIngestFileMetadataManager,
+            original_file_metadata: DirectIngestIngestFileMetadata,
+            split_file_path: GcsfsFilePath,
+            discovery_before_export_recorded: bool = False):
+        """Runs through the full progression of operations we expect to run on a split ingest file, up until processing.
+        """
+        expected_metadata = DirectIngestIngestFileMetadata.new_with_defaults(
+            region_code=metadata_manager.region_code,
+            file_tag=original_file_metadata.file_tag,
+            is_invalidated=False,
+            is_file_split=True,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            datetimes_contained_lower_bound_exclusive=original_file_metadata.datetimes_contained_lower_bound_exclusive,
+            datetimes_contained_upper_bound_inclusive=original_file_metadata.datetimes_contained_upper_bound_inclusive,
+            normalized_file_name=split_file_path.file_name,
+            export_time=None,
+            discovery_time=None,
+            processed_time=None,
+        )
+
+        with freeze_time('2015-01-02T03:05:05'):
+            split_file_metadata = self.metadata_manager.register_ingest_file_split(original_file_metadata,
+                                                                                   split_file_path)
+
+        self.assertEqual(expected_metadata, split_file_metadata)
+        metadata = metadata_manager.get_file_metadata(split_file_path)
+        self.assertEqual(expected_metadata, metadata)
+
+        # ... export actually performed in here
+        if discovery_before_export_recorded:
+            with freeze_time('2015-01-02T03:06:07'):
+                metadata_manager.register_new_file(split_file_path)
+
+            expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
+            expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 7)
+
+            metadata = metadata_manager.get_file_metadata(split_file_path)
+            self.assertEqual(expected_metadata, metadata)
+
+        with freeze_time('2015-01-02T03:06:08'):
+            self.metadata_manager.mark_ingest_view_exported(split_file_metadata)
+
+        expected_metadata.export_time = datetime.datetime(2015, 1, 2, 3, 6, 8)
+
+        metadata = metadata_manager.get_file_metadata(split_file_path)
+        self.assertEqual(expected_metadata, metadata)
+
+        if not discovery_before_export_recorded:
+            with freeze_time('2015-01-02T03:07:07'):
+                metadata_manager.register_new_file(split_file_path)
+
+            expected_metadata.discovery_time = datetime.datetime(2015, 1, 2, 3, 7, 7)
+            metadata = metadata_manager.get_file_metadata(split_file_path)
+            self.assertEqual(expected_metadata, metadata)
+
+    def test_ingest_then_split_progression(self):
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='file_tag',
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3)
+        )
+
+        ingest_view_unprocessed_path = self._make_unprocessed_path('bucket/file_tag.csv',
+                                                                   GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.run_ingest_view_file_progression(args,
+                                              self.metadata_manager, ingest_view_unprocessed_path, split_file=True)
+
+    def test_ingest_then_split_progression_discovery_before_export_recorded(self):
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='file_tag',
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3)
+        )
+
+        ingest_view_unprocessed_path = self._make_unprocessed_path('bucket/file_tag.csv',
+                                                                   GcsfsDirectIngestFileType.INGEST_VIEW)
+        self.run_ingest_view_file_progression(args,
+                                              self.metadata_manager, ingest_view_unprocessed_path,
+                                              discovery_before_export_recorded=True,
+                                              split_file=True)
 
     def test_get_ingest_view_metadata_for_most_recent_valid_job_no_jobs(self):
         self.assertIsNone(
@@ -438,6 +580,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 region_code='US_XX',
                 file_tag='file_tag',
                 is_invalidated=False,
+                is_file_split=False,
                 job_creation_time=datetime.datetime(2015, 1, 2, 3, 6, 6),
                 datetimes_contained_lower_bound_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3))
@@ -458,8 +601,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             path = self._make_unprocessed_path('bucket/file_tag.csv',
                                                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
                                                dt=datetime.datetime.utcnow())
-            metadata = self.metadata_manager.get_ingest_view_metadata_for_job(args)
-            self.metadata_manager.mark_ingest_view_exported(metadata, path)
+            metadata = self.metadata_manager.get_ingest_view_metadata_for_export_job(args)
+            self.metadata_manager.register_ingest_view_export_file_name(metadata, path)
+            # ... export actually performed in here
+            self.metadata_manager.mark_ingest_view_exported(metadata)
 
         self.assertEqual([], self.metadata_manager.get_ingest_view_metadata_pending_export())
 
@@ -482,7 +627,27 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             path = self._make_unprocessed_path('bucket/file_tag.csv',
                                                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
                                                dt=datetime.datetime.utcnow())
-            metadata = self.metadata_manager.get_ingest_view_metadata_for_job(args)
-            self.metadata_manager.mark_ingest_view_exported(metadata, path)
+            metadata = self.metadata_manager.get_ingest_view_metadata_for_export_job(args)
+            self.metadata_manager.register_ingest_view_export_file_name(metadata, path)
+            # ... export actually performed in here
+            self.metadata_manager.mark_ingest_view_exported(metadata)
 
         self.assertEqual([], self.metadata_manager.get_ingest_view_metadata_pending_export())
+
+    def test_register_ingest_view_export_file_name_already_exists_raises(self):
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name='file_tag',
+            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3)
+        )
+        metadata_entity = self.metadata_manager.register_ingest_file_export_job(args)
+        self.metadata_manager.register_ingest_view_export_file_name(
+            metadata_entity,
+            self._make_unprocessed_path('bucket/file_tag.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
+        )
+
+        with self.assertRaises(ValueError):
+            self.metadata_manager.register_ingest_view_export_file_name(
+                metadata_entity,
+                self._make_unprocessed_path('bucket/file_tag.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
+            )

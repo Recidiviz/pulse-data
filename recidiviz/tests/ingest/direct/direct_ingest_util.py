@@ -18,11 +18,9 @@
 import datetime
 import os
 import shutil
-import tempfile
 import threading
 import time
 import unittest
-import uuid
 from collections import defaultdict
 from typing import Set, List, Union, Optional, Dict
 
@@ -91,15 +89,6 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with self.mutex:
             return path.abs_path() in [p.abs_path() for p in self.all_paths]
 
-    @staticmethod
-    def generate_random_temp_path() -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), 'direct_ingest')
-
-        if not os.path.exists(temp_dir):
-            os.mkdir(temp_dir)
-
-        return os.path.join(temp_dir, str(uuid.uuid4()))
-
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         """Downloads file contents into local temporary_file, returning path to
         temp file, or None if the path no-longer exists in the GCS file system.
@@ -132,6 +121,16 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with open(temp_path, 'w') as f:
             f.write(contents)
 
+        self.uploaded_test_path_to_actual[path.abs_path()] = temp_path
+        self._add_path(path)
+
+    def upload_from_contents_handle(self,
+                                    path: GcsfsFilePath,
+                                    contents_handle: GcsfsFileContentsHandle,
+                                    content_type: str):
+
+        temp_path = self.generate_random_temp_path()
+        shutil.copyfile(contents_handle.local_file_path, temp_path)
         self.uploaded_test_path_to_actual[path.abs_path()] = temp_path
         self._add_path(path)
 
@@ -200,6 +199,10 @@ class FakeDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
             processed_time=None
         )
 
+    def get_ingest_view_metadata_for_export_job(
+            self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> Optional[DirectIngestIngestFileMetadata]:
+        raise ValueError('Unimplemented!')
+
     def get_file_metadata(self, path: GcsfsFilePath) -> DirectIngestFileMetadata:
         file_type = filename_parts_from_path(path).file_type
         return self.file_metadata[path.file_name][file_type]
@@ -208,14 +211,19 @@ class FakeDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         file_type = filename_parts_from_path(path).file_type
         self.file_metadata[path.file_name][file_type].processed_time = datetime.datetime.utcnow()
 
-    def register_ingest_file_export_job(self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> None:
+    def register_ingest_file_export_job(
+            self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> DirectIngestIngestFileMetadata:
         raise ValueError('Unimplemented!')
 
     def get_ingest_view_metadata_for_job(
             self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> DirectIngestIngestFileMetadata:
         raise ValueError('Unimplemented!')
 
-    def mark_ingest_view_exported(self, metadata: DirectIngestIngestFileMetadata, exported_path: GcsfsFilePath) -> None:
+    def register_ingest_view_export_file_name(self, metadata_entity: DirectIngestIngestFileMetadata,
+                                              exported_path: GcsfsFilePath):
+        raise ValueError('Unimplemented!')
+
+    def mark_ingest_view_exported(self, metadata_entity: DirectIngestIngestFileMetadata) -> None:
         raise ValueError('Unimplemented!')
 
     def get_ingest_view_metadata_for_most_recent_valid_job(

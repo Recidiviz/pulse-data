@@ -38,6 +38,9 @@ class _DirectIngestFileMetadataRowSharedColumns:
 
     region_code = Column(String(255), nullable=False, index=True)
     file_tag = Column(String(255), nullable=False, index=True)
+
+    # Unprocessed normalized file name for this file, either set at time of file discovery (raw files) or before export
+    # (ingest view files).
     normalized_file_name = Column(String(255), index=True)
 
     # Time when the file is actually discovered by our controller's handle_new_files endpoint
@@ -63,18 +66,23 @@ class DirectIngestIngestFileMetadata(OperationsBase, _DirectIngestFileMetadataRo
     __tablename__ = 'direct_ingest_ingest_file_metadata'
 
     __table_args__ = (
-        CheckConstraint(
-            '(normalized_file_name IS NULL AND export_time IS NULL) OR '
-            '(normalized_file_name IS NOT NULL AND export_time IS NOT NULL)', name='normalized_file_with_export'),
+        CheckConstraint('export_time IS NULL OR normalized_file_name IS NOT NULL',
+                        name='export_after_normalized_file_name_set'),
         CheckConstraint('discovery_time IS NULL OR export_time IS NOT NULL', name='discovery_after_export'),
         CheckConstraint('processed_time IS NULL OR discovery_time IS NOT NULL', name='processed_after_discovery'),
         CheckConstraint('datetimes_contained_lower_bound_exclusive IS NULL OR '
                         'datetimes_contained_lower_bound_exclusive < datetimes_contained_upper_bound_inclusive',
                         name='datetimes_contained_ordering'),
+        CheckConstraint('NOT is_file_split OR normalized_file_name IS NOT NULL',
+                        name='split_files_created_with_file_name'),
     )
 
     # These fields are first set at export job creation time
     is_invalidated = Column(Boolean, nullable=False)
+
+    # If true, indicates that this file is a split of an original ingest view export. If false, this file was exported
+    # directly from BigQuery.
+    is_file_split = Column(Boolean, nullable=False)
 
     # Time the export job is first scheduled for these time bounds
     job_creation_time = Column(DateTime, nullable=False)

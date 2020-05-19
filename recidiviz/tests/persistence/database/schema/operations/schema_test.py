@@ -160,6 +160,7 @@ class OperationsSchemaTest(unittest.TestCase):
             region_code='us_xx_yyyy',
             file_tag='file_tag',
             is_invalidated=False,
+            is_file_split=False,
             job_creation_time=datetime.datetime.now(),
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11)
@@ -169,6 +170,39 @@ class OperationsSchemaTest(unittest.TestCase):
         result_metadata = one(session.query(schema.DirectIngestIngestFileMetadata).all())
         self.assertEqual(result_metadata, ingest_file_metadata)
         self.assertIsNotNone(result_metadata.file_id)
+
+    def test_ingest_file_metadata_split_file(self):
+        session = SessionFactory.for_schema_base(OperationsBase)
+        ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
+            region_code='us_xx_yyyy',
+            file_tag='file_tag',
+            is_invalidated=False,
+            is_file_split=True,
+            job_creation_time=datetime.datetime.now(),
+            datetimes_contained_lower_bound_exclusive=None,
+            datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
+            normalized_file_name='file_name.csv'
+        )
+        session.add(ingest_file_metadata)
+        session.commit()
+        result_metadata = one(session.query(schema.DirectIngestIngestFileMetadata).all())
+        self.assertEqual(result_metadata, ingest_file_metadata)
+        self.assertIsNotNone(result_metadata.file_id)
+
+    def test_ingest_file_metadata_split_file_no_file_name_raises(self):
+        session = SessionFactory.for_schema_base(OperationsBase)
+        ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
+            region_code='us_xx_yyyy',
+            file_tag='file_tag',
+            is_invalidated=False,
+            is_file_split=True,
+            job_creation_time=datetime.datetime.now(),
+            datetimes_contained_lower_bound_exclusive=None,
+            datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
+        )
+        session.add(ingest_file_metadata)
+        with self.assertRaises(IntegrityError):
+            session.commit()
 
     def test_ingest_file_metadata_export_time_without_file_name_raises(self):
         session = SessionFactory.for_schema_base(OperationsBase)
@@ -187,12 +221,13 @@ class OperationsSchemaTest(unittest.TestCase):
         with self.assertRaises(IntegrityError):
             session.commit()
 
-    def test_ingest_file_metadata_file_name_without_export_time_raises(self):
+    def test_ingest_file_metadata_file_name_without_export_time_does_not_raise(self):
         session = SessionFactory.for_schema_base(OperationsBase)
         ingest_file_metadata = schema.DirectIngestIngestFileMetadata(
             region_code='us_xx_yyyy',
             file_tag='file_tag',
             is_invalidated=False,
+            is_file_split=False,
             job_creation_time=datetime.datetime.now(),
             datetimes_contained_lower_bound_exclusive=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(2020, 5, 11),
@@ -200,9 +235,10 @@ class OperationsSchemaTest(unittest.TestCase):
         )
 
         session.add(ingest_file_metadata)
-
-        with self.assertRaises(IntegrityError):
-            session.commit()
+        session.commit()
+        result_metadata = one(session.query(schema.DirectIngestIngestFileMetadata).all())
+        self.assertEqual(result_metadata, ingest_file_metadata)
+        self.assertIsNotNone(result_metadata.file_id)
 
     def test_ingest_file_discovery_time_no_export_time_raises(self):
         session = SessionFactory.for_schema_base(OperationsBase)
