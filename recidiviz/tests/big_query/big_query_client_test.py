@@ -23,7 +23,7 @@ import pytest
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportViewConfig
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 from recidiviz.big_query.big_query_view import BigQueryView
 
 
@@ -99,37 +99,15 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.update_table.assert_called()
         self.mock_client.create_table.assert_not_called()
 
-    def test_create_or_update_table_from_view(self):
-        """create_or_update_table_from_view queries a view and loads the result
-        into a table."""
-        self.assertIsNotNone(self.bq_client.export_view_to_table_async(
-            view_dataset_ref=self.mock_dataset,
-            view=self.mock_view,
-            output_table_dataset_ref=self.mock_dataset,
-            output_table_id='output_table',
-            view_filter_clause="WHERE state_code = 'US_CA'"))
-        self.mock_client.query.assert_called()
-
-    def test_create_or_update_table_from_view_no_view(self):
-        """create_or_update_table_from_view does not run a query if the source
-        view does not exist."""
-        self.mock_client.get_table.side_effect = exceptions.NotFound('!')
-        with self.assertLogs(level='WARNING'):
-            self.assertIsNone(self.bq_client.export_view_to_table_async(
-                view_dataset_ref=self.mock_dataset,
-                view=self.mock_view,
-                output_table_dataset_ref=self.mock_dataset,
-                output_table_id='output_table',
-                view_filter_clause="WHERE state_code = 'US_ND'"))
-            self.mock_client.query.assert_not_called()
-
     def test_export_to_cloud_storage(self):
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
         self.assertIsNotNone(self.bq_client.export_table_to_cloud_storage_async(
             source_table_dataset_ref=self.mock_dataset,
             source_table_id='source-table',
-            destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json'))
+            destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
+            destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+        ))
         self.mock_client.extract_table.assert_called()
 
     def test_export_to_cloud_storage_no_table(self):
@@ -140,7 +118,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.assertIsNone(self.bq_client.export_table_to_cloud_storage_async(
                 source_table_dataset_ref=self.mock_dataset,
                 source_table_id='source-table',
-                destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json'))
+                destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
+                destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON))
             self.mock_client.extract_table.assert_not_called()
 
     def test_load_table_async_create_dataset(self):
@@ -170,9 +149,22 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_not_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_export_views_to_cloud_storage(self):
-        """export_views_to_cloud_storage creates the table from the view and
-        extracts the table"""
+    def test_export_query_results_to_cloud_storage_no_table(self):
+        bucket = self.mock_project_id + '-bucket'
+        self.mock_client.get_table.side_effect = exceptions.NotFound('!')
+        with self.assertLogs(level='WARNING'):
+            self.bq_client.export_query_results_to_cloud_storage([
+                ExportQueryConfig.from_view_query(
+                    view=self.mock_view,
+                    view_filter_clause='WHERE x = y',
+                    intermediate_table_name=self.mock_table_id,
+                    output_uri=f'gs://{bucket}/view.json',
+                    output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
+            ])
+
+    def test_export_query_results_to_cloud_storage(self):
+        """export_query_results_to_cloud_storage creates the table from the view query and
+        exports the table."""
         bucket = self.mock_project_id + '-bucket'
         query_job = futures.Future()
         query_job.set_result([])
@@ -180,19 +172,24 @@ class BigQueryClientImplTest(unittest.TestCase):
         extract_job.set_result(None)
         self.mock_client.query.return_value = query_job
         self.mock_client.extract_table.return_value = extract_job
-        self.bq_client.export_views_to_cloud_storage(
-            self.mock_dataset, [ExportViewConfig(
+        self.bq_client.export_query_results_to_cloud_storage([
+            ExportQueryConfig.from_view_query(
                 view=self.mock_view,
                 view_filter_clause='WHERE x = y',
                 intermediate_table_name=self.mock_table_id,
-                output_uri=f'gs://{bucket}/view.json')])
+                output_uri=f'gs://{bucket}/view.json',
+                output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
+            ])
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
+        self.mock_client.delete_table.assert_called_with(
+            bigquery.DatasetReference(self.mock_project_id, self.mock_view.dataset_id).table(self.mock_table_id))
 
     def test_create_table_from_query(self):
         """Tests that the create_table_from_query function calls the function to create a table from a query."""
         self.bq_client.create_table_from_query_async(self.mock_dataset_id, self.mock_table_id,
-                                                     query="SELECT * FROM some.fake.table")
+                                                     query="SELECT * FROM some.fake.table",
+                                                     query_parameters=[])
         self.mock_client.query.assert_called()
 
     def test_insert_into_table_from_table(self):
@@ -224,23 +221,6 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
-
-    def test_insert_rows_into_table(self):
-        self.mock_client.insert_rows.return_value = None
-
-        self.bq_client.insert_rows_into_table(self.mock_dataset_id, self.mock_table_id, [{'col1': 1, 'col2': 'a'}])
-
-        self.mock_client.get_table.assert_called()
-        self.mock_client.insert_rows.assert_called()
-
-    def test_insert_rows_into_table_with_errors(self):
-        self.mock_client.insert_rows.return_value = [{'error1': 'An error'}]
-
-        with self.assertRaises(ValueError):
-            self.bq_client.insert_rows_into_table(self.mock_dataset_id, self.mock_table_id, [{'col1': 1, 'col2': 'a'}])
-
-        self.mock_client.get_table.assert_called()
-        self.mock_client.insert_rows.assert_called()
 
     def test_delete_from_table(self):
         """Tests that the delete_from_table function runs a query."""

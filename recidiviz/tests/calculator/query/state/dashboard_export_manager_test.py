@@ -67,9 +67,8 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     @mock.patch('recidiviz.big_query.view_manager.create_dataset_and_update_views')
-    @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.dataset_config')
     @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.view_config')
-    def test_export_dashboard_data_to_cloud_storage(self, mock_view_config, mock_dataset_config, mock_view_manager):
+    def test_export_dashboard_data_to_cloud_storage(self, mock_view_config, mock_view_manager):
         """Tests the table is created from the view and then extracted."""
         view_config_values = {
             'VIEWS_TO_UPDATE': self.views_to_update
@@ -77,9 +76,8 @@ class DashboardExportManagerTest(unittest.TestCase):
 
         dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket='bucket')
 
-        mock_dataset_config.DASHBOARD_VIEWS_DATASET.return_value = 'dataset'
         mock_view_config.VIEWS_TO_UPDATE.return_value = view_config_values
 
         mock_view_manager.assert_called_with(mock_view_config.VIEWS_TO_UPDATE)
 
-        self.mock_client.export_views_to_cloud_storage.assert_called()
+        self.mock_client.export_query_results_to_cloud_storage.assert_called()

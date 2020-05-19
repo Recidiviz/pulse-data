@@ -19,7 +19,7 @@ tables and views.
 """
 import abc
 import logging
-from typing import List, Optional, Iterator, Dict, Any
+from typing import List, Optional, Iterator
 
 import attr
 from google.cloud import bigquery, exceptions
@@ -38,20 +38,42 @@ def client(project_id: str) -> bigquery.Client:
 
 
 @attr.s(frozen=True)
-class ExportViewConfig:
-    """Specification for how to export a particular view."""
+class ExportQueryConfig:
+    # The query to export
+    query: str = attr.ib()
 
-    # The view to export.
-    view: BigQueryView = attr.ib()
+    # Query parameters for the above query
+    query_parameters: List[bigquery.ScalarQueryParameter] = attr.ib()
 
-    # A WHERE clause to filter what gets exported from the view
-    view_filter_clause: str = attr.ib()
+    # The name of the dataset to write the intermediate table to.
+    intermediate_dataset_id: str = attr.ib()
 
-    # The name of the intermediate table to create/update (will live in the same dataset as the view).
+    # The name of the intermediate table to create/overwrite.
     intermediate_table_name: str = attr.ib()
 
     # The desired path of the output file (starts with 'gs://').
     output_uri: str = attr.ib()
+
+    # The desired format of the output file
+    output_format: bigquery.DestinationFormat = attr.ib()
+
+    @classmethod
+    def from_view_query(cls,
+                        view: BigQueryView,
+                        view_filter_clause: str,
+                        intermediate_table_name: str,
+                        output_uri: str,
+                        output_format: bigquery.DestinationFormat) -> 'ExportQueryConfig':
+        query = "{select_query} {filter_clause}".format(select_query=view.select_query,
+                                                        filter_clause=view_filter_clause)
+        return ExportQueryConfig(
+            query=query,
+            query_parameters=[],
+            intermediate_dataset_id=view.dataset_id,
+            intermediate_table_name=intermediate_table_name,
+            output_uri=output_uri,
+            output_format=output_format,
+        )
 
 
 class BigQueryClient:
@@ -136,31 +158,6 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def export_view_to_table_async(self,
-                                   # TODO(3020): BigQueryView now encodes dataset information, remove this parameter.
-                                   view_dataset_ref: bigquery.DatasetReference,
-                                   view: BigQueryView,
-                                   view_filter_clause: str,
-                                   output_table_dataset_ref: bigquery.DatasetReference,
-                                   output_table_id: str) -> Optional[bigquery.QueryJob]:
-        """Queries data in a view filtered by the provided |view_filter_clause| and loads it into a table.
-
-        If the table exists, overwrites existing data. Creates the table if it does not exist.
-
-        It is the caller's responsibility to wait for the resulting job to complete.
-
-        Args:
-            view_dataset_ref: The BigQuery dataset where the view is.
-            view: The View to query.
-            view_filter_clause: A string WHERE clause to filter the results of the view
-            output_table_dataset_ref: The BigQuery dataset where the output table should go.
-            output_table_id: The string table name
-
-        Returns:
-            The QueryJob containing job details, or None if the job fails to start.
-        """
-
-    @abc.abstractmethod
     def load_table_from_cloud_storage_async(
             self,
             source_uri: str,
@@ -190,15 +187,16 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def export_table_to_cloud_storage_async(self,
-                                            source_table_dataset_ref: bigquery.dataset.DatasetReference,
-                                            source_table_id: str,
-                                            destination_uri: str) -> Optional[bigquery.ExtractJob]:
+    def export_table_to_cloud_storage_async(
+            self,
+            source_table_dataset_ref: bigquery.dataset.DatasetReference,
+            source_table_id: str,
+            destination_uri: str,
+            destination_format: bigquery.DestinationFormat) -> Optional[bigquery.ExtractJob]:
         """Exports the table corresponding to the given view to the path in Google Cloud Storage denoted by
         |destination_uri|.
 
-        Extracts the entire table and exports in JSON format to the given bucket in
-        Cloud Storage.
+        Extracts the entire table and exports in the specified format to the given bucket in Cloud Storage.
 
         It is the caller's responsibility to wait for the resulting job to complete.
 
@@ -207,28 +205,28 @@ class BigQueryClient:
             source_table_id: The string table name to export to cloud storage.
             destination_uri: The path in Google Cloud Storage to write the contents of the table to (starts with
                 'gs://').
+            destination_format: The format the contents of the table should be outputted as (e.g. CSV or
+                NEWLINE_DELIMITED_JSON).
 
         Returns:
             The ExtractJob object containing job details, or None if the job fails to start.
         """
 
     @abc.abstractmethod
-    def export_views_to_cloud_storage(self,
-                                      dataset_ref: bigquery.dataset.DatasetReference,
-                                      export_configs: List[ExportViewConfig]) -> None:
-        """Exports the views to cloud storage according to the given configs.
+    def export_query_results_to_cloud_storage(self, export_configs: List[ExportQueryConfig]) -> None:
+        """Exports the queries to cloud storage according to the given configs.
 
-        This is a two-step process. First, for each view, the view query is executed
-        and the entire result is loaded into a table in BigQuery. Then, for each
-        table, the contents are exported to the cloud storage bucket in JSON Lines format.
-        This has to be a two-step process because BigQuery doesn't support exporting
-        a view directly, it must be materialized in a table first.
+        This is a three-step process. First, each query is executed and the entire result is loaded into a temporary
+        table in BigQuery. Then, for each table, the contents are exported to the cloud storage bucket in the format
+        specified in the config. Finally, once all exports are complete, the temporary tables are deleted.
+
+        The query output must be materialized in a table first because BigQuery doesn't support exporting a view or
+        query directly.
 
         This runs synchronously and waits for the jobs to complete.
 
         Args:
-            dataset_ref: The dataset where the views exist.
-            export_configs: List of views along with how to export them.
+            export_configs: List of queries along with how to export their results.
         """
 
     @abc.abstractmethod
@@ -276,6 +274,7 @@ class BigQueryClient:
                                       dataset_id: str,
                                       table_id: str,
                                       query: str,
+                                      query_parameters: List[bigquery.ScalarQueryParameter],
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         """Creates a table at the given location with the output from the given query. If overwrite is False, a
         'duplicate' error is returned in the job result if the table already exists and contains data. If overwrite is
@@ -285,26 +284,11 @@ class BigQueryClient:
             dataset_id: The name of the dataset where the table should be created.
             table_id: The name of the table to be created.
             query: The query to run. The result will be loaded into the new table.
+            query_parameters: Parameters for the query
             overwrite: Whether or not to overwrite an existing table.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
-        """
-
-    @abc.abstractmethod
-    def insert_rows_into_table(self,
-                               dataset_id: str,
-                               table_id: str,
-                               rows: List[Dict[str, Any]]) -> None:
-        """Inserts (appends) rows into a table in BigQuery. Existing rows will not be overwritten. A table with name
-        |table_id| will be created if they do not exist, and updated if it does exist.
-
-        This completes synchronously.
-
-        Args:
-            dataset_id: The string BigQuery dataset name of the table to create/update with the data.
-            table_id: The string table name of the table we're adding to create/update with the data.
-            rows: A list of dictionaries containing the data to upload
         """
 
     @abc.abstractmethod
@@ -450,31 +434,6 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Creating view %s", str(bq_view))
         return self.client.create_table(bq_view)
 
-    def export_view_to_table_async(self,
-                                   view_dataset_ref: bigquery.DatasetReference,
-                                   view: BigQueryView,
-                                   view_filter_clause: str,
-                                   output_table_dataset_ref: bigquery.DatasetReference,
-                                   output_table_id: str) -> Optional[bigquery.QueryJob]:
-        if not self.table_exists(view_dataset_ref, view.view_id):
-            logging.error("View [%s] does not exist in dataset [%s]", view.view_id, str(view_dataset_ref))
-            return None
-
-        job_config = bigquery.QueryJobConfig()
-        job_config.destination = output_table_dataset_ref.table(output_table_id)
-        job_config.write_disposition = \
-            bigquery.job.WriteDisposition.WRITE_TRUNCATE
-        query = "{select_query} {filter_clause}".format(select_query=view.select_query,
-                                                        filter_clause=view_filter_clause)
-
-        logging.info("Querying table: %s with query: %s", view.view_id, query)
-
-        return self.client.query(
-            query=query,
-            location=self.LOCATION,
-            job_config=job_config,
-        )
-
     def load_table_from_cloud_storage_async(
             self,
             source_uri: str,
@@ -517,10 +476,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         return load_job
 
-    def export_table_to_cloud_storage_async(self,
-                                            source_table_dataset_ref: bigquery.DatasetReference,
-                                            source_table_id: str,
-                                            destination_uri: str) -> Optional[bigquery.ExtractJob]:
+    def export_table_to_cloud_storage_async(
+            self,
+            source_table_dataset_ref: bigquery.DatasetReference,
+            source_table_id: str,
+            destination_uri: str,
+            destination_format: bigquery.DestinationFormat) -> Optional[bigquery.ExtractJob]:
         if not self.table_exists(source_table_dataset_ref, source_table_id):
             logging.error("Table [%s] does not exist in dataset [%s]", source_table_id, str(source_table_dataset_ref))
             return None
@@ -528,7 +489,7 @@ class BigQueryClientImpl(BigQueryClient):
         table_ref = source_table_dataset_ref.table(source_table_id)
 
         job_config = bigquery.ExtractJobConfig()
-        job_config.destination_format = bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+        job_config.destination_format = destination_format
 
         return self.client.extract_table(
             table_ref,
@@ -538,17 +499,17 @@ class BigQueryClientImpl(BigQueryClient):
             job_config=job_config
         )
 
-    def export_views_to_cloud_storage(self,
-                                      dataset_ref: bigquery.dataset.DatasetReference,
-                                      export_configs: List[ExportViewConfig]) -> None:
+    def export_query_results_to_cloud_storage(self,
+                                              export_configs: List[ExportQueryConfig]) -> None:
         query_jobs = []
         for export_config in export_configs:
-            query_job = self.export_view_to_table_async(
-                dataset_ref,
-                export_config.view,
-                export_config.view_filter_clause,
-                dataset_ref,
-                export_config.intermediate_table_name)
+            query_job = self.create_table_from_query_async(
+                dataset_id=export_config.intermediate_dataset_id,
+                table_id=export_config.intermediate_table_name,
+                query=export_config.query,
+                query_parameters=export_config.query_parameters,
+                overwrite=True
+            )
             if query_job is not None:
                 query_jobs.append(query_job)
 
@@ -561,9 +522,11 @@ class BigQueryClientImpl(BigQueryClient):
         extract_jobs = []
         for export_config in export_configs:
             extract_job = self.export_table_to_cloud_storage_async(
-                dataset_ref,
+                self.dataset_ref_for_id(export_config.intermediate_dataset_id),
                 export_config.intermediate_table_name,
-                export_config.output_uri)
+                export_config.output_uri,
+                export_config.output_format
+            )
             if extract_job is not None:
                 extract_jobs.append(extract_job)
 
@@ -571,6 +534,15 @@ class BigQueryClientImpl(BigQueryClient):
         for job in extract_jobs:
             job.result()
         logging.info('Completed [%d] extract jobs.', len(extract_jobs))
+
+        logging.info('Deleting [%d] temporary intermediate tables.', len(export_configs))
+        for export_config in export_configs:
+            intermediate_dataset_ref = self.dataset_ref_for_id(export_config.intermediate_dataset_id)
+            intermediate_table_ref = intermediate_dataset_ref.table(export_config.intermediate_table_name)
+            logging.info('Deleting temporary table [%s] from dataset [%s].',
+                         intermediate_table_ref.table_id, intermediate_dataset_ref.dataset_id)
+            self.client.delete_table(intermediate_table_ref)
+        logging.info('Done deleting temporary intermediate tables.')
 
     def run_query_async(self, query_str: str) -> bigquery.QueryJob:
         return self.client.query(query_str)
@@ -599,6 +571,7 @@ class BigQueryClientImpl(BigQueryClient):
                                       dataset_id: str,
                                       table_id: str,
                                       query: str,
+                                      query_parameters: List[bigquery.ScalarQueryParameter],
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
@@ -611,6 +584,7 @@ class BigQueryClientImpl(BigQueryClient):
         # it already exists.
         job_config.write_disposition = (bigquery.job.WriteDisposition.WRITE_TRUNCATE if overwrite
                                         else bigquery.job.WriteDisposition.WRITE_EMPTY)
+        job_config.query_parameters = query_parameters
 
         logging.info("Creating table: %s with query: %s", table_id, query)
 
@@ -619,19 +593,6 @@ class BigQueryClientImpl(BigQueryClient):
             location=self.LOCATION,
             job_config=job_config,
         )
-
-    def insert_rows_into_table(self,
-                               dataset_id: str,
-                               table_id: str,
-                               rows: List[Dict[str, Any]]):
-        dataset_ref = self.dataset_ref_for_id(dataset_id)
-        table = self.get_table(dataset_ref, table_id)
-
-        logging.info('Inserting [%d] row(s) into [%s]', len(rows), table.full_table_id)
-        errors = self.client.insert_rows(table, rows)
-        if errors:
-            raise ValueError(f'Encountered errors inserting rows into {dataset_id}.{table_id}: {errors}')
-        logging.info('Done inserting [%d] row(s) into [%s].', len(rows), table.full_table_id)
 
     def insert_into_table_from_table_async(self,
                                            source_dataset_id: str,
@@ -697,5 +658,5 @@ class BigQueryClientImpl(BigQueryClient):
                      view.view_id, view.materialized_view_table_id)
 
         create_job = self.create_table_from_query_async(
-            view.dataset_id, view.materialized_view_table_id, view.select_query, overwrite=True)
+            view.dataset_id, view.materialized_view_table_id, view.select_query, query_parameters=[], overwrite=True)
         create_job.result()

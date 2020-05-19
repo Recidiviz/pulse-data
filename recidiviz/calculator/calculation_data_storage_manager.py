@@ -78,7 +78,10 @@ def move_old_dataflow_metrics_to_cold_storage():
             table_query = f"SELECT * FROM `{bq_client.project_id}.{dataflow_metrics_dataset}.{table_id}` " \
                           f"{filter_clause}"
 
-            create_job = bq_client.create_table_from_query_async(cold_storage_dataset, table_id, table_query)
+            create_job = bq_client.create_table_from_query_async(cold_storage_dataset,
+                                                                 table_id,
+                                                                 table_query,
+                                                                 query_parameters=[])
 
             # Wait for the create job to complete before running the delete job
             create_job.result()
