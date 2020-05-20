@@ -144,7 +144,7 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
         if self.upper_bound_datetime_prev:
             tag += f'-{snake_case_datetime(self.upper_bound_datetime_prev)}'
         else:
-            tag += f'-None'
+            tag += '-None'
         tag += f'-{snake_case_datetime(self.upper_bound_datetime_to_export)}'
         return tag
 

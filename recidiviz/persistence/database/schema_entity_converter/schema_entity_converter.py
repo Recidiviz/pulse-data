@@ -122,8 +122,7 @@ def convert_schema_objects_to_entity(
 def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
     result_list = convert_entities_to_schema([entity])
     if len(result_list) != 1:
-        raise AssertionError(
-            f"Call to convert object should have only returned one result.")
+        raise AssertionError("Call to convert object should have only returned one result.")
     return result_list[0]
 
 
@@ -132,6 +131,5 @@ def convert_schema_object_to_entity(schema_object: DatabaseEntity,
     result_list = convert_schema_objects_to_entity(
         [schema_object], populate_back_edges)
     if len(result_list) != 1:
-        raise AssertionError(
-            f"Call to convert object should have only returned one result.")
+        raise AssertionError("Call to convert object should have only returned one result.")
     return result_list[0]

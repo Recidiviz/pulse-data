@@ -821,7 +821,7 @@ TAK158_TAK024_TAK026_TAK039_INCARCERATION_PERIOD_FROM_SUPERVISION_SENTENCE = \
     """
 
 ALL_OFFICERS_FRAGMENT = \
-    f"""all_officers AS (
+    """all_officers AS (
         -- Combination of 2 officer tables into one source of truth. Both tables
         -- contain information about different groups of officers. From
         -- conversations with MO contacts, we should use a combination of both
@@ -1620,7 +1620,7 @@ TAK291_TAK292_TAK024_CITATIONS = \
     """
 
 ORAS_ASSESSMENTS_WEEKLY = \
-    f"""
+    """
     -- oras_assessments_weekly
     SELECT
         *

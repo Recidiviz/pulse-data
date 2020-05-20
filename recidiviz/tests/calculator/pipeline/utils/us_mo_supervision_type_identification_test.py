@@ -369,7 +369,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -401,7 +401,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -438,7 +438,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         supervision_end_date_middle_of_month = self.start_of_month_date + datetime.timedelta(days=5)
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -475,7 +475,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         parole_end_date_middle_of_month = self.start_of_month_date + datetime.timedelta(days=5)
         incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -491,7 +491,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=parole_end_date_middle_of_month
             ),
@@ -524,7 +524,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -539,7 +539,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -575,7 +575,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         second_to_last_month_date = self.end_of_month_date - datetime.timedelta(days=1)
         incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -590,7 +590,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -630,7 +630,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         second_to_last_month_date = self.end_of_month_date - datetime.timedelta(days=1)
         incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -645,7 +645,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=supervision_period.start_date
             ),
@@ -712,7 +712,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
 
         incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=start_date
             ),
@@ -727,7 +727,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
 
         supervision_sentence_1 = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=start_date
             ),
@@ -742,7 +742,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
 
         supervision_sentence_2 = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
-                external_id=f'ss1',
+                external_id='ss1',
                 state_code='US_MO',
                 start_date=start_date
             ),

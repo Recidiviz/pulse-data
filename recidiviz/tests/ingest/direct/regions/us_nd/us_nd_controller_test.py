@@ -2471,7 +2471,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.aliases.append(person_2_alias_3)
         person_2.races = [person_2_race_2]
         person_2.assessments = [person_2_assessment_1]
-        person_2.full_name = '{"given_names": "SOLANGE", ' '"middle_names": "P", ' '"surname": "KNOWLES"}'
+        person_2.full_name = '{"given_names": "SOLANGE", "middle_names": "P", "surname": "KNOWLES"}'
         person_2.current_address = '000 1ST AVE APT 1, WEST FARGO, ND, 58078'
         person_2.gender_raw_text = '2'
         person_2.residency_status = ResidencyStatus.PERMANENT

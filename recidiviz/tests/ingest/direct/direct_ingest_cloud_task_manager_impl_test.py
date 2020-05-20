@@ -85,7 +85,7 @@ class TestCloudTaskQueueInfo(TestCase):
             _build_task_id(_REGION.region_code, gcsfs_args.task_id_tag())
         info = ProcessIngestJobCloudTaskQueueInfo(
             queue_name='queue_name',
-            task_names=[f'projects/path/to/random_task',
+            task_names=['projects/path/to/random_task',
                         f'projects/path/to/{full_task_name}'])
         file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         gcsfs_args = \

@@ -113,16 +113,14 @@ class DatabaseEntity(CoreEntity):
             cls.get_primary_key_column_name())
 
     @classmethod
-    def _get_entity_property_names_by_type(cls, type_name):
+    def _get_entity_property_names_by_type(cls, type_name: str):
         """Returns set of string names of all properties of |cls| that match the
         type of |type_name|.
         """
-        # pylint: disable=protected-access
-        return {name for name, property in inspect(cls)._props.items()
-                if type(property).__name__ == type_name}
+        return set(cls._get_entity_names_and_properties_by_type(type_name).keys())
 
     @classmethod
-    def _get_entity_names_and_properties_by_type(cls, type_name):
+    def _get_entity_names_and_properties_by_type(cls, type_name: str):
         """Returns a dictionary where the keys are the string names of all
         properties of |cls| that match the type of |type_name|, and the
         values are the corresponding properties.
@@ -132,9 +130,7 @@ class DatabaseEntity(CoreEntity):
 
         # pylint: disable=protected-access
         for name, property_object in inspect(cls)._props.items():
-            if type(property_object).__name__ == type_name and \
-                    hasattr(property_object, 'argument') and \
-                    hasattr(property_object.argument, 'arg'):
+            if type(property_object).__name__ == type_name:
                 names_to_properties[name] = property_object
 
         return names_to_properties

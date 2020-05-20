@@ -942,8 +942,8 @@ class TestGetFromSupervisionType(unittest.TestCase):
                                           AdmissionReason.DUAL_REVOCATION]:
                     assert from_supervision_type
                 else:
-                    assert str(e.value) == (f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of "
-                                            f"type: INVALID.")
+                    assert str(e.value) == (
+                        "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: INVALID.")
 
     def test_get_from_supervision_type_invalid(self):
         """Tests the get_from_supervision_type function for an invalid
@@ -952,6 +952,4 @@ class TestGetFromSupervisionType(unittest.TestCase):
 
             _ = identifier.get_from_supervision_type('INVALID')
 
-        assert str(e.value) == (f"Enum case not handled for "
-                                f"StateIncarcerationPeriodAdmissionReason of"
-                                f" type: INVALID.")
+        assert str(e.value) == ("Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: INVALID.")

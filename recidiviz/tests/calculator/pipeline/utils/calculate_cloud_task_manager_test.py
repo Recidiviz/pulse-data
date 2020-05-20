@@ -41,7 +41,7 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
     """Tests for CalculateCloudTaskManager"""
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-14')
     def test_create_dataflow_monitor_task(self, mock_client, mock_uuid):
         # Arrange

@@ -19,6 +19,7 @@
 might care about. The extracted information is put into the ingest data
 model and returned.
 """
+import collections
 import csv
 import logging
 from collections import defaultdict, OrderedDict
@@ -158,7 +159,7 @@ class CsvDataExtractor(DataExtractor):
         """Converts entries in |content| and adds data to |ingest_info|."""
         if isinstance(content, str):
             rows = csv.DictReader(content.splitlines())
-        elif isinstance(content, Iterable):
+        elif isinstance(content, collections.abc.Iterable):
             rows = csv.DictReader(content)
         else:
             logging.error("%r is not a string or an Iterable", content)

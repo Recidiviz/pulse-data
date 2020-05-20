@@ -143,7 +143,7 @@ class CopyFilesFromProdToStagingController:
                 self.copy_progress.next()
 
     def _execute_copy(self, subdirs_to_copy: List[str]) -> None:
-        self.copy_progress = Bar(f"Copying files from subdirectories...", max=len(subdirs_to_copy))
+        self.copy_progress = Bar("Copying files from subdirectories...", max=len(subdirs_to_copy))
 
         thread_pool = ThreadPool(processes=12)
         thread_pool.map(self._copy_files_for_date, subdirs_to_copy)
