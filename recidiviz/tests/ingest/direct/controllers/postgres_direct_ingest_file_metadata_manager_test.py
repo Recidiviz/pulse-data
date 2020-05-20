@@ -156,8 +156,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         # Act
         self.metadata_manager.register_new_file(raw_unprocessed_path)
-        metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
-        self.metadata_manager.mark_file_as_processed(raw_unprocessed_path, metadata)
+        self.metadata_manager.mark_file_as_processed(raw_unprocessed_path)
 
         # Assert
         metadata = self.metadata_manager.get_file_metadata(raw_unprocessed_path)
@@ -411,7 +410,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                                                       metadata_manager.get_file_metadata(split_file_path)))
 
         with freeze_time('2015-01-02T03:08:08'):
-            metadata_manager.mark_file_as_processed(ingest_view_unprocessed_path, metadata)
+            metadata_manager.mark_file_as_processed(ingest_view_unprocessed_path)
 
         expected_metadata.processed_time = datetime.datetime(2015, 1, 2, 3, 8, 8)
 
@@ -422,7 +421,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         for split_file_path, split_file_metadata in split_file_paths_and_metadata:
             expected_metadata = split_file_metadata
             with freeze_time('2015-01-02T03:09:09'):
-                metadata_manager.mark_file_as_processed(split_file_path, split_file_metadata)
+                metadata_manager.mark_file_as_processed(split_file_path)
 
             expected_metadata.processed_time = datetime.datetime(2015, 1, 2, 3, 9, 9)
 

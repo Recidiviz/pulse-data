@@ -53,11 +53,7 @@ class DirectIngestFileMetadataManager:
         """
 
     @abc.abstractmethod
-    def mark_file_as_processed(self,
-                               path: GcsfsFilePath,
-                               # TODO(3020): Once we write rows to postgres immediately when we encounter a new file, we
-                               #  shouldn't need this arg - just query for the appropriate row to get the file id.
-                               metadata: DirectIngestFileMetadata) -> None:
+    def mark_file_as_processed(self, path: GcsfsFilePath) -> None:
         """Marks the file represented by the |metadata| as processed in the appropriate metadata table."""
 
     @abc.abstractmethod

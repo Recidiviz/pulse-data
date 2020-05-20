@@ -293,6 +293,7 @@ class DirectIngestRawFileImportManager:
     def _wait_for_jobs(temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob]) -> None:
         for temp_output_path, load_job in temp_path_to_load_job.items():
             try:
+                logging.info('Waiting for load of [%s]', temp_output_path.abs_path())
                 load_job.result()
                 logging.info('BigQuery load of [%s] complete', temp_output_path.abs_path())
             except BadRequest as e:

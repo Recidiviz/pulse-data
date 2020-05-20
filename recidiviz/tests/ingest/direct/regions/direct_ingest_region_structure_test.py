@@ -25,6 +25,7 @@ import yaml
 import recidiviz
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRegionRawFileConfig
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
 
 _REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
@@ -82,14 +83,23 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
         self.run_check_valid_yamls_exist_in_all_regions(lambda region_code: 'manifest.yaml',
                                                         validate_manifest_contents)
 
-    def test_region_controller_exists(self):
+    def test_region_controller_exists_and_builds(self):
         for dir_path in self._get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
             controller_path = os.path.join(dir_path, f'{region_code}_controller.py')
             self.assertTrue(os.path.exists(controller_path), f'Path [{controller_path}] does not exist.')
 
             region = get_region(region_code, is_direct_ingest=True)
-            self.assertIsNotNone(region.get_ingestor_class())
+            with local_project_id_override('project'):
+                self.assertIsNotNone(region.get_ingestor_class())
+
+    def test_region_controller_builds(self):
+        for dir_path in self._get_existing_region_dir_paths():
+            region_code = os.path.basename(dir_path)
+
+            region = get_region(region_code, is_direct_ingest=True)
+            with local_project_id_override('project'):
+                self.assertIsNotNone(region.get_ingestor())
 
     def test_raw_files_yaml_parses_all_regions(self):
         for region_code in self._get_existing_region_dir_names():
