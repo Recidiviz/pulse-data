@@ -43,7 +43,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
     def task_path(self, project, queues_region, queue, task_id):
         return f'queue_path/{project}/{queues_region}/{queue}/{task_id}'
 
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_purge_scrape_tasks(self, mock_client):
         # Arrange
         region_code = 'us_ca_san_francisco'
@@ -89,7 +89,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             ]
         )
 
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_list_scrape_tasks(self, mock_client):
         # Arrange
         region_code = 'us_ca_san_francisco'
@@ -131,7 +131,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         self.assertCountEqual(tasks, [task1])
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-14')
     def test_create_scrape_task(self, mock_client, mock_uuid):
         # Arrange
@@ -191,7 +191,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             queue_path, task)
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_create_scraper_phase_task(self, mock_client, mock_uuid):
         # Arrange
         uuid = 'random-uuid'

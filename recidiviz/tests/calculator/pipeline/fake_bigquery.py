@@ -51,7 +51,7 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
 
     def expand(self, input_or_inputs):
         return (input_or_inputs
-                | f"Loading table values" >>
+                | "Loading table values" >>
                 apache_beam.Create(self._table_values))
 
 

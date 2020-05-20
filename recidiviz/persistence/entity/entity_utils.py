@@ -564,7 +564,7 @@ def print_entity_tree(entity: CoreEntity,
                     _print_indented(f'{child_field}: [', indent)
                     for c in child:
                         print_entity_tree(c, print_tree_structure_only, indent + 2, python_id_to_fake_id)
-                    _print_indented(f']', indent)
+                    _print_indented(']', indent)
 
             else:
                 _print_indented(f'{child_field}:', indent)

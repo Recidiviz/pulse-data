@@ -41,7 +41,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
     """Tests for BQExportCloudTaskManager"""
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-12')
     def test_create_bq_test(self, mock_client, mock_uuid):
         # Arrange
@@ -90,7 +90,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             queue_path, task)
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
-    @patch(f'google.cloud.tasks_v2.CloudTasksClient')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-13')
     def test_create_bq_monitor_test(
             self, mock_client, mock_uuid):

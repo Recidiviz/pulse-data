@@ -165,7 +165,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
         data_import_args = _parse_cloud_task_args(json_data)
 
         if not data_import_args:
-            raise DirectIngestError(msg=f"raw_data_import was called with no IngestArgs.",
+            raise DirectIngestError(msg="raw_data_import was called with no IngestArgs.",
                                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
         if not isinstance(data_import_args, GcsfsRawDataBQImportArgs):
@@ -207,7 +207,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
         ingest_view_export_args = _parse_cloud_task_args(json_data)
 
         if not ingest_view_export_args:
-            raise DirectIngestError(msg=f"raw_data_import was called with no IngestArgs.",
+            raise DirectIngestError(msg="raw_data_import was called with no IngestArgs.",
                                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
         if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
@@ -249,7 +249,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
         ingest_args = _parse_cloud_task_args(json_data)
 
         if not ingest_args:
-            raise DirectIngestError(msg=f"process_job was called with no IngestArgs.",
+            raise DirectIngestError(msg="process_job was called with no IngestArgs.",
                                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
         if not isinstance(ingest_args, IngestArgs):
@@ -257,7 +257,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
                                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
         if not ingest_args:
-            return f'Could not parse ingest args', HTTPStatus.BAD_REQUEST
+            return 'Could not parse ingest args', HTTPStatus.BAD_REQUEST
         with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
                 controller = controller_for_region_code(region_code)

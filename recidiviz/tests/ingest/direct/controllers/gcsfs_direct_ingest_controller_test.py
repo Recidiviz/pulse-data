@@ -342,10 +342,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         file_path = \
-            path_for_fixture_file(controller, f'tagA.csv',
+            path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False)
         file_path2 = \
-            path_for_fixture_file(controller, f'tagB.csv',
+            path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
@@ -398,10 +398,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         file_path = \
-            path_for_fixture_file(controller, f'tagA.csv',
+            path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False)
         file_path2 = \
-            path_for_fixture_file(controller, f'tagB.csv',
+            path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
@@ -454,7 +454,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         path = path_for_fixture_file(controller,
-                                     f'tagB.csv',
+                                     'tagB.csv',
                                      should_normalize=False)
 
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
@@ -647,7 +647,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # fail_handle_file_call=True, it won't get picked up and split.
         file_path = path_for_fixture_file(
             controller,
-            f'tagC.csv',
+            'tagC.csv',
             should_normalize=True,
             dt=datetime.datetime.fromisoformat('2019-09-19'))
         controller.fs.test_add_path(file_path, fail_handle_file_call=True)
@@ -682,7 +682,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         previous_date = '2019-09-15'
         file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'tagB.csv',
+            'tagB.csv',
             should_normalize=True,
             dt=datetime.datetime.fromisoformat(previous_date))
 
@@ -692,7 +692,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         unexpected_file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'Unexpected_Tag.csv',
+            'Unexpected_Tag.csv',
             should_normalize=True,
             dt=datetime.datetime.fromisoformat(previous_date))
 
@@ -730,7 +730,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
         file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'tagB.csv',
+            'tagB.csv',
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=prev_date_datetime)
@@ -741,7 +741,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         unexpected_file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'Unexpected_Tag.csv',
+            'Unexpected_Tag.csv',
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
@@ -795,7 +795,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'tagB.csv',
+            'tagB.csv',
             should_normalize=True,
             dt=prev_date_datetime)
 
@@ -805,13 +805,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         unexpected_file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'Unexpected_Tag.csv',
+            'Unexpected_Tag.csv',
             should_normalize=True,
             dt=prev_date_datetime)
 
         file_path_from_current_day = path_for_fixture_file(
             controller,
-            f'tagA.csv',
+            'tagA.csv',
             should_normalize=True,
             dt=current_date_datetime)
 
@@ -874,7 +874,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'tagB.csv',
+            'tagB.csv',
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=prev_date_datetime)
@@ -885,14 +885,14 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         unexpected_file_path_from_prev_day = path_for_fixture_file(
             controller,
-            f'Unexpected_Tag.csv',
+            'Unexpected_Tag.csv',
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
 
         file_path_from_current_day = path_for_fixture_file(
             controller,
-            f'tagA.csv',
+            'tagA.csv',
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=current_date_datetime)
@@ -959,13 +959,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         file_path = \
-            path_for_fixture_file(controller, f'tagA.csv',
+            path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False)
         file_path2 = \
-            path_for_fixture_file(controller, f'tagB.csv',
+            path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
         file_path3 = \
-            path_for_fixture_file(controller, f'tagC.csv',
+            path_for_fixture_file(controller, 'tagC.csv',
                                   should_normalize=False)
 
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
@@ -1007,13 +1007,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         file_path = \
-            path_for_fixture_file(controller, f'tagA.csv',
+            path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False)
         file_path2 = \
-            path_for_fixture_file(controller, f'tagB.csv',
+            path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
         file_path3 = \
-            path_for_fixture_file(controller, f'tagC.csv',
+            path_for_fixture_file(controller, 'tagC.csv',
                                   should_normalize=False)
 
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
@@ -1061,19 +1061,19 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"type [{type(controller.fs)}]")
 
         subdir_path = \
-            path_for_fixture_file(controller, f'subdir/',
+            path_for_fixture_file(controller, 'subdir/',
                                   should_normalize=False)
         paths = [
             subdir_path,
-            path_for_fixture_file(controller, f'subdir/Unexpected_Tag.csv',
+            path_for_fixture_file(controller, 'subdir/Unexpected_Tag.csv',
                                   should_normalize=False),
-            path_for_fixture_file(controller, f'tagA.csv',
+            path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False),
-            path_for_fixture_file(controller, f'tagB.csv',
+            path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False),
-            path_for_fixture_file(controller, f'tagC.csv',
+            path_for_fixture_file(controller, 'tagC.csv',
                                   should_normalize=False),
-            path_for_fixture_file(controller, f'subdir/tagC_2.csv',
+            path_for_fixture_file(controller, 'subdir/tagC_2.csv',
                                   should_normalize=False),
         ]
 

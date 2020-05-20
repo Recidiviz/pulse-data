@@ -19,6 +19,7 @@ calculations."""
 import abc
 import logging
 from typing import Any, Dict, Optional, Type, Tuple, Set
+
 from more_itertools import one
 
 import apache_beam as beam
@@ -155,7 +156,7 @@ class ReadFromBigQuery(beam.PTransform):
 
     def expand(self, input_or_inputs):
         return (input_or_inputs
-                | f"Read from BigQuery" >>
+                | "Read from BigQuery" >>
                 beam.io.Read(beam.io.BigQuerySource
                              (query=self._query,
                               use_standard_sql=True)))
@@ -305,14 +306,18 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
         self._unifying_id_field_filter_set = unifying_id_field_filter_set
         self._state_code = state_code
 
+    @staticmethod
+    def _property_class_from_property_object(property_object) -> Type:
+        return property_object.argument.class_ \
+            if hasattr(property_object.argument, 'class_') else property_object.argument()
+
     def expand(self, input_or_inputs):
         names_to_properties = self._parent_schema_class. \
             get_relationship_property_names_and_properties()
-
         properties_dict = {}
         for property_name, property_object in names_to_properties.items():
             # Get class name associated with the property
-            property_class_name = property_object.argument.arg
+            property_class_name = self._property_class_from_property_object(property_object).__name__
 
             property_entity_class = entity_utils.get_entity_class_in_module_with_name(
                 state_entities, property_class_name)
@@ -378,7 +383,8 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                                 )
 
                 properties_dict[property_name] = entities
-
+            else:
+                print(f'NOT A FORWARD EDGE {self._parent_schema_class} -> {property_schema_class}')
         return properties_dict
 
 
