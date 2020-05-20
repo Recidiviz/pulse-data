@@ -160,8 +160,11 @@ _PERSON = entities.Person.new_with_defaults(
 
 class TestCountySchemaEntityConverter(TestCase):
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def test_convert_person(self):
         schema_person = CountyEntityToSchemaConverter().convert(_PERSON)

@@ -80,6 +80,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.entity_matching_error_threshold_patcher.stop()
+        fakes.teardown_in_memory_sqlite_databases()
 
     @classmethod
     def fixture_path_prefix(cls):

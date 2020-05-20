@@ -48,8 +48,11 @@ class MockDate(datetime.date):
 class TestSingleCountPersist(TestCase):
     """Test that store_single_count correctly persists a count."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
     def testWrite_SingleCount(self):

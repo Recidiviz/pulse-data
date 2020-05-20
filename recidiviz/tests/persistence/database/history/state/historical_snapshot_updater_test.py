@@ -39,6 +39,9 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def testStateRecordTreeSnapshotUpdate(self):
         person = generate_schema_state_person_obj_tree()
 

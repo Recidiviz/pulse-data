@@ -55,8 +55,11 @@ def parsed_pdf(request):
 class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     # ==================== TABLE 1 TESTS ====================
 

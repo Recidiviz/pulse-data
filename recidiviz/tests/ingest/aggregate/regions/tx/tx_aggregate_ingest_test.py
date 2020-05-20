@@ -73,8 +73,11 @@ def parsed_pdf_concat(request):
 class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def testParse_ParsesHeadAndTail_After_1996(self):
         result = self.parsed_pdf_after_1996[TxCountyAggregate]

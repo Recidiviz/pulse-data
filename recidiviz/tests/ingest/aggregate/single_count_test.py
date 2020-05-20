@@ -47,9 +47,12 @@ TEST_ENV = 'recidiviz-test'
 class TestSingleCountIngest(TestCase):
     """Test that store_single_count correctly stores a count."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         self.client = app.test_client()
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def testWrite_SingleCountToday(self):
         params = {
