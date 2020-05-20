@@ -38,15 +38,19 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
-from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata, DirectIngestIngestFileMetadata
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
+    PostgresDirectIngestFileMetadataManager
+from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
-    run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, \
-    FakeDirectIngestFileMetadataManager
+    run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION, fake_region
 
@@ -122,21 +126,27 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         are_raw_data_bq_imports_enabled_in_env=True
     )
 
+    def setUp(self) -> None:
+        fakes.use_in_memory_sqlite_database(OperationsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def validate_file_metadata(
             self,
             controller: GcsfsDirectIngestController,
-            expected_tags_in_metadata_with_type: Optional[List[Tuple[str, GcsfsDirectIngestFileType]]] = None,
+            expected_processed_tags_in_metadata_with_type: Optional[List[Tuple[str, GcsfsDirectIngestFileType]]] = None,
             expected_unprocessed_tags_with_type: Optional[List[Tuple[str, GcsfsDirectIngestFileType]]] = None):
         """Validates that the file metadata was recorded as expected."""
 
         if not controller.region.is_raw_vs_ingest_file_name_detection_enabled():
-            expected_tags_in_metadata_with_type = []
-        elif expected_tags_in_metadata_with_type is None:
+            expected_processed_tags_in_metadata_with_type = []
+        elif expected_processed_tags_in_metadata_with_type is None:
             # pylint:disable=protected-access
-            expected_tags_in_metadata_with_type = \
+            expected_processed_tags_in_metadata_with_type = \
                 [(tag, GcsfsDirectIngestFileType.RAW_DATA) for tag in controller._get_file_tag_rank_list()]
             if controller.region.are_ingest_view_exports_enabled_in_env():
-                expected_tags_in_metadata_with_type.extend(
+                expected_processed_tags_in_metadata_with_type.extend(
                     [(tag, GcsfsDirectIngestFileType.INGEST_VIEW) for tag in controller._get_file_tag_rank_list()]
                 )
 
@@ -144,36 +154,66 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_unprocessed_tags_with_type = []
 
         file_metadata_manager = controller.file_metadata_manager
-        if not isinstance(file_metadata_manager, FakeDirectIngestFileMetadataManager):
+        if not isinstance(file_metadata_manager, PostgresDirectIngestFileMetadataManager):
             self.fail(f'Unexpected file_metadata_manager type {file_metadata_manager}')
 
-        file_tags_in_metadata_with_type = set()
-        for file_name, type_to_metadata in file_metadata_manager.file_metadata.items():
-            parts = filename_parts_from_path(GcsfsFilePath.from_absolute_path(f'bucket/{file_name}'))
-            for file_type, metadata in type_to_metadata.items():
-                file_tags_in_metadata_with_type.add((parts.file_tag, file_type))
+        session = SessionFactory.for_schema_base(OperationsBase)
+        try:
+            raw_file_results = session.query(schema.DirectIngestRawFileMetadata).all()
 
-                if not isinstance(metadata, (DirectIngestRawFileMetadata, DirectIngestIngestFileMetadata)):
-                    self.fail(f'Unexpected metadata type: [{type(metadata)}]')
+            raw_file_metadata_list = [
+                # pylint:disable=protected-access
+                file_metadata_manager._raw_file_schema_metadata_as_entity(metadata) for metadata in raw_file_results]
 
-                self.assertEqual(file_name, metadata.normalized_file_name)
-                if file_type == GcsfsDirectIngestFileType.INGEST_VIEW and \
-                        not controller.region.are_ingest_view_exports_enabled_in_env():
-                    self.fail(f'Found unexpected metadata registered for ingest view {file_name}: {metadata}')
+            ingest_file_results = session.query(schema.DirectIngestIngestFileMetadata).all()
 
-                expected_unprocessed_with_type = {tag_with_type[0]
-                                                  for tag_with_type in expected_unprocessed_tags_with_type
-                                                  if tag_with_type[1] == file_type}
+            ingest_file_metadata_list = [
+                # pylint:disable=protected-access
+                file_metadata_manager._ingest_file_schema_metadata_as_entity(metadata)
+                for metadata in ingest_file_results]
 
-                if parts.file_tag not in expected_unprocessed_with_type:
-                    self.assertIsNotNone(metadata.processed_time, f'{metadata}')
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+        expected_raw_metadata_tags_with_is_processed = \
+            [(tag, True) for tag, file_type in expected_processed_tags_in_metadata_with_type
+             if file_type == GcsfsDirectIngestFileType.RAW_DATA]
+        expected_raw_metadata_tags_with_is_processed.extend(
+            (tag, False)
+            for tag, file_type in expected_unprocessed_tags_with_type
+            if file_type == GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        actual_raw_metadata_tags_with_is_processed = [(metadata.file_tag, bool(metadata.processed_time))
+                                                      for metadata in raw_file_metadata_list]
+
+        if not controller.region.is_raw_vs_ingest_file_name_detection_enabled():
+            self.assertEqual([], actual_raw_metadata_tags_with_is_processed)
+
+        self.assertCountEqual(expected_raw_metadata_tags_with_is_processed, actual_raw_metadata_tags_with_is_processed)
+
+        expected_ingest_metadata_tags_with_is_processed = \
+            [(tag, True) for tag, file_type in expected_processed_tags_in_metadata_with_type
+             if file_type == GcsfsDirectIngestFileType.INGEST_VIEW]
+        expected_ingest_metadata_tags_with_is_processed.extend(
+            (tag, False)
+            for tag, file_type in expected_unprocessed_tags_with_type
+            if file_type == GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+
+        actual_ingest_metadata_tags_with_is_processed = [(metadata.file_tag, bool(metadata.processed_time))
+                                                         for metadata in ingest_file_metadata_list]
+
+        if not controller.region.are_ingest_view_exports_enabled_in_env():
+            self.assertEqual([], actual_ingest_metadata_tags_with_is_processed)
+
+        self.assertCountEqual(expected_ingest_metadata_tags_with_is_processed,
+                              actual_ingest_metadata_tags_with_is_processed)
 
         # TODO(3020): Update this to better test that metadata for split files gets properly registered
-        if controller.region.is_raw_vs_ingest_file_name_detection_enabled():
-            all_tags = set(expected_tags_in_metadata_with_type).union(set(expected_unprocessed_tags_with_type))
-
-            self.assertFalse(all_tags.difference(file_tags_in_metadata_with_type))
-            self.assertFalse(file_tags_in_metadata_with_type.difference(all_tags))
 
     def run_async_file_order_test_for_controller_cls(self, controller_cls) -> GcsfsDirectIngestController:
         """Writes all expected files to the mock fs, then kicks the controller
@@ -284,9 +324,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
         self.assertEqual(4, len(controller.raw_file_import_manager.imported_paths))
-        self.validate_file_metadata(controller,
-                                    expected_tags_in_metadata_with_type=[(tag, GcsfsDirectIngestFileType.RAW_DATA)
-                                                                         for tag in file_tags])
+        self.validate_file_metadata(
+            controller,
+            expected_processed_tags_in_metadata_with_type=[(tag, GcsfsDirectIngestFileType.RAW_DATA)
+                                                           for tag in file_tags])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_queue_same_job_twice(self):
@@ -546,7 +587,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                           '00002_file_split_size1'})
         self.validate_file_metadata(
             controller,
-            expected_tags_in_metadata_with_type=[],
+            expected_processed_tags_in_metadata_with_type=[],
             expected_unprocessed_tags_with_type=[])
 
 
@@ -582,9 +623,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             if not isinstance(path, GcsfsFilePath):
                 continue
             self.assertTrue('file_split' not in path.file_name)
-        self.validate_file_metadata(controller,
-                                    expected_tags_in_metadata_with_type=[(tag, GcsfsDirectIngestFileType.RAW_DATA)
-                                                                         for tag in file_tags])
+        self.validate_file_metadata(
+            controller,
+            expected_processed_tags_in_metadata_with_type=[(tag, GcsfsDirectIngestFileType.RAW_DATA)
+                                                           for tag in file_tags])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_failing_to_process_a_file_that_needs_splitting_no_loop(self):
@@ -901,7 +943,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue('tagA' in processed_path_str)
         self.validate_file_metadata(
             controller,
-            expected_tags_in_metadata_with_type=[('Unexpected_Tag', GcsfsDirectIngestFileType.RAW_DATA)],
+            expected_processed_tags_in_metadata_with_type=[],
             expected_unprocessed_tags_with_type=[('Unexpected_Tag', GcsfsDirectIngestFileType.RAW_DATA)])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))

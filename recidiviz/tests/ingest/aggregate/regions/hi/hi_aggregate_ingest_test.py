@@ -55,8 +55,11 @@ def parsed_pdf(request):
 class TestHiAggregateIngest(TestCase):
     """Test that hi_aggregate_ingest correctly parses the HI PDF."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def testParse_ParsesHeadAndTail(self):
         result = self.parsed_pdf[HiFacilityAggregate]

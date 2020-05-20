@@ -51,8 +51,11 @@ _SCHEMA_OBJECT_TYPES_TO_IGNORE = [
 class TestCountyHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for CountyHistoricalSnapshotUpdater"""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def generate_schema_county_person_obj_tree(
             self) -> county_schema.Person:

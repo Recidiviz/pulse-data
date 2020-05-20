@@ -47,8 +47,11 @@ PARSED_RESULT = pa_aggregate_ingest.parse('', fixtures.as_filepath(
 class TestPaAggregateIngest(TestCase):
     """Test that pa_aggregate_ingest correctly parses the CA report file."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def testParse_Table1_ParsesHeadAndTail(self):
         result = PARSED_RESULT[PaFacilityPopAggregate]

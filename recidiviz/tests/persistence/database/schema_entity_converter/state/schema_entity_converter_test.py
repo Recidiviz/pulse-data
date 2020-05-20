@@ -36,8 +36,11 @@ from recidiviz.tests.utils import fakes
 class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def _get_schema_class_for_objects(
             self, schema_objects: List[DatabaseEntity]):

@@ -47,6 +47,9 @@ class BaseStateEntityMatcherTest(TestCase):
         self.get_region_patcher.start()
         self.addCleanup(self.get_region_patcher.stop)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def get_fake_region(self, **_kwargs):
         return create_autospec(Region)
 
@@ -103,6 +106,9 @@ class BaseStateMatchingUtilsTest(TestCase):
     """Base class for testing state matching utils"""
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(schema_obj, populate_back_edges=False)

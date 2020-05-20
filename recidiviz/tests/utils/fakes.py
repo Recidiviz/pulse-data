@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Initialize our database schema for in-memory testing via sqlite3."""
+import sqlite3
+
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from recidiviz.persistence.database.sqlalchemy_engine_manager import \
-    SQLAlchemyEngineManager
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 
 
 def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
@@ -26,14 +27,26 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     sqlite database.
 
     This includes:
-    1. Creates a new in memory sqlite database engine
+    1. Creates a new in memory sqlite database engine with a shared cache, allowing access from any test thread.
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new fake database engine
+
+    This will assert if an engine has already been initialized for this schema - you must use
+    teardown_in_memory_sqlite_databases() to do post-test cleanup, otherwise subsequent tests will fail.
     """
 
+    def connection_creator() -> sqlite3.Connection:
+        return sqlite3.connect('file::memory:?cache=shared', uri=True)
+
     SQLAlchemyEngineManager.init_engine_for_db_instance(
-        db_url='sqlite:///:memory:',
-        schema_base=declarative_base)
+        db_url='sqlite:///:memory:?cache=shared',
+        schema_base=declarative_base,
+        creator=connection_creator
+    )
+
+
+def teardown_in_memory_sqlite_databases():
+    SQLAlchemyEngineManager.teardown_engines()
 
 
 def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:

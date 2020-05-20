@@ -21,7 +21,6 @@ import shutil
 import threading
 import time
 import unittest
-from collections import defaultdict
 from typing import Set, List, Union, Optional, Dict
 
 import attr
@@ -30,7 +29,6 @@ from mock import Mock, patch
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
@@ -38,12 +36,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    filename_parts_from_path, GcsfsIngestArgs, GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
+    filename_parts_from_path, GcsfsIngestArgs, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsBucketPath, GcsfsDirectoryPath, GcsfsPath
-from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata, DirectIngestRawFileMetadata, \
-    DirectIngestIngestFileMetadata
+from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
@@ -177,70 +174,6 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
             return result
 
 
-class FakeDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
-    """Test-only implementation of DirectIngestFileMetadataManager."""
-    def __init__(self, *, region_code: str):
-        self.region_code = region_code
-        self.file_metadata: Dict[str, Dict[GcsfsDirectIngestFileType,
-                                           DirectIngestFileMetadata]] = defaultdict(dict)
-
-    def register_new_file(self, path: GcsfsFilePath) -> None:
-        if path.file_name in self.file_metadata:
-            raise ValueError(f'Found {path.file_name} already in metadata')
-
-        parts = filename_parts_from_path(path)
-        self.file_metadata[path.file_name][parts.file_type] = DirectIngestRawFileMetadata(
-            region_code=self.region_code,
-            file_tag=parts.file_tag,
-            file_id=len(self.file_metadata),
-            normalized_file_name=path.file_name,
-            datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
-            discovery_time=datetime.datetime.utcnow(),
-            processed_time=None
-        )
-
-    def get_ingest_view_metadata_for_export_job(
-            self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> Optional[DirectIngestIngestFileMetadata]:
-        raise ValueError('Unimplemented!')
-
-    def get_file_metadata(self, path: GcsfsFilePath) -> DirectIngestFileMetadata:
-        file_type = filename_parts_from_path(path).file_type
-        return self.file_metadata[path.file_name][file_type]
-
-    def mark_file_as_processed(self, path: GcsfsFilePath, metadata: DirectIngestFileMetadata) -> None:
-        file_type = filename_parts_from_path(path).file_type
-        self.file_metadata[path.file_name][file_type].processed_time = datetime.datetime.utcnow()
-
-    def register_ingest_file_export_job(
-            self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> DirectIngestIngestFileMetadata:
-        raise ValueError('Unimplemented!')
-
-    def get_ingest_view_metadata_for_job(
-            self, ingest_view_job_args: GcsfsIngestViewExportArgs) -> DirectIngestIngestFileMetadata:
-        raise ValueError('Unimplemented!')
-
-    def register_ingest_view_export_file_name(self, metadata_entity: DirectIngestIngestFileMetadata,
-                                              exported_path: GcsfsFilePath):
-        raise ValueError('Unimplemented!')
-
-    def mark_ingest_view_exported(self, metadata_entity: DirectIngestIngestFileMetadata) -> None:
-        raise ValueError('Unimplemented!')
-
-    def get_ingest_view_metadata_for_most_recent_valid_job(
-            self, ingest_view_tag: str) -> Optional[DirectIngestIngestFileMetadata]:
-        raise ValueError('Unimplemented!')
-
-    def get_ingest_view_metadata_pending_export(self) -> List[DirectIngestIngestFileMetadata]:
-        raise ValueError('Unimplemented!')
-
-    def get_metadata_for_raw_files_discovered_after_datetime(
-            self,
-            raw_file_tag: str,
-            discovery_time_lower_bound_exclusive: Optional[datetime.datetime]
-    ) -> List[DirectIngestRawFileMetadata]:
-        raise ValueError('Unimplemented!')
-
-
 @attr.s
 class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
 
@@ -343,19 +276,17 @@ def build_gcsfs_controller_for_tests(
         with patch(
                 'recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller.DirectIngestRawFileImportManager',
                 FakeDirectIngestRawFileImportManager):
-            with patch('recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller.'
-                       'PostgresDirectIngestFileMetadataManager', FakeDirectIngestFileMetadataManager):
-                task_manager = FakeAsyncDirectIngestCloudTaskManager() \
-                    if run_async else FakeSynchronousDirectIngestCloudTaskManager()
-                mock_task_factory_cls.return_value = task_manager
-                with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
-                    controller = controller_cls(
-                        ingest_directory_path=f'{fixture_path_prefix}/fixtures',
-                        storage_directory_path='storage/path',
-                        **kwargs)
-                    task_manager.set_controller(controller)
-                    fake_fs.test_set_controller(controller)
-                    return controller
+            task_manager = FakeAsyncDirectIngestCloudTaskManager() \
+                if run_async else FakeSynchronousDirectIngestCloudTaskManager()
+            mock_task_factory_cls.return_value = task_manager
+            with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
+                controller = controller_cls(
+                    ingest_directory_path=f'{fixture_path_prefix}/fixtures',
+                    storage_directory_path='storage/path',
+                    **kwargs)
+                task_manager.set_controller(controller)
+                fake_fs.test_set_controller(controller)
+                return controller
 
 
 def ingest_args_for_fixture_file(

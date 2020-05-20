@@ -58,6 +58,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.entity_eq_patcher.stop()
+        fakes.teardown_in_memory_sqlite_databases()
 
     @staticmethod
     def _make_unprocessed_path(path_str: str,

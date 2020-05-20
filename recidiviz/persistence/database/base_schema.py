@@ -22,14 +22,14 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Defines the base class for all table classes for the Jails schema.
 # For actual schema definitions, see /aggregate/schema.py and /county/schema.py.
-JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='JailsBase')
 
 
 # Defines the base class for all table classes in the state schema.
 # For actual schema definitions, see /state/schema.py.
-StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='StateBase')
 
 
 # Defines the base class for all table classes in the shared operations schema.
 # For actual schema definitions, see /operations/schema.py.
-OperationsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity)
+OperationsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='OperationsBase')
