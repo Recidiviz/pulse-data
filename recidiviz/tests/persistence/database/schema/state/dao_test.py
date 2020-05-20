@@ -43,6 +43,9 @@ class TestDao(TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def test_readPeople_byFullName(self):
         # Arrange
         person = schema.StatePerson(person_id=8, full_name=_FULL_NAME)

@@ -33,6 +33,9 @@ class OperationsSchemaTest(unittest.TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(OperationsBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def test_raw_file_metadata(self):
         session = SessionFactory.for_schema_base(OperationsBase)
         raw_metadata = schema.DirectIngestRawFileMetadata(
