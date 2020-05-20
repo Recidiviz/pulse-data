@@ -653,9 +653,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         updated_persons: List[schema.StatePerson] = []
         for match_result in persons_match_results.individual_match_results:
             if not match_result.merged_entity_trees:
-                raise EntityMatchingError(
-                    f"Expected match_result.merged_entity_trees to not be "
-                    f"empty.", 'state_person')
+                raise EntityMatchingError("Expected match_result.merged_entity_trees to not be empty.",
+                                          'state_person')
 
             # It is possible that multiple ingested persons match to the same
             # DB person, in which case we should only keep one reference to
@@ -663,9 +662,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for merged_person_tree in match_result.merged_entity_trees:
                 if not isinstance(merged_person_tree.entity,
                                   schema.StatePerson):
-                    raise EntityMatchingError(
-                        f"Expected merged_person_tree.entity to have type "
-                        f"schema.StatePerson.", 'state_person')
+                    raise EntityMatchingError("Expected merged_person_tree.entity to have type schema.StatePerson.",
+                                              'state_person')
 
                 if merged_person_tree.entity not in updated_persons:
                     updated_persons.append(merged_person_tree.entity)
@@ -676,7 +674,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         for db_person in persons_match_results.unmatched_db_entities:
             if not isinstance(db_person, schema.StatePerson):
                 raise EntityMatchingError(
-                    f"Expected db_person to have type schema.StatePerson.",
+                    "Expected db_person to have type schema.StatePerson.",
                     'state_person')
 
             if is_placeholder(db_person):

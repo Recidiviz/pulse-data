@@ -50,7 +50,7 @@ def get_non_flat_property_class_name(obj, property_name) -> Optional[str]:
         if len(type_names) > 1:
             raise ValueError(f'Multiple nonnull types found: {type_names}')
         if not type_names:
-            raise ValueError(f'Expected at least one nonnull type')
+            raise ValueError('Expected at least one nonnull type')
         return type_names[0]
 
     if _is_forward_ref(attr_type):

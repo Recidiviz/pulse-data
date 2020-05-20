@@ -343,8 +343,8 @@ def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarce
             return _sort_by_nonnull_release_dates(ip_a, ip_b)
         if ip_a.admission_date is None or ip_b.admission_date is None:
             raise ValueError(
-                f'Admission reasons expected to be equal and nonnull at this point otherwise we would have a'
-                f'period that has a null release and null admission reason.')
+                'Admission reasons expected to be equal and nonnull at this point otherwise we would have a'
+                'period that has a null release and null admission reason.')
         if ip_a.release_date is None and ip_b.release_date is None:
             return _sort_by_custody_status(ip_a, ip_b)
         # Sort by release dates, with unset release dates coming first if the following period is greater than 0 days

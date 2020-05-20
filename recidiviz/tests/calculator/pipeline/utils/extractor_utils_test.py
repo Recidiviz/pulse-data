@@ -1380,7 +1380,7 @@ class TestHydrateRootEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read supervision violation data from dict" >>
+            | "Read supervision violation data from dict" >>
             FakeReadFromBigQuery(table_values=supervision_violation_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
@@ -1423,7 +1423,7 @@ class TestHydrateEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read charge data from dict" >>
+            | "Read charge data from dict" >>
             FakeReadFromBigQuery(table_values=charge_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
@@ -1463,7 +1463,7 @@ class TestHydrateEntity(unittest.TestCase):
         # Read entities from data_dict
         entities_raw = (
             test_pipeline
-            | f"Read charge data from dict" >>
+            | "Read charge data from dict" >>
             FakeReadFromBigQuery(table_values=charge_data))
 
         hydrate_kwargs = {'entity_class': entity_class,
@@ -1502,7 +1502,7 @@ class TestHydrateEntity(unittest.TestCase):
             # Read entities from data_dict
             entities_raw = (
                 test_pipeline
-                | f"Read charge data from dict" >>
+                | "Read charge data from dict" >>
                 FakeReadFromBigQuery(table_values=charge_data))
 
             hydrate_kwargs = {'entity_class': entity_class,

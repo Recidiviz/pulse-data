@@ -130,7 +130,7 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:
             serializable_dict[key] = v.strftime('%Y-%m-%d')
-        elif isinstance(v, List):
+        elif isinstance(v, list):
             # These are the only two metric fields that support lists
             if key in ('race', 'ethnicity'):
                 values = [f"{entry.value}" for entry in v if entry is not None]

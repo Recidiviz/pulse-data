@@ -21,7 +21,7 @@ from http import HTTPStatus
 import logging
 import os
 import tempfile
-from typing import Optional, Tuple, Dict
+from typing import Optional, Dict
 from urllib.parse import urlparse
 import requests
 from flask import Blueprint, request
@@ -85,7 +85,7 @@ def scrape_aggregate_reports():
 
     for url in urls:
         post_data = None
-        if isinstance(url, Tuple):
+        if isinstance(url, tuple):
             url, post_data = url
             # We need to append the year of the report to create uniqueness in
             # the name since california sends post requests with the same url.
