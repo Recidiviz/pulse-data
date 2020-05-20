@@ -148,7 +148,7 @@ OFNDR_TST_OFNDR_TST_CERT_QUERY = \
     """
 
 # Gets all probation sentences
-PROBATION_SENTENCES_QUERY = f"""
+PROBATION_SENTENCES_QUERY = """
     SELECT
         *
     FROM
@@ -164,7 +164,7 @@ PROBATION_SENTENCES_QUERY = f"""
 """
 
 # Gets all incarceration sentences
-INCARCERATION_SENTENCES_QUERY = f"""
+INCARCERATION_SENTENCES_QUERY = """
     SELECT
         *
     FROM
@@ -307,7 +307,7 @@ MITTIMUS_JUDGE_SENTENCE_OFFENSE_SENTPROB_INCARCERATION_SENTENCES_QUERY = f"""
 # districts) but also movements within a single facility (changing prison pods, for example). The goal of these
 # query fragments is to transform the raw `movements` table into a set of movement_periods, where each row has
 # a single facility with a start and end date which represent a person's overall time in that facility.
-FACILITY_PERIOD_FRAGMENT = f"""
+FACILITY_PERIOD_FRAGMENT = """
 
     # Raw movements table with a move_dtd parsed as a datetime
     facilities_with_datetime AS (
@@ -784,7 +784,7 @@ OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
       ofndr_tst_id
 """
 
-OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
+OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = """
     # TODO(2999): Integrate PO assignments into supervision query once we have a loss-less table with POs and their 
     #  assignments through history.
     WITH
@@ -823,7 +823,7 @@ OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
       (body_loc_cd)
 """
 
-INCARCERATION_SENTENCE_IDS_QUERY = f"""
+INCARCERATION_SENTENCE_IDS_QUERY = """
       SELECT
           mitt_srl,
           incrno,
@@ -843,7 +843,7 @@ INCARCERATION_SENTENCE_IDS_QUERY = f"""
 
 """
 
-PROBATION_SENTENCE_IDS_QUERY = f"""
+PROBATION_SENTENCE_IDS_QUERY = """
       SELECT
           mitt_srl,
           incrno,

@@ -245,7 +245,8 @@ class GcsfsDirectIngestController(
     def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         check_is_region_launched_in_env(self.region)
         if not self.region.are_ingest_view_exports_enabled_in_env():
-            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
+            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]. Passed args: '
+                             f'{ingest_view_export_args}')
 
         # TODO(3020): Implement ingest view export
         # TODO(3020): Write rows for new files to the metadata table when we export here
