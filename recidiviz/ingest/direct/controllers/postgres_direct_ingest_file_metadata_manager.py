@@ -153,13 +153,11 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         return metadata_entity
 
     def mark_file_as_processed(self,
-                               path: GcsfsFilePath,
-                               metadata: DirectIngestFileMetadata) -> None:
-        parts = filename_parts_from_path(path)
+                               path: GcsfsFilePath) -> None:
         session = SessionFactory.for_schema_base(OperationsBase)
 
         try:
-            metadata = dao.get_file_metadata_row(session, parts.file_type, metadata.file_id)
+            metadata = dao.get_file_metadata_row_for_path(session, self.region_code, path)
             metadata.processed_time = datetime.datetime.utcnow()
             session.commit()
         except Exception as e:

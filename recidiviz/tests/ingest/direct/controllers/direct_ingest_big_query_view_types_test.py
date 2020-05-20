@@ -137,7 +137,7 @@ file_tag_first_generated_view AS (
        FROM 
           `recidiviz-456.us_xx_raw_data.file_tag_first`
        WHERE 
-           update_datetime <= @update_timestamp
+           update_datetime <= @my_update_timestamp_param_name
     )
 
     SELECT * 
@@ -153,7 +153,7 @@ file_tag_second_generated_view AS (
        FROM 
           `recidiviz-456.us_xx_raw_data.file_tag_second`
        WHERE 
-           update_datetime <= @update_timestamp
+           update_datetime <= @my_update_timestamp_param_name
     )
 
     SELECT * 
@@ -165,7 +165,8 @@ SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
 USING (col1);"""
 
-        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query)
+        self.assertEqual(expected_parametrized_view_query,
+                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self):
         region_config = DirectIngestRegionRawFileConfig(
@@ -269,7 +270,7 @@ SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
 USING (col1);"""
 
-        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query)
+        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
 
         # Also check that appending whitespace before the WITH prefix produces the same results
         view_query_template = '\n ' + view_query_template
@@ -284,7 +285,7 @@ USING (col1);"""
                          [c.file_tag for c in view.raw_table_dependency_configs])
 
         self.assertEqual(expected_view_query, view.view_query)
-        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query)
+        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self):
         region_config = DirectIngestRegionRawFileConfig(
