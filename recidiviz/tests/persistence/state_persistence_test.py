@@ -64,6 +64,9 @@ class TestStatePersistence(TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=True)

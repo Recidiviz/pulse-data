@@ -38,6 +38,7 @@ class DashboardExportConfigTest(unittest.TestCase):
 
     def tearDown(self):
         self.metadata_patcher.stop()
+        fakes.teardown_in_memory_sqlite_databases()
 
     def test_VIEWS_TO_EXPORT_types(self):
         """Make sure that all VIEWS_TO_EXPORT are of type BigQueryView."""

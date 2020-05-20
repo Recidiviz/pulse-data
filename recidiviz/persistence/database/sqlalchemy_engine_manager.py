@@ -53,10 +53,23 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def init_engine_for_db_instance(
-            cls, db_url: str, schema_base: DeclarativeMeta) -> None:
-        engine = sqlalchemy.create_engine(db_url)
+            cls,
+            db_url: str,
+            schema_base: DeclarativeMeta,
+            **dialect_specific_kwargs) -> None:
+
+        if schema_base in cls._engine_for_schema:
+            raise ValueError(f'Already initialized schema [{schema_base.__name__}]')
+
+        engine = sqlalchemy.create_engine(db_url, **dialect_specific_kwargs)
         schema_base.metadata.create_all(engine)
         cls._engine_for_schema[schema_base] = engine
+
+    @classmethod
+    def teardown_engines(cls):
+        for engine in cls._engine_for_schema.values():
+            engine.dispose()
+        cls._engine_for_schema.clear()
 
     @classmethod
     def init_engines_for_server_postgres_instances(cls) -> None:

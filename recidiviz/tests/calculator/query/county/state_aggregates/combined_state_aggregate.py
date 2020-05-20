@@ -36,8 +36,11 @@ from recidiviz.tests.utils import fakes
 class TestAggregateView(TestCase):
     """Test for combining aggregate reports into a BQ view."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def test_toQuery(self):
         # Arrange

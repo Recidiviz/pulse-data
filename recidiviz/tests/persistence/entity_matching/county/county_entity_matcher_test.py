@@ -75,6 +75,9 @@ class TestCountyEntityMatcher(TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def test_matchPeople_errorCount(self):
         # Arrange
         schema_booking = schema.Booking(

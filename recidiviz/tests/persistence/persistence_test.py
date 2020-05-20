@@ -92,8 +92,11 @@ ID_3 = 3
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(JailsBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):

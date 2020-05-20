@@ -71,6 +71,9 @@ class TestDatabase(TestCase):
     def setUp(self):
         fakes.use_in_memory_sqlite_database(JailsBase)
 
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
+
     def testWritePerson_noExistingSnapshots_createsSnapshots(self):
         act_session = SessionFactory.for_schema_base(JailsBase)
 
@@ -1160,7 +1163,6 @@ class TestDatabase(TestCase):
         assert_session.close()
 
     def test_orphanedEntities_shouldStillWriteSnapshots(self):
-        fakes.use_in_memory_sqlite_database(JailsBase)
         orphan_scrape_time = datetime.datetime(year=2020, month=7, day=8)
 
         arrange_session = SessionFactory.for_schema_base(JailsBase)

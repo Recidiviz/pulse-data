@@ -73,7 +73,7 @@ class TestSchemaEntityConverter(BaseSchemaEntityConverter):
 class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
 
-    def setup_method(self, _test_method):
+    def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(TestBase)
 
         session = SessionFactory.for_schema_base(TestBase)
@@ -81,9 +81,10 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(session.query(schema.Parent).all()), 0)
         self.assertEqual(len(session.query(schema.Child).all()), 0)
 
-    def test_add_behavior(self):
-        fakes.use_in_memory_sqlite_database(TestBase)
+    def tearDown(self) -> None:
+        fakes.teardown_in_memory_sqlite_databases()
 
+    def test_add_behavior(self):
         session = SessionFactory.for_schema_base(TestBase)
         self.assertEqual(len(session.query(schema.Root).all()), 0)
         self.assertEqual(len(session.query(schema.Parent).all()), 0)
@@ -131,8 +132,6 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(children[0].parents), 1)
 
     def test_add_behavior_2(self):
-        fakes.use_in_memory_sqlite_database(TestBase)
-
         parent = entities.Parent.new_with_defaults(
             full_name='Krusty the Clown',
         )
