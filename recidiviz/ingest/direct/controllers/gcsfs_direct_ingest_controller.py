@@ -170,6 +170,7 @@ class GcsfsDirectIngestController(
             return
 
         if self._schedule_any_pre_ingest_tasks():
+            logging.info("Found pre-ingest tasks to schedule - returning.")
             return
 
         ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
@@ -237,8 +238,7 @@ class GcsfsDirectIngestController(
         # TODO(3020): Technically moving to the processed path here will trigger the handle_new_files() call we need to
         # now check for ingest view export jobs - consider doing something more explicit, intentional here.
         processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
-        self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path,
-                                                          metadata=file_metadata)
+        self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path)
 
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
 
@@ -263,12 +263,14 @@ class GcsfsDirectIngestController(
         there are no remaining ingest jobs to schedule and it is safe to proceed with ingest.
         """
         if self._schedule_raw_data_import_tasks():
+            logging.info("Found pre-ingest raw data import tasks to schedule.")
             return True
         # TODO(3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
         #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
         #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
         #  to do view exports.
         if self._schedule_ingest_view_export_tasks():
+            logging.info("Found pre-ingest view export tasks to schedule.")
             return True
         return False
 
@@ -459,9 +461,7 @@ class GcsfsDirectIngestController(
                 self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
 
         if self.region.are_ingest_view_exports_enabled_in_env():
-            if not original_metadata:
-                raise ValueError(f'Original file metadata for path unexpectedly none [{path.abs_path()}]')
-            self.file_metadata_manager.mark_file_as_processed(path, original_metadata)
+            self.file_metadata_manager.mark_file_as_processed(path)
 
         logging.info("Done splitting file [%s] into [%s] paths, moving it to storage.",
                      path.abs_path(), len(split_contents_handles))
@@ -509,8 +509,7 @@ class GcsfsDirectIngestController(
             raise ValueError('Must implement metadata update to mark as processed here.')
 
         if self.region.are_ingest_view_exports_enabled_in_env():
-            self.file_metadata_manager.mark_file_as_processed(
-                args.file_path, self.file_metadata_manager.get_file_metadata(args.file_path))
+            self.file_metadata_manager.mark_file_as_processed(args.file_path)
 
         parts = filename_parts_from_path(args.file_path)
         self._move_processed_files_to_storage_as_necessary(

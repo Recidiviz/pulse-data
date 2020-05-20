@@ -17,7 +17,7 @@
 
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
 import string
-from typing import List
+from typing import List, Optional
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
@@ -167,11 +167,16 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """Non-parametrized query on the latest version of each raw table."""
         return self.view_query
 
-    @property
-    def date_parametrized_view_query(self):
-        """Parametrized query on the version of each raw table on a given date. The parameter @update_timestamp should
-        be filled in for any API request that uses this query."""
-        return self._date_parametrized_view_query
+    def date_parametrized_view_query(self,
+                                     param_name: Optional[str] = None):
+        """Parametrized query on the version of each raw table on a given date. If provided, the parameter name for the
+        max update date will have the provided |param_name|, otherwise the parameter name will be the default
+        UPDATE_DATETIME_PARAM_NAME.
+        """
+        if not param_name:
+            return self._date_parametrized_view_query
+
+        return self._date_parametrized_view_query.replace(f'@{UPDATE_DATETIME_PARAM_NAME}', f'@{param_name}')
 
     @staticmethod
     def _table_subbquery_name(raw_table_config: DirectIngestRawFileConfig) -> str:
@@ -275,6 +280,6 @@ class DirectIngestPreProcessedIngestViewBuilder:
         """For local testing, prints out the parametrized and latest versions of the view's query."""
         view = self.build()
         print('****************************** PARAMETRIZED ******************************')
-        print(view.date_parametrized_view_query)
+        print(view.date_parametrized_view_query())
         print('********************************* LATEST *********************************')
         print(view.latest_view_query)
