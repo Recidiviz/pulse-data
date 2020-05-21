@@ -38,7 +38,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
         SUBSTR(last_known_address, -9, 2) AS state_code,
         SUBSTR(county, 0, LENGTH(county) -7) AS county
       FROM 
-        `{project_id}.{views_dataset}.persons_with_last_known_address` as persons_with_address
+        `{project_id}.{reference_tables_dataset}.persons_with_last_known_address` as persons_with_address
       JOIN
         `{project_id}.{reference_tables_dataset}.zipcode_county_map` zipcode_county_map
       ON 
@@ -56,7 +56,6 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
-    views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )
 
