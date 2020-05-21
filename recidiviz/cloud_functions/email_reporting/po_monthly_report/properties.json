@@ -1,0 +1,22 @@
+{
+    "blue": "#4693BE",
+    "red": "#CF484B",
+    "increase": " more",
+    "decrease": " fewer",
+    "percent_increase": "% more",
+    "percent_decrease": "% less",
+    "pos_discharges_icon_great": "smiley.png",
+    "pos_discharges_icon_good": "pos_good.png",
+    "pos_discharges_icon_low": "pos_low.png",
+    "earned_discharges_icon_great": "clock.png",
+    "earned_discharges_icon_good": "earned_good.png",
+    "earned_discharges_icon_low": "earned_low.png",
+    "earned_discharges_tip_title_0": "Consider earned discharge",
+    "earned_discharges_tip_text_0": "Recommending 2 people for earned discharge each month would reduce your caseload by 24 people in a year!",
+    "earned_discharges_tip_title_1": "Nice work!",
+    "earned_discharges_tip_text_1": "Just one more earned discharge would reach the department recommendation.",
+    "earned_discharges_tip_title_2": "Target reached - Congrats!",
+    "earned_discharges_tip_text_2": "Keep going to get 24 extra people off your caseload this year. You are on fire!",
+    "earned_discharges_tip_title_3": "You are on fire!",
+    "earned_discharges_tip_text_3": "Something you’re doing is working - more clients than expected qualify for earned discharge. Keep it up!"
+}
