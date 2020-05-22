@@ -23,8 +23,10 @@ from typing import List, Callable
 import yaml
 
 import recidiviz
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRegionRawFileConfig
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
 
@@ -113,5 +115,14 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
             for config in raw_file_manager.raw_file_configs.values():
                 self.assertTrue(config.primary_key_cols)
 
-    # TODO(3020): Write a test that collects and builds all DirectIngestPreProcessedIngestViewBuilder instances for
-    #   each region to make sure there are no queries that don't parse.
+    def test_collect_ingest_views(self):
+        with local_project_id_override('project'):
+            for region_code in self._get_existing_region_dir_names():
+                region = get_region(region_code, is_direct_ingest=True)
+
+                controller_class = region.get_ingestor_class()
+                if not issubclass(controller_class, GcsfsDirectIngestController):
+                    continue
+
+                _ = DirectIngestPreProcessedIngestViewCollector(
+                    region, controller_class.get_file_tag_rank_list()).collect_views()

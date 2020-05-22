@@ -3721,8 +3721,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         # Rerun for sanity
-        # pylint:disable=protected-access
-        file_tags = self.controller._get_file_tag_rank_list()
+        file_tags = self.controller.get_file_tag_rank_list()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f'{file_tag}.csv')
 

@@ -597,8 +597,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._supervision_violation_citation_ancestor_chain_override,
         }
 
-    def _get_file_tag_rank_list(self) -> List[str]:
-        return self.FILE_TAGS
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
+        return cls.FILE_TAGS
 
     def _get_row_pre_processors_for_file(self,
                                          file_tag: str) -> List[Callable]:

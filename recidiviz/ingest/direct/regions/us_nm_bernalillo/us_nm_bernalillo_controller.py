@@ -52,7 +52,8 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
             storage_directory_path,
             max_delay_sec_between_files)
 
-    def _get_file_tag_rank_list(self) -> List[str]:
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
         return ['MDC_VERA']
 
     class DataFrameContentsHandle(GcsfsFileContentsHandle):
