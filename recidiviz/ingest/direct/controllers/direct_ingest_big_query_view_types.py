@@ -19,7 +19,7 @@
 import string
 from typing import List, Optional
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
     DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
@@ -257,7 +257,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                                   raw_file_config=raw_table_config).select_query
 
 
-class DirectIngestPreProcessedIngestViewBuilder:
+class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
     """Factory class for building DirectIngestPreProcessedIngestView"""
 
     def __init__(self, *,

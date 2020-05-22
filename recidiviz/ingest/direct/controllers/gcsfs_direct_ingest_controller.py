@@ -85,7 +85,7 @@ class GcsfsDirectIngestController(
             GcsfsDirectIngestJobPrioritizer(
                 self.fs,
                 self.ingest_directory_path,
-                self._get_file_tag_rank_list(),
+                self.get_file_tag_rank_list(),
                 ingest_job_file_type_filter)
 
         self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
@@ -224,7 +224,7 @@ class GcsfsDirectIngestController(
             # TODO(3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
             #  pre-processing is enabled for all direct ingest regions.
             parts = filename_parts_from_path(data_import_args.raw_data_file_path)
-            ingest_file_tags = self._get_file_tag_rank_list()
+            ingest_file_tags = self.get_file_tag_rank_list()
 
             if parts.file_tag in ingest_file_tags:
                 self.fs.copy(
@@ -322,8 +322,9 @@ class GcsfsDirectIngestController(
         # TODO(3020): Test that hits this block without newly scheduled tasks
         return did_schedule
 
+    @classmethod
     @abc.abstractmethod
-    def _get_file_tag_rank_list(self) -> List[str]:
+    def get_file_tag_rank_list(cls) -> List[str]:
         pass
 
     def _get_next_job_args(self) -> Optional[GcsfsIngestArgs]:
@@ -406,7 +407,7 @@ class GcsfsDirectIngestController(
             raise ValueError(f'Should not be attempting to split files other than ingest view files, found path with '
                              f'file type: {parts.file_type}')
 
-        if parts.file_tag not in self._get_file_tag_rank_list():
+        if parts.file_tag not in self.get_file_tag_rank_list():
             logging.info("File tag [%s] for path [%s] not in rank list - "
                          "not splitting.",
                          parts.file_tag,
