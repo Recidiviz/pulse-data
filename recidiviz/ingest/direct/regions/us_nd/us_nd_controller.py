@@ -168,7 +168,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_offendersentenceterms'
         ]
 
-    def _get_file_tag_rank_list(self) -> List[str]:
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
         # NOTE: The order of ingest here is important! Do not change unless you know what you're doing!
         tags = [
             # Elite - incarceration-focused

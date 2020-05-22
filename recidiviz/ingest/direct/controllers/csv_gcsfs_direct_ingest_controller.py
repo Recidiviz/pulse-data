@@ -58,8 +58,9 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
                          storage_directory_path,
                          max_delay_sec_between_files)
 
+    @classmethod
     @abc.abstractmethod
-    def _get_file_tag_rank_list(self) -> List[str]:
+    def get_file_tag_rank_list(cls) -> List[str]:
         pass
 
     def _file_meets_file_line_limit(
@@ -119,7 +120,7 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
                contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         file_tag = self.file_tag(args.file_path)
 
-        if file_tag not in self._get_file_tag_rank_list():
+        if file_tag not in self.get_file_tag_rank_list():
             raise DirectIngestError(
                 msg=f"No mapping found for tag [{file_tag}]",
                 error_type=DirectIngestErrorType.INPUT_ERROR)

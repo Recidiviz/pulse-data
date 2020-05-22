@@ -27,7 +27,7 @@ from datetime import datetime, tzinfo
 from enum import Enum
 from itertools import chain
 from types import ModuleType
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, Optional, Set
 from typing import List
 
 import attr
@@ -38,6 +38,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.utils import environment
 from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.utils.environment import GaeEnvironment
 
 
 class RemovedFromWebsite(Enum):
@@ -80,8 +81,8 @@ class Region:
     jurisdiction_id: str = attr.ib(validator=attr.validators.instance_of(str))
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
-    environment: Union[str, bool] = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
+    environment: Optional[str] = attr.ib(default=None)
     base_url: Optional[str] = attr.ib(default=None)
     shared_queue: Optional[str] = attr.ib(default=None)
     queue: Optional[Dict[str, Any]] = attr.ib(default=None)
@@ -102,7 +103,7 @@ class Region:
         if self.queue and self.shared_queue:
             raise ValueError(
                 'Only one of `queue` and `shared_queue` can be set.')
-        if self.environment not in {*environment.GAE_ENVIRONMENTS, False}:
+        if self.environment not in {*environment.GAE_ENVIRONMENTS, None}:
             raise ValueError('Invalid environment: {}'.format(self.environment))
 
     def get_ingestor_class(self):
@@ -133,19 +134,19 @@ class Region:
 
         return ingest_class()
 
-    def get_enum_overrides(self):
+    def get_enum_overrides(self) -> EnumOverrides:
         """Retrieves the overrides object of a region"""
         obj = self.get_ingestor()
         if obj:
             return obj.get_enum_overrides()
         return EnumOverrides.empty()
 
-    def get_queue_name(self):
+    def get_queue_name(self) -> str:
         """Returns the name of the queue to be used for the region"""
         return self.shared_queue if self.shared_queue \
             else '{}-scraper-v2'.format(self.region_code.replace('_', '-'))
 
-    def is_ingest_launched_in_env(self):
+    def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current
         environment.
 
@@ -156,7 +157,11 @@ class Region:
         return not environment.in_gae_production() \
             or self.environment == environment.get_gae_environment()
 
-    def is_raw_vs_ingest_file_name_detection_enabled(self):
+    def is_ingest_launched_in_production(self) -> bool:
+        """Returns true if ingest can be launched for this region in production. """
+        return self.environment is not None and self.environment.lower() == GaeEnvironment.PRODUCTION.value.lower()
+
+    def is_raw_vs_ingest_file_name_detection_enabled(self) -> bool:
         """Returns True if this is ready for ingest to differentiate between files with the 'raw' and 'ingest_view'
         file types in the file name.
 
@@ -187,7 +192,7 @@ class Region:
             (not environment.in_gae_production() or
              self.raw_vs_ingest_file_name_differentiation_enabled_env == environment.get_gae_environment())
 
-    def are_raw_data_bq_imports_enabled_in_env(self):
+    def are_raw_data_bq_imports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports raw data import to BQ.
 
         Side effects when enabled:
@@ -220,7 +225,7 @@ class Region:
             (not environment.in_gae_production() or
              self.raw_data_bq_imports_enabled_env == environment.get_gae_environment())
 
-    def are_ingest_view_exports_enabled_in_env(self):
+    def are_ingest_view_exports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports export of ingest views to the ingest bucket.
 
         Side effects when enabled:

@@ -67,8 +67,9 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
                          storage_directory_path)
         self.local_paths: Set[str] = set()
 
+    @classmethod
     @abc.abstractmethod
-    def _get_file_tag_rank_list(self) -> List[str]:
+    def get_file_tag_rank_list(cls) -> List[str]:
         pass
 
     def _get_contents_handle(
@@ -95,7 +96,8 @@ class StateTestGcsfsDirectIngestController(
                          ingest_directory_path,
                          storage_directory_path)
 
-    def _get_file_tag_rank_list(self) -> List[str]:
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
         return ['tagA', 'tagB', 'tagC']
 
 
@@ -109,7 +111,8 @@ class CountyTestGcsfsDirectIngestController(
                          ingest_directory_path,
                          storage_directory_path)
 
-    def _get_file_tag_rank_list(self) -> List[str]:
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
         return ['tagA', 'tagB']
 
 
@@ -142,12 +145,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         if not controller.region.is_raw_vs_ingest_file_name_detection_enabled():
             expected_processed_tags_in_metadata_with_type = []
         elif expected_processed_tags_in_metadata_with_type is None:
-            # pylint:disable=protected-access
             expected_processed_tags_in_metadata_with_type = \
-                [(tag, GcsfsDirectIngestFileType.RAW_DATA) for tag in controller._get_file_tag_rank_list()]
+                [(tag, GcsfsDirectIngestFileType.RAW_DATA) for tag in controller.get_file_tag_rank_list()]
             if controller.region.are_ingest_view_exports_enabled_in_env():
                 expected_processed_tags_in_metadata_with_type.extend(
-                    [(tag, GcsfsDirectIngestFileType.INGEST_VIEW) for tag in controller._get_file_tag_rank_list()]
+                    [(tag, GcsfsDirectIngestFileType.INGEST_VIEW) for tag in controller.get_file_tag_rank_list()]
                 )
 
         if not expected_unprocessed_tags_with_type:
@@ -223,9 +225,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                                       self.FIXTURE_PATH_PREFIX,
                                                       run_async=True)
 
-        # pylint:disable=protected-access
         file_tags = list(
-            reversed(sorted(controller._get_file_tag_rank_list())))
+            reversed(sorted(controller.get_file_tag_rank_list())))
 
         add_paths_with_tags_and_process(self, controller, file_tags)
 
@@ -492,8 +493,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.FIXTURE_PATH_PREFIX,
             run_async=True)
 
-        # pylint:disable=protected-access
-        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(self,
                                         controller,
@@ -529,8 +529,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Set line limit to 1
         controller.file_split_line_limit = 1
 
-        # pylint:disable=protected-access
-        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(self,
                                         controller,
@@ -563,8 +562,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Set line limit to 1
         controller.file_split_line_limit = 1
 
-        # pylint:disable=protected-access
-        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         add_paths_with_tags_and_process(self,
                                         controller,
@@ -699,8 +697,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller.fs.test_add_path(processed_file_from_prev_day)
         controller.fs.test_add_path(unexpected_file_path_from_prev_day)
 
-        # pylint:disable=protected-access
-        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         # This will test that all paths get moved to storage,
         # except the unexpected tag.
@@ -749,8 +746,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller.fs.test_add_path(processed_file_from_prev_day)
         controller.fs.test_add_path(unexpected_file_path_from_prev_day)
 
-        # pylint:disable=protected-access
-        file_tags = list(sorted(controller._get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
         unexpected_tags = ['Unexpected_Tag']
 

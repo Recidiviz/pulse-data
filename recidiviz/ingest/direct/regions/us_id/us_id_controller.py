@@ -329,8 +329,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
-    def _get_file_tag_rank_list(self) -> List[str]:
-        return self.FILE_TAGS
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
+        return cls.FILE_TAGS
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Idaho-specific overrides for enum mappings."""

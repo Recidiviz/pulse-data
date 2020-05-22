@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
-from typing import Optional, Dict
+import abc
+from typing import Optional, Dict, TypeVar, Generic
 
 from google.cloud import bigquery
 
@@ -84,3 +85,14 @@ class BigQueryView(bigquery.TableReference):
         return f'{self.__class__.__name__}(' \
             f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
             f'view_query=\'{self.view_query}\')'
+
+
+BigQueryViewType = TypeVar('BigQueryViewType', bound=BigQueryView)
+
+
+class BigQueryViewBuilder(Generic[BigQueryViewType]):
+    """Abstract interface for a class that builds a BigQueryView."""
+
+    @abc.abstractmethod
+    def build(self) -> BigQueryViewType:
+        pass
