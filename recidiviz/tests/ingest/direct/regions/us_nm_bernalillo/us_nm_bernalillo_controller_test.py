@@ -313,8 +313,7 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
         assert str(e.value) == "Found more columns than expected in charge row"
 
     def test_run_full_ingest_all_files(self):
-        # pylint:disable=protected-access
-        file_tags = sorted(self.controller._get_file_tag_rank_list())
+        file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'MDC_VERA_20200303_01.csv', False)
         self.controller.fs.test_add_path(file_path)

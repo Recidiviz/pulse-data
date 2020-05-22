@@ -199,8 +199,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
         self.validate_ingest(ingest_info, expected_info, metadata)
 
     def test_run_full_ingest_all_files(self):
-        # pylint:disable=protected-access
-        file_tags = sorted(self.controller._get_file_tag_rank_list())
+        file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'VERABrazosJailData_01012019_115703.csv', False)
         self.controller.fs.test_add_path(file_path)
