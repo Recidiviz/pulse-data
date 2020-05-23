@@ -17,6 +17,7 @@ Note to look at staging errors replace all 'recidiviz-123's with
 """
 import argparse
 import json
+import logging
 import pprint
 import subprocess
 from typing import List, Tuple, Optional
@@ -40,11 +41,16 @@ def enum_errors_from_logs(log_output: bytes, region: Optional[str]
 
 
 def extract_enum_string_type(text: str) -> Tuple[str, str]:
-    assert text.startswith('Could not parse')
-    text = text[len('Could not parse'):].strip()
-    enum_string = text[:text.find(' when building ')].strip()
-    enum_type = text.split("'")[-2].strip()
-    return enum_type, enum_string
+    try:
+        assert text.startswith('Could not parse')
+        text = text[len('Could not parse'):].strip()
+        enum_string = text[:text.find(' when building ')].strip()
+        enum_type = text.split("'")[-2].strip()
+        return enum_type, enum_string
+    except ValueError:
+        logging.error("Enum text is off: %s", text)
+        return "", ""
+
 
 
 if __name__ == '__main__':
@@ -62,6 +68,7 @@ if __name__ == '__main__':
         'gcloud', 'logging', 'read',
         'resource.type="gae_app" '
         f'logName="projects/{args.project}/logs/app" "could not parse"',
+        '--freshness=7d',
         '--project', args.project, '--format', 'json'])
 
     enum_errors = enum_errors_from_logs(logs, args.region)
