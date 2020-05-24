@@ -34,7 +34,8 @@ script:
       docker exec -it recidiviz pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range $TRAVIS_COMMIT_RANGE;
     fi
   - docker exec -it recidiviz pipenv run mypy recidiviz
-  - docker exec -it recidiviz pipenv run pylint recidiviz
+  - docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
+
   - docker exec -it recidiviz pipenv run pytest recidiviz --with-emulator
 
   # Cache the newly built docker image for the next Travis run
