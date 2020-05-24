@@ -1,3 +1,4 @@
+# pylint: skip-file
 """${message}
 
 Revision ID: ${up_revision}
