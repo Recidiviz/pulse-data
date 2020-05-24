@@ -25,6 +25,8 @@ from cloud_function_utils import make_iap_request, \
     get_dataflow_template_bucket, \
     trigger_dataflow_job_from_template
 
+from covid import covid_ingest
+
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
     '&filename={}')
@@ -193,3 +195,21 @@ def run_calculation_pipelines(_event, _context):
 
     monitor_response = make_iap_request(url, _CLIENT_ID[project_id])
     logging.info("The monitoring Dataflow response is %s", monitor_response)
+
+
+def handle_covid_ingest(data, _):
+    """This function is triggered when a file is dropped into the Covid
+    aggregation bucket, and makes a request to stitch together Covid data
+    sources into a single output file.
+
+    data: A cloud storage object that holds name information and other metadata
+    related to the file that was dropped into the bucket.
+    _: (google.cloud.functions.Context): Metadata of triggering event.
+    """
+    bucket = data['bucket']
+    source, filename = data['name'].split('/')
+    logging.info(
+        "Running covid ingest for bucket %s, source %s, filename %s",
+        bucket, source, filename)
+    # Actually read the source and stitch together into a CSV file.
+    covid_ingest.parse_to_csv(bucket, source, filename)
