@@ -66,6 +66,10 @@ class SQLAlchemyEngineManager:
         cls._engine_for_schema[schema_base] = engine
 
     @classmethod
+    def teardown_engine_for_schema(cls, declarative_base: DeclarativeMeta):
+        cls._engine_for_schema.pop(declarative_base).dispose()
+
+    @classmethod
     def teardown_engines(cls):
         for engine in cls._engine_for_schema.values():
             engine.dispose()
