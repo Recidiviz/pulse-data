@@ -129,11 +129,19 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         are_raw_data_bq_imports_enabled_in_env=True
     )
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(OperationsBase)
+        fakes.use_on_disk_postgresql_database(OperationsBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        fakes.teardown_on_disk_postgresql_database(OperationsBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
 
     def validate_file_metadata(
             self,
