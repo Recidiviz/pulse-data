@@ -83,6 +83,10 @@ def in_gae_staging() -> bool:
     return in_gae() and get_gae_environment() == GaeEnvironment.STAGING.value
 
 
+def in_travis() -> bool:
+    return os.getenv('HOSTNAME', 'local').startswith('travis')
+
+
 def get_datastore_client() -> datastore.Client:
     # If we're running with the datastore emulator, we must specify `_https` due
     # to a bug in the datastore client.
