@@ -23,6 +23,7 @@ import dateutil
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils import us_mo_utils
+from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -319,25 +320,46 @@ def person_external_id_to_include(pipeline: str, person: StatePerson) -> Optiona
     return None
 
 
-def include_in_monthly_metrics(year: int, month: int, calculation_month_lower_bound: Optional[date]) -> bool:
+def include_in_monthly_metrics(year: int,
+                               month: int,
+                               calculation_month_upper_bound: date,
+                               calculation_month_lower_bound: Optional[date]) -> bool:
     """Determines whether the event with the given year and month should be included in the monthly metric output. If
-    the calculation_month_lower_bound is None, then includes the bucket by default. If the calculation_month_lower_bound
-    is set, then includes the event if it happens in a month on or after the calculation_month_lower_bound. The
-    calculation_month_lower_bound is always the first day of a month."""
+    the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
+    calculation_month_upper_bound. If the calculation_month_lower_bound is set, then includes the event if it happens
+    in a month between the calculation_month_lower_bound and the calculation_month_upper_bound (inclusive). The
+    calculation_month_upper_bound is always the last day of a month, and, if set, the calculation_month_lower_bound is
+    always the first day of a month."""
     if not calculation_month_lower_bound:
-        return True
+        return (year < calculation_month_upper_bound.year
+                or (year == calculation_month_upper_bound.year and month <= calculation_month_upper_bound.month))
 
-    return year >= calculation_month_lower_bound.year and (date(year, month, 1) >= calculation_month_lower_bound)
+    return calculation_month_lower_bound <= date(year, month, 1) <= calculation_month_upper_bound
 
 
-def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, calculation_month_limit: int) -> \
+def get_calculation_month_upper_bound_date(calculation_end_month: Optional[str]) -> date:
+    """Returns the date at the end of the month represented in the calculation_end_month string. String must
+    be in the format YYYY-MM. If calculation_end_month is unset, returns the last day of the current month. """
+    if not calculation_end_month:
+        year, month = year_and_month_for_today()
+        return last_day_of_month(date(year, month, 1))
+
+    try:
+        end_month_date = datetime.datetime.strptime(calculation_end_month, '%Y-%m').date()
+    except ValueError:
+        raise ValueError(f"Invalid value for calculation_end_month: {calculation_end_month}")
+
+    return last_day_of_month(end_month_date)
+
+
+def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, calculation_month_count: int) -> \
         Optional[date]:
     """Returns the date at the beginning of the first month that should be included in the monthly calculations."""
 
     first_of_last_month = first_day_of_month(calculation_month_upper_bound)
 
-    calculation_month_lower_bound = (first_of_last_month - relativedelta(months=(calculation_month_limit - 1))) \
-        if calculation_month_limit != -1 else None
+    calculation_month_lower_bound = (first_of_last_month - relativedelta(months=(calculation_month_count - 1))) \
+        if calculation_month_count != -1 else None
 
     return calculation_month_lower_bound
 

@@ -55,9 +55,6 @@ _NCIC_CODE = '1234'
 class TestMapIncarcerationCombinations(unittest.TestCase):
     """Tests the map_incarceration_combinations function."""
 
-    # Freezing time to before the events so none of them fall into the
-    # relevant metric periods
-    @freeze_time('1900-01-01')
     def test_map_incarceration_combinations(self):
         person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
@@ -85,7 +82,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month='2000-03',
+            calculation_month_count=1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -96,7 +94,6 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         for combo, _ in incarceration_combinations:
             assert combo.get('year') == 2000
 
-    @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_all_types(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -147,7 +144,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -155,7 +153,6 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_admissions_same_month(self):
         person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
@@ -188,7 +185,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -196,7 +194,6 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_two_releases_same_month(self):
         person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
@@ -227,7 +224,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -235,7 +233,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
+    @freeze_time('2020-01-01')
     def test_map_incarceration_combinations_two_stays_same_month(self):
         person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
@@ -274,7 +272,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -282,7 +281,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
+
     def test_map_incarceration_combinations_two_stays_same_month_facility(self):
         person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
@@ -322,7 +321,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -330,7 +330,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
+
     def test_map_incarceration_combinations_multiple_stays(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -372,7 +372,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -382,7 +383,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in incarceration_combinations)
 
-    @freeze_time('1900-01-01')
+
     def test_map_incarceration_combinations_multiple_overlapping_stays(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -424,7 +425,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -466,7 +468,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -509,7 +512,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -559,7 +563,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -611,7 +616,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -664,7 +670,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -687,7 +694,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                        AdmissionReason.PAROLE_REVOCATION
 
     @freeze_time('2000-03-30')
-    def test_map_incarceration_combinations_calculation_month_limit(self):
+    def test_map_incarceration_combinations_calculation_month_count(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -716,7 +723,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=1
+            calculation_end_month='2000-03',
+            calculation_month_count=1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -730,7 +738,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             assert combo.get('year') == 2000
 
     @freeze_time('2000-03-30')
-    def test_map_incarceration_combinations_calculation_month_limit_exclude(self):
+    def test_map_incarceration_combinations_calculation_month_count_exclude(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -759,13 +767,14 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=1
+            calculation_end_month=None,
+            calculation_month_count=1
         )
 
         self.assertEqual(0, len(incarceration_combinations))
 
     @freeze_time('2000-03-30')
-    def test_map_incarceration_combinations_calculation_month_limit_include_one(self):
+    def test_map_incarceration_combinations_calculation_month_count_include_one(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -801,7 +810,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=36
+            calculation_end_month=None,
+            calculation_month_count=36
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -815,7 +825,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             assert combo.get('year') == 2000
 
     @freeze_time('2010-12-31')
-    def test_map_incarceration_combinations_calculation_month_limit_include_monthly(self):
+    def test_map_incarceration_combinations_calculation_month_count_include_monthly(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -844,7 +854,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=37
+            calculation_end_month=None,
+            calculation_month_count=37
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -856,7 +867,6 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         for combo, _ in incarceration_combinations:
             assert combo.get('year') == 2007
 
-    @freeze_time('1900-01-01')
     def test_map_incarceration_combinations_includes_statute_output(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -904,7 +914,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             person=person,
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_month_limit=-1
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)

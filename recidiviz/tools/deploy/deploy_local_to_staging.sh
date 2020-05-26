@@ -2,7 +2,6 @@
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 
-source ${BASH_SOURCE_DIR}/deploy_pipeline_helpers.sh
 source ${BASH_SOURCE_DIR}/../run_commands.sh
 
 deploy_name=$1
@@ -13,8 +12,11 @@ if [ x"$deploy_name" == x -o x"$version_tag" == x ]; then
     exit 1
 fi
 
-echo "Deploying pipeline templates"
-deploy_pipeline_templates_to_staging
+echo "Deploying stage-only calculation pipelines to templates in recidiviz-staging."
+run_cmd "pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-staging --templates_to_deploy staging"
+
+echo "Deploying prod-ready calculation pipelines to templates in recidiviz-staging."
+run_cmd "pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-staging --templates_to_deploy production"
 
 echo "Initializing task queues"
 run_cmd "pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-staging --google_auth_token $(gcloud auth print-access-token)"

@@ -30,9 +30,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods,\
-    augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_monthly_metrics,\
-    characteristics_with_person_id_fields, add_demographic_characteristics
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
+    augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_monthly_metrics, \
+    characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
@@ -50,7 +50,8 @@ def map_incarceration_combinations(person: StatePerson,
                                    incarceration_events:
                                    List[IncarcerationEvent],
                                    metric_inclusions: Dict[IncarcerationMetricType, bool],
-                                   calculation_month_limit: int) -> List[Tuple[Dict[str, Any], Any]]:
+                                   calculation_end_month: Optional[str],
+                                   calculation_month_count: int) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms IncarcerationEvents and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of their IncarcerationEvent and returns an array of "incarceration combinations".
@@ -58,49 +59,51 @@ def map_incarceration_combinations(person: StatePerson,
     the person should be counted as a positive instance of that metric.
 
     This translates a particular incarceration event, e.g. admission or release, into many different incarceration
-    metrics. Each metric represents one of many possible combinations of characteristics being tracked for that event.
-    For example, if a White male is admitted to prison, there is a metric that corresponds to White people, one to
-    males, one to White males, one to all people, and more depending on other dimensions in the data.
+    metrics.
 
     Args:
         person: the StatePerson
         incarceration_events: A list of IncarcerationEvents for the given StatePerson.
         metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
             flags for whether or not to include that metric type in the calculations
-        calculation_month_limit: The number of months (including this one) to limit the monthly calculation output to.
-            If set to -1, does not limit the calculations.
+        calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
+            calculated. If unset, ends with the current month.
+        calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
+            limit the monthly calculation output to. If set to -1, does not limit the calculations.
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
     metrics: List[Tuple[Dict[str, Any], Any]] = []
-
     periods_and_events: Dict[int, List[IncarcerationEvent]] = defaultdict()
 
-    # We will calculate person-based metrics for each metric period in METRIC_PERIOD_MONTHS ending with the current
-    # month
-    metric_period_end_date = last_day_of_month(date.today())
+    calculation_month_upper_bound = get_calculation_month_upper_bound_date(calculation_end_month)
+
+    # If the calculations include the current month, then we will calculate person-based metrics for each metric
+    # period in METRIC_PERIOD_MONTHS ending with the current month
+    include_metric_period_output = calculation_month_upper_bound == get_calculation_month_upper_bound_date(
+        date.today().strftime('%Y-%m'))
+
+    if include_metric_period_output:
+        # Organize the events by the relevant metric periods
+        for incarceration_event in incarceration_events:
+            relevant_periods = relevant_metric_periods(
+                incarceration_event.event_date,
+                calculation_month_upper_bound.year,
+                calculation_month_upper_bound.month)
+
+            if relevant_periods:
+                for period in relevant_periods:
+                    period_events = periods_and_events.get(period)
+
+                    if period_events:
+                        period_events.append(incarceration_event)
+                    else:
+                        periods_and_events[period] = [incarceration_event]
 
     calculation_month_lower_bound = get_calculation_month_lower_bound_date(
-        metric_period_end_date, calculation_month_limit)
-
-    # Organize the events by the relevant metric periods
-    for incarceration_event in incarceration_events:
-        relevant_periods = relevant_metric_periods(
-            incarceration_event.event_date,
-            metric_period_end_date.year,
-            metric_period_end_date.month)
-
-        if relevant_periods:
-            for period in relevant_periods:
-                period_events = periods_and_events.get(period)
-
-                if period_events:
-                    period_events.append(incarceration_event)
-                else:
-                    periods_and_events[period] = [incarceration_event]
+        calculation_month_upper_bound, calculation_month_count)
 
     for incarceration_event in incarceration_events:
-
         metric_type = METRIC_TYPES.get(type(incarceration_event))
         if not metric_type:
             raise ValueError(
@@ -111,8 +114,8 @@ def map_incarceration_combinations(person: StatePerson,
 
             metrics.extend(map_metric_combinations(
                 characteristic_combo, incarceration_event,
-                metric_period_end_date, calculation_month_lower_bound, incarceration_events,
-                periods_and_events, metric_type
+                calculation_month_upper_bound, calculation_month_lower_bound, incarceration_events,
+                periods_and_events, metric_type, include_metric_period_output
             ))
 
     return metrics
@@ -204,11 +207,12 @@ def add_person_level_characteristics(person, incarceration_event, characteristic
 def map_metric_combinations(
         characteristic_combo: Dict[str, Any],
         incarceration_event: IncarcerationEvent,
-        metric_period_end_date: date,
+        calculation_month_upper_bound: date,
         calculation_month_lower_bound: Optional[date],
         all_incarceration_events: List[IncarcerationEvent],
         periods_and_events: Dict[int, List[IncarcerationEvent]],
-        metric_type: IncarcerationMetricType) -> \
+        metric_type: IncarcerationMetricType,
+        include_metric_period_output: bool) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given time bucket and characteristic combinations to a variety of metrics that track incarceration
     admission and release counts.
@@ -219,12 +223,14 @@ def map_metric_combinations(
      Args:
          characteristic_combo: A dictionary containing the characteristics of the person and event
          incarceration_event: The incarceration event from which the combination was derived.
-         metric_period_end_date: The day the metric periods end
+         calculation_month_upper_bound: The year and month of the last month for which metrics should be calculated.
          calculation_month_lower_bound: The date of the first month to be included in the monthly calculations
          all_incarceration_events: All of the person's IncarcerationEvents
          periods_and_events: A dictionary mapping metric period month values to the corresponding relevant
             IncarcerationEvents
          metric_type: The metric type to set on each combination
+        include_metric_period_output: Whether or not to include metrics for the various metric periods before the
+            current month. If False, will still include metric_period_months = 1 for the current month.
 
      Returns:
         A list of key-value tuples representing specific metric combinations and the metric value corresponding to
@@ -236,14 +242,15 @@ def map_metric_combinations(
     characteristic_combo['metric_type'] = metric_type
 
     if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
-                                  calculation_month_lower_bound):
+                                  calculation_month_upper_bound, calculation_month_lower_bound):
         metrics.extend(combination_incarceration_monthly_metrics(
             characteristic_combo, incarceration_event, all_incarceration_events))
 
-    metrics.extend(combination_incarceration_metric_period_metrics(
-        characteristic_combo, incarceration_event, metric_period_end_date,
-        periods_and_events
-    ))
+    if include_metric_period_output:
+        metrics.extend(combination_incarceration_metric_period_metrics(
+            characteristic_combo, incarceration_event, calculation_month_upper_bound,
+            periods_and_events
+        ))
 
     return metrics
 

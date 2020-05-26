@@ -23,16 +23,15 @@ from __future__ import absolute_import
 
 import argparse
 import logging
-import sys
 
-from typing import Any, Dict, List, Tuple, Set
+from typing import Any, Dict, List, Tuple, Set, Optional
 import datetime
 
 from apache_beam.pvalue import AsDict
 from more_itertools import one
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions
+from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.recidivism import identifier
@@ -49,8 +48,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
-    get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.utils import environment
@@ -302,8 +300,8 @@ class RecidivismMetricWritableDict(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def parse_arguments(argv):
-    """Parses command-line arguments."""
+def get_arg_parser() -> argparse.ArgumentParser:
+    """Returns the parser for the command-line arguments for this pipeline."""
     parser = argparse.ArgumentParser()
 
     # Parse arguments
@@ -320,10 +318,16 @@ def parse_arguments(argv):
                         ],
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
-    return parser.parse_known_args(argv)
+    return parser
 
 
-def run(argv):
+def run(apache_beam_pipeline_options: PipelineOptions,
+        data_input: str,
+        reference_input: str,
+        output: str,
+        metric_types: List[str],
+        state_code: Optional[str],
+        person_filter_ids: Optional[List[int]]):
     """Runs the recidivism calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is
@@ -334,23 +338,17 @@ def run(argv):
     # attributes can be successfully accessed.
     _ = schema.StatePerson()
 
-    # Parse command-line arguments
-    known_args, remaining_args = parse_arguments(argv)
-
-    pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)
-    pipeline_options.view_as(SetupOptions).save_main_session = True
+    apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
 
     # Get pipeline job details
-    all_pipeline_options = pipeline_options.get_all_options()
+    all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
-    query_dataset = all_pipeline_options['project'] + '.' + known_args.input
-    reference_dataset = all_pipeline_options['project'] + '.' + \
-                        known_args.reference_input
+    query_dataset = all_pipeline_options['project'] + '.' + data_input
+    reference_dataset = all_pipeline_options['project'] + '.' + reference_input
 
-    person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
-    state_code = known_args.state_code
+    person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
-    with beam.Pipeline(options=pipeline_options) as p:
+    with beam.Pipeline(options=apache_beam_pipeline_options) as p:
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
@@ -461,21 +459,21 @@ def run(argv):
         )
 
         # Get pipeline job details for accessing job_id
-        all_pipeline_options = pipeline_options.get_all_options()
+        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get the type of metric to calculate
-        metric_types = set(known_args.metric_types)
+        metric_types_set = set(metric_types)
 
         # Get recidivism metrics
         recidivism_metrics = (person_events
                               | 'Get Recidivism Metrics' >>
                               GetRecidivismMetrics(
                                   pipeline_options=all_pipeline_options,
-                                  metric_types=metric_types))
+                                  metric_types=metric_types_set))
 
         if person_id_filter_set:
             logging.warning("Non-empty person filter set - returning before writing metrics.")
@@ -488,8 +486,8 @@ def run(argv):
                                 RecidivismMetricWritableDict()).with_outputs('rates', 'counts'))
 
         # Write the recidivism metrics to the output tables in BigQuery
-        rates_table = known_args.output + '.recidivism_rate_metrics'
-        counts_table = known_args.output + '.recidivism_count_metrics'
+        rates_table = output + '.recidivism_rate_metrics'
+        counts_table = output + '.recidivism_count_metrics'
 
         _ = (writable_metrics.rates
              | f"Write rate metrics to BQ table: {rates_table}" >>
@@ -506,8 +504,3 @@ def run(argv):
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    run(sys.argv)
