@@ -26,7 +26,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
     """Unittests for helpers in pipeline_args_utils.py."""
 
     DEFAULT_INCARCERATION_PIPELINE_ARGS =   \
-        Namespace(calculation_month_limit=1, input='state', output='dataflow_metrics', metric_types={'ALL'},
+        Namespace(calculation_month_count=1, calculation_end_month=None,
+                  data_input='state', output='dataflow_metrics', metric_types={'ALL'},
                   person_filter_ids=None, reference_input='reference_tables', state_code=None)
 
     DEFAULT_APACHE_BEAM_OPTIONS_DICT = {
@@ -50,7 +51,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
                 '--project', 'recidiviz-staging']
 
         # Act
-        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.parse_arguments(argv)
+        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -63,7 +64,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
                 '--project', 'recidiviz-staging',
                 '--save_as_template']
         # Act
-        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.parse_arguments(argv)
+        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -84,20 +85,22 @@ class TestPipelineArgsUtils(unittest.TestCase):
             '--setup_file', './setup2.py',
             '--bucket', 'recidiviz-123-my-bucket',
             '--region=us-central1',
-            '--input', 'county',
+            '--data_input', 'county',
             '--reference_input', 'reference_tables_2',
             '--output', 'dataflow_metrics_2',
-            '--calculation_month_limit=6',
+            '--calculation_month_count=6',
+            '--calculation_end_month=2009-07',
             '--save_as_template'
         ]
 
         # Act
-        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.parse_arguments(argv)
+        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
         expected_incarceration_pipeline_args = \
-            Namespace(calculation_month_limit=6, input='county', output='dataflow_metrics_2', metric_types={'ALL'},
+            Namespace(calculation_month_count=6, calculation_end_month='2009-07',
+                      data_input='county', output='dataflow_metrics_2', metric_types={'ALL'},
                       person_filter_ids=None, reference_input='reference_tables_2', state_code=None)
 
         self.assertEqual(incarceration_pipeline_args, expected_incarceration_pipeline_args)
@@ -131,7 +134,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
                 '--setup_file', './setup.py']
 
         # Act
-        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.parse_arguments(argv)
+        incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert

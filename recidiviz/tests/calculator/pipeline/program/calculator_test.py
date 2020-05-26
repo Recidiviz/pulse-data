@@ -27,6 +27,7 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
 from recidiviz.calculator.pipeline.utils import calculator_utils
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -50,9 +51,9 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 class TestMapProgramCombinations(unittest.TestCase):
     """Tests the map_program_combinations function."""
 
-    # Freezing time to before the events so none of them fall into the
+    # Freezing time to years after the events so none of them fall into the
     # relevant metric periods
-    @freeze_time('2012-11-02')
+    @freeze_time('2030-11-02')
     def test_map_program_combinations(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -83,7 +84,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -91,7 +94,6 @@ class TestMapProgramCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
 
-    @freeze_time('2007-11-02')
     def test_map_program_combinations_full_info(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -108,10 +110,12 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
+        event_date = date(2009, 10, 31)
+
         program_events = [
             ProgramReferralEvent(
                 state_code='US_ND',
-                event_date=date(2009, 10, 31),
+                event_date=event_date,
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
                 assessment_score=22,
@@ -122,7 +126,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2009-10',
+            calculation_month_count=1
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -130,7 +136,6 @@ class TestMapProgramCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
 
-    @freeze_time('2007-11-02')
     def test_map_program_combinations_full_info_probation(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -147,10 +152,12 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
+        event_date = date(2009, 10, 31)
+
         program_events = [
             ProgramReferralEvent(
                 state_code='US_ND',
-                event_date=date(2009, 10, 31),
+                event_date=event_date,
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PROBATION,
                 assessment_score=22,
@@ -161,7 +168,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2009-10',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -169,7 +178,6 @@ class TestMapProgramCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(program_combinations))
         assert all(value == 1 for _combination, value in program_combinations)
 
-    @freeze_time('2007-11-02')
     def test_map_program_combinations_multiple_supervision_types(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -186,10 +194,12 @@ class TestMapProgramCombinations(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
+        event_date = date(2009, 10, 7)
+
         program_events = [
             ProgramReferralEvent(
                 state_code='US_ND',
-                event_date=date(2009, 10, 7),
+                event_date=event_date,
                 program_id='XXX',
                 supervision_type=StateSupervisionType.PAROLE,
                 assessment_score=22,
@@ -210,7 +220,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2009-10',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -268,7 +280,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -318,7 +332,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -368,7 +384,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         ]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         relevant_periods = [36, 12]
@@ -398,7 +416,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert parole_combos == probation_combos
 
     @freeze_time('2012-11-30')
-    def test_map_program_combinations_calculation_month_limit_1(self):
+    def test_map_program_combinations_calculation_month_count_1(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -429,7 +447,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [included_event, not_included_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=1
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -439,7 +459,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2012-12-31')
-    def test_map_program_combinations_calculation_month_limit_36(self):
+    def test_map_program_combinations_calculation_month_count_36(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -470,7 +490,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [included_event, not_included_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=36
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=36
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -480,7 +502,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
     @freeze_time('2012-12-31')
-    def test_map_program_combinations_calculation_month_limit_36_include(self):
+    def test_map_program_combinations_calculation_month_count_36_include(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -511,7 +533,9 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_events = [same_month_event, old_month_event]
 
         program_combinations = calculator.map_program_combinations(
-            person, program_events, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=36
+            person, program_events, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=36
         )
 
         expected_combinations_count = expected_metric_combos_count(

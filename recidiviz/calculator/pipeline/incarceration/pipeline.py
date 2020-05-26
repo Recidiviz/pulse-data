@@ -22,16 +22,15 @@ from __future__ import absolute_import
 
 import argparse
 import logging
-import sys
 
-from typing import Any, Dict, List, Tuple, Set
+from typing import Any, Dict, List, Tuple, Set, Optional
 import datetime
 
 from apache_beam.pvalue import AsDict
 from more_itertools import one
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions
+from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.incarceration import identifier, calculator
@@ -43,10 +42,9 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, calculation_month_limit_arg
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments, \
-    get_apache_beam_pipeline_options_from_args
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -76,19 +74,25 @@ class GetIncarcerationMetrics(beam.PTransform):
 
     def __init__(self, pipeline_options: Dict[str, str],
                  metric_types: Set[str],
-                 calculation_month_limit: int):
+                 calculation_month_count: int,
+                 calculation_end_month: Optional[str] = None):
         super(GetIncarcerationMetrics, self).__init__()
         self._pipeline_options = pipeline_options
-        self.calculation_month_limit = calculation_month_limit
+        self._calculation_end_month = calculation_end_month
+        self._calculation_month_count = calculation_month_count
 
-        self.metric_inclusions: Dict[IncarcerationMetricType, bool] = {}
+        month_count_string = str(calculation_month_count) if calculation_month_count != -1 else 'all'
+        end_month_string = calculation_end_month if calculation_end_month else 'the current month'
+        logging.info("Producing metric output for %s month(s) up to %s", month_count_string, end_month_string)
+
+        self._metric_inclusions: Dict[IncarcerationMetricType, bool] = {}
 
         for metric_option in IncarcerationMetricType:
             if metric_option.value in metric_types or 'ALL' in metric_types:
-                self.metric_inclusions[metric_option] = True
+                self._metric_inclusions[metric_option] = True
                 logging.info("Producing %s metrics", metric_option.value)
             else:
-                self.metric_inclusions[metric_option] = False
+                self._metric_inclusions[metric_option] = False
 
     def expand(self, input_or_inputs):
         # Calculate incarceration metric combinations from a StatePerson and their IncarcerationEvents
@@ -96,7 +100,7 @@ class GetIncarcerationMetrics(beam.PTransform):
             input_or_inputs
             | 'Map to metric combinations' >>
             beam.ParDo(CalculateIncarcerationMetricCombinations(),
-                       self.calculation_month_limit, self.metric_inclusions))
+                       self._calculation_end_month, self._calculation_month_count, self._metric_inclusions))
 
         # Produce IncarcerationMetrics
         incarceration_metrics = (incarceration_metric_combinations |
@@ -144,13 +148,15 @@ class ClassifyIncarcerationEvents(beam.DoFn):
 
 
 @with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[IncarcerationEvent]]],
-                  beam.typehints.Optional[int], beam.typehints.Dict[IncarcerationMetricType, bool])
+                  beam.typehints.Optional[str],
+                  beam.typehints.Optional[int],
+                  beam.typehints.Dict[IncarcerationMetricType, bool])
 @with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateIncarcerationMetricCombinations(beam.DoFn):
     """Calculates incarceration metric combinations."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, calculation_month_limit, metric_inclusions):
+    def process(self, element, calculation_end_month, calculation_month_count, metric_inclusions):
         """Produces various incarceration metric combinations.
 
         Sends the calculator the StatePerson entity and their corresponding IncarcerationEvents for mapping all
@@ -158,7 +164,8 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
 
         Args:
             element: Tuple containing a StatePerson and their IncarcerationEvents
-            calculation_month_limit: The number of months to limit the monthly calculation output to.
+            calculation_end_month: The year and month of the last month for which metrics should be calculated.
+            calculation_month_count: The number of months to limit the monthly calculation output to.
             metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
                 flags for whether or not to include that metric type in the calculations
         Yields:
@@ -170,7 +177,8 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
         metric_combinations = calculator.map_incarceration_combinations(person,
                                                                         incarceration_events,
                                                                         metric_inclusions,
-                                                                        calculation_month_limit)
+                                                                        calculation_end_month,
+                                                                        calculation_month_count)
 
         # Return each of the incarceration metric combinations
         for metric_combination in metric_combinations:
@@ -280,12 +288,12 @@ class IncarcerationMetricWritableDict(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def parse_arguments(argv):
-    """Parses command-line arguments."""
+def get_arg_parser() -> argparse.ArgumentParser:
+    """Returns the parser for the command-line arguments for this pipeline."""
     parser = argparse.ArgumentParser()
 
     # Parse arguments
-    add_shared_pipeline_arguments(parser)
+    add_shared_pipeline_arguments(parser, include_calculation_limit_args=True)
 
     parser.add_argument('--metric_types',
                         dest='metric_types',
@@ -300,17 +308,18 @@ def parse_arguments(argv):
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
 
-    parser.add_argument('--calculation_month_limit',
-                        dest='calculation_month_limit',
-                        type=calculation_month_limit_arg,
-                        help='The number of months (including this one) to limit the monthly calculation output to. '
-                             'If set to -1, does not limit the calculations.',
-                        default=1)
-
-    return parser.parse_known_args(argv)
+    return parser
 
 
-def run(argv):
+def run(apache_beam_pipeline_options: PipelineOptions,
+        data_input: str,
+        reference_input: str,
+        output: str,
+        calculation_month_count: int,
+        metric_types: List[str],
+        state_code: Optional[str],
+        calculation_end_month: Optional[str],
+        person_filter_ids: Optional[List[int]]):
     """Runs the incarceration calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
@@ -319,23 +328,17 @@ def run(argv):
     # are loaded and their attributes can be successfully accessed.
     _ = schema.StatePerson()
 
-    # Parse command-line arguments
-    known_args, remaining_args = parse_arguments(argv)
-
-    pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)
-
-    pipeline_options.view_as(SetupOptions).save_main_session = True
+    apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
 
     # Get pipeline job details
-    all_pipeline_options = pipeline_options.get_all_options()
+    all_apache_beam_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
-    query_dataset = all_pipeline_options['project'] + '.' + known_args.input
-    reference_dataset = all_pipeline_options['project'] + '.' + known_args.reference_input
+    query_dataset = all_apache_beam_pipeline_options['project'] + '.' + data_input
+    reference_dataset = all_apache_beam_pipeline_options['project'] + '.' + reference_input
 
-    person_id_filter_set = set(known_args.person_filter_ids) if known_args.person_filter_ids else None
-    state_code = known_args.state_code
+    person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
-    with beam.Pipeline(options=pipeline_options) as p:
+    with beam.Pipeline(options=apache_beam_pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load StatePersons' >>
                    BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StatePerson,
@@ -447,24 +450,22 @@ def run(argv):
                          beam.ParDo(ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
-        all_pipeline_options = pipeline_options.get_all_options()
-
-        # The number of months to limit the monthly calculation output to
-        calculation_month_limit = known_args.calculation_month_limit
+        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
+        all_apache_beam_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get the type of metric to calculate
-        metric_types = set(known_args.metric_types)
+        metric_types_set = set(metric_types)
 
         # Get IncarcerationMetrics
         incarceration_metrics = (person_events | 'Get Incarceration Metrics' >>
                                  GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
-                                     metric_types=metric_types,
-                                     calculation_month_limit=calculation_month_limit))
+                                     metric_types=metric_types_set,
+                                     calculation_end_month=calculation_end_month,
+                                     calculation_month_count=calculation_month_count))
 
         if person_id_filter_set:
             logging.warning("Non-empty person filter set - returning before writing metrics.")
@@ -476,11 +477,11 @@ def run(argv):
                                 'admissions', 'populations', 'releases'))
 
         # Write the metrics to the output tables in BigQuery
-        admissions_table = known_args.output + '.incarceration_admission_metrics'
+        admissions_table = output + '.incarceration_admission_metrics'
 
-        population_table = known_args.output + '.incarceration_population_metrics'
+        population_table = output + '.incarceration_population_metrics'
 
-        releases_table = known_args.output + '.incarceration_release_metrics'
+        releases_table = output + '.incarceration_release_metrics'
 
         _ = (writable_metrics.admissions
              | f"Write admission metrics to BQ table: {admissions_table}" >>
@@ -505,8 +506,3 @@ def run(argv):
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    run(sys.argv)

@@ -602,7 +602,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    metric_types=metric_types,
-                                   calculation_month_limit=-1))
+                                   calculation_end_month=None,
+                                   calculation_month_count=-1))
 
         assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types,
                                                                                expected_aggregate_metric_types))
@@ -2603,13 +2604,13 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        calculation_month_limit = -1
-
         output = (test_pipeline
                   | beam.Create([(fake_person, supervision_time_buckets)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit, self.metric_inclusions_dict)
+                             calculation_end_month=None,
+                             calculation_month_count=-1,
+                             metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, AssertMatchers.
@@ -2654,14 +2655,13 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        calculation_month_limit = -1
-
         output = (test_pipeline
                   | beam.Create([(fake_person, supervision_months)])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit,
-                             self.metric_inclusions_dict)
+                             calculation_end_month=None,
+                             calculation_month_count=-1,
+                             metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, AssertMatchers.count_combinations(expected_combination_counts),
@@ -2684,7 +2684,9 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, metric_inclusions=self.metric_inclusions_dict)
+                             calculation_end_month=None,
+                             calculation_month_count=-1,
+                             metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))
@@ -2701,7 +2703,9 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   | beam.Create([])
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
-                             calculation_month_limit=-1, metric_inclusions=self.metric_inclusions_dict)
+                             calculation_end_month=None,
+                             calculation_month_count=-1,
+                             metric_inclusions=self.metric_inclusions_dict)
                   )
 
         assert_that(output, equal_to([]))

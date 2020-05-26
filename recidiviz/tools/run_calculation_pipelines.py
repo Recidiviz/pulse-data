@@ -50,7 +50,7 @@ Examples:
     python -m recidiviz.tools.run_calculation_pipelines.py --pipeline incarceration --job_name incarceration-example
 
     python -m recidiviz.tools.run_calculation_pipelines.py --pipeline incarceration --job_name incarceration-example \
-    --region us-central1 --include_race False --save_as_template --calculation_month_limit 36
+    --region us-central1 --include_race False --save_as_template --calculation_month_count 36
 
 You must also include any arguments required by the given pipeline.
 """
@@ -68,9 +68,16 @@ from recidiviz.calculator.pipeline.recidivism import \
     pipeline as recidivism_pipeline
 from recidiviz.calculator.pipeline.supervision import \
     pipeline as supervision_pipeline
+from recidiviz.calculator.pipeline.utils.pipeline_args_utils import get_apache_beam_pipeline_options_from_args
+
+PIPELINE_MODULES = {
+    'incarceration': incarceration_pipeline,
+    'recidivism': recidivism_pipeline,
+    'supervision': supervision_pipeline,
+    'program': program_pipeline
+}
 
 
-# pylint: disable=line-too-long
 def parse_arguments(argv):
     """Parses the arguments needed to run pipelines."""
     parser = argparse.ArgumentParser()
@@ -78,26 +85,38 @@ def parse_arguments(argv):
     parser.add_argument('--pipeline',
                         dest='pipeline',
                         type=str,
-                        choices=['recidivism', 'supervision', 'program',
-                                 'incarceration'],
+                        choices=PIPELINE_MODULES.keys(),
                         help='The type of pipeline that should be run.',
                         required=True)
 
     return parser.parse_known_args(argv)
 
 
+def get_pipeline_module(pipeline: str):
+    """Returns the calculation pipeline module corresponding to the given pipeline type."""
+    pipeline_module = PIPELINE_MODULES.get(pipeline)
+
+    if pipeline_module:
+        return pipeline_module
+
+    raise ValueError(f"Unexpected pipeline {pipeline}")
+
+
 def run_calculation_pipelines():
     """Runs the pipeline designated by the given --pipeline argument."""
     known_args, remaining_args = parse_arguments(sys.argv)
 
-    if known_args.pipeline == 'incarceration':
-        incarceration_pipeline.run(remaining_args)
-    if known_args.pipeline == 'recidivism':
-        recidivism_pipeline.run(remaining_args)
-    elif known_args.pipeline == 'supervision':
-        supervision_pipeline.run(remaining_args)
-    elif known_args.pipeline == 'program':
-        program_pipeline.run(remaining_args)
+    pipeline_module = get_pipeline_module(known_args.pipeline)
+
+    run_pipeline(pipeline_module, remaining_args)
+
+
+def run_pipeline(pipeline_module, argv):
+    """Runs the given pipeline_module with the arguments contained in argv."""
+    known_args, remaining_args = pipeline_module.get_arg_parser().parse_known_args(argv)
+    apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)
+
+    pipeline_module.run(apache_beam_pipeline_options, **vars(known_args))
 
 
 if __name__ == '__main__':

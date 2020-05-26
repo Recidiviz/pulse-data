@@ -30,7 +30,7 @@ from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
     augmented_combo_for_calculations, include_in_monthly_metrics, \
     get_calculation_month_lower_bound_date, \
-    characteristics_with_person_id_fields, add_demographic_characteristics
+    characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -42,7 +42,8 @@ def map_program_combinations(person: StatePerson,
                              program_events:
                              List[ProgramEvent],
                              metric_inclusions: Dict[ProgramMetricType, bool],
-                             calculation_month_limit: int) -> List[Tuple[Dict[str, Any], Any]]:
+                             calculation_end_month: Optional[str],
+                             calculation_month_count: int) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ProgramEvents and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of her ProgramEvents and returns an array of "program combinations". These are
@@ -56,38 +57,42 @@ def map_program_combinations(person: StatePerson,
         program_events: A list of ProgramEvents for the given StatePerson.
         metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
             flags for whether or not to include that metric type in the calculations
-        calculation_month_limit: The number of months (including this one) to limit the monthly calculation output to.
-            If set to -1, does not limit the calculations.
+        calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
+            calculated. If unset, ends with the current month.
+        calculation_month_count: The number of months (including the month of the calculation_end_month) to
+            limit the monthly calculation output to. If set to -1, does not limit the calculations.
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
-
     metrics: List[Tuple[Dict[str, Any], Any]] = []
-
     periods_and_events: Dict[int, List[ProgramEvent]] = defaultdict()
 
-    # We will calculate person-based metrics for each metric period in METRIC_PERIOD_MONTHS ending with the current
-    # month
-    metric_period_end_date = last_day_of_month(date.today())
+    calculation_month_upper_bound = get_calculation_month_upper_bound_date(calculation_end_month)
+
+    # If the calculations include the current month, then we will calculate person-based metrics for each metric
+    # period in METRIC_PERIOD_MONTHS ending with the current month
+    include_metric_period_output = calculation_month_upper_bound == get_calculation_month_upper_bound_date(
+        date.today().strftime('%Y-%m'))
+
+    if include_metric_period_output:
+        # Organize the events by the relevant metric periods
+        for program_event in program_events:
+            relevant_periods = relevant_metric_periods(
+                program_event.event_date,
+                calculation_month_upper_bound.year,
+                calculation_month_upper_bound.month)
+
+            if relevant_periods:
+                for period in relevant_periods:
+                    period_events = periods_and_events.get(period)
+
+                    if period_events:
+                        period_events.append(program_event)
+                    else:
+                        periods_and_events[period] = [program_event]
 
     calculation_month_lower_bound = get_calculation_month_lower_bound_date(
-        metric_period_end_date, calculation_month_limit)
-
-    # Organize the events by the relevant metric periods
-    for program_event in program_events:
-        relevant_periods = relevant_metric_periods(
-            program_event.event_date,
-            metric_period_end_date.year,
-            metric_period_end_date.month)
-
-        if relevant_periods:
-            for period in relevant_periods:
-                period_events = periods_and_events.get(period)
-
-                if period_events:
-                    period_events.append(program_event)
-                else:
-                    periods_and_events[period] = [program_event]
+        calculation_month_upper_bound, calculation_month_count)
 
     for program_event in program_events:
         if isinstance(program_event, ProgramReferralEvent) and metric_inclusions.get(ProgramMetricType.REFERRAL):
@@ -95,8 +100,9 @@ def map_program_combinations(person: StatePerson,
 
             program_referral_metrics_event_based = map_metric_combinations(
                 characteristic_combo, program_event,
-                metric_period_end_date, calculation_month_lower_bound,
-                program_events, periods_and_events, ProgramMetricType.REFERRAL
+                calculation_month_upper_bound, calculation_month_lower_bound,
+                program_events, periods_and_events,
+                ProgramMetricType.REFERRAL, include_metric_period_output
             )
 
             metrics.extend(program_referral_metrics_event_based)
@@ -153,11 +159,12 @@ def characteristics_dict(person: StatePerson,
 def map_metric_combinations(
         characteristic_combo: Dict[str, Any],
         program_event: ProgramEvent,
-        metric_period_end_date: date,
+        calculation_month_upper_bound: date,
         calculation_month_lower_bound: Optional[date],
         all_program_events: List[ProgramEvent],
         periods_and_events: Dict[int, List[ProgramEvent]],
-        metric_type: ProgramMetricType) -> \
+        metric_type: ProgramMetricType,
+        include_metric_period_output: bool) -> \
         List[Tuple[Dict[str, Any], Any]]:
     """Maps the given program event and characteristic combinations to a variety of metrics that track program
     interactions.
@@ -168,11 +175,13 @@ def map_metric_combinations(
     Args:
         characteristic_combo: A dictionary describing the person and event.
         program_event: The program event from which the combination was derived.
-        metric_period_end_date: The day the metric periods end
+        calculation_month_upper_bound: The year and month of the last month for which metrics should be calculated.
         calculation_month_lower_bound: The date of the first month to be included in the monthly calculations
         all_program_events: All of the person's ProgramEvents
         periods_and_events: A dictionary mapping metric period month values to the corresponding relevant ProgramEvents
         metric_type: The metric type to set on each combination
+        include_metric_period_output: Whether or not to include metrics for the various metric periods before the
+            current month. If False, will still include metric_period_months = 1 for the current month.
 
     Returns:
         A list of key-value tuples representing specific metric combinations and the metric value corresponding to that
@@ -189,13 +198,17 @@ def map_metric_combinations(
         characteristic_combo['metric_type'] = metric_type
 
         if include_in_monthly_metrics(
-                program_event.event_date.year, program_event.event_date.month, calculation_month_lower_bound):
+                program_event.event_date.year, program_event.event_date.month,
+                calculation_month_upper_bound, calculation_month_lower_bound):
 
             metrics.extend(
                 combination_referral_monthly_metrics(characteristic_combo, program_event, all_referral_events))
 
-        metrics.extend(combination_referral_metric_period_metrics(characteristic_combo, program_event,
-                                                                  metric_period_end_date, periods_and_events))
+        if include_metric_period_output:
+            metrics.extend(combination_referral_metric_period_metrics(characteristic_combo,
+                                                                      program_event,
+                                                                      calculation_month_upper_bound,
+                                                                      periods_and_events))
 
     return metrics
 

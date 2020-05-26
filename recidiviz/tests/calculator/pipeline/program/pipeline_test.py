@@ -293,7 +293,8 @@ class TestProgramPipeline(unittest.TestCase):
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
                                metric_types=metric_types,
-                               calculation_month_limit=-1))
+                               calculation_end_month=None,
+                               calculation_month_count=-1))
 
         assert_that(program_metrics, AssertMatchers.validate_pipeline_test())
 
@@ -761,7 +762,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, program_events)])
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
-                             -1, ALL_METRIC_INCLUSIONS_DICT)
+                             None, -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, AssertMatchers.count_combinations(expected_combination_counts),
@@ -783,7 +784,8 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(fake_person, [])])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_METRIC_INCLUSIONS_DICT)
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
+                             None, -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -799,7 +801,8 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([])
                   | 'Calculate Program Metrics' >>
-                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(), -1, ALL_METRIC_INCLUSIONS_DICT)
+                  beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
+                             None, -1, ALL_METRIC_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))

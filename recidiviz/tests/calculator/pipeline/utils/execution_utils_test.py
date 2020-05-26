@@ -20,7 +20,7 @@
 
 
 """Tests for utils/execution_utils.py."""
-
+import argparse
 import unittest
 import datetime
 import pytest
@@ -29,7 +29,7 @@ import random
 import string
 
 from apache_beam.options.pipeline_options import PipelineOptions
-
+from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils import execution_utils
 
@@ -112,3 +112,46 @@ class TestGetJobID(unittest.TestCase):
             _ = execution_utils.get_job_id(pipeline_options)
 
         assert "No job_name provided in pipeline options:" in str(e.value)
+
+
+class TestCalculationEndMonthArg(unittest.TestCase):
+    """Tests the calculation_end_month function."""
+    def test_calculation_end_month_arg(self):
+        value = '2009-01'
+
+        return_value = execution_utils.calculation_end_month_arg(value)
+
+        self.assertEqual(return_value, value)
+
+    def test_calculation_end_month_arg_bad_month(self):
+        value = '2009-31'
+
+        with pytest.raises(argparse.ArgumentTypeError) as e:
+            _ = execution_utils.calculation_end_month_arg(value)
+
+        assert "calculation_end_month parameter must be in the format YYYY-MM." in str(e.value)
+
+    def test_calculation_end_month_arg_bad_year(self):
+        value = '001-03'
+
+        with pytest.raises(argparse.ArgumentTypeError) as e:
+            _ = execution_utils.calculation_end_month_arg(value)
+
+        assert "calculation_end_month parameter must be in the format YYYY-MM." in str(e.value)
+
+    @freeze_time('2019-11-01')
+    def test_calculation_end_month_arg_after_this_month(self):
+        value = '2030-01'
+
+        with pytest.raises(argparse.ArgumentTypeError) as e:
+            _ = execution_utils.calculation_end_month_arg(value)
+
+        assert "calculation_end_month parameter cannot be a month in the future." in str(e.value)
+
+    def test_calculation_end_month_arg_only_year(self):
+        value = '2009'
+
+        with pytest.raises(argparse.ArgumentTypeError) as e:
+            _ = execution_utils.calculation_end_month_arg(value)
+
+        assert "calculation_end_month parameter must be in the format YYYY-MM." in str(e.value)
