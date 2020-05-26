@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,16 +18,20 @@
 """Helper functions for building BQ views."""
 
 
+def unnest_column(input_column_name, output_column_name):
+    return f"UNNEST ([{input_column_name}, 'ALL']) AS {output_column_name}"
+
+
 def unnest_district(district_column='supervising_district_external_id'):
-    return f"UNNEST ([{district_column}, 'ALL']) AS district"
+    return unnest_column(district_column, 'district')
 
 
 def unnest_supervision_type(supervision_type_column='supervision_type'):
-    return f"UNNEST ([{supervision_type_column}, 'ALL']) AS supervision_type"
+    return unnest_column(supervision_type_column, 'supervision_type')
 
 
 def unnest_charge_category(category_column='case_type'):
-    return f"UNNEST ([{category_column}, 'ALL']) AS charge_category"
+    return unnest_column(category_column, 'charge_category')
 
 
 def unnest_metric_period_months():
