@@ -450,7 +450,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                                  pipeline.GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
                                      metric_types=metric_types,
-                                     calculation_month_limit=-1))
+                                     calculation_end_month=None,
+                                     calculation_month_count=-1))
 
         assert_that(incarceration_metrics, AssertMatchers.validate_metric_type(allow_empty=allow_empty),
                     'Assert that all metrics are of the expected type.')
@@ -730,7 +731,8 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | beam.Create([(fake_person, incarceration_events)])
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
-                      pipeline.CalculateIncarcerationMetricCombinations(), -1, ALL_METRICS_INCLUSIONS_DICT)
+                      pipeline.CalculateIncarcerationMetricCombinations(),
+                      None, -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
         assert_that(output, AssertMatchers.
@@ -754,7 +756,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_METRICS_INCLUSIONS_DICT)
+                      None, -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))
@@ -772,7 +774,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
                   | 'Calculate Incarceration Metrics' >>
                   beam.ParDo(
                       pipeline.CalculateIncarcerationMetricCombinations(),
-                      -1, ALL_METRICS_INCLUSIONS_DICT)
+                      None, -1, ALL_METRICS_INCLUSIONS_DICT)
                   )
 
         assert_that(output, equal_to([]))

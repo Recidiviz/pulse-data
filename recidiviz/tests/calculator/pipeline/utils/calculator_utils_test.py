@@ -19,6 +19,8 @@ import unittest
 from datetime import date
 from datetime import datetime
 
+import pytest
+
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import add_demographic_characteristics
 from recidiviz.common.constants.person_characteristics import Gender
@@ -440,3 +442,134 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
         expected_output = {}
 
         self.assertEqual(updated_characteristics, expected_output)
+
+
+class TestIncludeInMonthlyMetrics(unittest.TestCase):
+    """Tests the include_in_monthly_metrics function."""
+    def test_include_in_monthly_metrics(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=1999,
+            month=11,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=None
+        )
+
+        self.assertTrue(include)
+
+    def test_include_in_monthly_metrics_lower_bound(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+        calculation_month_lower_bound = date(1999, 10, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=1999,
+            month=11,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertTrue(include)
+
+    def test_include_in_monthly_metrics_month_of_lower_bound(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+        calculation_month_lower_bound = date(1999, 10, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=calculation_month_lower_bound.year,
+            month=calculation_month_lower_bound.month,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertTrue(include)
+
+    def test_include_in_monthly_metrics_month_of_end_date(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+        calculation_month_lower_bound = date(1999, 10, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=calculation_month_upper_bound.year,
+            month=calculation_month_upper_bound.month,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertTrue(include)
+
+    def test_include_in_monthly_metrics_after_end_date(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=2000,
+            month=2,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=None
+        )
+
+        self.assertFalse(include)
+
+    def test_include_in_monthly_metrics_before_lower_bound(self):
+        calculation_month_upper_bound = date(2000, 1, 31)
+        calculation_month_lower_bound = date(1999, 10, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=1990,
+            month=4,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertFalse(include)
+
+    def test_include_in_monthly_metrics_one_month_run(self):
+        calculation_month_upper_bound = date(1999, 12, 31)
+        calculation_month_lower_bound = date(1999, 12, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=1999,
+            month=12,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertTrue(include)
+
+    def test_include_in_monthly_metrics_one_month_run_exclude(self):
+        calculation_month_upper_bound = date(1999, 12, 31)
+        calculation_month_lower_bound = date(1999, 12, 1)
+
+        include = calculator_utils.include_in_monthly_metrics(
+            year=2000,
+            month=1,
+            calculation_month_upper_bound=calculation_month_upper_bound,
+            calculation_month_lower_bound=calculation_month_lower_bound
+        )
+
+        self.assertFalse(include)
+
+
+class TestGetCalculationMonthUpperBoundDate(unittest.TestCase):
+    """Tests the get_calculation_month_upper_bound_date function."""
+    def test_get_calculation_month_upper_bound_date(self):
+        value = '2009-01'
+
+        calculation_month_upper_bound = calculator_utils.get_calculation_month_upper_bound_date(value)
+
+        self.assertEqual(date(2009, 1, 31), calculation_month_upper_bound)
+
+    def test_get_calculation_month_upper_bound_date_bad_month(self):
+        value = '2009-31'
+
+        with pytest.raises(ValueError) as e:
+            _ = calculator_utils.get_calculation_month_upper_bound_date(value)
+
+        assert "Invalid value for calculation_end_month" in str(e.value)
+
+    def test_get_calculation_month_upper_bound_date_bad_year(self):
+        value = '0001-31'
+
+        with pytest.raises(ValueError) as e:
+            _ = calculator_utils.get_calculation_month_upper_bound_date(value)
+
+        assert "Invalid value for calculation_end_month" in str(e.value)

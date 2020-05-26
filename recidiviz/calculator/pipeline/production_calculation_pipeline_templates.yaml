@@ -1,0 +1,81 @@
+# Details of production-ready pipeline jobs to deploy to templates. These templates will be deployed both to staging and
+# production buckets.
+#
+#  If you want to deploy a pipeline just to stage, add it to staging_only_calculation_pipeline_templates.yaml
+
+# List of pipelines with their necessary details
+
+# Full US_ND calculations with no time limit
+- pipeline: supervision
+  job_name: full-us-nd-supervision-calculations
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+- pipeline: recidivism
+  job_name: full-us-nd-recidivism-calculations
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: -1 # No limit
+- pipeline: incarceration
+  job_name: full-us-nd-incarceration-calculations
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: -1 # No limit
+- pipeline: program
+  job_name: full-us-nd-program-calculations
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: -1 # No limit
+
+# Daily US_ND calculations for the 36-mo dashboard
+- pipeline: supervision
+  job_name: us-nd-supervision-calculations-36
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: 36
+  metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+- pipeline: incarceration
+  job_name: us-nd-incarceration-calculations-36
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: 36
+- pipeline: program
+  job_name: us-nd-program-calculations-36
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_ND
+  calculation_month_count: 36
+
+# Daily US_MO calculations for the dashboard
+- pipeline: supervision
+  job_name: us-mo-supervision-calculations-36
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_MO
+  calculation_month_count: 36
+  metric_types: POPULATION REVOCATION_ANALYSIS REVOCATION_VIOLATION_TYPE_ANALYSIS
+
+# Daily US_MO calculations for automated data validation not covered by daily calculation runs
+- pipeline: incarceration
+  job_name: us-mo-incarceration-validation-calculations
+  data_input: state
+  reference_input: reference_tables
+  output: dataflow_metrics
+  state_code: US_MO
+  calculation_end_month: 2019-12
+  calculation_month_count: 1
+  metric_types: POPULATION

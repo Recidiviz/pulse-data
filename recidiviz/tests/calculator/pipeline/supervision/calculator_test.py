@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils import calculator_utils
+from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -66,8 +67,6 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 class TestMapSupervisionCombinations(unittest.TestCase):
     """Tests the map_supervision_combinations function."""
 
-    # Freezing time to before the events so none of them fall into the relevant metric periods
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations(self):
         """Tests the map_supervision_combinations function."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -104,7 +103,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -112,7 +113,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_assessment(self):
         """Tests the map_supervision_combinations function when there is assessment data present."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -153,7 +153,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -161,7 +163,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_exclude_assessment(self):
         """Tests the map_supervision_combinations function when there is assessment data present, but it should not
         be included for this state and pipeline type."""
@@ -203,7 +204,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -211,7 +214,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervising_officer_district(self):
         """Tests the map_supervision_combinations function when there is supervising officer and district data
         present."""
@@ -255,7 +257,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -263,7 +267,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_revocation_combinations(self):
         """Tests the map_supervision_combinations function for a revocation month."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -312,7 +315,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-03',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -323,7 +328,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if combo.get('person_id') is not None
                    and combo_has_enum_value_for_key(combo, 'metric_type', SupervisionMetricType.POPULATION))
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_success(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -370,7 +374,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -383,7 +389,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if combo_has_enum_value_for_key(
                        _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_unsuccessful(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket
         and the supervision is not successfully completed."""
@@ -430,7 +435,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -446,7 +453,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, _ in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_supervision_mixed_success(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket and the
         supervision is not successfully completed."""
@@ -493,7 +499,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -559,7 +567,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         tested_metric_period_months = set()
@@ -579,7 +589,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         # Validate the most recent 2020 metrics have officer & district for all metric period months
         self.assertEqual(len(tested_metric_period_months), len([1, 3, 6, 12, 36]))
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_revocation_and_not(self):
         """Tests the map_supervision_combinations function."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -648,7 +657,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -656,7 +667,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_multiple_months(self):
         """Tests the map_supervision_combinations function where the person was on supervision for multiple months."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -693,7 +703,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-07',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -701,7 +713,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month."""
@@ -732,7 +743,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -740,7 +753,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months_types(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
@@ -778,7 +790,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-05',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -788,7 +802,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_overlapping_months_types_dual(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
@@ -834,7 +847,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -848,7 +863,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if _combination.get('person_id') is not None
                    and _combination.get('methodology') == MetricMethodologyType.PERSON)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_two_revocations_in_month_sort_date(self):
         """Tests the map_supervision_combinations function where the person was revoked twice in a given month. Asserts
         that the revocation with the latest date is chosen."""
@@ -884,7 +898,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-03',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -921,7 +937,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -961,7 +979,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1)
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1)
 
         # Get the expected count for the relevant bucket without revocation analysis metrics
         expected_combinations_count = expected_metric_combos_count(
@@ -1010,7 +1030,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1047,7 +1069,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1058,7 +1082,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicate_month_mixed_success(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1097,7 +1120,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1115,7 +1140,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if combo_has_enum_value_for_key(
                        _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
-    # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_supervision_types(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1153,7 +1177,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1167,7 +1193,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if _combination.get('person_id') is not None
                    and _combination.get('methodology') == MetricMethodologyType.PERSON)
 
-    # pylint:disable=line-too-long
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicate_termination(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1208,7 +1233,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1283,7 +1310,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1308,7 +1337,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if combo_has_enum_value_for_key(
                        _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the
         calculator."""
@@ -1343,7 +1371,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [termination_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2000-01',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -1353,7 +1383,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value
                    in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_buckets_no_score_change(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator,
         but the bucket doesn't have an assessment_score_change."""
@@ -1387,7 +1416,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [termination_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2000-01',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = 0
@@ -1397,7 +1428,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value
                    in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_termination_buckets(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator
         that end in the same month."""
@@ -1446,7 +1476,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                     second_termination_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=-1
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2000-01',
+            calculation_month_count=-1
         )
 
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
@@ -1456,7 +1488,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value
                    in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_assessment_change(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1474,9 +1505,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_level=StateAssessmentLevel.LOW,
@@ -1488,7 +1519,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=398,
@@ -1497,9 +1528,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=True),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=True)
         ]
 
         inclusions_dict = {
@@ -1513,7 +1546,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1532,7 +1567,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.ASSESSMENT_CHANGE)
             for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_success(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1550,9 +1584,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1563,16 +1597,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=True),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=True)
         ]
 
         inclusions_dict = {
@@ -1586,7 +1622,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1605,7 +1643,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.SUCCESS)
             for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_successful_sentence_length(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1623,9 +1660,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1636,7 +1673,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=500,
@@ -1644,9 +1681,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=True),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=True)
         ]
 
         inclusions_dict = {
@@ -1660,7 +1699,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1675,7 +1716,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                 SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_revocation(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1693,9 +1733,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1706,7 +1746,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1735,7 +1775,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -1754,7 +1796,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.REVOCATION)
             for _combination, value in supervision_combinations)
 
-    @freeze_time('2010-01-31')
     def test_map_supervision_combinations_only_revocation_analysis(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1778,9 +1819,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1791,7 +1832,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1820,13 +1861,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
             metric_to_include=SupervisionMetricType.REVOCATION_ANALYSIS
         )
 
@@ -1840,7 +1882,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.REVOCATION_ANALYSIS)
             for _combination, value in supervision_combinations)
 
-    @freeze_time('2010-01-31')
     def test_map_supervision_combinations_only_revocation_violation_type_analysis(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1864,9 +1905,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1877,7 +1918,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1916,14 +1957,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
             include_revocation_violation_type_analysis_dimensions=True,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
             metric_to_include=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
         )
 
@@ -1937,7 +1979,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(_combination.get('person_id') is None for _combination, value in supervision_combinations)
         assert all('person_id' not in _combination.keys() for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_population(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -1955,9 +1996,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         termination_bucket = SupervisionTerminationBucket(
             state_code='US_MO',
-            year=2000,
+            year=2010,
             month=1,
-            termination_date=date(2000, 1, 13),
+            termination_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1968,7 +2009,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_MO', year=2010, month=3,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -2000,7 +2041,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2010-12',
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -2020,7 +2063,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_calculation_month_limit_12(self):
+    def test_map_supervision_combinations_relevant_periods_calculation_month_count_12(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -2046,7 +2089,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [included_bucket, not_included_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=12
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=12
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -2059,7 +2104,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    in supervision_combinations)
 
     @freeze_time('2010-12-31')
-    def test_map_supervision_combinations_relevant_periods_calculation_month_limit_37(self):
+    def test_map_supervision_combinations_relevant_periods_calculation_month_count_37(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -2082,7 +2127,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [included_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, calculation_month_limit=37, metric_inclusions=ALL_METRICS_INCLUSIONS_DICT
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=37
         )
 
         expected_combinations_count = expected_metric_combos_count([included_bucket])
@@ -2116,13 +2163,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [included_bucket]
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT, calculation_month_limit=12
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=12
         )
 
         self.assertEqual(0, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    @freeze_time('1900-01-01')
     def test_map_supervision_combinations_only_successful_sentence_length_duplicate_month_longer_sentence(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -2166,7 +2214,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict, calculation_month_limit=-1
+            person, supervision_time_buckets, inclusions_dict,
+            calculation_end_month='2018-03',
+            calculation_month_count=1
         )
 
         expected_combinations_count = expected_metric_combos_count(
