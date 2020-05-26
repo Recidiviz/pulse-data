@@ -21,6 +21,8 @@ from typing import List
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.validation_models import DataValidationCheck
+from recidiviz.validation.views.state.case_termination_by_type_comparison import \
+    CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW
@@ -46,6 +48,13 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
     ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW),
     ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW),
 
+    SamenessDataValidationCheck(view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW,
+                                comparison_columns=['absconsions_by_month', 'absconsions_by_officer'],
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS),
+    SamenessDataValidationCheck(view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW,
+                                comparison_columns=['discharges_by_month', 'discharges_by_officer'],
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                                max_allowed_error=0.02),
     SamenessDataValidationCheck(view=FTR_REFERRALS_COMPARISON_VIEW,
                                 comparison_columns=['age_bucket_sum', 'risk_level_sum', 'gender_sum', 'race_sum'],
                                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
