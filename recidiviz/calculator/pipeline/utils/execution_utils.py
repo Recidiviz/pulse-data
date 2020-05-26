@@ -16,9 +16,11 @@
 # =============================================================================
 """Utils for executing calculation pipelines."""
 import argparse
+import datetime
 import logging
+from datetime import date
 
-from typing import Dict
+from typing import Dict, Tuple
 
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
@@ -120,12 +122,35 @@ def get_dataflow_job_with_id(project, job_id, location) -> Dict[str, str]:
         location=location).execute()
 
 
-def calculation_month_limit_arg(value) -> int:
-    """Enforces the acceptable values for the calculation_month_limit parameter in the pipelines."""
+def calculation_month_count_arg(value) -> int:
+    """Enforces the acceptable values for the calculation_month_count parameter in the pipelines."""
     int_value = int(value)
 
     if int_value < -1:
-        raise argparse.ArgumentTypeError("Minimum calculation_month_limit is -1")
+        raise argparse.ArgumentTypeError("Minimum calculation_month_count is -1")
     if int_value == 0:
-        raise argparse.ArgumentTypeError("calculation_month_limit cannot be 0")
+        raise argparse.ArgumentTypeError("calculation_month_count cannot be 0")
     return int_value
+
+
+def calculation_end_month_arg(value) -> str:
+    """Enforces the acceptable values for the calculation_end_month parameter in the pipelines."""
+    try:
+        end_month_date = datetime.datetime.strptime(value, '%Y-%m').date()
+
+        today_year, today_month = year_and_month_for_today()
+
+        if end_month_date.year > today_year or \
+                (end_month_date.year == today_year and end_month_date.month > today_month):
+            raise argparse.ArgumentTypeError("calculation_end_month parameter cannot be a month in the future.")
+
+        return value
+    except ValueError:
+        raise argparse.ArgumentTypeError("calculation_end_month parameter must be in the format YYYY-MM.")
+
+
+def year_and_month_for_today() -> Tuple[int, int]:
+    """Returns the year and month of today's date."""
+    today = date.today()
+
+    return today.year, today.month

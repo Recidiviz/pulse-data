@@ -20,14 +20,16 @@ from typing import List, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions
 
+from recidiviz.calculator.pipeline.utils.execution_utils import calculation_month_count_arg,\
+    calculation_end_month_arg
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DATAFLOW_METRICS_DATASET, \
     STATE_BASE_DATASET
 
 
-def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
+def add_shared_pipeline_arguments(parser: argparse.ArgumentParser, include_calculation_limit_args: bool = False):
     """Adds argument configs to the |parser| for shared pipeline args that do not get passed through to Apache Beam."""
 
-    parser.add_argument('--input',
+    parser.add_argument('--data_input',
                         type=str,
                         help='BigQuery dataset to query.',
                         default=STATE_BASE_DATASET)
@@ -50,6 +52,22 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--person_filter_ids', type=int, nargs='+',
                         help='An optional list of DB person_id values. When present, the pipeline will only calculate '
                              'metrics for these people and will not output to BQ.')
+
+    if include_calculation_limit_args:
+        # Only for pipelines that may receive these arguments
+        parser.add_argument('--calculation_end_month',
+                            dest='calculation_end_month',
+                            type=calculation_end_month_arg,
+                            help='The year and month, formatted in YYYY-MM, specifying the last month for which metrics'
+                                 ' should be calculated. If unset, defaults to the current month. Cannot be a month in'
+                                 ' the future.')
+
+        parser.add_argument('--calculation_month_count',
+                            dest='calculation_month_count',
+                            type=calculation_month_count_arg,
+                            help='The number of months (including this one) to limit the monthly calculation output to.'
+                                 ' If set to -1, does not limit the calculations.',
+                            default=1)
 
 
 def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
