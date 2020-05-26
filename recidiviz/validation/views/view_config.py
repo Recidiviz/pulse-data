@@ -21,6 +21,9 @@ from typing import Dict, List
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
+from recidiviz.validation.views.state.case_termination_by_type_comparison import \
+    CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW
+from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW
@@ -42,6 +45,8 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 
 VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
     VIEWS_DATASET: [
+        CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW,
+        FTR_REFERRALS_COMPARISON_VIEW,
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW,
         INCARCERATION_ADMISSION_NULLS_VIEW,
         INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW,
