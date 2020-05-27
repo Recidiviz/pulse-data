@@ -319,10 +319,9 @@ def admission_event_for_period(
         incarceration_sentences,
         supervision_sentences,
         incarceration_period)
-    incarceration_type = incarceration_period.incarceration_type
     specialized_purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 
-    if admission_date and admission_reason and incarceration_type == StateIncarcerationType.STATE_PRISON:
+    if admission_date and admission_reason:
         return IncarcerationAdmissionEvent(
             state_code=incarceration_period.state_code,
             event_date=admission_date,
@@ -344,15 +343,15 @@ def release_event_for_period(
 
     release_date = incarceration_period.release_date
     release_reason = incarceration_period.release_reason
-    incarceration_type = incarceration_period.incarceration_type
+    purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 
-    if release_date and release_reason and \
-            incarceration_type == StateIncarcerationType.STATE_PRISON:
+    if release_date and release_reason:
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=release_date,
             facility=incarceration_period.facility,
             release_reason=release_reason,
+            purpose_for_incarceration=purpose_for_incarceration,
             county_of_residence=county_of_residence,
         )
 
