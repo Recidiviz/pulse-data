@@ -35,8 +35,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code as region_code,
-      year,
-      month,
+      date_of_stay,
       facility,
       IFNULL(population_count, 0) as external_population_count,
       IFNULL(internal_population_count, 0) as internal_population_count
@@ -45,23 +44,23 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
         FULL OUTER JOIN
       (SELECT * FROM
          -- Only compare states and months for which we have external validation data
-        (SELECT DISTINCT state_code, year, month FROM
+        (SELECT DISTINCT state_code, date_of_stay FROM
          `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`)
        LEFT JOIN
           (SELECT
-            state_code, year, month,
+            state_code, date_of_stay,
             IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
             COUNT(DISTINCT(person_id)) as internal_population_count
           FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
           JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
             USING (state_code, job_id, year, month, metric_period_months)
-          WHERE metric_period_months = 1
+          WHERE metric_period_months = 0
           AND methodology = 'PERSON'
           AND job.metric_type = 'INCARCERATION_POPULATION'
-          GROUP BY state_code, year, month, facility)
-      USING(state_code, year, month))
-    USING (state_code, year, month, facility)
-    ORDER BY region_code, year, month, facility
+          GROUP BY state_code, date_of_stay, facility)
+      USING(state_code, date_of_stay))
+    USING (state_code, date_of_stay, facility)
+    ORDER BY region_code, date_of_stay, facility
 """
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW = BigQueryView(

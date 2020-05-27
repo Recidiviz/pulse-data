@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     augmented_combo_for_calculations, relevant_metric_periods, \
-    augment_combination, include_in_monthly_metrics, \
+    augment_combination, include_in_historical_metrics, \
     get_calculation_month_lower_bound_date, characteristics_with_person_id_fields, add_demographic_characteristics, \
     get_calculation_month_upper_bound_date
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
@@ -364,7 +364,7 @@ def map_metric_combinations(
 
     characteristic_combo['metric_type'] = metric_type
 
-    if include_in_monthly_metrics(
+    if include_in_historical_metrics(
             supervision_time_bucket.year, supervision_time_bucket.month,
             calculation_month_upper_bound, calculation_month_lower_bound):
         metrics.extend(combination_supervision_monthly_metrics(

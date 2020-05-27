@@ -81,8 +81,10 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
         AND person_id IS NOT NULL
-        AND m.metric_period_months = 1
+        AND m.metric_period_months = 0
         AND {prior_month_metric_period_dimension}
+        -- Get population count for the last day of the month
+        AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
         AND job.metric_type = 'INCARCERATION_POPULATION'
       GROUP BY state_code, district, metric_period_months
     ) inc_pop

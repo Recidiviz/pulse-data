@@ -296,7 +296,7 @@ def augmented_combo_for_calculations(combo: Dict[str, Any],
     if month:
         parameters['month'] = month
 
-    if metric_period_months:
+    if metric_period_months is not None:
         parameters['metric_period_months'] = metric_period_months
 
     return augment_combination(combo, parameters)
@@ -320,12 +320,12 @@ def person_external_id_to_include(pipeline: str, person: StatePerson) -> Optiona
     return None
 
 
-def include_in_monthly_metrics(year: int,
-                               month: int,
-                               calculation_month_upper_bound: date,
-                               calculation_month_lower_bound: Optional[date]) -> bool:
-    """Determines whether the event with the given year and month should be included in the monthly metric output. If
-    the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
+def include_in_historical_metrics(year: int,
+                                  month: int,
+                                  calculation_month_upper_bound: date,
+                                  calculation_month_lower_bound: Optional[date]) -> bool:
+    """Determines whether the event with the given year and month should be included in the historical metric output.
+    If the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
     calculation_month_upper_bound. If the calculation_month_lower_bound is set, then includes the event if it happens
     in a month between the calculation_month_lower_bound and the calculation_month_upper_bound (inclusive). The
     calculation_month_upper_bound is always the last day of a month, and, if set, the calculation_month_lower_bound is

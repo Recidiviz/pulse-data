@@ -22,15 +22,10 @@ from dateutil.relativedelta import relativedelta
 from pydot import frozendict
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
-    IncarcerationEvent, IncarcerationAdmissionEvent, \
-    IncarcerationReleaseEvent, IncarcerationStayEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    last_day_of_month
+    IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_pre_incarceration_supervision_type
-from recidiviz.common.constants.state.state_incarceration import \
-    StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType
@@ -130,7 +125,7 @@ def find_all_end_of_month_state_prison_stay_events(
         original_incarceration_periods, collapse_transfers=False)
 
     for incarceration_period in incarceration_periods:
-        period_stay_events = find_end_of_month_state_prison_stays(
+        period_stay_events = find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
@@ -142,17 +137,13 @@ def find_all_end_of_month_state_prison_stay_events(
     return incarceration_stay_events
 
 
-def find_end_of_month_state_prison_stays(
+def find_incarceration_stays(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
         county_of_residence: Optional[str]) -> List[IncarcerationStayEvent]:
-    """Finds months for which this person was incarcerated in a state prison on the last day of the month.
-    """
+    """Finds all days for which this person was incarcerated."""
     incarceration_stay_events: List[IncarcerationStayEvent] = []
-
-    if incarceration_period.incarceration_type != StateIncarcerationType.STATE_PRISON:
-        return incarceration_stay_events
 
     admission_date = incarceration_period.admission_date
     release_date = incarceration_period.release_date
@@ -174,17 +165,17 @@ def find_end_of_month_state_prison_stays(
 
     sentence_group = _get_sentence_group_for_incarceration_period(incarceration_period)
 
-    end_of_month = last_day_of_month(admission_date)
+    stay_date = admission_date
 
-    while end_of_month < release_date:
-        most_serious_charge = find_most_serious_prior_charge_in_sentence_group(sentence_group, end_of_month)
+    while stay_date < release_date:
+        most_serious_charge = find_most_serious_prior_charge_in_sentence_group(sentence_group, stay_date)
         most_serious_offense_ncic_code = most_serious_charge.ncic_code if most_serious_charge else None
         most_serious_offense_statute = most_serious_charge.statute if most_serious_charge else None
 
         incarceration_stay_events.append(
             IncarcerationStayEvent(
                 state_code=incarceration_period.state_code,
-                event_date=end_of_month,
+                event_date=stay_date,
                 facility=incarceration_period.facility,
                 county_of_residence=county_of_residence,
                 most_serious_offense_ncic_code=most_serious_offense_ncic_code,
@@ -195,7 +186,7 @@ def find_end_of_month_state_prison_stays(
             )
         )
 
-        end_of_month = last_day_of_month(end_of_month + relativedelta(days=1))
+        stay_date = stay_date + relativedelta(days=1)
 
     return incarceration_stay_events
 

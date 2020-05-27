@@ -83,11 +83,14 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
 
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
-    """Subclass of IncarcerationMetric that contains incarceration population counts at the end of the month."""
+    """Subclass of IncarcerationMetric that contains incarceration population counts on a given date."""
     # Required characteristics
 
     # Population count
     count: int = attr.ib(default=None)
+
+    # Date of the incarceration population count
+    date_of_stay: date = attr.ib(default=None)
 
     # Optional characteristics
 
