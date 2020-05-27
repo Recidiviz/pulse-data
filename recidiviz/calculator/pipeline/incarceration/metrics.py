@@ -142,6 +142,7 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
     # Admission reason raw text
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
+    # TODO(3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 
@@ -179,6 +180,9 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
 
     # Release reason
     release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(default=None)
+
+    # Type of incarceration the release was from
+    purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \

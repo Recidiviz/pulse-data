@@ -1273,7 +1273,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                facility='PRISON3',
+                facility='CJ10',
                 admission_date=date(2013, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2019, 12, 4),
@@ -1283,7 +1283,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
-        self.assertIsNone(admission_event)
+        self.assertEqual(IncarcerationAdmissionEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.admission_date,
+            facility='CJ10',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            admission_reason=incarceration_period.admission_reason,
+        ), admission_event)
 
 
 class TestReleaseEventForPeriod(unittest.TestCase):
@@ -1299,6 +1305,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
                 release_date=date(2010, 12, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
@@ -1310,7 +1317,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             event_date=incarceration_period.release_date,
             facility='PRISON3',
             county_of_residence=_COUNTY_OF_RESIDENCE,
-            release_reason=incarceration_period.release_reason
+            release_reason=incarceration_period.release_reason,
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
         ), release_event)
 
     def test_admission_event_for_period_all_release_reasons(self):
@@ -1340,7 +1348,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='TX',
-                facility='PRISON3',
+                facility='CJ19',
                 admission_date=date(2013, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2019, 12, 4),
@@ -1350,7 +1358,13 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
-        self.assertIsNone(release_event)
+        self.assertEqual(IncarcerationReleaseEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.release_date,
+            facility='CJ19',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            release_reason=incarceration_period.release_reason
+        ), release_event)
 
 
 class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):

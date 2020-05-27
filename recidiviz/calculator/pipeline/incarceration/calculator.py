@@ -143,6 +143,7 @@ def characteristics_dict(person: StatePerson,
             characteristics['admission_reason'] = incarceration_event.admission_reason
         if incarceration_event.supervision_type_at_admission:
             characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
+        # TODO(3275): Rename to purpose_for_incarceration
         if incarceration_event.specialized_purpose_for_incarceration:
             characteristics['specialized_purpose_for_incarceration'] = \
                 incarceration_event.specialized_purpose_for_incarceration
@@ -150,6 +151,9 @@ def characteristics_dict(person: StatePerson,
     if isinstance(incarceration_event, IncarcerationReleaseEvent):
         if incarceration_event.release_reason:
             characteristics['release_reason'] = incarceration_event.release_reason
+        if incarceration_event.purpose_for_incarceration:
+            characteristics['purpose_for_incarceration'] = \
+                incarceration_event.purpose_for_incarceration
 
     if isinstance(incarceration_event, IncarcerationStayEvent):
         if incarceration_event.admission_reason:
