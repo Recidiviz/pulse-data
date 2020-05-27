@@ -19,18 +19,21 @@ import datetime
 import os
 import time
 import unittest
-from typing import List, Union, Optional, Dict
+from typing import List, Union, Optional, Dict, Type
 
 import attr
 from mock import Mock, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRawFileImportManager, DirectIngestRawFileConfig, DirectIngestRegionRawFileConfig
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -39,12 +42,14 @@ from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsPath
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
 from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
 
@@ -109,6 +114,25 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self.imported_paths.append(path)
 
 
+class FakeDirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
+    def __init__(self,
+                 region: Region,
+                 controller_file_tags: List[str]):
+        self.region = region
+        self.controller_file_tags = controller_file_tags
+
+    def collect_views(self) -> List[DirectIngestPreProcessedIngestView]:
+        views = [
+            DirectIngestPreProcessedIngestView(
+                ingest_view_name=tag,
+                view_query_template=('SELECT * FROM {' + tag + '}'),
+                region_raw_table_config=FakeDirectIngestRegionRawFileConfig(region_code=self.region.region_code)
+            )
+            for tag in self.controller_file_tags
+        ]
+
+        return views
+
 def build_controller_for_tests(controller_cls,
                                run_async: bool) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. If
@@ -143,24 +167,31 @@ def build_gcsfs_controller_for_tests(
     def mock_build_fs():
         return fake_fs
 
-    with patch(
-            'recidiviz.ingest.direct.controllers.'
-            'base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl') \
-            as mock_task_factory_cls:
-        with patch(
-                'recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller.DirectIngestRawFileImportManager',
-                FakeDirectIngestRawFileImportManager):
-            task_manager = FakeAsyncDirectIngestCloudTaskManager() \
-                if run_async else FakeSynchronousDirectIngestCloudTaskManager()
-            mock_task_factory_cls.return_value = task_manager
-            with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
-                controller = controller_cls(
-                    ingest_directory_path=f'{fixture_path_prefix}/fixtures',
-                    storage_directory_path='storage/path',
-                    **kwargs)
-                task_manager.set_controller(controller)
-                fake_fs.test_set_controller(controller)
-                return controller
+    if 'TestGcsfsDirectIngestController' in controller_cls.__name__:
+        view_collector_cls: Type[BigQueryViewCollector] = \
+            FakeDirectIngestPreProcessedIngestViewCollector
+    else:
+        view_collector_cls = DirectIngestPreProcessedIngestViewCollector
+
+    with patch(f'{BaseDirectIngestController.__module__}.DirectIngestCloudTaskManagerImpl') as mock_task_factory_cls:
+        with patch(f'{GcsfsDirectIngestController.__module__}.BigQueryClientImpl') as mock_big_query_client_cls:
+            with patch(f'{GcsfsDirectIngestController.__module__}.DirectIngestRawFileImportManager',
+                       FakeDirectIngestRawFileImportManager):
+                with patch(f'{GcsfsDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector',
+                           view_collector_cls):
+                    task_manager = FakeAsyncDirectIngestCloudTaskManager() \
+                        if run_async else FakeSynchronousDirectIngestCloudTaskManager()
+                    mock_task_factory_cls.return_value = task_manager
+                    mock_big_query_client_cls.return_value = \
+                        FakeDirectIngestBigQueryClient(project_id=metadata.project_id(), fs=fake_fs)
+                    with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
+                        controller = controller_cls(
+                            ingest_directory_path=f'{fixture_path_prefix}/fixtures',
+                            storage_directory_path='storage/path',
+                            **kwargs)
+                        task_manager.set_controller(controller)
+                        fake_fs.test_set_controller(controller)
+                        return controller
 
 
 def ingest_args_for_fixture_file(
