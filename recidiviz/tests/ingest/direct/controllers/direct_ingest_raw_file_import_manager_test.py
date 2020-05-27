@@ -32,8 +32,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsD
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.direct_ingest_util import FakeDirectIngestGCSFileSystem, \
-    path_for_fixture_file_in_test_gcs_directory
+from recidiviz.tests.ingest.direct.direct_ingest_util import path_for_fixture_file_in_test_gcs_directory
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 
 
