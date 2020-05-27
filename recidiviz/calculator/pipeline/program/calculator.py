@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
     ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
-    augmented_combo_for_calculations, include_in_monthly_metrics, \
+    augmented_combo_for_calculations, include_in_historical_metrics, \
     get_calculation_month_lower_bound_date, \
     characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
@@ -197,7 +197,7 @@ def map_metric_combinations(
     if metric_type == ProgramMetricType.REFERRAL and isinstance(program_event, ProgramReferralEvent):
         characteristic_combo['metric_type'] = metric_type
 
-        if include_in_monthly_metrics(
+        if include_in_historical_metrics(
                 program_event.event_date.year, program_event.event_date.month,
                 calculation_month_upper_bound, calculation_month_lower_bound):
 

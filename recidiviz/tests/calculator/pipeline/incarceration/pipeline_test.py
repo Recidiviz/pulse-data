@@ -584,7 +584,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             facility='PRISON XX',
             admission_date=date(2010, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            release_date=date(2010, 12, 4),
+            release_date=date(2010, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -620,7 +620,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
                 supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
                 state_code=incarceration_period.state_code,
-                event_date=last_day_of_month(incarceration_period.admission_date),
+                event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code='5699',

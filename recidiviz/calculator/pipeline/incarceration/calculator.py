@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
-    augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_monthly_metrics, \
+    augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_historical_metrics, \
     characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
@@ -245,12 +245,17 @@ def map_metric_combinations(
 
     characteristic_combo['metric_type'] = metric_type
 
-    if include_in_monthly_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
-                                  calculation_month_upper_bound, calculation_month_lower_bound):
-        metrics.extend(combination_incarceration_monthly_metrics(
-            characteristic_combo, incarceration_event, all_incarceration_events))
+    if include_in_historical_metrics(incarceration_event.event_date.year, incarceration_event.event_date.month,
+                                     calculation_month_upper_bound, calculation_month_lower_bound):
+        # IncarcerationPopulationMetrics are point-in-time counts for the date of the event, all other
+        # IncarcerationMetrics are counts based on the month of the event
+        is_daily_metric = metric_type == IncarcerationMetricType.POPULATION
 
-    if include_metric_period_output:
+        # All other IncarcerationMetrics are counts based on the month of the event
+        metrics.extend(combination_incarceration_metrics(
+            characteristic_combo, incarceration_event, all_incarceration_events, is_daily_metric))
+
+    if include_metric_period_output and metric_type != IncarcerationMetricType.POPULATION:
         metrics.extend(combination_incarceration_metric_period_metrics(
             characteristic_combo, incarceration_event, calculation_month_upper_bound,
             periods_and_events
@@ -259,21 +264,24 @@ def map_metric_combinations(
     return metrics
 
 
-def combination_incarceration_monthly_metrics(
+def combination_incarceration_metrics(
         combo: Dict[str, Any],
         incarceration_event: IncarcerationEvent,
-        all_incarceration_events: List[IncarcerationEvent]) \
+        all_incarceration_events: List[IncarcerationEvent],
+        is_daily_metric: bool) \
         -> List[Tuple[Dict[str, Any], int]]:
     """Returns all unique incarceration metrics for the given event and combination.
 
-    First, includes an event-based count for the month the event occurred with a metric period of 1 month. Then, if
-    this event should be included in the person-based count for the month when the event occurred, adds those person-
-    based metrics.
+    First, includes an event-based count for the event. Then, if this is a daily metric, includes a count of the event
+    if it should be included in the person-based count for the day when the event occurred. If this is not a daily
+    metric, includes a count of the event if it should be included in the person-based count for the month of the event.
 
     Args:
         combo: A characteristic combination to convert into metrics
         incarceration_event: The IncarcerationEvent from which the combination was derived
         all_incarceration_events: All of this person's IncarcerationEvents
+        is_daily_metric: If True, limits person-based counts to the date of the event. If False, limits person-based
+            counts to the month of the event.
 
     Returns:
         A list of key-value tuples representing specific metric combination dictionaries and the number 1 representing
@@ -285,11 +293,13 @@ def combination_incarceration_monthly_metrics(
     event_year = event_date.year
     event_month = event_date.month
 
+    metric_period_months = 0 if is_daily_metric else 1
+
     # Add event-based combo for the 1-month period the month of the event
     event_based_same_month_combo = augmented_combo_for_calculations(
         combo, incarceration_event.state_code,
         event_year, event_month,
-        MetricMethodologyType.EVENT, 1)
+        MetricMethodologyType.EVENT, metric_period_months=metric_period_months)
 
     metrics.append((event_based_same_month_combo, 1))
 
@@ -297,44 +307,47 @@ def combination_incarceration_monthly_metrics(
     person_based_same_month_combo = augmented_combo_for_calculations(
         combo, incarceration_event.state_code,
         event_year, event_month,
-        MetricMethodologyType.PERSON, 1
-    )
+        MetricMethodologyType.PERSON, metric_period_months=metric_period_months)
 
-    events_in_month: List[IncarcerationEvent] = []
+    day_match_value = event_date.day if is_daily_metric else None
 
-    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
-        # All admission events that happened the same month as this one
-        events_in_month = [
-            event for event in all_incarceration_events
-            if isinstance(event, IncarcerationAdmissionEvent) and
-            event.event_date.year == event_date.year and
-            event.event_date.month == event_date.month
-        ]
-    elif isinstance(incarceration_event, IncarcerationStayEvent):
-        # All stay events that happened the same month as this one
-        events_in_month = [
-            event for event in all_incarceration_events
-            if isinstance(event, IncarcerationStayEvent) and
-            event.event_date.year == event_date.year and
-            event.event_date.month == event_date.month
-        ]
-    elif isinstance(incarceration_event, IncarcerationReleaseEvent):
-        # All release events that happened the same month as this one
-        events_in_month = [
-            event for event in all_incarceration_events
-            if isinstance(event, IncarcerationReleaseEvent) and
-            event.event_date.year == event_date.year and
-            event.event_date.month == event_date.month
-        ]
+    # Get the events of the same type that happened in the same month
+    events_in_period = matching_events_for_person_based_count(year=event_year,
+                                                              month=event_month,
+                                                              day=day_match_value,
+                                                              event_type=type(incarceration_event),
+                                                              all_incarceration_events=all_incarceration_events)
 
-    if events_in_month and include_event_in_count(
+    if events_in_period and include_event_in_count(
             incarceration_event,
             last_day_of_month(event_date),
-            events_in_month):
+            events_in_period):
         # Include this event in the person-based count
         metrics.append((person_based_same_month_combo, 1))
 
     return metrics
+
+
+def matching_events_for_person_based_count(
+        year: int,
+        month: int,
+        day: Optional[int],
+        event_type: Type[IncarcerationEvent],
+        all_incarceration_events: List[IncarcerationEvent],
+) -> List[IncarcerationEvent]:
+    """Returns events that match the given date parameters and match the IncarcerationEvent type. If |day| is set,
+    returns only events that happened on the exact date (year-month-day). If |day| is unset, returns events that
+    happened in the given |year| and |month|."""
+    def _date_matches(event_date: date) -> bool:
+        return (event_date.year == year
+                and event_date.month == month
+                and (day is None or event_date.day == day))
+
+    return [
+        event for event in all_incarceration_events
+        if isinstance(event, event_type)
+        and _date_matches(event.event_date)
+    ]
 
 
 def combination_incarceration_metric_period_metrics(
@@ -401,7 +414,7 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
                            all_events_in_period:
                            Sequence[IncarcerationEvent]) -> bool:
     """Determines whether the given incarceration_event should be included in a person-based count for this given
-    calculation_month_upper_bound.
+    metric_period_end_date.
 
     For the release counts, the last instance of a release before the end of the period is included. For the counts of
     stay events, the last instance of a stay in the period is included.
@@ -444,7 +457,7 @@ def include_event_in_count(incarceration_event: IncarcerationEvent,
             # revocation admission event, then include it in the person-based count.
             return True
     elif isinstance(incarceration_event, IncarcerationStayEvent):
-        # If this is the last recorded event for this month, include it
+        # If this is the last recorded event for this period, include it
         if id(incarceration_event) == id(events_rest_of_period[-1]):
             return True
 
