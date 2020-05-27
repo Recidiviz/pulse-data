@@ -45,8 +45,9 @@ from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
-    FakeDirectIngestGCSFileSystem, path_for_fixture_file, \
+    path_for_fixture_file, \
     run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager

@@ -28,8 +28,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsDirectIngestFileType
-from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    FakeDirectIngestGCSFileSystem
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 
 
 # TODO(3162): Delete this test class once is_raw_vs_ingest_file_name_detection_enabled() is true for all regions
