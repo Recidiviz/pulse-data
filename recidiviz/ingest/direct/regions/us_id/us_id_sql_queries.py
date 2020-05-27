@@ -320,18 +320,20 @@ FACILITY_PERIOD_FRAGMENT = """
           loc.loc_cd,
           loc.loc_ldesc,
           m.move_srl,
-          DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)) AS move_dtd,
+          # TODO(3284): Remove SUBSTR call if we completely transition away from the manually uploaded files and 
+          #  therefore only expect one date format
+          DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))) AS move_dtd,
           LAG(m.fac_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)))
+              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))))
             AS previous_fac_cd,
           LAG(loc.loc_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', m.move_dtd)))
+              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))))
           AS previous_loc_cd
         FROM 
           movement m
@@ -465,9 +467,11 @@ ALL_PERIODS_FRAGMENT = f"""
         incrno,
         statno, 
         stat_cd, 
-        PARSE_DATE('%x', stat_intake_dtd) AS stat_intake_dtd,
-        PARSE_DATE('%x', stat_strt_dtd) AS start_date,
-        COALESCE(PARSE_DATE('%x', stat_rls_dtd), CAST('9999-12-31' AS DATE)) AS end_date,
+        # TODO(3284): Remove SAFE_CAST call if we completely transition away from the manually uploaded files and 
+        #  therefore only expect one date format
+        COALESCE(SAFE_CAST(stat_intake_dtd AS DATE), PARSE_DATE('%x', stat_intake_dtd)) AS stat_intake_dtd,
+        COALESCE(SAFE_CAST(stat_strt_dtd AS DATE), PARSE_DATE('%x', stat_strt_dtd)) AS start_date,
+        COALESCE(COALESCE(SAFE_CAST(stat_rls_dtd AS DATE), PARSE_DATE('%x', stat_rls_dtd)), CAST('9999-12-31' AS DATE)) AS end_date,
         stat_strt_typ, 
         stat_rls_typ, 
       FROM offstat
@@ -784,7 +788,7 @@ OFNDR_TST_TST_QSTN_RSPNS_VIOLATION_REPORTS_OLD_QUERY = f"""
       ofndr_tst_id
 """
 
-OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = """
+OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS_QUERY = f"""
     # TODO(2999): Integrate PO assignments into supervision query once we have a loss-less table with POs and their 
     #  assignments through history.
     WITH
