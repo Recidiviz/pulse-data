@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 
-source ${BASH_SOURCE_DIR}/deploy_pipeline_helpers.sh
-
 echo "Fetching all tags"
 git fetch --all --tags --prune
 
@@ -16,7 +14,7 @@ echo "Starting task queue initialization"
 pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-123 --google_auth_token $(gcloud auth print-access-token)
 
 echo "Deploying prod-ready calculation pipelines to templates in recidiviz-123."
-run_cmd "pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-123 --templates_to_deploy production"
+pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-123 --templates_to_deploy production
 
 VERSION=$(echo $1 | tr '.' '-')
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$VERSION:latest
