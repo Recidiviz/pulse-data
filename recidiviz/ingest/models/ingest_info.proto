@@ -383,21 +383,22 @@ message StateSupervisionPeriod {
     optional string state_supervision_period_id = 1;
     optional string status = 2;
     optional string supervision_type = 3;
-    optional string start_date = 4;
-    optional string termination_date = 5;
-    optional string state_code = 6;
-    optional string county_code = 7;
-    optional string supervision_site = 8;
-    optional string admission_reason = 9;
-    optional string termination_reason = 10;
-    optional string supervision_level = 11;
-    optional string supervising_officer_id = 12;
+    optional string supervision_period_supervision_type = 4;
+    optional string start_date = 5;
+    optional string termination_date = 6;
+    optional string state_code = 7;
+    optional string county_code = 8;
+    optional string supervision_site = 9;
+    optional string admission_reason = 10;
+    optional string termination_reason = 11;
+    optional string supervision_level = 12;
+    optional string supervising_officer_id = 13;
 
-    repeated string conditions = 13;
-    repeated string state_supervision_violation_entry_ids = 14;
-    repeated string state_assessment_ids = 15;
-    repeated string state_program_assignment_ids = 16;
-    repeated string state_supervision_case_type_entry_ids = 17;
+    repeated string conditions = 14;
+    repeated string state_supervision_violation_entry_ids = 15;
+    repeated string state_assessment_ids = 16;
+    repeated string state_program_assignment_ids = 17;
+    repeated string state_supervision_case_type_entry_ids = 18;
 }
 
 message StateSupervisionCaseTypeEntry {

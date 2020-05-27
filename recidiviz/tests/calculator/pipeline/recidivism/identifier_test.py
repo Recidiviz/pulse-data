@@ -698,6 +698,7 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
         AdmissionReason.EXTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.INTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
+        AdmissionReason.RETURN_FROM_SUPERVISION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.PAROLE_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
@@ -821,9 +822,11 @@ class TestGetReturnType(unittest.TestCase):
                                         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE):
                     assert return_type == \
                         ReincarcerationReturnType.NEW_ADMISSION
-                elif admission_reason in (AdmissionReason.PAROLE_REVOCATION,
-                                          AdmissionReason.PROBATION_REVOCATION,
-                                          AdmissionReason.DUAL_REVOCATION):
+                elif admission_reason in (
+                        AdmissionReason.RETURN_FROM_SUPERVISION,
+                        AdmissionReason.PAROLE_REVOCATION,
+                        AdmissionReason.PROBATION_REVOCATION,
+                        AdmissionReason.DUAL_REVOCATION):
                     assert return_type == ReincarcerationReturnType.REVOCATION
                 else:
                     # StateIncarcerationPeriodAdmissionReason enum type not
@@ -937,7 +940,8 @@ class TestGetFromSupervisionType(unittest.TestCase):
                                         AdmissionReason.TRANSFER,
                                         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
                     assert not from_supervision_type
-                elif admission_reason in [AdmissionReason.PAROLE_REVOCATION,
+                elif admission_reason in [AdmissionReason.RETURN_FROM_SUPERVISION,
+                                          AdmissionReason.PAROLE_REVOCATION,
                                           AdmissionReason.PROBATION_REVOCATION,
                                           AdmissionReason.DUAL_REVOCATION]:
                     assert from_supervision_type

@@ -52,6 +52,8 @@ def _get_most_relevant_supervision_type(supervision_types: Set[StateSupervisionP
         return StateSupervisionPeriodSupervisionType.PAROLE
     if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.PROBATION
+    if StateSupervisionPeriodSupervisionType.INVESTIGATION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.INVESTIGATION
     if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
     if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:
@@ -69,12 +71,12 @@ def get_pre_incarceration_supervision_type_from_incarceration_period(
     if incarceration_period.admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
                                                  AdmissionReason.EXTERNAL_UNKNOWN,
                                                  AdmissionReason.INTERNAL_UNKNOWN,
+                                                 AdmissionReason.RETURN_FROM_SUPERVISION,
                                                  AdmissionReason.NEW_ADMISSION,
                                                  AdmissionReason.TRANSFER,
                                                  AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
                                                  AdmissionReason.RETURN_FROM_ESCAPE,
-                                                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-                                                 AdmissionReason.INTERNAL_UNKNOWN]:
+                                                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE]:
         return None
 
     if incarceration_period.admission_reason == AdmissionReason.DUAL_REVOCATION:

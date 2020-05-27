@@ -420,6 +420,8 @@ def get_from_supervision_type(
                                             AdmissionReason.TRANSFER,
                                             AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
         return None
+    if reincarceration_admission_reason == AdmissionReason.RETURN_FROM_SUPERVISION:
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if reincarceration_admission_reason == AdmissionReason.PAROLE_REVOCATION:
         return StateSupervisionPeriodSupervisionType.PAROLE
     if reincarceration_admission_reason == AdmissionReason.DUAL_REVOCATION:

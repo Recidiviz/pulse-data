@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -41,6 +41,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
             status='TERMINATED',
             supervision_type='PAROLE',
+            supervision_period_supervision_type='PAROLE',
             admission_reason='CONDITIONAL_RELEASE',
             termination_reason='DISCHARGE',
             supervision_level=None,
@@ -65,6 +66,8 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             status_raw_text='TERMINATED',
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_period_supervision_type_raw_text='PAROLE',
             admission_reason=
             StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='CONDITIONAL_RELEASE',

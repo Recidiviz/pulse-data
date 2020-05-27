@@ -1129,10 +1129,11 @@ class StateSupervisionPeriod(IngestObject):
                  termination_date=None, state_code=None, county_code=None, supervision_site=None, admission_reason=None,
                  termination_reason=None, supervision_level=None, conditions=None, supervising_officer=None,
                  state_supervision_violation_entries=None, state_assessments=None, state_program_assignments=None,
-                 state_supervision_case_type_entries=None):
+                 state_supervision_case_type_entries=None, supervision_period_supervision_type=None):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
+        self.supervision_period_supervision_type: Optional[str] = supervision_period_supervision_type
         self.start_date: Optional[str] = start_date
         self.termination_date: Optional[str] = termination_date
         self.state_code: Optional[str] = state_code

@@ -1004,7 +1004,8 @@ def _include_termination_in_success_metric(termination_reason: Optional[StateSup
             StateSupervisionPeriodTerminationReason.EXPIRATION,
             # Unsuccessful terminations
             StateSupervisionPeriodTerminationReason.ABSCONSION,
-            StateSupervisionPeriodTerminationReason.REVOCATION
+            StateSupervisionPeriodTerminationReason.REVOCATION,
+            StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
     ):
         return True
 
