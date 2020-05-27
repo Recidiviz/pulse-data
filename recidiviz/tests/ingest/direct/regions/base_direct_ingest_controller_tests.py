@@ -31,8 +31,8 @@ from recidiviz import IngestInfo
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file, \
-    FakeDirectIngestGCSFileSystem
+    build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 

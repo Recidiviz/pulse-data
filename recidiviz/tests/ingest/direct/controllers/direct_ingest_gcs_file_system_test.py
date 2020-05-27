@@ -25,8 +25,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsD
     filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
-from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    FakeDirectIngestGCSFileSystem
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 
 
 class TestDirectIngestGcsFileSystem(TestCase):

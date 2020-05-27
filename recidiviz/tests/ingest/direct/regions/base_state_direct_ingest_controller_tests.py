@@ -36,8 +36,9 @@ from recidiviz.persistence.entity.entity_utils import person_has_id, \
     print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
-    FakeDirectIngestGCSFileSystem, run_task_queues_to_empty, \
+    run_task_queues_to_empty, \
     path_for_fixture_file
+from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
