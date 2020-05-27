@@ -74,9 +74,11 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         USING (state_code, job_id, year, month, metric_period_months),
       {district_dimension}
       WHERE methodology = 'PERSON'
-        AND metric_period_months = 1
+        AND metric_period_months = 0
         AND person_id IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 4 YEAR))
+        -- Get population count for the last day of the month
+        AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
         AND job.metric_type = 'INCARCERATION_POPULATION'
       GROUP BY state_code, year, month, district
     ) inc_pop

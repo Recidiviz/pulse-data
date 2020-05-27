@@ -449,7 +449,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
     def test_include_in_monthly_metrics(self):
         calculation_month_upper_bound = date(2000, 1, 31)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=1999,
             month=11,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -462,7 +462,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=1999,
             month=11,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -475,7 +475,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=calculation_month_lower_bound.year,
             month=calculation_month_lower_bound.month,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -488,7 +488,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=calculation_month_upper_bound.year,
             month=calculation_month_upper_bound.month,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -500,7 +500,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
     def test_include_in_monthly_metrics_after_end_date(self):
         calculation_month_upper_bound = date(2000, 1, 31)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=2000,
             month=2,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -513,7 +513,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=1990,
             month=4,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -526,7 +526,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(1999, 12, 31)
         calculation_month_lower_bound = date(1999, 12, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=1999,
             month=12,
             calculation_month_upper_bound=calculation_month_upper_bound,
@@ -539,7 +539,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         calculation_month_upper_bound = date(1999, 12, 31)
         calculation_month_lower_bound = date(1999, 12, 1)
 
-        include = calculator_utils.include_in_monthly_metrics(
+        include = calculator_utils.include_in_historical_metrics(
             year=2000,
             month=1,
             calculation_month_upper_bound=calculation_month_upper_bound,
