@@ -21,7 +21,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionLevel, StateSupervisionPeriodSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_date, normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionPeriod
@@ -57,6 +57,7 @@ def copy_fields_to_builder(
     enum_fields = {
         'status': StateSupervisionPeriodStatus,
         'supervision_type': StateSupervisionType,
+        'supervision_period_supervision_type': StateSupervisionPeriodSupervisionType,
         'admission_reason': StateSupervisionPeriodAdmissionReason,
         'termination_reason': StateSupervisionPeriodTerminationReason,
         'supervision_level': StateSupervisionLevel
@@ -76,6 +77,8 @@ def copy_fields_to_builder(
     new.status_raw_text = fn(normalize, 'status', proto)
     new.supervision_type = enum_mappings.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, 'supervision_type', proto)
+    new.supervision_period_supervision_type = enum_mappings.get(StateSupervisionPeriodSupervisionType)
+    new.supervision_period_supervision_type_raw_text = fn(normalize, 'supervision_period_supervision_type', proto)
     new.admission_reason = enum_mappings.get(StateSupervisionPeriodAdmissionReason)
     new.admission_reason_raw_text = fn(normalize, 'admission_reason', proto)
     new.termination_reason = enum_mappings.get(StateSupervisionPeriodTerminationReason)

@@ -208,6 +208,7 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_dual_revocation,
     state_enum_strings.state_incarceration_period_admission_reason_return_from_erroneous_release,
     state_enum_strings.state_incarceration_period_admission_reason_return_from_escape,
+    state_enum_strings.state_incarceration_period_admission_reason_return_from_supervision,
     state_enum_strings.state_incarceration_period_admission_reason_temporary_custody,
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state,
@@ -275,9 +276,19 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state,
     state_enum_strings.state_supervision_period_termination_reason_transfer_within_state,
     state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion,
+    state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration,
     state_enum_strings.state_supervision_period_termination_reason_revocation,
     state_enum_strings.state_supervision_period_termination_reason_suspension,
     name='state_supervision_period_termination_reason')
+
+state_supervision_period_supervision_type = Enum(
+    enum_strings.external_unknown,
+    enum_strings.internal_unknown,
+    state_enum_strings.state_supervision_period_supervision_type_investigation,
+    state_enum_strings.state_supervision_period_supervision_type_parole,
+    state_enum_strings.state_supervision_period_supervision_type_probation,
+    state_enum_strings.state_supervision_period_supervision_type_dual,
+    name='state_supervision_period_supervision_type')
 
 state_incarceration_incident_type = Enum(
     enum_strings.present_without_info,
@@ -372,6 +383,10 @@ state_program_assignment_discharge_reason = Enum(
     name='state_program_assignment_discharge_reason')
 
 state_specialized_purpose_for_incarceration = Enum(
+    enum_strings.external_unknown,
+    enum_strings.internal_unknown,
+    state_enum_strings.state_specialized_purpose_for_incarceration_general,
+    state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold,
     state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration,
     state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison,
     name='state_specialized_purpose_for_incarceration'
@@ -1479,19 +1494,18 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     status_raw_text = Column(String(255))
     supervision_type = Column(state_supervision_type)
     supervision_type_raw_text = Column(String(255))
+    supervision_period_supervision_type = Column(state_supervision_period_supervision_type)
+    supervision_period_supervision_type_raw_text = Column(String(255))
     start_date = Column(Date)
     termination_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
     county_code = Column(String(255), index=True)
     supervision_site = Column(String(255))
-    admission_reason = \
-        Column(state_supervision_period_admission_reason)
+    admission_reason = Column(state_supervision_period_admission_reason)
     admission_reason_raw_text = Column(String(255))
-    termination_reason = \
-        Column(state_supervision_period_termination_reason)
+    termination_reason = Column(state_supervision_period_termination_reason)
     termination_reason_raw_text = Column(String(255))
-    supervision_level = \
-        Column(state_supervision_level)
+    supervision_level = Column(state_supervision_level)
     supervision_level_raw_text = Column(String(255))
     conditions = Column(String(255))
 

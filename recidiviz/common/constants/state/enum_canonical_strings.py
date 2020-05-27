@@ -123,6 +123,7 @@ state_incarceration_period_admission_reason_dual_revocation = 'DUAL_REVOCATION'
 state_incarceration_period_admission_reason_return_from_court = 'RETURN_FROM_COURT'
 state_incarceration_period_admission_reason_return_from_erroneous_release = 'RETURN_FROM_ERRONEOUS_RELEASE'
 state_incarceration_period_admission_reason_return_from_escape = 'RETURN_FROM_ESCAPE'
+state_incarceration_period_admission_reason_return_from_supervision = 'RETURN_FROM_SUPERVISION'
 state_incarceration_period_admission_reason_temporary_custody = 'TEMPORARY_CUSTODY'
 state_incarceration_period_admission_reason_transfer = 'TRANSFER'
 state_incarceration_period_admission_reason_transferred_from_out_of_state = 'TRANSFERRED_FROM_OUT_OF_STATE'
@@ -167,6 +168,7 @@ state_supervision_type_pre_confinement = 'PRE_CONFINEMENT'
 state_supervision_type_probation = 'PROBATION'
 
 # supervision_period.py
+state_supervision_period_supervision_type_investigation = 'INVESTIGATION'
 state_supervision_period_supervision_type_parole = 'PAROLE'
 state_supervision_period_supervision_type_probation = 'PROBATION'
 state_supervision_period_supervision_type_dual = 'DUAL'
@@ -199,6 +201,7 @@ state_supervision_period_termination_reason_expiration = 'EXPIRATION'
 state_supervision_period_termination_reason_transfer_out_of_state = 'TRANSFER_OUT_OF_STATE'
 state_supervision_period_termination_reason_transfer_within_state = 'TRANSFER_WITHIN_STATE'
 state_supervision_period_termination_reason_return_from_absconsion = 'RETURN_FROM_ABSCONSION'
+state_supervision_period_termination_reason_return_to_incarceration = 'RETURN_TO_INCARCERATION'
 state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
@@ -256,6 +259,8 @@ state_program_assignment_discharge_reason_program_transfer = 'PROGRAM_TRANSFER'
 state_program_assignment_discharge_reason_reincarcerated = 'REINCARCERATED'
 
 # state_specialized_purpose_for_incarceration
+state_specialized_purpose_for_incarceration_general = 'GENERAL'
+state_specialized_purpose_for_incarceration_parole_board_hold = 'PAROLE_BOARD_HOLD'
 state_specialized_purpose_for_incarceration_shock_incarceration = 'SHOCK_INCARCERATION'
 state_specialized_purpose_for_incarceration_treatment_in_prison = 'TREATMENT_IN_PRISON'
 

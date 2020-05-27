@@ -80,7 +80,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
-    StateSupervisionLevel,
+    StateSupervisionLevel, StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -665,9 +665,12 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
-    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    # TODO(2891): DEPRECATED - use supervision_period_supervision_type instead. Delete this field once all existing
+    #  users have migrated to the new field.
     supervision_type: Optional[StateSupervisionType] = attr.ib()
     supervision_type_raw_text: Optional[str] = attr.ib()
+    supervision_period_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib()
+    supervision_period_supervision_type_raw_text: Optional[str] = attr.ib()
 
     # Attributes
     #   - When
