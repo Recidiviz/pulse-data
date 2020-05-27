@@ -59,6 +59,7 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
     RETURN_FROM_ERRONEOUS_RELEASE = \
         state_enum_strings.state_incarceration_period_admission_reason_return_from_erroneous_release
     RETURN_FROM_ESCAPE = state_enum_strings.state_incarceration_period_admission_reason_return_from_escape
+    RETURN_FROM_SUPERVISION = state_enum_strings.state_incarceration_period_admission_reason_return_from_supervision
     TEMPORARY_CUSTODY = state_enum_strings.state_incarceration_period_admission_reason_temporary_custody
     TRANSFER = state_enum_strings.state_incarceration_period_admission_reason_transfer
     TRANSFERRED_FROM_OUT_OF_STATE = \
@@ -95,9 +96,14 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
+# TODO(3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
 class StateSpecializedPurposeForIncarceration(EntityEnum,
                                               metaclass=EntityEnumMeta):
     """Specialized purposes for a period of incarceration"""
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    GENERAL = state_enum_strings.state_specialized_purpose_for_incarceration_general
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    PAROLE_BOARD_HOLD = state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold
     SHOCK_INCARCERATION = state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration
     TREATMENT_IN_PRISON = state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison
 
@@ -113,7 +119,9 @@ def is_revocation_admission(admission_reason: Optional[StateIncarcerationPeriodA
     revocation_types = [
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION]
+        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+    ]
     non_revocation_types = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
@@ -165,6 +173,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     'RECA': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     'RETURN FROM ESCAPE': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     'RETURN FROM ERRONEOUS RELEASE': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+    'RETURN FROM SUPERVISION': StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
     'COURT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'CRT': StateIncarcerationPeriodAdmissionReason.TRANSFER,
     'DETOX': StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -227,6 +236,10 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
 }
 
 _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
-    'TREATMENT IN PRISON': StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+    'EXTERNAL UNKNOWN': StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
+    'INTERNAL UNKNOWN': StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+    'GENERAL': StateSpecializedPurposeForIncarceration.GENERAL,
+    'PAROLE BOARD HOLD': StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
     'SHOCK INCARCERATION': StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+    'TREATMENT IN PRISON': StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
 }
