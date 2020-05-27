@@ -70,7 +70,7 @@ def get_file_metadata_row_for_path(
         raise ValueError(f'Unexpected path type: {parts.file_type}')
 
     if len(results) != 1:
-        raise ValueError(f'Unexpected number of metadata results for path {path.abs_path()}')
+        raise ValueError(f'Unexpected number of metadata results for path {path.abs_path()}: [{len(results)}]')
 
     return one(results)
 

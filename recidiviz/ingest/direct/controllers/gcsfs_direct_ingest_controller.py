@@ -28,7 +28,10 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
     GcsfsFileContentsHandle
+from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import \
+    DirectIngestIngestViewExportManager
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -100,6 +103,15 @@ class GcsfsDirectIngestController(
             temp_output_directory_path=GcsfsDirectoryPath.from_absolute_path(
                 gcsfs_direct_ingest_temporary_output_directory_path()),
             big_query_client=BigQueryClientImpl()
+        )
+
+        self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
+            region=self.region,
+            fs=self.fs,
+            ingest_directory_path=self.ingest_directory_path,
+            file_metadata_manager=self.file_metadata_manager,
+            big_query_client=BigQueryClientImpl(),
+            view_collector=DirectIngestPreProcessedIngestViewCollector(self.region, self.get_file_tag_rank_list())
         )
 
     # ================= #
@@ -208,6 +220,7 @@ class GcsfsDirectIngestController(
             logging.warning(
                 "File path [%s] no longer exists - might have already been "
                 "processed or deleted", data_import_args.raw_data_file_path)
+            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
             return
 
         file_metadata = self.file_metadata_manager.get_file_metadata(data_import_args.raw_data_file_path)
@@ -215,6 +228,7 @@ class GcsfsDirectIngestController(
         if file_metadata.processed_time:
             logging.warning('File [%s] is already marked as processed. Skipping file processing.',
                             data_import_args.raw_data_file_path.file_name)
+            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
             return
 
         self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path,
@@ -235,12 +249,11 @@ class GcsfsDirectIngestController(
                     ))
                 )
 
-        # TODO(3020): Technically moving to the processed path here will trigger the handle_new_files() call we need to
-        # now check for ingest view export jobs - consider doing something more explicit, intentional here.
         processed_path = self.fs.mv_path_to_processed_path(data_import_args.raw_data_file_path)
         self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path)
 
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
+        self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
 
     def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         check_is_region_launched_in_env(self.region)
@@ -248,9 +261,11 @@ class GcsfsDirectIngestController(
             raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]. Passed args: '
                              f'{ingest_view_export_args}')
 
-        # TODO(3020): Implement ingest view export
-        # TODO(3020): Write rows for new files to the metadata table when we export here
-        raise ValueError('Unimplemented!')
+        did_export = self.ingest_view_export_manager.export_view_for_args(ingest_view_export_args)
+        if not did_export or not self.file_metadata_manager.get_ingest_view_metadata_pending_export():
+            logging.info("Creating cloud task to schedule next job.")
+            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(region=self.region,
+                                                                               can_start_ingest=True)
 
     # ============== #
     # JOB SCHEDULING #
@@ -291,15 +306,6 @@ class GcsfsDirectIngestController(
 
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
-    def _get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:
-        if not self.region.are_ingest_view_exports_enabled_in_env():
-            raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
-
-        # TODO(3020): Implement actual checking for new export jobs - use file metadata tables to figure out last export
-        #  date and current export date to process.
-
-        return []
-
     def _schedule_ingest_view_export_tasks(self) -> bool:
         if not self.region.are_ingest_view_exports_enabled_in_env():
             return False
@@ -308,18 +314,22 @@ class GcsfsDirectIngestController(
         if queue_info.has_ingest_view_export_jobs_queued():
             # Since we schedule all export jobs at once, after all raw files have been processed, we wait for all of the
             # export jobs to be done before checking if we need to schedule more.
-            # TODO(3020): Write a test that early-returns here if we already have ingest view export tasks queues
             return True
 
         did_schedule = False
-        tasks_to_schedule = self._get_ingest_view_export_task_args()
+        tasks_to_schedule = self.ingest_view_export_manager.get_ingest_view_export_task_args()
+
+        rank_list = self.get_file_tag_rank_list()
+
+        # Sort by tag order and export datetime
+        tasks_to_schedule.sort(key=lambda args: (rank_list.index(args.ingest_view_name),
+                                                 args.upper_bound_datetime_to_export))
+
         for task_args in tasks_to_schedule:
             if not queue_info.has_task_already_scheduled(task_args):
                 self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(self.region, task_args)
                 did_schedule = True
 
-        # TODO(3020): Test that hits this block with newly scheduled tasks
-        # TODO(3020): Test that hits this block without newly scheduled tasks
         return did_schedule
 
     @classmethod
@@ -506,9 +516,6 @@ class GcsfsDirectIngestController(
 
     def _do_cleanup(self, args: GcsfsIngestArgs):
         self.fs.mv_path_to_processed_path(args.file_path)
-
-        if self.region.are_ingest_view_exports_enabled_in_env():
-            raise ValueError('Must implement metadata update to mark as processed here.')
 
         if self.region.are_ingest_view_exports_enabled_in_env():
             self.file_metadata_manager.mark_file_as_processed(args.file_path)
