@@ -16,9 +16,9 @@
 # =============================================================================
 """Test implementation of the DirectIngestCloudTaskManager that runs tasks
 asynchronously on background threads."""
-from queue import Queue
-from threading import Thread
-from typing import Callable, List
+from queue import Queue, Empty
+from threading import Thread, Lock, Condition
+from typing import Callable, List, Tuple, Optional
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgsType
@@ -42,6 +42,14 @@ class SingleThreadTaskQueue(Queue):
         super().__init__()
         self.name = name
 
+        self.all_tasks_mutex = Lock()
+        self.has_unfinished_tasks_condition = Condition(self.all_tasks_mutex)
+
+        # These variables all protected by all_tasks_mutex
+        self.all_task_names: List[str] = []
+        self.running_task_name: Optional[str] = None
+        self.terminating_exception: Optional[Exception] = None
+
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
@@ -49,33 +57,95 @@ class SingleThreadTaskQueue(Queue):
     def add_task(self, task_name: str, task: Callable, *args, **kwargs):
         args = args or ()
         kwargs = kwargs or {}
-        self.put((task_name, task, args, kwargs))
+        with self.all_tasks_mutex:
+            if self.terminating_exception:
+                return
+            self.put_nowait((task_name, task, args, kwargs))
 
-    def worker(self):
-        while True:
-            _task_name, task, args, kwargs = self.get()
-            task(*args, **kwargs)
-            self.task_done()
+            self.all_task_names = self._get_queued_task_names()
+            if self.running_task_name is not None:
+                self.all_task_names.append(self.running_task_name)
+            self.has_unfinished_tasks_condition.notify()
 
-    def get_queued_task_names_unsafe(self) -> List[str]:
-        """Returns the names of all tasks in this queue.
+    def get_unfinished_task_names_unsafe(self) -> List[str]:
+        """Returns the names of all unfinished tasks in this queue, including the task that is currently running, if
+        there is one.
 
-        NOTE: You must be holding the mutex for this queue before calling this
+        NOTE: You must be holding the all_tasks_mutex for this queue before calling this
         to avoid races. For example:
             queue = SingleThreadTaskQueue(name='my_queue')
-            with queue.mutex:
-                task_names = queue.get_queued_task_names_unsafe()
+            with queue.all_tasks_mutex:
+                task_names = queue.get_unfinished_task_names_unsafe()
 
             if task_names:
                 ...
         """
-        _queue = self.queue.copy()
-        task_names = []
-        while _queue:
-            task_name, _task, _args, _kwargs = _queue.pop()
-            task_names.append(task_name)
+        return self.all_task_names
 
-        return task_names
+    def join(self) -> None:
+        """Waits until all queued tasks are complete. Raises any exceptions that were raised on the worker thread."""
+        super().join()
+        with self.all_tasks_mutex:
+            if self.terminating_exception:
+                raise self.terminating_exception
+
+    def worker(self):
+        """Runs tasks indefinitely until a task raises an exception, waiting for new tasks if the queue is empty."""
+        while True:
+            _task_name, task, args, kwargs = self._worker_pop_task()
+            try:
+                task(*args, **kwargs)
+            except Exception as e:
+                self._worker_mark_task_done()
+                self._worker_handle_exception(e)
+                break
+
+            self._worker_mark_task_done()
+
+    def _get_queued_task_names(self) -> List[str]:
+        """Returns the names of all queued tasks in this queue. This does NOT include tasks that are currently running.
+        """
+        with self.mutex:
+            _queue = self.queue.copy()
+            task_names = []
+            while _queue:
+                task_name, _task, _args, _kwargs = _queue.pop()
+                task_names.append(task_name)
+
+            return task_names
+
+    def _worker_pop_task(self) -> Tuple:
+        """Helper for the worker thread. Waits until there is a task in the queue, marks it as the running task, then
+        returns the task and args."""
+        while True:
+            with self.all_tasks_mutex:
+                try:
+                    task_name, task, args, kwargs = self.get_nowait()
+                    self.running_task_name = task_name
+                    self.all_task_names = self._get_queued_task_names() + [task_name]
+                    return task_name, task, args, kwargs
+                except Empty:
+                    self.has_unfinished_tasks_condition.wait()
+
+    def _worker_mark_task_done(self):
+        """Helper for the worker thread. Marks the current task as complete in the running thread and updates the list
+        of all task names."""
+        with self.all_tasks_mutex:
+            self.task_done()
+            self.running_task_name = None
+            self.all_task_names = self._get_queued_task_names()
+
+    def _worker_handle_exception(self, e: Exception):
+        """Helper for the worker thread. Clears the queue and sets the terminating exception field so that any callers
+        to join() will terminate and raise on the join thread."""
+        with self.all_tasks_mutex:
+            self.terminating_exception = e
+            try:
+                _ = self.get_nowait()
+                self._worker_mark_task_done()
+            except Empty:
+                self.running_task_name = None
+                self.all_task_names = []
 
 
 def with_monitoring(region_code: str, fn: Callable) -> Callable:
@@ -180,23 +250,22 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_process_job_queue_info(self, region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
-        with self.process_job_queue.mutex:
-            task_names = self.process_job_queue.get_queued_task_names_unsafe()
+        with self.process_job_queue.all_tasks_mutex:
+            task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
 
         return ProcessIngestJobCloudTaskQueueInfo(queue_name=self.process_job_queue.name,
                                                   task_names=task_names)
 
     def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
-        with self.scheduler_queue.mutex:
-            task_names = self.scheduler_queue.get_queued_task_names_unsafe()
+        with self.scheduler_queue.all_tasks_mutex:
+            task_names = self.scheduler_queue.get_unfinished_task_names_unsafe()
 
         return SchedulerCloudTaskQueueInfo(queue_name=self.scheduler_queue.name,
                                            task_names=task_names)
 
     def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
-        with self.bq_import_export_queue.mutex:
-            has_unfinished_tasks = \
-                self.bq_import_export_queue.get_queued_task_names_unsafe()
+        with self.bq_import_export_queue.all_tasks_mutex:
+            has_unfinished_tasks = self.bq_import_export_queue.get_unfinished_task_names_unsafe()
 
         task_names = [f'{region.region_code}-schedule-job'] \
             if has_unfinished_tasks else []
@@ -205,12 +274,12 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def wait_for_all_tasks_to_run(self):
         while True:
-            with self.bq_import_export_queue.mutex:
-                with self.scheduler_queue.mutex:
-                    with self.process_job_queue.mutex:
-                        bq_import_export_done = not self.bq_import_export_queue.get_queued_task_names_unsafe()
-                        scheduler_done = not self.scheduler_queue.get_queued_task_names_unsafe()
-                        process_job_queue_done = not self.process_job_queue.get_queued_task_names_unsafe()
+            with self.bq_import_export_queue.all_tasks_mutex:
+                with self.scheduler_queue.all_tasks_mutex:
+                    with self.process_job_queue.all_tasks_mutex:
+                        bq_import_export_done = not self.bq_import_export_queue.get_unfinished_task_names_unsafe()
+                        scheduler_done = not self.scheduler_queue.get_unfinished_task_names_unsafe()
+                        process_job_queue_done = not self.process_job_queue.get_unfinished_task_names_unsafe()
 
             if scheduler_done and process_job_queue_done and bq_import_export_done:
                 break
