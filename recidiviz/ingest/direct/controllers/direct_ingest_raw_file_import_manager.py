@@ -223,16 +223,22 @@ class DirectIngestRawFileImportManager:
             path: GcsfsFilePath,
             file_metadata: DirectIngestFileMetadata,
             contents_handle: GcsfsFileContentsHandle) -> List[Tuple[GcsfsFilePath, List[str]]]:
+        """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
+        additional metadata columns added.
+        """
+
         temp_paths_with_columns = []
         logging.info('Starting chunked upload of contents to GCS')
         try:
             for i, raw_data_df in enumerate(self._read_contents_into_dataframes(path, contents_handle)):
                 logging.info('Loaded DataFrame chunk [%d] has [%d] rows', i, raw_data_df.shape[0])
 
+                # Stripping white space from all fields
+                raw_data_df = raw_data_df.applymap(lambda x: x.strip())
+
                 augmented_df = self._augment_raw_data_with_metadata_columns(path=path,
                                                                             file_metadata=file_metadata,
                                                                             raw_data_df=raw_data_df)
-                print(raw_data_df.columns)
                 logging.info('Augmented DataFrame chunk [%d] has [%d] rows', i, augmented_df.shape[0])
                 temp_output_path = self._get_temp_df_output_path(path, chunk_num=i)
 
@@ -375,6 +381,9 @@ class DirectIngestRawFileImportManager:
 
         columns = self.remove_column_non_printable_characters(columns)
 
+        # Strip whitespace from head/tail of column names
+        columns = [c.strip() for c in columns]
+
         for column_name in columns:
             if not column_name:
                 raise ValueError(f'Found empty column name in [{file_config.file_tag}]')
@@ -398,8 +407,7 @@ class DirectIngestRawFileImportManager:
     def _create_raw_table_schema_from_columns(columns: List[str]) -> List[bigquery.SchemaField]:
         """Creates schema for use in `to_gbq` based on the provided columns."""
         schema = []
-        normalized_columns = [c.strip() for c in columns]
-        for name in normalized_columns:
+        for name in columns:
             typ_str = bigquery.enums.SqlTypeNames.STRING.value
             mode = 'NULLABLE'
             if name == _FILE_ID_COL_NAME:

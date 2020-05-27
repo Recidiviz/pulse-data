@@ -137,6 +137,11 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         df = pd.read_csv(local_temp_path, header=None, dtype=str)
         for value in df.values:
             for cell in value:
+                if isinstance(cell, str):
+                    stripped_cell = cell.strip()
+                    if stripped_cell != cell:
+                        raise ValueError('Did not strip white space from raw data cell')
+
                 if cell in col_names:
                     raise ValueError(f'Wrote column row to output file: {value}')
         self.num_lines_uploaded += len(df)
