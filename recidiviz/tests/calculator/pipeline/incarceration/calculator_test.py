@@ -330,7 +330,6 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
-
     def test_map_incarceration_combinations_multiple_stays(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -383,6 +382,57 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in incarceration_combinations)
 
+    def test_map_incarceration_combinations_multiple_stays_one_month(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_events = [
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 3, 13),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE
+            ),
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 3, 14),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE
+            ),
+            IncarcerationStayEvent(
+                state_code='CA',
+                event_date=date(2010, 3, 15),
+                facility='FACILITY 33',
+                county_of_residence=_COUNTY_OF_RESIDENCE
+            )
+        ]
+
+        incarceration_combinations = calculator.map_incarceration_combinations(
+            person=person,
+            incarceration_events=incarceration_events,
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+
+        self.assertEqual(expected_combinations_count,
+                         len(incarceration_combinations))
+        assert all(value == 1 for _combination, value
+                   in incarceration_combinations)
 
     def test_map_incarceration_combinations_multiple_overlapping_stays(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -969,6 +1019,195 @@ class TestCharacteristicsDict(unittest.TestCase):
         self.assertEqual(expected_output, characteristic_dict)
 
 
+class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
+    """Tests the matching_events_for_person_based_count function in the calculator."""
+    def test_matching_events_for_person_based_count(self):
+        year = 2000
+        month = 9
+        day = None
+
+        all_events = [
+            IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
+                most_serious_offense_statute=_STATUTE,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 12),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+            ),
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 12),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            )
+        ]
+
+        matching_events = calculator.matching_events_for_person_based_count(
+            year, month, day, IncarcerationAdmissionEvent, all_events)
+
+        self.assertEqual([
+            IncarcerationAdmissionEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 12),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+            )
+        ], matching_events)
+
+    def test_matching_events_for_person_based_count_day_set(self):
+        year = 2000
+        month = 9
+        day = 30
+
+        all_events = [
+            IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
+                most_serious_offense_statute=_STATUTE,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 12),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+            ),
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 12),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            )
+        ]
+
+        matching_events = calculator.matching_events_for_person_based_count(
+            year, month, day, IncarcerationStayEvent, all_events)
+
+        self.assertEqual([
+            IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
+                most_serious_offense_statute=_STATUTE,
+            )
+        ], matching_events)
+
+    def test_matching_events_for_person_based_count_day_set_different_type(self):
+        year = 2000
+        month = 9
+        day = 30
+
+        all_events = [
+            IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
+                most_serious_offense_statute=_STATUTE,
+            ),
+            IncarcerationAdmissionEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+            ),
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            )
+        ]
+
+        matching_events = calculator.matching_events_for_person_based_count(
+            year, month, day, IncarcerationStayEvent, all_events)
+
+        self.assertEqual([
+            IncarcerationStayEvent(
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text='NEW_ADMISSION',
+                supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='CA',
+                event_date=date(2000, 9, 30),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                most_serious_offense_ncic_code=_NCIC_CODE,
+                most_serious_offense_statute=_STATUTE,
+            )
+        ], matching_events)
+
+    def test_matching_events_for_person_based_count_multiple_matching(self):
+        year = 2000
+        month = 9
+        day = None
+
+        all_events = [
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 3),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 14),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            ),
+            IncarcerationReleaseEvent(
+                state_code='CA',
+                event_date=date(2000, 9, 19),
+                facility='SAN QUENTIN',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+            )
+        ]
+
+        matching_events = calculator.matching_events_for_person_based_count(
+            year, month, day, IncarcerationReleaseEvent, all_events)
+
+        self.assertEqual(all_events, matching_events)
+
+
 def expected_metric_combos_count(
         incarceration_events: List[IncarcerationEvent],
         num_relevant_periods_admissions: int = 0,
@@ -984,14 +1223,14 @@ def expected_metric_combos_count(
     stay_events = [event for event in incarceration_events if isinstance(event, IncarcerationStayEvent)]
 
     num_stay_events = len(stay_events)
-    num_duplicated_stay_months = 0
-    stay_months: Set[Tuple[int, int]] = set()
+    num_duplicated_stay_dates = 0
+    stay_dates: Set[date] = set()
 
     for stay_event in stay_events:
-        if (stay_event.event_date.year, stay_event.event_date.month) in stay_months:
-            num_duplicated_stay_months += 1
+        if stay_event.event_date in stay_dates:
+            num_duplicated_stay_dates += 1
 
-        stay_months.add((stay_event.event_date.year, stay_event.event_date.month))
+        stay_dates.add(stay_event.event_date)
 
     admission_events = [event for event in incarceration_events if isinstance(event, IncarcerationAdmissionEvent)]
 
@@ -1021,7 +1260,7 @@ def expected_metric_combos_count(
                         (num_admission_events -
                          num_duplicated_admission_months)*(num_relevant_periods_admissions + 1))
 
-    stay_combos = (num_stay_events + (num_stay_events - num_duplicated_stay_months))
+    stay_combos = (num_stay_events + (num_stay_events - num_duplicated_stay_dates))
 
     release_combos = (num_release_events +
                       (num_release_events - num_duplicated_release_months)*(num_relevant_periods_releases + 1))
