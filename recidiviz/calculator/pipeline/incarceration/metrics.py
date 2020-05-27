@@ -178,8 +178,14 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
     # Release count
     count: int = attr.ib(default=None)
 
+    # Release date
+    release_date: Optional[date] = attr.ib(default=None)
+
     # Release reason
     release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(default=None)
+
+    # Release reason raw text
+    release_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Type of incarceration the release was from
     purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)

@@ -953,8 +953,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
-        characteristic_dict = calculator.characteristics_dict(
-            person, incarceration_event, IncarcerationMetricType.ADMISSION)
+        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
 
         expected_output = {
             'facility': 'SAN QUENTIN',

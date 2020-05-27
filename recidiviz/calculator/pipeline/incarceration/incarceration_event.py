@@ -96,5 +96,8 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
     # Release reason
     release_reason: StateIncarcerationPeriodReleaseReason = attr.ib(default=None)
 
+    # Release reason raw text
+    release_reason_raw_text: Optional[str] = attr.ib(default=None)
+
     # Type of incarceration the release was from
     purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
