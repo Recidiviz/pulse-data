@@ -351,6 +351,7 @@ def release_event_for_period(
             event_date=release_date,
             facility=incarceration_period.facility,
             release_reason=release_reason,
+            release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=purpose_for_incarceration,
             county_of_residence=county_of_residence,
         )
