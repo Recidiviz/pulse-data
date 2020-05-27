@@ -110,7 +110,7 @@ def map_incarceration_combinations(person: StatePerson,
                 'No metric type mapped to incarceration event of type {}'.format(type(incarceration_event)))
 
         if metric_inclusions.get(metric_type):
-            characteristic_combo = characteristics_dict(person, incarceration_event, metric_type)
+            characteristic_combo = characteristics_dict(person, incarceration_event)
 
             metrics.extend(map_metric_combinations(
                 characteristic_combo, incarceration_event,
@@ -122,15 +122,12 @@ def map_incarceration_combinations(person: StatePerson,
 
 
 def characteristics_dict(person: StatePerson,
-                         incarceration_event: IncarcerationEvent,
-                         metric_type: IncarcerationMetricType) -> Dict[str, Any]:
+                         incarceration_event: IncarcerationEvent) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
         person: the StatePerson we are picking characteristics from
         incarceration_event: the IncarcerationEvent we are picking characteristics from
-        metric_type: The IncarcerationMetricType that determines which fields should be added to the characteristics
-            dictionary
 
     Returns:
         A dictionary populated with all relevant characteristics.
@@ -139,6 +136,8 @@ def characteristics_dict(person: StatePerson,
 
     # Add characteristics that will be used to generate dictionaries with unique combinations.
     if isinstance(incarceration_event, IncarcerationAdmissionEvent):
+        characteristics['admission_date'] = incarceration_event.event_date
+
         if incarceration_event.admission_reason:
             characteristics['admission_reason'] = incarceration_event.admission_reason
         if incarceration_event.supervision_type_at_admission:
@@ -149,8 +148,12 @@ def characteristics_dict(person: StatePerson,
                 incarceration_event.specialized_purpose_for_incarceration
 
     if isinstance(incarceration_event, IncarcerationReleaseEvent):
+        characteristics['release_date'] = incarceration_event.event_date
+
         if incarceration_event.release_reason:
             characteristics['release_reason'] = incarceration_event.release_reason
+        if incarceration_event.release_reason_raw_text:
+            characteristics['release_reason_raw_text'] = incarceration_event.release_reason_raw_text
         if incarceration_event.purpose_for_incarceration:
             characteristics['purpose_for_incarceration'] = \
                 incarceration_event.purpose_for_incarceration
@@ -175,9 +178,6 @@ def characteristics_dict(person: StatePerson,
 
     characteristics_with_person_details = add_person_level_characteristics(
         person, incarceration_event, characteristics)
-
-    if metric_type == IncarcerationMetricType.ADMISSION:
-        characteristics_with_person_details['admission_date'] = incarceration_event.event_date
 
     return characteristics_with_person_details
 
