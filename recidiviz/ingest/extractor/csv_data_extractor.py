@@ -183,6 +183,7 @@ class CsvDataExtractor(DataExtractor):
 
             extracted_objects_for_row = []
             for k, v in row.items():
+                k = k.strip()
                 if k not in self.all_keys:
                     raise ValueError("Unmapped key: [%s]" % k)
 
