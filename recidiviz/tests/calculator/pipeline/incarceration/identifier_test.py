@@ -1307,7 +1307,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
                 release_date=date(2010, 12, 4),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                release_reason_raw_text='SS')
 
         release_event = identifier.release_event_for_period(
             incarceration_period, _COUNTY_OF_RESIDENCE)
@@ -1318,6 +1319,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             facility='PRISON3',
             county_of_residence=_COUNTY_OF_RESIDENCE,
             release_reason=incarceration_period.release_reason,
+            release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
         ), release_event)
 
