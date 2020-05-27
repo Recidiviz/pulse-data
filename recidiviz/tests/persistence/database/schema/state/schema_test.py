@@ -49,71 +49,49 @@ class TestStateSchemaEnums(TestSchemaEnums):
             'state_assessment_class': state_assessment.StateAssessmentClass,
             'state_assessment_level': state_assessment.StateAssessmentLevel,
             'state_assessment_type': state_assessment.StateAssessmentType,
-            'state_charge_classification_type':
-                state_charge.StateChargeClassificationType,
+            'state_charge_classification_type': state_charge.StateChargeClassificationType,
             'state_sentence_status': state_sentence.StateSentenceStatus,
             'state_supervision_type': state_supervision.StateSupervisionType,
             'state_acting_body_type': recidiviz.common.constants.state.shared_enums.StateActingBodyType,
             'state_early_discharge_decision': StateEarlyDischargeDecision,
             'state_fine_status': state_fine.StateFineStatus,
-            'state_incarceration_type':
-                state_incarceration.StateIncarcerationType,
+            'state_incarceration_type': state_incarceration.StateIncarcerationType,
             'state_court_case_status': state_court_case.StateCourtCaseStatus,
             'state_court_type': state_court_case.StateCourtType,
             'state_agent_type': state_agent.StateAgentType,
-            'state_incarceration_period_status':
-                state_incarceration_period.StateIncarcerationPeriodStatus,
+            'state_incarceration_period_status': state_incarceration_period.StateIncarcerationPeriodStatus,
             'state_incarceration_facility_security_level':
-                state_incarceration_period.
-                StateIncarcerationFacilitySecurityLevel,
+                state_incarceration_period.StateIncarcerationFacilitySecurityLevel,
             'state_incarceration_period_admission_reason':
-                state_incarceration_period.
-                StateIncarcerationPeriodAdmissionReason,
+                state_incarceration_period.StateIncarcerationPeriodAdmissionReason,
             'state_incarceration_period_release_reason':
-                state_incarceration_period.
-                StateIncarcerationPeriodReleaseReason,
-            'state_parole_decision_outcome':
-                state_parole_decision.StateParoleDecisionOutcome,
+                state_incarceration_period.StateIncarcerationPeriodReleaseReason,
+            'state_parole_decision_outcome': state_parole_decision.StateParoleDecisionOutcome,
             'state_person_alias_type': state_person_alias.StatePersonAliasType,
-            'state_supervision_period_status':
-                state_supervision_period.StateSupervisionPeriodStatus,
-            'state_supervision_period_admission_reason':
-                state_supervision_period.StateSupervisionPeriodAdmissionReason,
+            'state_supervision_period_status': state_supervision_period.StateSupervisionPeriodStatus,
+            'state_supervision_period_admission_reason': state_supervision_period.StateSupervisionPeriodAdmissionReason,
+            'state_supervision_period_supervision_type': state_supervision_period.StateSupervisionPeriodSupervisionType,
             'state_supervision_period_termination_reason':
-                state_supervision_period.
-                StateSupervisionPeriodTerminationReason,
-            'state_supervision_level':
-                state_supervision_period.StateSupervisionLevel,
-            'state_incarceration_incident_type':
-                state_incarceration_incident.StateIncarcerationIncidentType,
+                state_supervision_period.StateSupervisionPeriodTerminationReason,
+            'state_supervision_level': state_supervision_period.StateSupervisionLevel,
+            'state_incarceration_incident_type': state_incarceration_incident.StateIncarcerationIncidentType,
             'state_incarceration_incident_outcome_type':
-                state_incarceration_incident.
-                StateIncarcerationIncidentOutcomeType,
+                state_incarceration_incident.StateIncarcerationIncidentOutcomeType,
             'state_specialized_purpose_for_incarceration':
-                state_incarceration_period.
-                StateSpecializedPurposeForIncarceration,
+                state_incarceration_period.StateSpecializedPurposeForIncarceration,
             'state_program_assignment_participation_status':
-                state_program_assignment.
-                StateProgramAssignmentParticipationStatus,
-            'state_program_assignment_discharge_reason':
-                state_program_assignment.
-                StateProgramAssignmentDischargeReason,
-            'state_supervision_case_type':
-                state_supervision_case_type_entry.StateSupervisionCaseType,
-            'state_supervision_violation_type':
-                state_supervision_violation.StateSupervisionViolationType,
+                state_program_assignment.StateProgramAssignmentParticipationStatus,
+            'state_program_assignment_discharge_reason': state_program_assignment.StateProgramAssignmentDischargeReason,
+            'state_supervision_case_type': state_supervision_case_type_entry.StateSupervisionCaseType,
+            'state_supervision_violation_type': state_supervision_violation.StateSupervisionViolationType,
             'state_supervision_violation_response_type':
-                state_supervision_violation_response.
-                StateSupervisionViolationResponseType,
+                state_supervision_violation_response.StateSupervisionViolationResponseType,
             'state_supervision_violation_response_decision':
-                state_supervision_violation_response.
-                StateSupervisionViolationResponseDecision,
+                state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             'state_supervision_violation_response_revocation_type':
-                state_supervision_violation_response.
-                StateSupervisionViolationResponseRevocationType,
+                state_supervision_violation_response.StateSupervisionViolationResponseRevocationType,
             'state_supervision_violation_response_deciding_body_type':
-                state_supervision_violation_response.
-                StateSupervisionViolationResponseDecidingBodyType,
+                state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
         }
 
         merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING,
