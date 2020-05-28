@@ -16,13 +16,16 @@
 # =============================================================================
 """Contains logic for US_PA specific entity matching overrides."""
 
-from typing import List, Type
+from typing import List, Type, Optional
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity_matching import entity_matching_utils
+from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
-from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls
+from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls, \
+    base_entity_match
 
 
 class UsPaMatchingDelegate(BaseStateMatchingDelegate):
@@ -42,3 +45,14 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         db_persons = read_persons_by_root_entity_cls(
             session, self.region_code, ingested_persons, allowed_root_entity_classes)
         return db_persons
+
+    def get_non_external_id_match(
+            self, ingested_entity_tree: EntityTree,
+            db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
+        """PA specific logic to match the |ingested_entity_tree| to one of the
+        |db_entity_trees| that does not rely solely on matching by external_id.
+        If such a match is found, it is returned.
+        """
+        if isinstance(ingested_entity_tree.entity, schema.StateAssessment):
+            return entity_matching_utils.get_only_match(ingested_entity_tree, db_entity_trees, base_entity_match)
+        return None

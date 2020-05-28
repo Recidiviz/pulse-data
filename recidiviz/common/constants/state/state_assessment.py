@@ -24,10 +24,13 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
+    """An enumeration of assessment classifications tracked in our schema."""
     MENTAL_HEALTH = state_enum_strings.state_assessment_class_mental_health
     RISK = state_enum_strings.state_assessment_class_risk
     SECURITY_CLASSIFICATION = \
         state_enum_strings.state_assessment_class_security_classification
+    SEX_OFFENSE = state_enum_strings.state_assessment_class_sex_offense
+    SOCIAL = state_enum_strings.state_assessment_class_social
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
 
     @staticmethod
@@ -36,8 +39,11 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
+    """An enumeration of assessment types tracked in our schema."""
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     ASI = state_enum_strings.state_assessment_type_asi
+    CSSM = state_enum_strings.state_assessment_type_cssm
+    HIQ = state_enum_strings.state_assessment_type_hiq
     LSIR = state_enum_strings.state_assessment_type_lsir
     ORAS = state_enum_strings.state_assessment_type_oras
     ORAS_COMMUNITY_SUPERVISION = \
@@ -58,8 +64,11 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     ORAS_STATIC = state_enum_strings.state_assessment_type_oras_static
     ORAS_SUPPLEMENTAL_REENTRY = \
         state_enum_strings.state_assessment_type_oras_supplemental_reentry
+    PA_RST = state_enum_strings.state_assessment_type_pa_rst
     PSA = state_enum_strings.state_assessment_type_psa
     SORAC = state_enum_strings.state_assessment_type_sorac
+    STATIC_99 = state_enum_strings.state_assessment_type_static_99
+    TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
 
     @staticmethod
     def _get_default_map():
@@ -87,6 +96,8 @@ _STATE_ASSESSMENT_CLASS_MAP = {
     'MH': StateAssessmentClass.MENTAL_HEALTH,
     'RISK': StateAssessmentClass.RISK,
     'SECURITY CLASSIFICATION': StateAssessmentClass.SECURITY_CLASSIFICATION,
+    'SEX OFFENSE': StateAssessmentClass.SEX_OFFENSE,
+    'SOCIAL': StateAssessmentClass.SOCIAL,
     'SUBSTANCE ABUSE': StateAssessmentClass.SUBSTANCE_ABUSE,
     'SUBSTANCE': StateAssessmentClass.SUBSTANCE_ABUSE,
 }
@@ -94,6 +105,8 @@ _STATE_ASSESSMENT_CLASS_MAP = {
 
 _STATE_ASSESSMENT_TYPE_MAP = {
     'ASI': StateAssessmentType.ASI,
+    'CSSM': StateAssessmentType.CSSM,
+    'HIQ': StateAssessmentType.HIQ,
     'LSIR': StateAssessmentType.LSIR,
     'ORAS': StateAssessmentType.ORAS,
     'ORAS COMMUNITY SUPERVISION':
@@ -110,8 +123,12 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     'ORAS REENTRY': StateAssessmentType.ORAS_REENTRY,
     'ORAS STATIC': StateAssessmentType.ORAS_STATIC,
     'ORAS SUPPLEMENTAL REENTRY': StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
+    'PA RST': StateAssessmentType.PA_RST,
     'PSA': StateAssessmentType.PSA,
     'SORAC': StateAssessmentType.SORAC,
+    'STATIC 99': StateAssessmentType.STATIC_99,
+    'TCU': StateAssessmentType.TCU_DRUG_SCREEN,
+    'TCU DRUG SCREEN': StateAssessmentType.TCU_DRUG_SCREEN,
     'INTERNAL UNKNOWN': StateAssessmentType.INTERNAL_UNKNOWN,
 }
 

@@ -17,17 +17,19 @@
 
 """Unit and integration tests for Pennsylvania direct ingest."""
 import datetime
+import json
 from typing import Type
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
-from recidiviz.common.constants.state.external_id_types import US_PA_CONT, US_PA_SID, US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_SID, US_PA_PBPP
+from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
-    StatePersonEthnicity, StateSentenceGroup
+    StatePersonEthnicity, StateSentenceGroup, StateAssessment
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -58,7 +60,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             current_address='123 Easy Street, PITTSBURGH, PA 16161',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='12345678', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONTROL),
                                 StatePersonExternalId(state_person_external_id_id='123A', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='2')],
@@ -80,7 +82,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             current_address='555 FLATBUSH DR, NEW YORK, NY 10031',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='55554444', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONTROL),
                                 StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='2')],
@@ -103,7 +105,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             current_address='5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='99990000', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONTROL),
                                 StatePersonExternalId(state_person_external_id_id='012D', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='6')],
@@ -126,7 +128,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             current_address='214 HAPPY PLACE, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='09876543', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONTROL),
                                 StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                             ],
                             state_person_ethnicities=[StatePersonEthnicity(ethnicity='3')],
@@ -143,6 +145,99 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ])
 
         self.run_parse_file_test(expected, 'dbo_IcsDoc')
+
+    def test_populate_data_dbo_tblInmTestScore(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='123456',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONTROL),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='123456-1-1',
+                                                assessment_type='CSS-M                                             ',
+                                                assessment_class='SOCIAL',
+                                                assessment_date='6/22/2008 13:20:54',
+                                                assessment_score='19'),
+                                StateAssessment(state_assessment_id='123456-2-1',
+                                                assessment_type='HIQ                                               ',
+                                                assessment_class='SOCIAL',
+                                                assessment_date='7/12/2004 8:23:28',
+                                                assessment_score='62'),
+                                StateAssessment(state_assessment_id='123456-3-3',
+                                                assessment_type='LSI-R                                             ',
+                                                assessment_class='RISK',
+                                                assessment_date='10/3/2010 12:11:41',
+                                                assessment_score='25'),
+                            ]),
+                StatePerson(state_person_id='654321',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONTROL),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='654321-1-1',
+                                                assessment_type='CSS-M                                             ',
+                                                assessment_class='SOCIAL',
+                                                assessment_date='4/1/2003 11:42:17',
+                                                assessment_score='22'),
+                                StateAssessment(state_assessment_id='654321-3-1',
+                                                assessment_type='LSI-R                                             ',
+                                                assessment_class='RISK',
+                                                assessment_date='6/8/2004 11:07:48',
+                                                assessment_score='19'),
+                                StateAssessment(state_assessment_id='654321-4-1',
+                                                assessment_type='TCU                                               ',
+                                                assessment_class='SUBSTANCE_ABUSE',
+                                                assessment_date='1/4/2004 11:09:52',
+                                                assessment_score='6'),
+                                StateAssessment(state_assessment_id='654321-5-1',
+                                                assessment_type='ST99                                              ',
+                                                assessment_class='SEX_OFFENSE',
+                                                assessment_date='7/5/2004 15:30:59',
+                                                assessment_score='4'),
+                            ]),
+                StatePerson(state_person_id='445566',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONTROL),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='445566-2-1',
+                                                assessment_type='HIQ                                               ',
+                                                assessment_class='SOCIAL',
+                                                assessment_date='7/28/2005 10:33:31',
+                                                assessment_score='61'),
+                                StateAssessment(state_assessment_id='445566-3-2',
+                                                assessment_type='LSI-R                                             ',
+                                                assessment_class='RISK',
+                                                assessment_date='12/19/2016 15:21:56',
+                                                assessment_score='13'),
+                            ]),
+                StatePerson(state_person_id='778899',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONTROL),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='778899-3-3',
+                                                assessment_type='LSI-R                                             ',
+                                                assessment_class='RISK',
+                                                assessment_date='1/6/2017 18:16:56',
+                                                assessment_score='14'),
+                                StateAssessment(state_assessment_id='778899-6-1',
+                                                assessment_type='RST                                               ',
+                                                assessment_class='RISK',
+                                                assessment_date='12/8/2012 15:09:08',
+                                                assessment_score='9',
+                                                assessment_metadata=json.dumps({"latest_version": False})),
+                                StateAssessment(state_assessment_id='778899-6-2',
+                                                assessment_type='RST                                               ',
+                                                assessment_class='RISK',
+                                                assessment_date='5/11/2018 15:54:06',
+                                                assessment_score='7',
+                                                assessment_metadata=json.dumps({"latest_version": True})),
+                            ]),
+            ])
+
+        self.run_parse_file_test(expected, 'dbo_tblInmTestScore')
 
     def test_populate_data_dbo_Offender(self):
         expected = IngestInfo(
@@ -190,6 +285,61 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_Offender')
 
+    def test_populate_data_dbo_LSIR(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='789C',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='789C', id_type=US_PA_PBPP),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='789C-0-1',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='01312001',
+                                                assessment_score='14'),
+                            ]),
+                StatePerson(state_person_id='456B',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='456B-1-1',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='12222005',
+                                                assessment_score='23'),
+                            ]),
+                StatePerson(state_person_id='345E',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
+                            ],
+                            state_assessments=[
+                                StateAssessment(state_assessment_id='345E-3-1',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='01192006',
+                                                assessment_score='30'),
+                                StateAssessment(state_assessment_id='345E-3-2',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='08032006',
+                                                assessment_score='30'),
+                                StateAssessment(state_assessment_id='345E-3-3',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='01152007',
+                                                assessment_score='31'),
+                                StateAssessment(state_assessment_id='345E-4-1',
+                                                assessment_type='LSIR',
+                                                assessment_class='RISK',
+                                                assessment_date='07142007',
+                                                assessment_score='33'),
+                            ]),
+            ])
+
+        self.run_parse_file_test(expected, 'dbo_LSIR')
+
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
 
@@ -207,7 +357,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='123456', id_type=US_PA_CONT),
+                    state_code=_STATE_CODE_UPPER, external_id='123456', id_type=US_PA_CONTROL),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='123A', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -243,7 +393,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='654321', id_type=US_PA_CONT),
+                    state_code=_STATE_CODE_UPPER, external_id='654321', id_type=US_PA_CONTROL),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='456B', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -279,7 +429,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='445566', id_type=US_PA_CONT),
+                    state_code=_STATE_CODE_UPPER, external_id='445566', id_type=US_PA_CONTROL),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='012D', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -315,7 +465,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='778899', id_type=US_PA_CONT),
+                    state_code=_STATE_CODE_UPPER, external_id='778899', id_type=US_PA_CONTROL),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='345E', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -346,6 +496,96 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('dbo_IcsDoc.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # dbo_tblInmTestScore
+        ######################################
+
+        person_1_doc_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SOCIAL, assessment_class_raw_text='SOCIAL',
+                assessment_type=StateAssessmentType.CSSM, assessment_type_raw_text='CSS-M',
+                assessment_score=19, assessment_date=datetime.date(year=2008, month=6, day=22),
+                external_id='123456-1-1', state_code=_STATE_CODE_UPPER, person=person_1),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SOCIAL, assessment_class_raw_text='SOCIAL',
+                assessment_type=StateAssessmentType.HIQ, assessment_type_raw_text='HIQ',
+                assessment_score=62, assessment_date=datetime.date(year=2004, month=7, day=12),
+                external_id='123456-2-1', state_code=_STATE_CODE_UPPER, person=person_1),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSI-R',
+                assessment_score=25, assessment_date=datetime.date(year=2010, month=10, day=3),
+                external_id='123456-3-3', state_code=_STATE_CODE_UPPER, person=person_1),
+        ]
+        person_1.assessments = person_1_doc_assessments
+
+        person_2_doc_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SOCIAL, assessment_class_raw_text='SOCIAL',
+                assessment_type=StateAssessmentType.CSSM, assessment_type_raw_text='CSS-M',
+                assessment_score=22, assessment_date=datetime.date(year=2003, month=4, day=1),
+                external_id='654321-1-1', state_code=_STATE_CODE_UPPER, person=person_2),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSI-R',
+                assessment_score=19, assessment_date=datetime.date(year=2004, month=6, day=8),
+                external_id='654321-3-1', state_code=_STATE_CODE_UPPER, person=person_2),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SUBSTANCE_ABUSE, assessment_class_raw_text='SUBSTANCE_ABUSE',
+                assessment_type=StateAssessmentType.TCU_DRUG_SCREEN, assessment_type_raw_text='TCU',
+                assessment_score=6, assessment_date=datetime.date(year=2004, month=1, day=4),
+                external_id='654321-4-1', state_code=_STATE_CODE_UPPER, person=person_2),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SEX_OFFENSE, assessment_class_raw_text='SEX_OFFENSE',
+                assessment_type=StateAssessmentType.STATIC_99, assessment_type_raw_text='ST99',
+                assessment_score=4, assessment_date=datetime.date(year=2004, month=7, day=5),
+                external_id='654321-5-1', state_code=_STATE_CODE_UPPER, person=person_2),
+        ]
+        person_2.assessments = person_2_doc_assessments
+
+        person_3_doc_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.SOCIAL, assessment_class_raw_text='SOCIAL',
+                assessment_type=StateAssessmentType.HIQ, assessment_type_raw_text='HIQ',
+                assessment_score=61, assessment_date=datetime.date(year=2005, month=7, day=28),
+                external_id='445566-2-1', state_code=_STATE_CODE_UPPER, person=person_3),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSI-R',
+                assessment_score=13, assessment_date=datetime.date(year=2016, month=12, day=19),
+                external_id='445566-3-2', state_code=_STATE_CODE_UPPER, person=person_3),
+        ]
+        person_3.assessments = person_3_doc_assessments
+
+        person_4_doc_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSI-R',
+                assessment_score=14, assessment_date=datetime.date(year=2017, month=1, day=6),
+                external_id='778899-3-3', state_code=_STATE_CODE_UPPER, person=person_4),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.PA_RST, assessment_type_raw_text='RST',
+                assessment_score=9, assessment_date=datetime.date(year=2012, month=12, day=8),
+                assessment_metadata='{"LATEST_VERSION": FALSE}',
+                external_id='778899-6-1', state_code=_STATE_CODE_UPPER, person=person_4),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.PA_RST, assessment_type_raw_text='RST',
+                assessment_score=7, assessment_date=datetime.date(year=2018, month=5, day=11),
+                assessment_metadata='{"LATEST_VERSION": TRUE}',
+                external_id='778899-6-2', state_code=_STATE_CODE_UPPER, person=person_4),
+        ]
+        person_4.assessments = person_4_doc_assessments
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename('dbo_tblInmTestScore.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -390,6 +630,64 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Assert
         self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # dbo_LSIR
+        ######################################
+        # Arrange
+        person_2_pbpp_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=23, assessment_date=datetime.date(year=2005, month=12, day=22),
+                external_id='456B-1-1', state_code=_STATE_CODE_UPPER, person=person_2),
+        ]
+        person_2.assessments.extend(person_2_pbpp_assessments)
+
+        person_4_pbpp_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=30, assessment_date=datetime.date(year=2006, month=1, day=19),
+                external_id='345E-3-1', state_code=_STATE_CODE_UPPER, person=person_4),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=30, assessment_date=datetime.date(year=2006, month=8, day=3),
+                external_id='345E-3-2', state_code=_STATE_CODE_UPPER, person=person_4),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=31, assessment_date=datetime.date(year=2007, month=1, day=15),
+                external_id='345E-3-3', state_code=_STATE_CODE_UPPER, person=person_4),
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=33, assessment_date=datetime.date(year=2007, month=7, day=14),
+                external_id='345E-4-1', state_code=_STATE_CODE_UPPER, person=person_4),
+        ]
+        person_4.assessments.extend(person_4_pbpp_assessments)
+
+        person_5_pbpp_assessments = [
+            entities.StateAssessment.new_with_defaults(
+                assessment_class=StateAssessmentClass.RISK, assessment_class_raw_text='RISK',
+                assessment_type=StateAssessmentType.LSIR, assessment_type_raw_text='LSIR',
+                assessment_score=14, assessment_date=datetime.date(year=2001, month=1, day=31),
+                external_id='789C-0-1', state_code=_STATE_CODE_UPPER, person=person_5),
+        ]
+        person_5.assessments.extend(person_5_pbpp_assessments)
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename('dbo_LSIR.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # Full Rerun for Idempotence
+        ######################################
 
         # Rerun for sanity
         file_tags = self.controller.get_file_tag_rank_list()
