@@ -3,7 +3,9 @@
 merge_base_hash=$(git merge-base master HEAD)
 current_head_hash=$(git rev-parse HEAD)
 current_head_branch_name=$(git rev-parse --abbrev-ref HEAD)
-changed_files_cmd="git diff --name-only $(git merge-base HEAD master)"
+
+# Returns all files with updates that are not deletions
+changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD master)"
 changed_files=$(${changed_files_cmd})
 
 # Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not
@@ -27,6 +29,9 @@ else
         exit 0
     fi
 
-    echo "Running differential pylint for branch $current_head_branch_name";
+    echo "Running differential pylint for branch [$current_head_branch_name]";
+    echo "Changed files:"
+    echo ${changed_python_files} | tr " " "\n"
+
     pylint ${changed_python_files};
 fi
