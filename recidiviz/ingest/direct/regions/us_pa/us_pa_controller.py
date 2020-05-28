@@ -22,8 +22,7 @@ from typing import List, Dict, Optional, Callable
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
-from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_INMATE, US_PA_CONT, US_PA_DOC, \
-    US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONT, US_PA_PBPP
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
@@ -50,12 +49,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'dbo_IcsDoc': [
-                gen_label_single_external_id_hook(US_PA_DOC),
+                gen_label_single_external_id_hook(US_PA_SID),
                 self.gen_hydrate_alternate_external_ids({
                     'Cont_Num': US_PA_CONT,
-                    'Inmate_Num': US_PA_INMATE,
                     'PBPP_Num': US_PA_PBPP,
-                    'SID_Num': US_PA_SID,
                 }),
                 copy_name_to_alias,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
