@@ -72,15 +72,22 @@ state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
     state_enum_strings.state_assessment_class_security_classification,
+    state_enum_strings.state_assessment_class_sex_offense,
+    state_enum_strings.state_assessment_class_social,
     state_enum_strings.state_assessment_class_substance_abuse,
     name='state_assessment_class')
 
 state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_asi,
+    state_enum_strings.state_assessment_type_cssm,
+    state_enum_strings.state_assessment_type_hiq,
     state_enum_strings.state_assessment_type_lsir,
     state_enum_strings.state_assessment_type_oras,
+    state_enum_strings.state_assessment_type_pa_rst,
     state_enum_strings.state_assessment_type_psa,
     state_enum_strings.state_assessment_type_sorac,
+    state_enum_strings.state_assessment_type_static_99,
+    state_enum_strings.state_assessment_type_tcu_drug_screen,
     state_enum_strings.state_assessment_type_oras_community_supervision,
     state_enum_strings.state_assessment_type_oras_community_supervision_screening,
     state_enum_strings.state_assessment_type_oras_misdemeanor_assessment,
