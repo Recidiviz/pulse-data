@@ -21,13 +21,13 @@ from typing import Type
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
-from recidiviz.common.constants.state.external_id_types import US_PA_DOC, US_PA_CONT, US_PA_INMATE, US_PA_SID, \
-    US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_PA_CONT, US_PA_SID, US_PA_PBPP
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
-    StatePersonEthnicity
+    StatePersonEthnicity, StateSentenceGroup
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -50,18 +50,16 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
     def test_populate_data_dbo_IcsDoc(self):
         expected = IngestInfo(
             state_people=[
-                StatePerson(state_person_id='1',
+                StatePerson(state_person_id='12345678',
                             surname='RUSSELL',
                             given_names='BERTRAND',
                             gender='2',
                             birthdate='19760318',
                             current_address='123 Easy Street, PITTSBURGH, PA 16161',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='1', id_type=US_PA_DOC),
-                                StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONT),
-                                StatePersonExternalId(state_person_external_id_id='AB7413', id_type=US_PA_INMATE),
-                                StatePersonExternalId(state_person_external_id_id='123A', id_type=US_PA_PBPP),
                                 StatePersonExternalId(state_person_external_id_id='12345678', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='123A', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='2')],
                             state_aliases=[
@@ -70,19 +68,20 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     given_names='BERTRAND',
                                     alias_type='GIVEN_NAME'
                                 )
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(state_sentence_group_id='AB7413')
                             ]),
-                StatePerson(state_person_id='2',
+                StatePerson(state_person_id='55554444',
                             surname='SARTRE',
                             given_names='JEAN-PAUL',
                             gender='2',
                             birthdate='19821002',
                             current_address='555 FLATBUSH DR, NEW YORK, NY 10031',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='2', id_type=US_PA_DOC),
-                                StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONT),
-                                StatePersonExternalId(state_person_external_id_id='GF3374', id_type=US_PA_INMATE),
-                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
                                 StatePersonExternalId(state_person_external_id_id='55554444', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='2')],
                             state_aliases=[
@@ -91,8 +90,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     given_names='JEAN-PAUL',
                                     alias_type='GIVEN_NAME'
                                 )
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(state_sentence_group_id='GF3374')
                             ]),
-                StatePerson(state_person_id='3',
+                StatePerson(state_person_id='99990000',
                             surname='KIERKEGAARD',
                             given_names='SOREN',
                             name_suffix='JR ',
@@ -100,11 +102,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             birthdate='19911120',
                             current_address='5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='3', id_type=US_PA_DOC),
-                                StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONT),
-                                StatePersonExternalId(state_person_external_id_id='CJ1991', id_type=US_PA_INMATE),
-                                StatePersonExternalId(state_person_external_id_id='012D', id_type=US_PA_PBPP),
                                 StatePersonExternalId(state_person_external_id_id='99990000', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='012D', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='6')],
                             state_aliases=[
@@ -114,19 +114,20 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     name_suffix='JR ',
                                     alias_type='GIVEN_NAME'
                                 )
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(state_sentence_group_id='CJ1991')
                             ]),
-                StatePerson(state_person_id='4',
+                StatePerson(state_person_id='09876543',
                             surname='RAWLS',
                             given_names='JOHN',
                             gender='2',
                             birthdate='19890617',
                             current_address='214 HAPPY PLACE, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='4', id_type=US_PA_DOC),
-                                StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONT),
-                                StatePersonExternalId(state_person_external_id_id='JE1989', id_type=US_PA_INMATE),
-                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                                 StatePersonExternalId(state_person_external_id_id='09876543', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONT),
+                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                             ],
                             state_person_ethnicities=[StatePersonEthnicity(ethnicity='3')],
                             state_aliases=[
@@ -135,6 +136,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     given_names='JOHN',
                                     alias_type='GIVEN_NAME'
                                 )
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(state_sentence_group_id='JE1989')
                             ]),
             ])
 
@@ -203,11 +207,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='1', id_type=US_PA_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='123456', id_type=US_PA_CONT),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='AB7413', id_type=US_PA_INMATE),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='123A', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -225,6 +225,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
             ],
         )
+        person_1_sentence_groups = [
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, external_id='AB7413', person=person_1,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            ),
+        ]
+        person_1.sentence_groups = person_1_sentence_groups
+
         person_2 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JEAN-PAUL", "surname": "SARTRE"}',
             gender=Gender.MALE,
@@ -235,11 +243,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='2', id_type=US_PA_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='654321', id_type=US_PA_CONT),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='GF3374', id_type=US_PA_INMATE),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='456B', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -257,6 +261,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
             ],
         )
+        person_2_sentence_groups = [
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, external_id='GF3374', person=person_2,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            ),
+        ]
+        person_2.sentence_groups = person_2_sentence_groups
+
         person_3 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
             gender=Gender.FEMALE,
@@ -267,11 +279,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='3', id_type=US_PA_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='445566', id_type=US_PA_CONT),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='CJ1991', id_type=US_PA_INMATE),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='012D', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -289,6 +297,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text='6'),
             ],
         )
+        person_3_sentence_groups = [
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, external_id='CJ1991', person=person_3,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            ),
+        ]
+        person_3.sentence_groups = person_3_sentence_groups
+
         person_4 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JOHN", "surname": "RAWLS"}',
             gender=Gender.MALE,
@@ -299,11 +315,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='4', id_type=US_PA_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='778899', id_type=US_PA_CONT),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER, external_id='JE1989', id_type=US_PA_INMATE),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='345E', id_type=US_PA_PBPP),
                 entities.StatePersonExternalId.new_with_defaults(
@@ -321,6 +333,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='3'),
             ],
         )
+        person_4_sentence_groups = [
+            entities.StateSentenceGroup.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, external_id='JE1989', person=person_4,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            ),
+        ]
+        person_4.sentence_groups = person_4_sentence_groups
+
         expected_people = [person_1, person_2, person_3, person_4]
         populate_person_backedges(expected_people)
 
