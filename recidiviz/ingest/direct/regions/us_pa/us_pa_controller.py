@@ -16,19 +16,20 @@
 # =============================================================================
 
 """Direct ingest controller implementation for US_PA."""
-
+import json
 from typing import List, Dict, Optional, Callable
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
-from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONT, US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity
-from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId
+from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -51,12 +52,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_IcsDoc': [
                 gen_label_single_external_id_hook(US_PA_SID),
                 self.gen_hydrate_alternate_external_ids({
-                    'Cont_Num': US_PA_CONT,
+                    'Cont_Num': US_PA_CONTROL,
                     'PBPP_Num': US_PA_PBPP,
                 }),
                 copy_name_to_alias,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
                 self._compose_current_address,
+            ],
+            'dbo_tblInmTestScore': [
+                self.gen_hydrate_alternate_external_ids({
+                    'Control_Number': US_PA_CONTROL,
+                }),
+                self._generate_doc_assessment_external_id,
+                self._enrich_doc_assessments,
             ],
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
@@ -65,18 +73,28 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 }),
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             ],
+            'dbo_LSIR': [
+                gen_label_single_external_id_hook(US_PA_PBPP),
+                self._generate_pbpp_assessment_external_id,
+                self._enrich_pbpp_assessments,
+            ]
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'dbo_IcsDoc': [],
+            'dbo_tblInmTestScore': [],
             'dbo_Offender': [],
+            'dbo_LSIR': [],
         }
 
     FILE_TAGS = [
         # Data source: DOC
         'dbo_IcsDoc',
+        'dbo_tblInmTestScore',
+
         # Data source: PBPP
         'dbo_Offender',
+        'dbo_LSIR',
     ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -90,6 +108,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         Gender.FEMALE: ['1', 'F'],
         Gender.MALE: ['2', 'M'],
+
+        StateAssessmentType.CSSM: ['CSS-M'],
+        StateAssessmentType.LSIR: ['LSI-R'],
+        StateAssessmentType.PA_RST: ['RST'],
+        StateAssessmentType.STATIC_99: ['ST99'],
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
@@ -159,3 +182,78 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
                 obj.current_address = address
+
+    ASSESSMENT_CLASSES: Dict[str, StateAssessmentClass] = {
+        'CSS-M': StateAssessmentClass.SOCIAL,
+        'HIQ': StateAssessmentClass.SOCIAL,
+        'LSI-R': StateAssessmentClass.RISK,
+        'RST': StateAssessmentClass.RISK,
+        'ST99': StateAssessmentClass.SEX_OFFENSE,
+        'TCU': StateAssessmentClass.SUBSTANCE_ABUSE,
+    }
+
+    @staticmethod
+    def _generate_doc_assessment_external_id(_file_tag: str,
+                                             row: Dict[str, str],
+                                             extracted_objects: List[IngestObject],
+                                             _cache: IngestObjectCache):
+        """Adds the assessment external_id to the extracted state assessment."""
+        control_number = row['Control_Number']
+        test_id = row['Test_Id']
+        version_number = row['AsmtVer_Num']
+        external_id = '-'.join([control_number, test_id, version_number])
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateAssessment):
+                extracted_object.state_assessment_id = external_id
+
+    def _enrich_doc_assessments(self,
+                                _file_tag: str,
+                                row: Dict[str, str],
+                                extracted_objects: List[IngestObject],
+                                _cache: IngestObjectCache):
+        """Enriches the assessment object with additional metadata."""
+
+        def _rst_metadata() -> Optional[Dict]:
+            version_flag = row.get('RSTRvsd_Flg', None)
+            if version_flag:
+                return {'latest_version': version_flag in ['1', '-1']}
+            return None
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateAssessment):
+                assessment_type = obj.assessment_type.strip() if obj.assessment_type else ''
+                assessment_class = self.ASSESSMENT_CLASSES.get(assessment_type, None)
+                if assessment_class:
+                    obj.assessment_class = assessment_class.value
+
+                if assessment_type == 'RST':
+                    rst_metadata = _rst_metadata()
+                    if rst_metadata:
+                        obj.assessment_metadata = json.dumps(rst_metadata)
+
+    @staticmethod
+    def _generate_pbpp_assessment_external_id(_file_tag: str,
+                                              row: Dict[str, str],
+                                              extracted_objects: List[IngestObject],
+                                              _cache: IngestObjectCache):
+        """Adds the assessment external_id to the extracted state assessment."""
+        parole_number = row['ParoleNumber']
+        parole_count_id = row['ParoleCountID']
+        lsir_instance = row['LsirID']
+        external_id = '-'.join([parole_number, parole_count_id, lsir_instance])
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateAssessment):
+                extracted_object.state_assessment_id = external_id
+
+    @staticmethod
+    def _enrich_pbpp_assessments(_file_tag: str,
+                                 _row: Dict[str, str],
+                                 extracted_objects: List[IngestObject],
+                                 _cache: IngestObjectCache):
+        """Enriches the assessment object with additional metadata."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateAssessment):
+                obj.assessment_type = StateAssessmentType.LSIR.value
+                obj.assessment_class = StateAssessmentClass.RISK.value
