@@ -1815,7 +1815,8 @@ def expected_incarceration_stay_events(incarceration_period: StateIncarcerationP
     expected_incarceration_events = []
 
     if incarceration_period.admission_date:
-        release_date = incarceration_period.release_date if incarceration_period.release_date else date.today()
+        release_date = (incarceration_period.release_date if incarceration_period.release_date
+                        else date.today() + relativedelta(days=1))
 
         days_incarcerated = [incarceration_period.admission_date + relativedelta(days=x)
                              for x in range((release_date - incarceration_period.admission_date).days)]

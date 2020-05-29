@@ -58,7 +58,7 @@ def find_incarceration_events(
     if not incarceration_periods:
         return incarceration_events
 
-    incarceration_events.extend(find_all_end_of_month_state_prison_stay_events(
+    incarceration_events.extend(find_all_stay_events(
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
@@ -110,7 +110,7 @@ def find_all_admission_release_events(
     return incarceration_events
 
 
-def find_all_end_of_month_state_prison_stay_events(
+def find_all_stay_events(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
@@ -154,8 +154,8 @@ def find_incarceration_stays(
             raise ValueError("Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
                              " setting missing dates.")
 
-        # This person is in custody for this period. Set the release date for today.
-        release_date = date.today()
+        # This person is in custody for this period. Set the release date for tomorrow.
+        release_date = date.today() + relativedelta(days=1)
 
     if admission_date is None:
         return incarceration_stay_events
