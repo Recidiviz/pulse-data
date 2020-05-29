@@ -34,7 +34,8 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
-    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason, \
+    StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecision
@@ -554,6 +555,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             admission_date='2008-01-01',
                                             release_reason='I',
                                             release_date='2008-10-01',
+                                            specialized_purpose_for_incarceration='TM',
                                         ),
                                         StateIncarcerationPeriod(
                                             state_incarceration_period_id='1111-2',
@@ -563,6 +565,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             admission_date='2008-10-01',
                                             release_reason='H',
                                             release_date='2009-01-01',
+                                            specialized_purpose_for_incarceration='TM',
                                         ),
                                     ]
                                 )
@@ -581,6 +584,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             admission_date='2019-01-01',
                                             release_reason='I',
                                             release_date='2019-02-01',
+                                            specialized_purpose_for_incarceration='TM',
                                         ),
                                         StateIncarcerationPeriod(
                                             state_incarceration_period_id='1111-4',
@@ -590,7 +594,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             admission_date='2019-02-01',
                                             release_reason='P',
                                             release_date='2020-01-01',
-                                            specialized_purpose_for_incarceration='TREATMENT_IN_PRISON',
+                                            specialized_purpose_for_incarceration="RJ,PB",
                                         ),
                                     ]
                                 )
@@ -613,19 +617,21 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             state_incarceration_period_id='2222-1',
                                             facility='SHERIFF DEPT 2',
                                             incarceration_type='COUNTY_JAIL',
-                                            admission_reason='TEMPORARY_CUSTODY',
+                                            admission_reason='P',
                                             admission_date='2010-01-01',
-                                            release_reason='RELEASED_FROM_TEMPORARY_CUSTODY',
+                                            release_reason='I',
                                             release_date='2010-06-01',
+                                            specialized_purpose_for_incarceration='PV',
                                         ),
                                         StateIncarcerationPeriod(
                                             state_incarceration_period_id='2222-2',
                                             facility='FACILITY 3',
                                             incarceration_type='STATE_PRISON',
-                                            admission_reason='PROBATION_REVOCATION',
+                                            admission_reason='I',
                                             admission_date='2010-06-01',
                                             release_reason='F',
                                             release_date='2011-01-01',
+                                            specialized_purpose_for_incarceration='TM',
                                         ),
                                     ]
                                 )
@@ -655,10 +661,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-1',
                                             supervision_site='DISTRICT 1',
-                                            admission_reason='INVESTIGATION',
+                                            admission_reason='COURT_SENTENCE',
                                             start_date='2007-10-01',
-                                            termination_reason='INVESTIGATION',
+                                            termination_reason='I',
                                             termination_date='2008-01-01',
+                                            supervision_period_supervision_type='PS',
                                         ),
                                     ],
                                 )
@@ -672,23 +679,26 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-2',
                                             supervision_site='DISTRICT 1',
-                                            admission_reason='INVESTIGATION',
+                                            admission_reason='H',
                                             start_date='2017-10-01',
-                                            termination_reason='INVESTIGATION',
+                                            termination_reason='P',
                                             termination_date='2018-01-01',
+                                            supervision_period_supervision_type='PS',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-3',
                                             supervision_site='DISTRICT 1',
-                                            admission_reason='COURT_SENTENCE',
+                                            admission_reason='P',
                                             start_date='2018-01-01',
                                             termination_reason='I',
                                             termination_date='2018-12-31',
+                                            supervision_period_supervision_type='PB',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-4',
                                             supervision_site='DISTRICT 1',
                                             admission_reason='I',
+                                            supervision_period_supervision_type='PR',
                                             start_date='2020-01-01',
                                         ),
                                     ]
@@ -715,6 +725,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2009-01-01',
                                             termination_reason='F',
                                             termination_date='2009-07-01',
+                                            supervision_period_supervision_type='PB',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='2222-2',
@@ -722,6 +733,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2009-07-01',
                                             termination_reason='RETURN_FROM_ABSCONSION',
                                             termination_date='2009-12-01',
+                                            supervision_period_supervision_type='PB',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='2222-3',
@@ -730,6 +742,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2009-12-01',
                                             termination_reason='I',
                                             termination_date='2009-12-31',
+                                            supervision_period_supervision_type='PB,PR',
                                         ),
                                     ]
                                 )
@@ -755,10 +768,12 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2015-01-01',
                                             termination_reason='TRANSFER_OUT_OF_STATE',
                                             termination_date='2018-01-01',
+                                            supervision_period_supervision_type='PB',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='3333-2',
                                             admission_reason='TRANSFER_OUT_OF_STATE',
+                                            supervision_period_supervision_type='PB',
                                             start_date='2018-01-01',
                                         ),
                                     ]
@@ -1511,6 +1526,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             release_reason_raw_text='I',
             release_date=datetime.date(year=2008, month=10, day=1),
             incarceration_sentences=[is_1111_1],
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='TM',
             person=is_1111_1.person,
         )
         ip_1111_2 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -1527,6 +1544,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             release_reason_raw_text='H',
             release_date=datetime.date(year=2009, month=1, day=1),
             incarceration_sentences=[is_1111_1],
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='TM',
             person=is_1111_1.person,
         )
         sg_1111_1.incarceration_sentences.append(is_1111_1_placeholder)
@@ -1545,13 +1564,15 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='STATE_PRISON',
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             admission_reason_raw_text='P',
             admission_date=datetime.date(year=2019, month=1, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text='I',
             release_date=datetime.date(year=2019, month=2, day=1),
             incarceration_sentences=[is_1111_3],
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='TM',
             person=is_1111_3.person,
         )
         ip_1111_4 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -1568,7 +1589,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             release_reason_raw_text='P',
             release_date=datetime.date(year=2020, month=1, day=1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            specialized_purpose_for_incarceration_raw_text='TREATMENT_IN_PRISON',
+            specialized_purpose_for_incarceration_raw_text="RJ,PB",
             incarceration_sentences=[is_1111_3],
             person=is_1111_3.person,
         )
@@ -1588,12 +1609,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             incarceration_type_raw_text='COUNTY_JAIL',
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text='TEMPORARY_CUSTODY',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason_raw_text='P',
             admission_date=datetime.date(year=2010, month=1, day=1),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text='RELEASED_FROM_TEMPORARY_CUSTODY',
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text='I',
             release_date=datetime.date(year=2010, month=6, day=1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            specialized_purpose_for_incarceration_raw_text='PV',
             incarceration_sentences=[is_2222_2],
             person=is_2222_2.person,
         )
@@ -1604,12 +1627,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text='STATE_PRISON',
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            admission_reason_raw_text='PROBATION_REVOCATION',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text='I',
             admission_date=datetime.date(year=2010, month=6, day=1),
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
             release_reason_raw_text='F',
             release_date=datetime.date(year=2011, month=1, day=1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='TM',
             incarceration_sentences=[is_2222_2],
             person=is_2222_2.person,
         )
@@ -1637,12 +1662,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='1111-1',
             supervision_site='DISTRICT 1',
             status=StateSupervisionPeriodStatus.TERMINATED,
-            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-            admission_reason_raw_text='INVESTIGATION',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text='COURT_SENTENCE',
             start_date=datetime.date(year=2007, month=10, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.INVESTIGATION,
-            termination_reason_raw_text='INVESTIGATION',
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason_raw_text='I',
             termination_date=datetime.date(year=2008, month=1, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_period_supervision_type_raw_text='PS',
             supervision_sentences=[ss_1111_1_placeholder],
             person=ss_1111_1_placeholder.person,
         )
@@ -1659,12 +1686,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='1111-2',
             supervision_site='DISTRICT 1',
             status=StateSupervisionPeriodStatus.TERMINATED,
-            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-            admission_reason_raw_text='INVESTIGATION',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text='H',
             start_date=datetime.date(year=2017, month=10, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.INVESTIGATION,
-            termination_reason_raw_text='INVESTIGATION',
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text='P',
             termination_date=datetime.date(year=2018, month=1, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_period_supervision_type_raw_text='PS',
             supervision_sentences=[ss_1111_2_placeholder],
             person=ss_1111_2_placeholder.person,
         )
@@ -1673,11 +1702,13 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='1111-3',
             supervision_site='DISTRICT 1',
             status=StateSupervisionPeriodStatus.TERMINATED,
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            admission_reason_raw_text='COURT_SENTENCE',
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text='P',
             start_date=datetime.date(year=2018, month=1, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
             termination_reason_raw_text='I',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='PB',
             termination_date=datetime.date(year=2018, month=12, day=31),
             supervision_sentences=[ss_1111_2],
             person=ss_1111_2.person,
@@ -1690,6 +1721,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='I',
             start_date=datetime.date(year=2020, month=1, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_period_supervision_type_raw_text='PR',
             incarceration_sentences=[is_1111_3],
             supervising_officer=po_1,
             person=is_1111_3.person,
@@ -1715,6 +1748,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             termination_reason_raw_text='F',
             termination_date=datetime.date(year=2009, month=7, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='PB',
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
@@ -1727,6 +1762,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             start_date=datetime.date(year=2009, month=7, day=1),
             termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
             termination_reason_raw_text='RETURN_FROM_ABSCONSION',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='PB',
             termination_date=datetime.date(year=2009, month=12, day=1),
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
@@ -1739,9 +1776,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             admission_reason_raw_text='F',
             start_date=datetime.date(year=2009, month=12, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
             termination_reason_raw_text='I',
             termination_date=datetime.date(year=2009, month=12, day=31),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_period_supervision_type_raw_text='PB,PR',
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
@@ -1764,6 +1803,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
             termination_reason_raw_text='TRANSFER_OUT_OF_STATE',
             termination_date=datetime.date(year=2018, month=1, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='PB',
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
         )
@@ -1774,6 +1815,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
             admission_reason_raw_text='TRANSFER_OUT_OF_STATE',
             start_date=datetime.date(year=2018, month=1, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='PB',
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
             supervising_officer=po_2,

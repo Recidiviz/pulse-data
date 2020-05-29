@@ -18,9 +18,10 @@
 from typing import Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES
 
 
@@ -43,7 +44,7 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
     # TODO(2999): Should we have a special reason for when someone goes to parole violation?
     if label in ('I', 'O'):     # Going to incarceration. TODO(2999): Clarify when 'O' is used.
-        return StateSupervisionPeriodTerminationReason.REVOCATION
+        return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
     if label == 'F':    # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     return None
@@ -53,7 +54,7 @@ def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcera
     if label == 'H':    # Coming from history (person had completed sentences in past)
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
     if label == 'P':    # Coming from probation/parole within the state
-        return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
     if label in ('I', 'O'):     # Coming from incarceration. TODO(2999): Clarify when 'O' is used.
         return StateIncarcerationPeriodAdmissionReason.TRANSFER
     if label == 'F':    # Coming from absconsion.
@@ -70,6 +71,50 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
         return StateIncarcerationPeriodReleaseReason.TRANSFER
     if label == 'F':    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
+    return None
+
+
+def purpose_for_incarceration_mapper(label: str) -> Optional[StateSpecializedPurposeForIncarceration]:
+    """Parses status information from the 'offstat' table into potential purposes for incarceration. Ranking of priority
+    is taken from Idaho itself (the 'statstrt' table in the us_id_raw_data dataset).
+    """
+    statuses = sorted_list_from_str(label, delimiter=' ')
+    if 'TM' in statuses:    # Termer
+        return StateSpecializedPurposeForIncarceration.GENERAL
+    if 'RJ' in statuses:    # Rider
+        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+    if 'NO' in statuses:    # Non Idaho commitment TODO(2999): Consider storing out of state info somewhere else.
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    if 'PV' in statuses:    # Parole board hold
+        return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+    if 'IP' in statuses:    # Institutional Probation   TODO(2999): Understand what this is.
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    if 'CV' in statuses:    # Civil commitment      TODO(2999): Consider adding a specialized purpose for this
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    if 'CH' in statuses:    # Courtesy Hold         TODO(2999): Understand what this is
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    return None
+
+
+def supervision_period_supervision_type_mapper(label: str) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Parses status information from the 'offstat' table into potential supervision types. Ranking of priority
+    is taken from Idaho itself (the 'statstrt' table in the us_id_raw_data dataset).
+    """
+    statuses = sorted_list_from_str(label, delimiter=' ')
+    if 'PR' in statuses and 'PB' in statuses:   # Parole and Probation
+        return StateSupervisionPeriodSupervisionType.DUAL
+    if 'PR' in statuses:    # Parole
+        return StateSupervisionPeriodSupervisionType.PAROLE
+    if 'PB' in statuses:    # Probation
+        return StateSupervisionPeriodSupervisionType.PROBATION
+    if 'PS' in statuses:    # Pre sentence investigation
+        return StateSupervisionPeriodSupervisionType.INVESTIGATION
+    if 'PA' in statuses:    # Pardon applicant      TODO(2999): Should we filter these people out entirely?
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    if 'PF' in statuses:    # Firearm applicant     TODO(2999): Should we filter these people out entirely?
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    if 'CR' in statuses:    # Rider (no longer used).
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     return None
 
 
