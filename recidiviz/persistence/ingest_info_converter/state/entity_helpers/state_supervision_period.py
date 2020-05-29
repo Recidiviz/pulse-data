@@ -53,6 +53,7 @@ def copy_fields_to_builder(
     new.supervision_site = fn(normalize, 'supervision_site', proto)
     if proto.conditions:
         new.conditions = create_comma_separated_list(proto, 'conditions')
+    new.custodial_authority = fn(normalize, 'custodial_authority', proto)
 
     enum_fields = {
         'status': StateSupervisionPeriodStatus,

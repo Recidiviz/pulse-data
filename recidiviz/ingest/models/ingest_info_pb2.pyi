@@ -1015,6 +1015,7 @@ class StateIncarcerationPeriod(google___protobuf___message___Message):
     projected_release_reason = ... # type: typing___Text
     release_reason = ... # type: typing___Text
     specialized_purpose_for_incarceration = ... # type: typing___Text
+    custodial_authority = ... # type: typing___Text
     state_incarceration_incident_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_parole_decision_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_assessment_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
@@ -1037,6 +1038,7 @@ class StateIncarcerationPeriod(google___protobuf___message___Message):
         projected_release_reason : typing___Optional[typing___Text] = None,
         release_reason : typing___Optional[typing___Text] = None,
         specialized_purpose_for_incarceration : typing___Optional[typing___Text] = None,
+        custodial_authority : typing___Optional[typing___Text] = None,
         state_incarceration_incident_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_parole_decision_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_assessment_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
@@ -1051,8 +1053,8 @@ class StateIncarcerationPeriod(google___protobuf___message___Message):
         def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> StateIncarcerationPeriod: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
-    def HasField(self, field_name: typing_extensions___Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_code",b"state_code",u"state_incarceration_period_id",b"state_incarceration_period_id",u"status",b"status"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_incarceration_incident_ids",b"state_incarceration_incident_ids",u"state_incarceration_period_id",b"state_incarceration_period_id",u"state_parole_decision_ids",b"state_parole_decision_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"status",b"status"]) -> None: ...
+    def HasField(self, field_name: typing_extensions___Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_code",b"state_code",u"state_incarceration_period_id",b"state_incarceration_period_id",u"status",b"status"]) -> builtin___bool: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"admission_date",b"admission_date",u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"facility",b"facility",u"facility_security_level",b"facility_security_level",u"housing_unit",b"housing_unit",u"incarceration_type",b"incarceration_type",u"projected_release_reason",b"projected_release_reason",u"release_date",b"release_date",u"release_reason",b"release_reason",u"source_supervision_violation_response_id",b"source_supervision_violation_response_id",u"specialized_purpose_for_incarceration",b"specialized_purpose_for_incarceration",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_incarceration_incident_ids",b"state_incarceration_incident_ids",u"state_incarceration_period_id",b"state_incarceration_period_id",u"state_parole_decision_ids",b"state_parole_decision_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"status",b"status"]) -> None: ...
 global___StateIncarcerationPeriod = StateIncarcerationPeriod
 
 class StateSupervisionPeriod(google___protobuf___message___Message):
@@ -1070,6 +1072,7 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
     termination_reason = ... # type: typing___Text
     supervision_level = ... # type: typing___Text
     supervising_officer_id = ... # type: typing___Text
+    custodial_authority = ... # type: typing___Text
     conditions = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_supervision_violation_entry_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_assessment_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
@@ -1091,6 +1094,7 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
         termination_reason : typing___Optional[typing___Text] = None,
         supervision_level : typing___Optional[typing___Text] = None,
         supervising_officer_id : typing___Optional[typing___Text] = None,
+        custodial_authority : typing___Optional[typing___Text] = None,
         conditions : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_supervision_violation_entry_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_assessment_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
@@ -1105,8 +1109,8 @@ class StateSupervisionPeriod(google___protobuf___message___Message):
         def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> StateSupervisionPeriod: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
-    def HasField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_period_id",b"state_supervision_period_id",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"conditions",b"conditions",u"county_code",b"county_code",u"start_date",b"start_date",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_supervision_case_type_entry_ids",b"state_supervision_case_type_entry_ids",u"state_supervision_period_id",b"state_supervision_period_id",u"state_supervision_violation_entry_ids",b"state_supervision_violation_entry_ids",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> None: ...
+    def HasField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"start_date",b"start_date",u"state_code",b"state_code",u"state_supervision_period_id",b"state_supervision_period_id",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> builtin___bool: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"admission_reason",b"admission_reason",u"conditions",b"conditions",u"county_code",b"county_code",u"custodial_authority",b"custodial_authority",u"start_date",b"start_date",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_supervision_case_type_entry_ids",b"state_supervision_case_type_entry_ids",u"state_supervision_period_id",b"state_supervision_period_id",u"state_supervision_violation_entry_ids",b"state_supervision_violation_entry_ids",u"status",b"status",u"supervising_officer_id",b"supervising_officer_id",u"supervision_level",b"supervision_level",u"supervision_period_supervision_type",b"supervision_period_supervision_type",u"supervision_site",b"supervision_site",u"supervision_type",b"supervision_type",u"termination_date",b"termination_date",u"termination_reason",b"termination_reason"]) -> None: ...
 global___StateSupervisionPeriod = StateSupervisionPeriod
 
 class StateSupervisionCaseTypeEntry(google___protobuf___message___Message):

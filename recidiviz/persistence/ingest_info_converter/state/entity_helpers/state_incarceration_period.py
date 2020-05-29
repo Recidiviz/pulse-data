@@ -55,6 +55,7 @@ def copy_fields_to_builder(
     new.county_code = fn(normalize, 'county_code', proto)
     new.facility = fn(normalize, 'facility', proto)
     new.housing_unit = fn(normalize, 'housing_unit', proto)
+    new.custodial_authority = fn(normalize, 'custodial_authority', proto)
 
     enum_fields = {
         'status': StateIncarcerationPeriodStatus,
