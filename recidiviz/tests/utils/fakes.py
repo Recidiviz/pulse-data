@@ -114,11 +114,11 @@ def start_on_disk_postgresql_database() -> None:
         # postgres server has already been initialized via config in .travis.yaml.
         os.system('pg_ctl -D /usr/local/var/postgres start &> /dev/null')
 
-        # Create a database with the same name as the user initialized in .travis.yaml
-        os.system(f'createdb {TEST_POSTGRES_DB_NAME} &> /dev/null')
-
         # Create a user with the same name as the user initialized in .travis.yaml (no password set)
         os.system(f'createuser {TEST_POSTGRES_USER_NAME} &> /dev/null')
+
+        # Create a database with the same name as the database initialized in .travis.yaml
+        os.system(f'createdb -O {TEST_POSTGRES_USER_NAME} {TEST_POSTGRES_DB_NAME} &> /dev/null')
 
 
 def stop_and_clear_on_disk_postgresql_database() -> None:
@@ -168,7 +168,7 @@ def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> N
 
     session = SessionFactory.for_schema_base(declarative_base)
     try:
-        for _table_name, table in declarative_base.metadata.tables.items():
+        for table in reversed(declarative_base.metadata.sorted_tables):
             session.execute(table.delete())
         session.commit()
     except Exception as e:

@@ -690,8 +690,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ######################################
 
         # Rerun for sanity
-        file_tags = self.controller.get_file_tag_rank_list()
-        for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+        self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(expected_people)

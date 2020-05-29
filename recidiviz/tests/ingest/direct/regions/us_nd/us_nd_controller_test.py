@@ -3156,9 +3156,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        file_tags = self.controller.get_file_tag_rank_list()
-        for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+        # Rerun for sanity
+        self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(expected_people)
 
@@ -3364,8 +3363,6 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         # Rerun for sanity
-        file_tags = ['elite_offenders', 'docstars_lsi_chronology', 'elite_offenderidentifier']
-        for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f'{file_tag}.csv')
+        self._do_ingest_job_rerun_for_tags(['elite_offenders', 'docstars_lsi_chronology', 'elite_offenderidentifier'])
 
         self.assert_expected_db_people(expected_people)

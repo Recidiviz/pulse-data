@@ -18,6 +18,8 @@
 GcsfsDirectIngestControllers.
 """
 import abc
+import datetime
+import os
 from typing import List, Type, Optional, cast
 
 from freezegun import freeze_time
@@ -26,7 +28,8 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
+    GcsfsIngestViewExportArgs
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
@@ -85,22 +88,36 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
             if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled() else None
 
-        file_path = path_for_fixture_file(self.controller,
-                                          filename,
-                                          file_type=file_type,
-                                          should_normalize=True)
-
         if not isinstance(self.controller.fs, FakeDirectIngestGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
                              f"FakeDirectIngestGCSFileSystem. Found instead "
                              f"type [{type(self.controller.fs)}]")
 
-        self.controller.fs.test_add_path(file_path)
+        if self.controller.region.are_ingest_view_exports_enabled_in_env():
+            ingest_file_export_job_args = GcsfsIngestViewExportArgs(
+                ingest_view_name=os.path.splitext(filename)[0],
+                upper_bound_datetime_to_export=datetime.datetime.utcnow(),
+                upper_bound_datetime_prev=None
+            )
+
+            self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)
+            self.controller.ingest_view_export_manager.export_view_for_args(ingest_file_export_job_args)
+        else:
+            file_path = path_for_fixture_file(self.controller,
+                                              filename,
+                                              file_type=file_type,
+                                              should_normalize=True)
+            self.controller.fs.test_add_path(file_path)
 
         run_task_queues_to_empty(self.controller)
 
         get_region_patcher.stop()
         environ_patcher.stop()
+
+    def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]):
+        self.invalidate_ingest_view_metadata()
+        for file_tag in file_tags:
+            self._run_ingest_job_for_filename(f'{file_tag}.csv')
 
     @staticmethod
     def convert_and_clear_db_ids(db_entities: List[StateBase]):
