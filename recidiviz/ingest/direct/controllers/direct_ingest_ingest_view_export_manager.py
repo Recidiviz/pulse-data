@@ -249,7 +249,8 @@ class DirectIngestIngestViewExportManager:
         if not metadata.normalized_file_name:
             output_file_name = to_normalized_unprocessed_file_name(
                 f'{ingest_view.file_tag}.csv',
-                GcsfsDirectIngestFileType.INGEST_VIEW
+                GcsfsDirectIngestFileType.INGEST_VIEW,
+                dt=ingest_view_export_args.upper_bound_datetime_to_export
             )
         else:
             output_file_name = metadata.normalized_file_name

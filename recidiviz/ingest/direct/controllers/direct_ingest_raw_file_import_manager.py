@@ -380,6 +380,10 @@ class DirectIngestRawFileImportManager:
     def _get_validated_columns(self,
                                file_config: DirectIngestRawFileConfig,
                                contents_handle: GcsfsFileContentsHandle) -> List[str]:
+        # TODO(3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should instead
+        # define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
+        # this function to make sure that the columns in the CSV is a strict subset of expected columns. This will allow
+        # to gracefully any raw data re-imports where a new column gets introduced in a later file.
         columns = pd.read_csv(contents_handle.local_file_path,
                               nrows=1,
                               sep=file_config.separator).columns
