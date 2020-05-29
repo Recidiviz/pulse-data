@@ -29,10 +29,14 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
     to_normalized_unprocessed_file_name
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs, \
     GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata, DirectIngestRawFileMetadata
+from recidiviz.utils import regions
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
 
 UPPER_BOUND_TIMESTAMP_PARAM_NAME = 'update_timestamp_upper_bound_inclusive'
@@ -155,7 +159,9 @@ class DirectIngestIngestViewExportManager:
         logging.info('Beginning export for view tag [%s] with args: [%s].',
                      ingest_view_export_args.ingest_view_name, ingest_view_export_args)
 
-        query, query_params = self._generate_query_with_params(ingest_view_export_args)
+        query, query_params = self._generate_query_with_params(
+            self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
+            ingest_view_export_args)
 
         logging.info('Generated export query [%s]', query)
         logging.info('Generated export query params [%s]', query_params)
@@ -186,8 +192,26 @@ class DirectIngestIngestViewExportManager:
         self.file_metadata_manager.mark_ingest_view_exported(metadata)
         return True
 
+    @classmethod
+    def print_debug_query_for_args(cls,
+                                   ingest_views_by_tag: Dict[str, DirectIngestPreProcessedIngestView],
+                                   ingest_view_export_args: GcsfsIngestViewExportArgs):
+        """Prints a version of the export query for the provided args that can be run in the BigQuery UI."""
+        query, query_params = cls._generate_query_with_params(
+            ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
+            ingest_view_export_args)
+
+        for param in query_params:
+            dt = param.value
+            query = query.replace(
+                f'@{param.name}',
+                f'DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})')
+
+        print(query)
+
+    @staticmethod
     def _generate_query_with_params(
-            self,
+            ingest_view: DirectIngestPreProcessedIngestView,
             ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a date bounded query that represents the data that has changed for this view between the specified
@@ -199,7 +223,6 @@ class DirectIngestIngestViewExportManager:
         Returns the query, along with the query params that must be passed to the BigQuery query job.
         """
 
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
         query_params = [
             bigquery.ScalarQueryParameter(UPPER_BOUND_TIMESTAMP_PARAM_NAME,
                                           bigquery.enums.SqlTypeNames.DATETIME.value,
@@ -277,3 +300,28 @@ class DirectIngestIngestViewExportManager:
             upper_bound_datetime_prev=metadata.datetimes_contained_lower_bound_exclusive,
             upper_bound_datetime_to_export=metadata.datetimes_contained_upper_bound_inclusive
         ) for metadata in metadata_list]
+
+
+if __name__ == '__main__':
+
+    # Update these variables and run to print an export query you can run in the BigQuery UI
+    region_code_: str = 'us_id'
+    ingest_view_name_: str = 'early_discharge_supervision_sentence'
+    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 5, 11)
+    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 5, 18)
+
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        region_ = regions.get_region(region_code_, is_direct_ingest=True)
+        view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
+        views_by_tag_ = {
+            view.file_tag: view
+            for view in view_collector_.collect_views()}
+
+        DirectIngestIngestViewExportManager.print_debug_query_for_args(
+            views_by_tag_,
+            GcsfsIngestViewExportArgs(
+                ingest_view_name=ingest_view_name_,
+                upper_bound_datetime_prev=upper_bound_datetime_prev_,
+                upper_bound_datetime_to_export=upper_bound_datetime_to_export_
+            )
+        )

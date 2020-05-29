@@ -61,6 +61,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             'tagA': DirectIngestRawFileConfig(
                 file_tag='tagA',
                 primary_key_cols=[],
+                datetime_cols=[],
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
@@ -68,6 +69,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             'tagB': DirectIngestRawFileConfig(
                 file_tag='tagB',
                 primary_key_cols=[],
+                datetime_cols=[],
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
@@ -75,6 +77,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             'tagC': DirectIngestRawFileConfig(
                 file_tag='tagC',
                 primary_key_cols=[],
+                datetime_cols=[],
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
@@ -82,6 +85,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             'tagWeDoNotIngest': DirectIngestRawFileConfig(
                 file_tag='tagWeDoNotIngest',
                 primary_key_cols=[],
+                datetime_cols=[],
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,

@@ -48,6 +48,10 @@ class DirectIngestRawFileConfig:
     # A list of columns that constitute the primary key for this file
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
+    # A list of columns that contain dates that we should do our best to normalize into the same string format
+    # to avoid re-ingesting data when raw data date formats change.
+    datetime_cols: List[str] = attr.ib()
+
     # String encoding for this file (e.g. UTF-8)
     encoding: str = attr.ib()
 
@@ -73,6 +77,7 @@ class DirectIngestRawFileConfig:
         return DirectIngestRawFileConfig(
             file_tag=file_config_dict['file_tag'],
             primary_key_cols=file_config_dict['primary_key_cols'],
+            datetime_cols=file_config_dict.get('datetime_cols', []),
             encoding=file_config_dict['encoding'],
             separator=file_config_dict['separator'],
             ignore_quotes=file_config_dict.get('ignore_quotes', False)

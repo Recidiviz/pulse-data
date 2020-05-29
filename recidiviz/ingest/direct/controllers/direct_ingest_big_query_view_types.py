@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
-    DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
+    DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig, _FILE_ID_COL_NAME, _UPDATE_DATETIME_COL_NAME
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
@@ -30,17 +30,17 @@ UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 # before a certain date.
 RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
 WITH rows_with_recency_rank AS (
-   SELECT 
-      *, 
-      ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}} ORDER BY update_datetime DESC) AS recency_rank
-   FROM 
-      `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-   WHERE 
-       update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+    SELECT 
+        * {{except_clause}}, {{datetime_cols_clause}}
+        ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}} ORDER BY update_datetime DESC) AS recency_rank
+    FROM 
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE 
+        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
 )
 
 SELECT * 
-EXCEPT (file_id, recency_rank, update_datetime)
+EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 """
@@ -48,18 +48,28 @@ WHERE recency_rank = 1
 # A query for looking at the most recent row for each primary key
 RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
-   SELECT 
-      *, 
-      ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str} ORDER BY update_datetime DESC) AS recency_rank
-   FROM 
-      `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+    SELECT 
+        * {except_clause}, {datetime_cols_clause}
+        ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str} ORDER BY update_datetime DESC) AS recency_rank
+    FROM 
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
 )
 
 SELECT * 
-EXCEPT (file_id, recency_rank, update_datetime)
+EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 """
+
+
+DATETIME_COL_NORMALIZATION_TEMPLATE = """
+        COALESCE(
+            CAST(SAFE_CAST({col_name} AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', {col_name}) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', {col_name}) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name}) AS DATETIME) AS STRING),
+            {col_name}
+        ) AS {col_name},"""
 
 
 class DirectIngestRawDataTableBigQueryView(BigQueryView):
@@ -72,13 +82,35 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                  raw_file_config: DirectIngestRawFileConfig):
         view_dataset_id = f'{region_code.lower()}_raw_data_up_to_date_views'
         raw_table_dataset_id = DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
+        except_clause = self._except_clause_for_config(raw_file_config)
+        datetime_cols_clause = self._datetime_cols_clause_for_config(raw_file_config)
         super().__init__(project_id=project_id,
                          dataset_id=view_dataset_id,
                          view_id=view_id,
                          view_query_template=view_query_template,
                          raw_table_dataset_id=raw_table_dataset_id,
                          raw_table_name=raw_file_config.file_tag,
-                         raw_table_primary_key_str=raw_file_config.primary_key_str)
+                         raw_table_primary_key_str=raw_file_config.primary_key_str,
+                         except_clause=except_clause,
+                         datetime_cols_clause=datetime_cols_clause)
+
+    @staticmethod
+    def _except_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
+        # TODO(3020): Update the raw data yaml format to allow for us to specify other columns that should always be
+        #  excluded for the purposes of diffing (e.g. update date cols that change with every new import).
+        except_cols = raw_file_config.datetime_cols + [_FILE_ID_COL_NAME, _UPDATE_DATETIME_COL_NAME]
+        except_cols_str = ', '.join(except_cols)
+        return f'EXCEPT ({except_cols_str})'
+
+    @staticmethod
+    def _datetime_cols_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
+        if not raw_file_config.datetime_cols:
+            return ''
+
+        formatted_clauses = [
+            DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=col_name) for col_name in raw_file_config.datetime_cols
+        ]
+        return ''.join(formatted_clauses)
 
 
 class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
