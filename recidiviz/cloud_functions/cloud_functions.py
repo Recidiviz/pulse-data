@@ -84,9 +84,11 @@ def state_aggregate():
     # Don't use the gcsfs cache
     fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
     logging.info("The path to download from is %s", path)
-    bucket_path = os.path.join(bucket, state)
-    logging.info("The files in the directory are:")
-    logging.info(fs.ls(bucket_path))
+
+    # TODO(3292): Uncomment once gcsfs.ls is more stable
+    # bucket_path = os.path.join(bucket, state)
+    # logging.info("The files in the directory are:")
+    # logging.info(fs.ls(bucket_path))
 
     # Providing a stream buffer to tabula reader does not work because it
     # tries to load the file into the local filesystem, since appengine is a
