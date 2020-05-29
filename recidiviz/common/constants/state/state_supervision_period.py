@@ -30,6 +30,10 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     # period if the PO is the same. In this case, the supervision period supervision type is DUAL.
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    # A type of supervision where the person is not formally supervised and does not have to regularly report to a PO.
+    # The person does have certain conditions associated with their supervision, that when violated can lead to
+    # revocations. Might also be called "Court Probation".
+    INFORMAL_PROBATION = state_enum_strings.state_supervision_period_supervision_type_informal_probation
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     INVESTIGATION = state_enum_strings.state_supervision_period_supervision_type_investigation
     PAROLE = state_enum_strings.state_supervision_period_supervision_type_parole
@@ -116,6 +120,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
 _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
     'DUAL': StateSupervisionPeriodSupervisionType.DUAL,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
+    'INFORMAL PROBATION': StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
     'INTERNAL UNKNOWN': StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
     'INVESTIGATION': StateSupervisionPeriodSupervisionType.INVESTIGATION,
     'PAROLE': StateSupervisionPeriodSupervisionType.PAROLE,

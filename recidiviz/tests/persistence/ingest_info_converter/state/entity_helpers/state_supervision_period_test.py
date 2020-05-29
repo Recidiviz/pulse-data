@@ -50,6 +50,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             termination_date='2/2/2112',
             state_code='us_nd',
             county_code='bis',
+            custodial_authority='custodial_authority',
             supervision_site='07-CENTRAL',
             conditions=['CURFEW', 'DRINKING']
         )
@@ -83,6 +84,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             county_code='BIS',
             supervision_site='07-CENTRAL',
             conditions='CURFEW, DRINKING',
+            custodial_authority='CUSTODIAL_AUTHORITY',
         )
 
         self.assertEqual(result, expected_result)

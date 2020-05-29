@@ -633,6 +633,8 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
     specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib()
 
+    custodial_authority: Optional[str] = attr.ib()
+
     #   - Who
     # See |person| in entity relationships below.
 
@@ -693,6 +695,8 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     supervision_level: Optional[StateSupervisionLevel] = attr.ib()
     supervision_level_raw_text: Optional[str] = attr.ib()
+
+    custodial_authority: Optional[str] = attr.ib()
 
     # TODO(2668): This is currently unused - delete this since we won't likely
     #  ever get this info independently from violations.

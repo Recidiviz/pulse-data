@@ -1047,7 +1047,7 @@ class StateIncarcerationPeriod(IngestObject):
                  facility_security_level=None, admission_reason=None, projected_release_reason=None,
                  release_reason=None, specialized_purpose_for_incarceration=None, state_incarceration_incidents=None,
                  state_parole_decisions=None, state_assessments=None, state_program_assignments=None,
-                 source_supervision_violation_response=None):
+                 source_supervision_violation_response=None, custodial_authority=None):
         self.state_incarceration_period_id: Optional[str] = state_incarceration_period_id
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
@@ -1062,6 +1062,7 @@ class StateIncarcerationPeriod(IngestObject):
         self.projected_release_reason: Optional[str] = projected_release_reason
         self.release_reason: Optional[str] = release_reason
         self.specialized_purpose_for_incarceration: Optional[str] = specialized_purpose_for_incarceration
+        self.custodial_authority = custodial_authority
 
         self.state_incarceration_incidents: List[StateIncarcerationIncident] = state_incarceration_incidents or []
         self.state_parole_decisions: List[StateParoleDecision] = state_parole_decisions or []
@@ -1129,7 +1130,8 @@ class StateSupervisionPeriod(IngestObject):
                  termination_date=None, state_code=None, county_code=None, supervision_site=None, admission_reason=None,
                  termination_reason=None, supervision_level=None, conditions=None, supervising_officer=None,
                  state_supervision_violation_entries=None, state_assessments=None, state_program_assignments=None,
-                 state_supervision_case_type_entries=None, supervision_period_supervision_type=None):
+                 state_supervision_case_type_entries=None, supervision_period_supervision_type=None,
+                 custodial_authority=None):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
@@ -1142,6 +1144,7 @@ class StateSupervisionPeriod(IngestObject):
         self.admission_reason: Optional[str] = admission_reason
         self.termination_reason: Optional[str] = termination_reason
         self.supervision_level: Optional[str] = supervision_level
+        self.custodial_authority: Optional[str] = custodial_authority
         self.conditions: List[str] = conditions or []
 
         self.supervising_officer: Optional[StateAgent] = supervising_officer

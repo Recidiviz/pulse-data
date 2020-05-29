@@ -371,12 +371,13 @@ message StateIncarcerationPeriod {
     optional string projected_release_reason = 12;
     optional string release_reason = 13;
     optional string specialized_purpose_for_incarceration = 14;
+    optional string custodial_authority = 15;
 
-    repeated string state_incarceration_incident_ids = 15;
-    repeated string state_parole_decision_ids = 16;
-    repeated string state_assessment_ids = 17;
-    repeated string state_program_assignment_ids = 18;
-    optional string source_supervision_violation_response_id = 19;
+    repeated string state_incarceration_incident_ids = 16;
+    repeated string state_parole_decision_ids = 17;
+    repeated string state_assessment_ids = 18;
+    repeated string state_program_assignment_ids = 19;
+    optional string source_supervision_violation_response_id = 20;
 }
 
 message StateSupervisionPeriod {
@@ -393,12 +394,13 @@ message StateSupervisionPeriod {
     optional string termination_reason = 11;
     optional string supervision_level = 12;
     optional string supervising_officer_id = 13;
+    optional string custodial_authority = 14;
 
-    repeated string conditions = 14;
-    repeated string state_supervision_violation_entry_ids = 15;
-    repeated string state_assessment_ids = 16;
-    repeated string state_program_assignment_ids = 17;
-    repeated string state_supervision_case_type_entry_ids = 18;
+    repeated string conditions = 15;
+    repeated string state_supervision_violation_entry_ids = 16;
+    repeated string state_assessment_ids = 17;
+    repeated string state_program_assignment_ids = 18;
+    repeated string state_supervision_case_type_entry_ids = 19;
 }
 
 message StateSupervisionCaseTypeEntry {
