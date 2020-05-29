@@ -152,7 +152,7 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
 #
 # At a high level, our approach is:
 # 1. Create time spans for each person's stay in a specific facility (prison facility or supervision district).
-# 2. Create time spans for each person's time with specific statuses
+# 2. Create time spans for each person's "offender statuses"
 # 3. Add all significant dates for a person (start/end dates of each facility and of each status term) into a single
 #    view. These ordered dates signify dates at which something changed that indicates we need to create a new
 #    incarceration period.
@@ -160,11 +160,11 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
 #    periods we want at the end. It is a superset, because a) it still includes time spans for a person on
 #    supervision, but b) because includes spans for which a person is not currently under DOC custody, but is
 #    between sentences (i.e. span between the end date of one sentence and the beginning of another).
-# 5. Inner joins these new time spans from part 4 back onto the facility spans in part 1. Any span which represents
+# 5. Left join the time spans from part 4 to those of part 2. If multiple status spans from part 2 overlap with the
+#    spans created in part 4, then all overlapping statuses are captured.
+# 6. Inner joins these new time spans from part 5 back onto the facility spans in part 1. Any span which represents
 #    a time period where the person was not under DOC supervision will not have a facility, and therefore will fall
 #    out of our query.
-# 6. Left join the time spans from part 5 to the status spans from part 2 in order to tell a persons status for the
-#    given time span.
 # 7. Use LEAD/LAG functions to get previous and next facility info for each row (this will later let us know more
 #    info about in and out edges of periods. During this time also add a row number to each period.
 ALL_PERIODS_FRAGMENT = f"""
@@ -176,7 +176,7 @@ ALL_PERIODS_FRAGMENT = f"""
     # Create status time spans
 
     # Offstat table with dates parsed
-    offstat_with_dates AS (
+    offstat_periods AS (
       SELECT 
         docno, 
         incrno,
@@ -192,12 +192,6 @@ ALL_PERIODS_FRAGMENT = f"""
         stat_rls_typ, 
       FROM {{offstat}}
     ),
-    # Time spans that a person spent on a rider
-    rider_periods AS ({OFFSTAT_STATUS_FRAGMENT_TEMPLATE.format(stat_cd='I', strt_typ='RJ')}),
-    # Time spans that a person spent as a parole violator
-    parole_violator_periods AS ({OFFSTAT_STATUS_FRAGMENT_TEMPLATE.format(stat_cd='I', strt_typ='PV')}),
-    # Time spans that a person spent on investigative probation
-    investigative_periods AS ({OFFSTAT_STATUS_FRAGMENT_TEMPLATE.format(stat_cd='P', strt_typ='PS')}),
 
     # Create view with all important dates
 
@@ -205,16 +199,9 @@ ALL_PERIODS_FRAGMENT = f"""
     facility_dates AS (
         {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='facility_periods')}
     ),
-    # All rider period start/end dates
-    rider_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='rider_periods')}
-    ),
-    # All parole violator dates
-    parole_violator_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='parole_violator_periods')}
-    ),
-    investigative_dates AS (
-        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='investigative_periods')}
+    # All offstat period start/end dates
+    offstat_dates AS (
+        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='offstat_periods')}
     ),
     # All dates where something we care about changed.
     all_dates AS (
@@ -226,21 +213,10 @@ ALL_PERIODS_FRAGMENT = f"""
       SELECT
         * 
       FROM
-        rider_dates
-      UNION DISTINCT
-      SELECT
-        * 
-      FROM
-        parole_violator_dates
-      UNION DISTINCT
-      SELECT
-        * 
-      FROM
-        investigative_dates
+        offstat_dates
     ),
 
     # Create time spans from the important dates
-
     all_periods AS (
       SELECT
         docno,
@@ -252,52 +228,52 @@ ALL_PERIODS_FRAGMENT = f"""
         all_dates
     ),
 
-    # Join important date spans back with the facility spans from Part 1.
-
-    periods_with_facility_info AS (
-      SELECT
+    # Get all statuses that were relevant for each of the created date periods.
+    periods_with_offstat_info AS (
+      SELECT 
         a.docno,
         a.incrno,
         a.start_date,
+        a.end_date,
+        STRING_AGG(o.stat_strt_typ) AS statuses
+      FROM 
+        all_periods a
+      LEFT JOIN
+        offstat_periods o
+      ON
+        (a.docno = o.docno
+        AND a.incrno = o.incrno
+        AND (a.start_date
+             BETWEEN o.start_date
+             AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY))))
+      GROUP BY a.docno, a.incrno, a.start_date, a.end_date
+    ),
+
+    # Join date spans with status information back with the facility spans from Part 1.
+    periods_with_facility_and_offstat_info AS (
+      SELECT
+        p.docno,
+        p.incrno,
+        p.start_date,
         # Choose smaller of two dates to handle facility_periods that last 1 day
-        LEAST(a.end_date, f.end_date) AS end_date,
+        LEAST(p.end_date, f.end_date) AS end_date,
         f.fac_cd,
         f.fac_typ,
         f.fac_ldesc,
         f.loc_cd,
-        f.loc_ldesc
+        f.loc_ldesc,
+        p.statuses
       FROM 
-        all_periods a
+        periods_with_offstat_info p
       # Inner join to only get periods of time where there is a matching facility
       JOIN
         facility_periods f
       USING
         (docno, incrno)
       WHERE
-        a.start_date 
+        p.start_date 
           BETWEEN f.start_date
           AND IF(f.start_date = f.end_date, f.start_date, DATE_SUB(f.end_date, INTERVAL 1 DAY))
-    ),
-
-    # Left join important date spans from part 5 with the status spans from part 2.
-
-    periods_with_facility_and_rider_info AS (
-        {FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE.format(
-    status_name='rider',
-    facility_periods='periods_with_facility_info',
-    status_periods='rider_periods')}  
-    ),
-    periods_with_facility_rider_and_pv_info AS (
-        {FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE.format(
-    status_name='parole_violator',
-    facility_periods='periods_with_facility_and_rider_info',
-    status_periods='parole_violator_periods')}  
-    ),
-    periods_with_all_info AS (
-        {FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE.format(
-    status_name='investigative',
-    facility_periods='periods_with_facility_rider_and_pv_info',
-    status_periods='investigative_periods')}  
     ),
 
     # Add row numbers and include information about previous and next stays
@@ -307,48 +283,22 @@ ALL_PERIODS_FRAGMENT = f"""
           incrno,
           start_date,
           end_date,
-          LAG(fac_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_cd,
           LAG(fac_typ)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_typ,
-          LAG(fac_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_ldesc,
-          LAG(loc_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_cd,
-          LAG(loc_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_ldesc,
-          LAG(rider)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_rider,
-          LAG(parole_violator)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_parole_violator,
-          LAG(investigative)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_investigative,
+          LAG(fac_cd)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_cd,
           fac_cd,
           fac_typ,
           fac_ldesc,
           loc_cd,
           loc_ldesc,
-          rider,
-          parole_violator,
-          investigative,
-          LEAD(fac_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_cd,
+          statuses,
           LEAD(fac_typ)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
-          LEAD(fac_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_ldesc,
-          LEAD(loc_cd)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_cd,
-          LEAD(loc_ldesc)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_ldesc,
-          LEAD(rider)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_rider,
-          LEAD(parole_violator)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_parole_violator,
-          LEAD(investigative)
-            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_investigative
+          LEAD(fac_cd)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_cd,
         FROM 
-          periods_with_all_info
+          periods_with_facility_and_offstat_info
     )
 """
 

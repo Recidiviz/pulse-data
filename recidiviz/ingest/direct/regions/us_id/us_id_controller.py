@@ -31,7 +31,7 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
@@ -41,12 +41,10 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
     VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
-    SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_TYPE, PREVIOUS_INVESTIGATION, PREVIOUS_FACILITY_CODE, \
-    NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE, CURRENT_INVESTIGATION, PREVIOUS_PAROLE_VIOLATOR, \
-    CURRENT_PAROLE_VIOLATOR, CURRENT_RIDER
+    SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_CODE, NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
-    is_jail_facility
+    is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
@@ -112,17 +110,13 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._override_facilities,
                 self._set_generated_ids,
                 self._clear_max_dates,
-                self._add_rider_treatment,
                 self._add_incarceration_type,
-                self._clear_admission_reason_if_preceded_by_investigation,
-                self._incarceration_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
             ],
             'movement_facility_location_offstat_supervision_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
                 self._clear_max_dates,
-                self._clear_admission_reason_if_preceded_by_investigation,
                 self._supervision_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
             ],
@@ -325,6 +319,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateIncarcerationPeriodReleaseReason: incarceration_release_reason_mapper,
         StateSupervisionPeriodAdmissionReason: supervision_admission_reason_mapper,
         StateSupervisionPeriodTerminationReason: supervision_termination_reason_mapper,
+        StateSpecializedPurposeForIncarceration: purpose_for_incarceration_mapper,
+        StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
     }
 
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
@@ -519,24 +515,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 obj.state_early_discharge_id = f'{early_discharge_id}-{early_discharge_sent_id}'
 
     @staticmethod
-    def _add_rider_treatment(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        """Adds a specialized_purpose_for_incarceration to all incarceration periods that represent someone's time on a
-        rider (treatment with possibility of probation afterwards).
-        """
-        rider = _get_bool_from_row(CURRENT_RIDER, row)
-        if not rider:
-            return
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                obj.specialized_purpose_for_incarceration = \
-                    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value
-
-    @staticmethod
     def _add_default_admission_reason(
             _file_tag: str,
             _row: Dict[str, str],
@@ -583,24 +561,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 if obj.termination_date == MAX_DATE_STR:
                     obj.termination_date = None
 
-    @staticmethod
-    def _clear_admission_reason_if_preceded_by_investigation(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        """Clears the inferred admission reason if the previous period was an investigative supervision period. As
-        people haven't been sentenced when they're under investigation, defaults / other overrides should be used to
-        figure out the admission reason for periods following investigation.
-        """
-        previous_fac_typ = row.get(PREVIOUS_FACILITY_TYPE, '')
-        previous_investigation = _get_bool_from_row(PREVIOUS_INVESTIGATION, row)
-
-        for obj in extracted_objects:
-            if isinstance(obj, (StateSupervisionPeriod, StateIncarcerationPeriod)):
-                # Previous investigation means we clear this out!
-                if previous_investigation and previous_fac_typ == 'P':
-                    obj.admission_reason = None
 
     @staticmethod
     def _supervision_period_admission_and_termination_overrides(
@@ -612,7 +572,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
         prev_fac_cd = row.get(PREVIOUS_FACILITY_CODE, '')
         next_fac_cd = row.get(NEXT_FACILITY_CODE, '')
         cur_fac_cd = row.get(CURRENT_FACILITY_CODE, '')
-        current_investigation = _get_bool_from_row(CURRENT_INVESTIGATION, row)
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -639,37 +598,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     obj.admission_reason = StateSupervisionPeriodAdmissionReason.ABSCONSION.value
                     if obj.termination_date:
                         obj.termination_reason = StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION.value
-
-                # Handle investigation periods
-                if current_investigation:
-                    obj.admission_reason = StateSupervisionPeriodAdmissionReason.INVESTIGATION.value
-                    if obj.termination_date:
-                        obj.termination_reason = StateSupervisionPeriodTerminationReason.INVESTIGATION.value
-
-    @staticmethod
-    def _incarceration_period_admission_and_termination_overrides(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
-        """Update in and out edges of incarceration periods if the normal mappings are insufficient."""
-        previous_fac_typ = row.get('prev_fac_typ')
-
-        previous_parole_violator = _get_bool_from_row(PREVIOUS_PAROLE_VIOLATOR, row)
-        current_parole_violator = _get_bool_from_row(CURRENT_PAROLE_VIOLATOR, row)
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                # Determine in and out edges based on previous facilities
-                if previous_parole_violator and previous_fac_typ in ('I', 'O'):
-                    obj.admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value
-
-                # Override in an out edges based on current facilities
-                if current_parole_violator:
-                    obj.admission_reason = StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value
-                    if obj.release_date:
-                        obj.release_reason = StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY.value
-
 
     @staticmethod
     def _hydrate_violation_report_fields(
