@@ -1,7 +1,7 @@
-docno,incrno,start_date,end_date,prev_fac_cd,prev_fac_typ,prev_fac_ldesc,prev_loc_cd,prev_loc_ldesc,prev_rider,prev_parole_violator,prev_investigative,fac_cd,fac_typ,fac_ldesc,loc_cd,loc_ldesc,rider,parole_violator,investigative,next_fac_cd,next_fac_typ,next_fac_ldesc,next_loc_cd,next_loc_ldesc,next_rider,next_parole_violator,next_investigative,period_id
-1111,1,2008-01-01,2008-10-01,D1,P,DISTRICT 1,,,False,False,True,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,false,False,False,CJ,I,COUNTY JAIL,002,SHERIFF DEPT 1,False,False,False,1
-1111,1,2008-10-01,2009-01-01,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,False,False,False,CJ,I,COUNTY JAIL,002,SHERIFF DEPT 1,false,False,False,HS,H,HISTORY,,,False,False,False,2
-1111,2,2019-01-01,2019-02-01,D1,P,DISTRICT 1,,,False,False,False,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,false,False,False,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,True,False,False,3
-1111,2,2019-02-01,2020-01-01,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,False,False,False,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,true,False,False,D1,P,DISTRICT 1,,,False,False,False,4
-2222,1,2010-01-01,2010-06-01,D2,P,DISTRICT 2,,,False,False,False,FAC3,I,FACILITY 3,003,SHERIFF DEPT 2,false,True,False,FAC3,I,FACILITY 3,001,PRESENT AT FACILITY,False,False,False,1
-2222,1,2010-06-01,2011-01-01,FAC3,I,FACILITY 3,003,SHERIFF DEPT 3,False,True,False,FAC3,I,FACILITY 3,001,PRESENT AT FACILITY,false,False,False,FI,F,FUGITIVE INMATE,,,False,False,False,2
+docno,incrno,start_date,end_date,prev_fac_typ,prev_fac_cd,fac_cd,fac_typ,fac_ldesc,loc_cd,loc_ldesc,statuses,next_fac_typ,next_fac_cd,period_id
+1111,1,2008-01-01,2008-10-01,,,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,TM,I,,1
+1111,1,2008-10-01,2009-01-01,I,,CJ,I,COUNTY JAIL,002,SHERIFF DEPT 1,TM,H,,2
+1111,2,2019-01-01,2019-02-01,P,,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,TM,I,,3
+1111,2,2019-02-01,2020-01-01,I,,FAC1,I,FACILITY 1,001,PRESENT AT FACILITY,"RJ,PB",P,,4
+2222,1,2010-01-01,2010-06-01,P,,FAC3,I,FACILITY 3,003,SHERIFF DEPT 2,PV,I,,1
+2222,1,2010-06-01,2011-01-01,I,,FAC3,I,FACILITY 3,001,PRESENT AT FACILITY,TM,F,,2
