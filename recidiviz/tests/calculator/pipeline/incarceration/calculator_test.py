@@ -980,7 +980,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
-    def test_characteristics_dict(self):
+    def test_characteristics_dict_admission_event(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -1017,6 +1017,83 @@ class TestCharacteristicsDict(unittest.TestCase):
         }
 
         self.assertEqual(expected_output, characteristic_dict)
+
+    def test_characteristics_dict_stay_event(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationStayEvent(
+            state_code='CA',
+            event_date=date(2018, 9, 13),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
+
+        expected_output = {
+            'facility': 'SAN QUENTIN',
+            'county_of_residence': 'county',
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'date_of_stay': date(2018, 9, 13)
+        }
+
+        self.assertEqual(expected_output, characteristic_dict)
+
+    def test_characteristics_dict_release_event(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        incarceration_event = IncarcerationReleaseEvent(
+            state_code='CA',
+            event_date=date(2018, 9, 13),
+            facility='SAN QUENTIN',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+        )
+
+        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
+
+        expected_output = {
+            'facility': 'SAN QUENTIN',
+            'county_of_residence': 'county',
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'release_date': date(2018, 9, 13)
+        }
+
+        self.assertEqual(expected_output, characteristic_dict)
+
 
 
 class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
