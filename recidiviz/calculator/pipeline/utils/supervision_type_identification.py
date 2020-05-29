@@ -54,6 +54,8 @@ def _get_most_relevant_supervision_type(supervision_types: Set[StateSupervisionP
         return StateSupervisionPeriodSupervisionType.PROBATION
     if StateSupervisionPeriodSupervisionType.INVESTIGATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
+    if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
     if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
     if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:
