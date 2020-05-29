@@ -24,7 +24,7 @@ import importlib
 import os
 import pkgutil
 from datetime import datetime, tzinfo
-from enum import Enum
+from enum import Enum, auto
 from itertools import chain
 from types import ModuleType
 from typing import Any, Dict, Optional, Set
@@ -45,8 +45,14 @@ class RemovedFromWebsite(Enum):
     RELEASED = 'RELEASED'
     UNKNOWN_SIGNIFICANCE = 'UNKNOWN_SIGNIFICANCE'
 
+
+class IngestType(Enum):
+    DIRECT_INGEST = auto()
+    SCRAPER = auto()
+
+
 # Cache of the `Region` objects.
-REGIONS: Dict[str, 'Region'] = {}
+REGIONS: Dict[IngestType, Dict[str, 'Region']] = {}
 
 @attr.s(frozen=True)
 class Region:
@@ -252,12 +258,16 @@ class Region:
 
 def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     global REGIONS
-    if region_code not in REGIONS:
-        REGIONS[region_code] = Region(region_code=region_code,
-                                      is_direct_ingest=is_direct_ingest,
-                                      **get_region_manifest(region_code,
-                                                            is_direct_ingest))
-    return REGIONS[region_code]
+
+    ingest_type = IngestType.DIRECT_INGEST if is_direct_ingest else IngestType.SCRAPER
+    if ingest_type not in REGIONS:
+        REGIONS[ingest_type] = {}
+
+    if region_code not in REGIONS[ingest_type]:
+        REGIONS[ingest_type][region_code] = Region(region_code=region_code,
+                                                   is_direct_ingest=is_direct_ingest,
+                                                   **get_region_manifest(region_code, is_direct_ingest))
+    return REGIONS[ingest_type][region_code]
 
 
 MANIFEST_NAME = 'manifest.yaml'

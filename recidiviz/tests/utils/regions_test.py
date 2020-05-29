@@ -24,6 +24,8 @@ import pytest
 import pytz
 from mock import Mock, PropertyMock, mock_open
 
+from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
+from recidiviz.ingest.scrape.regions.us_pa.us_pa_scraper import UsPaScraper
 from recidiviz.utils import regions
 from recidiviz.utils.regions import Region, get_region_manifest
 
@@ -363,6 +365,26 @@ class TestRegions(TestCase):
                                raw_data_bq_imports_enabled_env='production',
                                ingest_view_exports_enabled_env='production')
         self.assertTrue(region.are_ingest_view_exports_enabled_in_env())
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_get_region_same_name_different_ingest_type(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        us_pa_scraper_region = regions.get_region('us_pa', is_direct_ingest=False)
+        self.assertEqual(us_pa_scraper_region.get_ingestor_class(), UsPaScraper)
+
+        us_pa_direct_ingest_region = regions.get_region('us_pa', is_direct_ingest=True)
+        self.assertEqual(us_pa_direct_ingest_region.get_ingestor_class(), UsPaController)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_get_region_same_name_different_ingest_type_reverse(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        us_pa_direct_ingest_region = regions.get_region('us_pa', is_direct_ingest=True)
+        self.assertEqual(us_pa_direct_ingest_region.get_ingestor_class(), UsPaController)
+
+        us_pa_scraper_region = regions.get_region('us_pa', is_direct_ingest=False)
+        self.assertEqual(us_pa_scraper_region.get_ingestor_class(), UsPaScraper)
 
 
 def mock_manifest_open(filename, *args):

@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
 from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.utils.metadata import local_project_id_override
 
 CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 
@@ -127,9 +128,8 @@ class TestDirectIngestControl(unittest.TestCase):
                                    query_string=request_args,
                                    headers=headers)
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Unsupported direct ingest region [us_ca]")
+        self.assertTrue(
+            response.get_data().decode().startswith("Unsupported direct ingest region [us_ca]"))
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -442,6 +442,23 @@ class TestDirectIngestControl(unittest.TestCase):
                                    headers=headers)
 
         self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch('recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl')
+    def test_ensure_all_file_paths_normalized_actual_regions(
+            self,
+            mock_cloud_task_manager,
+            mock_environment):
+        with local_project_id_override('recidiviz-staging'):
+            mock_environment.return_value = 'staging'
+            mock_cloud_task_manager.return_value = create_autospec(DirectIngestCloudTaskManager)
+
+            headers = {'X-Appengine-Cron': 'test-cron'}
+            response = self.client.get('/ensure_all_file_paths_normalized',
+                                       query_string={},
+                                       headers=headers)
+
+            self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
