@@ -159,6 +159,8 @@ def characteristics_dict(person: StatePerson,
                 incarceration_event.purpose_for_incarceration
 
     if isinstance(incarceration_event, IncarcerationStayEvent):
+        characteristics['date_of_stay'] = incarceration_event.event_date
+
         if incarceration_event.admission_reason:
             characteristics['admission_reason'] = incarceration_event.admission_reason
         if incarceration_event.supervision_type_at_admission:
