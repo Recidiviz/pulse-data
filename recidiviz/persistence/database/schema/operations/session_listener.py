@@ -43,7 +43,7 @@ def session_listener(session):
 
         if len(results) > 1:
             raise IntegrityError(
-                f'Attempting to commit repeated non-file split irectIngestIngestFileMetadata row for '
+                f'Attempting to commit repeated non-file split DirectIngestIngestFileMetadata row for '
                 f'region_code={instance.region_code}, file_tag={instance.file_tag}, '
                 f'datetimes_contained_lower_bound_exclusive={instance.datetimes_contained_lower_bound_exclusive}, '
                 f'datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}')
