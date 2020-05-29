@@ -35,20 +35,18 @@ FACILITY_PERIOD_FRAGMENT = """
           loc.loc_cd,
           loc.loc_ldesc,
           m.move_srl,
-          # TODO(3284): Remove SUBSTR call if we completely transition away from the manually uploaded files and 
-          #  therefore only expect one date format
-          DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))) AS move_dtd,
+          SAFE_CAST(SAFE_CAST(m.move_dtd AS DATETIME) AS DATE) AS move_dtd,
           LAG(m.fac_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))))
+              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
             AS previous_fac_cd,
           LAG(loc.loc_cd) 
             OVER (PARTITION BY 
               m.docno,
               m.incrno
-              ORDER BY DATETIME(PARSE_TIMESTAMP('%Y-%m-%d %H:%M', SUBSTR(m.move_dtd, 1, 16))))
+              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
           AS previous_loc_cd
         FROM 
           {movement} m
@@ -183,13 +181,13 @@ ALL_PERIODS_FRAGMENT = f"""
         docno, 
         incrno,
         statno, 
-        stat_cd, 
-        # TODO(3284): Remove SAFE_CAST call if we completely transition away from the manually uploaded files and 
-        #  therefore only expect one date format
-        COALESCE(SAFE_CAST(stat_intake_dtd AS DATE), PARSE_DATE('%x', stat_intake_dtd)) AS stat_intake_dtd,
-        COALESCE(SAFE_CAST(stat_strt_dtd AS DATE), PARSE_DATE('%x', stat_strt_dtd)) AS start_date,
-        COALESCE(COALESCE(SAFE_CAST(stat_rls_dtd AS DATE), PARSE_DATE('%x', stat_rls_dtd)),
-                 CAST('9999-12-31' AS DATE)) AS end_date,
+        stat_cd,
+        SAFE_CAST(SAFE_CAST(stat_intake_dtd AS DATETIME) AS DATE) AS stat_intake_dtd,
+        SAFE_CAST(SAFE_CAST(stat_strt_dtd AS DATETIME) AS DATE) AS start_date,
+        COALESCE(
+            SAFE_CAST(SAFE_CAST(stat_rls_dtd AS DATETIME) AS DATE),
+            CAST('9999-12-31' AS DATE)
+        ) AS end_date,
         stat_strt_typ, 
         stat_rls_typ, 
       FROM {{offstat}}
