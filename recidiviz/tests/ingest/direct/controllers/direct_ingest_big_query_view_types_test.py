@@ -46,6 +46,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
                 primary_key_cols=['col1', 'col2'],
+                datetime_cols=[],
                 encoding='any-encoding',
                 separator='@',
                 ignore_quotes=False
@@ -61,7 +62,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str='col1, col2',
             raw_table_dataset_id='us_xx_raw_data',
-            raw_table_name='table_name'
+            raw_table_name='table_name',
+            except_clause='EXCEPT (file_id, update_datetime)',
+            datetime_cols_clause=''
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -74,6 +77,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
                 primary_key_cols=['col1'],
+                datetime_cols=['col2'],
                 encoding='any-encoding',
                 separator='@',
                 ignore_quotes=False
@@ -85,11 +89,22 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('table_name_by_update_date', view.table_id)
         self.assertEqual('table_name_by_update_date', view.view_id)
 
+        expected_datetime_cols_clause = """
+        COALESCE(
+            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
+            col2
+        ) AS col2,"""
+
         expected_view_query = RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE.format(
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str='col1',
             raw_table_dataset_id='us_xx_raw_data',
-            raw_table_name='table_name'
+            raw_table_name='table_name',
+            except_clause='EXCEPT (col2, file_id, update_datetime)',
+            datetime_cols_clause=expected_datetime_cols_clause
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -131,33 +146,33 @@ USING (col1);"""
         expected_parametrized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-       SELECT 
-          *, 
-          ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
-       FROM 
-          `recidiviz-456.us_xx_raw_data.file_tag_first`
-       WHERE 
-           update_datetime <= @my_update_timestamp_param_name
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE 
+            update_datetime <= @my_update_timestamp_param_name
     )
 
     SELECT * 
-    EXCEPT (file_id, recency_rank, update_datetime)
+    EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
-       SELECT 
-          *, 
-          ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
-       FROM 
-          `recidiviz-456.us_xx_raw_data.file_tag_second`
-       WHERE 
-           update_datetime <= @my_update_timestamp_param_name
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE 
+            update_datetime <= @my_update_timestamp_param_name
     )
 
     SELECT * 
-    EXCEPT (file_id, recency_rank, update_datetime)
+    EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 )
@@ -235,33 +250,33 @@ USING (col1);"""
         expected_parametrized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-       SELECT 
-          *, 
-          ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
-       FROM 
-          `recidiviz-456.us_xx_raw_data.file_tag_first`
-       WHERE 
-           update_datetime <= @update_timestamp
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE 
+            update_datetime <= @update_timestamp
     )
 
     SELECT * 
-    EXCEPT (file_id, recency_rank, update_datetime)
+    EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
-       SELECT 
-          *, 
-          ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
-       FROM 
-          `recidiviz-456.us_xx_raw_data.file_tag_second`
-       WHERE 
-           update_datetime <= @update_timestamp
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE 
+            update_datetime <= @update_timestamp
     )
 
     SELECT * 
-    EXCEPT (file_id, recency_rank, update_datetime)
+    EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
