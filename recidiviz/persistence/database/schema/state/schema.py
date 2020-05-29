@@ -291,6 +291,7 @@ state_supervision_period_termination_reason = Enum(
 state_supervision_period_supervision_type = Enum(
     enum_strings.external_unknown,
     enum_strings.internal_unknown,
+    state_enum_strings.state_supervision_period_supervision_type_informal_probation,
     state_enum_strings.state_supervision_period_supervision_type_investigation,
     state_enum_strings.state_supervision_period_supervision_type_parole,
     state_enum_strings.state_supervision_period_supervision_type_probation,
@@ -1429,6 +1430,7 @@ class _StateIncarcerationPeriodSharedColumns(
     specialized_purpose_for_incarceration = \
         Column(state_specialized_purpose_for_incarceration)
     specialized_purpose_for_incarceration_raw_text = Column(String(255))
+    custodial_authority = Column(String(255))
 
     @declared_attr
     def source_supervision_violation_response_id(self):
@@ -1515,6 +1517,7 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     supervision_level = Column(state_supervision_level)
     supervision_level_raw_text = Column(String(255))
     conditions = Column(String(255))
+    custodial_authority = Column(String(255))
 
     @declared_attr
     def supervising_officer_id(self):

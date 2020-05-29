@@ -54,7 +54,8 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             state_code='us_nd',
             county_code='bis',
             facility='The Prison',
-            housing_unit='CB4'
+            housing_unit='CB4',
+            custodial_authority='custodial_authority',
         )
 
         # Act
@@ -92,6 +93,7 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             county_code='BIS',
             facility='THE PRISON',
             housing_unit='CB4',
+            custodial_authority='CUSTODIAL_AUTHORITY',
         )
 
         self.assertEqual(result, expected_result)
