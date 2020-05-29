@@ -38,7 +38,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, 
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
-from recidiviz.utils import regions, monitoring
+from recidiviz.utils import regions, monitoring, metadata
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
@@ -128,6 +128,7 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
 
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
+        logging.info("Ensuring paths normalized for region [%s]", region_code)
         with monitoring.push_region_tag(region_code):
             try:
                 controller = controller_for_region_code(region_code,
@@ -301,7 +302,7 @@ def controller_for_region_code(
     """Returns an instance of the region's controller, if one exists."""
     if region_code not in get_supported_direct_ingest_region_codes():
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region [{region_code}]",
+            msg=f"Unsupported direct ingest region [{region_code}] in project [{metadata.project_id()}]",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
@@ -309,7 +310,7 @@ def controller_for_region_code(
         region = regions.get_region(region_code, is_direct_ingest=True)
     except FileNotFoundError:
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region [{region_code}]",
+            msg=f"Region [{region_code}] has no registered manifest",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
@@ -320,7 +321,7 @@ def controller_for_region_code(
 
     if not isinstance(controller, BaseDirectIngestController):
         raise DirectIngestError(
-            msg=f"Unsupported direct ingest region [{region_code}]",
+            msg=f"Controller for direct ingest region [{region_code}] has unexpected type [{type(controller)}]",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
