@@ -31,6 +31,7 @@ keys_to_ignore:
   - sent_no                   # Sentence number - Handled manually in the controller.
 
   - caseno_seq                        # Unused - Case sequence number within a single docket for related sentence
+  - case_planning_respond             # Unused - TODO(2999): Get more details from ID
   - compliance                        # Unused - whether the person has been compliant to their supervision conditions
   - created_by_dt                     # Unused - date that the row was created
   - created_by_id                     # Unused - id of the person who created the request (usually a person's PO)
@@ -53,6 +54,7 @@ keys_to_ignore:
   - juris_decision_comment            # Unused - comments surrounding early discharge decision
   - meets_criteria                    # Unused - bool indicating if the person meets the early discharge critera.
   - mitt_srl                          # Unused - id of the mittimus associated with the sentences
+  - narrative                         # Unused - TODO(2999): Get more details from ID
   - ncic_chk                          # Unused - bool indicating if an NCIC check was run (see if there are new charges)
   - ncic_chk_date                     # Unused - date of the NCIC check
   - restitution_curr_bal              # Unused - current restitution balance
