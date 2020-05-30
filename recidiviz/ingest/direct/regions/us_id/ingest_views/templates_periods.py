@@ -15,6 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper templates for the US_ID period queries."""
+from enum import Enum, auto
+
+
+class PeriodType(Enum):
+    INCARCERATION = auto()
+    SUPERVISION = auto()
+
+
+def create_period_split_criteria(period_type: PeriodType) -> str:
+    """Based on the provided |period_type| returns a query fragment detailing when to divide the relevant period."""
+    criteria = """
+        # Default values in equality check if nulls are provided. Without this any null values result in the row being 
+        # ignored
+        (IFNULL(fac_cd, '') != IFNULL(previous_fac_cd, '')) 
+        OR (IFNULL(loc_cd, '') != IFNULL(previous_loc_cd, ''))
+    """
+    if period_type == PeriodType.INCARCERATION:
+        return criteria
+    # Currently only supervision periods should be divided by living unit code. If we ever care about bunk information
+    # for incarceration periods, we can add it to the incarceration query as well.
+    if period_type == PeriodType.SUPERVISION:
+        criteria += "\n    OR (IFNULL(lu_cd, '') != IFNULL(previous_lu_cd, ''))"
+        return criteria
+    raise ValueError(f'Unexpected PeriodType {period_type}')
+
+
 # Idaho provides us with a table 'movements', which acts as a ledger for each person's physical movements throughout
 # the ID criminal justice system. By default, each row of this table includes a location and the date that the
 # person arrived at that location (`move_dtd`). New entries into this table are created every time a person's
@@ -34,6 +60,8 @@ FACILITY_PERIOD_FRAGMENT = """
           f.fac_ldesc,
           loc.loc_cd,
           loc.loc_ldesc,
+          lvgunit.lu_cd,
+          lvgunit.lu_ldesc,
           m.move_srl,
           SAFE_CAST(SAFE_CAST(m.move_dtd AS DATETIME) AS DATE) AS move_dtd,
           LAG(m.fac_cd) 
@@ -47,15 +75,24 @@ FACILITY_PERIOD_FRAGMENT = """
               m.docno,
               m.incrno
               ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
-          AS previous_loc_cd
+          AS previous_loc_cd,
+          LAG(lvgunit.lu_cd) 
+            OVER (PARTITION BY 
+              m.docno,
+              m.incrno
+              ORDER BY SAFE_CAST(m.move_dtd AS DATETIME))
+          AS previous_lu_cd
         FROM 
-          {movement} m
+          {{movement}} m
         LEFT JOIN 
-           {facility} f
+           {{facility}} f
         USING (fac_cd)
         LEFT JOIN 
-           {location} loc
+           {{location}} loc
         USING (loc_cd)
+        LEFT JOIN 
+           {{lvgunit}} lvgunit
+        USING (fac_cd, lu_cd)
     ),
     # This query here only keeps rows from `facilities_with_datetime` that represent a movement of a person between
     # facilities and locations (but not a movement within a single facility/location). If we ever need to track
@@ -67,10 +104,8 @@ FACILITY_PERIOD_FRAGMENT = """
       FROM 
         facilities_with_datetime 
       WHERE 
-        # Default values in equality check if nulls are provided. Without this any null values result in the row being 
-        # ignored
-        (IFNULL(fac_cd, '') != IFNULL(previous_fac_cd, ''))
-        OR (IFNULL(loc_cd, '') != IFNULL(previous_loc_cd, ''))
+        {period_split_criteria}
+        
     ), 
     # This query transforms the `collapsed_facilities` table, which contains a facility and the date that a person
     # entered that facility, and transforms it into a table which has a start and end date for the given facility. We
@@ -88,7 +123,9 @@ FACILITY_PERIOD_FRAGMENT = """
         fac_typ,
         fac_ldesc,
         loc_cd,
-        loc_ldesc
+        loc_ldesc,
+        lu_cd,
+        lu_ldesc
       FROM collapsed_facilities
     )
 """
@@ -190,7 +227,7 @@ ALL_PERIODS_FRAGMENT = f"""
         ) AS end_date,
         stat_strt_typ, 
         stat_rls_typ, 
-      FROM {{offstat}}
+      FROM {{{{offstat}}}}
     ),
 
     # Create view with all important dates
@@ -262,6 +299,8 @@ ALL_PERIODS_FRAGMENT = f"""
         f.fac_ldesc,
         f.loc_cd,
         f.loc_ldesc,
+        f.lu_cd,
+        f.lu_ldesc,
         p.statuses
       FROM 
         periods_with_offstat_info p
@@ -292,6 +331,8 @@ ALL_PERIODS_FRAGMENT = f"""
           fac_ldesc,
           loc_cd,
           loc_ldesc,
+          lu_cd,
+          lu_ldesc,
           statuses,
           LEAD(fac_typ)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
@@ -303,5 +344,5 @@ ALL_PERIODS_FRAGMENT = f"""
 """
 
 
-def get_all_periods_query_fragment() -> str:
-    return ALL_PERIODS_FRAGMENT
+def get_all_periods_query_fragment(period_type: PeriodType) -> str:
+    return ALL_PERIODS_FRAGMENT.format(period_split_criteria=create_period_split_criteria(period_type))

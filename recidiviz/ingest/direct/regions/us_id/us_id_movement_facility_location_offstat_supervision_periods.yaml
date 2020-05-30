@@ -26,6 +26,8 @@ keys_to_ignore:
   - fac_cd                  # Facility code - analogous to fac_ldesc used above. Handled manually in controller to help
                             #                 determine if a person is in interstate probation.
   - fac_typ                 # Facility type - handled manually in controller for periods of absconscion.
+  - loc_cd                  # Location code - handled manually in controller.
+  - lu_cd                   # Living unit code - handled manually in controller.
 
-  - loc_cd                  # Unused - location code.
-  - loc_ldesc               # Unused - Location name, used sometimes in place of fac_ldesc - handled manually in controller.
+  - loc_ldesc               # Unused - Location name
+  - lu_ldesc                # Unused - Living unit named.

@@ -17,13 +17,14 @@
 """Query that generates supervision periods."""
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import get_all_periods_query_fragment
+from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import get_all_periods_query_fragment, \
+    PeriodType
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
     WITH 
-    {get_all_periods_query_fragment()}
+    {get_all_periods_query_fragment(period_type=PeriodType.SUPERVISION)}
 
     # Filter to just supervision periods
 
