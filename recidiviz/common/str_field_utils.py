@@ -84,6 +84,22 @@ def parse_days(
     raise ValueError("Cannot parse time duration: %s" % time_string)
 
 
+def safe_parse_days_from_duration_pieces(
+        years_str: Optional[str] = None,
+        months_str: Optional[str] = None,
+        days_str: Optional[str] = None,
+        start_dt_str: Optional[str] = None) -> Optional[int]:
+    """Same as parse_days_from_duration_pieces below, but returns None if a number of days cannot be parsed."""
+    try:
+        return parse_days_from_duration_pieces(
+            years_str=years_str,
+            months_str=months_str,
+            days_str=days_str,
+            start_dt_str=start_dt_str)
+    except ValueError:
+        return None
+
+
 def parse_days_from_duration_pieces(
         years_str: Optional[str] = None,
         months_str: Optional[str] = None,
