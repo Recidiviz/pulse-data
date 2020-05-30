@@ -1100,12 +1100,14 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _deciding_body_type(
             cls,
             revocation_admission_reason: StateIncarcerationPeriodAdmissionReason
-    ) -> Optional[StateSupervisionViolationResponseDecidingBodyType]:
+    ) -> StateSupervisionViolationResponseDecidingBodyType:
+        if revocation_admission_reason == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION:
+            return StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD
         if revocation_admission_reason == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
             return StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD
         if revocation_admission_reason == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
             return StateSupervisionViolationResponseDecidingBodyType.COURT
-        return None
+        raise ValueError(f'Unexpected revocation_admission_reason [{revocation_admission_reason}].')
 
     @classmethod
     def _set_incarceration_period_status(cls,

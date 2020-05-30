@@ -699,14 +699,18 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         vr_110035_19890901_5 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
+            response_date='19940609',
             decision='REVOCATION',
             revocation_type='S',
+            deciding_body_type='PAROLE_BOARD'
         )
 
         vr_110035_20010414_2 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
+            response_date='20010420',
             decision='REVOCATION',
-            revocation_type='X'
+            revocation_type='X',
+            deciding_body_type='PAROLE_BOARD'
         )
 
         vr_710448_20010414_3 = StateSupervisionViolationResponse(
@@ -2548,10 +2552,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text='PERMANENT_DECISION',
+            response_date=datetime.date(year=1994, month=6, day=9),
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             revocation_type_raw_text='S',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
             person=person_110035,
         )
         ip_110035_19890901_5_0.source_supervision_violation_response = vr_110035_19890901_5
@@ -2582,10 +2589,13 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text='PERMANENT_DECISION',
+            response_date=datetime.date(year=2001, month=4, day=20),
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text='REVOCATION',
             revocation_type=None,
             revocation_type_raw_text='X',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
             person=person_110035,
         )
         ip_110035_20010414_2_0.source_supervision_violation_response = vr_110035_20010414_2
