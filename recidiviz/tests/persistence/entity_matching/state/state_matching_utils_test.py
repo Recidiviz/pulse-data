@@ -35,7 +35,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     _is_match, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, \
     get_root_entity_cls, get_total_entities_of_cls, \
-    base_entity_match, get_external_ids_of_cls, \
+    nonnull_fields_entity_match, get_external_ids_of_cls, \
     get_all_entity_trees_of_cls, default_merge_flat_fields, \
     read_persons_by_root_entity_cls, read_db_entity_trees_of_cls_to_merge, \
     read_persons
@@ -54,6 +54,7 @@ _ID = 1
 _ID_2 = 2
 _ID_3 = 3
 _COUNTY_CODE = 'COUNTY'
+_COUNTY_CODE_ANOTHER = 'COUNTY_ANOTHER'
 _STATE_CODE = 'NC'
 _STATE_CODE_ANOTHER = 'CA'
 _ID_TYPE = 'ID_TYPE'
@@ -391,38 +392,51 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         is_revocation_admission(StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None))
 
-    def test_baseEntityMatch_placeholder(self):
+    def test_nonnullFieldsEntityMatch_placeholder(self):
         charge = StateCharge.new_with_defaults()
         charge_another = StateCharge.new_with_defaults()
         self.assertFalse(
-            base_entity_match(
+            nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
-    def test_baseEntityMatch_externalIdCompare(self):
+    def test_nonnullFieldsEntityMatch_externalIdCompare(self):
         charge = StateCharge.new_with_defaults(external_id=_EXTERNAL_ID)
         charge_another = StateCharge.new_with_defaults()
         self.assertFalse(
-            base_entity_match(
+            nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
         charge_another.external_id = _EXTERNAL_ID
         self.assertTrue(
-            base_entity_match(
+            nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
-    def test_baseEntityMatch_flatFieldsCompare(self):
+    def test_nonnullFieldsEntityMatch_flatFieldsCompare(self):
         charge = StateCharge.new_with_defaults(
-            state_code=_STATE_CODE, county_code=_COUNTY_CODE)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE)
+            state_code=_STATE_CODE,
+            ncic_code='1234',
+            county_code=_COUNTY_CODE)
+        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, ncic_code='1234')
+
+        # If one of the entities is merely missing a field, we still consider it a match
+        self.assertTrue(
+            nonnull_fields_entity_match(
+                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
+                db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
+        charge_another.county_code = _COUNTY_CODE_ANOTHER
+
+        # If one of the entities has a different value, then it is not a match
         self.assertFalse(
-            base_entity_match(
+            nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
         charge_another.county_code = _COUNTY_CODE
+
+        # All fields the same - this is a match
         self.assertTrue(
-            base_entity_match(
+            nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 

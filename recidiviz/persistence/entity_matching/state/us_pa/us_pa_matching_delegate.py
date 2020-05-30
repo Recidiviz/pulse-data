@@ -25,7 +25,7 @@ from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls, \
-    base_entity_match
+    nonnull_fields_entity_match
 
 
 class UsPaMatchingDelegate(BaseStateMatchingDelegate):
@@ -54,5 +54,7 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         If such a match is found, it is returned.
         """
         if isinstance(ingested_entity_tree.entity, schema.StateAssessment):
-            return entity_matching_utils.get_only_match(ingested_entity_tree, db_entity_trees, base_entity_match)
+            return entity_matching_utils.get_only_match(ingested_entity_tree,
+                                                        db_entity_trees,
+                                                        nonnull_fields_entity_match)
         return None
