@@ -36,7 +36,7 @@ from recidiviz.common.constants.state.state_supervision_violation import StateSu
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, sorted_list_from_str
+from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces, sorted_list_from_str
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
@@ -430,9 +430,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
                 start_date = obj.start_date
-                max_time = parse_days_from_duration_pieces(
+                max_time = safe_parse_days_from_duration_pieces(
                     years_str=max_years, months_str=max_months, days_str=max_days, start_dt_str=start_date)
-                min_time = parse_days_from_duration_pieces(
+                min_time = safe_parse_days_from_duration_pieces(
                     years_str=min_years, months_str=min_months, days_str=min_days, start_dt_str=start_date)
 
                 if max_time:

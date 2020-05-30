@@ -41,6 +41,15 @@ def create_period_split_criteria(period_type: PeriodType) -> str:
     raise ValueError(f'Unexpected PeriodType {period_type}')
 
 
+def get_status_code(period_type: PeriodType) -> str:
+    """Returns the relevant offstat stat_cd for the given |period_type|"""
+    if period_type == PeriodType.INCARCERATION:
+        return 'I'
+    if period_type == PeriodType.SUPERVISION:
+        return 'P'
+    raise ValueError(f'Unexpected PeriodType {period_type}')
+
+
 # Idaho provides us with a table 'movements', which acts as a ledger for each person's physical movements throughout
 # the ID criminal justice system. By default, each row of this table includes a location and the date that the
 # person arrived at that location (`move_dtd`). New entries into this table are created every time a person's
@@ -282,7 +291,8 @@ ALL_PERIODS_FRAGMENT = f"""
         AND a.incrno = o.incrno
         AND (a.start_date
              BETWEEN o.start_date
-             AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY))))
+             AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY)))
+        AND o.stat_cd = '{{period_status_code}}')
       GROUP BY a.docno, a.incrno, a.start_date, a.end_date
     ),
 
@@ -345,4 +355,6 @@ ALL_PERIODS_FRAGMENT = f"""
 
 
 def get_all_periods_query_fragment(period_type: PeriodType) -> str:
-    return ALL_PERIODS_FRAGMENT.format(period_split_criteria=create_period_split_criteria(period_type))
+    return ALL_PERIODS_FRAGMENT.format(
+        period_split_criteria=create_period_split_criteria(period_type),
+        period_status_code=get_status_code(period_type))
