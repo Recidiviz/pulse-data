@@ -41,7 +41,10 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FACILITY_CODE, FUGITIVE_FACILITY_CODE, \
     VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
-    SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_CODE, NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE
+    SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_CODE, NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE, \
+    PAROLE_COMMISSION_CODE, LIMITED_SUPERVISION_LIVING_UNIT, BENCH_WARRANT_LIVING_UNIT, COURT_PROBATION_LIVING_UNIT, \
+    LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, IDOC_CUSTODIAL_AUTHORITY, CURRENT_FACILITY_NAME, \
+    CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
@@ -119,6 +122,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._clear_max_dates,
                 self._supervision_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
+                self._override_supervision_fields_from_location_info
             ],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -449,14 +453,62 @@ class UsIdController(CsvGcsfsDirectIngestController):
         """Overrides the recorded facility for the person if IDOC data indicates that the person is at another
         location.
         """
-        location_cd = row.get('loc_cd', '')
-        location_name = row.get('loc_ldesc', '')
+        location_cd = row.get(CURRENT_LOCATION_CODE, '')
+        location_name = row.get(CURRENT_LOCATION_NAME, '')
         if not (location_cd and location_name) or location_cd == '001':   # Present at facility
             return
 
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.facility = location_name
+
+    # TODO(2912): Add custodial authority to incarceration periods
+    @staticmethod
+    def _override_supervision_fields_from_location_info(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Overrides various fields on SupervisionPeriods based on granular location info."""
+        facility_cd = row.get(CURRENT_FACILITY_CODE, '')
+        facility_name = row.get(CURRENT_FACILITY_NAME, '')
+        location_name = row.get(CURRENT_LOCATION_NAME, '')
+        living_unit_cd = row.get(CURRENT_LIVING_UNIT_CODE, '')
+        living_unit_name = row.get(CURRENT_LIVING_UNIT_NAME, '')
+
+        # default values
+        custodial_authority = IDOC_CUSTODIAL_AUTHORITY
+        supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=living_unit_name)
+        supervision_type_override = None
+
+        # Interstate and parole commission facilities mean some non-IDOC entity is supervising the person.
+        if facility_cd in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
+            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=location_name)
+            custodial_authority = location_name
+        # Absconders have no granular facility info.
+        elif facility_cd == FUGITIVE_FACILITY_CODE:
+            supervision_site = None
+        # People on limited supervision are marked as a part of 'DISTRICT 4' in the data because it started out as a
+        # District 4 only program. Now, however, they count anyone on limited supervision as a part of DISTRICT 0
+        elif living_unit_cd == LIMITED_SUPERVISION_LIVING_UNIT:
+            supervision_site = _create_supervision_site(
+                facility_name=DISTRICT_0, specific_location=LIMITED_SUPERVISION_UNIT_NAME)
+        # TODO(3309): Consider adding warrant spans to schema.
+        # Folks with an existing bench warrant are not actively supervised and have no office info.
+        elif living_unit_cd == BENCH_WARRANT_LIVING_UNIT:
+            supervision_type_override = BENCH_WARRANT_LIVING_UNIT
+            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
+        # Folks with court probation do not have office info.
+        elif living_unit_cd == COURT_PROBATION_LIVING_UNIT:
+            supervision_type_override = COURT_PROBATION_LIVING_UNIT
+            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                obj.supervision_site = supervision_site
+                obj.custodial_authority = custodial_authority
+                if supervision_type_override:
+                    obj.supervision_period_supervision_type = supervision_type_override
 
     @staticmethod
     def _set_generated_ids(
@@ -543,7 +595,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 else:
                     obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
 
-
     @staticmethod
     def _clear_max_dates(
             _file_tag: str,
@@ -560,7 +611,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionPeriod):
                 if obj.termination_date == MAX_DATE_STR:
                     obj.termination_date = None
-
 
     @staticmethod
     def _supervision_period_admission_and_termination_overrides(
@@ -587,14 +637,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 # If we're currently in an interstate period, set admission/release reason accordingly and clear
                 # supervision site, as we don't have info on where exactly supervision is taking place.
                 if cur_fac_cd == INTERSTATE_FACILITY_CODE:
-                    obj.supervision_site = None
                     obj.admission_reason = StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE.value
                     if obj.termination_date:
                         obj.termination_reason = StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE.value
 
                 # Handle absconsion periods.
                 if cur_fac_cd == FUGITIVE_FACILITY_CODE:
-                    obj.supervision_site = None
                     obj.admission_reason = StateSupervisionPeriodAdmissionReason.ABSCONSION.value
                     if obj.termination_date:
                         obj.termination_reason = StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION.value
@@ -685,3 +733,7 @@ def _get_bool_from_row(arg: str, row: Dict[str, str]):
     if not val:
         return False
     return str_to_bool(val)
+
+
+def _create_supervision_site(facility_name: str, specific_location: str):
+    return facility_name + '|' + specific_location
