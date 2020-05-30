@@ -28,7 +28,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    read_persons_by_root_entity_cls, base_entity_match
+    read_persons_by_root_entity_cls, nonnull_fields_entity_match
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import move_periods_onto_sentences_by_date
 from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import \
     move_violations_onto_supervision_periods_for_sentence
@@ -85,5 +85,5 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
                       schema.StateSupervisionViolationResponse):
             return entity_matching_utils.get_only_match(
                 ingested_entity_tree, db_entity_trees,
-                base_entity_match)
+                nonnull_fields_entity_match)
         return None
