@@ -28,7 +28,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import \
 from recidiviz.persistence.entity_matching.state. \
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    base_entity_match, read_persons_by_root_entity_cls
+    nonnull_fields_entity_match, read_persons_by_root_entity_cls
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import \
     add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity_matching.state.us_nd. \
@@ -117,7 +117,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
                        schema.StateSupervisionViolationResponse)):
             return entity_matching_utils.get_only_match(
                 ingested_entity_tree, db_entity_trees,
-                base_entity_match)
+                nonnull_fields_entity_match)
         return None
 
     def get_merge_flat_fields_override_for_type(

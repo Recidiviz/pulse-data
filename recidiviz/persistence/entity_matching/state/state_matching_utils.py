@@ -120,7 +120,7 @@ def _is_match(*,
     return ingested_entity.get_external_id() == db_entity.get_external_id()
 
 
-def base_entity_match(
+def nonnull_fields_entity_match(
         ingested_entity: EntityTree,
         db_entity: EntityTree) -> bool:
     """
@@ -131,10 +131,10 @@ def base_entity_match(
     """
     a = ingested_entity.entity
     b = db_entity.entity
-    return _base_entity_match(a, b)
+    return _base_entity_match(a, b, allow_null_mismatch=True)
 
 
-def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity) -> bool:
+def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity, allow_null_mismatch: bool = False) -> bool:
     # Placeholders never match
     if is_placeholder(a) or is_placeholder(b):
         return False
@@ -153,6 +153,11 @@ def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity) -> bool:
             continue
         a_field = a.get_field(field_name)
         b_field = b.get_field(field_name)
+
+        if allow_null_mismatch and (a_field is None or b_field is None):
+            # Do not disqualify a match if one of the fields is null
+            continue
+
         if a_field != b_field:
             return False
 
