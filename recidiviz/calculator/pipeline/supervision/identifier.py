@@ -29,14 +29,15 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
-from recidiviz.calculator.pipeline.utils import us_mo_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
     identify_most_severe_response_decision, first_day_of_month, first_day_of_next_month
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
-from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state, \
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
+    supervision_types_distinct_for_state, \
     default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
     get_pre_incarceration_supervision_type, \
     terminating_supervision_period_supervision_type, \
@@ -49,8 +50,7 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason, is_revocation_admission
+from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -458,33 +458,6 @@ def find_supervision_termination_bucket(
     return None
 
 
-def _admission_reason_matches_supervision_type(
-        admission_reason: AdmissionReason,
-        supervision_type: Optional[StateSupervisionPeriodSupervisionType]):
-
-    if not supervision_type:
-        return True
-
-    if admission_reason == AdmissionReason.PROBATION_REVOCATION:
-        # Note: we explicitly omit DUAL type here since you could be on supervision but only have PROBATION revoked
-        if supervision_type == StateSupervisionPeriodSupervisionType.PAROLE:
-            return False
-
-    if admission_reason == AdmissionReason.PAROLE_REVOCATION:
-        # Note: we explicitly omit DUAL type here since you could be on supervision but only have PAROLE revoked
-        if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
-            return False
-
-    if admission_reason == AdmissionReason.DUAL_REVOCATION:
-        if supervision_type in (
-                StateSupervisionPeriodSupervisionType.PROBATION,
-                StateSupervisionPeriodSupervisionType.PAROLE
-        ):
-            return False
-
-    return True
-
-
 RevocationDetails = NamedTuple('RevocationDetails', [
         ('revocation_type', Optional[StateSupervisionViolationResponseRevocationType]),
         ('source_violation_type', Optional[StateSupervisionViolationType]),
@@ -570,7 +543,7 @@ def get_violation_and_response_history(
     for response in responses_in_window:
         # TODO(2995): Formalize state-specific calc logic
         if response.state_code == 'US_MO':
-            updated_responses.append(us_mo_utils.normalize_violations_on_responses(response))
+            updated_responses.append(us_mo_violation_utils.normalize_violations_on_responses(response))
         else:
             updated_responses.append(response)
 
@@ -671,7 +644,7 @@ def _get_violation_history_description(violations: List[StateSupervisionViolatio
 
     if state_code.upper() == 'US_MO':
         ranked_violation_type_and_subtype_counts = \
-            us_mo_utils.get_ranked_violation_type_and_subtype_counts(violations)
+            us_mo_violation_utils.get_ranked_violation_type_and_subtype_counts(violations)
 
     descriptions = [f"{count}{label}" for label, count in
                     ranked_violation_type_and_subtype_counts.items() if count > 0]
