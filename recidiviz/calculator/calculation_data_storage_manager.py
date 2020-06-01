@@ -69,7 +69,8 @@ def move_old_dataflow_metrics_to_cold_storage():
                                                                       source_table_id=table_id,
                                                                       destination_dataset_id=cold_storage_dataset,
                                                                       destination_table_id=table_id,
-                                                                      source_data_filter_clause=filter_clause)
+                                                                      source_data_filter_clause=filter_clause,
+                                                                      allow_field_additions=True)
 
             # Wait for the insert job to complete before running the delete job
             insert_job.result()

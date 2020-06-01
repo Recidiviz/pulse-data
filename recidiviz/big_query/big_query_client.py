@@ -297,7 +297,8 @@ class BigQueryClient:
                                            source_table_id: str,
                                            destination_dataset_id: str,
                                            destination_table_id: str,
-                                           source_data_filter_clause: Optional[str]) -> bigquery.QueryJob:
+                                           source_data_filter_clause: Optional[str] = None,
+                                           allow_field_additions: bool = False) -> bigquery.QueryJob:
         """Inserts rows from the source table into the destination table, with an optional filter clause to only insert
         a subset of rows into the destination table.
 
@@ -308,6 +309,8 @@ class BigQueryClient:
             destination_table_id: The name of the table to insert into.
             source_data_filter_clause: An optional clause to filter the contents of the source table that are inserted
                 into the destination table. Must start with "WHERE".
+            allow_field_additions: Whether or not to allow new columns to be created in the destination table if the
+                schema in the source table does not exactly match the destination table. Defaults to False.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -599,7 +602,8 @@ class BigQueryClientImpl(BigQueryClient):
                                            source_table_id: str,
                                            destination_dataset_id: str,
                                            destination_table_id: str,
-                                           source_data_filter_clause: Optional[str] = None) -> bigquery.QueryJob:
+                                           source_data_filter_clause: Optional[str] = None,
+                                           allow_field_additions: bool = False) -> bigquery.QueryJob:
 
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
@@ -607,12 +611,9 @@ class BigQueryClientImpl(BigQueryClient):
             raise ValueError(f"Destination table [{self.project_id}.{destination_dataset_id}.{destination_table_id}]"
                              f" does not exist!")
 
-        insert_query = \
-            """INSERT INTO `{project_id}.{destination_dataset_id}.{destination_table_id}`
-            SELECT * FROM `{project_id}.{source_dataset_id}.{source_table_id}`""".format(
+        select_query = \
+            """SELECT * FROM `{project_id}.{source_dataset_id}.{source_table_id}`""".format(
                 project_id=self.project_id,
-                destination_dataset_id=destination_dataset_id,
-                destination_table_id=destination_table_id,
                 source_dataset_id=source_dataset_id,
                 source_table_id=source_table_id
             )
@@ -621,12 +622,19 @@ class BigQueryClientImpl(BigQueryClient):
             if not source_data_filter_clause.startswith('WHERE'):
                 raise ValueError("Cannot filter a SELECT without a valid filter clause starting with WHERE.")
 
-            insert_query = f"{insert_query} {source_data_filter_clause}"
+            select_query = f"{select_query} {source_data_filter_clause}"
+
+        job_config = bigquery.job.QueryJobConfig()
+        job_config.destination = destination_dataset_ref.table(destination_table_id)
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+
+        if allow_field_additions:
+            job_config.schema_update_options = [bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
 
         logging.info("Copying data from: %s.%s to: %s.%s", source_dataset_id, source_table_id,
                      destination_dataset_id, destination_table_id)
 
-        return self.client.query(insert_query)
+        return self.client.query(select_query, job_config=job_config)
 
     def insert_into_table_from_cloud_storage_async(
             self,
