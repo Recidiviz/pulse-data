@@ -19,9 +19,9 @@ import datetime
 import unittest
 from typing import Optional
 
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoIncarcerationSentence, \
-    UsMoSupervisionSentence, SupervisionTypeSpan
-from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import \
+    UsMoIncarcerationSentence, UsMoSupervisionSentence, SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import \
     us_mo_get_supervision_period_supervision_type_on_date, us_mo_get_pre_incarceration_supervision_type, \
     us_mo_get_month_supervision_type, us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason

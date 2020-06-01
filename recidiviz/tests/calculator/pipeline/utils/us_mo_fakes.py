@@ -19,8 +19,8 @@ from typing import List
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSupervisionSentence, \
-    UsMoIncarcerationSentence, SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import \
+    UsMoSupervisionSentence, UsMoIncarcerationSentence, SupervisionTypeSpan
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence
 
 

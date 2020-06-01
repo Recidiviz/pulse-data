@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the us_mo_utils.py file."""
+"""Tests the us_mo_violation_utils.py file."""
 import unittest
 from collections import OrderedDict
 
@@ -22,7 +22,8 @@ import pytest
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violation_subtype
 # pylint: disable=protected-access
-from recidiviz.calculator.pipeline.utils.us_mo_utils import get_ranked_violation_type_and_subtype_counts, \
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import \
+    get_ranked_violation_type_and_subtype_counts, \
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP, _LAW_CITATION_SUBTYPE_STR, \
     _SUBSTANCE_ABUSE_CONDITION_STR, us_mo_filter_violation_responses, normalize_violations_on_responses
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -33,8 +34,8 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionViolatio
 _STATE_CODE = 'US_MO'
 
 
-class TestUsMoUtils(unittest.TestCase):
-    """Test US_MO specific calculation utils."""
+class TestUsMoViolationUtils(unittest.TestCase):
+    """Test US_MO specific calculation utils related to violations."""
 
     def test_identifyViolationSubtype_nonTechnical(self):
         # Arrange

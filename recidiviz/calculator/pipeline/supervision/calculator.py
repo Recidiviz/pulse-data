@@ -40,7 +40,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import supervision_types_distinct_for_state
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
+    supervision_types_distinct_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 

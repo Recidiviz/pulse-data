@@ -48,7 +48,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSe
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \

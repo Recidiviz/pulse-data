@@ -24,7 +24,7 @@ from datetime import date
 from functools import cmp_to_key
 from typing import List
 
-from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import \
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     temporary_custody_periods_under_state_authority, non_prison_periods_under_state_authority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod

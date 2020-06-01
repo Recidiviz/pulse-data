@@ -23,7 +23,7 @@ from typing import List, Set, Optional, Dict
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     _sentence_supervision_types_to_supervision_period_supervision_type
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSentenceMixin
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import UsMoSentenceMixin
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \

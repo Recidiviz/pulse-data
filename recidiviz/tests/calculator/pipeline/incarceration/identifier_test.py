@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationStayEvent, IncarcerationEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
