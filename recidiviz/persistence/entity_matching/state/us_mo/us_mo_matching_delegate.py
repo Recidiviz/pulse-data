@@ -74,6 +74,21 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
             "[Entity matching] Post-processing: Move SupervisionViolationResponses onto SupervisionPeriods by date.")
         move_violations_onto_supervision_periods_for_sentence(matched_persons)
 
+    @staticmethod
+    def _nonnull_fields_ssvr_entity_match(ingested_entity: EntityTree,
+                                          db_entity: EntityTree) -> bool:
+        """Custom matcher for StateSupervisionViolationResponses where we allow for flat field matching to allow for
+        changes to the revocation type - we've seen this changes occasionally in the SSVRs we ingest as
+        source_supervision_violation_response in our incarceration period files."""
+
+        if not isinstance(ingested_entity.entity, schema.StateSupervisionViolationResponse):
+            raise ValueError(f'Unexpected entity type [{type(ingested_entity.entity)}]')
+
+        return nonnull_fields_entity_match(
+            ingested_entity, db_entity,
+            skip_fields={schema.StateSupervisionViolationResponse.revocation_type.name,
+                         schema.StateSupervisionViolationResponse.revocation_type_raw_text.name})
+
     def get_non_external_id_match(
             self, ingested_entity_tree: EntityTree,
             db_entity_trees: List[EntityTree]) -> Optional[EntityTree]:
@@ -85,5 +100,5 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
                       schema.StateSupervisionViolationResponse):
             return entity_matching_utils.get_only_match(
                 ingested_entity_tree, db_entity_trees,
-                nonnull_fields_entity_match)
+                self._nonnull_fields_ssvr_entity_match)
         return None
