@@ -111,7 +111,7 @@ def _is_match(*,
                    schema.StateSupervisionViolatedConditionEntry,
                    schema.StateSupervisionViolationTypeEntry,
                    schema.StateSupervisionCaseTypeEntry)):
-        return _base_entity_match(ingested_entity, db_entity)
+        return _base_entity_match(ingested_entity, db_entity, skip_fields=set())
 
     # Placeholders entities are considered equal
     if ingested_entity.get_external_id() is None \
@@ -122,19 +122,39 @@ def _is_match(*,
 
 def nonnull_fields_entity_match(
         ingested_entity: EntityTree,
-        db_entity: EntityTree) -> bool:
+        db_entity: EntityTree,
+        skip_fields: Optional[Set[str]] = None) -> bool:
     """
     Matching logic for comparing entities that might not have external ids, by
     comparing all flat fields in the given entities. Should only be used for
     entities that we know might not have external_ids based on the ingested
     state data.
     """
+    if skip_fields is None:
+        skip_fields = set()
+
     a = ingested_entity.entity
     b = db_entity.entity
-    return _base_entity_match(a, b, allow_null_mismatch=True)
+    return _base_entity_match(a, b, skip_fields=skip_fields, allow_null_mismatch=True)
 
 
-def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity, allow_null_mismatch: bool = False) -> bool:
+def _base_entity_match(
+        a: DatabaseEntity,
+        b: DatabaseEntity,
+        skip_fields: Set[str],
+        allow_null_mismatch: bool = False
+) -> bool:
+    """Returns whether two objects of the same type are an entity match.
+
+    Args:
+        a: The first entity to match
+        b: The second entity to match
+        skip_fields: A list of names of fields that should be ignored when determining if two objects match based on
+            flat fields.
+        allow_null_mismatch: Allow for two objects to still match if one has a null value in a field where the other's
+            is nonnull.
+    """
+
     # Placeholders never match
     if is_placeholder(a) or is_placeholder(b):
         return False
@@ -149,7 +169,7 @@ def _base_entity_match(a: DatabaseEntity, b: DatabaseEntity, allow_null_mismatch
         get_set_entity_field_names(b, EntityFieldType.FLAT_FIELD)
     for field_name in all_set_flat_field_names:
         # Skip primary key
-        if field_name == a.get_class_id_name():
+        if field_name == a.get_class_id_name() or field_name in skip_fields:
             continue
         a_field = a.get_field(field_name)
         b_field = b.get_field(field_name)

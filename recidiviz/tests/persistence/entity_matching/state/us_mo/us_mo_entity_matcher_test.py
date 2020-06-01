@@ -25,7 +25,8 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response import \
-    StateSupervisionViolationResponseDecidingBodyType, StateSupervisionViolationResponseType
+    StateSupervisionViolationResponseDecidingBodyType, StateSupervisionViolationResponseType, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.entity.state.entities import \
     StatePersonExternalId, StatePerson, \
     StateSupervisionSentence, StateSupervisionViolation, \
@@ -580,6 +581,102 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[external_id])
 
         expected_person = self.to_entity(db_person)
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _US_MO, ingested_people=[person])
+
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person], matched_entities.people, session)
+        self.assertEqual(0, matched_entities.error_count)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_ssvrFlatFieldMatchingRevocationTypeChanges(self):
+        db_person = generate_person()
+        db_supervision_violation_response = \
+            generate_supervision_violation_response(
+                person=db_person,
+                state_code=_US_MO,
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION.value,
+                response_type_raw_text=StateSupervisionViolationResponseType.PERMANENT_DECISION.value,
+                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value,
+                deciding_body_type_raw_text=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value,
+                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
+                revocation_type_raw_text='S',
+            )
+        db_incarceration_period = \
+            generate_incarceration_period(
+                person=db_person,
+                state_code=_US_MO,
+                external_id=_EXTERNAL_ID,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION.value,
+                source_supervision_violation_response=db_supervision_violation_response)
+        db_incarceration_sentence = generate_incarceration_sentence(
+            person=db_person,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_US_MO,
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[db_incarceration_period])
+        db_sentence_group = generate_sentence_group(
+            person=db_person,
+            state_code=_US_MO,
+            external_id=_EXTERNAL_ID_WITH_SUFFIX,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            incarceration_sentences=[db_incarceration_sentence],
+            supervision_sentences=[])
+        db_external_id = generate_external_id(
+            person=db_person,
+            state_code=_US_MO,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID)
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+
+        self._commit_to_db(db_person)
+
+        # Even though the revocation type has changed, we still allow a match
+        supervision_violation_response = \
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code=_US_MO,
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text=StateSupervisionViolationResponseType.PERMANENT_DECISION.value,
+                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+                deciding_body_type_raw_text=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD.value,
+                revocation_type=StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
+                revocation_type_raw_text='L',
+
+            )
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code=_US_MO,
+                external_id=_EXTERNAL_ID,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                source_supervision_violation_response=supervision_violation_response)
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=_US_MO,
+            external_id=_EXTERNAL_ID,
+            incarceration_periods=[incarceration_period])
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code=_US_MO,
+            external_id=_EXTERNAL_ID_WITH_SUFFIX,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[])
+        external_id = StatePersonExternalId.new_with_defaults(
+            state_code=_US_MO,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID)
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group],
+            external_ids=[external_id])
+
+        expected_person = self.to_entity(db_person)
+        expected_ip = expected_person.sentence_groups[0].incarceration_sentences[0].incarceration_periods[0]
+        expected_ssvr = expected_ip.source_supervision_violation_response
+        expected_ssvr.revocation_type = StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON
+        expected_ssvr.revocation_type_raw_text = 'L'
 
         # Act 1 - Match
         session = self._session()
