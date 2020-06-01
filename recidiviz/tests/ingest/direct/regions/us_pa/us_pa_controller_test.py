@@ -20,6 +20,8 @@ import datetime
 import json
 from typing import Type
 
+from mock import patch
+
 from recidiviz import IngestInfo
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_SID, US_PA_PBPP
@@ -30,10 +32,12 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import G
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateSentenceGroup, StateAssessment
+from recidiviz.ingest.scrape.regions.us_pa.us_pa_scraper import UsPaScraper
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
 from recidiviz.tests.ingest.direct.regions.utils import populate_person_backedges
+from recidiviz.utils import regions
 
 _STATE_CODE_UPPER = 'US_PA'
 
@@ -693,3 +697,25 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(expected_people)
+
+    # Note: These tests really belong in regions_test.py, but since our copybara job that copies code to the pulse-data
+    # repo deletes everything in a regions directory, references to UsPaScraper and UsPaController will fail the build.
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_get_region_same_name_different_ingest_type(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        us_pa_scraper_region = regions.get_region('us_pa', is_direct_ingest=False)
+        self.assertEqual(us_pa_scraper_region.get_ingestor_class(), UsPaScraper)
+
+        us_pa_direct_ingest_region = regions.get_region('us_pa', is_direct_ingest=True)
+        self.assertEqual(us_pa_direct_ingest_region.get_ingestor_class(), UsPaController)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_get_region_same_name_different_ingest_type_reverse(self, mock_environment):
+        mock_environment.return_value = 'staging'
+
+        us_pa_direct_ingest_region = regions.get_region('us_pa', is_direct_ingest=True)
+        self.assertEqual(us_pa_direct_ingest_region.get_ingestor_class(), UsPaController)
+
+        us_pa_scraper_region = regions.get_region('us_pa', is_direct_ingest=False)
+        self.assertEqual(us_pa_scraper_region.get_ingestor_class(), UsPaScraper)
