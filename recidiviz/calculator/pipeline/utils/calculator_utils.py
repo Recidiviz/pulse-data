@@ -22,7 +22,7 @@ from typing import Optional, List, Any, Dict, Tuple
 import dateutil
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils import us_mo_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.common.constants.state.state_supervision_violation import \
@@ -198,7 +198,8 @@ def _identify_most_severe_violation_type(
     state_code = violations[0].state_code
 
     if state_code.upper() == 'US_MO':
-        return us_mo_utils.us_mo_identify_most_severe_violation_type(violations, VIOLATION_TYPE_SEVERITY_ORDER)
+        return us_mo_violation_utils.us_mo_identify_most_severe_violation_type(
+            violations, VIOLATION_TYPE_SEVERITY_ORDER)
 
     violation_types = []
     for violation in violations:
@@ -217,7 +218,7 @@ def identify_violation_subtype(violation_type: Optional[StateSupervisionViolatio
 
     state_code = violations[0].state_code
     if state_code.upper() == 'US_MO':
-        return us_mo_utils.us_mo_identify_violation_subtype(violation_type, violations)
+        return us_mo_violation_utils.us_mo_identify_violation_subtype(violation_type, violations)
 
     return None
 

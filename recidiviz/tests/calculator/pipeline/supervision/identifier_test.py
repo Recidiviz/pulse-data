@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import \
@@ -969,6 +969,88 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=first_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=first_supervision_period.termination_reason)]
+        self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
+
+    def test_findSupervisionTimeBuckets_usId(self):
+        """Tests the find_supervision_time_buckets function for state code US_ND to ensure that temporary
+        custody periods are ignored."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_ID',
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 5, 9),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_sentences = []
+        supervision_periods = [supervision_period]
+        incarceration_periods = [revocation_period]
+        assessments = []
+        violation_responses = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences, incarceration_sentences,
+            supervision_periods, incarceration_periods,
+            assessments, violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        expected_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2017, month=3,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL,
+                is_on_supervision_last_day_of_month=True),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2017, month=4,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL,
+                is_on_supervision_last_day_of_month=True),
+            RevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2017, month=5,
+                revocation_admission_date=revocation_period.admission_date,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                most_severe_violation_type_subtype='UNSET',
+                case_type=StateSupervisionCaseType.GENERAL,
+                is_on_supervision_last_day_of_month=False,
+                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                termination_date=supervision_period.termination_date,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason)]
         self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
 
     def test_find_supervision_time_buckets_multiple_periods(self):
@@ -2636,6 +2718,113 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason
             ),
+        ])
+
+    def test_find_supervision_time_buckets_us_id(self):
+        """Tests the find_supervision_time_buckets function where the supervision type should be taken from the
+        supervision_period_supervision_type off of the supervision_period."""
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                case_type_entries=[
+                    StateSupervisionCaseTypeEntry.new_with_defaults(
+                        state_code='US_ID',
+                        case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
+                    )
+                ],
+                state_code='US_ID',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            external_id='is1',
+            start_date=date(2017, 1, 1),
+            supervision_periods=[supervision_period]
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 10)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods = []
+        assessments = [assessment]
+        violation_responses = []
+        incarceration_sentences = [incarceration_sentence]
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual(len(supervision_time_buckets), 4)
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=True),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=True),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                termination_date=supervision_period.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                termination_reason=supervision_period.termination_reason
+            )
         ])
 
     def test_find_supervision_time_buckets_infer_supervision_type(self):

@@ -26,8 +26,7 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     _get_most_relevant_supervision_type, \
     _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences, \
     _get_sentence_supervision_type_from_sentence, get_pre_incarceration_supervision_type_from_incarceration_period
-from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_month_supervision_type, \
-    get_pre_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import get_month_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
