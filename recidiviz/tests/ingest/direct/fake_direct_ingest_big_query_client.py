@@ -95,7 +95,8 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
 
     def insert_into_table_from_table_async(self, source_dataset_id: str, source_table_id: str,
                                            destination_dataset_id: str, destination_table_id: str,
-                                           source_data_filter_clause: Optional[str]) -> bigquery.QueryJob:
+                                           source_data_filter_clause: Optional[str] = None,
+                                           allow_field_additions: bool = False) -> bigquery.QueryJob:
         raise ValueError('Must be implemented for use in tests.')
 
     def insert_into_table_from_cloud_storage_async(
