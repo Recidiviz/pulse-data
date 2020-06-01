@@ -22,8 +22,8 @@ from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSupervisionSentence, \
-    UsMoIncarcerationSentence
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import \
+    UsMoSupervisionSentence, UsMoIncarcerationSentence
 from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
 

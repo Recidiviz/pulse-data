@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for state-specific calculations for Missouri."""
+"""Utils for state-specific calculations related to violations for US_MO."""
 from collections import defaultdict, OrderedDict
 from typing import List, Optional, Dict, Any
 

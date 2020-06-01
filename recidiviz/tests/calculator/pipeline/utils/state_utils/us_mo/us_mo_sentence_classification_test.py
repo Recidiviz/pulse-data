@@ -18,7 +18,7 @@
 import datetime
 import unittest
 
-from recidiviz.calculator.pipeline.utils.us_mo_sentence_classification import UsMoSentenceStatus, \
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import UsMoSentenceStatus, \
     UsMoIncarcerationSentence, UsMoSupervisionSentence
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence

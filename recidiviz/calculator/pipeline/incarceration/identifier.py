@@ -25,7 +25,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
-from recidiviz.calculator.pipeline.utils.state_calculation_config_manager import get_pre_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
+    get_pre_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType

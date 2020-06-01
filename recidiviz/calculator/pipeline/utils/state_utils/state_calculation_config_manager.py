@@ -19,13 +19,15 @@
 import datetime
 from typing import List, Optional
 
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
+    us_id_get_pre_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
-from recidiviz.calculator.pipeline.utils.us_mo_supervision_type_identification import \
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
-from recidiviz.calculator.pipeline.utils.us_mo_utils import us_mo_filter_violation_responses
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse
@@ -98,6 +100,11 @@ def get_month_supervision_type(
                                                 incarceration_sentences,
                                                 supervision_period)
 
+    if supervision_period.state_code == 'US_ID':
+        return (supervision_period.supervision_period_supervision_type
+                if supervision_period.supervision_period_supervision_type
+                else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+
     return get_month_supervision_type_default(
         any_date_in_month, supervision_sentences, incarceration_sentences, supervision_period)
 
@@ -112,7 +119,7 @@ def get_pre_incarceration_supervision_type(
     Args:
         incarceration_sentences: (List[StateIncarcerationSentence]) All IncarcerationSentences associated with this
             person.
-        supervision_sentences: (List[StateSupervisionSentence]) All SupervionSentences associated with this person.
+        supervision_sentences: (List[StateSupervisionSentence]) All SupervisionSentences associated with this person.
         incarceration_period: (StateIncarcerationPeriod) The incarceration period where the person was first
             reincarcerated.
     """
@@ -121,6 +128,11 @@ def get_pre_incarceration_supervision_type(
 
     if state_code == 'US_MO':
         return us_mo_get_pre_incarceration_supervision_type(incarceration_sentences,
+                                                            supervision_sentences,
+                                                            incarceration_period)
+
+    if state_code == 'US_ID':
+        return us_id_get_pre_incarceration_supervision_type(incarceration_sentences,
                                                             supervision_sentences,
                                                             incarceration_period)
 
@@ -179,6 +191,11 @@ def terminating_supervision_period_supervision_type(
         )
 
         return supervision_type if supervision_type else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+    if supervision_period.state_code == 'US_ID':
+        return (supervision_period.supervision_period_supervision_type
+                if supervision_period.supervision_period_supervision_type
+                else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
 
     return get_month_supervision_type_default(
         supervision_period.termination_date, supervision_sentences, incarceration_sentences, supervision_period)
