@@ -190,12 +190,12 @@ raw_files:
   - file_tag: ofndr_wrkld
     primary_key_cols:
       - ofndr_wrkld_id
-  - file_tag: sentdisp
-    primary_key_cols:
-      - sent_disp
   - file_tag: reldest
     primary_key_cols:
       - rel_dest_cd
+  - file_tag: sentdisp
+    primary_key_cols:
+      - sent_disp
   - file_tag: sentence
     primary_key_cols:
       - mitt_srl
