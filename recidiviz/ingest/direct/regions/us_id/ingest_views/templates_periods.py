@@ -249,6 +249,21 @@ ALL_PERIODS_FRAGMENT = f"""
     offstat_dates AS (
         {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='offstat_periods')}
     ),
+    # Offstat dates occasionally have information going into the future which is unreliable. Filter offstat dates to
+    # only those that are within the bounds of real facility dates.
+    filtered_offstat_dates AS (
+        SELECT 
+            docno,
+            incrno,
+            important_date
+        FROM 
+            offstat_dates
+        WHERE 
+            important_date <= (
+                SELECT MAX(important_date) 
+                FROM facility_dates 
+                WHERE important_date != CAST('9999-12-31' AS DATE))
+    ),
     # All dates where something we care about changed.
     all_dates AS (
       SELECT 
@@ -259,7 +274,7 @@ ALL_PERIODS_FRAGMENT = f"""
       SELECT
         * 
       FROM
-        offstat_dates
+        filtered_offstat_dates
     ),
 
     # Create time spans from the important dates
