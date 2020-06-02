@@ -21,10 +21,20 @@ import datetime
 import logging
 import os
 import gcsfs
+import xlrd
+
+from covid import covid_aggregator
 
 
-COVID_STITCHED_UPLOAD_BUCKET = '{}-covid-aggregation'
-COVID_STITCHED_HISTORICAL_UPLOAD_BUCKET = '{}-covid-aggregation-storage'
+COVID_CURRENT_OUTPUT_BUCKET = '{}-covid-aggregation-output'
+COVID_HISTORICAL_OUTPUT_BUCKET = '{}-covid-aggregation-storage'
+
+PRISON_DATA_FOLDER = 'prison'
+UCLA_DATA_FOLDER = 'ucla'
+RECIDIVIZ_DATA_FOLDER = 'recidiviz'
+
+OUTPUT_FILE_NAME = 'merged_data_{}.csv'
+OUTPUT_FILE_TIMESTAMP_FORMAT = '%Y_%m_%d_%H_%M_%S'
 
 
 class CovidIngestError(Exception):
@@ -35,9 +45,13 @@ def parse_to_csv(bucket, source, filename):
     """Ingests covid sources"""
     if not bucket or not source or not filename:
         raise CovidIngestError(
-            "All of source, bucket, and filename must be provided")
+            "All of bucket, source, and filename must be provided: Bucket - "
+            + "{}, source - {}, filename - {}"
+            .format(bucket, source, filename))
 
-    all_sources = {'prison': None, 'ucla': None, 'recidiviz_manual': None}
+    all_sources = {PRISON_DATA_FOLDER: None,
+                   UCLA_DATA_FOLDER: None,
+                   RECIDIVIZ_DATA_FOLDER: None}
 
     project_id = os.environ.get('GCP_PROJECT')
     path = os.path.join(bucket, source, filename)
@@ -52,16 +66,16 @@ def parse_to_csv(bucket, source, filename):
     # whatever reason a source folder is completely empty, we abort the
     # stitching process.
     for covid_source in all_sources:
-        all_sources[covid_source] = _get_latest_source_file(
+        all_sources[covid_source] = _get_latest_source_file_name_and_timestamp(
             fs, bucket, covid_source)
 
     # Once we have the latest file for each source, start stitching
     return _stitch_and_upload(fs, all_sources)
 
 
-def _get_latest_source_file(fs, bucket, source):
-    """Walks the source directory given and finds the newest file for the given
-    data source."""
+def _get_latest_source_file_name_and_timestamp(fs, bucket, source):
+    """Walks the source directory given and finds the newest file and its
+    timestamp for the given data source."""
     source_path = os.path.join(bucket, source)
     files = fs.ls(source_path)
     if not files:
@@ -71,26 +85,83 @@ def _get_latest_source_file(fs, bucket, source):
     # Pick an old date since it will be replaced.
     latest_time = datetime.datetime(1970, 1, 1)
     latest_file = ''
+    # Note that each file name returned by ls already includes the full path
     for file in files:
-        info = fs.info(os.path.join(bucket, source, file))
-        cur_time = datetime.datetime(info['created'])
-        if cur_time > latest_time:
+        upload_time = _get_upload_time_from_file_info(fs.info(file))
+        if upload_time > latest_time:
+            latest_time = upload_time
             latest_file = file
-    logging.info("Found newest file from source bucket %s", source)
-    return os.path.join(bucket, source, latest_file)
+    logging.info(
+        "Found newest file %s from source bucket %s", latest_file, source)
+    return (latest_file, latest_time)
 
 
-def _stitch_and_upload(fs, all_sources):  # pylint: disable=unused-argument
+def _stitch_and_upload(fs, all_sources):
     """Stitches all sources together into one combined CSV and uploads the
-    output file.
+    output file, with a filename including the timestamp of the most recent
+    source file included.
 
-    This function will abort if any of the sources are not provided.  Once it
-    has been stitched, it checks the covid upload bucket for the current
-    freshest file and replaces it if the current one is newer; moving the old
-    one to the historical bucket.  This function should use the timestamp of the
-    freshest of the sources as its timestamp and append the datetime to the name
-    of the file.
+    Any existing files in the output bucket with a timestamp earlier than the
+    output file will be moved to the historical output bucket. If there are any
+    files in the output bucket with a timestamp later than the output file, this
+    function will raise an error.
+
+    This function will abort if any of the sources are not provided.
 
     Returns:
         The GCS path of the final, aggregated csv.
     """
+    prison_data_file_path = all_sources[PRISON_DATA_FOLDER][0]
+    ucla_file_path = all_sources[UCLA_DATA_FOLDER][0]
+    recidiviz_file_path = all_sources[RECIDIVIZ_DATA_FOLDER][0]
+
+    prison_data_date = all_sources[PRISON_DATA_FOLDER][1]
+    ucla_date = all_sources[UCLA_DATA_FOLDER][1]
+    recidiviz_date = all_sources[RECIDIVIZ_DATA_FOLDER][1]
+    latest_source_time = max(prison_data_date, ucla_date, recidiviz_date)
+
+    aggregated_csv = None
+    with fs.open(ucla_file_path) as ucla_file:
+        ucla_workbook = xlrd.open_workbook(file_contents=ucla_file.read())
+        # GCSFS open mode defaults to rb, so to read a normal text file we need
+        # to specify rt
+        with fs.open(prison_data_file_path, "rt") as prison_data_file:
+            with fs.open(recidiviz_file_path, "rt") as recidiviz_file:
+                aggregated_csv = covid_aggregator.aggregate(
+                    prison_data_file, ucla_workbook, recidiviz_file)
+
+    project_id = os.environ.get('GCP_PROJECT')
+    output_bucket = COVID_CURRENT_OUTPUT_BUCKET.format(project_id)
+    historical_output_bucket = COVID_HISTORICAL_OUTPUT_BUCKET.format(project_id)
+
+    output_bucket_files = fs.ls(output_bucket)
+    for file_path in output_bucket_files:
+        file_time = _get_upload_time_from_file_info(fs.info(file_path))
+        if file_time > latest_source_time:
+            raise CovidIngestError(
+                ('File {filename} currently in output bucket {output_bucket} '
+                 + 'has creation time of {existing_time}, which is greater '
+                 + 'than latest input source time of {new_time}')
+                .format(filename=file_path,
+                        output_bucket=output_bucket,
+                        existing_time=file_time.strftime('%Y-%m-%d %H:%M:%S'),
+                        new_time=latest_source_time.strftime(
+                            '%Y-%m-%d %H:%M:%S')))
+        file_name = file_path.split('/')[-1]
+        target_path = os.path.join(historical_output_bucket, file_name)
+        fs.mv(file_path, target_path)
+
+    output_file_path = os.path.join(
+        output_bucket, OUTPUT_FILE_NAME.format(
+            latest_source_time.strftime(OUTPUT_FILE_TIMESTAMP_FORMAT)))
+    with fs.open(output_file_path, 'wt') as output_file:
+        output_file.write(aggregated_csv)
+
+    return output_file_path
+
+
+def _get_upload_time_from_file_info(info):
+    """Returns the file upload time as a datetime"""
+    # Have to strip trailing Z, because fromisoformat can't parse it
+    upload_timestamp = info['timeCreated'].strip('Z')
+    return datetime.datetime.fromisoformat(upload_timestamp)

@@ -18,6 +18,7 @@
 """This file contains all of the relevant cloud functions"""
 import logging
 import os
+import traceback
 
 from cloud_function_utils import make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
@@ -206,10 +207,16 @@ def handle_covid_ingest(data, _):
     related to the file that was dropped into the bucket.
     _: (google.cloud.functions.Context): Metadata of triggering event.
     """
-    bucket = data['bucket']
-    source, filename = data['name'].split('/')
-    logging.info(
-        "Running covid ingest for bucket %s, source %s, filename %s",
-        bucket, source, filename)
-    # Actually read the source and stitch together into a CSV file.
-    covid_ingest.parse_to_csv(bucket, source, filename)
+
+    # TODO(zdg2102): remove this try-except wrapper once GCP cloud function
+    # stack trace bug is fixed: https://issuetracker.google.com/issues/155215191
+    try:
+        bucket = data['bucket']
+        source, filename = data['name'].split('/')
+        logging.info(
+            "Running covid ingest for bucket %s, source %s, filename %s",
+            bucket, source, filename)
+        # Actually read the source and stitch together into a CSV file.
+        covid_ingest.parse_to_csv(bucket, source, filename)
+    except Exception:
+        raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
