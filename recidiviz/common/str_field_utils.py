@@ -233,8 +233,13 @@ def parse_date(
     Parses a string into a datetime.date object, using |from_dt| as a base for
     any relative dates.
     """
-    if date_string == '0':
-        return None
+    try:
+        date_as_int = int(date_string)
+        if date_as_int == 0:
+            return None
+    except ValueError:
+        # This was a check for date strings that are just processions of 0s. If it's not a parseable int, that's normal.
+        pass
 
     if is_yyyymmdd_date(date_string):
         return parse_yyyymmdd_date(date_string)

@@ -117,10 +117,12 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_commuted,
     state_enum_strings.state_sentence_status_completed,
     enum_strings.external_unknown,
+    state_enum_strings.state_sentence_status_pardoned,
     enum_strings.present_without_info,
     state_enum_strings.state_sentence_status_serving,
     state_enum_strings.state_sentence_status_suspended,
     state_enum_strings.state_sentence_status_revoked,
+    state_enum_strings.state_sentence_status_vacated,
     name='state_sentence_status')
 
 state_supervision_type = Enum(
@@ -160,6 +162,8 @@ state_fine_status = Enum(
 state_incarceration_type = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_incarceration_type_county_jail,
+    state_enum_strings.state_incarceration_type_federal_prison,
+    state_enum_strings.state_incarceration_type_out_of_state,
     state_enum_strings.state_incarceration_type_state_prison,
     name='state_incarceration_type')
 

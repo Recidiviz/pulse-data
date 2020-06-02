@@ -23,13 +23,18 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity
-from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment
+    gen_rationalize_race_and_ethnicity, gen_set_agent_type
+from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
+    StateIncarcerationSentence, StateCharge
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -66,6 +71,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_doc_assessment_external_id,
                 self._enrich_doc_assessments,
             ],
+            'dbo_Senrec': [
+                self._set_incarceration_sentence_id,
+                self._enrich_incarceration_sentence,
+                self._strip_id_whitespace,
+                gen_set_agent_type(StateAgentType.JUDGE),
+            ],
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self.gen_hydrate_alternate_external_ids({
@@ -83,6 +94,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'dbo_IcsDoc': [],
             'dbo_tblInmTestScore': [],
+            'dbo_Senrec': [],
             'dbo_Offender': [],
             'dbo_LSIR': [],
         }
@@ -91,6 +103,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         # Data source: DOC
         'dbo_IcsDoc',
         'dbo_tblInmTestScore',
+        'dbo_Senrec',
 
         # Data source: PBPP
         'dbo_Offender',
@@ -113,6 +126,72 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateAssessmentType.LSIR: ['LSI-R'],
         StateAssessmentType.PA_RST: ['RST'],
         StateAssessmentType.STATIC_99: ['ST99'],
+
+        # TODO(3020): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as final.
+        StateSentenceStatus.COMPLETED: [
+            'B',   # Bailed
+            'CS',  # Change other Sentence
+            'DA',  # Deceased - Assault
+            'DN',  # Deceased - Natural
+            'DS',  # Deceased - Suicide
+            'DX',  # Deceased - Accident
+            'DZ',  # Deceased - Non DOC Location
+            'EX',  # Executed
+            'FR',  # Federal Release
+            'NC',  # Non-Return CSC
+            'NF',  # Non-Return Furlough
+            'NR',  # [Unlisted]
+            'NW',  # Non-Return Work Release
+            'P',   # Paroled
+            'SC',  # Sentence Complete
+            'SP',  # Serve Previous
+            'TC',  # Transfer to County
+            'TS',  # Transfer to Other State
+        ],
+        StateSentenceStatus.COMMUTED: [
+            'RD',  # Release Detentioner
+            'RE',  # Received in Error
+        ],
+        StateSentenceStatus.PARDONED: [
+            'PD',  # Pardoned
+        ],
+        StateSentenceStatus.SERVING: [
+            'AS',  # Actively Serving
+            'CT',  # In Court
+            'DC',  # Diag/Class
+            'EC',  # Escape CSC
+            'EI',  # Escape Institution
+            'F',   # Furloughed
+            'IC',  # In Custody Elsewhere
+            'MH',  # Mental Health
+            'SH',  # State Hospital
+            'W',   # Waiting
+            'WT',  # WRIT/ATA
+        ],
+        StateSentenceStatus.VACATED: [
+            'VC',  # Vacated Conviction
+            'VS',  # Vacated Sentence
+        ],
+        StateSentenceStatus.EXTERNAL_UNKNOWN: [
+            'O',   # ??? (this is PA's own label; it means unknown within their own system)
+        ],
+
+        StateIncarcerationType.COUNTY_JAIL: [
+            'C',  # County
+        ],
+        StateIncarcerationType.FEDERAL_PRISON: [
+            'F',  # Federal
+        ],
+        StateIncarcerationType.OUT_OF_STATE: [
+            'O',  # Transfer out of Pennsylvania
+        ],
+        StateIncarcerationType.STATE_PRISON: [
+            'S',  # State
+            'I',  # Transfer into Pennsylvania
+            'T',  # County Transfer, i.e. transfer from county to state, usually for mental health services ("5B Case")
+            'P',  # SIP Program
+            'E',  # SIP Evaluation
+        ],
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
@@ -257,3 +336,61 @@ class UsPaController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateAssessment):
                 obj.assessment_type = StateAssessmentType.LSIR.value
                 obj.assessment_class = StateAssessmentClass.RISK.value
+
+    @staticmethod
+    def _set_incarceration_sentence_id(_file_tag: str,
+                                       row: Dict[str, str],
+                                       extracted_objects: List[IngestObject],
+                                       _cache: IngestObjectCache):
+        sentence_group_id = row['curr_inmate_num']
+        sentence_number = row['type_number']
+        sentence_id = f"{sentence_group_id}-{sentence_number}"
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationSentence):
+                obj.state_incarceration_sentence_id = sentence_id
+
+    @staticmethod
+    def _enrich_incarceration_sentence(_file_tag: str,
+                                       row: Dict[str, str],
+                                       extracted_objects: List[IngestObject],
+                                       _cache: IngestObjectCache):
+        """Enriches incarceration sentences by setting sentence length and boolean fields."""
+        max_years = row.get('max_cort_sent_yrs', '0')
+        max_months = row.get('max_cort_sent_mths', '0')
+        max_days = row.get('max_cort_sent_days', '0')
+        min_years = row.get('min_cort_sent_yrs', '0')
+        min_months = row.get('min_cort_sent_mths', '0')
+        min_days = row.get('min_cort_sent_days', '0')
+
+        sentence_class = row.get('class_of_sent', '')
+        is_life = sentence_class in ('CL', 'LF')
+        is_capital_punishment = sentence_class in ('EX', 'EP')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationSentence):
+                start_date = obj.start_date
+                max_time = parse_days_from_duration_pieces(
+                    years_str=max_years, months_str=max_months, days_str=max_days, start_dt_str=start_date)
+                min_time = parse_days_from_duration_pieces(
+                    years_str=min_years, months_str=min_months, days_str=min_days, start_dt_str=start_date)
+
+                if max_time:
+                    obj.max_length = str(max_time)
+                if min_time:
+                    obj.min_length = str(min_time)
+
+                obj.is_life = str(is_life)
+                obj.is_capital_punishment = str(is_capital_punishment)
+
+    # TODO(3020): When PA is switched to use SQL pre-processing, this will no longer be necessary
+    @staticmethod
+    def _strip_id_whitespace(_file_tag: str,
+                             _row: Dict[str, str],
+                             extracted_objects: List[IngestObject],
+                             _cache: IngestObjectCache):
+        """Strips id fields provided as strings with inconsistent whitespace padding to avoid id matching issues."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                if obj.state_charge_id:
+                    obj.state_charge_id = obj.state_charge_id.strip()
