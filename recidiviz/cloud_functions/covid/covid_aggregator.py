@@ -30,8 +30,6 @@ import xlrd
 
 # Source for facility info mapping
 FACILITY_INFO_MAPPING_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT95DUfwcHbauuuMScd1Jb9u3vLCdfCcieXrRthNowoSbrmeWF3ibv06LkfcDxl1Vd97S5aujvnHdZX/pub?gid=1112897899&single=true&output=csv' # pylint:disable=line-too-long
-# Recidiviz Google Sheets data, as CSV
-RECIDIVIZ_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTbxP67VHDHQt4xvpNmzbsXyT0pSh_b1Pn7aY5Ac089KKYnPDT6PpskMBMvhOX_PA08Zqkxt4zNn8_y/pub?gid=0&single=true&output=csv' # pylint:disable=line-too-long
 
 OUTPUT_DATE_FORMAT = '%Y-%m-%d'
 PRISON_DATA_DATE_FORMAT = '%Y-%m-%d'
@@ -77,7 +75,7 @@ OUTPUT_COLUMN_ORDER = [
 ]
 
 
-def aggregate(prison_data_file, ucla_file):
+def aggregate(prison_data_file, ucla_file, recidiviz_file):
     """Aggregates all COVID data source files into a single output file
 
     Args:
@@ -85,15 +83,19 @@ def aggregate(prison_data_file, ucla_file):
             CSV format. The caller is expected to handle opening and closing the
             file.
         ucla_file: an XLRD Book instance containing the UCLA data Excel workbook
+        recidiviz_file: a file instance containing the Recidiviz data in CSV
+            format. The caller is expected to handle opening and closing the
+            file.
     """
-    if not (prison_data_file and ucla_file):
+    if not (prison_data_file and ucla_file and recidiviz_file):
         raise RuntimeError(
-            'COVID aggregator source missing: Prison data - {}, UCLA - {}'
-            .format(prison_data_file, ucla_file))
+            ('COVID aggregator source missing: Prison data - {}, UCLA - {}, '
+             + 'Recidiviz - {}')
+            .format(prison_data_file, ucla_file, recidiviz_file))
 
-    prison_data = _parse_prison_data(prison_data_file)
-    ucla_data = _parse_ucla_data(ucla_file)
-    recidiviz_data = _fetch_and_parse_recidiviz_data()
+    prison_data = _parse_prison_data_file(prison_data_file)
+    ucla_data = _parse_ucla_workbook(ucla_file)
+    recidiviz_data = _parse_recidiviz_file(recidiviz_file)
 
     facility_info_mapping = _fetch_facility_info_mapping()
 
@@ -114,7 +116,7 @@ def aggregate(prison_data_file, ucla_file):
     return aggregated_csv
 
 
-def _parse_prison_data(prison_data_file):
+def _parse_prison_data_file(prison_data_file):
     """Parses the prison data CSV"""
     csv_dict_reader = csv.DictReader(prison_data_file, delimiter=',')
 
@@ -150,7 +152,7 @@ def _parse_prison_data(prison_data_file):
     return data
 
 
-def _parse_ucla_data(ucla_file):
+def _parse_ucla_workbook(ucla_file):
     """Parses the UCLA data Excel workbook"""
     data_sheets = []
     for sheet in ucla_file.sheets():
@@ -240,11 +242,9 @@ def _parse_ucla_data(ucla_file):
     return data
 
 
-def _fetch_and_parse_recidiviz_data():
-    """Fetches and parses Recidiviz data from remote source"""
-    response = requests.get(RECIDIVIZ_DATA_URL)
-    csv_lines = response.content.decode('utf-8').splitlines()
-    csv_dict_reader = csv.DictReader(csv_lines, delimiter=',')
+def _parse_recidiviz_file(recidiviz_file):
+    """Parses the Recidiviz data CSV"""
+    csv_dict_reader = csv.DictReader(recidiviz_file, delimiter=',')
 
     data = []
 
