@@ -131,6 +131,9 @@ class TestStrFieldUtils(TestCase):
     def test_parseDate_zero(self):
         assert parse_date('0') is None
 
+    def test_parseDate_zeroes(self):
+        assert parse_date('00000000') is None
+
     def test_parseNoDate(self):
         assert parse_date('None set') is None
 

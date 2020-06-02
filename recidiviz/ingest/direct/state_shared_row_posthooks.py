@@ -25,13 +25,14 @@ from typing import Dict, List, Callable, Type, Optional, Union
 
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.person_characteristics import Ethnicity
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_person_alias import \
     StatePersonAliasType
 from recidiviz.ingest.direct.direct_ingest_controller_utils import \
     create_if_not_exists
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAlias, \
     StatePerson, StatePersonExternalId, StateSentenceGroup, \
-    StateSupervisionSentence, StateIncarcerationSentence, IngestInfo, StatePersonEthnicity
+    StateSupervisionSentence, StateIncarcerationSentence, IngestInfo, StatePersonEthnicity, StateAgent
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -327,3 +328,17 @@ def gen_set_field_as_concatenated_values_hook(
                                 field_value)
 
     return set_field_as_concatenated_values_hook
+
+
+def gen_set_agent_type(agent_type: StateAgentType) -> Callable:
+    """Generates a row post-hook that sets the StateAgentType.agent_type field to the given argument."""
+
+    def _set_judge_agent_type(_file_tag: str,
+                              _row: Dict[str, str],
+                              extracted_objects: List[IngestObject],
+                              _cache: IngestObjectCache):
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateAgent):
+                extracted_object.agent_type = agent_type.value
+
+    return _set_judge_agent_type
