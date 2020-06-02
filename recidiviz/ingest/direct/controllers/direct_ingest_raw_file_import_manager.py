@@ -116,11 +116,20 @@ class DirectIngestRegionRawFileConfig:
             raw_data_configs = {}
             default_encoding = file_contents['default_encoding']
             default_separator = file_contents['default_separator']
+
+            last_tag = None
             for file_info in file_contents['raw_files']:
                 file_tag = file_info['file_tag']
 
+                if not file_tag:
+                    raise ValueError(f'Found empty file tag in entry after [{last_tag}]')
+
                 if file_tag in raw_data_configs:
                     raise ValueError(f'Found duplicate file tag [{file_tag}] in [{self.yaml_config_file_path}]')
+
+                if last_tag and file_tag < last_tag:
+                    raise ValueError(
+                        f'Tags out of ASCII alphabetical order - [{file_tag}] should come before [{last_tag}]')
 
                 config = {
                     'encoding': default_encoding,
@@ -129,6 +138,7 @@ class DirectIngestRegionRawFileConfig:
                 }
 
                 raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_dict(config)
+                last_tag = file_tag
 
         return raw_data_configs
 
