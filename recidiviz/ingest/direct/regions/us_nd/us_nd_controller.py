@@ -54,7 +54,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not
 from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import incarceration_period_status_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_normalize_county_codes_posthook, gen_set_is_life_sentence_hook, gen_convert_person_ids_to_external_id_objects, \
-    get_normalized_ymd_str
+    get_normalized_ymd_str, gen_set_agent_type
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import normalized_county_code
 from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import \
     normalized_judicial_district_code
@@ -112,7 +112,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._rationalize_controlling_charge
             ],
             'elite_orderstable': [
-                self._set_judge_agent_type,
+                gen_set_agent_type(StateAgentType.JUDGE),
                 gen_normalize_county_codes_posthook(
                     self.region.region_code, 'COUNTY_CODE', StateCourtCase, normalized_county_code),
                 self._normalize_judicial_district_code
@@ -139,7 +139,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._concatenate_docstars_length_periods,
                 self._add_terminating_officer_to_supervision_periods,
                 self._record_revocation,
-                self._set_judge_agent_type,
+                gen_set_agent_type(StateAgentType.JUDGE),
                 self._hydrate_supervision_period_sentence_shared_date_fields,
                 gen_normalize_county_codes_posthook(
                     self.region.region_code, 'TB_CTY', StateSupervisionPeriod, normalized_county_code),
@@ -638,15 +638,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 extracted_object.state_incarceration_incident_outcome_id = '-'.join([incident_id, sanction_seq])
 
     @staticmethod
-    def _set_judge_agent_type(_file_tag: str,
-                              _row: Dict[str, str],
-                              extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache):
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateAgent):
-                extracted_object.agent_type = StateAgentType.JUDGE.value
-
-    @staticmethod
     def _add_sentence_children(_file_tag: str,
                                row: Dict[str, str],
                                extracted_objects: List[IngestObject],
@@ -843,6 +834,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
+
 
 def _yaml_filepath(filename):
     return os.path.join(os.path.dirname(__file__), filename)

@@ -91,6 +91,8 @@ state_fine_status_unpaid = 'UNPAID'
 
 # state_incarceration.py
 state_incarceration_type_county_jail = 'COUNTY_JAIL'
+state_incarceration_type_federal_prison = 'FEDERAL_PRISON'
+state_incarceration_type_out_of_state = 'OUT_OF_STATE'
 state_incarceration_type_state_prison = 'STATE_PRISON'
 
 # state_incarceration_incident.py
@@ -162,9 +164,11 @@ state_person_alias_alias_type_nickname = 'NICKNAME'
 # state_sentence.py
 state_sentence_status_commuted = 'COMMUTED'
 state_sentence_status_completed = 'COMPLETED'
+state_sentence_status_pardoned = 'PARDONED'
+state_sentence_status_revoked = 'REVOKED'
 state_sentence_status_serving = 'SERVING'
 state_sentence_status_suspended = 'SUSPENDED'
-state_sentence_status_revoked = 'REVOKED'
+state_sentence_status_vacated = 'VACATED'
 
 # state_supervision.py
 state_supervision_type_civil_commitment = 'CIVIL_COMMITMENT'

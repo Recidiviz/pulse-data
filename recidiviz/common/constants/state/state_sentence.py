@@ -24,14 +24,20 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
+    # Commuted means that the sentence has been shortened/lessened, all the way to today, but the judgment remains
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    # Pardoned means that the executive branch has removed the conviction after the fact,
+    # but the judgment may remain until expunged from the record in some cases
+    PARDONED = state_enum_strings.state_sentence_status_pardoned
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    # Set when someone is on probation and that probation sentence is revoked / turned into incarceration
+    # Revoked means someone was on probation and that probation sentence was revoked / turned into incarceration
     REVOKED = state_enum_strings.state_sentence_status_revoked
     SERVING = state_enum_strings.state_sentence_status_serving
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
+    # Vacated means that a previous judgment was voided by the judiciary - the judgment is completely undone
+    VACATED = state_enum_strings.state_sentence_status_vacated
 
     @staticmethod
     def _get_default_map():
@@ -45,8 +51,10 @@ _STATE_SENTENCE_STATUS_MAP = {
     'COMMUTED': StateSentenceStatus.COMMUTED,
     'COMPLETED': StateSentenceStatus.COMPLETED,
     'EXTERNAL UNKNOWN': StateSentenceStatus.EXTERNAL_UNKNOWN,
+    'PARDONED': StateSentenceStatus.PARDONED,
     'PRESENT WITHOUT INFO': StateSentenceStatus.PRESENT_WITHOUT_INFO,
     'REVOKED': StateSentenceStatus.REVOKED,
     'SERVING': StateSentenceStatus.SERVING,
     'SUSPENDED': StateSentenceStatus.SUSPENDED,
+    'VACATED': StateSentenceStatus.VACATED,
 }

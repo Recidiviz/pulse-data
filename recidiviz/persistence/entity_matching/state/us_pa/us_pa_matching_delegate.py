@@ -41,7 +41,7 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         """Reads and returns all persons from the DB that are needed for entity matching in this state, given the
         |ingested_persons|.
         """
-        allowed_root_entity_classes: List[Type[DatabaseEntity]] = [schema.StatePerson]
+        allowed_root_entity_classes: List[Type[DatabaseEntity]] = [schema.StatePerson, schema.StateSentenceGroup]
         db_persons = read_persons_by_root_entity_cls(
             session, self.region_code, ingested_persons, allowed_root_entity_classes)
         return db_persons

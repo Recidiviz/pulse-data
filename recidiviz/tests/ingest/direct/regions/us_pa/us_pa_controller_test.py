@@ -23,15 +23,20 @@ from typing import Type
 from mock import patch
 
 from recidiviz import IngestInfo
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_SID, US_PA_PBPP
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType
+from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
-    StatePersonEthnicity, StateSentenceGroup, StateAssessment
+    StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
+    StateCourtCase, StateAgent
 from recidiviz.ingest.scrape.regions.us_pa.us_pa_scraper import UsPaScraper
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
@@ -76,7 +81,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 )
                             ],
                             state_sentence_groups=[
-                                StateSentenceGroup(state_sentence_group_id='AB7413')
+                                StateSentenceGroup(state_sentence_group_id='AB7413'),
                             ]),
                 StatePerson(state_person_id='55554444',
                             surname='SARTRE',
@@ -98,7 +103,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 )
                             ],
                             state_sentence_groups=[
-                                StateSentenceGroup(state_sentence_group_id='GF3374')
+                                StateSentenceGroup(state_sentence_group_id='GF3374'),
                             ]),
                 StatePerson(state_person_id='99990000',
                             surname='KIERKEGAARD',
@@ -122,7 +127,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 )
                             ],
                             state_sentence_groups=[
-                                StateSentenceGroup(state_sentence_group_id='CJ1991')
+                                StateSentenceGroup(state_sentence_group_id='CJ1991'),
                             ]),
                 StatePerson(state_person_id='09876543',
                             surname='RAWLS',
@@ -144,7 +149,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 )
                             ],
                             state_sentence_groups=[
-                                StateSentenceGroup(state_sentence_group_id='JE1989')
+                                StateSentenceGroup(state_sentence_group_id='JE1989'),
                             ]),
             ])
 
@@ -242,6 +247,117 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ])
 
         self.run_parse_file_test(expected, 'dbo_tblInmTestScore')
+
+    def test_populate_data_dbo_Senrec(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id="AB7413",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="AB7413-01",
+                                    status="SC", incarceration_type="S", county_code="PHI",
+                                    date_imposed="20080815", start_date="20080815", completion_date="20090104",
+                                    min_length="549", max_length="1095",
+                                    is_life="False", is_capital_punishment="False",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="N7825555", statute="CC3701A ",
+                                            state_court_case=StateCourtCase(
+                                                state_court_case_id="CP0001111 CT",
+                                                judge=StateAgent(full_name="REYNOLDS, FRANK", agent_type="JUDGE")
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id="GF3374",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="GF3374-01",
+                                    status="AS", incarceration_type="S", county_code="PHI",
+                                    date_imposed="20080816", start_date="20080816", completion_date="00000000",
+                                    min_length="4291", max_length="5113",
+                                    is_life="False", is_capital_punishment="False",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="U1196666", statute="CC3701A ",
+                                            state_court_case=StateCourtCase(
+                                                state_court_case_id="CP0002222 CT",
+                                                judge=StateAgent(full_name="REYNOLDS, FRANK", agent_type="JUDGE")
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id="CJ1991",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="CJ1991-01",
+                                    status="AS", incarceration_type="S", county_code="BUC",
+                                    date_imposed="20160820", start_date="20160820", completion_date="00000000",
+                                    min_length="454", max_length="912",
+                                    is_life="False", is_capital_punishment="False",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="L3947777", statute="CC6318A1",
+                                            state_court_case=StateCourtCase(
+                                                state_court_case_id="CP0003333 CT",
+                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        StateSentenceGroup(
+                            state_sentence_group_id="JE1989",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="JE1989-01",
+                                    status="AS", incarceration_type="S", county_code="BUC",
+                                    date_imposed="20160820", start_date="20160820", completion_date="00000000",
+                                    max_length="1096",
+                                    is_life="False", is_capital_punishment="False",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="L7858888", statute="CC3503A ",
+                                            state_court_case=StateCourtCase(
+                                                state_court_case_id="CP0004444 CT",
+                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
+                                            )
+                                        )
+                                    ]
+                                ),
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="JE1989-02",
+                                    status="AS", incarceration_type="S", county_code="BUC",
+                                    date_imposed="20160820", start_date="20160820", completion_date="00000000",
+                                    min_length="546",
+                                    is_life="False", is_capital_punishment="False",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="L7858890", statute="CC3503B ",
+                                            state_court_case=StateCourtCase(
+                                                state_court_case_id="CP0004445 CT",
+                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            ])
+
+        self.run_parse_file_test(expected, 'dbo_Senrec')
 
     def test_populate_data_dbo_Offender(self):
         expected = IngestInfo(
@@ -379,13 +495,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
             ],
         )
-        person_1_sentence_groups = [
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, external_id='AB7413', person=person_1,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-        ]
-        person_1.sentence_groups = person_1_sentence_groups
+        p1_sg = entities.StateSentenceGroup.new_with_defaults(
+            external_id='AB7413', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_1
+        )
+        person_1.sentence_groups.append(p1_sg)
 
         person_2 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JEAN-PAUL", "surname": "SARTRE"}',
@@ -413,15 +527,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             races=[
                 entities.StatePersonRace.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
-            ],
+            ]
         )
-        person_2_sentence_groups = [
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, external_id='GF3374', person=person_2,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-        ]
-        person_2.sentence_groups = person_2_sentence_groups
+
+        p2_sg = entities.StateSentenceGroup.new_with_defaults(
+            external_id='GF3374', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2
+        )
+        person_2.sentence_groups.append(p2_sg)
 
         person_3 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
@@ -451,13 +564,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text='6'),
             ],
         )
-        person_3_sentence_groups = [
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, external_id='CJ1991', person=person_3,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-        ]
-        person_3.sentence_groups = person_3_sentence_groups
+        p3_sg = entities.StateSentenceGroup.new_with_defaults(
+            external_id='CJ1991', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_3
+        )
+        person_3.sentence_groups.append(p3_sg)
 
         person_4 = entities.StatePerson.new_with_defaults(
             full_name='{"given_names": "JOHN", "surname": "RAWLS"}',
@@ -487,13 +598,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='3'),
             ],
         )
-        person_4_sentence_groups = [
-            entities.StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, external_id='JE1989', person=person_4,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-        ]
-        person_4.sentence_groups = person_4_sentence_groups
+        p4_sg = entities.StateSentenceGroup.new_with_defaults(
+            external_id='JE1989', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4
+        )
+        person_4.sentence_groups.append(p4_sg)
 
         expected_people = [person_1, person_2, person_3, person_4]
         populate_person_backedges(expected_people)
@@ -590,6 +699,172 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('dbo_tblInmTestScore.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # dbo_Senrec
+        ######################################
+
+        # Person 1 updates
+        p1_is = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="AB7413-01", state_code=_STATE_CODE_UPPER, county_code="PHI",
+            status=StateSentenceStatus.COMPLETED, status_raw_text="SC",
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
+            date_imposed=datetime.date(year=2008, month=8, day=15),
+            start_date=datetime.date(year=2008, month=8, day=15),
+            completion_date=datetime.date(year=2009, month=1, day=4),
+            min_length_days=549, max_length_days=1095, is_life=False, is_capital_punishment=False,
+            person=person_1, sentence_group=p1_sg
+        )
+        p1_sg.incarceration_sentences.append(p1_is)
+
+        p1_is_charge = entities.StateCharge.new_with_defaults(
+            external_id="N7825555", statute="CC3701A", status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_1, incarceration_sentences=[p1_is]
+        )
+        p1_is.charges.append(p1_is_charge)
+
+        p1_is_charge_case = entities.StateCourtCase.new_with_defaults(
+            external_id="CP0001111 CT", state_code=_STATE_CODE_UPPER,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=entities.StateAgent.new_with_defaults(
+                full_name='{"full_name": "REYNOLDS, FRANK"}',
+                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
+                state_code=_STATE_CODE_UPPER
+            ),
+            person=person_1, charges=[p1_is_charge]
+        )
+        p1_is_charge.court_case = p1_is_charge_case
+
+        # Person 2 updates
+        p2_is = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="GF3374-01", state_code=_STATE_CODE_UPPER, county_code="PHI",
+            status=StateSentenceStatus.SERVING, status_raw_text="AS",
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
+            date_imposed=datetime.date(year=2008, month=8, day=16),
+            start_date=datetime.date(year=2008, month=8, day=16),
+            min_length_days=4291, max_length_days=5113, is_life=False, is_capital_punishment=False,
+            person=person_2, sentence_group=p2_sg
+        )
+        p2_sg.incarceration_sentences.append(p2_is)
+
+        p2_is_charge = entities.StateCharge.new_with_defaults(
+            external_id="U1196666", statute="CC3701A", status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_2, incarceration_sentences=[p2_is]
+        )
+        p2_is.charges.append(p2_is_charge)
+
+        p2_is_charge_case = entities.StateCourtCase.new_with_defaults(
+            external_id="CP0002222 CT", state_code=_STATE_CODE_UPPER,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=entities.StateAgent.new_with_defaults(
+                full_name='{"full_name": "REYNOLDS, FRANK"}',
+                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
+                state_code=_STATE_CODE_UPPER
+            ),
+            person=person_2, charges=[p2_is_charge]
+        )
+        p2_is_charge.court_case = p2_is_charge_case
+
+        # Person 3 updates
+        p3_is = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="CJ1991-01", state_code=_STATE_CODE_UPPER, county_code="BUC",
+            status=StateSentenceStatus.SERVING, status_raw_text="AS",
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
+            date_imposed=datetime.date(year=2016, month=8, day=20),
+            start_date=datetime.date(year=2016, month=8, day=20),
+            min_length_days=454, max_length_days=912, is_life=False, is_capital_punishment=False,
+            person=person_3, sentence_group=p3_sg
+        )
+        p3_sg.incarceration_sentences.append(p3_is)
+
+        p3_is_charge = entities.StateCharge.new_with_defaults(
+            external_id="L3947777", statute="CC6318A1", status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_3, incarceration_sentences=[p3_is]
+        )
+        p3_is.charges.append(p3_is_charge)
+
+        p3_is_charge_case = entities.StateCourtCase.new_with_defaults(
+            external_id="CP0003333 CT", state_code=_STATE_CODE_UPPER,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=entities.StateAgent.new_with_defaults(
+                full_name='{"full_name": "REYNOLDS, DEE"}',
+                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
+                state_code=_STATE_CODE_UPPER
+            ),
+            person=person_3, charges=[p3_is_charge]
+        )
+        p3_is_charge.court_case = p3_is_charge_case
+
+        # Person 4 updates
+        p4_is_1 = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="JE1989-01", state_code=_STATE_CODE_UPPER, county_code="BUC",
+            status=StateSentenceStatus.SERVING, status_raw_text="AS",
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
+            date_imposed=datetime.date(year=2016, month=8, day=20),
+            start_date=datetime.date(year=2016, month=8, day=20),
+            max_length_days=1096, is_life=False, is_capital_punishment=False,
+            person=person_4, sentence_group=p4_sg
+        )
+        p4_is_2 = entities.StateIncarcerationSentence.new_with_defaults(
+            external_id="JE1989-02", state_code=_STATE_CODE_UPPER, county_code="BUC",
+            status=StateSentenceStatus.SERVING, status_raw_text="AS",
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
+            date_imposed=datetime.date(year=2016, month=8, day=20),
+            start_date=datetime.date(year=2016, month=8, day=20),
+            min_length_days=546, is_life=False, is_capital_punishment=False,
+            person=person_4, sentence_group=p4_sg
+        )
+        p4_sg.incarceration_sentences.extend([p4_is_1, p4_is_2])
+
+        p4_is_1_charge = entities.StateCharge.new_with_defaults(
+            external_id="L7858888", statute="CC3503A", status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_4, incarceration_sentences=[p4_is_1]
+        )
+        p4_is_1.charges.append(p4_is_1_charge)
+
+        p4_is_2_charge = entities.StateCharge.new_with_defaults(
+            external_id="L7858890", statute="CC3503B", status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            state_code=_STATE_CODE_UPPER,
+            person=person_4, incarceration_sentences=[p4_is_2]
+        )
+        p4_is_2.charges.append(p4_is_2_charge)
+
+        p4_is_1_charge_case = entities.StateCourtCase.new_with_defaults(
+            external_id="CP0004444 CT", state_code=_STATE_CODE_UPPER,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO, court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=entities.StateAgent.new_with_defaults(
+                full_name='{"full_name": "REYNOLDS, DEE"}',
+                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE", state_code=_STATE_CODE_UPPER
+            ),
+            person=person_4, charges=[p4_is_1_charge]
+        )
+        p4_is_1_charge.court_case = p4_is_1_charge_case
+
+        p4_is_2_charge_case = entities.StateCourtCase.new_with_defaults(
+            external_id="CP0004445 CT", state_code=_STATE_CODE_UPPER,
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO, court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            judge=entities.StateAgent.new_with_defaults(
+                full_name='{"full_name": "REYNOLDS, DEE"}',
+                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE", state_code=_STATE_CODE_UPPER
+            ),
+            person=person_4, charges=[p4_is_2_charge]
+        )
+        p4_is_2_charge.court_case = p4_is_2_charge_case
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename('dbo_Senrec.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

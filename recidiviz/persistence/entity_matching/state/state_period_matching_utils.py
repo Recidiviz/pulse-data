@@ -106,7 +106,9 @@ def _is_sentence_ended_by_status(sentence: schema.SchemaSentenceType):
         return False
     if sentence.status in (StateSentenceStatus.COMPLETED.value,
                            StateSentenceStatus.COMMUTED.value,
-                           StateSentenceStatus.REVOKED.value):
+                           StateSentenceStatus.PARDONED.value,
+                           StateSentenceStatus.REVOKED.value,
+                           StateSentenceStatus.VACATED.value):
         return True
     raise ValueError(f'Unexpected sentence type [{sentence.status}] in _is_sentence_ended_by_status')
 
