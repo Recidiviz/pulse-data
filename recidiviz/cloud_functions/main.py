@@ -198,25 +198,16 @@ def run_calculation_pipelines(_event, _context):
     logging.info("The monitoring Dataflow response is %s", monitor_response)
 
 
-def handle_covid_ingest(data, _):
-    """This function is triggered when a file is dropped into the Covid
-    aggregation bucket, and makes a request to stitch together Covid data
-    sources into a single output file.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
+def handle_covid_ingest(_request):
+    """This function is triggered when the appropriate URL (defined in the
+    execute-covid-aggregation cloud function on GCP) is called, and aggregates
+    the currently available COVID data into an output file stored in a GCP
+    bucket.
     """
-
     # TODO(zdg2102): remove this try-except wrapper once GCP cloud function
     # stack trace bug is fixed: https://issuetracker.google.com/issues/155215191
     try:
-        bucket = data['bucket']
-        source, filename = data['name'].split('/')
-        logging.info(
-            "Running covid ingest for bucket %s, source %s, filename %s",
-            bucket, source, filename)
-        # Actually read the source and stitch together into a CSV file.
-        covid_ingest.parse_to_csv(bucket, source, filename)
+        logging.info('Covid ingest triggered')
+        covid_ingest.ingest_latest_data()
     except Exception:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))

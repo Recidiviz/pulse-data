@@ -32,7 +32,7 @@ import xlrd
 FACILITY_INFO_MAPPING_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT95DUfwcHbauuuMScd1Jb9u3vLCdfCcieXrRthNowoSbrmeWF3ibv06LkfcDxl1Vd97S5aujvnHdZX/pub?gid=1112897899&single=true&output=csv' # pylint:disable=line-too-long
 
 OUTPUT_DATE_FORMAT = '%Y-%m-%d'
-PRISON_DATA_DATE_FORMAT = '%Y-%m-%d'
+PRISON_DATE_FORMAT = '%Y-%m-%d'
 UCLA_DATE_FORMAT = '%m/%d/%Y'
 RECIDIVIZ_DATE_FORMAT = '%m/%d/%Y'
 
@@ -75,27 +75,23 @@ OUTPUT_COLUMN_ORDER = [
 ]
 
 
-def aggregate(prison_data_file, ucla_file, recidiviz_file):
+def aggregate(prison_csv_reader, ucla_workbook, recidiviz_csv_reader):
     """Aggregates all COVID data source files into a single output file
 
     Args:
-        prison_data_file: a file instance containing the prison data source in
-            CSV format. The caller is expected to handle opening and closing the
-            file.
-        ucla_file: an XLRD Book instance containing the UCLA data Excel workbook
-        recidiviz_file: a file instance containing the Recidiviz data in CSV
-            format. The caller is expected to handle opening and closing the
-            file.
+        prison_csv_reader: prison file as a CSV DictReader
+        ucla_workbook: UCLA file as an XLRD Book
+        recidiviz_csv_reader: Recidiviz file as a CSV DictReader
     """
-    if not (prison_data_file and ucla_file and recidiviz_file):
+    if not (prison_csv_reader and ucla_workbook and recidiviz_csv_reader):
         raise RuntimeError(
-            ('COVID aggregator source missing: Prison data - {}, UCLA - {}, '
+            ('COVID aggregator source missing: Prison - {}, UCLA - {}, '
              + 'Recidiviz - {}')
-            .format(prison_data_file, ucla_file, recidiviz_file))
+            .format(prison_csv_reader, ucla_workbook, recidiviz_csv_reader))
 
-    prison_data = _parse_prison_data_file(prison_data_file)
-    ucla_data = _parse_ucla_workbook(ucla_file)
-    recidiviz_data = _parse_recidiviz_file(recidiviz_file)
+    prison_data = _parse_prison_csv(prison_csv_reader)
+    ucla_data = _parse_ucla_workbook(ucla_workbook)
+    recidiviz_data = _parse_recidiviz_csv(recidiviz_csv_reader)
 
     facility_info_mapping = _fetch_facility_info_mapping()
 
@@ -116,13 +112,11 @@ def aggregate(prison_data_file, ucla_file, recidiviz_file):
     return aggregated_csv
 
 
-def _parse_prison_data_file(prison_data_file):
+def _parse_prison_csv(prison_csv_reader):
     """Parses the prison data CSV"""
-    csv_dict_reader = csv.DictReader(prison_data_file, delimiter=',')
-
     data = []
 
-    for raw_row in csv_dict_reader:
+    for raw_row in prison_csv_reader:
         row = {k.strip(): v.strip() for (k, v) in raw_row.items()}
 
         date = row['scrape_date']
@@ -130,7 +124,7 @@ def _parse_prison_data_file(prison_data_file):
         if date in MISSING_DATE_VALUES:
             continue
         formatted_date = datetime.datetime.strptime(
-            date, PRISON_DATA_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
+            date, PRISON_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
 
         # Extract subset of columns we care about.
         data_row = {
@@ -152,10 +146,10 @@ def _parse_prison_data_file(prison_data_file):
     return data
 
 
-def _parse_ucla_workbook(ucla_file):
+def _parse_ucla_workbook(ucla_workbook):
     """Parses the UCLA data Excel workbook"""
     data_sheets = []
-    for sheet in ucla_file.sheets():
+    for sheet in ucla_workbook.sheets():
         # Sheets with data in them (as opposed to summary sheets, etc.) have a
         # name format like "04.08.20" (with inconsistent zero-padding)
         format_match = re.search(r'[0-9]+\.[0-9]+\.[0-9]+', sheet.name)
@@ -194,7 +188,8 @@ def _parse_ucla_workbook(ucla_file):
         # Start from 1 to skip header row
         for index in range(1, sheet.nrows):
             row = \
-                [_get_excel_cell_string_value(cell, ucla_file.datemode).strip()
+                [_get_excel_cell_string_value(
+                    cell, ucla_workbook.datemode).strip()
                  for cell in sheet.row(index)]
 
             date = row[column_indices['Date']]
@@ -242,13 +237,11 @@ def _parse_ucla_workbook(ucla_file):
     return data
 
 
-def _parse_recidiviz_file(recidiviz_file):
+def _parse_recidiviz_csv(recidiviz_csv_reader):
     """Parses the Recidiviz data CSV"""
-    csv_dict_reader = csv.DictReader(recidiviz_file, delimiter=',')
-
     data = []
 
-    for raw_row in csv_dict_reader:
+    for raw_row in recidiviz_csv_reader:
         row = {k.strip(): v.strip() for (k, v) in raw_row.items()}
 
         date = row['As of...? (Date)']
