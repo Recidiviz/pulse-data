@@ -20,7 +20,6 @@ calculations."""
 import logging
 from copy import deepcopy
 
-from datetime import date
 from functools import cmp_to_key
 from typing import List
 
@@ -30,7 +29,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
-    StateIncarcerationPeriodStatus, StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
@@ -40,87 +39,6 @@ def drop_placeholder_periods(
         incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods that are placeholders. Returns the valid incarceration periods."""
     return [ip for ip in incarceration_periods if not is_placeholder(ip)]
-
-
-def validate_admission_data(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        List[StateIncarcerationPeriod]:
-    """Removes any incarceration periods that don't have admission dates
-    or admission reasons.
-
-    Returns the valid incarceration periods.
-    """
-    validated_incarceration_periods: List[StateIncarcerationPeriod] = []
-
-    for incarceration_period in incarceration_periods:
-        if is_placeholder(incarceration_period):
-            # Drop any placeholder incarceration periods from the calculations
-            continue
-        if not incarceration_period.admission_date:
-            logging.info("No admission_date on incarceration period with"
-                         " id: %d",
-                         incarceration_period.incarceration_period_id)
-            continue
-        if not incarceration_period.admission_reason:
-            logging.info("No admission_reason on incarceration period with"
-                         " id: %d",
-                         incarceration_period.incarceration_period_id)
-            continue
-
-        validated_incarceration_periods.append(incarceration_period)
-
-    return validated_incarceration_periods
-
-
-def validate_release_data(
-        incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        List[StateIncarcerationPeriod]:
-    """Removes any incarceration periods that don't have release dates
-    or release reasons. Removes release data if the release date is in the
-    future.
-
-    Returns the valid incarceration periods.
-    """
-    validated_incarceration_periods: List[StateIncarcerationPeriod] = []
-
-    for incarceration_period in incarceration_periods:
-        if not incarceration_period.release_date and \
-                incarceration_period.status != \
-                StateIncarcerationPeriodStatus.IN_CUSTODY:
-            logging.info("No release_date on intermediate incarceration "
-                         "period with id: %d",
-                         incarceration_period.incarceration_period_id)
-            continue
-        if not incarceration_period.release_reason and \
-                incarceration_period.status != \
-                StateIncarcerationPeriodStatus.IN_CUSTODY:
-            logging.info("No release_reason on intermediate incarceration "
-                         "period with id: %d",
-                         incarceration_period.incarceration_period_id)
-            incarceration_period.release_reason = StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
-
-        if not incarceration_period.release_date and \
-                (incarceration_period.release_reason or incarceration_period.release_reason_raw_text):
-            # TODO(2981): Update MO ingest to pull in status date of last TAK026 status to use when the release date is
-            #  99999999. This should eliminate the 600ish instances of this we're seeing.
-            logging.warning("No release_date for incarceration period (%d) with nonnull release_reason (%s) or "
-                            "release_reason_raw_text (%s)",
-                            incarceration_period.incarceration_period_id,
-                            incarceration_period.release_reason,
-                            incarceration_period.release_reason_raw_text)
-            continue
-        if incarceration_period.release_date is not None and \
-                incarceration_period.release_date > date.today():
-            # If the person has not been released yet, remove the release
-            # date and release reason, and set the status to be in custody
-            incarceration_period.release_date = None
-            incarceration_period.release_reason = None
-            incarceration_period.status = \
-                StateIncarcerationPeriodStatus.IN_CUSTODY
-
-        validated_incarceration_periods.append(incarceration_period)
-
-    return validated_incarceration_periods
 
 
 def collapse_incarceration_period_transfers(
@@ -291,10 +209,6 @@ def _filter_and_update_incarceration_periods_for_calculations(
 
     filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(filtered_incarceration_periods)
 
-    filtered_incarceration_periods = validate_admission_data(filtered_incarceration_periods)
-
-    filtered_incarceration_periods = validate_release_data(filtered_incarceration_periods)
-
     return filtered_incarceration_periods
 
 
@@ -394,6 +308,19 @@ def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcera
                     # If the person is no longer in custody on this period, set the release date to the admission date.
                     ip.release_date = ip.admission_date
                     ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
+                elif ip.release_reason or ip.release_reason_raw_text:
+                    # TODO(2981): Update MO ingest to pull in status date of last TAK026 status to use when the release
+                    #  date is 99999999. This should eliminate the 600ish instances of this we're seeing.
+                    # There is no release date on this period, but the set release_reason indicates that the person
+                    # is no longer in custody. Set the release date to the admission date.
+                    ip.release_date = ip.admission_date
+                    ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+
+                    logging.warning("No release_date for incarceration period (%d) with nonnull release_reason (%s) or "
+                                    "release_reason_raw_text (%s)",
+                                    ip.incarceration_period_id,
+                                    ip.release_reason,
+                                    ip.release_reason_raw_text)
             else:
                 # This is not the last incarceration period in the list. Set the release date to the next admission or
                 # release date.
@@ -405,9 +332,6 @@ def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcera
                     if next_ip.admission_reason == AdmissionReason.TRANSFER:
                         # If they were transferred into the next period, infer that this release was a transfer
                         ip.release_reason = ReleaseReason.TRANSFER
-                    else:
-                        # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
-                        ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
 
                 ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
@@ -427,9 +351,13 @@ def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcera
                     if previous_ip.release_reason == ReleaseReason.TRANSFER:
                         # If they were transferred out of the previous period, infer that this admission was a transfer
                         ip.admission_reason = AdmissionReason.TRANSFER
-                    else:
-                        # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
-                        ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+
+        if ip.admission_reason is None:
+            # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
+            ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+        if ip.release_date is not None and ip.release_reason is None:
+            # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
+            ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
 
     return incarceration_periods
 
