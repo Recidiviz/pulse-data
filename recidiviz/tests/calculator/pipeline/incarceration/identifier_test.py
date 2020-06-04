@@ -411,7 +411,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 IncarcerationAdmissionEvent(
                     state_code=incarceration_period_1.state_code,
                     event_date=incarceration_period_1.admission_date,
-                    facility=incarceration_period_2.facility,
+                    facility=incarceration_period_1.facility,
                     admission_reason=AdmissionReason.NEW_ADMISSION,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                 ),
