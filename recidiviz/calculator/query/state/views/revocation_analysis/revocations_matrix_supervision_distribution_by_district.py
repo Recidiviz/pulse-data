@@ -43,7 +43,6 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       metric_period_months
     FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
     WHERE current_month
-      AND district != 'ALL'
     GROUP BY state_code, district, supervision_type, charge_category, violation_type, reported_violations,
       metric_period_months
     ORDER BY state_code, metric_period_months, district, supervision_type, reported_violations, charge_category,
