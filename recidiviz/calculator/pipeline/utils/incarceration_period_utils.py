@@ -42,7 +42,8 @@ def drop_placeholder_periods(
 
 
 def collapse_incarceration_period_transfers(
-        sorted_incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        overwrite_facility_information_in_transfers: bool = True) -> List[StateIncarcerationPeriod]:
     """Collapses any incarceration periods that are connected by transfers.
 
     Loops through all of the StateIncarcerationPeriods and combines adjacent
@@ -53,7 +54,8 @@ def collapse_incarceration_period_transfers(
     Args:
         sorted_incarceration_periods: list of StateIncarcerationPeriods for a StatePerson, sorted by ascending
             admission_date
-
+        overwrite_facility_information_in_transfers: Whether or not to overwrite facility information when
+            collapsing transfers.
     Returns:
         A list of collapsed StateIncarcerationPeriods.
     """
@@ -71,7 +73,10 @@ def collapse_incarceration_period_transfers(
                 # transferred into this incarceration period, then combine this
                 # period with the open transfer period.
                 start_period = new_incarceration_periods.pop(-1)
-                combined_period = combine_incarceration_periods(start_period, incarceration_period)
+                combined_period = combine_incarceration_periods(
+                    start_period,
+                    incarceration_period,
+                    overwrite_facility_information=overwrite_facility_information_in_transfers)
                 new_incarceration_periods.append(combined_period)
             else:
                 # They weren't transferred here. Add this as a new
@@ -116,7 +121,10 @@ def collapse_temporary_custody_and_revocation_periods(
                     AdmissionReason.PAROLE_REVOCATION,
                     AdmissionReason.PROBATION_REVOCATION]:
             merged_period = combine_incarceration_periods(
-                previous_period, incarceration_period, overwrite_admission_reason=True)
+                previous_period,
+                incarceration_period,
+                overwrite_admission_reason=True,
+                overwrite_facility_information=True)
             collapsed_ips.append(merged_period)
             previous_period = None
         else:
@@ -131,7 +139,9 @@ def collapse_temporary_custody_and_revocation_periods(
 
 def combine_incarceration_periods(start: StateIncarcerationPeriod,
                                   end: StateIncarcerationPeriod,
-                                  overwrite_admission_reason: bool = False) -> StateIncarcerationPeriod:
+                                  overwrite_admission_reason: bool = False,
+                                  overwrite_facility_information: bool = False) -> \
+        StateIncarcerationPeriod:
     """Combines two StateIncarcerationPeriods.
 
     Brings together two StateIncarcerationPeriods by setting the following
@@ -147,6 +157,8 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
             start: The starting StateIncarcerationPeriod.
             end: The ending StateIncarcerationPeriod.
             overwrite_admission_reason: Whether to use the end admission reason instead of the start admission reason.
+            overwrite_facility_information: Whether to use the facility, housing, and purpose for incarceration
+                information on the end period instead of on the start period.
     """
 
     collapsed_incarceration_period = deepcopy(start)
@@ -155,12 +167,20 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
         collapsed_incarceration_period.admission_reason = end.admission_reason
         collapsed_incarceration_period.admission_reason_raw_text = end.admission_reason_raw_text
 
+    if overwrite_facility_information:
+        collapsed_incarceration_period.facility = end.facility
+        collapsed_incarceration_period.facility_security_level = end.facility_security_level
+        collapsed_incarceration_period.facility_security_level_raw_text = end.facility_security_level_raw_text
+        collapsed_incarceration_period.housing_unit = end.housing_unit
+        # We want the latest non-null specialized_purpose_for_incarceration
+        if end.specialized_purpose_for_incarceration is not None:
+            collapsed_incarceration_period.specialized_purpose_for_incarceration = \
+                end.specialized_purpose_for_incarceration
+            collapsed_incarceration_period.specialized_purpose_for_incarceration_raw_text = \
+                end.specialized_purpose_for_incarceration_raw_text
+
     collapsed_incarceration_period.status = end.status
     collapsed_incarceration_period.release_date = end.release_date
-    collapsed_incarceration_period.facility = end.facility
-    collapsed_incarceration_period.housing_unit = end.housing_unit
-    collapsed_incarceration_period.facility_security_level = end.facility_security_level
-    collapsed_incarceration_period.facility_security_level_raw_text = end.facility_security_level_raw_text
     collapsed_incarceration_period.projected_release_reason = end.projected_release_reason
     collapsed_incarceration_period.projected_release_reason_raw_text = end.projected_release_reason_raw_text
     collapsed_incarceration_period.release_reason = end.release_reason
@@ -173,6 +193,7 @@ def prepare_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
         collapse_temporary_custody_periods_with_revocation: bool = False,
         collapse_transfers: bool = True,
+        overwrite_facility_information_in_transfers: bool = True,
 ) -> List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
 
@@ -191,7 +212,8 @@ def prepare_incarceration_periods_for_calculations(
     updated_periods.sort(key=lambda b: b.admission_date)
 
     collapsed_periods = _collapse_incarceration_periods_for_calculations(
-        updated_periods, collapse_temporary_custody_periods_with_revocation, collapse_transfers)
+        updated_periods, collapse_temporary_custody_periods_with_revocation, collapse_transfers,
+        overwrite_facility_information_in_transfers)
     return collapsed_periods
 
 
@@ -398,14 +420,16 @@ def _drop_non_prison_periods(incarceration_periods: List[StateIncarcerationPerio
 def _collapse_incarceration_periods_for_calculations(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         collapse_temporary_custody_periods_with_revocation: bool,
-        collapse_transfers: bool) -> List[StateIncarcerationPeriod]:
+        collapse_transfers: bool,
+        overwrite_facility_information_in_transfers: bool) -> List[StateIncarcerationPeriod]:
     """Collapses the provided |sorted_incarceration_periods| based on the input params
     |collapse_temporary_custody_periods_with_revocation| and |collapse_transfers|. Assumes the
     |sorted_incarceration_periods| are sorted based on ascending admission_date.
     """
     collapsed_periods = sorted_incarceration_periods
     if collapse_transfers:
-        collapsed_periods = collapse_incarceration_period_transfers(collapsed_periods)
+        collapsed_periods = collapse_incarceration_period_transfers(collapsed_periods,
+                                                                    overwrite_facility_information_in_transfers)
 
     if collapse_temporary_custody_periods_with_revocation:
         collapsed_periods = collapse_temporary_custody_and_revocation_periods(collapsed_periods)
