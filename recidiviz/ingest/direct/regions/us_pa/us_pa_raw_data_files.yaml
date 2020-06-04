@@ -81,10 +81,6 @@ raw_files:
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - HrngID
       - SchdID
-  - file_tag: dbo_HistParoleeAddress
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - EffDate
   - file_tag: dbo_Hist_Arrest_Crim
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber
@@ -109,11 +105,15 @@ raw_files:
   - file_tag: dbo_Hist_Investigation
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - InvUPAR
-  - file_tag: dbo_Hist_OffenderDetail
+  - file_tag: dbo_Hist_OffenderDetails
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - HOffenderDetailsID
+  - file_tag: dbo_Hist_ParoleeAddress
+    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+      - ParoleNumber
+      - EffDate
   - file_tag: dbo_Hist_Release
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber

@@ -141,7 +141,7 @@ class UploadStateFilesToIngestBucketController:
         if self.dry_run:
             logging.info("DRY RUN: Found [%s] paths to upload", len(paths_to_upload))
         else:
-            i = input(f"Found [{len(paths_to_upload)}] dates to move - " f"continue? [y/n]: ")
+            i = input(f"Found [{len(paths_to_upload)}] files to move - " f"continue? [y/n]: ")
 
             if i.upper() != 'Y':
                 return
