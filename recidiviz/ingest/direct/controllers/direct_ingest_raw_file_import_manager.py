@@ -20,7 +20,7 @@ import logging
 import os
 import string
 import time
-from typing import List, Dict, Any, Set, Optional, Iterator, Tuple
+from typing import List, Dict, Any, Set, Optional, Iterator, Tuple, Union
 
 import attr
 import pandas as pd
@@ -37,6 +37,11 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsD
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.utils.regions import Region
 
+COMMON_RAW_FILE_ENCODINGS = [
+    'UTF-8',
+    'ISO-8859-1'  # Also known as 'latin-1', used in the census and lots of other government data
+]
+
 
 @attr.s(frozen=True)
 class DirectIngestRawFileConfig:
@@ -52,7 +57,7 @@ class DirectIngestRawFileConfig:
     # to avoid re-ingesting data when raw data date formats change.
     datetime_cols: List[str] = attr.ib()
 
-    # String encoding for this file (e.g. UTF-8)
+    # Most likely string encoding for this file (e.g. UTF-8)
     encoding: str = attr.ib()
 
     # The separator character used to denote columns (e.g. ',' or '|').
@@ -71,6 +76,11 @@ class DirectIngestRawFileConfig:
     @primary_key_str.default
     def _primary_key_str(self):
         return ", ".join(self.primary_key_cols)
+
+    def encodings_to_try(self) -> List[str]:
+        """Returns an ordered list of encodings we should try for this file."""
+        return [self.encoding] + [encoding for encoding in COMMON_RAW_FILE_ENCODINGS
+                                  if encoding.upper() != self.encoding.upper()]
 
     @classmethod
     def from_dict(cls, file_config_dict: Dict[str, Any]) -> 'DirectIngestRawFileConfig':
@@ -242,33 +252,50 @@ class DirectIngestRawFileImportManager:
         additional metadata columns added.
         """
 
-        temp_paths_with_columns = []
         logging.info('Starting chunked upload of contents to GCS')
-        try:
-            for i, raw_data_df in enumerate(self._read_contents_into_dataframes(path, contents_handle)):
-                logging.info('Loaded DataFrame chunk [%d] has [%d] rows', i, raw_data_df.shape[0])
 
-                # Stripping white space from all fields
-                raw_data_df = raw_data_df.applymap(lambda x: x.strip())
+        parts = filename_parts_from_path(path)
+        file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
+        for encoding in file_config.encodings_to_try():
+            logging.info('Attempting to do chunked upload of [%s] with encoding [%s]', path.abs_path(), encoding)
+            temp_paths_with_columns = []
+            try:
+                for i, raw_data_df in enumerate(self._read_contents_into_dataframes(encoding,
+                                                                                    contents_handle,
+                                                                                    file_config)):
+                    logging.info('Loaded DataFrame chunk [%d] has [%d] rows', i, raw_data_df.shape[0])
 
-                augmented_df = self._augment_raw_data_with_metadata_columns(path=path,
-                                                                            file_metadata=file_metadata,
-                                                                            raw_data_df=raw_data_df)
-                logging.info('Augmented DataFrame chunk [%d] has [%d] rows', i, augmented_df.shape[0])
-                temp_output_path = self._get_temp_df_output_path(path, chunk_num=i)
+                    # Stripping white space from all fields
+                    raw_data_df = raw_data_df.applymap(lambda x: x.strip())
 
-                logging.info('Writing DataFrame chunk [%d] to temporary output path [%s]',
-                             i, temp_output_path.abs_path())
-                self.fs.upload_from_string(temp_output_path, augmented_df.to_csv(header=False, index=False), 'text/csv')
-                logging.info('Done writing to temporary output path')
+                    augmented_df = self._augment_raw_data_with_metadata_columns(path=path,
+                                                                                file_metadata=file_metadata,
+                                                                                raw_data_df=raw_data_df)
+                    logging.info('Augmented DataFrame chunk [%d] has [%d] rows', i, augmented_df.shape[0])
+                    temp_output_path = self._get_temp_df_output_path(path, chunk_num=i)
 
-                temp_paths_with_columns.append((temp_output_path, augmented_df.columns))
-        except Exception as e:
-            logging.error('Failed to upload to GCS - cleaning up temp paths')
-            self._delete_temp_output_paths([path for path, _ in temp_paths_with_columns])
-            raise e
+                    logging.info('Writing DataFrame chunk [%d] to temporary output path [%s]',
+                                 i, temp_output_path.abs_path())
+                    self.fs.upload_from_string(temp_output_path,
+                                               augmented_df.to_csv(header=False, index=False),
+                                               'text/csv')
+                    logging.info('Done writing to temporary output path')
 
-        return temp_paths_with_columns
+                    temp_paths_with_columns.append((temp_output_path, augmented_df.columns))
+                logging.info('Successfully read file [%s] with encoding [%s]', path.abs_path(), encoding)
+                return temp_paths_with_columns
+            except UnicodeDecodeError:
+                logging.info('Unable to read file [%s] with encoding [%s]', path.abs_path(), encoding)
+                self._delete_temp_output_paths([path for path, _ in temp_paths_with_columns])
+                temp_paths_with_columns.clear()
+                continue
+            except Exception as e:
+                logging.error('Failed to upload to GCS - cleaning up temp paths')
+                self._delete_temp_output_paths([path for path, _ in temp_paths_with_columns])
+                raise e
+
+        raise ValueError(
+            f'Unable to read path [{path.abs_path()}] for any of these encodings: {file_config.encodings_to_try()}')
 
     def _load_contents_to_bigquery(self,
                                    path: GcsfsFilePath,
@@ -334,30 +361,26 @@ class DirectIngestRawFileImportManager:
                                                           f'temp_{name}_{chunk_num}.csv')
 
     def _read_contents_into_dataframes(self,
-                                       path: GcsfsFilePath,
-                                       contents_handle: GcsfsFileContentsHandle) -> Iterator[pd.DataFrame]:
-        parts = filename_parts_from_path(path)
-        file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
+                                       encoding: str,
+                                       contents_handle: GcsfsFileContentsHandle,
+                                       file_config: DirectIngestRawFileConfig) -> Iterator[pd.DataFrame]:
 
-        columns = self._get_validated_columns(file_config, contents_handle)
-        try:
-            for df in pd.read_csv(
-                    contents_handle.local_file_path,
-                    sep=file_config.separator,
-                    dtype=str,
-                    index_col=False,
-                    header=None,
-                    skiprows=1,
-                    encoding=file_config.encoding,
-                    quoting=(csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL),
-                    usecols=columns,
-                    names=columns,
-                    chunksize=self.upload_chunk_size,
-                    keep_default_na=False):
-                yield df
-        except Exception as e:
-            logging.error('Failed to parse DataFrame for path [%s] with config [%s]', path.abs_path(), file_config)
-            raise e
+        columns = self._get_validated_columns(encoding, file_config, contents_handle)
+        df_iterator = self._read_csv(
+            encoding,
+            contents_handle,
+            file_config,
+            index_col=False,
+            header=None,
+            skiprows=1,
+            usecols=columns,
+            names=columns,
+            chunksize=self.upload_chunk_size,
+            keep_default_na=False)
+        for df in df_iterator:
+            if not isinstance(df, pd.DataFrame):
+                raise ValueError(f'Unexpected type for DataFrame: [{type(df)}]')
+            yield df
 
     @staticmethod
     def _augment_raw_data_with_metadata_columns(path: GcsfsFilePath,
@@ -388,17 +411,19 @@ class DirectIngestRawFileImportManager:
         return fixed_columns
 
     def _get_validated_columns(self,
+                               encoding: str,
                                file_config: DirectIngestRawFileConfig,
                                contents_handle: GcsfsFileContentsHandle) -> List[str]:
         # TODO(3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should instead
         # define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
         # this function to make sure that the columns in the CSV is a strict subset of expected columns. This will allow
         # to gracefully any raw data re-imports where a new column gets introduced in a later file.
-        columns = pd.read_csv(contents_handle.local_file_path,
-                              nrows=1,
-                              sep=file_config.separator).columns
+        df = self._read_csv(encoding, contents_handle, file_config, nrows=1)
 
-        columns = self.remove_column_non_printable_characters(columns)
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError(f'Unexpected type for DataFrame: [{type(df)}]')
+
+        columns = self.remove_column_non_printable_characters(df.columns)
 
         # Strip whitespace from head/tail of column names
         columns = [c.strip() for c in columns]
@@ -437,3 +462,18 @@ class DirectIngestRawFileImportManager:
                 typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
             schema.append(bigquery.SchemaField(name=name, field_type=typ_str, mode=mode))
         return schema
+
+    @staticmethod
+    def _read_csv(encoding: str,
+                  contents_handle: GcsfsFileContentsHandle,
+                  file_config: DirectIngestRawFileConfig,
+                  **kwargs) -> Union[pd.DataFrame, Iterator[pd.DataFrame]]:
+
+        return pd.read_csv(
+            contents_handle.local_file_path,
+            **kwargs,
+            dtype=str,
+            encoding=encoding,
+            sep=file_config.separator,
+            quoting=(csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL),
+        )
