@@ -85,10 +85,12 @@ def find_all_admission_release_events(
     """
     incarceration_events: List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]] = []
 
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        original_incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
+    incarceration_periods_for_admissions = prepare_incarceration_periods_for_calculations(
+        original_incarceration_periods,
+        collapse_temporary_custody_periods_with_revocation=True,
+        overwrite_facility_information_in_transfers=False)
 
-    de_duplicated_incarceration_admissions = de_duplicated_admissions(incarceration_periods)
+    de_duplicated_incarceration_admissions = de_duplicated_admissions(incarceration_periods_for_admissions)
 
     for incarceration_period in de_duplicated_incarceration_admissions:
         admission_event = admission_event_for_period(
@@ -100,7 +102,12 @@ def find_all_admission_release_events(
         if admission_event:
             incarceration_events.append(admission_event)
 
-    de_duplicated_incarceration_releases = de_duplicated_releases(incarceration_periods)
+    incarceration_periods_for_releases = prepare_incarceration_periods_for_calculations(
+        original_incarceration_periods,
+        collapse_temporary_custody_periods_with_revocation=True,
+        overwrite_facility_information_in_transfers=True)
+
+    de_duplicated_incarceration_releases = de_duplicated_releases(incarceration_periods_for_releases)
 
     for incarceration_period in de_duplicated_incarceration_releases:
         release_event = release_event_for_period(incarceration_period, county_of_residence)

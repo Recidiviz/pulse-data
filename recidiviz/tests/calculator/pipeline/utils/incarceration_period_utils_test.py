@@ -30,7 +30,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     _infer_missing_dates_and_statuses
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
-    StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel
+    StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -629,7 +629,8 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             release_reason=ReleaseReason.CONDITIONAL_RELEASE)
 
         combined_incarceration_period = utils.combine_incarceration_periods(
-            start_incarceration_period, end_incarceration_period)
+            start_incarceration_period, end_incarceration_period,
+            overwrite_facility_information=True)
 
         assert combined_incarceration_period == \
             StateIncarcerationPeriod.new_with_defaults(
@@ -651,8 +652,8 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             )
 
     def test_combineIncarcerationPeriods_overwriteAdmissionReason(self):
-        """Tests for combining two incarceration periods connected by a transfer."""
-
+        """Tests for combining two incarceration periods connected by a transfer, where the admission reason on the
+        start_incarceration_period should be overwritten by the admission reason on the end_incarceration_period."""
         start_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -680,7 +681,62 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             release_reason=ReleaseReason.CONDITIONAL_RELEASE)
 
         combined_incarceration_period = utils.combine_incarceration_periods(
-            start_incarceration_period, end_incarceration_period, overwrite_admission_reason=True)
+            start_incarceration_period,
+            end_incarceration_period,
+            overwrite_admission_reason=True,
+            overwrite_facility_information=False)
+
+        expected_combined_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=start_incarceration_period.incarceration_period_id,
+            status=end_incarceration_period.status,
+            state_code=start_incarceration_period.state_code,
+            facility=start_incarceration_period.facility,
+            housing_unit=start_incarceration_period.housing_unit,
+            facility_security_level=start_incarceration_period.facility_security_level,
+            projected_release_reason=end_incarceration_period.projected_release_reason,
+            admission_date=start_incarceration_period.admission_date,
+            admission_reason=end_incarceration_period.admission_reason,
+            release_date=end_incarceration_period.release_date,
+            release_reason=end_incarceration_period.release_reason)
+        self.assertEqual(expected_combined_period, combined_incarceration_period)
+
+    def test_combineIncarcerationPeriods_overwriteFacilityInformation(self):
+        """Tests for combining two incarceration periods connected by a transfer, where the facility information
+        (facility, housing unit, security level, purpose for incarceration) should be taken from the
+        end_incarceration_period."""
+        start_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Green',
+            housing_unit='House19',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Jones',
+            housing_unit='HouseUnit3',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            admission_date=date(2010, 12, 4),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2012, 12, 10),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        combined_incarceration_period = utils.combine_incarceration_periods(
+            start_incarceration_period,
+            end_incarceration_period,
+            overwrite_admission_reason=True,
+            overwrite_facility_information=True)
 
         expected_combined_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=start_incarceration_period.incarceration_period_id,
@@ -689,6 +745,60 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             facility=end_incarceration_period.facility,
             housing_unit=end_incarceration_period.housing_unit,
             facility_security_level=end_incarceration_period.facility_security_level,
+            specialized_purpose_for_incarceration=end_incarceration_period.specialized_purpose_for_incarceration,
+            projected_release_reason=end_incarceration_period.projected_release_reason,
+            admission_date=start_incarceration_period.admission_date,
+            admission_reason=end_incarceration_period.admission_reason,
+            release_date=end_incarceration_period.release_date,
+            release_reason=end_incarceration_period.release_reason)
+        self.assertEqual(expected_combined_period, combined_incarceration_period)
+
+    def test_combineIncarcerationPeriods_doNotOverwriteFacilityInformation(self):
+        """Tests for combining two incarceration periods connected by a transfer, where the facility information
+        (facility, housing unit, security level, purpose for incarceration) should be taken from the
+        start_incarceration_period."""
+        start_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Green',
+            housing_unit='House19',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='Jones',
+            housing_unit='HouseUnit3',
+            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
+            specialized_purpose_for_incarceration=None,
+            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            admission_date=date(2010, 12, 4),
+            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            release_date=date(2012, 12, 10),
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+
+        combined_incarceration_period = utils.combine_incarceration_periods(
+            start_incarceration_period,
+            end_incarceration_period,
+            overwrite_admission_reason=True,
+            overwrite_facility_information=True)
+
+        expected_combined_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=start_incarceration_period.incarceration_period_id,
+            status=end_incarceration_period.status,
+            state_code=start_incarceration_period.state_code,
+            facility=end_incarceration_period.facility,
+            housing_unit=end_incarceration_period.housing_unit,
+            facility_security_level=end_incarceration_period.facility_security_level,
+            specialized_purpose_for_incarceration=start_incarceration_period.specialized_purpose_for_incarceration,
             projected_release_reason=end_incarceration_period.projected_release_reason,
             admission_date=start_incarceration_period.admission_date,
             admission_reason=end_incarceration_period.admission_reason,
