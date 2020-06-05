@@ -25,6 +25,7 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
+from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -36,10 +37,12 @@ METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
 PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     'incarceration': {
-        'US_MO': ['US_MO_DOC']
+        'US_ID': [US_ID_DOC],
+        'US_MO': [US_MO_DOC],
     },
     'supervision': {
-        'US_MO': ['US_MO_DOC']
+        'US_ID': [US_ID_DOC],
+        'US_MO': [US_MO_DOC],
     },
 }
 
