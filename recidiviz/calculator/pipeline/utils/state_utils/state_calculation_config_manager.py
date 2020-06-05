@@ -37,13 +37,13 @@ def supervision_types_distinct_for_state(state_code: str) -> bool:
     """For some states, we want to track DUAL supervision as distinct from both PAROLE and PROBATION. For others, a
     person can be on multiple types of supervision simultaneously and contribute to counts for both types.
 
-        - US_ID: False
+        - US_ID: True
         - US_MO: True
         - US_ND: False
 
     Returns whether our calculations should consider supervision types as distinct for the given state_code.
     """
-    return state_code.upper() == 'US_MO'
+    return state_code.upper() in ('US_ID', 'US_MO')
 
 
 def default_to_supervision_period_officer_for_revocation_details_for_state(state_code: str) -> bool:

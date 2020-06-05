@@ -3190,6 +3190,91 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
+    def test_find_supervision_time_buckets_infer_supervision_type_dual_us_id(self):
+        """Tests the find_supervision_time_buckets function where the supervision type is taken from a `DUAL`
+        supervision period. Asserts that the DUAL buckets are NOT expanded into separate PROBATION and PAROLE buckets.
+        """
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                state_code='US_ID',
+                start_date=date(2018, 3, 5),
+                termination_date=date(2018, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=None
+            )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 10)
+        )
+
+        supervision_sentences = []
+        supervision_periods = [supervision_period]
+        incarceration_periods = []
+        assessments = [assessment]
+        violation_responses = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertCountEqual(supervision_time_buckets, [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=3,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.GENERAL,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=True),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.GENERAL,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=True),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                case_type=StateSupervisionCaseType.GENERAL,
+                most_severe_violation_type_subtype='UNSET',
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                case_type=StateSupervisionCaseType.GENERAL,
+                month=supervision_period.termination_date.month,
+                termination_date=supervision_period.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                termination_reason=supervision_period.termination_reason
+            ),
+        ])
+
     def test_find_supervision_time_buckets_infer_supervision_type_dual_us_nd(self):
         """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
