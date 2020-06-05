@@ -23,6 +23,7 @@ from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
@@ -50,12 +51,12 @@ def find_program_events(
         - assessments: All of the person's recorded StateAssessments
         - supervision_periods: All of the person's supervision_periods
         - supervision_period_to_agent_associations: dictionary associating
-            StateSupervisionPeriod ids to information about the corresponding
-            StateAgent
+            StateSupervisionPeriod ids to information about the corresponding StateAgent
 
     Returns:
         A list of ProgramEvents for the person.
     """
+    supervision_periods = prepare_supervision_periods_for_calculations(supervision_periods)
 
     program_events: List[ProgramEvent] = []
 

@@ -78,6 +78,28 @@ def non_prison_periods_under_state_authority(state_code: str) -> bool:
     return state_code.upper() in ('US_ID', 'US_ND')
 
 
+def investigation_periods_in_supervision_population(state_code: str) -> bool:
+    """Whether or not supervision periods that have a supervision_period_supervision_type of INVESTIGATION should be
+    counted in the supervision calculations.
+
+    - US_ID: False
+    - US_MO: False
+    - US_ND: True
+    """
+    return state_code.upper() == 'US_ND'
+
+
+def non_state_custodial_authority_in_supervision_population(state_code: str) -> bool:
+    """Whether or not supervision periods that are not under the state DOC's custodial authority should be counted in
+    the supervision calculations.
+
+    - US_ID: False
+    - US_MO: True
+    - US_ND: True
+    """
+    return state_code.upper() != 'US_ID'
+
+
 def get_month_supervision_type(
         any_date_in_month: datetime.date,
         supervision_sentences: List[StateSupervisionSentence],

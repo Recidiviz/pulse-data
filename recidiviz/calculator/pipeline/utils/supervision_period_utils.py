@@ -21,12 +21,54 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
+    investigation_periods_in_supervision_population, non_state_custodial_authority_in_supervision_population
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 # The number of months for the window of time prior to a revocation return in which we look for a terminated supervision
 # period to attribute the revocation to
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
+
+# The suffix appended to the state_code that represents the custodial authority of that state's Department of
+# Corrections
+STATE_DOC_CUSTODIAL_AUTHORITY_SUFFIX = '_DOC'
+
+
+def prepare_supervision_periods_for_calculations(supervision_periods: List[StateSupervisionPeriod]) -> \
+        List[StateSupervisionPeriod]:
+
+    if not supervision_periods:
+        return supervision_periods
+
+    state_code = supervision_periods[0].state_code
+
+    if not investigation_periods_in_supervision_population(state_code):
+        supervision_periods = _drop_investigation_supervision_periods(supervision_periods)
+    if not non_state_custodial_authority_in_supervision_population(state_code):
+        supervision_periods = _drop_non_state_custodial_authority_periods(supervision_periods)
+
+    return supervision_periods
+
+
+def _drop_investigation_supervision_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
+        List[StateSupervisionPeriod]:
+    """Drops all supervision periods with a supervision_period_supervision_type of INVESTIGATION."""
+    return [
+        period for period in supervision_periods
+        if period.supervision_period_supervision_type != StateSupervisionPeriodSupervisionType.INVESTIGATION
+    ]
+
+
+def _drop_non_state_custodial_authority_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
+        List[StateSupervisionPeriod]:
+    """Drops all supervision periods where the custodial_authority is not the state DOC of the state_code on the
+    supervision_period."""
+    return [
+        period for period in supervision_periods
+        if period.custodial_authority == (period.state_code + STATE_DOC_CUSTODIAL_AUTHORITY_SUFFIX)
+    ]
 
 
 def _get_relevant_supervision_periods_before_admission_date(
