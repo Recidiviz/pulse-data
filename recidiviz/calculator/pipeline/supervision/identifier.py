@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific, \
     filter_violation_responses_before_revocation
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    _get_relevant_supervision_periods_before_admission_date
+    _get_relevant_supervision_periods_before_admission_date, prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
@@ -141,6 +141,8 @@ def find_supervision_time_buckets(
         state_code = get_single_state_code(incarceration_periods)
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
+
+    supervision_periods = prepare_supervision_periods_for_calculations(supervision_periods)
 
     # We don't want to collapse temporary custody periods with revocations because we want to use the actual date
     # of the revocation admission for the revocation buckets
