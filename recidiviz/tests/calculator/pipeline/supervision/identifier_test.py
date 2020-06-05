@@ -979,6 +979,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
+            custodial_authority='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
@@ -988,6 +989,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_period_id=222,
             external_id='ip2',
             state_code='US_ID',
+            custodial_authority='US_ID_DOC',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
@@ -2735,6 +2737,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     )
                 ],
                 state_code='US_ID',
+                custodial_authority='US_ID_DOC',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,

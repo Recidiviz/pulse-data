@@ -23,7 +23,9 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    _find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT
+    _find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
+    prepare_supervision_periods_for_calculations
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -186,3 +188,104 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period_recent])
 
         self.assertIsNone(most_recently_terminated_period)
+
+
+class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
+    """Tests the prepare_supervision_periods_for_calculations function."""
+    def test_prepare_supervision_periods_for_calculations(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ND',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31)
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usID(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='US_ID_DOC',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usID_dropInvestigation(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='US_ID_DOC',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usID_dropNonDOC(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='ALABAMA',  # Not the state's DOC authority
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usID_unsetType(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='US_ID_DOC',
+            supervision_period_supervision_type=None
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usND(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ND',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='CALIFORNIA'
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usMO(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_MO',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_usMO_custodialAuthority(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_MO',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31),
+            custodial_authority='IDAHO'
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+
+        self.assertEqual([supervision_period], updated_periods)
