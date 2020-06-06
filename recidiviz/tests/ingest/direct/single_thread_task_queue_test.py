@@ -40,7 +40,7 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
             task_queue.join()
 
     def test_run_many_tasks(self):
-        task_queue = SingleThreadTaskQueue(name='test_queue')
+        task_queue = SingleThreadTaskQueue(name='test_queue', max_tasks=1000)
 
         self.num_tasks = 0
         expected_num_tasks = 1000
