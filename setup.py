@@ -31,6 +31,8 @@ REQUIRED_PACKAGES = [
     'cattrs',
     'dateparser',
     'Flask',
+    # TODO(3337): Remove this line once the google-api-core release is stable
+    'google-api-core==1.17.0',
     # TODO(2973): Resolve dependency conflict to remove this version constraint
     'google-api-python-client<=1.7.11',
     'google-cloud-monitoring',

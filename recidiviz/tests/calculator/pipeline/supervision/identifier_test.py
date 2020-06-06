@@ -3204,6 +3204,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 state_code='US_ID',
+                custodial_authority='US_ID_DOC',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,

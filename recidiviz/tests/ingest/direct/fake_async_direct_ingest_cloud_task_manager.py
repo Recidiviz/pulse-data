@@ -16,6 +16,7 @@
 # =============================================================================
 """Test implementation of the DirectIngestCloudTaskManager that runs tasks
 asynchronously on background threads."""
+import logging
 from queue import Queue, Empty
 from threading import Thread, Lock, Condition
 from typing import Callable, List, Tuple, Optional
@@ -35,18 +36,26 @@ from recidiviz.utils import monitoring
 from recidiviz.utils.regions import Region
 
 
+class TooManyTasksError(ValueError):
+    pass
+
+
 class SingleThreadTaskQueue(Queue):
     """Simple class for running tasks on a single background thread."""
 
-    def __init__(self, name: str):
+    MAX_TASKS = 100
+
+    def __init__(self, name: str, max_tasks=MAX_TASKS):
         super().__init__()
         self.name = name
+        self.max_tasks = max_tasks
 
         self.all_tasks_mutex = Lock()
         self.has_unfinished_tasks_condition = Condition(self.all_tasks_mutex)
 
         # These variables all protected by all_tasks_mutex
         self.all_task_names: List[str] = []
+        self.all_executed_tasks: List[str] = []
         self.running_task_name: Optional[str] = None
         self.terminating_exception: Optional[Exception] = None
 
@@ -87,6 +96,8 @@ class SingleThreadTaskQueue(Queue):
         super().join()
         with self.all_tasks_mutex:
             if self.terminating_exception:
+                if isinstance(self.terminating_exception, TooManyTasksError):
+                    logging.warning('Too many tasks run: [%s]', self.all_executed_tasks)
                 raise self.terminating_exception
 
     def worker(self):
@@ -94,13 +105,20 @@ class SingleThreadTaskQueue(Queue):
         while True:
             _task_name, task, args, kwargs = self._worker_pop_task()
             try:
+
                 task(*args, **kwargs)
             except Exception as e:
                 self._worker_mark_task_done()
                 self._worker_handle_exception(e)
-                break
+                return
 
             self._worker_mark_task_done()
+
+            with self.all_tasks_mutex:
+                too_many_tasks = len(self.all_executed_tasks) > self.max_tasks
+            if too_many_tasks:
+                self._worker_handle_exception(TooManyTasksError(f'Ran too many tasks on queue [{self.name}]'))
+                return
 
     def _get_queued_task_names(self) -> List[str]:
         """Returns the names of all queued tasks in this queue. This does NOT include tasks that are currently running.
@@ -132,6 +150,7 @@ class SingleThreadTaskQueue(Queue):
         of all task names."""
         with self.all_tasks_mutex:
             self.task_done()
+            self.all_executed_tasks.append(self.running_task_name)
             self.running_task_name = None
             self.all_task_names = self._get_queued_task_names()
 
@@ -141,8 +160,9 @@ class SingleThreadTaskQueue(Queue):
         with self.all_tasks_mutex:
             self.terminating_exception = e
             try:
-                _ = self.get_nowait()
-                self._worker_mark_task_done()
+                while True:
+                    _ = self.get_nowait()
+                    self.task_done()
             except Empty:
                 self.running_task_name = None
                 self.all_task_names = []
