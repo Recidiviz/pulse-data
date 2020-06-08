@@ -47,6 +47,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 primary_key_cols=['col1', 'col2'],
                 datetime_cols=[],
+                supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
                 separator='@',
                 ignore_quotes=False
@@ -64,7 +65,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
             except_clause='EXCEPT (file_id, update_datetime)',
-            datetime_cols_clause=''
+            datetime_cols_clause='',
+            supplemental_order_by_clause=', CAST(seq_num AS INT64)'
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -78,6 +80,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 primary_key_cols=['col1'],
                 datetime_cols=['col2'],
+                supplemental_order_by_clause='',
                 encoding='any-encoding',
                 separator='@',
                 ignore_quotes=False
@@ -104,7 +107,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
             except_clause='EXCEPT (col2, file_id, update_datetime)',
-            datetime_cols_clause=expected_datetime_cols_clause
+            datetime_cols_clause=expected_datetime_cols_clause,
+            supplemental_order_by_clause=''
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -148,7 +152,8 @@ file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT 
             * EXCEPT (file_id, update_datetime), 
-            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
         FROM 
             `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE 
@@ -164,7 +169,8 @@ file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT 
             * EXCEPT (file_id, update_datetime), 
-            ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
         FROM 
             `recidiviz-456.us_xx_raw_data.file_tag_second`
         WHERE 
@@ -252,7 +258,8 @@ file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT 
             * EXCEPT (file_id, update_datetime), 
-            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b ORDER BY update_datetime DESC) AS recency_rank
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
         FROM 
             `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE 
@@ -268,7 +275,8 @@ file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT 
             * EXCEPT (file_id, update_datetime), 
-            ROW_NUMBER() OVER (PARTITION BY col_name_2a ORDER BY update_datetime DESC) AS recency_rank
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
         FROM 
             `recidiviz-456.us_xx_raw_data.file_tag_second`
         WHERE 
