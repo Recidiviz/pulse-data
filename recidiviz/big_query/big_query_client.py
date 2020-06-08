@@ -465,6 +465,7 @@ class BigQueryClientImpl(BigQueryClient):
         job_config = bigquery.LoadJobConfig()
         job_config.schema = destination_table_schema
         job_config.source_format = bigquery.SourceFormat.CSV
+        job_config.allow_quoted_newlines = True
         job_config.write_disposition = write_disposition
 
         load_job = self.client.load_table_from_uri(
