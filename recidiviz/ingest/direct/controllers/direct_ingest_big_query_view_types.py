@@ -32,7 +32,8 @@ RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
 WITH rows_with_recency_rank AS (
     SELECT 
         * {{except_clause}}, {{datetime_cols_clause}}
-        ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}} ORDER BY update_datetime DESC) AS recency_rank
+        ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
+                           ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM 
         `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
     WHERE 
@@ -50,7 +51,8 @@ RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
     SELECT 
         * {except_clause}, {datetime_cols_clause}
-        ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str} ORDER BY update_datetime DESC) AS recency_rank
+        ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
+                           ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM 
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
 )
@@ -84,6 +86,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         raw_table_dataset_id = DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
         except_clause = self._except_clause_for_config(raw_file_config)
         datetime_cols_clause = self._datetime_cols_clause_for_config(raw_file_config)
+        supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(raw_file_config)
         super().__init__(project_id=project_id,
                          dataset_id=view_dataset_id,
                          view_id=view_id,
@@ -92,7 +95,19 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                          raw_table_name=raw_file_config.file_tag,
                          raw_table_primary_key_str=raw_file_config.primary_key_str,
                          except_clause=except_clause,
-                         datetime_cols_clause=datetime_cols_clause)
+                         datetime_cols_clause=datetime_cols_clause,
+                         supplemental_order_by_clause=supplemental_order_by_clause)
+
+    @staticmethod
+    def _supplemental_order_by_clause_for_config(raw_file_config: DirectIngestRawFileConfig):
+        if not raw_file_config.supplemental_order_by_clause:
+            return ''
+
+        supplemental_order_by_clause = raw_file_config.supplemental_order_by_clause.strip()
+        if not supplemental_order_by_clause.startswith(','):
+            return ', ' + supplemental_order_by_clause
+
+        return supplemental_order_by_clause
 
     @staticmethod
     def _except_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
