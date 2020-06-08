@@ -276,8 +276,8 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 StateIncarcerationSentence(
                                     state_incarceration_sentence_id="GF3374-01",
                                     status="AS", incarceration_type="S", county_code="PHI",
-                                    date_imposed="20080816", start_date="20080816", completion_date="00000000",
-                                    min_length="4291", max_length="5113",
+                                    date_imposed="20080816", start_date="00000000", completion_date="00000000",
+                                    min_length="4287", max_length="5113",
                                     is_life="False", is_capital_punishment="False",
                                     state_charges=[
                                         StateCharge(
@@ -742,8 +742,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             status=StateSentenceStatus.SERVING, status_raw_text="AS",
             incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2008, month=8, day=16),
-            start_date=datetime.date(year=2008, month=8, day=16),
-            min_length_days=4291, max_length_days=5113, is_life=False, is_capital_punishment=False,
+            min_length_days=4287, max_length_days=5113, is_life=False, is_capital_punishment=False,
             person=person_2, sentence_group=p2_sg
         )
         p2_sg.incarceration_sentences.append(p2_is)
