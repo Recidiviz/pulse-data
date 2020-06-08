@@ -296,7 +296,7 @@ ALL_PERIODS_FRAGMENT = f"""
         a.incrno,
         a.start_date,
         a.end_date,
-        STRING_AGG(o.stat_strt_typ) AS statuses
+        STRING_AGG(o.stat_strt_typ ORDER BY o.stat_strt_typ) AS statuses
       FROM 
         all_periods a
       LEFT JOIN
