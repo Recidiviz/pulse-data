@@ -22,14 +22,14 @@ from typing import List, Set, Tuple, Dict
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import standard_date_sort_for_incarceration_periods
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 def _incarceration_periods_converter(incarceration_periods: List[StateIncarcerationPeriod]):
-    incarceration_periods.sort(key=lambda b: b.admission_date)
-
-    return incarceration_periods
+    sorted_periods = standard_date_sort_for_incarceration_periods(incarceration_periods)
+    return sorted_periods
 
 
 @attr.s

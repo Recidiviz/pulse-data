@@ -21,11 +21,8 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    investigation_periods_in_supervision_population, non_state_custodial_authority_in_supervision_population
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
-
 
 # The number of months for the window of time prior to a revocation return in which we look for a terminated supervision
 # period to attribute the revocation to
@@ -36,28 +33,24 @@ SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 STATE_DOC_CUSTODIAL_AUTHORITY_SUFFIX = '_DOC'
 
 
-def prepare_supervision_periods_for_calculations(supervision_periods: List[StateSupervisionPeriod]) -> \
+def prepare_supervision_periods_for_calculations(supervision_periods: List[StateSupervisionPeriod],
+                                                 drop_non_state_custodial_authority_periods: bool) -> \
         List[StateSupervisionPeriod]:
+    supervision_periods = _drop_placeholder_periods(supervision_periods)
 
-    if not supervision_periods:
-        return supervision_periods
-
-    state_code = supervision_periods[0].state_code
-
-    if not investigation_periods_in_supervision_population(state_code):
-        supervision_periods = _drop_investigation_supervision_periods(supervision_periods)
-    if not non_state_custodial_authority_in_supervision_population(state_code):
+    if drop_non_state_custodial_authority_periods:
         supervision_periods = _drop_non_state_custodial_authority_periods(supervision_periods)
 
     return supervision_periods
 
 
-def _drop_investigation_supervision_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
+def _drop_placeholder_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
         List[StateSupervisionPeriod]:
-    """Drops all supervision periods with a supervision_period_supervision_type of INVESTIGATION."""
+    """Drops all supervision periods where the custodial_authority is not the state DOC of the state_code on the
+    supervision_period."""
     return [
         period for period in supervision_periods
-        if period.supervision_period_supervision_type != StateSupervisionPeriodSupervisionType.INVESTIGATION
+        if not is_placeholder(period)
     ]
 
 
@@ -71,7 +64,7 @@ def _drop_non_state_custodial_authority_periods(supervision_periods: List[StateS
     ]
 
 
-def _get_relevant_supervision_periods_before_admission_date(
+def get_relevant_supervision_periods_before_admission_date(
         admission_date: Optional[date], supervision_periods: List[StateSupervisionPeriod]
 ) -> List[StateSupervisionPeriod]:
     """Returns the relevant supervision periods preceding an admission to prison that can be used to determine
@@ -89,7 +82,7 @@ def _get_relevant_supervision_periods_before_admission_date(
         # may have been on supervision at some time before this admission. If present within the
         # |SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT|, find the most recently terminated supervision period.
         most_recent_supervision_period = \
-            _find_last_supervision_period_terminated_before_date(
+            find_last_supervision_period_terminated_before_date(
                 admission_date, supervision_periods, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
 
         if most_recent_supervision_period:
@@ -98,7 +91,7 @@ def _get_relevant_supervision_periods_before_admission_date(
     return relevant_periods
 
 
-def _find_last_supervision_period_terminated_before_date(
+def find_last_supervision_period_terminated_before_date(
         upper_bound_date: date, supervision_periods: List[StateSupervisionPeriod],
         maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT) -> Optional[StateSupervisionPeriod]:
     """Looks for the supervision period that ended most recently before the upper_bound_date, within the
