@@ -23,7 +23,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
-    _find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
+    find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
     prepare_supervision_periods_for_calculations
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -43,7 +43,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2010, 9, 1)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2010, 10, 1),
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
@@ -60,7 +60,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2010, 1, 1)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(1990, 10, 1),
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
@@ -83,7 +83,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
                           relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
                           + relativedelta(days=1))
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=admission_date,
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
@@ -105,7 +105,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         admission_date = (supervision_period_recent.termination_date +
                           relativedelta(days=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT))
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=admission_date,
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
@@ -123,7 +123,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2010, 1, 1)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2007, 10, 1),
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
@@ -140,14 +140,14 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             start_date=date(2006, 3, 1),
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2007, 10, 1),
             supervision_periods=[supervision_period_older, supervision_period_recent])
 
         self.assertEqual(supervision_period_older, most_recently_terminated_period)
 
     def test_find_most_recently_terminated_supervision_period_no_periods(self):
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(1990, 10, 1),
             supervision_periods=[])
 
@@ -159,7 +159,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2005, 3, 31)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2005, 4, 1),
             supervision_periods=[supervision_period])
 
@@ -171,7 +171,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2007, 12, 31)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2007, 12, 31),
             supervision_periods=[supervision_period_recent])
 
@@ -183,7 +183,7 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
             termination_date=date(2007, 12, 31)
         )
 
-        most_recently_terminated_period = _find_last_supervision_period_terminated_before_date(
+        most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
             upper_bound_date=date(2006, 1, 1),
             supervision_periods=[supervision_period_recent])
 
@@ -199,9 +199,20 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             termination_date=date(2007, 12, 31)
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=False)
 
         self.assertEqual([supervision_period], updated_periods)
+
+    def test_prepare_supervision_periods_for_calculations_placeholder(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code='US_XX',
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=False)
+        self.assertEqual([], updated_periods)
 
     def test_prepare_supervision_periods_for_calculations_usID(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -212,22 +223,9 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=True)
         self.assertEqual([supervision_period], updated_periods)
-
-    def test_prepare_supervision_periods_for_calculations_usID_dropInvestigation(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code='US_ID',
-            start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31),
-            custodial_authority='US_ID_DOC',
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
-        )
-
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
-        self.assertEqual([], updated_periods)
 
     def test_prepare_supervision_periods_for_calculations_usID_dropNonDOC(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -238,8 +236,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=True)
         self.assertEqual([], updated_periods)
 
     def test_prepare_supervision_periods_for_calculations_usID_unsetType(self):
@@ -251,31 +249,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             supervision_period_supervision_type=None
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
-        self.assertEqual([supervision_period], updated_periods)
-
-    def test_prepare_supervision_periods_for_calculations_usND(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code='US_ND',
-            start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31),
-            custodial_authority='CALIFORNIA'
-        )
-
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
-        self.assertEqual([supervision_period], updated_periods)
-
-    def test_prepare_supervision_periods_for_calculations_usMO(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code='US_MO',
-            start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31),
-        )
-
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=True)
         self.assertEqual([supervision_period], updated_periods)
 
     def test_prepare_supervision_periods_for_calculations_usMO_custodialAuthority(self):
@@ -286,6 +261,6 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             custodial_authority='IDAHO'
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period])
-
+        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
+                                                                       drop_non_state_custodial_authority_periods=False)
         self.assertEqual([supervision_period], updated_periods)

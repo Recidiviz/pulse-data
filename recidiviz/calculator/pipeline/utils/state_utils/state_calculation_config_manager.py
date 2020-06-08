@@ -19,6 +19,9 @@
 import datetime
 from typing import List, Optional
 
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
+    us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
+    us_id_is_revocation_admission
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
@@ -28,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_typ
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
+from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse
@@ -71,9 +75,9 @@ def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
 
 def non_prison_periods_under_state_authority(state_code: str) -> bool:
     """Whether or not incarceration periods that aren't in a STATE_PRISON are considered under the state authority.
-    - US_ID: True
-    - US_MO: False
-    - US_ND: True
+        - US_ID: True
+        - US_MO: False
+        - US_ND: True
     """
     return state_code.upper() in ('US_ID', 'US_ND')
 
@@ -89,13 +93,25 @@ def investigation_periods_in_supervision_population(state_code: str) -> bool:
     return state_code.upper() == 'US_ND'
 
 
-def non_state_custodial_authority_in_supervision_population(state_code: str) -> bool:
-    """Whether or not supervision periods that are not under the state DOC's custodial authority should be counted in
+def only_state_custodial_authority_in_supervision_population(state_code: str) -> bool:
+    """Whether or not only supervision periods that are under the state DOC's custodial authority should be counted in
     the supervision calculations.
 
-    - US_ID: False
-    - US_MO: True
-    - US_ND: True
+    - US_ID: True
+    - US_MO: False
+    - US_ND: False
+    """
+    return state_code.upper() == 'US_ID'
+
+
+def should_collapse_transfers_different_purpose_for_incarceration(state_code: str) -> bool:
+    """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
+    be collapsed into one period if they have different specialized_purpose_for_incarceration values.
+        - US_ID: False
+            We need the dates of transfers from parole board holds and treatment custody to identify revocations
+            in US_ID.
+        - US_MO: True
+        - US_ND: True
     """
     return state_code.upper() != 'US_ID'
 
@@ -160,6 +176,23 @@ def get_pre_incarceration_supervision_type(
 
     # TODO(2938): Decide if we want date matching/supervision period lookback logic for US_ND
     return get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
+
+
+def get_pre_revocation_supervision_type(
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod,
+        revoked_supervision_period: Optional[StateSupervisionPeriod]) -> \
+        Optional[StateSupervisionPeriodSupervisionType]:
+    """Returns the supervision type the person was on before they had their supervision revoked."""
+    if incarceration_period.state_code == 'US_ID':
+        return us_id_get_pre_revocation_supervision_type(revoked_supervision_period)
+
+    return get_pre_incarceration_supervision_type(
+        incarceration_sentences,
+        supervision_sentences,
+        incarceration_period
+    )
 
 
 def supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
@@ -231,3 +264,32 @@ def filter_violation_responses_before_revocation(violation_responses: List[State
         if state_code == 'US_MO':
             return us_mo_filter_violation_responses(violation_responses)
     return violation_responses
+
+
+def filter_supervision_periods_for_revocation_identification(supervision_periods: List[StateSupervisionPeriod]) -> \
+        List[StateSupervisionPeriod]:
+    """State-specific filtering of supervision periods that should be included in pre-revocation analysis."""
+    if supervision_periods:
+        if supervision_periods[0].state_code == 'US_ID':
+            return us_id_filter_supervision_periods_for_revocation_identification(supervision_periods)
+    return supervision_periods
+
+
+def incarceration_period_is_from_revocation(
+        incarceration_period: StateIncarcerationPeriod,
+        preceding_incarceration_period: Optional[StateIncarcerationPeriod]) \
+        -> bool:
+    """Determines if the sequence of incarceration periods represents a revocation."""
+    if incarceration_period.state_code == 'US_ID':
+        return us_id_is_revocation_admission(incarceration_period, preceding_incarceration_period)
+    return is_revocation_admission(incarceration_period.admission_reason)
+
+
+def produce_supervision_time_bucket_for_period(supervision_period: StateSupervisionPeriod):
+    """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases, we do
+    not want to drop periods entirely because we need them for context in some of the calculations, but we do not want
+    to create metrics using the periods."""
+    if (supervision_period.supervision_period_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION
+            and not investigation_periods_in_supervision_population(supervision_period.state_code)):
+        return False
+    return True
