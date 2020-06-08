@@ -28,7 +28,7 @@ def question_numbers_with_descriptive_answers_view_fragment(test_id: str):
             tst_dt,
             score_by_name,
             CONCAT(assess_qstn_num, '-', tst_sctn_num) AS qstn_num, 
-            STRING_AGG(qstn_choice_desc) AS qstn_answer
+            STRING_AGG(qstn_choice_desc ORDER BY qstn_choice_desc) AS qstn_answer
           FROM 
             {{ofndr_tst}}
           LEFT JOIN 
