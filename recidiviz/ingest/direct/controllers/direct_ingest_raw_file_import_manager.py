@@ -57,6 +57,13 @@ class DirectIngestRawFileConfig:
     # to avoid re-ingesting data when raw data date formats change.
     datetime_cols: List[str] = attr.ib()
 
+    # An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date
+    # row to pick among all rows that have the same primary key.
+    # NOTE: Right now this clause does not have access to the date-normalized version of the columns in datetime_cols,
+    #  so must handle its own date parsing logic - if this becomes too cumbersome, we can restructure the query to do
+    #  date normalization in a subquery before ordering.
+    supplemental_order_by_clause: str = attr.ib()
+
     # Most likely string encoding for this file (e.g. UTF-8)
     encoding: str = attr.ib()
 
@@ -88,6 +95,7 @@ class DirectIngestRawFileConfig:
             file_tag=file_config_dict['file_tag'],
             primary_key_cols=file_config_dict['primary_key_cols'],
             datetime_cols=file_config_dict.get('datetime_cols', []),
+            supplemental_order_by_clause=file_config_dict.get('supplemental_order_by_clause', ''),
             encoding=file_config_dict['encoding'],
             separator=file_config_dict['separator'],
             ignore_quotes=file_config_dict.get('ignore_quotes', False)
@@ -277,7 +285,7 @@ class DirectIngestRawFileImportManager:
                     logging.info('Writing DataFrame chunk [%d] to temporary output path [%s]',
                                  i, temp_output_path.abs_path())
                     self.fs.upload_from_string(temp_output_path,
-                                               augmented_df.to_csv(header=False, index=False),
+                                               augmented_df.to_csv(header=False, index=False, quoting=csv.QUOTE_ALL),
                                                'text/csv')
                     logging.info('Done writing to temporary output path')
 

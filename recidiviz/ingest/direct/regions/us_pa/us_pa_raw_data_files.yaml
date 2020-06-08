@@ -155,12 +155,9 @@ raw_files:
       - Doc_Id
       - CrmlHistSeq_Id
   - file_tag: dbo_IcsDoc
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
-      - Doc_Id
+    primary_key_cols:
       - Cont_Num
-      - Inmate_Num
-      - SID_Num
-      - PBPP_Num
+      - Doc_Id
   - file_tag: dbo_InstantOffense
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - PrimaryKey
@@ -175,7 +172,7 @@ raw_files:
       - ParoleNumber
       - PBPP30ID
   - file_tag: dbo_LSIR
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - LsirID
@@ -215,7 +212,7 @@ raw_files:
       - GuidelineID
       - DocketID
   - file_tag: dbo_Offender
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
   - file_tag: dbo_OffenderDetails
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
@@ -250,8 +247,9 @@ raw_files:
       - SetID
       - SequenceID
   - file_tag: dbo_Senrec
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - curr_inmate_num
+      - type_number
   - file_tag: dbo_Sentence
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber
@@ -292,11 +290,16 @@ raw_files:
   - file_tag: dbo_tblInmTestScore
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - Control_Number
+      - Inmate_number
       - Test_Id
+      - AsmtVer_Num
   - file_tag: dbo_tblInmTestScoreHist
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - Control_Number
+      - Inmate_number
       - Test_Id
+      - AsmtVer_Num
+    supplemental_order_by_clause: "PARSE_DATETIME('%m/%d/%Y %H:%M:%S', Hist_dt) DESC"
   - file_tag: dbo_tblRecmdPrgm
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - Control_Number
