@@ -68,9 +68,16 @@ filtered_early_discharge AS (
   SELECT 
     * 
   EXCEPT (
+     # Ignore fields which are always NULL.
     jurisdiction_decision_code_id, 
     supervisor_review_date,
-    jurisdiction_authize_date)  # Ignore fields which are always NULL.
+    # TODO(3345): Remove these excludes once we have a full historical dump from an automated feed OR a reason to
+    #  parse these fields. The format between the manual and automated exports differs for booleans (t vs True, etc)
+    #  and money amounts (15.5 vs 15.50).
+    meets_criteria,
+    compliance,
+    ncic_chk,
+    restitution_init_bal)
   FROM 
     {{early_discharge}}
 ),

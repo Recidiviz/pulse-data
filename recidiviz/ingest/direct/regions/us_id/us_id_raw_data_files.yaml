@@ -92,6 +92,20 @@ raw_files:
   - file_tag: early_discharge
     primary_key_cols:
       - early_discharge_id
+    datetime_cols:
+      - created_by_dt
+      - decision_date
+      - decision_official_dt
+      - decision_updt_date
+      - fine_last_pymnt_dt
+      - juris_auth_sbmt_dt
+      - jurisdiction_authize_date
+      - ncic_chk_date
+      - restitution_last_pymnt_dt
+      - submit_updt_date
+      - subst_tst_start_dt
+      - sup_aprv_sbmt_dt
+      - supervisor_review_date
   - file_tag: early_discharge_form_typ
     primary_key_cols:
       - early_discharge_form_typ_id
@@ -133,6 +147,10 @@ raw_files:
   - file_tag: mittimus
     primary_key_cols:
       - mitt_srl
+    datetime_cols:
+      - sent_eff_dtd
+      - sentence_dtd
+      - sent_exp_dtd
   - file_tag: movement
     primary_key_cols:
       - move_srl
@@ -146,6 +164,9 @@ raw_files:
       - off_cat
       - off_cd
       - off_deg
+    datetime_cols:
+      - off_stat_eff_dtd
+      - off_stat_term_dtd
   - file_tag: offstat
     primary_key_cols:
       - docno
@@ -183,10 +204,16 @@ raw_files:
   - file_tag: ofndr_tst
     primary_key_cols:
       - ofndr_tst_id
+    datetime_cols:
+      - tst_dt
+      - updt_dt
     ignore_quotes: True
   - file_tag: ofndr_tst_cert
     primary_key_cols:
       - ofndr_tst_id
+    datetime_cols:
+      - cert_dt
+      - updt_dt
   - file_tag: ofndr_wrkld
     primary_key_cols:
       - ofndr_wrkld_id
