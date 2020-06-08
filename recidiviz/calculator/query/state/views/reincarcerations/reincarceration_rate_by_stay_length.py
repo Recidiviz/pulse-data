@@ -39,6 +39,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
       state_code,
       release_cohort,
       follow_up_period,
+      SUM(recidivated_releases) AS reincarceration_count,
       SUM(recidivated_releases)/COUNT(*) AS recidivism_rate,
       stay_length_bucket,
       district
