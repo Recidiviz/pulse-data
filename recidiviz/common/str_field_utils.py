@@ -143,6 +143,17 @@ def parse_days_from_duration_pieces(
     return int(years * 365.25) + (months * 30) + days
 
 
+def _is_str_field_zeros(str_field: str) -> bool:
+    """Checks if a string field is a procession of any number of zeros, i.e. '0' or '000000'."""
+    try:
+        field_as_int = int(str_field)
+        return field_as_int == 0
+    except ValueError:
+        # This was a check for date strings that are just processions of 0s. If it's not a parseable int, that means it
+        # is not.
+        return False
+
+
 def parse_datetime(
         date_string: str, from_dt: Optional[datetime.datetime] = None
     ) -> Optional[datetime.datetime]:
@@ -150,9 +161,7 @@ def parse_datetime(
     Parses a string into a datetime.datetime object, using |from_dt| as a base
     for any relative dates.
     """
-    if date_string == '' or date_string.isspace():
-        return None
-    if is_str_field_none(date_string):
+    if date_string == '' or date_string.isspace() or _is_str_field_zeros(date_string) or is_str_field_none(date_string):
         return None
 
     settings: Dict[str, Any] = {'PREFER_DAY_OF_MONTH': 'first'}
@@ -228,18 +237,13 @@ def parse_yyyymmdd_date(date_str: str) -> Optional[datetime.date]:
 
 def parse_date(
         date_string: str, from_dt: Optional[datetime.datetime] = None
-    ) -> Optional[datetime.date]:
+) -> Optional[datetime.date]:
     """
     Parses a string into a datetime.date object, using |from_dt| as a base for
     any relative dates.
     """
-    try:
-        date_as_int = int(date_string)
-        if date_as_int == 0:
-            return None
-    except ValueError:
-        # This was a check for date strings that are just processions of 0s. If it's not a parseable int, that's normal.
-        pass
+    if _is_str_field_zeros(date_string):
+        return None
 
     if is_yyyymmdd_date(date_string):
         return parse_yyyymmdd_date(date_string)
