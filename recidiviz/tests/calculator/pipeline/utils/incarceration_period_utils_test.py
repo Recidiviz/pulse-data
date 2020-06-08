@@ -235,9 +235,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 1
-
-        assert collapsed_incarceration_periods == [
+        self.assertListEqual([
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=initial_incarceration_period.incarceration_period_id,
                 status=first_reincarceration_period.status,
@@ -246,7 +244,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                 admission_reason=initial_incarceration_period.admission_reason,
                 release_date=first_reincarceration_period.release_date,
                 release_reason=first_reincarceration_period.release_reason)
-        ]
+        ], collapsed_incarceration_periods)
 
     def test_collapse_incarceration_periods_no_transfers(self):
         """Tests collapse_incarceration_periods for two incarceration
@@ -278,9 +276,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 2
-
-        assert collapsed_incarceration_periods == incarceration_periods
+        self.assertListEqual(incarceration_periods, collapsed_incarceration_periods)
 
     def test_collapse_incarceration_periods_multiple_transfers(self):
         """Tests collapse_incarceration_periods for a person who was repeatedly
@@ -335,9 +331,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 1
-
-        assert collapsed_incarceration_periods == [
+        self.assertListEqual([
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=initial_incarceration_period.
                 incarceration_period_id,
@@ -347,7 +341,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                 admission_reason=initial_incarceration_period.admission_reason,
                 release_date=third_reincarceration_period.release_date,
                 release_reason=third_reincarceration_period.release_reason),
-        ]
+        ], collapsed_incarceration_periods)
 
     def test_collapse_incarceration_periods_between_periods(self):
         """Tests collapse_incarceration_periods for two incarceration
@@ -402,9 +396,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 3
-
-        assert collapsed_incarceration_periods == [
+        self.assertListEqual([
             initial_incarceration_period,
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=first_reincarceration_period.
@@ -416,7 +408,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                 release_date=second_reincarceration_period.release_date,
                 release_reason=second_reincarceration_period.release_reason),
             third_reincarceration_period
-        ]
+        ], collapsed_incarceration_periods)
 
     def test_collapse_incarceration_periods_no_incarcerations(self):
         """Tests collapse_incarceration_periods for an empty list of
@@ -446,29 +438,27 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert collapsed_incarceration_periods == incarceration_periods
+        self.assertListEqual(collapsed_incarceration_periods, incarceration_periods)
 
     def test_collapse_incarceration_periods_one_incarceration_transferred(self):
         """Tests collapse_incarceration_periods for a person with only
         one incarceration period that ended with a transfer out of state
         prison."""
 
-        only_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                admission_date=date(2008, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2010, 12, 4),
-                release_reason=ReleaseReason.TRANSFER)
+        only_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
 
         incarceration_periods = [only_incarceration_period]
 
-        collapsed_incarceration_periods = \
-            utils.collapse_incarceration_period_transfers(incarceration_periods)
+        collapsed_incarceration_periods = utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert collapsed_incarceration_periods == incarceration_periods
+        self.assertListEqual(collapsed_incarceration_periods, incarceration_periods)
 
     def test_collapse_incarceration_periods_transfer_out_then_in(self):
         """Tests collapse_incarceration_periods for a person who was
@@ -522,9 +512,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 3
-
-        assert collapsed_incarceration_periods == incarceration_periods
+        self.assertListEqual(incarceration_periods, collapsed_incarceration_periods)
 
     def test_collapse_incarceration_periods_transfer_back_then_transfer(self):
         """Tests collapse_incarceration_periods for a person who was transferred
@@ -577,9 +565,7 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         collapsed_incarceration_periods = \
             utils.collapse_incarceration_period_transfers(incarceration_periods)
 
-        assert len(collapsed_incarceration_periods) == 2
-
-        assert collapsed_incarceration_periods == [
+        self.assertListEqual([
             initial_incarceration_period,
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=first_reincarceration_period.
@@ -590,7 +576,87 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
                 admission_reason=first_reincarceration_period.admission_reason,
                 release_date=second_reincarceration_period.release_date,
                 release_reason=second_reincarceration_period.release_reason),
-        ]
+        ], collapsed_incarceration_periods)
+
+    def test_collapse_incarceration_periods_transfer_different_pfi_do_not_collapse(self):
+        """Tests collapse_incarceration_periods when the collapse_transfers_with_different_pfi flag is False, and
+        the two periods connected by a transfer have different specialized_purpose_for_incarceration values.
+        """
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=3333,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2012, 12, 4),
+                admission_reason=AdmissionReason.TRANSFER,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [initial_incarceration_period,
+                                 second_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            utils.collapse_incarceration_period_transfers(incarceration_periods,
+                                                          collapse_transfers_with_different_pfi=False)
+
+        self.assertListEqual(incarceration_periods, collapsed_incarceration_periods)
+
+    def test_collapse_incarceration_periods_transfer_different_pfi_collapse(self):
+        """Tests collapse_incarceration_periods when the collapse_transfers_with_different_pfi flag is True, and
+        the two periods connected by a transfer have different specialized_purpose_for_incarceration values.
+        """
+        initial_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.TRANSFER)
+
+        second_incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=3333,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                admission_date=date(2012, 12, 4),
+                admission_reason=AdmissionReason.TRANSFER,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                release_date=date(2014, 4, 14),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [initial_incarceration_period,
+                                 second_incarceration_period]
+
+        collapsed_incarceration_periods = \
+            utils.collapse_incarceration_period_transfers(incarceration_periods,
+                                                          collapse_transfers_with_different_pfi=True)
+
+        self.assertListEqual([
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=initial_incarceration_period.incarceration_period_id,
+                status=second_incarceration_period.status,
+                state_code=initial_incarceration_period.state_code,
+                admission_date=initial_incarceration_period.admission_date,
+                admission_reason=initial_incarceration_period.admission_reason,
+                specialized_purpose_for_incarceration=second_incarceration_period.specialized_purpose_for_incarceration,
+                release_date=second_incarceration_period.release_date,
+                release_reason=second_incarceration_period.release_reason)
+        ], collapsed_incarceration_periods)
 
 
 class TestCombineIncarcerationPeriods(unittest.TestCase):

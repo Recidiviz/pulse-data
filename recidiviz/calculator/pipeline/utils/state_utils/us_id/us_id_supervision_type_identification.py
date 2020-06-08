@@ -26,7 +26,11 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
-    StateIncarcerationPeriod
+    StateIncarcerationPeriod, StateSupervisionPeriod
+
+# We expect transition dates from supervision to incarceration to be fairly close together for the data in US_ID. We
+# limit the search for a pre-incarceration supervision type to 30 days prior to admission.
+PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS = 30
 
 
 def us_id_get_pre_incarceration_supervision_type(
@@ -34,65 +38,63 @@ def us_id_get_pre_incarceration_supervision_type(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Calculates the pre-incarceration supervision type for US_ID people by calculating the most recent type of
-    supervision a given person was on. If no supervision type is found, returns None.
+    supervision a given person was on within PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS days of the
+    incarceration admission. If no supervision type is found, returns None.
     """
-    if not incarceration_period.admission_date:
+    admission_date = incarceration_period.admission_date
+
+    if not admission_date:
         raise ValueError(
             f'No admission date for incarceration period {incarceration_period.incarceration_period_id}')
 
+    supervision_periods = _get_supervision_periods_from_sentences(incarceration_sentences, supervision_sentences)
+
     return us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-        upper_bound_exclusive_date=incarceration_period.admission_date,
-        lower_bound_inclusive_date=None,
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences
+        upper_bound_exclusive_date=admission_date,
+        lower_bound_inclusive_date=
+        admission_date - relativedelta(days=PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS),
+        supervision_periods=supervision_periods
     )
 
 
 def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date: date,
         lower_bound_inclusive_date: Optional[date],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
+        supervision_periods: List[StateSupervisionPeriod],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Finds the most recent nonnull supervision period supervision type associated to the person with these sentences,
-    preceding or overlapping the provided date. An optional lower bound may be provided to limit the lookback window.
+    """Finds the most recent nonnull supervision period supervision type on the supervision periods, preceding or
+    overlapping the provided date. An optional lower bound may be provided to limit the lookback window.
 
     Returns the most recent StateSupervisionPeriodSupervisionType. If there is no valid supervision
     type found (e.g. the person has only been incarcerated for the time window), returns None.
     """
     supervision_types_by_end_date: Dict[date, Set[StateSupervisionPeriodSupervisionType]] = defaultdict(set)
-    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
 
     lower_bound_exclusive_date = (lower_bound_inclusive_date - relativedelta(days=1)
                                   if lower_bound_inclusive_date else date.min)
 
-    for sentence in sentences:
-        if not isinstance(sentence, (StateIncarcerationSentence, StateSupervisionSentence)):
-            raise ValueError(f"Sentence has unexpected type {type(sentence)}")
+    for supervision_period in supervision_periods:
+        start_date = supervision_period.start_date
 
-        supervision_periods = sentence.supervision_periods
+        if not start_date:
+            continue
 
-        for supervision_period in supervision_periods:
-            start_date = supervision_period.start_date
-            if not start_date:
-                continue
+        termination_date = (supervision_period.termination_date
+                            if supervision_period.termination_date else date.today())
 
-            supervision_period_supervision_type = supervision_period.supervision_period_supervision_type
+        supervision_period_supervision_type = supervision_period.supervision_period_supervision_type
 
-            if not supervision_period_supervision_type:
-                continue
+        if not supervision_period_supervision_type:
+            continue
 
-            termination_date = (supervision_period.termination_date
-                                if supervision_period.termination_date else date.today())
+        if not date_spans_overlap_exclusive(
+                start_1=lower_bound_exclusive_date,
+                end_1=upper_bound_exclusive_date,
+                start_2=start_date,
+                end_2=termination_date):
+            continue
 
-            if not date_spans_overlap_exclusive(
-                    start_1=lower_bound_exclusive_date,
-                    end_1=upper_bound_exclusive_date,
-                    start_2=start_date,
-                    end_2=termination_date):
-                continue
-
-            supervision_types_by_end_date[termination_date].add(supervision_period_supervision_type)
+        supervision_types_by_end_date[termination_date].add(supervision_period_supervision_type)
 
     if not supervision_types_by_end_date:
         return None
@@ -100,3 +102,25 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
     max_end_date = max(supervision_types_by_end_date.keys())
 
     return _get_most_relevant_supervision_type(supervision_types_by_end_date[max_end_date])
+
+
+def _get_supervision_periods_from_sentences(incarceration_sentences: List[StateIncarcerationSentence],
+                                            supervision_sentences: List[StateSupervisionSentence]) -> \
+        List[StateSupervisionPeriod]:
+    """Returns all unique supervision periods associated with any of the given sentences."""
+    sentences = itertools.chain(supervision_sentences, incarceration_sentences)
+    supervision_period_ids: Set[int] = set()
+    supervision_periods: List[StateSupervisionPeriod] = []
+
+    for sentence in sentences:
+        if not isinstance(sentence, (StateIncarcerationSentence, StateSupervisionSentence)):
+            raise ValueError(f"Sentence has unexpected type {type(sentence)}")
+
+        for supervision_period in sentence.supervision_periods:
+            supervision_period_id = supervision_period.supervision_period_id
+
+            if supervision_period_id is not None and supervision_period_id not in supervision_period_ids:
+                supervision_periods.append(supervision_period)
+                supervision_period_ids.add(supervision_period_id)
+
+    return supervision_periods

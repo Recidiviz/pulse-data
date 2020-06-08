@@ -120,7 +120,8 @@ def is_revocation_admission(admission_reason: Optional[StateIncarcerationPeriodA
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+        # This is sometimes, but not always, a revocation admission. Handled by state-specific revocation logic.
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
     ]
     non_revocation_types = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,

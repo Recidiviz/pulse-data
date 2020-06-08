@@ -100,6 +100,7 @@ class TestProgramPipeline(unittest.TestCase):
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         program_assignment = schema.StateProgramAssignment(
+            state_code='CA',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id
@@ -345,6 +346,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         # Program assignment for a different person
         program_assignment = schema.StateProgramAssignment(
+            state_code='CA',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id_2
