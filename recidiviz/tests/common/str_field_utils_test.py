@@ -119,6 +119,11 @@ class TestStrFieldUtils(TestCase):
             '2018-04', from_dt=datetime.datetime(2019, 3, 15)) == \
                datetime.datetime(year=2018, month=4, day=1)
 
+    def test_parseDateTime_yyyymmdd_format(self):
+        assert parse_datetime(
+            '19990629', from_dt=None) == \
+               datetime.datetime(year=1999, month=6, day=29)
+
     def test_parseDateTime_relative(self):
         assert parse_datetime(
             '1y 1m 1d', from_dt=datetime.datetime(2000, 1, 1)) == \

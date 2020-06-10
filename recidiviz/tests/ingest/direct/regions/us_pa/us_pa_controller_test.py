@@ -298,7 +298,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_incarceration_sentence_id="CJ1991-01",
                                     status="AS", incarceration_type="S", county_code="BUC",
                                     date_imposed="20160820", start_date="20160820", completion_date="00000000",
-                                    min_length="454", max_length="912",
+                                    min_length="457", max_length="914",
                                     is_life="False", is_capital_punishment="False",
                                     state_charges=[
                                         StateCharge(
@@ -319,7 +319,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_incarceration_sentence_id="JE1989-01",
                                     status="AS", incarceration_type="S", county_code="BUC",
                                     date_imposed="20160820", start_date="20160820", completion_date="00000000",
-                                    max_length="1096",
+                                    max_length="1095",
                                     is_life="False", is_capital_punishment="False",
                                     state_charges=[
                                         StateCharge(
@@ -335,7 +335,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_incarceration_sentence_id="JE1989-02",
                                     status="AS", incarceration_type="S", county_code="BUC",
                                     date_imposed="20160820", start_date="20160820", completion_date="00000000",
-                                    min_length="546",
+                                    min_length="549",
                                     is_life="False", is_capital_punishment="False",
                                     state_charges=[
                                         StateCharge(
@@ -774,7 +774,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
-            min_length_days=454, max_length_days=912, is_life=False, is_capital_punishment=False,
+            min_length_days=457, max_length_days=914, is_life=False, is_capital_punishment=False,
             person=person_3, sentence_group=p3_sg
         )
         p3_sg.incarceration_sentences.append(p3_is)
@@ -806,7 +806,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
-            max_length_days=1096, is_life=False, is_capital_punishment=False,
+            max_length_days=1095, is_life=False, is_capital_punishment=False,
             person=person_4, sentence_group=p4_sg
         )
         p4_is_2 = entities.StateIncarcerationSentence.new_with_defaults(
@@ -815,7 +815,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text="S",
             date_imposed=datetime.date(year=2016, month=8, day=20),
             start_date=datetime.date(year=2016, month=8, day=20),
-            min_length_days=546, is_life=False, is_capital_punishment=False,
+            min_length_days=549, is_life=False, is_capital_punishment=False,
             person=person_4, sentence_group=p4_sg
         )
         p4_sg.incarceration_sentences.extend([p4_is_1, p4_is_2])
