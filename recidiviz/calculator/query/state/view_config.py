@@ -20,14 +20,24 @@
 from typing import Dict, List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DASHBOARD_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DASHBOARD_VIEWS_DATASET, \
+    COVID_REPORT_DATASET
 from recidiviz.calculator.query.state.views.admissions import admissions_views
+from recidiviz.calculator.query.state.views.admissions.us_nd.admissions_to_cpp_by_week import \
+    ADMISSIONS_TO_CPP_BY_WEEK_VIEW
+from recidiviz.calculator.query.state.views.incarceration_facilities.facility_population_by_age_with_capacity_by_day \
+    import FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW
+from recidiviz.calculator.query.state.views.incarceration_facilities.us_nd.incidents_by_facility_by_week import \
+    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW
 from recidiviz.calculator.query.state.views.program_evaluation import program_evaluation_views
 from recidiviz.calculator.query.state.views.reference import reference_views
 from recidiviz.calculator.query.state.views.reincarcerations import reincarcerations_views
+from recidiviz.calculator.query.state.views.releases.releases_by_type_by_week import RELEASES_BY_TYPE_BY_WEEK_VIEW
 from recidiviz.calculator.query.state.views.revocation_analysis import revocation_analysis_views
 from recidiviz.calculator.query.state.views.revocations import revocations_views
 from recidiviz.calculator.query.state.views.supervision import supervision_views
+from recidiviz.calculator.query.state.views.supervision.supervision_termination_by_type_by_week import \
+    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW
 
 VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
     REFERENCE_TABLES_DATASET: reference_views.REF_VIEWS,
@@ -38,5 +48,12 @@ VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
         supervision_views.SUPERVISION_VIEWS +
         program_evaluation_views.PROGRAM_EVALUATION_VIEWS +
         revocation_analysis_views.REVOCATION_ANALYSIS_VIEWS
-    )
+    ),
+    COVID_REPORT_DATASET: [
+        ADMISSIONS_TO_CPP_BY_WEEK_VIEW,
+        FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW,
+        INCIDENTS_BY_FACILITY_BY_WEEK_VIEW,
+        RELEASES_BY_TYPE_BY_WEEK_VIEW,
+        SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW
+    ]
 }

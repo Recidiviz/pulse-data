@@ -14,19 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dashboard dataset configuration."""
-
-# Where the actual, final dashboard views live
-DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
-
-# Where the metrics that Dataflow jobs produce live
-DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
-
-# Where static reference tables live
-REFERENCE_TABLES_DATASET: str = 'reference_tables'
-
-# Where the base tables for the state schema live
-STATE_BASE_DATASET: str = 'state'
-
-# Where the views for the COVID report live
-COVID_REPORT_DATASET: str = 'covid_report_views'
