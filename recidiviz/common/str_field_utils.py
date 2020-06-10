@@ -164,6 +164,12 @@ def parse_datetime(
     if date_string == '' or date_string.isspace() or _is_str_field_zeros(date_string) or is_str_field_none(date_string):
         return None
 
+    if is_yyyymmdd_date(date_string):
+        as_date = parse_yyyymmdd_date(date_string)
+        if not as_date:
+            raise ValueError(f'Parsed date for string [{date_string}] is unexpectedly None.')
+        return datetime.datetime(year=as_date.year, month=as_date.month, day=as_date.day)
+
     settings: Dict[str, Any] = {'PREFER_DAY_OF_MONTH': 'first'}
     if from_dt:
         settings['RELATIVE_BASE'] = from_dt
