@@ -19,6 +19,7 @@ from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query.state.views.reference.augmented_agent_info import AUGMENTED_AGENT_INFO_VIEW
+from recidiviz.calculator.query.state.views.reference.covid_report_weeks import COVID_REPORT_WEEKS_VIEW
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW
 from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
@@ -57,4 +58,5 @@ REF_VIEWS: List[BigQueryView] = [
     REVOCATIONS_MATRIX_BY_PERSON_VIEW,
     SUPERVISION_MATRIX_BY_PERSON_VIEW,
     US_MO_SENTENCE_STATUSES_VIEW,
+    COVID_REPORT_WEEKS_VIEW
 ]
