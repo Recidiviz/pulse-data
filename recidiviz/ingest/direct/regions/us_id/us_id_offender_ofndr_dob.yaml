@@ -48,3 +48,4 @@ keys_to_ignore:
   - st                  # Unused - birth state (mostly null)
   - birth_ctry_cd       # Unused - birth country code (mostly null)
   - birth_city          # Unused - birth city (mostly null)
+  - dob_dtd             # Unused - birth date (not present in manual files)

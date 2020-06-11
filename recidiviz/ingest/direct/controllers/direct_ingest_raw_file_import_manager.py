@@ -284,8 +284,12 @@ class DirectIngestRawFileImportManager:
 
                     logging.info('Writing DataFrame chunk [%d] to temporary output path [%s]',
                                  i, temp_output_path.abs_path())
+
+                    # We cannot use QUOTE_ALL as it results in empty values being written as "" in our temp file csv.
+                    # When uploading the temp file to BQ this results in empty strings being uploaded instead of NULLs.
+                    quoting = csv.QUOTE_MINIMAL
                     self.fs.upload_from_string(temp_output_path,
-                                               augmented_df.to_csv(header=False, index=False, quoting=csv.QUOTE_ALL),
+                                               augmented_df.to_csv(header=False, index=False, quoting=quoting),
                                                'text/csv')
                     logging.info('Done writing to temporary output path')
 

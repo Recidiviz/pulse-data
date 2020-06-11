@@ -50,6 +50,7 @@ keys_to_ignore:
   - cnty_cd             # Unused - County code, instead we use cnty_desc for the actual county name
   - cnty_ldesc          # Unused - County long description. We use cnty_sdesc instead (short description).
   - def_atty            # Unused - Defense attorney code
+  - description         # Unused - Offense description
   - dist_atty           # Unused - DA code
   - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(2999): Consider adding to schema.
   - govn_sent           # Unused - Whether this is the governing sentence or not. TODO(2999): Consider adding to schema.
@@ -87,6 +88,7 @@ keys_to_ignore:
   - off_viol            # Unused - Whether or not the offense was violent. TODO(2999): Consider adding this to charge
                         #          schema.
   - offvisxo_flg        # Unused - TODO(2999): Get more info from ID
+  - off_visxo_flg       # Unused - TODO(2999): Add raw import preprocessing to combine with offvisxo_flg above.
   - plea                # Unused - Plea
   - sent_eff_dtd        # Unused - Date sentences within a mittimus begin, instead we use sent_beg_dtd
                         #          TODO(2999): Fully understand difference bw these two dates.
