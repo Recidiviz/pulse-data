@@ -189,6 +189,9 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
 
     # Discard extra columns and rename the columns based on the table.
     if is_female:
+        # Since December 2019, an extra empty column is shifting the data.
+        if df.columns[8] == '':
+            df = df.drop('', axis=1)
         df = df.iloc[:, 0:len(_FEMALE_JAIL_REPORT_COLUMN_NAMES)]
         df.columns = _FEMALE_JAIL_REPORT_COLUMN_NAMES
         df = df[[col for col in df.columns if col in
