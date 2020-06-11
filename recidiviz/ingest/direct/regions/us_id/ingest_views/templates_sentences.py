@@ -122,7 +122,7 @@ LEFT JOIN
     (SELECT
             judge_cd,
             # TODO(3345): Keep just judge_nam once we have a full historical dump from an automated feed.
-            COALESCE(judge_name, judge_nam)
+            COALESCE(judge_name, judge_nam) AS judge_name
     FROM
         {{judge}})
 USING

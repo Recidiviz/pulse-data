@@ -159,6 +159,8 @@ raw_files:
   - file_tag: offender
     primary_key_cols:
       - docno
+    datetime_cols:
+      - move_dtd
   - file_tag: offense
     primary_key_cols:
       - off_cat
