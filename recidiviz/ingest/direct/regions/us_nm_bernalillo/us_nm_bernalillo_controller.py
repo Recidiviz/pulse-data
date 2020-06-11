@@ -69,8 +69,11 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
                contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         # Preprocess raw data.
         df = pd.read_csv(contents_handle.local_file_path, dtype=str,
-                         lineterminator='\r').fillna('')
-        df['PERSON ID'] = df['PERSON ID'].replace(r'\n', '', regex=True)
+                         lineterminator='\r')
+
+        # When there is a new line at the end of the file, pandas generates a new row filled with null values except
+        # for the PERSON ID column which is a new line, we want to delete this row.
+        df = df[df['PERSON ID'] != '\n']
         ingest_info = super()._parse(args,
                                      self.DataFrameContentsHandle(
                                          contents_handle.local_file_path, df))
