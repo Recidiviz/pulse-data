@@ -55,9 +55,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'dbo_IcsDoc': [
-                gen_label_single_external_id_hook(US_PA_SID),
+                gen_label_single_external_id_hook(US_PA_CONTROL),
                 self.gen_hydrate_alternate_external_ids({
-                    'Cont_Num': US_PA_CONTROL,
+                    'SID_Num': US_PA_SID,
                     'PBPP_Num': US_PA_PBPP,
                 }),
                 copy_name_to_alias,
@@ -65,9 +65,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._compose_current_address,
             ],
             'dbo_tblInmTestScore': [
-                self.gen_hydrate_alternate_external_ids({
-                    'Control_Number': US_PA_CONTROL,
-                }),
+                gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
                 self._enrich_doc_assessments,
             ],
