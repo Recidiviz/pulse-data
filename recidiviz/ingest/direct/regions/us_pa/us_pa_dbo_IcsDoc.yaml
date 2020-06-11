@@ -1,5 +1,5 @@
 key_mappings:
-  SID_Num: state_person.state_person_id
+  Cont_Num: state_person.state_person_id
   CmtmtLast_Nm: state_person.surname
   CmtmtFirst_Nm: state_person.given_names
   CmtmtMid_Nm: state_person.middle_names
@@ -9,14 +9,14 @@ key_mappings:
 
 child_key_mappings:
   Race_Id: state_person_race.race
-  SID_Num: state_person_external_id.state_person_external_id_id
+  Cont_Num: state_person_external_id.state_person_external_id_id
   Inmate_Num: state_sentence_group.state_sentence_group_id
 
 primary_key:
-  SID_Num: state_person.state_person_id
+  Cont_Num: state_person.state_person_id
 
 keys_to_ignore:
-  - Cont_Num          # Control Number - Hydrated manually in the controller
+  - SID_Num           # SID Number - Hydrated manually in the controller
   - PBPP_Num          # PBPP Number - Hydrated manually in the controller
   - Doc_Id            # ICSA Document Id - Unused as of yet
   - Event_Num

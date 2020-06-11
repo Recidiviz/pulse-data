@@ -177,6 +177,11 @@ class CsvDataExtractor(DataExtractor):
 
         seen_map: Dict[int, Set[str]] = defaultdict(set)
         for row in rows:
+            row_with_stripped_cols = OrderedDict()
+            for key in row:
+                row_with_stripped_cols[key.strip()] = row[key]
+            row = row_with_stripped_cols
+
             self._pre_process_row(row)
             primary_coordinates = self._primary_coordinates(row)
             ancestor_chain: Dict[str, str] = self._ancestor_chain(row)
@@ -327,7 +332,7 @@ class CsvDataExtractor(DataExtractor):
             this_col_class_name, _ = field.split('.')
             if child_class_name == this_col_class_name:
                 cols_for_id.append(col)
-        child_primary_key_parts += [row[col] for col in sorted(cols_for_id)]
+        child_primary_key_parts += [row[col.strip()] for col in sorted(cols_for_id)]
 
         return '|'.join(child_primary_key_parts)
 
@@ -432,7 +437,11 @@ class CsvDataExtractor(DataExtractor):
                 raise TypeError(f"Expected truthy key mapping [{key_mapping}] "
                                 f"to have a value inside")
             cls, field = cls_and_field.split('.')
-            id_value = row.get(lookup_key)
+            id_value = row[lookup_key.strip()]
+
+            if not id_value:
+                raise ValueError(f"Found empty coordinates mapping in col {lookup_key} for {cls}.{field}")
+
             coordinates.append(IngestFieldCoordinates(cls, field, id_value))
 
         return coordinates

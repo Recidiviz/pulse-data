@@ -2,6 +2,7 @@ key_mappings:
   Control_Number: state_person.state_person_id
 
 child_key_mappings:
+  Control_Number: state_person_external_id.state_person_external_id_id
   Test_Desc: state_assessment.assessment_type
   Test_Dt: state_assessment.assessment_date
   Test_Score: state_assessment.assessment_score
