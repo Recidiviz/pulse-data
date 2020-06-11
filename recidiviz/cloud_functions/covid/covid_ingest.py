@@ -48,7 +48,7 @@ class CovidIngestError(Exception):
     """Generic error when covid ingest fails."""
 
 
-def ingest_latest_data():
+def ingest_and_aggregate_latest_data():
     """Ingests latest available COVID data and writes them to an aggregate
     file
     """
