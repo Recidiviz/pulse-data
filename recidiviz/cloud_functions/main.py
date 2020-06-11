@@ -25,8 +25,8 @@ from cloud_function_utils import make_iap_request, \
     get_dashboard_data_export_storage_bucket, \
     get_dataflow_template_bucket, \
     trigger_dataflow_job_from_template
-
 from covid import covid_ingest
+
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
@@ -198,16 +198,40 @@ def run_calculation_pipelines(_event, _context):
     logging.info("The monitoring Dataflow response is %s", monitor_response)
 
 
-def handle_covid_ingest(_request):
-    """This function is triggered when the appropriate URL (defined in the
-    execute-covid-aggregation cloud function on GCP) is called, and aggregates
-    the currently available COVID data into an output file stored in a GCP
-    bucket.
+def handle_covid_ingest_on_upload(_data, _context):
+    """Ingests and aggregates the currently available COVID data into an output
+    file stored in a GCP bucket.
+
+    This function is triggered when a new source file is uploaded to the input
+    GCP bucket, as defined in the handle-covid-source-upload cloud function on
+    GCP.
     """
+    _ingest_and_aggregate_covid_data()
+
+
+def handle_covid_ingest_on_trigger(_request):
+    """Ingests and aggregates the currently available COVID data into an output
+    file stored in a GCP bucket.
+
+    This function is triggered by call to a URL endpoint defined in the
+    execute-covid-aggregation cloud function on GCP. This URL is intended to be
+    called by an App Engine endpoint defined in covid.covid_ingest_endpoint.
+
+    (Note that this does not follow the same pattern as most of the other App
+    Engine-Cloud Function interactions in this file, which delegate in the
+    other direction. Keeping the logic in the cloud function here is intended to
+    enable quicker redeploys when the ingest data formats change.)
+    """
+    _ingest_and_aggregate_covid_data()
+
+
+def _ingest_and_aggregate_covid_data():
+    """Calls main COVID ingest function"""
     # TODO(zdg2102): remove this try-except wrapper once GCP cloud function
     # stack trace bug is fixed: https://issuetracker.google.com/issues/155215191
     try:
-        logging.info('Covid ingest triggered')
-        covid_ingest.ingest_latest_data()
+        logging.info('COVID ingest cloud function triggered')
+        covid_ingest.ingest_and_aggregate_latest_data()
+        logging.info('COVID ingest cloud function completed')
     except Exception:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
