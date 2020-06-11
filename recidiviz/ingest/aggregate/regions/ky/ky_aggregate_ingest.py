@@ -92,6 +92,10 @@ def _parse_table(location, filename: str) -> pd.DataFrame:
 
     dfs_grouped_by_gender = []
     for df in dfs_split_by_county:
+        # This is a typo in several reports
+        if '12/' in df['Federal Inmates'].values:
+            df['Federal Inmates'] = df['Federal Inmates'].replace({'12/': '12'})
+
         # Cast everything to int before summing below
         df = df.fillna(0)
         df = aggregate_ingest_utils.cast_columns_to_int(
@@ -208,7 +212,7 @@ def parse_date(filename: str) -> datetime.date:
     easily be parsed for the date.
     """
     date_str = filename.replace(' revised', ''). \
-        replace(' new', '').replace('.pdf', '')[-8:]
+                   replace(' new', '').replace('.pdf', '')[-8:]
     parsed_date = str_field_utils.parse_date(date_str)
     if parsed_date:
         return parsed_date
