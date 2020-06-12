@@ -101,6 +101,14 @@ def is_attr_decorated(obj) -> bool:
     return attr.has(obj)
 
 
+def is_bool(attribute) -> bool:
+    """Returns true if the attribute is a bool type."""
+    if _is_union(attribute.type):
+        return _is_type_is_union(attribute.type, _is_bool)
+
+    return _is_bool(attribute.type)
+
+
 def is_enum(attribute) -> bool:
     """Returns true if the attribute is an Enum type."""
     if _is_union(attribute.type):
@@ -113,19 +121,62 @@ def is_date(attribute) -> bool:
     """Returns true if the attribute is a date type."""
 
     if _is_union(attribute.type):
-        return _is_date_is_union(attribute.type)
+        return _is_type_is_union(attribute.type, _is_date_cls)
 
     return _is_date_cls(attribute.type)
 
 
+def is_float(attribute) -> bool:
+    """Returns true if the attribute is a float type."""
+    if _is_union(attribute.type):
+        return _is_type_is_union(attribute.type, _is_float)
+
+    return _is_float(attribute.type)
+
+
 def is_list(attribute) -> bool:
     """Returns true if the attribute is a List type."""
+    if _is_union(attribute.type):
+        return _is_type_is_union(attribute.type, _is_list)
+
     return _is_list(attribute.type)
+
+
+def is_str(attribute) -> bool:
+    """Returns true if the attribute is a str type."""
+    if _is_union(attribute.type):
+        return _is_type_is_union(attribute.type, _is_str)
+
+    return _is_str(attribute.type)
+
+
+def is_int(attribute) -> bool:
+    """Returns true if the attribute is an int type."""
+    if _is_union(attribute.type):
+        return _is_type_is_union(attribute.type, _is_int)
+
+    return _is_int(attribute.type)
 
 
 def _is_list(attr_type) -> bool:
     return hasattr(attr_type, '__origin__') \
         and attr_type.__origin__ is list
+
+
+def _is_str(attr_type) -> bool:
+    return attr_type == str
+
+
+def _is_int(attr_type) -> bool:
+    return attr_type == int
+
+
+def _is_float(attr_type) -> bool:
+    return attr_type == float
+
+
+def _is_bool(attr_type) -> bool:
+    return attr_type == bool
 
 
 def get_enum_cls(attribute) -> Optional[Type[Enum]]:
@@ -189,12 +240,12 @@ def _extract_mappable_enum_from_union(union: Union) \
         f"{union}")
 
 
-def _is_date_is_union(union: Union) -> bool:
-    """Looks for a single date in a Union. Returns whether exactly one
-     is present."""
+def _is_type_is_union(union: Union, type_check_func) -> bool:
+    """Looks for the presence of a single type in the Union. Looks for type where the type_check_func returns True.
+    Returns whether exactly one is present."""
     result = set()
     for type_in_union in union.__args__:  # type: ignore
-        if _is_date_cls(type_in_union):
+        if type_check_func(type_in_union):
             result.add(type_in_union)
 
     if not result:

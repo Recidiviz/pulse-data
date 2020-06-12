@@ -33,6 +33,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.incarceration import identifier, calculator
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent
@@ -477,32 +478,33 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                 'admissions', 'populations', 'releases'))
 
         # Write the metrics to the output tables in BigQuery
-        admissions_table = output + '.incarceration_admission_metrics'
-
-        population_table = output + '.incarceration_population_metrics'
-
-        releases_table = output + '.incarceration_release_metrics'
+        admissions_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationAdmissionMetric)
+        population_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationPopulationMetric)
+        releases_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationReleaseMetric)
 
         _ = (writable_metrics.admissions
-             | f"Write admission metrics to BQ table: {admissions_table}" >>
+             | f"Write admission metrics to BQ table: {admissions_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=admissions_table,
+                 table=admissions_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.populations
-             | f"Write population metrics to BQ table: {population_table}" >>
+             | f"Write population metrics to BQ table: {population_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=population_table,
+                 table=population_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.releases
-             | f"Write release metrics to BQ table: {releases_table}" >>
+             | f"Write release metrics to BQ table: {releases_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=releases_table,
+                 table=releases_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

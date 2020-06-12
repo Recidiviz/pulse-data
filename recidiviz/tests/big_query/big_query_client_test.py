@@ -251,3 +251,88 @@ class BigQueryClientImplTest(unittest.TestCase):
         with pytest.raises(ValueError):
             self.bq_client.materialize_view_to_table(invalid_view)
         self.mock_client.query.assert_not_called()
+
+    def test_create_table_with_schema(self):
+        """Tests that the create_table_with_schema function calls the create_table function on the client."""
+        self.mock_client.get_table.side_effect = exceptions.NotFound('!')
+        schema_fields = [bigquery.SchemaField('new_schema_field', 'STRING')]
+
+        self.bq_client.create_table_with_schema(self.mock_dataset_id, self.mock_table_id, schema_fields)
+        self.mock_client.create_table.assert_called()
+
+    def test_create_table_with_schema_table_exists(self):
+        """Tests that the create_table_with_schema function raises an error when the table already exists."""
+        self.mock_client.get_table.side_effect = None
+        schema_fields = [bigquery.SchemaField('new_schema_field', 'STRING')]
+
+        with pytest.raises(ValueError):
+            self.bq_client.create_table_with_schema(self.mock_dataset_id, self.mock_table_id, schema_fields)
+        self.mock_client.create_table.assert_not_called()
+
+    def test_add_missing_fields_to_schema(self):
+        """Tests that the add_missing_fields_to_schema function calls the client to update the table."""
+        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('new_schema_field', 'STRING')]
+
+        self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.update_table.assert_called()
+
+    def test_add_missing_fields_to_schema_no_missing_fields(self):
+        """Tests that the add_missing_fields_to_schema function does not call the client to update the table when all
+        of the fields are already present."""
+        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
+
+        self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.update_table.assert_not_called()
+
+    def test_add_missing_fields_to_schema_no_table(self):
+        """Tests that the add_missing_fields_to_schema function does not call the client to update the table when the
+        table does not exist."""
+        self.mock_client.get_table.side_effect = exceptions.NotFound('!')
+        new_schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
+
+        with pytest.raises(ValueError):
+            self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.update_table.assert_not_called()
+
+    def test_add_missing_fields_to_schema_fields_with_same_name_different_type(self):
+        """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
+        with the same name but different field_type as an existing field."""
+        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('fake_schema_field', 'INTEGER')]
+
+        with pytest.raises(ValueError):
+            self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.update_table.assert_not_called()
+
+    def test_add_missing_fields_to_schema_fields_with_same_name_different_mode(self):
+        """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
+        with the same name but different mode as an existing field."""
+        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING', mode="NULLABLE")]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING', mode="REQUIRED")]
+
+        with pytest.raises(ValueError):
+            self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.update_table.assert_not_called()

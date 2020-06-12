@@ -213,16 +213,23 @@ class BuildableAttrTests(unittest.TestCase):
             # Build from dictionary
             _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-    def testBuildFromDictionary_InvalidListInDict(self):
-        with self.assertRaises(ValueError):
+    def testBuildFromDictionary_ListInDict(self):
+        # Construct dictionary representation
+        subject_dict = {'required_field': 'value',
+                        'another_required_field': 'another_value',
+                        'enum_nonnull_field': FakeEnum.A,
+                        'field_list': ['a', 'b', 'c']}
 
-            # Construct dictionary representation
-            subject_dict = {'required_field': 'value',
-                            'another_required_field': 'another_value',
-                            'field_list': ['a', 'b', 'c']}
+        subject = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
 
-            # Build from dictionary
-            _ = FakeBuildableAttrDeluxe.build_from_dictionary(subject_dict)
+        # Assert
+        expected_result = FakeBuildableAttrDeluxe(
+            required_field='value',
+            another_required_field='another_value',
+            enum_nonnull_field=FakeEnum.A,
+            field_list=['a', 'b', 'c'])
+
+        self.assertEqual(subject, expected_result)
 
     def testBuildFromDictionary_InvalidForwardRefInDict(self):
         with self.assertRaises(ValueError):

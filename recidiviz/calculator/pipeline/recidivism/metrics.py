@@ -152,7 +152,7 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
     # The total number of releases from incarceration that led to recidivism that the characteristics in this metric
     # describe
-    recidivated_releases: float = attr.ib(default=None)  # non-nullable
+    recidivated_releases: int = attr.ib(default=None)  # non-nullable
 
     # The float rate of recidivism for the releases that the characteristics in this metric describe
     recidivism_rate: float = attr.ib(default=None)  # non-nullable

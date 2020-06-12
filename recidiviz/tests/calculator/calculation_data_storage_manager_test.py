@@ -81,6 +81,22 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.insert_into_table_from_table_async.assert_called()
         self.mock_client.delete_from_table_async.assert_called()
 
+    def test_update_dataflow_metric_tables_schemas(self):
+        """Test that update_dataflow_metric_tables_schemas calls the client to update the schemas of the metric
+        tables."""
+        calculation_data_storage_manager.update_dataflow_metric_tables_schemas()
+
+        self.mock_client.add_missing_fields_to_schema.assert_called()
+
+    def test_update_dataflow_metric_tables_schemas_create_table(self):
+        """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table
+        does not yet exist."""
+        self.mock_client.table_exists.return_value = False
+
+        calculation_data_storage_manager.update_dataflow_metric_tables_schemas()
+
+        self.mock_client.create_table_with_schema.assert_called()
+
     @patch('recidiviz.calculator.calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage')
     def test_prune_old_dataflow_data(self, mock_move_metrics):
         """Tests that the move_old_dataflow_metrics_to_cold_storage function is called when the /prune_old_dataflow_data

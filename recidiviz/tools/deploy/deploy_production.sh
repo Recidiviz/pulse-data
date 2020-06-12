@@ -13,6 +13,9 @@ gcloud -q app deploy cron.yaml --project=recidiviz-123
 echo "Starting task queue initialization"
 pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id recidiviz-123 --google_auth_token $(gcloud auth print-access-token)
 
+echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
+pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --function_to_execute update_schemas
+
 echo "Deploying prod-ready calculation pipelines to templates in recidiviz-123."
 pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-123 --templates_to_deploy production
 

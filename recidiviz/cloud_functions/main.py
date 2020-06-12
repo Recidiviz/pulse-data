@@ -37,6 +37,10 @@ _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
 _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
 )
+_PREPARE_FOR_CALCULATIONS_CLOUD_FUNCTION_URL = (
+    'http://{}.appspot.com/cloud_function/prepare_for_calculation_pipelines?topic={}'
+)
+
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
     '&location={}&topic={}'
@@ -235,3 +239,24 @@ def _ingest_and_aggregate_covid_data():
         logging.info('COVID ingest cloud function completed')
     except Exception:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
+
+def calculation_pipelines_preparation(_event, _context):
+    """This function is triggered by a Pub/Sub event to do necessary preparations before the calculation pipelines
+    begin.
+    """
+    project_id = os.environ.get('GCP_PROJECT')
+    if not project_id:
+        logging.error('No project id set for call to export dashboard data, '
+                      'returning.')
+        return
+
+    topic = os.environ.get('ON_SUCCESS_TOPIC')
+
+    url = _PREPARE_FOR_CALCULATIONS_CLOUD_FUNCTION_URL.format(project_id, topic)
+    logging.info("project_id: %s", project_id)
+    logging.info("Calling URL: %s", url)
+
+    # Hit the cloud function backend, which exports the given data type to
+    # the given cloud storage bucket
+    response = make_iap_request(url, _CLIENT_ID[project_id])
+    logging.info("The response status is %s", response.status_code)
