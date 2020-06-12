@@ -28,6 +28,7 @@ from apache_beam.pvalue import AsDict
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
@@ -611,75 +612,77 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             )
 
         # Write the metrics to the output tables in BigQuery
-        populations_table = output + '.supervision_population_metrics'
-
-        revocations_table = output + '.supervision_revocation_metrics'
-
-        successes_table = output + '.supervision_success_metrics'
-
-        successful_sentence_lengths_table = output + '.successful_supervision_sentence_days_served_metrics'
-
-        assessment_changes_table = output + '.terminated_supervision_assessment_score_change_metrics'
-
-        revocation_analysis_table = output + '.supervision_revocation_analysis_metrics'
-
-        revocation_violation_type_analysis_table = output + \
-            '.supervision_revocation_violation_type_analysis_metrics'
+        assessment_changes_table_id = DATAFLOW_METRICS_TO_TABLES.get(TerminatedSupervisionAssessmentScoreChangeMetric)
+        populations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionPopulationMetric)
+        revocations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationMetric)
+        revocation_analysis_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationAnalysisMetric)
+        revocation_violation_type_analysis_table_id = \
+            DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationAnalysisMetric)
+        successes_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionSuccessMetric)
+        successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES.get(
+            SuccessfulSupervisionSentenceDaysServedMetric)
 
         _ = (writable_metrics.populations
-             | f"Write population metrics to BQ table: {populations_table}" >>
+             | f"Write population metrics to BQ table: {populations_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=populations_table,
+                 table=populations_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.revocations
-             | f"Write revocation metrics to BQ table: {revocations_table}" >>
+             | f"Write revocation metrics to BQ table: {revocations_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=revocations_table,
+                 table=revocations_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.successes
-             | f"Write success metrics to BQ table: {successes_table}" >>
+             | f"Write success metrics to BQ table: {successes_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=successes_table,
+                 table=successes_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.successful_sentence_lengths
              | f"Write supervision successful sentence length metrics to BQ"
-               f" table: {successful_sentence_lengths_table}" >>
+               f" table: {successful_sentence_lengths_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=successful_sentence_lengths_table,
+                 table=successful_sentence_lengths_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.assessment_changes
-             | f"Write assessment change metrics to BQ table: {assessment_changes_table}" >>
+             | f"Write assessment change metrics to BQ table: {assessment_changes_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=assessment_changes_table,
+                 table=assessment_changes_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.revocation_analyses
-             | f"Write revocation analyses metrics to BQ table: {revocation_analysis_table}" >>
+             | f"Write revocation analyses metrics to BQ table: {revocation_analysis_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=revocation_analysis_table,
+                 table=revocation_analysis_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.revocation_violation_type_analyses
              | f"Write revocation violation type analyses metrics to BQ table: "
-               f"{revocation_violation_type_analysis_table}" >>
+               f"{revocation_violation_type_analysis_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=revocation_violation_type_analysis_table,
+                 table=revocation_violation_type_analysis_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

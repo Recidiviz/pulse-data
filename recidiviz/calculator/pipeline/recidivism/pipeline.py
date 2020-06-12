@@ -34,6 +34,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism import calculator
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
@@ -486,21 +487,23 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                 RecidivismMetricWritableDict()).with_outputs('rates', 'counts'))
 
         # Write the recidivism metrics to the output tables in BigQuery
-        rates_table = output + '.recidivism_rate_metrics'
-        counts_table = output + '.recidivism_count_metrics'
+        rates_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismRateMetric)
+        counts_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismCountMetric)
 
         _ = (writable_metrics.rates
-             | f"Write rate metrics to BQ table: {rates_table}" >>
+             | f"Write rate metrics to BQ table: {rates_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=rates_table,
+                 table=rates_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))
 
         _ = (writable_metrics.counts
-             | f"Write count metrics to BQ table: {counts_table}" >>
+             | f"Write count metrics to BQ table: {counts_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=counts_table,
+                 table=counts_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

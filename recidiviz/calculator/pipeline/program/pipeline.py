@@ -28,6 +28,7 @@ from apache_beam.pvalue import AsDict
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.program import identifier, calculator
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramReferralMetric
@@ -423,11 +424,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             beam.ParDo(ProgramMetricWritableDict()).with_outputs('referrals'))
 
         # Write the metrics to the output tables in BigQuery
-        referrals_table = output + '.program_referral_metrics'
+        referrals_table_id = DATAFLOW_METRICS_TO_TABLES.get(ProgramReferralMetric)
 
-        _ = (writable_metrics.referrals | f"Write referral metrics to BQ table: {referrals_table}" >>
+        _ = (writable_metrics.referrals | f"Write referral metrics to BQ table: {referrals_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=referrals_table,
+                 table=referrals_table_id,
+                 dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
              ))

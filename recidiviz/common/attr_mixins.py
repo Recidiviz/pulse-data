@@ -20,8 +20,7 @@ from typing import Any, Dict, Optional
 import datetime
 import attr
 
-from recidiviz.common.attr_utils import is_enum, is_forward_ref, is_list, \
-    get_enum_cls, is_date
+from recidiviz.common.attr_utils import is_enum, is_forward_ref, get_enum_cls, is_date
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
 
 
@@ -122,7 +121,7 @@ class BuildableAttr:
         """Builds a BuildableAttr with values from the given build_dict.
 
         Given build_dict must contain all required fields, and cannot contain
-        any fields with attribute types of List or ForwardRef. Any date values
+        any fields with ForwardRef attribute types. Any date values
         must be in the format 'YYYY-MM-DD' if they are present.
         """
         if not attr.has(cls):
@@ -135,10 +134,6 @@ class BuildableAttr:
 
         for field, attribute in attr.fields_dict(cls).items():
             if field in build_dict:
-                if is_list(attribute):
-                    raise ValueError("build_dict should be a dictionary of "
-                                     "flat values. Should not contain any "
-                                     f"lists: {build_dict}.")
                 if is_forward_ref(attribute):
                     # TODO(1886): Implement detection of non-ForwardRefs
                     # ForwardRef fields are expected to be references to other
