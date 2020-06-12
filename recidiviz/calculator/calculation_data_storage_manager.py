@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages the storage of data produced by calculations."""
+import argparse
 import logging
+import sys
 from http import HTTPStatus
 
 import flask
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
-    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
+    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE, DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.auth import authenticate_request
 
@@ -94,7 +96,42 @@ def move_old_dataflow_metrics_to_cold_storage():
         delete_job.result()
 
 
+def update_dataflow_metric_tables_schemas() -> None:
+    """For each table that stores Dataflow metric output, ensures that all attributes on the corresponding metric are
+    present in the table in BigQuery."""
+    bq_client = BigQueryClientImpl()
+    dataflow_metrics_dataset_id = DATAFLOW_METRICS_DATASET
+    dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(dataflow_metrics_dataset_id)
+
+    for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items():
+        schema_for_metric_class = metric_class.bq_schema_for_metric_table()
+
+        if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
+            # Add any missing fields to the table's schema
+            bq_client.add_missing_fields_to_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
+        else:
+            # Create a table with this schema
+            bq_client.create_table_with_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
+
+
+def parse_arguments(argv):
+    """Parses the arguments needed to call the desired function."""
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--function_to_execute',
+                        dest='function_to_execute',
+                        type=str,
+                        choices=['cold_storage_export', 'update_schemas'],
+                        required=True)
+
+    return parser.parse_known_args(argv)
+
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
+    known_args, _ = parse_arguments(sys.argv)
 
-    move_old_dataflow_metrics_to_cold_storage()
+    if known_args.function_to_execute == 'cold_storage_export':
+        move_old_dataflow_metrics_to_cold_storage()
+    elif known_args.function_to_execute == 'update_schemas':
+        update_dataflow_metric_tables_schemas()
