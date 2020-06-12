@@ -19,7 +19,7 @@ tables and views.
 """
 import abc
 import logging
-from typing import List, Optional, Iterator
+from typing import List, Optional, Iterator, Dict
 
 import attr
 from google.cloud import bigquery, exceptions
@@ -366,6 +366,34 @@ class BigQueryClient:
             view: The BigQueryView to materialize into a table.
         """
 
+    @abc.abstractmethod
+    def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
+            bigquery.Table:
+        """Creates a table in the given dataset with the given schema fields. Raises an error if a table with the same
+        table_id already exists in the dataset.
+
+        Args:
+            dataset_id: The name of the dataset where the table should be created
+            table_id: The name of the table to be created
+            schema_fields: A list of fields defining the table's schema
+
+        Returns:
+            The bigquery.Table that is created.
+        """
+
+    @abc.abstractmethod
+    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) \
+            -> None:
+        """Updates the schema of the table to include the schema_fields if they are not already present in the
+        Table's schema. Does not update the type or mode of any existing schema fields, and does not delete existing
+        schema fields.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to add fields to.
+            schema_fields: A list of fields to add to the table
+        """
+
 
 class BigQueryClientImpl(BigQueryClient):
     """Wrapper around the bigquery.Client with convenience functions for querying, creating, copying and exporting
@@ -669,3 +697,69 @@ class BigQueryClientImpl(BigQueryClient):
         create_job = self.create_table_from_query_async(
             view.dataset_id, view.materialized_view_table_id, view.select_query, query_parameters=[], overwrite=True)
         create_job.result()
+
+    def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
+            bigquery.Table:
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+
+        if self.table_exists(dataset_ref, table_id):
+            raise ValueError(f"Trying to create a table that already exists: {dataset_id}.{table_id}.")
+
+        table_ref = bigquery.TableReference(dataset_ref, table_id)
+        table = bigquery.Table(table_ref, schema_fields)
+
+        logging.info("Creating table %s.%s", dataset_id, table_id)
+        return self.client.create_table(table)
+
+    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) \
+            -> None:
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+
+        if not self.table_exists(dataset_ref, table_id):
+            raise ValueError(f"Cannot add schema fields to a table that does not exist: {dataset_id}.{table_id}")
+
+        table = self.get_table(dataset_ref, table_id)
+        existing_table_schema = table.schema
+
+        existing_table_schema_fields_by_name: Dict[str, bigquery.SchemaField] = {
+            field.name: field for field in existing_table_schema
+        }
+
+        schema_fields_by_name: Dict[str, bigquery.SchemaField] = {
+            field.name: field for field in schema_fields
+        }
+
+        missing_field_names = \
+            set(schema_fields_by_name.keys()).difference(set(existing_table_schema_fields_by_name.keys()))
+
+        updated_table_schema = existing_table_schema.copy()
+
+        for field in schema_fields:
+            if field.name in missing_field_names:
+                updated_table_schema.append(field)
+            else:
+                # A field with this name should already be in the existing schema. Assert they are of the same
+                # field_type and mode.
+                existing_field_with_name = existing_table_schema_fields_by_name.get(field.name)
+
+                if not existing_field_with_name:
+                    raise ValueError("Set comparison of field names is not working. This should be in the"
+                                     " missing_field_names set.")
+
+                if field.field_type != existing_field_with_name.field_type:
+                    raise ValueError("Trying to change the field type of an existing field. Existing field "
+                                     f"{existing_field_with_name.name} has type {existing_field_with_name.field_type}. "
+                                     f"Cannot change this type to {field.field_type}.")
+
+                if field.mode != existing_field_with_name.mode:
+                    raise ValueError(f"Cannot change the mode of field {existing_field_with_name} to {field.mode}.")
+
+        if updated_table_schema == existing_table_schema:
+            logging.info("Schema for table %s.%s already contains all of the following fields: %s.",
+                         dataset_id, table_id, schema_fields)
+            return
+
+        # Update the table schema with the missing fields
+        logging.info("Updating schema of table %s to: %s", table_id, updated_table_schema)
+        table.schema = updated_table_schema
+        self.client.update_table(table, ['schema'])

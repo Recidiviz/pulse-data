@@ -22,8 +22,10 @@ from typing import Any, Dict, Optional, cast, List
 
 from enum import Enum
 import attr
+from google.cloud import bigquery
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.attr_utils import is_enum, is_list, is_date, is_str, is_int, is_float, is_bool
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 
 
@@ -105,6 +107,28 @@ class RecidivizMetric(BuildableAttr):
                                 build_from_dictionary(metric_key))
 
         return recidiviz_metric
+
+    @classmethod
+    def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
+        """Returns the necessary BigQuery schema for the RecidivizMetric, which is a list of SchemaField objects
+        containing the column name and value type for each attribute on the RecidivizMetric."""
+        def schema_type_for_attribute(attribute) -> str:
+            # Race and ethnicity fields are the only ones that support list form. These are converted to
+            # comma-separated lists stored as strings in BigQuery.
+            if is_enum(attribute) or is_list(attribute) or is_str(attribute):
+                return bigquery.enums.SqlTypeNames.STRING.value
+            if is_int(attribute):
+                return bigquery.enums.SqlTypeNames.INTEGER.value
+            if is_float(attribute):
+                return bigquery.enums.SqlTypeNames.FLOAT.value
+            if is_date(attribute):
+                return bigquery.enums.SqlTypeNames.DATE.value
+            if is_bool(attribute):
+                return bigquery.enums.SqlTypeNames.BOOLEAN.value
+            raise ValueError(f"Unhandled attribute type for attribute: {attribute}")
+
+        return [bigquery.SchemaField(field, schema_type_for_attribute(attribute), mode='NULLABLE')
+                for field, attribute in attr.fields_dict(cls).items()]
 
 
 @attr.s
