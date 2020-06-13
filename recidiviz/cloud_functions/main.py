@@ -20,7 +20,7 @@ import logging
 import os
 import traceback
 
-from cloud_function_utils import make_iap_request, \
+from cloud_function_utils import IAP_CLIENT_ID, make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
     get_dashboard_data_export_storage_bucket, \
     get_dataflow_template_bucket, \
@@ -45,12 +45,6 @@ _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
     '&location={}&topic={}'
 )
-_CLIENT_ID = {
-    'recidiviz-staging': ('984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.'
-                          'googleusercontent.com'),
-    'recidiviz-123': ('688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.'
-                      'googleusercontent.com')
-}
 
 
 def parse_state_aggregate(data, _):
@@ -72,7 +66,7 @@ def parse_state_aggregate(data, _):
         project_id, bucket, state, filename)
     # Hit the cloud function backend, which persists the table data to our
     # database.
-    response = make_iap_request(url, _CLIENT_ID[project_id])
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
 
 
@@ -129,7 +123,7 @@ def _handle_state_direct_ingest_file(data,
 
     # Hit the cloud function backend, which will schedule jobs to parse
     # data for unprocessed files in this bucket and persist to our database.
-    response = make_iap_request(url, _CLIENT_ID[project_id])
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
 
 
@@ -151,7 +145,7 @@ def export_dashboard_data(_event, _context):
 
     # Hit the cloud function backend, which exports the given data type to
     # the given cloud storage bucket
-    response = make_iap_request(url, _CLIENT_ID[project_id])
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
 
 
@@ -198,7 +192,7 @@ def run_calculation_pipelines(_event, _context):
     # Monitor the successfully triggered Dataflow job
     url = _DATAFLOW_MONITOR_URL.format(project_id, job_id, location, on_dataflow_job_completion_topic)
 
-    monitor_response = make_iap_request(url, _CLIENT_ID[project_id])
+    monitor_response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The monitoring Dataflow response is %s", monitor_response)
 
 
@@ -240,6 +234,7 @@ def _ingest_and_aggregate_covid_data():
     except Exception:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
 
+
 def calculation_pipelines_preparation(_event, _context):
     """This function is triggered by a Pub/Sub event to do necessary preparations before the calculation pipelines
     begin.
@@ -258,5 +253,5 @@ def calculation_pipelines_preparation(_event, _context):
 
     # Hit the cloud function backend, which exports the given data type to
     # the given cloud storage bucket
-    response = make_iap_request(url, _CLIENT_ID[project_id])
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
