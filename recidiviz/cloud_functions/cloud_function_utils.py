@@ -35,6 +35,14 @@ import google.oauth2.service_account
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
+
+IAP_CLIENT_ID = {
+    'recidiviz-staging': ('984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.'
+                          'googleusercontent.com'),
+    'recidiviz-123': ('688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.'
+                      'googleusercontent.com')
+}
+
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
 _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
 _STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
