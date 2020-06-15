@@ -40,7 +40,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities, \
     entities
-from recidiviz.persistence.errors import PersistenceError, EntityMatchingError
+from recidiviz.persistence.errors import PersistenceError
 
 _STATE_CLASS_HIERARCHY = [
     state_entities.StatePerson.__name__,
@@ -327,9 +327,7 @@ def _get_all_database_entity_field_names(entity: DatabaseEntity,
         return back_edges
     if entity_field_type is EntityFieldType.ALL:
         return flat_fields | foreign_keys | forward_edges | back_edges
-    raise EntityMatchingError(
-        f"Unrecognized EntityFieldType {entity_field_type}",
-        'entity_field_type')
+    raise ValueError(f"Unrecognized EntityFieldType [{entity_field_type}] on entity [{entity}]")
 
 
 def _get_all_entity_field_names(entity: Entity,
@@ -377,9 +375,7 @@ def _get_all_entity_field_names(entity: Entity,
         return back_edges
     if entity_field_type is EntityFieldType.ALL:
         return flat_fields | forward_edges | back_edges
-    raise EntityMatchingError(
-        f"Unrecognized EntityFieldType {entity_field_type}",
-        'entity_field_type')
+    raise ValueError(f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity}]")
 
 
 def prune_dangling_placeholders_from_tree(

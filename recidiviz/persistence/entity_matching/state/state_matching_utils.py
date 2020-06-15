@@ -58,20 +58,14 @@ def _is_match(*,
         return ingested_entity == db_entity
 
     if ingested_entity.__class__ != db_entity.__class__:
-        raise EntityMatchingError(
-            f"is_match received entities of two different classes: "
-            f"ingested entity {ingested_entity.__class__.__name__} and "
-            f"db_entity {db_entity.__class__.__name__}",
-            ingested_entity.get_entity_name())
+        raise ValueError(
+            f"is_match received entities of two different classes: ingested entity [{ingested_entity}] and db_entity "
+            f"[{db_entity}]")
 
     if not isinstance(ingested_entity, DatabaseEntity):
-        raise EntityMatchingError(
-            f"Unexpected type for ingested entity[{type(ingested_entity)}]",
-            'unknown')
+        raise ValueError(f"Unexpected type for ingested entity [{ingested_entity}]: [{type(ingested_entity)}]")
     if not isinstance(db_entity, DatabaseEntity):
-        raise EntityMatchingError(
-            f"Unexpected type for db entity[{type(db_entity)}]",
-            'unknown')
+        raise ValueError(f"Unexpected type for db entity [{db_entity}]: [{type(db_entity)}]")
 
     if isinstance(ingested_entity, schema.StatePerson):
         db_entity = cast(schema.StatePerson, db_entity)
@@ -275,9 +269,8 @@ def add_child_to_entity(
     else:
         if child_field and child_field != child_to_add:
             raise EntityMatchingError(
-                f"Attempting to add child {child_to_add} to entity {entity}, "
-                f"but {child_field_name} already had different value "
-                f"{child_field}", entity.get_entity_name())
+                f"Attempting to add child [{child_to_add}] to entity [{entity}], but field [{child_field_name}] "
+                f"already had different value [{child_field}]", entity.get_entity_name())
         child_field = child_to_add
         entity.set_field(child_field_name, child_field)
 
@@ -343,8 +336,8 @@ def get_external_ids_of_cls(persons: List[schema.StatePerson],
         external_ids = get_external_ids_from_entity(entity)
         if not external_ids:
             raise EntityMatchingError(
-                f'Expected all external_ids to be present in cls '
-                f'[{cls.__name__}]', cls.__name__)
+                f'Expected external_ids to be non-empty for entity [{entity}] with class [{cls.__name__}]',
+                entity.get_class_id_name())
         ids.update(external_ids)
     return ids
 
@@ -528,11 +521,9 @@ def read_persons_by_root_entity_cls(
     unexpected root entity class is found.
     """
     root_entity_cls = get_root_entity_cls(ingested_people)
-    if allowed_root_entity_classes and root_entity_cls \
-            not in allowed_root_entity_classes:
-        raise EntityMatchingError(
-            f'For region [{region}] found unexpected root_entity_cls: '
-            f'[{root_entity_cls.__name__}]', 'root_entity_cls')
+    if allowed_root_entity_classes and root_entity_cls not in allowed_root_entity_classes:
+        raise ValueError(f'For region [{region}] found unexpected root_entity_cls: [{root_entity_cls.__name__}]. '
+                         f'Allowed classes: [{allowed_root_entity_classes}]')
     root_external_ids = get_external_ids_of_cls(
         ingested_people, root_entity_cls)
     logging.info("[Entity Matching] Reading [%s] external ids of class [%s]",
@@ -572,8 +563,9 @@ def get_or_create_placeholder_child(
         parent_entity.get_external_id(), parent_entity.get_entity_name(), child_field_name)
     new_child = child_class(**child_kwargs)
     if not is_placeholder(new_child):
-        raise EntityMatchingError(f'Child created with kwargs is not a placeholder [{child_kwargs}]',
-                                  parent_entity.get_entity_name())
+        raise EntityMatchingError(
+            f'Child created with kwargs is not a placeholder [{child_kwargs}]. Parent entity: [{parent_entity}]. Child '
+            f'field name: [{child_field_name}]. Child class: [{child_class}].', parent_entity.get_entity_name())
 
     children.append(new_child)
     parent_entity.set_field_from_list(child_field_name, children)
