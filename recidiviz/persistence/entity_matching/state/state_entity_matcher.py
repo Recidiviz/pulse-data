@@ -662,7 +662,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for merged_person_tree in match_result.merged_entity_trees:
                 if not isinstance(merged_person_tree.entity,
                                   schema.StatePerson):
-                    raise EntityMatchingError("Expected merged_person_tree.entity to have type schema.StatePerson.",
+                    raise EntityMatchingError(f"Expected merged_person_tree.entity [{merged_person_tree.entity}] to "
+                                              f"have type schema.StatePerson.",
                                               'state_person')
 
                 if merged_person_tree.entity not in updated_persons:
@@ -674,7 +675,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         for db_person in persons_match_results.unmatched_db_entities:
             if not isinstance(db_person, schema.StatePerson):
                 raise EntityMatchingError(
-                    "Expected db_person to have type schema.StatePerson.",
+                    f"Expected db_person [{db_person}] to have type schema.StatePerson.",
                     'state_person')
 
             if is_placeholder(db_person):
@@ -837,15 +838,15 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
             if not child_field_name or not child_match_result:
                 raise EntityMatchingError(
-                    f"Expected child_field_name and child_match_result to be "
-                    f"set, but instead got {child_field_name} and "
-                    f"{child_match_result} respectively.",
+                    f"Expected child_field_name and child_match_result to be set, but instead got [{child_field_name}] "
+                    f"and [{child_match_result}] respectively for entity [{ingested_placeholder_tree.entity}].",
                     ingested_placeholder_tree.entity.get_entity_name())
 
             if not child_match_result.merged_entity_trees:
                 raise EntityMatchingError(
-                    f"Expected child_match_result.merged_entity_trees to not "
-                    f"be empty for [{ingested_placeholder_tree.entity.get_entity_name()}.{child_field_name}].",
+                    f"Expected child_match_result.merged_entity_trees to not be empty for "
+                    f"[{ingested_placeholder_tree.entity.get_entity_name()}.{child_field_name}] on entity "
+                    f"[{ingested_placeholder_tree.entity}].",
                     ingested_placeholder_tree.entity.get_entity_name())
 
             for merged_child_tree in child_match_result.merged_entity_trees:
@@ -967,16 +968,15 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             """
             if not child_field_name or not child_match_result:
                 raise EntityMatchingError(
-                    f"Expected child_field_name and child_match_result to be "
-                    f"set, but instead got {child_field_name} and "
-                    f"{child_match_result} respectively.",
+                    f"Expected child_field_name and child_match_result to be set, but instead got [{child_field_name}] "
+                    f"and [{child_match_result}] respectively for entity [{ingested_unmatched_entity_tree.entity}].",
                     ingested_unmatched_entity_tree.entity.get_entity_name())
 
-            # If child is unmatched, keep track of unchanged child
             if not child_match_result.merged_entity_trees:
                 raise EntityMatchingError(
-                    f"Expected child_match_result.merged_entity_trees to not "
-                    f"be empty for [{ingested_unmatched_entity_tree.entity.get_entity_name()}.{child_field_name}].",
+                    f"Expected child_match_result.merged_entity_trees to not be empty for "
+                    f"[{ingested_unmatched_entity_tree.entity.get_entity_name()}.{child_field_name}] on entity "
+                    f"[{ingested_unmatched_entity_tree.entity}].",
                     ingested_unmatched_entity_tree.entity.get_entity_name())
 
             # For each matched child, remove child from the DB placeholder and
@@ -997,7 +997,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     if ancestor_chain_updated != placeholder_tree.ancestor_chain:
                         raise EntityMatchingError(
                             f"Expected all placeholder DB entities matched to an ingested unmatched entity to have the "
-                            f"same ancestor chain, but they did not for entity {ingested_entity.get_entity_name()}. "
+                            f"same ancestor chain, but they did not for entity [{ingested_entity}]. "
                             f"Found conflicting ancestor chains: "
                             f"{ancestor_chain_updated} and {placeholder_tree.ancestor_chain}",
                             ingested_entity.get_entity_name())
@@ -1045,8 +1045,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             ingested_entity_tree: EntityTree,
             db_match_tree: EntityTree,
             matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
-            root_entity_cls) \
-            -> IndividualMatchResult:
+            root_entity_cls
+    ) -> IndividualMatchResult:
         """Given an |ingested_entity_tree| and it's matched |db_match_tree|,
         this method merges any updated information from teh ingested entity
         onto the DB entity and then continues entity matching for all children
@@ -1074,13 +1074,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             if not child_match_result:
                 raise EntityMatchingError(
                     f"Expected child_match_result to be set for "
-                    f"{ingested_entity_tree.entity.get_entity_name()}.{child_field_name}, but instead got "
-                    f"{child_match_result}",
+                    f"{ingested_entity_tree.entity.get_entity_name()}.{child_field_name} on entity "
+                    f"[{ingested_entity_tree.entity}], but instead got {child_match_result}",
                     ingested_entity_tree.entity.get_entity_name())
 
             if not child_match_result.merged_entity_trees:
                 raise EntityMatchingError(
-                    f"Expected child_match_result.merged_entity_trees to not "
+                    f"Expected child_match_result.merged_entity_trees on entity [{ingested_entity_tree.entity}] to not "
                     f"be empty for [{ingested_entity_tree.entity.get_entity_name()}.{child_field_name}].",
                     ingested_entity_tree.entity.get_entity_name())
 
@@ -1109,8 +1109,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     raise EntityMatchingError(
                         f"Singular ingested entity field {ingested_entity.get_entity_name()}.{child_field_name} "
                         f"with value: {ingested_child_field} should match one of the provided db options, but it does "
-                        f"not. Found unmatched db entities: {match_results.unmatched_db_entities}",
-                        ingested_entity.get_entity_name())
+                        f"not for entity [{ingested_entity}]. Found unmatched db entities: "
+                        f"{match_results.unmatched_db_entities}", ingested_entity.get_entity_name())
                 self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, one(updated_children))
 
@@ -1251,8 +1251,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             return exact_match
 
         if not isinstance(exact_match, EntityTree):
-            raise EntityMatchingError(
-                f"Bad return value of type [{type(exact_match)}].", ingested_entity_tree.entity.get_entity_name())
+            raise ValueError(
+                f"Bad return value of type [{type(exact_match)}] for exact match [{exact_match}].")
 
         return exact_match
 

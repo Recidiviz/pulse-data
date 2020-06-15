@@ -23,7 +23,6 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
-from recidiviz.persistence.errors import EntityMatchingError
 
 
 # TODO(1907): Rename people -> persons
@@ -66,9 +65,8 @@ class EntityTree:
                  entity: DatabaseEntity,
                  ancestor_chain: List[DatabaseEntity]):
         if not entity:
-            raise EntityMatchingError(
-                "When creating EntityTree object, entity field must be set",
-                'entity_tree')
+            raise ValueError(
+                f"When creating EntityTree object, entity field must be set. Ancestor chain: {ancestor_chain}.")
 
         # The final child in this EntityTree.
         self.entity: DatabaseEntity = entity

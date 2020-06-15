@@ -21,7 +21,6 @@ from typing import List, Union
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls
-from recidiviz.persistence.errors import EntityMatchingError
 
 
 # TODO(1883): Remove this once our proto converter and data extractor can handle the presence of multiple paths to
@@ -46,8 +45,7 @@ def _remove_suffix_from_violation_entity(
             continue
         splits = entity.external_id.rsplit('-', 2)
         if len(splits) != 3:
-            raise EntityMatchingError(f'Unexpected id format for {entity.get_entity_name()}{entity.external_id}',
-                                      entity.get_entity_name())
+            raise ValueError(f'Unexpected id format [{entity.external_id}] for [{entity}]')
         entity.external_id = splits[0]
 
 
