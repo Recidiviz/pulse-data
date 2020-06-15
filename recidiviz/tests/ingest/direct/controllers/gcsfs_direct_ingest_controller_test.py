@@ -1144,16 +1144,18 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
-            run_async=False)
+            run_async=False,
+            max_delay_sec_between_files=1)
+
         if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
                              f"FakeDirectIngestGCSFileSystem. Found instead "
                              f"type [{type(controller.fs)}]")
 
-        prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
-        current_date_datetime = datetime.datetime.fromisoformat('2019-09-16')
+        current_date_datetime = datetime.datetime.utcnow()
+        prev_date_datetime = current_date_datetime - datetime.timedelta(days=1)
 
-        with freeze_time(prev_date_datetime.date().isoformat()):
+        with freeze_time(prev_date_datetime.isoformat()):
             unexpected_file_path_from_prev_day = path_for_fixture_file(
                 controller,
                 'Unexpected_Tag.csv',
@@ -1169,18 +1171,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller.fs.test_add_path(unexpected_file_path_from_prev_day)
             controller.fs.test_add_path(processed_file_from_prev_day)
 
-            run_task_queues_to_empty(controller)
+        run_task_queues_to_empty(controller)
 
-        with freeze_time(current_date_datetime.date().isoformat()):
-            file_path_from_current_day = path_for_fixture_file(
-                controller,
-                'tagA.csv',
-                should_normalize=True,
-                file_type=GcsfsDirectIngestFileType.RAW_DATA)
+        file_path_from_current_day = path_for_fixture_file(
+            controller,
+            'tagA.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-            controller.fs.test_add_path(file_path_from_current_day)
+        controller.fs.test_add_path(file_path_from_current_day)
 
-            run_task_queues_to_empty(controller)
+        run_task_queues_to_empty(controller)
 
         self.assertTrue(len(controller.fs.all_paths), 3)
 

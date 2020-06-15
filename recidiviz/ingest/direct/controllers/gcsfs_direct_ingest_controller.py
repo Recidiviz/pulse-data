@@ -131,16 +131,6 @@ class GcsfsDirectIngestController(
         if self.fs.is_normalized_file_path(path):
             parts = filename_parts_from_path(path)
 
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled():
-                if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA or (
-                        parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW and
-                        self.region.are_ingest_view_exports_enabled_in_env()
-                ):
-                    # TODO(3020): Design/handle/write tests for case where this is a file we've moved from storage for a
-                    #  rerun. Right now we will crash here because we'll try to set a discovery time that comes after
-                    #  the processed time.
-                    self.file_metadata_manager.register_new_file(path)
-
             if parts.is_file_split and \
                     parts.file_split_size and \
                     parts.file_split_size <= self.file_split_line_limit:
@@ -154,6 +144,11 @@ class GcsfsDirectIngestController(
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=self.region,
             can_start_ingest=start_ingest)
+
+    def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]):
+        for path in paths:
+            if not self.file_metadata_manager.has_file_been_discovered(path):
+                self.file_metadata_manager.mark_file_as_discovered(path)
 
     def handle_new_files(self, can_start_ingest: bool):
         """Searches the ingest directory for new/unprocessed files. Normalizes
@@ -181,18 +176,24 @@ class GcsfsDirectIngestController(
             # this function to be re-triggered.
             return
 
+        ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
+            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
+        unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
+                                                                           file_type_filter=ingest_file_type_filter)
+        if self.region.is_raw_vs_ingest_file_name_detection_enabled():
+            unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
+                self.ingest_directory_path, file_type_filter=GcsfsDirectIngestFileType.RAW_DATA)
+            self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
+
+            if self.region.are_ingest_view_exports_enabled_in_env():
+                self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
+
         if self._schedule_any_pre_ingest_tasks():
             logging.info("Found pre-ingest tasks to schedule - returning.")
             return
 
-        ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
-            if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
-
-        unprocessed_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
-                                                               file_type_filter=ingest_file_type_filter)
-
         did_split = False
-        for path in unprocessed_paths:
+        for path in unprocessed_ingest_view_paths:
             if self._split_file_if_necessary(path):
                 did_split = True
 
@@ -204,9 +205,8 @@ class GcsfsDirectIngestController(
             # that calls this function to be re-triggered.
             return
 
-        if can_start_ingest and unprocessed_paths:
-            self.schedule_next_ingest_job_or_wait_if_necessary(
-                just_finished_job=False)
+        if can_start_ingest and unprocessed_ingest_view_paths:
+            self.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
         """Process a raw incoming file by importing it to BQ, tracking it in our metadata tables, and moving it to
@@ -300,7 +300,11 @@ class GcsfsDirectIngestController(
         tasks_to_schedule = [GcsfsRawDataBQImportArgs(path)
                              for path in self.raw_file_import_manager.get_unprocessed_raw_files_to_import()]
         for task_args in tasks_to_schedule:
-            if not queue_info.has_task_already_scheduled(task_args):
+            # If the file path has not actually been discovered by the metadata manager yet, it likely was just added
+            # and a subsequent call to handle_files will register it and trigger another call to this function so we can
+            # schedule the appropriate job.
+            discovered = self.file_metadata_manager.has_file_been_discovered(task_args.raw_data_file_path)
+            if discovered and not queue_info.has_task_already_scheduled(task_args):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(self.region, task_args)
                 did_schedule = True
 
@@ -338,7 +342,20 @@ class GcsfsDirectIngestController(
         pass
 
     def _get_next_job_args(self) -> Optional[GcsfsIngestArgs]:
-        return self.file_prioritizer.get_next_job_args()
+        args = self.file_prioritizer.get_next_job_args()
+
+        if not self.region.are_ingest_view_exports_enabled_in_env():
+            return args
+
+        if not args:
+            return None
+
+        discovered = self.file_metadata_manager.has_file_been_discovered(args.file_path)
+
+        # If the file path has not actually been discovered by the controller yet, it likely was just added and a
+        # subsequent call to handle_files will register it and trigger another call to this function so we can
+        # schedule the appropriate job.
+        return args if discovered else None
 
     def _wait_time_sec_for_next_args(self, args: GcsfsIngestArgs) -> int:
         if self.file_prioritizer.are_next_args_expected(args):

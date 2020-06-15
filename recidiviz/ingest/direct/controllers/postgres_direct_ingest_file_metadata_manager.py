@@ -96,8 +96,32 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
         return metadata_entity
 
-    def register_new_file(self,
-                          path: GcsfsFilePath) -> None:
+    def has_file_been_discovered(self, path: GcsfsFilePath) -> bool:
+        parts = filename_parts_from_path(path)
+
+        try:
+            metadata = self.get_file_metadata(path)
+        except ValueError as e:
+            if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
+                raise e
+            return False
+
+        if not metadata:
+            raise ValueError(f'Metadata unexpectedly None for path [{path.abs_path()}]')
+
+        # TODO(3020): Design/handle/write tests for case where this is a file we've moved from storage for a
+        #  rerun. How do we accurately detect when this is happening?
+        if isinstance(metadata, DirectIngestRawFileMetadata):
+            return True
+
+        if isinstance(metadata, DirectIngestIngestFileMetadata):
+            if metadata.discovery_time is None:
+                return False
+            return True
+
+        raise ValueError(f'Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]')
+
+    def mark_file_as_discovered(self, path: GcsfsFilePath) -> None:
         if not path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX):
             raise ValueError('Expect only unprocessed paths in this function.')
 
