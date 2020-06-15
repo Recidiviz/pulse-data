@@ -41,7 +41,11 @@ class DirectIngestFileMetadataManager:
         ingest view files."""
 
     @abc.abstractmethod
-    def register_new_file(self, path: GcsfsFilePath) -> None:
+    def has_file_been_discovered(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as discovered."""
+
+    @abc.abstractmethod
+    def mark_file_as_discovered(self, path: GcsfsFilePath) -> None:
         """Writes a new row to the appropriate metadata table for a new, unprocessed raw file, or updates the existing
         metadata row for this path with the appropriate file discovery time."""
 
