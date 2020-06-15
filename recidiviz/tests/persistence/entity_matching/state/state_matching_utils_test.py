@@ -533,7 +533,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         ingested_person = schema.StatePerson(
             sentence_groups=[ingested_sentence_group])
 
-        with pytest.raises(EntityMatchingError):
+        with pytest.raises(ValueError):
             session = SessionFactory.for_schema_base(StateBase)
             read_persons_by_root_entity_cls(
                 session, 'us_nd', [ingested_person],

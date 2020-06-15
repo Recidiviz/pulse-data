@@ -257,9 +257,8 @@ def _set_preceding_admission_reason(
 
     beginning_ip = sorted_ips[idx]
     if _is_hold(beginning_ip):
-        raise EntityMatchingError(
-            f'Expected beginning_ip to NOT be a hold, instead '
-            f'found {beginning_ip}', 'incarceration_period')
+        raise EntityMatchingError(f'Expected beginning_ip to NOT be a hold, instead found [{beginning_ip}] with '
+                                  f'incarceration type [{beginning_ip.incarceration_type}]', 'incarceration_period')
 
     earliest_hold_admission_raw_text = None
     subsequent_ip = None
@@ -303,9 +302,7 @@ def _is_hold(ip: schema.StateIncarcerationPeriod) -> bool:
         return True
     if ip.incarceration_type in non_hold_types:
         return False
-    raise EntityMatchingError(
-        f"Unexpected StateIncarcerationType"
-        f"{ip.incarceration_type}.", ip.get_entity_name())
+    raise ValueError(f"Unexpected StateIncarcerationType [{ip.incarceration_type}] on [{ip}].")
 
 
 def _are_consecutive(ip1: schema.StateIncarcerationPeriod,
@@ -467,9 +464,9 @@ def is_incarceration_period_match(
     incomplete_external_id = incomplete.external_id
 
     if len(complete_external_ids) != 2:
-        raise EntityMatchingError(
-            f"Could not split external id of complete incarceration period "
-            f"{complete.external_id} as expected", "state_incarceration_period")
+        raise ValueError(
+            f"Could not split external id [{complete.external_id}] of complete incarceration period [{complete}] as "
+            f"expected")
 
     return incomplete_external_id in complete_external_ids
 
@@ -514,9 +511,7 @@ def _get_sequence_no(period: schema.StateIncarcerationPeriod) -> int:
         external_id = cast(str, period.external_id)
         sequence_no = int(external_id.split('-')[-1])
     except Exception:
-        raise EntityMatchingError(
-            f"Could not parse sequence number from external_id "
-            f"{period.external_id}", period.get_entity_name())
+        raise ValueError(f"Could not parse sequence number from external_id {period.external_id} on period [{period}]")
     return sequence_no
 
 
