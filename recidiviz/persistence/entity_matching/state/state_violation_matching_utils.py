@@ -28,7 +28,6 @@ from recidiviz.persistence.database.schema.state.schema import StateSupervisionV
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.state.state_matching_utils import get_or_create_placeholder_child, \
     get_all_entities_of_cls
-from recidiviz.persistence.errors import EntityMatchingError
 
 
 def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
@@ -45,8 +44,8 @@ def revoked_to_prison(svr: schema.StateSupervisionViolationResponse) -> bool:
         return True
     if svr.revocation_type in non_reincarceration_types:
         return False
-    raise EntityMatchingError(f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type}.",
-                              svr.get_entity_name())
+    raise ValueError(
+        f"Unexpected StateSupervisionViolationRevocationType {svr.revocation_type} for [{svr}].")
 
 
 def move_violations_onto_supervision_periods_for_sentence(matched_persons: List[schema.StatePerson]):
