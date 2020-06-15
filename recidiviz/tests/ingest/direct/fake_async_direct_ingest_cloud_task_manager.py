@@ -293,17 +293,17 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
                                                 task_names=task_names)
 
     def wait_for_all_tasks_to_run(self):
-        while True:
+        bq_import_export_done = False
+        scheduler_done = False
+        process_job_queue_done = False
+        while not (bq_import_export_done and scheduler_done and process_job_queue_done):
+            self.bq_import_export_queue.join()
+            self.scheduler_queue.join()
+            self.process_job_queue.join()
+
             with self.bq_import_export_queue.all_tasks_mutex:
                 with self.scheduler_queue.all_tasks_mutex:
                     with self.process_job_queue.all_tasks_mutex:
                         bq_import_export_done = not self.bq_import_export_queue.get_unfinished_task_names_unsafe()
                         scheduler_done = not self.scheduler_queue.get_unfinished_task_names_unsafe()
                         process_job_queue_done = not self.process_job_queue.get_unfinished_task_names_unsafe()
-
-            if scheduler_done and process_job_queue_done and bq_import_export_done:
-                break
-
-            self.bq_import_export_queue.join()
-            self.scheduler_queue.join()
-            self.process_job_queue.join()
