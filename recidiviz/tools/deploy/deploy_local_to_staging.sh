@@ -13,7 +13,7 @@ if [ x"$deploy_name" == x -o x"$version_tag" == x ]; then
 fi
 
 echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
-run_cmd "pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --function_to_execute update_schemas"
+run_cmd "pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --project_id recidiviz-staging --function_to_execute update_schemas"
 
 echo "Deploying stage-only calculation pipelines to templates in recidiviz-staging."
 run_cmd "pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-staging --templates_to_deploy staging"

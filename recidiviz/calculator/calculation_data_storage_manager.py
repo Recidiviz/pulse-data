@@ -27,6 +27,8 @@ from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRIC
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE, DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
 
 calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_storage_manager', __name__)
 
@@ -118,6 +120,11 @@ def parse_arguments(argv):
     """Parses the arguments needed to call the desired function."""
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--project_id',
+                        dest='project_id',
+                        type=str,
+                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        required=True)
     parser.add_argument('--function_to_execute',
                         dest='function_to_execute',
                         type=str,
@@ -131,7 +138,8 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
-    if known_args.function_to_execute == 'cold_storage_export':
-        move_old_dataflow_metrics_to_cold_storage()
-    elif known_args.function_to_execute == 'update_schemas':
-        update_dataflow_metric_tables_schemas()
+    with local_project_id_override(known_args.project_id):
+        if known_args.function_to_execute == 'cold_storage_export':
+            move_old_dataflow_metrics_to_cold_storage()
+        elif known_args.function_to_execute == 'update_schemas':
+            update_dataflow_metric_tables_schemas()
