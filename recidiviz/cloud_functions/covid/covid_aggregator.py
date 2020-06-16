@@ -325,8 +325,13 @@ def _map_by_canonical_facility_info(source_data, facility_info_mapping):
             facility_type = facility_info_mapping.get_facility_type(
                 state, facility_name)
         else:
+            # TODO(zdg2102): write unmapped facilities and their data out to a
+            # separate file
             logging.warning(
-                'No facility info for %s, %s', state, facility_name)
+                'No facility info for %s, %s, ignoring row',
+                state,
+                facility_name)
+            continue
 
         # Copy row and overwrite facility name and type with canonical values
         # before setting row key
