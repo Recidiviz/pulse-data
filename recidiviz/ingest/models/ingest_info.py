@@ -1131,7 +1131,7 @@ class StateSupervisionPeriod(IngestObject):
                  termination_reason=None, supervision_level=None, conditions=None, supervising_officer=None,
                  state_supervision_violation_entries=None, state_assessments=None, state_program_assignments=None,
                  state_supervision_case_type_entries=None, supervision_period_supervision_type=None,
-                 custodial_authority=None):
+                 custodial_authority=None, state_supervision_contacts=None):
         self.state_supervision_period_id: Optional[str] = state_supervision_period_id
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
@@ -1154,6 +1154,7 @@ class StateSupervisionPeriod(IngestObject):
         self.state_program_assignments: List[StateProgramAssignment] = state_program_assignments or []
         self.state_supervision_case_type_entries: List[StateSupervisionCaseTypeEntry] = \
             state_supervision_case_type_entries or []
+        self.state_supervision_contacts: List[StateSupervisionContact] = state_supervision_contacts or []
 
     def __setattr__(self, name, value):
         restricted_setattr(self, 'state_case_type_entries', name, value)
@@ -1182,6 +1183,11 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_case_type_entries.append(case_type)
         return case_type
 
+    def create_state_supervision_contact(self, **kwargs) -> 'StateSupervisionContact':
+        contact = StateSupervisionContact(**kwargs)
+        self.state_supervision_contacts.append(contact)
+        return contact
+
     def get_state_supervision_violation_by_id(self, state_supervision_violation_id)\
             -> Optional['StateSupervisionViolation']:
         return next((sc for sc in self.state_supervision_violation_entries
@@ -1194,6 +1200,11 @@ class StateSupervisionPeriod(IngestObject):
                      if cte.state_supervision_case_type_entry_id == state_supervision_case_type_entry_id),
                     None)
 
+    def get_state_supervision_contact_by_id(self, state_supervision_contact_id) -> Optional['StateSupervisionContact']:
+        return next((sc for sc in self.state_supervision_contacts
+                     if sc.state_supervision_contact_id == state_supervision_contact_id),
+                    None)
+
     def prune(self) -> 'StateSupervisionPeriod':
         if not self.supervising_officer:
             self.supervising_officer = None
@@ -1202,6 +1213,7 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments = [a for a in self.state_assessments if a]
         self.state_program_assignments = [p.prune() for p in self.state_program_assignments if p]
         self.state_supervision_case_type_entries = [c for c in self.state_supervision_case_type_entries if c]
+        self.state_supervision_contacts = [c.prune() for c in self.state_supervision_contacts if c]
 
         return self
 
@@ -1210,6 +1222,40 @@ class StateSupervisionPeriod(IngestObject):
         self.state_assessments.sort()
         self.state_program_assignments.sort()
         self.state_supervision_case_type_entries.sort()
+        self.state_supervision_contacts.sort()
+
+
+class StateSupervisionContact(IngestObject):
+    """Class for information about an contact between a person and their supervising agent. Referenced from
+    SupervisionPeriod.
+    """
+
+    def __init__(self, state_supervision_contact_id=None, contact_date=None, contact_reason=None, state_code=None,
+                 contact_type=None, location=None, resulted_in_arrest=None, status=None,
+                 verified_employment=None, contacted_agent=None):
+        self.state_supervision_contact_id: Optional[str] = state_supervision_contact_id
+        self.contact_date: Optional[str] = contact_date
+        self.contact_reason: Optional[str] = contact_reason
+        self.state_code: Optional[str] = state_code
+        self.contact_type: Optional[str] = contact_type
+        self.location: Optional[str] = location
+        self.resulted_in_arrest: Optional[str] = resulted_in_arrest
+        self.status: Optional[str] = status
+        self.verified_employment: Optional[str] = verified_employment
+
+        self.contacted_agent: Optional[StateAgent] = contacted_agent
+
+    def __setattr__(self, name, value):
+        restricted_setattr(self, 'contacted_agent', name, value)
+
+    def create_state_agent(self, **kwargs) -> 'StateAgent':
+        self.contacted_agent = StateAgent(**kwargs)
+        return self.contacted_agent
+
+    def prune(self) -> 'StateSupervisionContact':
+        if not self.contacted_agent:
+            self.contacted_agent = None
+        return self
 
 
 class StateSupervisionCaseTypeEntry(IngestObject):

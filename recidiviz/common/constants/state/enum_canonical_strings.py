@@ -282,6 +282,26 @@ state_early_discharge_decision_request_denied = 'REQUEST_DENIED'
 state_early_discharge_decision_sentence_termination_granted = 'SENTENCE_TERMINATION_GRANTED'
 state_early_discharge_decision_unsupervised_probation_granted = 'UNSUPERVISED_PROBATION_GRANTED'
 
+# state_supervision_contact.py
+state_supervision_contact_type_face_to_face = 'FACE_TO_FACE'
+state_supervision_contact_type_telephone = 'TELEPHONE'
+state_supervision_contact_type_written_message = 'WRITTEN_MESSAGE'
+
+state_supervision_contact_reason_emergency_contact = 'EMERGENCY_CONTACT'
+state_supervision_contact_reason_general_contact = 'GENERAL_CONTACT'
+state_supervision_contact_reason_initial_contact = 'INITIAL_CONTACT'
+
+state_supervision_contact_status_attempted = 'ATTEMPTED'
+state_supervision_contact_status_completed = 'COMPLETED'
+
+state_supervision_contact_location_court = 'COURT'
+state_supervision_contact_location_field = 'FIELD'
+state_supervision_contact_location_jail = 'JAIL'
+state_supervision_contact_location_place_of_employment = 'PLACE_OF_EMPLOYMENT'
+state_supervision_contact_location_residence = 'RESIDENCE'
+state_supervision_contact_location_supervision_office = 'SUPERVISION_OFFICE'
+state_supervision_contact_location_treatment_provider = 'TREATMENT_PROVIDER'
+
 # shared_enums.py
 
 state_acting_body_type_court = 'COURT'
