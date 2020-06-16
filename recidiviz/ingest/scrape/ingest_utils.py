@@ -177,6 +177,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
     state_supervision_violation_response_decision_entry_map: \
         Dict[str, ingest_info.StateSupervisionViolationResponseDecisionEntry] = {}
     state_agent_map: Dict[str, ingest_info.StateAgent] = {}
+    state_supervision_contact_map: Dict[str, ingest_info.StateSupervisionContact] = {}
 
     id_to_generated: Dict[int, str] = {}
 
@@ -379,8 +380,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_period.state_supervision_case_type_entry_ids.append(
                     proto_case_type_entry.state_supervision_case_type_entry_id)
 
-            for violation in \
-                    supervision_period.state_supervision_violation_entries:
+            for violation in supervision_period.state_supervision_violation_entries:
                 proto_violation = _populate_proto(
                     'state_supervision_violations', violation,
                     'state_supervision_violation_id',
@@ -388,19 +388,16 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                 proto_period.state_supervision_violation_entry_ids.append(
                     proto_violation.state_supervision_violation_id)
 
-                for violation_type in \
-                        violation.state_supervision_violation_types:
+                for violation_type in violation.state_supervision_violation_types:
                     proto_violation_type = _populate_proto(
                         'state_supervision_violation_type_entries',
                         violation_type,
                         'state_supervision_violation_type_entry_id',
                         state_supervision_violation_type_entry_map)
                     proto_violation.state_supervision_violation_type_entry_ids \
-                        .append(proto_violation_type.
-                                state_supervision_violation_type_entry_id)
+                        .append(proto_violation_type.state_supervision_violation_type_entry_id)
 
-                for violated_condition in \
-                        violation.state_supervision_violated_conditions:
+                for violated_condition in violation.state_supervision_violated_conditions:
                     proto_violated_condition = _populate_proto(
                         'state_supervision_violated_condition_entries',
                         violated_condition,
@@ -408,8 +405,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         state_supervision_violated_condition_entry_map)
                     proto_violation.\
                         state_supervision_violated_condition_entry_ids \
-                        .append(proto_violated_condition.
-                                state_supervision_violated_condition_entry_id)
+                        .append(proto_violated_condition.state_supervision_violated_condition_entry_id)
 
                 for response in violation.state_supervision_violation_responses:
                     proto_response = _populate_proto(
@@ -417,19 +413,16 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                         'state_supervision_violation_response_id',
                         state_supervision_violation_response_map)
                     proto_violation.state_supervision_violation_response_ids \
-                        .append(proto_response.
-                                state_supervision_violation_response_id)
+                        .append(proto_response.state_supervision_violation_response_id)
 
-                    for decision_type in \
-                            response.state_supervision_violation_response_decisions:
+                    for decision_type in response.state_supervision_violation_response_decisions:
                         proto_decision_type = _populate_proto(
                             'state_supervision_violation_response_decision_entries',
                             decision_type,
                             'state_supervision_violation_response_decision_entry_id',
                             state_supervision_violation_response_decision_entry_map)
                         proto_response.state_supervision_violation_response_decision_entry_ids \
-                            .append(proto_decision_type.
-                                    state_supervision_violation_response_decision_entry_id)
+                            .append(proto_decision_type.state_supervision_violation_response_decision_entry_id)
 
                     for agent in response.decision_agents:
                         proto_decision_agent = _populate_proto(
@@ -437,6 +430,19 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
                             'state_agent_id', state_agent_map)
                         proto_response.decision_agent_ids.append(
                             proto_decision_agent.state_agent_id)
+
+            for contact in supervision_period.state_supervision_contacts:
+                proto_contact = _populate_proto(
+                    'state_supervision_contacts',
+                    contact,
+                    'state_supervision_contact_id',
+                    state_supervision_contact_map)
+                proto_period.state_supervision_contact_ids.append(proto_contact.state_supervision_contact_id)
+
+                if contact.contacted_agent:
+                    proto_contacted_agent = _populate_proto(
+                        'state_agents', contact.contacted_agent, 'state_agent_id', state_agent_map)
+                    proto_contact.contacted_agent_id = proto_contacted_agent.state_agent_id
 
             for period_assessment in supervision_period.state_assessments:
                 proto_period_assessment = _populate_proto(
@@ -813,6 +819,10 @@ def convert_proto_to_ingest_info(
         dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
              for agent in proto.state_agents)
 
+    state_supervision_contact_map: Dict[str, ingest_info.StateSupervisionContact] = \
+        dict(_proto_to_py(contact, ingest_info.StateSupervisionContact, 'state_supervision_contact_id')
+             for contact in proto.state_supervision_contacts)
+
     # Wire bonds and sentences to respective charges
     for proto_charge in proto.charges:
         charge = charge_map[proto_charge.charge_id]
@@ -892,8 +902,12 @@ def convert_proto_to_ingest_info(
     for proto_assessment in proto.state_assessments:
         assessment = state_assessment_map[proto_assessment.state_assessment_id]
         if proto_assessment.conducting_agent_id:
-            assessment.conducting_agent = \
-                state_agent_map[proto_assessment.conducting_agent_id]
+            assessment.conducting_agent = state_agent_map[proto_assessment.conducting_agent_id]
+
+    for proto_supervision_contact in proto.state_supervision_contacts:
+        contact = state_supervision_contact_map[proto_supervision_contact.state_supervision_contact_id]
+        if proto_supervision_contact.contacted_agent_id:
+            contact.contacted_agent = state_agent_map[proto_supervision_contact.contacted_agent_id]
 
     for proto_program_assignment in proto.state_program_assignments:
         program_assignment = state_program_assignment_map[
@@ -950,6 +964,9 @@ def convert_proto_to_ingest_info(
         supervision_period.state_supervision_case_type_entries = \
             [state_supervision_case_type_entry_map[proto_id] for proto_id in
              proto_supervision_period.state_supervision_case_type_entry_ids]
+        supervision_period.state_supervision_contacts = \
+            [state_supervision_contact_map[proto_id]
+             for proto_id in proto_supervision_period.state_supervision_contact_ids]
 
     # Wire child entities to respective incarceration periods
     for proto_incarceration_period in proto.state_incarceration_periods:

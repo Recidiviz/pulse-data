@@ -400,11 +400,16 @@ class TestIngestUtils:
         supervision_period_agent.full_name = 'Officer Paroley'
         supervision_period.state_program_assignments = [program_assignment]
 
-        supervision_case_type_entry = \
-            supervision_period.create_state_supervision_case_type_entry()
+        supervision_case_type_entry = supervision_period.create_state_supervision_case_type_entry()
         supervision_case_type_entry.case_type = 'case_type'
-        supervision_case_type_entry.state_supervision_case_type_entry_id = \
-            'case_type_entry_id'
+        supervision_case_type_entry.state_supervision_case_type_entry_id = 'case_type_entry_id'
+
+        supervision_contact = supervision_period.create_state_supervision_contact()
+        supervision_contact.state_supervision_contact_id = 'supervision_contact_id'
+        supervision_contact.contact_type = 'contact_type'
+        supervision_contacted_agent = supervision_contact.create_state_agent()
+        supervision_contacted_agent.state_agent_id = 'agentPO'
+        supervision_contacted_agent.full_name = 'Officer Paroley'
 
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = 'violation1'
@@ -528,13 +533,16 @@ class TestIngestUtils:
         supervision_period_agent_pb.state_agent_id = 'agentPO'
         supervision_period_agent_pb.full_name = 'Officer Paroley'
 
-        supervision_case_type_entry_pb = \
-            expected_proto.state_supervision_case_type_entries.add()
-        supervision_case_type_entry_pb.state_supervision_case_type_entry_id = \
-            'case_type_entry_id'
+        supervision_case_type_entry_pb = expected_proto.state_supervision_case_type_entries.add()
+        supervision_case_type_entry_pb.state_supervision_case_type_entry_id = 'case_type_entry_id'
         supervision_case_type_entry_pb.case_type = 'case_type'
-        supervision_period_pb.state_supervision_case_type_entry_ids.append(
-            'case_type_entry_id')
+        supervision_period_pb.state_supervision_case_type_entry_ids.append('case_type_entry_id')
+
+        supervision_contact_pb = expected_proto.state_supervision_contacts.add()
+        supervision_contact_pb.state_supervision_contact_id = 'supervision_contact_id'
+        supervision_contact_pb.contact_type = 'contact_type'
+        supervision_contact_pb.contacted_agent_id = 'agentPO'
+        supervision_period_pb.state_supervision_contact_ids.append('supervision_contact_id')
 
         supervision_period_pb.state_supervision_violation_entry_ids.append(
             'violation1')

@@ -20,6 +20,7 @@ from recidiviz.common.constants.state.state_parole_decision import \
 from recidiviz.common.constants.state.state_program_assignment import \
     StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_incident import \
@@ -79,6 +80,17 @@ def generate_test_supervision_case_type(person_id) \
     return instance
 
 
+def generate_test_supervision_contact(person_id, contacted_agent=None) -> state_schema.StateSupervisionContact:
+    instance = state_schema.StateSupervisionContact(
+        person_id=person_id,
+        supervision_contact_id=12345,
+        state_code='us_ca',
+        contacted_agent=contacted_agent,
+        status=StateSupervisionContactStatus.COMPLETED.value,
+        status_raw_text='COMPLETED')
+    return instance
+
+
 def generate_test_supervision_violation(person_id,
                                         supervision_violation_responses) -> \
         state_schema.StateSupervisionViolation:
@@ -111,8 +123,7 @@ def generate_test_supervision_violation(person_id,
     return instance
 
 
-def generate_test_supervision_period(
-        person_id, supervision_violations, case_types) -> \
+def generate_test_supervision_period(person_id, supervision_violations, case_types, supervision_contacts) -> \
         state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
@@ -121,6 +132,7 @@ def generate_test_supervision_period(
         person_id=person_id,
         case_type_entries=case_types,
         supervision_violation_entries=supervision_violations,
+        supervision_contacts=supervision_contacts,
     )
 
     return instance
@@ -395,9 +407,9 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
 
     test_supervision_case_type = generate_test_supervision_case_type(
         test_person_id)
+    test_contact = generate_test_supervision_contact(test_person_id)
     test_supervision_period = generate_test_supervision_period(
-        test_person_id, [test_supervision_violation],
-        [test_supervision_case_type])
+        test_person_id, [test_supervision_violation], [test_supervision_case_type], [test_contact])
 
     test_incarceration_incident_outcome = \
         generate_test_incarceration_incident_outcome(test_person_id)

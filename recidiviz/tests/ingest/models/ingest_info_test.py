@@ -28,7 +28,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import Person, \
     StateBond, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateIncarcerationIncident, StateParoleDecision, \
     StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateIncarcerationIncidentOutcome, StateProgramAssignment, StateEarlyDischarge
+    StateIncarcerationIncidentOutcome, StateProgramAssignment, StateEarlyDischarge, StateSupervisionContact
 
 
 class FieldsDontMatchError(Exception):
@@ -115,8 +115,9 @@ class TestIngestInfo(unittest.TestCase):
              'state_supervision_violation_entries',
              'state_assessment_ids', 'state_assessments',
              'state_program_assignment_ids', 'state_program_assignments',
-             'state_supervision_case_type_entry_ids',
-             'state_supervision_case_type_entries']
+             'state_supervision_case_type_entry_ids', 'state_supervision_case_type_entries',
+             'state_supervision_contact_ids', 'state_supervision_contacts']
+        supervision_contacts_fields_ignore = ['contacted_agent_id', 'contacted_agent']
         supervision_violation_fields_ignore = \
             ['state_supervision_violation_response_ids',
              'state_supervision_violation_responses',
@@ -165,6 +166,9 @@ class TestIngestInfo(unittest.TestCase):
         _verify_fields(StateSupervisionPeriod,
                        ingest_info.StateSupervisionPeriod(),
                        supervision_period_fields_ignore)
+        _verify_fields(StateSupervisionContact,
+                       ingest_info.StateSupervisionContact(),
+                       supervision_contacts_fields_ignore)
         _verify_fields(StateIncarcerationIncident,
                        ingest_info.StateIncarcerationIncident(),
                        incarceration_incident_fields_ignore)

@@ -52,6 +52,8 @@ from recidiviz.common.constants.state.state_program_assignment import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactStatus, \
+    StateSupervisionContactLocation, StateSupervisionContactReason, StateSupervisionContactType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason, \
     StateSupervisionLevel
@@ -510,6 +512,23 @@ def generate_full_graph_state_person(
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text='DOMESTIC_VIOLENCE')
 
+    supervision_contact = entities.StateSupervisionContact.new_with_defaults(
+        external_id='CONTACT_ID',
+        status=StateSupervisionContactStatus.COMPLETED,
+        status_raw_text='COMPLETED',
+        contact_type=StateSupervisionContactType.FACE_TO_FACE,
+        contact_type_raw_text='FACE_TO_FACE',
+        contact_date=datetime.date(year=1111, month=1, day=2),
+        state_code='us_ca',
+        contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+        contact_reason_raw_text='GENERAL_CONTACT',
+        location=StateSupervisionContactLocation.RESIDENCE,
+        location_raw_text='RESIDENCE',
+        verified_employment=True,
+        resulted_in_arrest=False,
+        contacted_agent=supervising_officer,
+    )
+
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
         status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         status_raw_text='UNDER SUPERVISION',
@@ -527,7 +546,8 @@ def generate_full_graph_state_person(
         supervision_level_raw_text='UNKNOWN',
         conditions='10PM CURFEW',
         supervising_officer=supervising_officer,
-        case_type_entries=[supervision_case_type_entry]
+        case_type_entries=[supervision_case_type_entry],
+        supervision_contacts=[supervision_contact],
     )
 
     incarceration_sentence.supervision_periods = [supervision_period]
@@ -669,8 +689,7 @@ def generate_full_graph_state_person(
             child.person = person
 
         # pylint:disable=not-an-iterable
-        incarceration_incident_children = \
-            incarceration_incident.incarceration_incident_outcomes
+        incarceration_incident_children = incarceration_incident.incarceration_incident_outcomes
 
         for child in incarceration_incident_children:
             child.incarceration_incident = incarceration_incident
@@ -680,7 +699,8 @@ def generate_full_graph_state_person(
             supervision_period.supervision_violation_entries + \
             supervision_period.assessments + \
             supervision_period.program_assignments + \
-            supervision_period.case_type_entries
+            supervision_period.case_type_entries + \
+            supervision_period.supervision_contacts
 
         for child in supervision_period_children:
             if hasattr(child, 'supervision_periods'):

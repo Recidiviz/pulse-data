@@ -68,7 +68,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonAlias, StateIncarcerationIncidentOutcome, \
     StateProgramAssignment, StateSupervisionViolationResponseDecisionEntry, \
     StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolatedConditionEntry, StateSupervisionCaseTypeEntry
+    StateSupervisionViolatedConditionEntry, StateSupervisionCaseTypeEntry, StateSupervisionContact
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import \
     IngestInfoConversionResult
@@ -269,6 +269,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_supervision_violation_entry_ids=['VIOLATION_ID'],
             supervision_type='PAROLE',
             supervision_level='MED',
+            state_supervision_contact_ids=['SUPERVISION_CONTACT_ID'],
             state_program_assignment_ids=['PROGRAM_ASSIGNMENT_ID']
         )
         ingest_info.state_supervision_periods.add(
@@ -353,11 +354,25 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_parole_decision_id='DECISION_ID',
             decision_agent_ids=['AGENT_ID2', 'AGENT_ID3']
         )
+        ingest_info.state_supervision_contacts.add(
+            state_supervision_contact_id='SUPERVISION_CONTACT_ID',
+            contacted_agent_id='AGENT_ID_PO'
+        )
 
         # Act
         result = self._convert_and_throw_on_errors(ingest_info, metadata)
 
         # Assert
+        supervision_contact = StateSupervisionContact.new_with_defaults(
+            external_id='SUPERVISION_CONTACT_ID',
+            state_code='US_ND',
+            contacted_agent=StateAgent.new_with_defaults(
+                external_id='AGENT_ID_PO',
+                state_code='US_ND',
+                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
+                full_name='{"full_name": "AGENT PAROLEY"}'),
+        )
+
         incident_outcome = StateIncarcerationIncidentOutcome.new_with_defaults(
             external_id='INCIDENT_OUTCOME_ID',
             outcome_type=StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
@@ -643,7 +658,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                     supervision_type=StateSupervisionType.PAROLE,
                                     supervision_type_raw_text='PAROLE',
                                     supervision_violation_entries=[violation],
-                                    program_assignments=[program_assignment]
+                                    program_assignments=[program_assignment],
+                                    supervision_contacts=[supervision_contact],
                                 )
                             ]
                         )
