@@ -65,6 +65,7 @@ message IngestInfo {
     repeated StateAgent state_agents = 33;
     repeated StateProgramAssignment state_program_assignments = 34;
     repeated StateEarlyDischarge state_early_discharges = 35;
+    repeated StateSupervisionContact state_supervision_contacts = 36;
 }
 
 message Person {
@@ -401,6 +402,7 @@ message StateSupervisionPeriod {
     repeated string state_assessment_ids = 17;
     repeated string state_program_assignment_ids = 18;
     repeated string state_supervision_case_type_entry_ids = 19;
+    repeated string state_supervision_contact_ids = 20;
 }
 
 message StateSupervisionCaseTypeEntry {
@@ -527,4 +529,18 @@ message StateEarlyDischarge{
     optional string requesting_body_type = 6;
     optional string state_code = 7;
     optional string county_code = 8;
+}
+
+message StateSupervisionContact {
+     optional string state_supervision_contact_id = 1;
+     optional string contact_date = 2;
+     optional string contact_reason = 3;
+     optional string contact_type = 4;
+     optional string location = 5;
+     optional string resulted_in_arrest = 6;
+     optional string status = 7;
+     optional string verified_employment = 8;
+     optional string state_code = 9;
+
+     optional string contacted_agent_id = 10;
 }

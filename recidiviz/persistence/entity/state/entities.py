@@ -76,6 +76,8 @@ from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactStatus, \
+    StateSupervisionContactType, StateSupervisionContactReason, StateSupervisionContactLocation
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason,
@@ -720,6 +722,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(factory=list)
     assessments: List['StateAssessment'] = attr.ib(factory=list)
     case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(factory=list)
+    supervision_contacts: List['StateSupervisionContact'] = attr.ib(factory=list)
 
 
 @attr.s(eq=False)
@@ -1082,3 +1085,43 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Should only be one of incarceration or supervision sentences on this.
     incarceration_sentence: Optional['StateIncarcerationSentence'] = attr.ib(default=None)
     supervision_sentence: Optional['StateIncarcerationSentence'] = attr.ib(default=None)
+
+
+@attr.s(eq=False)
+class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models a person's contact with their supervising officer."""
+    # Status
+    status: Optional[StateSupervisionContactStatus] = attr.ib()
+    status_raw_text: Optional[str] = attr.ib()
+
+    # Attributes
+    #   - When
+    contact_date: Optional[datetime.date] = attr.ib()
+
+    #   - Where
+    state_code: str = attr.ib()  # non-nullable
+
+    #   - What
+    contact_type: Optional[StateSupervisionContactType] = attr.ib()
+    contact_type_raw_text: Optional[str] = attr.ib()
+
+    contact_reason: Optional[StateSupervisionContactReason] = attr.ib()
+    contact_reason_raw_text: Optional[str] = attr.ib()
+
+    location: Optional[StateSupervisionContactLocation] = attr.ib()
+    location_raw_text: Optional[str] = attr.ib()
+
+    verified_employment: Optional[bool] = attr.ib()
+    resulted_in_arrest: Optional[bool] = attr.ib()
+
+    #   - Who
+    # See |person| in entity relationships below.
+
+    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
+    # persistence layer
+    supervision_contact_id: Optional[int] = attr.ib(default=None)
+
+    # Cross-entity relationships
+    person: Optional['StatePerson'] = attr.ib(default=None)
+    contacted_agent: Optional['StateAgent'] = attr.ib(default=None)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
