@@ -879,7 +879,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
         supervision_period = \
-            database_test_utils.generate_test_supervision_period(123, [], [])
+            database_test_utils.generate_test_supervision_period(123, [], [], [])
 
         assessment = database_test_utils.generate_test_assessment(123)
 
@@ -895,8 +895,10 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             schema.StateSupervisionViolation.__tablename__: [],
             schema.StateProgramAssignment.__tablename__: [],
             schema.StateSupervisionCaseTypeEntry.__tablename__: [],
+            schema.StateSupervisionContact.__tablename__: [],
             schema.state_supervision_period_supervision_violation_association_table.name: [],
             schema.state_supervision_period_program_assignment_association_table.name: [],
+            schema.state_supervision_period_supervision_contact_association_table.name: [],
         }
         dataset = 'recidiviz-123.state'
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
@@ -917,7 +919,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(),
                              {'supervising_officer', 'supervision_violations', 'supervision_violation_entries',
-                              'assessments', 'program_assignments', 'case_type_entries'})
+                              'assessments', 'program_assignments', 'case_type_entries', 'supervision_contacts'})
 
             output_assessments = properties_dict.get('assessments')
 
@@ -939,7 +941,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                 123, [], [])
 
         supervision_period = \
-            database_test_utils.generate_test_supervision_period(123, [], [])
+            database_test_utils.generate_test_supervision_period(123, [], [], [])
 
         # Build association table for many-to-many relationship
         incarceration_sentence_supervision_period_association_table = [{

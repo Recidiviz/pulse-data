@@ -419,6 +419,45 @@ state_acting_body_type = Enum(
     name='state_acting_body_type'
 )
 
+state_supervision_contact_location = Enum(
+    enum_strings.internal_unknown,
+    enum_strings.external_unknown,
+    state_enum_strings.state_supervision_contact_location_court,
+    state_enum_strings.state_supervision_contact_location_field,
+    state_enum_strings.state_supervision_contact_location_jail,
+    state_enum_strings.state_supervision_contact_location_place_of_employment,
+    state_enum_strings.state_supervision_contact_location_residence,
+    state_enum_strings.state_supervision_contact_location_supervision_office,
+    state_enum_strings.state_supervision_contact_location_treatment_provider,
+    name='state_supervision_contact_location'
+)
+
+state_supervision_contact_status = Enum(
+    enum_strings.internal_unknown,
+    enum_strings.external_unknown,
+    state_enum_strings.state_supervision_contact_status_attempted,
+    state_enum_strings.state_supervision_contact_status_completed,
+    name='state_supervision_contact_status'
+)
+
+state_supervision_contact_reason = Enum(
+    enum_strings.internal_unknown,
+    enum_strings.external_unknown,
+    state_enum_strings.state_supervision_contact_reason_emergency_contact,
+    state_enum_strings.state_supervision_contact_reason_general_contact,
+    state_enum_strings.state_supervision_contact_reason_initial_contact,
+    name='state_supervision_contact_reason'
+)
+
+state_supervision_contact_type = Enum(
+    enum_strings.internal_unknown,
+    enum_strings.external_unknown,
+    state_enum_strings.state_supervision_contact_type_face_to_face,
+    state_enum_strings.state_supervision_contact_type_telephone,
+    state_enum_strings.state_supervision_contact_type_written_message,
+    name='state_supervision_contact_type'
+)
+
 # Join tables
 
 state_supervision_sentence_incarceration_period_association_table = \
@@ -503,6 +542,18 @@ state_supervision_period_program_assignment_association_table = \
                  Integer,
                  ForeignKey(
                      'state_program_assignment.program_assignment_id'),
+                 index=True))
+
+state_supervision_period_supervision_contact_association_table = \
+    Table('state_supervision_period_supervision_contact_association',
+          StateBase.metadata,
+          Column('supervision_period_id',
+                 Integer,
+                 ForeignKey('state_supervision_period.supervision_period_id'),
+                 index=True),
+          Column('supervision_contact_id',
+                 Integer,
+                 ForeignKey('state_supervision_contact.supervision_contact_id'),
                  index=True))
 
 state_incarceration_period_program_assignment_association_table = \
@@ -1540,13 +1591,9 @@ class StateSupervisionPeriod(StateBase,
     supervision_period_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
-    supervising_officer = relationship(
-        'StateAgent', uselist=False, lazy='selectin')
+    supervising_officer = relationship('StateAgent', uselist=False, lazy='selectin')
     # TODO(2668): Deprecated - Delete this column from our schema.
-    supervision_violations = relationship(
-        'StateSupervisionViolation',
-        backref='supervision_period',
-        lazy='selectin')
+    supervision_violations = relationship('StateSupervisionViolation', backref='supervision_period', lazy='selectin')
     # TODO(2697): Rename `supervision_violation_entries` to
     # `supervision_violations` once the 1:many relationship
     # `supervision_violations` above has been removed from our db/schema object.
@@ -1556,16 +1603,17 @@ class StateSupervisionPeriod(StateBase,
         state_supervision_period_supervision_violation_association_table,
         backref='supervision_periods',
         lazy='selectin')
-    assessments = relationship(
-        'StateAssessment', backref='supervision_period', lazy='selectin')
+    assessments = relationship('StateAssessment', backref='supervision_period', lazy='selectin')
     program_assignments = relationship(
         'StateProgramAssignment',
         secondary=state_supervision_period_program_assignment_association_table,
         backref='supervision_periods',
         lazy='selectin')
-    case_type_entries = relationship(
-        'StateSupervisionCaseTypeEntry',
-        backref='supervision_period',
+    case_type_entries = relationship('StateSupervisionCaseTypeEntry', backref='supervision_period', lazy='selectin')
+    supervision_contacts = relationship(
+        'StateSupervisionContact',
+        secondary=state_supervision_period_supervision_contact_association_table,
+        backref='supervision_periods',
         lazy='selectin')
 
 
@@ -2348,7 +2396,7 @@ class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
 
 
 class StateEarlyDischargeHistory(StateBase, _StateEarlyDischargeSharedColumns, HistoryTableSharedColumns):
-    """Represents the historical state of a StateProgramAssignment"""
+    """Represents the historical state of a StateEarlyDischarge"""
     __tablename__ = 'state_early_discharge_history'
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
@@ -2357,3 +2405,58 @@ class StateEarlyDischargeHistory(StateBase, _StateEarlyDischargeSharedColumns, H
 
     early_discharge_id = Column(
         Integer, ForeignKey('state_early_discharge.early_discharge_id'), nullable=False, index=True)
+
+
+# StateSupervisionContact
+
+class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns):
+    """A mixin which defines all columns common to StateSupervisionContact and
+    StateSupervisionContactHistory.
+    """
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is _StateSupervisionContactSharedColumns:
+            raise Exception(f'[{cls}] cannot be instantiated')
+        return super().__new__(cls)
+
+    external_id = Column(String(255), index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+
+    contact_date = Column(Date)
+    contact_reason = Column(state_supervision_contact_reason)
+    contact_reason_raw_text = Column(String(255))
+    contact_type = Column(state_supervision_contact_type)
+    contact_type_raw_text = Column(String(255))
+    location = Column(state_supervision_contact_location)
+    location_raw_text = Column(String(255))
+    resulted_in_arrest = Column(Boolean)
+    status = Column(state_supervision_contact_status)
+    status_raw_text = Column(String(255))
+    verified_employment = Column(Boolean)
+
+    @declared_attr
+    def contacted_agent_id(self):
+        return Column(Integer, ForeignKey('state_agent.agent_id'), index=True, nullable=True)
+
+
+class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
+    """Represents a StateSupervisionContact in the SQL schema."""
+    __tablename__ = 'state_supervision_contact'
+
+    supervision_contact_id = Column(Integer, primary_key=True)
+
+    person = relationship('StatePerson', uselist=False)
+    contacted_agent = relationship('StateAgent', uselist=False, lazy='selectin')
+
+
+class StateSupervisionContactHistory(StateBase, _StateSupervisionContactSharedColumns, HistoryTableSharedColumns):
+    """Represents the historical state of a StateSupervisionContact"""
+    __tablename__ = 'state_supervision_contact_history'
+
+    # This primary key should NOT be used. It only exists because SQLAlchemy
+    # requires every table to have a unique primary key.
+    supervision_contact_history_id = Column(Integer, primary_key=True)
+
+    supervision_contact_id = Column(
+        Integer, ForeignKey('state_supervision_contact.supervision_contact_id'), nullable=False, index=True)

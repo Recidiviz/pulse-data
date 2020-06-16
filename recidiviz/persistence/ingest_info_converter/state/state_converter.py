@@ -22,7 +22,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StateCharge, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateFine, StateParoleDecision, \
     StateIncarcerationIncident, StateAssessment, StateCourtCase, \
-    StateSupervisionViolationResponse, StateProgramAssignment, StateEarlyDischarge
+    StateSupervisionViolationResponse, StateProgramAssignment, StateEarlyDischarge, StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
@@ -38,7 +38,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_supervision_violation_type_entry, \
     state_supervision_violated_condition_entry, \
     state_supervision_violation_response_decision_entry, \
-    state_supervision_case_type_entry, state_early_discharge
+    state_supervision_case_type_entry, state_early_discharge, state_supervision_contact
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
@@ -103,6 +103,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for iio in ingest_info.state_incarceration_incident_outcomes
         }
 
+        self.supervision_contacts = {
+            ii.state_supervision_contact_id: ii for ii in ingest_info.state_supervision_contacts
+        }
         self.supervision_violations = {
             sv.state_supervision_violation_id: sv for sv
             in ingest_info.state_supervision_violations
@@ -467,6 +470,14 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for case_type_id in
             ingest_supervision_period.state_supervision_case_type_entry_ids]
         supervision_period_builder.case_type_entries = converted_case_types
+
+        converted_contacts = [
+            self._convert_supervision_contact(self.supervision_contacts[contact_id])
+            for contact_id
+            in ingest_supervision_period.state_supervision_contact_ids
+        ]
+        supervision_period_builder.supervision_contacts = converted_contacts
+
         return supervision_period_builder.build()
 
     def _convert_supervision_violation(
@@ -610,6 +621,17 @@ class StateConverter(BaseConverter[entities.StatePerson]):
 
         incident_builder.incarceration_incident_outcomes = converted_outcomes
         return incident_builder.build()
+
+    def _convert_supervision_contact(self, ingest_contact: StateSupervisionContact) -> entities.StateSupervisionContact:
+        """Converts an ingest_info proto StateSupervisionContact to a persistence entity."""
+        contact_builder = entities.StateSupervisionContact.builder()
+
+        state_supervision_contact.copy_fields_to_builder(contact_builder, ingest_contact, self.metadata)
+
+        contact_builder.contacted_agent = fn(
+            lambda i: state_agent.convert(self.agents[i], self.metadata), 'contacted_agent_id', ingest_contact)
+
+        return contact_builder.build()
 
     def _convert_parole_decision(
             self, ingest_parole_decision: StateParoleDecision) \
