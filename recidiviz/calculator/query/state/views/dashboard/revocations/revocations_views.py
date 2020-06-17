@@ -14,23 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views related to revocations of supervision."""
+"""Dashboard views related to revocations of supervision."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.views.revocations.revocations_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_month import \
     REVOCATIONS_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_officer_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_officer_by_period import \
     REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_period import \
     REVOCATIONS_BY_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_race_and_ethnicity_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_race_and_ethnicity_by_period import \
     REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_site_id_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_site_id_by_period import \
     REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_supervision_type_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_supervision_type_by_month import \
     REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.revocations.revocations_by_violation_type_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_violation_type_by_month import \
     REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW
 
 

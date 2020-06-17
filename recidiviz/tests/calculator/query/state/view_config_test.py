@@ -14,20 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for dashboard_export_config.py."""
+"""Tests for view_config.py."""
 
 import unittest
 
 from mock import patch
 
-from recidiviz.calculator.query.state import dashboard_export_config, view_config
+from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 
 
-class DashboardExportConfigTest(unittest.TestCase):
-    """Tests for dashboard_export_config.py."""
+class ViewExportConfigTest(unittest.TestCase):
+    """Tests for the export variables in view_config.py."""
 
     def setUp(self) -> None:
         self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
@@ -41,17 +41,11 @@ class DashboardExportConfigTest(unittest.TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_VIEWS_TO_EXPORT_types(self):
-        """Make sure that all VIEWS_TO_EXPORT are of type BigQueryView."""
-        for view in dashboard_export_config.VIEWS_TO_EXPORT:
-            self.assertIsInstance(view, BigQueryView)
-
-    def test_VIEWS_TO_EXCLUDE_FROM_EXPORT_all_excluded(self):
-        """Make sure a view is excluded from VIEWS_TO_EXPORT if listed in
-        VIEWS_TO_EXCLUDE_FROM_EXPORT.
-        """
-
-        for view in dashboard_export_config.VIEWS_TO_EXCLUDE_FROM_EXPORT:
-            self.assertNotIn(view, dashboard_export_config.VIEWS_TO_EXPORT)
+        """Make sure that all DATASETS_STATES_AND_VIEWS_TO_EXPORT are of type BigQueryView."""
+        for _, state_exports in view_config.DATASETS_STATES_AND_VIEWS_TO_EXPORT.items():
+            for _, views in state_exports.items():
+                for view in views:
+                    self.assertIsInstance(view, BigQueryView)
 
     def test_view_dataset_ids(self):
         for dataset_id, views in view_config.VIEWS_TO_UPDATE.items():

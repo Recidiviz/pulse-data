@@ -14,18 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views related to admissions."""
+"""Dashboard views related to admissions."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.views.admissions.admissions_by_type_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_period import \
     ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW
-from recidiviz.calculator.query.state.views.admissions.admissions_by_type_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_month import \
     ADMISSIONS_BY_TYPE_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.admissions.admissions_versus_releases_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_month import \
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.admissions.admissions_versus_releases_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_period import \
     ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW
+
 
 ADMISSIONS_VIEWS: List[BigQueryView] = [
     ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW,

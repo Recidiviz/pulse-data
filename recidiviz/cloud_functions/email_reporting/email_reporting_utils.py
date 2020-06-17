@@ -79,7 +79,7 @@ def get_static_image_path(state_code: str, report_type: str) -> str:
 
 
 def get_data_filename(state_code: str, report_type: str) -> str:
-    return f'{state_code}/{report_type}/data.json'
+    return f'{report_type}/{state_code}/{report_type}_data.json'
 
 
 def get_data_archive_filename(batch_id: str) -> str:
@@ -87,7 +87,7 @@ def get_data_archive_filename(batch_id: str) -> str:
 
 
 def get_properties_filename(state_code: str, report_type: str) -> str:
-    return f'{state_code}/{report_type}/properties.json'
+    return f'{report_type}/{state_code}/properties.json'
 
 
 def get_html_filename(batch_id: str, email_address: str) -> str:
@@ -95,7 +95,7 @@ def get_html_filename(batch_id: str, email_address: str) -> str:
 
 
 def get_template_filename(state_code: str, report_type: str) -> str:
-    return f'{state_code}/{report_type}/template.html'
+    return f'{report_type}/{state_code}/template.html'
 
 
 # TODO(3260): Make this general-purpose to work for any report type's chart

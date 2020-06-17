@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for export_manager.py."""
+"""Tests for view_export_manager.py."""
 
 import unittest
 from unittest import mock
@@ -23,11 +23,11 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state import dashboard_export_manager
+from recidiviz.calculator.query.state import view_export_manager
 
 
-class DashboardExportManagerTest(unittest.TestCase):
-    """Tests for dashboard_export_manager.py."""
+class ViewExportManagerTest(unittest.TestCase):
+    """Tests for view_export_manager.py."""
 
     def setUp(self):
         project_id = 'fake-recidiviz-project'
@@ -40,7 +40,7 @@ class DashboardExportManagerTest(unittest.TestCase):
         self.mock_project_id_fn.return_value = project_id
 
         self.client_patcher = mock.patch(
-            'recidiviz.calculator.query.state.dashboard_export_manager.BigQueryClientImpl')
+            'recidiviz.calculator.query.state.view_export_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
@@ -49,35 +49,39 @@ class DashboardExportManagerTest(unittest.TestCase):
                                       view_id='test_view',
                                       view_query_template='SELECT NULL LIMIT 0')
 
-        self.views_to_export = [self.mock_view]
-        dashboard_export_config_values = {
-            'STATES_TO_EXPORT': ['US_CA'],
-            'VIEWS_TO_EXPORT': self.views_to_export,
+        self.views_to_export = {
+            "dataset_id": {
+                'US_XX': [self.mock_view],
+            },
         }
-        self.dashboard_export_config_patcher = mock.patch(
-            'recidiviz.calculator.query.state.dashboard_export_manager.dashboard_export_config',
-            **dashboard_export_config_values)
-        self.mock_export_config = self.dashboard_export_config_patcher.start()
+
+        self.output_uri_template_for_dataset = {
+            "dataset_id": "gs://{project_id}-dataset-location/subdirectory/{state_code}/{view_id}.json",
+        }
 
         self.views_to_update = {self.mock_dataset_name: self.views_to_export}
 
+        view_config_values = {
+            'STATES_TO_EXPORT': ['US_CA'],
+            'DATASETS_STATES_AND_VIEWS_TO_EXPORT': self.views_to_export,
+            'OUTPUT_URI_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
+            'VIEWS_TO_UPDATE': self.views_to_update
+        }
+        self.view_export_config_patcher = mock.patch(
+            'recidiviz.calculator.query.state.view_export_manager.view_config',
+            **view_config_values)
+        self.mock_export_config = self.view_export_config_patcher.start()
+
     def tearDown(self):
         self.client_patcher.stop()
-        self.dashboard_export_config_patcher.stop()
+        self.view_export_config_patcher.stop()
         self.metadata_patcher.stop()
 
     @mock.patch('recidiviz.big_query.view_manager.create_dataset_and_update_views')
-    @mock.patch('recidiviz.calculator.query.state.dashboard_export_manager.view_config')
-    def test_export_dashboard_data_to_cloud_storage(self, mock_view_config, mock_view_manager):
+    def test_export_dashboard_data_to_cloud_storage(self, mock_view_manager):
         """Tests the table is created from the view and then extracted."""
-        view_config_values = {
-            'VIEWS_TO_UPDATE': self.views_to_update
-        }
+        view_export_manager.export_view_data_to_cloud_storage()
 
-        dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket='bucket')
-
-        mock_view_config.VIEWS_TO_UPDATE.return_value = view_config_values
-
-        mock_view_manager.assert_called_with(mock_view_config.VIEWS_TO_UPDATE)
+        mock_view_manager.assert_called_with(self.views_to_update)
 
         self.mock_client.export_query_results_to_cloud_storage.assert_called()

@@ -72,7 +72,8 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
     )
     SELECT 
       *, 
-      CONCAT(agents.external_id, ': ', agents.given_names, ' ', agents.surname) as agent_external_id
+      COALESCE(CONCAT(agents.external_id, ': ', agents.given_names, ' ', agents.surname),
+               agents.external_id) as agent_external_id
     FROM agents
 
 """
