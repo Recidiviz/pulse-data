@@ -24,8 +24,7 @@ from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 import gcsfs
 
-from recidiviz.calculator.calculation_data_storage_manager import update_dataflow_metric_tables_schemas
-from recidiviz.calculator.query.state import dashboard_export_manager
+from recidiviz.calculator.query.state import view_export_manager
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
@@ -40,7 +39,7 @@ from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
 from recidiviz.persistence.database.schema.aggregate import dao
-from recidiviz.utils import metadata, pubsub_helper
+from recidiviz.utils import metadata
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_str_param_value
 
@@ -117,22 +116,14 @@ def state_aggregate():
         return jsonify(e), 500
 
 
-@cloud_functions_blueprint.route('/dashboard_export')
+@cloud_functions_blueprint.route('/view_data_export')
 @authenticate_request
-def dashboard_export():
-    """Calls the dashboard export manager.
+def view_data_export():
+    """Calls the view export manager."""
 
-    Endpoint path parameters:
-        bucket: A string indicating the GCP cloud storage bucket to export to
-    """
+    logging.info("Attempting to export view data to cloud storage")
 
-    # The cloud storage bucket to export to
-    bucket = get_str_param_value('bucket', request.args)
-
-    logging.info("Attempting to export dashboard data to cloud storage"
-                 " bucket: %s.", bucket)
-
-    dashboard_export_manager.export_dashboard_data_to_cloud_storage(bucket)
+    view_export_manager.export_view_data_to_cloud_storage()
 
     return '', HTTPStatus.OK
 
@@ -158,27 +149,5 @@ def dataflow_monitor():
     CalculateCloudTaskManager().create_dataflow_monitor_task(job_id,
                                                              location,
                                                              topic)
-
-    return '', HTTPStatus.OK
-
-
-@cloud_functions_blueprint.route('/prepare_for_calculation_pipelines')
-@authenticate_request
-def prepare_for_calculation_pipelines():
-    """Executes preparation steps necessary for Dataflow pipelines to run. Updates the schemas of the tables that hold
-    Dataflow metric output to match the attributes of the metric classes.
-
-    Endpoint path parameters:
-        topic: The Pub/Sub topic to publish a message to if the preparation completes successfully
-    """
-    # Update the Dataflow metrics tables to match the attributes of the metrics
-    logging.info("Updating the Dataflow metrics tables to match the metric attributes.")
-    update_dataflow_metric_tables_schemas()
-
-    topic = get_str_param_value('topic', request.args)
-    message = "Preparation for calculation pipelines complete."
-
-    # Publish a message to the Pub/Sub topic once all BQ exports are complete
-    pubsub_helper.publish_message_to_topic(message=message, topic=topic)
 
     return '', HTTPStatus.OK

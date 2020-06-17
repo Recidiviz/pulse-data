@@ -14,17 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views related to reincarcerations."""
+"""Dashboard views related to reincarcerations."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.views.reincarcerations.average_days_at_liberty_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.average_days_at_liberty_by_month import \
     AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reincarcerations.reincarceration_rate_by_stay_length import \
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarceration_rate_by_stay_length import \
     REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW
-from recidiviz.calculator.query.state.views.reincarcerations.reincarcerations_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_month import \
     REINCARCERATIONS_BY_MONTH_VIEW
-from recidiviz.calculator.query.state.views.reincarcerations.reincarcerations_by_period import \
+from recidiviz.calculator.query.state.views.dashboard.reincarcerations.reincarcerations_by_period import \
     REINCARCERATIONS_BY_PERIOD_VIEW
 
 REINCARCERATIONS_VIEWS: List[BigQueryView] = [

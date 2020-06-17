@@ -170,9 +170,5 @@ def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
     return region_code_match.replace('-', '_')
 
 
-def get_dashboard_data_export_storage_bucket(project_id: str) -> str:
-    return f'{project_id}-dashboard-data'
-
-
 def get_dataflow_template_bucket(project_id: str) -> str:
     return f'{project_id}-dataflow-templates'

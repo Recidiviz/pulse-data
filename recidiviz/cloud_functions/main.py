@@ -22,7 +22,6 @@ import traceback
 
 from cloud_function_utils import IAP_CLIENT_ID, make_iap_request, \
     get_state_region_code_from_direct_ingest_bucket, \
-    get_dashboard_data_export_storage_bucket, \
     get_dataflow_template_bucket, \
     trigger_dataflow_job_from_template
 from covid import covid_ingest
@@ -34,8 +33,8 @@ _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/direct/handle_direct_ingest_file?region={}'
     '&bucket={}&relative_file_path={}&start_ingest={}')
-_DASHBOARD_EXPORT_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/cloud_function/dashboard_export?bucket={}'
+_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = (
+    'http://{}.appspot.com/cloud_function/view_data_export'
 )
 _PREPARE_FOR_CALCULATIONS_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/prepare_for_calculation_pipelines?topic={}'
@@ -127,24 +126,20 @@ def _handle_state_direct_ingest_file(data,
     logging.info("The response status is %s", response.status_code)
 
 
-def export_dashboard_data(_event, _context):
-    """This function is triggered by a Pub/Sub event to begin the export of
-    data needed for the dashboard.
+def export_view_data(_event, _context):
+    """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery views to files
+    in cloud storage buckets.
     """
     project_id = os.environ.get('GCP_PROJECT')
     if not project_id:
-        logging.error('No project id set for call to export dashboard data, '
-                      'returning.')
+        logging.error('No project id set for call to export view data, returning.')
         return
+    url = _VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
 
-    bucket = get_dashboard_data_export_storage_bucket(project_id)
-
-    url = _DASHBOARD_EXPORT_CLOUD_FUNCTION_URL.format(project_id, bucket)
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)
 
-    # Hit the cloud function backend, which exports the given data type to
-    # the given cloud storage bucket
+    # Hit the cloud function backend, which exports view data to their assigned cloud storage bucket
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
 
@@ -233,25 +228,3 @@ def _ingest_and_aggregate_covid_data():
         logging.info('COVID ingest cloud function completed')
     except Exception:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
-
-
-def calculation_pipelines_preparation(_event, _context):
-    """This function is triggered by a Pub/Sub event to do necessary preparations before the calculation pipelines
-    begin.
-    """
-    project_id = os.environ.get('GCP_PROJECT')
-    if not project_id:
-        logging.error('No project id set for call to export dashboard data, '
-                      'returning.')
-        return
-
-    topic = os.environ.get('ON_SUCCESS_TOPIC')
-
-    url = _PREPARE_FOR_CALCULATIONS_CLOUD_FUNCTION_URL.format(project_id, topic)
-    logging.info("project_id: %s", project_id)
-    logging.info("Calling URL: %s", url)
-
-    # Hit the cloud function backend, which exports the given data type to
-    # the given cloud storage bucket
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)

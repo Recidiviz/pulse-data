@@ -44,7 +44,7 @@ from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_pers
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import \
     SUPERVISION_MATRIX_BY_PERSON_VIEW
 
-REF_VIEWS: List[BigQueryView] = [
+REFERENCE_VIEWS: List[BigQueryView] = [
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW,
     AUGMENTED_AGENT_INFO_VIEW,
     SSVR_TO_AGENT_ASSOCIATION_VIEW,
