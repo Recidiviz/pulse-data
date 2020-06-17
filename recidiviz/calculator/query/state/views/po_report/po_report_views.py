@@ -14,26 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dashboard export configuration."""
-
+"""All views for the PO Report."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.view_config import VIEWS_TO_UPDATE
-from recidiviz.calculator.query.state.views.reference import reference_views
-from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
+from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW
+from recidiviz.calculator.query.state.views.po_report.supervision_absconsion_terminations_by_officer_by_month import \
+    SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_officer_by_month import \
+    SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW
+from recidiviz.calculator.query.state.views.po_report.supervision_discharges_by_officer_by_month import \
+    SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW
 
-STATES_TO_EXPORT = ['US_MO', 'US_ND']
-
-VIEWS_TO_EXCLUDE_FROM_EXPORT: List[BigQueryView] = \
-    reference_views.REF_VIEWS
-
-VIEWS_TO_EXPORT = [
-    view for view_list in VIEWS_TO_UPDATE.values() for view in view_list
-    if view not in VIEWS_TO_EXCLUDE_FROM_EXPORT
-]
-
-VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
+PO_REPORT_VIEWS: List[BigQueryView] = [
+    SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW,
+    SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW,
+    SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW,
+    PO_MONTHLY_REPORT_DATA_VIEW
 ]

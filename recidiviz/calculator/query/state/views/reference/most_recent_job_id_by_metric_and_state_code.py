@@ -58,6 +58,9 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_ASSESSMENT_CHANGE' as metric_type
             FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`)
             UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_COMPLIANCE' as metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`)
+            UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_POPULATION' as metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`)
             UNION ALL

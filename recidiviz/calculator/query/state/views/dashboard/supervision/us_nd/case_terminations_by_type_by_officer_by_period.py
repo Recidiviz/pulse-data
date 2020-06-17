@@ -20,7 +20,7 @@
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.supervision.us_nd.case_terminations_by_type_by_month import \
+from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import \
     _get_query_prep_statement
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'case_terminations_by_type_by_officer_by_period'

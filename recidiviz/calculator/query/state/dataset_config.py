@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dashboard dataset configuration."""
+"""Various BigQuery datasets."""
 
 # Where the actual, final dashboard views live
 DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
@@ -30,3 +30,6 @@ STATE_BASE_DATASET: str = 'state'
 
 # Where the views for the COVID report live
 COVID_REPORT_DATASET: str = 'covid_report_views'
+
+# Where the views for the PO Monthly report live
+PO_REPORT_DATASET: str = 'po_report_views'
