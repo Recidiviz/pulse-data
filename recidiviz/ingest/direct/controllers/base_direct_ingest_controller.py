@@ -72,6 +72,10 @@ class BaseDirectIngestController(Ingestor,
         job immediately."""
         check_is_region_launched_in_env(self.region)
 
+        if self._schedule_any_pre_ingest_tasks():
+            logging.info("Found pre-ingest tasks to schedule - returning.")
+            return
+
         process_job_queue_info = \
             self.cloud_task_manager.get_process_job_queue_info(self.region)
         if process_job_queue_info.size() and not just_finished_job:
@@ -127,6 +131,31 @@ class BaseDirectIngestController(Ingestor,
                 region=self.region,
                 ingest_args=next_job_args)
             self._on_job_scheduled(next_job_args)
+
+    def _schedule_any_pre_ingest_tasks(self) -> bool:
+        """Schedules any tasks related to SQL preprocessing of new files in preparation for ingest of those files into
+        our Postgres database.
+
+        Returns True if any jobs were scheduled or if there were already any pre-ingest jobs scheduled. Returns False if
+        there are no remaining ingest jobs to schedule and it is safe to proceed with ingest.
+        """
+        if self._schedule_raw_data_import_tasks():
+            logging.info("Found pre-ingest raw data import tasks to schedule.")
+            return True
+        # TODO(3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
+        #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
+        #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
+        #  to do view exports.
+        if self._schedule_ingest_view_export_tasks():
+            logging.info("Found pre-ingest view export tasks to schedule.")
+            return True
+        return False
+
+    def _schedule_raw_data_import_tasks(self):
+        return False
+
+    def _schedule_ingest_view_export_tasks(self):
+        return False
 
     @abc.abstractmethod
     def _get_next_job_args(self) -> Optional[IngestArgsType]:
@@ -187,7 +216,7 @@ class BaseDirectIngestController(Ingestor,
             # it has been properly moved.
             return True
 
-        if not self._can_proceed_with_ingest_for_contents(contents_handle):
+        if not self._can_proceed_with_ingest_for_contents(args, contents_handle):
             logging.warning(
                 "Cannot proceed with contents for ingest run [%s] - returning.",
                 self._job_tag(args))
@@ -200,7 +229,7 @@ class BaseDirectIngestController(Ingestor,
         logging.info("Successfully read contents for ingest run [%s]",
                      self._job_tag(args))
 
-        if not self._are_contents_empty(contents_handle):
+        if not self._are_contents_empty(args, contents_handle):
             self._parse_and_persist_contents(args, contents_handle)
         else:
             logging.warning(
@@ -274,6 +303,7 @@ class BaseDirectIngestController(Ingestor,
 
     @abc.abstractmethod
     def _are_contents_empty(self,
+                            args: IngestArgsType,
                             contents_handle: ContentsHandleType) -> bool:
         """Should be overridden by subclasses to return True if the contents
         for the given args should be considered "empty" and not parsed. For
@@ -297,6 +327,7 @@ class BaseDirectIngestController(Ingestor,
     @abc.abstractmethod
     def _can_proceed_with_ingest_for_contents(
             self,
+            args: IngestArgsType,
             contents_handle: ContentsHandleType):
         """ Given a pointer to the contents, can the controller continue with
         ingest.

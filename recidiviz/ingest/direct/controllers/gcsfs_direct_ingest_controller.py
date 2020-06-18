@@ -54,7 +54,7 @@ class GcsfsDirectIngestController(
 
     _MAX_STORAGE_FILE_RENAME_TRIES = 10
     _DEFAULT_MAX_PROCESS_JOB_WAIT_TIME_SEC = 300
-    _FILE_SPLIT_LINE_LIMIT = 2500
+    _INGEST_FILE_SPLIT_LINE_LIMIT = 2500
 
     def __init__(self,
                  region_name: str,
@@ -81,6 +81,9 @@ class GcsfsDirectIngestController(
         self.storage_directory_path = \
             GcsfsDirectoryPath.from_absolute_path(storage_directory_path)
 
+        self.temp_output_directory_path = \
+            GcsfsDirectoryPath.from_absolute_path(gcsfs_direct_ingest_temporary_output_directory_path())
+
         ingest_job_file_type_filter = \
             GcsfsDirectIngestFileType.INGEST_VIEW \
             if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
@@ -91,7 +94,7 @@ class GcsfsDirectIngestController(
                 self.get_file_tag_rank_list(),
                 ingest_job_file_type_filter)
 
-        self.file_split_line_limit = self._FILE_SPLIT_LINE_LIMIT
+        self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
         self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
             region_code=self.region.region_code)
@@ -100,8 +103,7 @@ class GcsfsDirectIngestController(
             region=self.region,
             fs=self.fs,
             ingest_directory_path=self.ingest_directory_path,
-            temp_output_directory_path=GcsfsDirectoryPath.from_absolute_path(
-                gcsfs_direct_ingest_temporary_output_directory_path()),
+            temp_output_directory_path=self.temp_output_directory_path,
             big_query_client=BigQueryClientImpl()
         )
 
@@ -133,7 +135,7 @@ class GcsfsDirectIngestController(
 
             if parts.is_file_split and \
                     parts.file_split_size and \
-                    parts.file_split_size <= self.file_split_line_limit:
+                    parts.file_split_size <= self.ingest_file_split_line_limit:
                 self.kick_scheduler(just_finished_job=False)
                 logging.info("File [%s] is already normalized and split split "
                              "with correct size, kicking scheduler.",
@@ -176,6 +178,8 @@ class GcsfsDirectIngestController(
             # this function to be re-triggered.
             return
 
+        unprocessed_raw_paths = []
+
         ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
             if self.region.is_raw_vs_ingest_file_name_detection_enabled() else None
         unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
@@ -188,10 +192,7 @@ class GcsfsDirectIngestController(
             if self.region.are_ingest_view_exports_enabled_in_env():
                 self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
-        if self._schedule_any_pre_ingest_tasks():
-            logging.info("Found pre-ingest tasks to schedule - returning.")
-            return
-
+        unprocessed_paths = unprocessed_raw_paths + unprocessed_ingest_view_paths
         did_split = False
         for path in unprocessed_ingest_view_paths:
             if self._split_file_if_necessary(path):
@@ -205,7 +206,7 @@ class GcsfsDirectIngestController(
             # that calls this function to be re-triggered.
             return
 
-        if can_start_ingest and unprocessed_ingest_view_paths:
+        if can_start_ingest and unprocessed_paths:
             self.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
@@ -220,7 +221,7 @@ class GcsfsDirectIngestController(
             logging.warning(
                 "File path [%s] no longer exists - might have already been "
                 "processed or deleted", data_import_args.raw_data_file_path)
-            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
+            self.kick_scheduler(just_finished_job=True)
             return
 
         file_metadata = self.file_metadata_manager.get_file_metadata(data_import_args.raw_data_file_path)
@@ -228,7 +229,7 @@ class GcsfsDirectIngestController(
         if file_metadata.processed_time:
             logging.warning('File [%s] is already marked as processed. Skipping file processing.',
                             data_import_args.raw_data_file_path.file_name)
-            self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
+            self.kick_scheduler(just_finished_job=True)
             return
 
         self.raw_file_import_manager.import_raw_file_to_big_query(data_import_args.raw_data_file_path,
@@ -253,7 +254,7 @@ class GcsfsDirectIngestController(
         self.file_metadata_manager.mark_file_as_processed(path=data_import_args.raw_data_file_path)
 
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
-        self.cloud_task_manager.create_direct_ingest_handle_new_files_task(self.region, can_start_ingest=True)
+        self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_export(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         check_is_region_launched_in_env(self.region)
@@ -402,18 +403,31 @@ class GcsfsDirectIngestController(
 
     @abc.abstractmethod
     def _are_contents_empty(self,
+                            args: GcsfsIngestArgs,
                             contents_handle: GcsfsFileContentsHandle) -> bool:
         pass
 
     def _can_proceed_with_ingest_for_contents(
             self,
+            args: GcsfsIngestArgs,
             contents_handle: GcsfsFileContentsHandle):
-        return self._are_contents_empty(contents_handle) or \
-               self._file_meets_file_line_limit(contents_handle)
+        parts = filename_parts_from_path(args.file_path)
+        return self._are_contents_empty(args, contents_handle) or \
+            not self._must_split_contents(parts.file_type, args.file_path)
+
+    def _must_split_contents(self,
+                             file_type: GcsfsDirectIngestFileType,
+                             path: GcsfsFilePath):
+        if file_type == GcsfsDirectIngestFileType.RAW_DATA:
+            return False
+
+        return not self._file_meets_file_line_limit(self.ingest_file_split_line_limit, path)
 
     @abc.abstractmethod
     def _file_meets_file_line_limit(
-            self, contents_handle: GcsfsFileContentsHandle) -> bool:
+            self,
+            line_limit: int,
+            path: GcsfsFilePath) -> bool:
         """Subclasses should implement to determine whether the file meets the
         expected line limit"""
 
@@ -423,10 +437,9 @@ class GcsfsDirectIngestController(
                contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         pass
 
-    def _split_file_if_necessary(self, path: GcsfsFilePath):
-        """Checks if the given file needs to be split according to this
-        controller's |file_split_line_limit|.
-        """
+
+    def _should_split_file(self, path: GcsfsFilePath) -> bool:
+        """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)
 
         if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
@@ -435,41 +448,41 @@ class GcsfsDirectIngestController(
                              f'file type: {parts.file_type}')
 
         if parts.file_tag not in self.get_file_tag_rank_list():
-            logging.info("File tag [%s] for path [%s] not in rank list - "
-                         "not splitting.",
+            logging.info("File tag [%s] for path [%s] not in rank list - not splitting.",
                          parts.file_tag,
                          path.abs_path())
             return False
 
         if parts.is_file_split and \
                 parts.file_split_size and \
-                parts.file_split_size <= self.file_split_line_limit:
+                parts.file_split_size <= self.ingest_file_split_line_limit:
             logging.info("File [%s] already split with size [%s].",
                          path.abs_path(), parts.file_split_size)
             return False
 
-        file_contents_handle = self._get_contents_handle_from_path(path)
+        return self._must_split_contents(parts.file_type, path)
 
-        if not file_contents_handle:
-            logging.info("File [%s] has no rows - not splitting.",
-                         path.abs_path())
-            return False
+    def _split_file_if_necessary(self, path: GcsfsFilePath) -> bool:
+        """Checks if the given file needs to be split according to this controller's |file_split_line_limit|.
 
-        if self._can_proceed_with_ingest_for_contents(file_contents_handle):
+        Returns True if the file was split, False if splitting was not necessary.
+        """
+
+        should_split = self._should_split_file(path)
+        if not should_split:
             logging.info("No need to split file path [%s].", path.abs_path())
             return False
 
-        logging.info("Proceeding to file splitting for path [%s].",
-                     path.abs_path())
-
-        split_contents_handles = self._split_file(path, file_contents_handle)
+        logging.info("Proceeding to file splitting for path [%s].", path.abs_path())
 
         original_metadata = None
         if self.region.are_ingest_view_exports_enabled_in_env():
             original_metadata = self.file_metadata_manager.get_file_metadata(path)
 
         output_dir = GcsfsDirectoryPath.from_file_path(path)
-        for i, split_contents_handle in enumerate(split_contents_handles):
+
+        split_contents_paths = self._split_file(path)
+        for i, split_contents_path in enumerate(split_contents_paths):
             upload_path = self._create_split_file_path(path, output_dir, split_num=i)
 
             ingest_file_metadata = None
@@ -480,8 +493,8 @@ class GcsfsDirectIngestController(
 
                 ingest_file_metadata = self.file_metadata_manager.register_ingest_file_split(original_metadata,
                                                                                              upload_path)
-            logging.info("Writing file split [%s] to Cloud Storage.", upload_path.abs_path())
-            self.fs.upload_from_contents_handle(upload_path, split_contents_handle, self._contents_type())
+            logging.info("Copying split [%s] to direct ingest directory at path [%s].", i, upload_path.abs_path())
+            self.fs.mv(split_contents_path, upload_path)
 
             if self.region.are_ingest_view_exports_enabled_in_env():
                 if not ingest_file_metadata:
@@ -493,7 +506,7 @@ class GcsfsDirectIngestController(
             self.file_metadata_manager.mark_file_as_processed(path)
 
         logging.info("Done splitting file [%s] into [%s] paths, moving it to storage.",
-                     path.abs_path(), len(split_contents_handles))
+                     path.abs_path(), len(split_contents_paths))
 
         self.fs.mv_path_to_storage(path, self.storage_directory_path)
 
@@ -508,7 +521,7 @@ class GcsfsDirectIngestController(
         rank_str = str(split_num + 1).zfill(5)
         updated_file_name = (
             f'{parts.stripped_file_name}_{rank_str}'
-            f'_{SPLIT_FILE_SUFFIX}_size{self.file_split_line_limit}'
+            f'_{SPLIT_FILE_SUFFIX}_size{self.ingest_file_split_line_limit}'
             f'.{parts.extension}')
 
         file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
@@ -521,15 +534,9 @@ class GcsfsDirectIngestController(
                                                 dt=parts.utc_upload_datetime))
 
     @abc.abstractmethod
-    def _split_file(self,
-                    path: GcsfsFilePath,
-                    file_contents_handle: GcsfsFileContentsHandle) -> List[GcsfsFileContentsHandle]:
-        """Should be implemented by subclasses to split a file accessible via the provided contents handle into multiple
-        files in separate contents handles. """
-
-    @abc.abstractmethod
-    def _contents_type(self) -> str:
-        """Returns the contents type for the contents this controller handles, e.g. 'text/csv'."""
+    def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
+        """Should be implemented by subclasses to split a file accessible via the provided path into multiple
+        files and upload those files to GCS. Returns the list of upload paths."""
 
     def _do_cleanup(self, args: GcsfsIngestArgs):
         self.fs.mv_path_to_processed_path(args.file_path)

@@ -23,10 +23,11 @@ import inspect
 import os
 from typing import List, Optional, Callable
 
+import gcsfs
 import pandas as pd
-from more_itertools import spy
 
 from recidiviz import IngestInfo
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
@@ -34,11 +35,30 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle, \
     DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+    GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadOneGcsfsCsvReaderDelegate, \
+    SplittingGcsfsCsvReaderDelegate
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
+from recidiviz.utils import metadata
+
+
+class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
+    def __init__(self, path: GcsfsFilePath, fs: DirectIngestGCSFileSystem, output_directory_path: GcsfsDirectoryPath):
+        super().__init__(path, fs, include_header=True)
+        self.output_directory_path = output_directory_path
+
+    def transform_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    def get_output_path(self, chunk_num: int):
+        name, _extension = os.path.splitext(self.path.file_name)
+
+        return GcsfsFilePath.from_directory_and_file_name(self.output_directory_path,
+                                                          f'temp_direct_ingest_{name}_{chunk_num}.csv')
 
 
 class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
@@ -57,6 +77,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
                          ingest_directory_path,
                          storage_directory_path,
                          max_delay_sec_between_files)
+        self.csv_reader = GcsfsCsvReader(gcsfs.GCSFileSystem(project=metadata.project_id(),
+                                                             cache_timeout=GCSFS_NO_CACHING))
 
     @classmethod
     @abc.abstractmethod
@@ -64,37 +86,33 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         pass
 
     def _file_meets_file_line_limit(
-            self, contents_handle: GcsfsFileContentsHandle) -> bool:
-        # Read a chunk up to one line bigger than the acceptable size
-        df_list = list(pd.read_csv(contents_handle.local_file_path,
-                                   dtype=str,
-                                   chunksize=(self.file_split_line_limit+1)))
+            self,
+            line_limit: int,
+            path: GcsfsFilePath) -> bool:
+        delegate = ReadOneGcsfsCsvReaderDelegate()
 
-        if len(df_list) == 0:
+        # Read a chunk up to one line bigger than the acceptable size
+        self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=(line_limit + 1))
+
+        if delegate.df is None:
             # If the file is empty, it's fine.
             return True
 
         # If length of the only chunk is less than or equal to the acceptable
         # size, file meets line limit.
-        return len(df_list[0]) <= self.file_split_line_limit
+        return len(delegate.df) <= line_limit
 
-    def _split_file(self,
-                    path: GcsfsFilePath,
-                    file_contents_handle: GcsfsFileContentsHandle) -> List[GcsfsFileContentsHandle]:
+    def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
+        parts = filename_parts_from_path(path)
 
-        split_contents_handles = []
-        for df in pd.read_csv(file_contents_handle.local_file_path,
-                              dtype=str,
-                              chunksize=self.file_split_line_limit,
-                              keep_default_na=False):
-            local_file_path = DirectIngestGCSFileSystem.generate_random_temp_path()
-            df.to_csv(local_file_path, index=False)
-            split_contents_handles.append(GcsfsFileContentsHandle(local_file_path))
+        if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+            raise ValueError(f'Splitting raw files unsupported. Attempting to split [{path.abs_path()}]')
 
-        return split_contents_handles
+        delegate = DirectIngestFileSplittingGcsfsCsvReaderDelegate(path, self.fs, self.temp_output_directory_path)
+        self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=self.ingest_file_split_line_limit)
+        output_paths = [path for path, _ in delegate.output_paths_with_columns]
 
-    def _contents_type(self) -> str:
-        return 'text/csv'
+        return output_paths
 
     def _yaml_filepath(self, file_tag):
         return os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
@@ -158,12 +176,14 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
             contents_handle.get_contents_iterator())
 
     def _are_contents_empty(self,
+                            args: GcsfsIngestArgs,
                             contents_handle: GcsfsFileContentsHandle) -> bool:
         """Returns true if the CSV file is emtpy, i.e. it contains no non-header
          rows.
          """
-        vals, _ = spy(contents_handle.get_contents_iterator(), 2)
-        return len(vals) < 2
+        delegate = ReadOneGcsfsCsvReaderDelegate()
+        self.csv_reader.streaming_read(args.file_path, delegate=delegate, chunk_size=1, skiprows=1)
+        return delegate.df is None
 
     def _get_row_pre_processors_for_file(self, _file_tag) -> List[Callable]:
         """Subclasses should override to return row_pre_processors for a given
