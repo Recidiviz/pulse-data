@@ -153,7 +153,7 @@ class UsMaMiddlesexController(
         return UsMaMiddlesexContentsHandle(args)
 
     def _can_proceed_with_ingest_for_contents(
-            self, _contents_handle: UsMaMiddlesexContentsHandle):
+            self, _args: IngestArgs, _contents_handle: UsMaMiddlesexContentsHandle):
         return True
 
     def _parse(self,
@@ -167,6 +167,7 @@ class UsMaMiddlesexController(
 
     def _are_contents_empty(
             self,
+            args: IngestArgs,
             contents_handle: UsMaMiddlesexContentsHandle) -> bool:
         """Checks if there are any content Dicts to process, returns True if not
         (i.e. there are no elements in the Iterable).
