@@ -17,19 +17,23 @@
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 # TODO(2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 import datetime
+import logging
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
     us_id_is_revocation_admission
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
-    us_id_get_pre_incarceration_supervision_type
+    us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
+    us_nd_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
+    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
+    us_mo_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
@@ -176,6 +180,37 @@ def get_pre_incarceration_supervision_type(
 
     # TODO(2938): Decide if we want date matching/supervision period lookback logic for US_ND
     return get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
+
+
+def get_post_incarceration_supervision_type(
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """If the person was released from incarceration onto some form of supervision, returns the type of supervision
+    they were released to. This function must be implemented for each state for which we need this output. There is not
+    a default way to determine the supervision type someone is released onto.
+
+    Args:
+        incarceration_sentences: (List[StateIncarcerationSentence]) All IncarcerationSentences associated with this
+            person.
+        supervision_sentences: (List[StateSupervisionSentence]) All SupervisionSentences associated with this person.
+        incarceration_period: (StateIncarcerationPeriod) The incarceration period the person was released from.
+    """
+    state_code = incarceration_period.state_code
+
+    if state_code == 'US_ID':
+        return us_id_get_post_incarceration_supervision_type(incarceration_sentences,
+                                                             supervision_sentences,
+                                                             incarceration_period)
+    if state_code == 'US_MO':
+        return us_mo_get_post_incarceration_supervision_type(incarceration_sentences,
+                                                             supervision_sentences,
+                                                             incarceration_period)
+    if state_code == 'US_ND':
+        return us_nd_get_post_incarceration_supervision_type(incarceration_period)
+
+    logging.warning("get_post_incarceration_supervision_type not implemented for state: %s", state_code)
+    return None
 
 
 def get_pre_revocation_supervision_type(

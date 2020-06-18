@@ -34,7 +34,7 @@ from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration, \
-    StateIncarcerationPeriodAdmissionReason
+    StateIncarcerationPeriodAdmissionReason, StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
@@ -137,6 +137,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 event_date=date(2003, 4, 12),
                 facility='SAN QUENTIN',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE
             )
         ]
 
@@ -1077,6 +1078,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             event_date=date(2018, 9, 13),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='CR',
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.DUAL
         )
 
         characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
@@ -1089,11 +1093,13 @@ class TestCharacteristicsDict(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'release_date': date(2018, 9, 13)
+            'release_date': date(2018, 9, 13),
+            'supervision_type_at_release': StateSupervisionPeriodSupervisionType.DUAL,
+            'release_reason_raw_text': 'CR',
+            'release_reason': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
         }
 
         self.assertEqual(expected_output, characteristic_dict)
-
 
 
 class TestMatchingEventsForPersonBasedCount(unittest.TestCase):

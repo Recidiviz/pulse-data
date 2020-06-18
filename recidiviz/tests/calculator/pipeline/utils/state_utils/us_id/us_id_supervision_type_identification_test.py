@@ -24,8 +24,9 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, \
     us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
-    PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
+    INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT, us_id_get_post_incarceration_supervision_type
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionSentence
@@ -46,10 +47,10 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.admission_date -
-            relativedelta(days=PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS + 100),
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
             termination_date=
             incarceration_period.admission_date -
-            relativedelta(days=PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS - 1),
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT - 1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -101,10 +102,10 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.admission_date -
-            relativedelta(days=PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS + 100),
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
             termination_date=
             incarceration_period.admission_date -
-            relativedelta(days=PRE_INCARCERATION_SUPERVISION_TYPE_LOOKBACK_DAYS + 10),
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -117,6 +118,116 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             incarceration_sentences=[],
             supervision_sentences=[supervision_sentence],
             incarceration_period=incarceration_period))
+
+
+class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
+    """Tests for us_id_get_post_incarceration_supervision_type"""
+
+    def test_usId_getPostIncarcerationSupervisionType(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            external_id='ip1',
+            state_code='US_ID',
+            admission_date=date(2019, 9, 13),
+            release_date=date(2020, 3, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
+        )
+
+        succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=incarceration_period.release_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='XXX',
+            supervision_periods=[succeeding_supervision_period])
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
+                         us_id_get_post_incarceration_supervision_type(
+                             incarceration_sentences=[],
+                             supervision_sentences=[supervision_sentence],
+                             incarceration_period=incarceration_period))
+
+    def test_usId_getPostIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            external_id='ip1',
+            state_code='US_ID',
+            admission_date=date(2019, 9, 13),
+            release_date=date(2020, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
+        )
+
+        succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=
+            incarceration_period.release_date +
+            relativedelta(days=(INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100)),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='XXX',
+            supervision_periods=[succeeding_supervision_period])
+
+        self.assertIsNone(us_id_get_post_incarceration_supervision_type(
+            incarceration_sentences=[],
+            supervision_sentences=[supervision_sentence],
+            incarceration_period=incarceration_period))
+
+    def test_usId_getPostIncarcerationSupervisionType_ignoreOutOfDatePeriods_Before(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            external_id='ip1',
+            state_code='US_ID',
+            admission_date=date(2019, 9, 13),
+            release_date=date(2020, 1, 18),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
+        )
+
+        succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=
+            incarceration_period.admission_date -
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
+            termination_date=
+            incarceration_period.admission_date -
+            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 10),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=1,
+            external_id='XXX',
+            supervision_periods=[succeeding_supervision_period])
+
+        self.assertIsNone(us_id_get_post_incarceration_supervision_type(
+            incarceration_sentences=[],
+            supervision_sentences=[supervision_sentence],
+            incarceration_period=incarceration_period))
+
+    def test_usId_getPostIncarcerationSupervisionType_NotConditionalRelease(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            external_id='ip1',
+            state_code='US_ID',
+            admission_date=date(2019, 9, 13),
+            release_date=date(2020, 3, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        self.assertIsNone(us_id_get_post_incarceration_supervision_type(
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            incarceration_period=incarceration_period))
+
 
 class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(unittest.TestCase):
     """Unittests for the us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day helper."""

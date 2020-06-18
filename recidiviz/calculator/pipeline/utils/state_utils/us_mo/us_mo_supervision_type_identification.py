@@ -20,6 +20,8 @@ import itertools
 from collections import defaultdict
 from typing import List, Set, Optional, Dict
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     _sentence_supervision_types_to_supervision_period_supervision_type
@@ -28,6 +30,11 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod
+
+# The maximum number of days following a release from incarceration where we will look for a subsequent supervision
+# period. This is a short window because the status changes from incarceration to supervision should happen
+# simultaneously in the US_MO data.
+POST_INCARCERATION_SUPERVISION_DAYS_LIMIT = 3
 
 
 def us_mo_get_pre_incarceration_supervision_type(
@@ -44,6 +51,26 @@ def us_mo_get_pre_incarceration_supervision_type(
     return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=incarceration_period.admission_date,
         lower_bound_inclusive_date=None,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences
+    )
+
+
+def us_mo_get_post_incarceration_supervision_type(
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Calculates the post-incarceration supervision type for US_MO people by calculating the type of supervision the
+    person was on directly after their release from incarceration.
+    """
+    if not incarceration_period.release_date:
+        raise ValueError(
+            f'No release date for incarceration period {incarceration_period.incarceration_period_id}')
+
+    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+        upper_bound_exclusive_date=
+        incarceration_period.release_date + relativedelta(days=POST_INCARCERATION_SUPERVISION_DAYS_LIMIT),
+        lower_bound_inclusive_date=incarceration_period.release_date,
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences
     )
