@@ -33,6 +33,7 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.persistence import persistence
@@ -83,7 +84,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         return ingest_info
 
     def _file_meets_file_line_limit(
-            self, _contents_handle: GcsfsFileContentsHandle) -> bool:
+            self, _line_limit: int, _path: GcsfsFilePath) -> bool:
         """The CSV files must be processed all at once, so do not split."""
         return True
 

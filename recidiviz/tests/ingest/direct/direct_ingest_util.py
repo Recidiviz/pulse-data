@@ -22,7 +22,8 @@ import unittest
 from typing import List, Union, Optional, Dict, Type
 
 import attr
-from mock import Mock, patch
+import gcsfs
+from mock import Mock, patch, create_autospec
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
@@ -41,6 +42,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
 from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
 from recidiviz.ingest.direct.controllers.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsPath
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
@@ -51,6 +53,16 @@ from recidiviz.tests.ingest.direct. \
     FakeSynchronousDirectIngestCloudTaskManager
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
+
+
+class TestSafeGcsCsvReader(GcsfsCsvReader):
+    def __init__(self, fs: FakeDirectIngestGCSFileSystem):
+        super().__init__(create_autospec(gcsfs.GCSFileSystem))
+        self.fs = fs
+
+    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str):
+        path_str = self.fs.real_absolute_path_for_path(path)
+        return open(path_str, encoding=encoding)
 
 
 @attr.s
@@ -197,6 +209,9 @@ def build_gcsfs_controller_for_tests(
                             ingest_directory_path=f'{fixture_path_prefix}/fixtures',
                             storage_directory_path='storage/path',
                             **kwargs)
+                        controller.csv_reader = TestSafeGcsCsvReader(fake_fs)
+                        controller.raw_file_import_manager.csv_reader = controller.csv_reader
+
                         task_manager.set_controller(controller)
                         fake_fs.test_set_controller(controller)
                         return controller

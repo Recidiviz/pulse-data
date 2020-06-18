@@ -20,27 +20,27 @@ import logging
 import os
 import string
 import time
-from typing import List, Dict, Any, Set, Optional, Iterator, Tuple, Union
+from typing import List, Dict, Any, Set, Optional, Tuple
 
 import attr
+import gcsfs
 import pandas as pd
 import yaml
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
-    GcsfsFileContentsHandle
+from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader, COMMON_RAW_FILE_ENCODINGS
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadOneGcsfsCsvReaderDelegate, \
+    SplittingGcsfsCsvReaderDelegate
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
-
-COMMON_RAW_FILE_ENCODINGS = [
-    'UTF-8',
-    'ISO-8859-1'  # Also known as 'latin-1', used in the census and lots of other government data
-]
 
 
 @attr.s(frozen=True)
@@ -169,7 +169,7 @@ class DirectIngestRegionRawFileConfig:
 
 _FILE_ID_COL_NAME = 'file_id'
 _UPDATE_DATETIME_COL_NAME = 'update_datetime'
-_DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 500000
+_DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
 # The number of seconds of spacing we need to have between each table load operation to avoid going over the
 # "5 operations every 10 seconds per table" rate limit (with a little buffer): https://cloud.google.com/bigquery/quotas
@@ -199,6 +199,8 @@ class DirectIngestRawFileImportManager:
         self.region_raw_file_config = region_raw_file_config \
             if region_raw_file_config else DirectIngestRegionRawFileConfig(region_code=self.region.region_code)
         self.upload_chunk_size = upload_chunk_size
+        self.csv_reader = GcsfsCsvReader(gcsfs.GCSFileSystem(project=metadata.project_id(),
+                                                             cache_timeout=GCSFS_NO_CACHING))
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
@@ -238,15 +240,9 @@ class DirectIngestRawFileImportManager:
         if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
             raise ValueError(f'Unexpected file type [{parts.file_type}] for path [{parts.file_tag}].')
 
-        logging.info('Beginning BigQuery upload of raw file [%s] - downloading raw path to local file', path.abs_path())
+        logging.info('Beginning BigQuery upload of raw file [%s]', path.abs_path())
 
-        contents_handle = self.fs.download_to_temp_file(path)
-        if not contents_handle:
-            raise ValueError(f'Failed to load path [{path.abs_path()}] to disk.')
-
-        logging.info('Done downloading contents to local file')
-
-        temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata, contents_handle)
+        temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
 
         logging.info('Completed BigQuery import of [%s]', path.abs_path())
@@ -254,60 +250,38 @@ class DirectIngestRawFileImportManager:
     def _upload_contents_to_temp_gcs_paths(
             self,
             path: GcsfsFilePath,
-            file_metadata: DirectIngestFileMetadata,
-            contents_handle: GcsfsFileContentsHandle) -> List[Tuple[GcsfsFilePath, List[str]]]:
+            file_metadata: DirectIngestFileMetadata) -> List[Tuple[GcsfsFilePath, List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
+
+        Returns a list of tuple pairs containing the destination paths and corrected CSV columns for that file.
         """
 
         logging.info('Starting chunked upload of contents to GCS')
 
         parts = filename_parts_from_path(path)
         file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
-        for encoding in file_config.encodings_to_try():
-            logging.info('Attempting to do chunked upload of [%s] with encoding [%s]', path.abs_path(), encoding)
-            temp_paths_with_columns = []
-            try:
-                for i, raw_data_df in enumerate(self._read_contents_into_dataframes(encoding,
-                                                                                    contents_handle,
-                                                                                    file_config)):
-                    logging.info('Loaded DataFrame chunk [%d] has [%d] rows', i, raw_data_df.shape[0])
 
-                    # Stripping white space from all fields
-                    raw_data_df = raw_data_df.applymap(lambda x: x.strip())
+        columns = self._get_validated_columns(path, file_config)
 
-                    augmented_df = self._augment_raw_data_with_metadata_columns(path=path,
-                                                                                file_metadata=file_metadata,
-                                                                                raw_data_df=raw_data_df)
-                    logging.info('Augmented DataFrame chunk [%d] has [%d] rows', i, augmented_df.shape[0])
-                    temp_output_path = self._get_temp_df_output_path(path, chunk_num=i)
+        delegate = DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(path,
+                                                                      self.fs,
+                                                                      file_metadata,
+                                                                      self.temp_output_directory_path)
 
-                    logging.info('Writing DataFrame chunk [%d] to temporary output path [%s]',
-                                 i, temp_output_path.abs_path())
+        self.csv_reader.streaming_read(path,
+                                       delegate=delegate,
+                                       chunk_size=self.upload_chunk_size,
+                                       encodings_to_try=file_config.encodings_to_try(),
+                                       index_col=False,
+                                       header=None,
+                                       skiprows=1,
+                                       usecols=columns,
+                                       names=columns,
+                                       keep_default_na=False,
+                                       **self._common_read_csv_kwargs(file_config))
 
-                    # We cannot use QUOTE_ALL as it results in empty values being written as "" in our temp file csv.
-                    # When uploading the temp file to BQ this results in empty strings being uploaded instead of NULLs.
-                    quoting = csv.QUOTE_MINIMAL
-                    self.fs.upload_from_string(temp_output_path,
-                                               augmented_df.to_csv(header=False, index=False, quoting=quoting),
-                                               'text/csv')
-                    logging.info('Done writing to temporary output path')
-
-                    temp_paths_with_columns.append((temp_output_path, augmented_df.columns))
-                logging.info('Successfully read file [%s] with encoding [%s]', path.abs_path(), encoding)
-                return temp_paths_with_columns
-            except UnicodeDecodeError:
-                logging.info('Unable to read file [%s] with encoding [%s]', path.abs_path(), encoding)
-                self._delete_temp_output_paths([path for path, _ in temp_paths_with_columns])
-                temp_paths_with_columns.clear()
-                continue
-            except Exception as e:
-                logging.error('Failed to upload to GCS - cleaning up temp paths')
-                self._delete_temp_output_paths([path for path, _ in temp_paths_with_columns])
-                raise e
-
-        raise ValueError(
-            f'Unable to read path [{path.abs_path()}] for any of these encodings: {file_config.encodings_to_try()}')
+        return delegate.output_paths_with_columns
 
     def _load_contents_to_bigquery(self,
                                    path: GcsfsFilePath,
@@ -366,49 +340,6 @@ class DirectIngestRawFileImportManager:
             logging.info('Deleting temp file [%s].', temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
 
-    def _get_temp_df_output_path(self, path: GcsfsFilePath, chunk_num: int) -> GcsfsFilePath:
-        name, _extension = os.path.splitext(path.file_name)
-
-        return GcsfsFilePath.from_directory_and_file_name(self.temp_output_directory_path,
-                                                          f'temp_{name}_{chunk_num}.csv')
-
-    def _read_contents_into_dataframes(self,
-                                       encoding: str,
-                                       contents_handle: GcsfsFileContentsHandle,
-                                       file_config: DirectIngestRawFileConfig) -> Iterator[pd.DataFrame]:
-
-        columns = self._get_validated_columns(encoding, file_config, contents_handle)
-        df_iterator = self._read_csv(
-            encoding,
-            contents_handle,
-            file_config,
-            index_col=False,
-            header=None,
-            skiprows=1,
-            usecols=columns,
-            names=columns,
-            chunksize=self.upload_chunk_size,
-            keep_default_na=False)
-        for df in df_iterator:
-            if not isinstance(df, pd.DataFrame):
-                raise ValueError(f'Unexpected type for DataFrame: [{type(df)}]')
-            yield df
-
-    @staticmethod
-    def _augment_raw_data_with_metadata_columns(path: GcsfsFilePath,
-                                                file_metadata: DirectIngestFileMetadata,
-                                                raw_data_df: pd.DataFrame) -> pd.DataFrame:
-        """Add file_id and update_datetime columns to all rows in the dataframe."""
-
-        parts = filename_parts_from_path(path)
-
-        logging.info('Adding extra columns with file_id [%s] and update_datetime [%s]',
-                     file_metadata.file_id, parts.utc_upload_datetime)
-        raw_data_df[_FILE_ID_COL_NAME] = file_metadata.file_id
-        raw_data_df[_UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
-
-        return raw_data_df
-
     @staticmethod
     def remove_column_non_printable_characters(columns: List[str]) -> List[str]:
         """Removes all non-printable characters that occasionally show up in column names. This is known to happen in
@@ -423,14 +354,18 @@ class DirectIngestRawFileImportManager:
         return fixed_columns
 
     def _get_validated_columns(self,
-                               encoding: str,
-                               file_config: DirectIngestRawFileConfig,
-                               contents_handle: GcsfsFileContentsHandle) -> List[str]:
+                               path: GcsfsFilePath,
+                               file_config: DirectIngestRawFileConfig) -> List[str]:
+        """Returns a list of normalized column names for the raw data file at the given path."""
         # TODO(3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should instead
         # define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
         # this function to make sure that the columns in the CSV is a strict subset of expected columns. This will allow
         # to gracefully any raw data re-imports where a new column gets introduced in a later file.
-        df = self._read_csv(encoding, contents_handle, file_config, nrows=1)
+
+        delegate = ReadOneGcsfsCsvReaderDelegate()
+        self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=1, nrows=1,
+                                       **self._common_read_csv_kwargs(file_config))
+        df = delegate.df
 
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f'Unexpected type for DataFrame: [{type(df)}]')
@@ -476,16 +411,54 @@ class DirectIngestRawFileImportManager:
         return schema
 
     @staticmethod
-    def _read_csv(encoding: str,
-                  contents_handle: GcsfsFileContentsHandle,
-                  file_config: DirectIngestRawFileConfig,
-                  **kwargs) -> Union[pd.DataFrame, Iterator[pd.DataFrame]]:
+    def _common_read_csv_kwargs(file_config: DirectIngestRawFileConfig) -> Dict[str, Any]:
+        return {
+            'sep': file_config.separator,
+            'quoting': (csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL),
+        }
 
-        return pd.read_csv(
-            contents_handle.local_file_path,
-            **kwargs,
-            dtype=str,
-            encoding=encoding,
-            sep=file_config.separator,
-            quoting=(csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL),
-        )
+
+class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
+    """An implementation of the GcsfsCsvReaderDelegate that augments chunks of a raw data file and re-uploads each
+    chunk to a temporary Google Cloud Storage path.
+    """
+
+    def __init__(self,
+                 path: GcsfsFilePath,
+                 fs: DirectIngestGCSFileSystem,
+                 file_metadata: DirectIngestFileMetadata,
+                 temp_output_directory_path: GcsfsDirectoryPath):
+
+        super().__init__(path, fs, include_header=False)
+        self.file_metadata = file_metadata
+        self.temp_output_directory_path = temp_output_directory_path
+
+    def transform_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        # Stripping white space from all fields
+        df = df.applymap(lambda x: x.strip())
+
+        augmented_df = self._augment_raw_data_with_metadata_columns(path=self.path,
+                                                                    file_metadata=self.file_metadata,
+                                                                    raw_data_df=df)
+        return augmented_df
+
+    def get_output_path(self, chunk_num: int):
+        name, _extension = os.path.splitext(self.path.file_name)
+
+        return GcsfsFilePath.from_directory_and_file_name(self.temp_output_directory_path,
+                                                          f'temp_{name}_{chunk_num}.csv')
+
+    @staticmethod
+    def _augment_raw_data_with_metadata_columns(path: GcsfsFilePath,
+                                                file_metadata: DirectIngestFileMetadata,
+                                                raw_data_df: pd.DataFrame) -> pd.DataFrame:
+        """Add file_id and update_datetime columns to all rows in the dataframe."""
+
+        parts = filename_parts_from_path(path)
+
+        logging.info('Adding extra columns with file_id [%s] and update_datetime [%s]',
+                     file_metadata.file_id, parts.utc_upload_datetime)
+        raw_data_df[_FILE_ID_COL_NAME] = file_metadata.file_id
+        raw_data_df[_UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
+
+        return raw_data_df
