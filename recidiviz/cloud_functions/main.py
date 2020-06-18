@@ -36,10 +36,6 @@ _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
 _VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/view_data_export'
 )
-_PREPARE_FOR_CALCULATIONS_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/cloud_function/prepare_for_calculation_pipelines?topic={}'
-)
-
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
     '&location={}&topic={}'

@@ -223,7 +223,7 @@ def create_all_state_bq_export_tasks():
     for table in export_config.STATE_TABLES_TO_EXPORT:
         task_manager.create_bq_task(table.name, schema_type_str)
 
-    pub_sub_topic = 'v1.calculator.preparation'
+    pub_sub_topic = 'v1.calculator.recidivism'
     pub_sub_message = 'State export to BQ complete'
     task_manager.create_bq_monitor_task(pub_sub_topic, pub_sub_message)
     return ('', HTTPStatus.OK)
