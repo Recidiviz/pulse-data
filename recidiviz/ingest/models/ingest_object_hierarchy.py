@@ -133,8 +133,14 @@ _HIERARCHY_MAP: Dict[
                                       'fine'}),
                 'state_charge', 'state_court_case'),
             'state_supervision_case_type_entry': ('state_person', 'state_sentence_group', 'state_supervision_sentence',
-                                                  'state_supervision_period',)
-        }
+                                                  'state_supervision_period',),
+            'state_supervision_contact': (
+                'state_person', 'state_sentence_group',
+                AncestorTypeChoices(
+                    key='state_sentence',
+                    ancestor_choices={'state_incarceration_sentence', 'state_supervision_sentence'}),
+                'state_supervision_period')
+            }
 
 
 def get_ancestor_class_sequence(

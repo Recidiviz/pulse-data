@@ -254,6 +254,9 @@ raw_files:
   - file_tag: sprvsn_cntc
     primary_key_cols:
       - sprvsn_cntc_id
+    datetime_cols:
+      - cntc_dt
+      - updt_dt
   - file_tag: statrls
     primary_key_cols:
       - stat_rls_typ

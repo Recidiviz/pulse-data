@@ -29,9 +29,8 @@ from recidiviz.persistence.entity_matching.state.\
     base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     read_persons_by_root_entity_cls, nonnull_fields_entity_match
-from recidiviz.persistence.entity_matching.state.state_period_matching_utils import move_periods_onto_sentences_by_date
-from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import \
-    move_violations_onto_supervision_periods_for_sentence
+from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import \
+    move_periods_onto_sentences_by_date, move_violations_onto_supervision_periods_for_sentence
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils \
     import remove_suffix_from_violation_ids, \
     set_current_supervising_officer_from_supervision_periods

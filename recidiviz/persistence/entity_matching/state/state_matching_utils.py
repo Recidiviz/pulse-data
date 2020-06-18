@@ -361,6 +361,7 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
         schema.StateIncarcerationPeriod,
         schema.StateParoleDecision,
         schema.StateSupervisionPeriod,
+        schema.StateSupervisionContact,
         schema.StateSupervisionViolation,
         schema.StateSupervisionViolationResponse,
         schema.StateProgramAssignment,
