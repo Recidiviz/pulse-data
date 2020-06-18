@@ -307,8 +307,8 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'offender_ofndr_dob'
-    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 4)
+    ingest_view_name_: str = 'sprvsn_cntc'
+    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 2, 27)
     upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 6, 9)
 
     with local_project_id_override(GAE_PROJECT_STAGING):

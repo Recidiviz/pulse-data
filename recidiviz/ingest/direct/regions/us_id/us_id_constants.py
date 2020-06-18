@@ -102,6 +102,10 @@ SEX_CRIME_TYPES = (
     NON_VIOLENT_SEX_OFFENSE,
 )
 
+CONTACT_RESULT_ARREST = 'ARREST'
+
+CONTACT_TYPES_TO_BECOME_LOCATIONS = ('TELEPHONE', 'FAX', 'EMAIL', 'MAIL')
+
 # Recidiviz generated date used by Supervision/Incarceration periods query
 MAX_DATE_STR = '9999-12-31'
 

@@ -30,6 +30,8 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactLocation, \
+    StateSupervisionContactType, StateSupervisionContactReason, StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -44,7 +46,8 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
     SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_CODE, NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE, \
     PAROLE_COMMISSION_CODE, LIMITED_SUPERVISION_LIVING_UNIT, BENCH_WARRANT_LIVING_UNIT, COURT_PROBATION_LIVING_UNIT, \
     LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, IDOC_CUSTODIAL_AUTHORITY, CURRENT_FACILITY_NAME, \
-    CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE
+    CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE, \
+    CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
@@ -53,7 +56,8 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson, StateEarlyDischarge
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson, \
+    StateEarlyDischarge, StateSupervisionContact
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 from recidiviz.utils.params import str_to_bool
@@ -142,6 +146,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_supervising_officer,
             ],
+            'sprvsn_cntc': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._add_supervision_contact_fields,
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender_ofndr_dob': [],
@@ -161,6 +169,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 #   - reused as a child key
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            'sprvsn_cntc': [],
         }
 
     FILE_TAGS = [
@@ -175,6 +184,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         'movement_facility_location_offstat_supervision_periods',
         'ofndr_tst_tst_qstn_rspns_violation_reports',
         'ofndr_tst_tst_qstn_rspns_violation_reports_old',
+        'sprvsn_cntc',
     ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -314,6 +324,87 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateActingBodyType.SENTENCED_PERSON: [
             'SPECIAL PROGRESS REPORT MOTION FOR PROBATION DISCHARGE BY DEFENDANT',
             'SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE DISCHARGE REQUEST',
+        ],
+
+        StateSupervisionContactLocation.SUPERVISION_OFFICE: [
+            'OFFICE',
+            'ALTERNATE WORK SITE',
+            'INTERSTATE OFFICE',
+        ],
+        StateSupervisionContactLocation.RESIDENCE: [
+            'RESIDENCE',
+            'OTHER RESIDENCE',
+        ],
+        StateSupervisionContactLocation.COURT: [
+            'COURT',
+            'DRUG COURT',
+        ],
+        StateSupervisionContactLocation.TREATMENT_PROVIDER: [
+            'TREATMENT PROVIDER',
+        ],
+        StateSupervisionContactLocation.JAIL: [
+            'JAIL',
+        ],
+        StateSupervisionContactLocation.FIELD: [
+            'FIELD',
+        ],
+        StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
+            'EMPLOYER',
+        ],
+        StateSupervisionContactLocation.INTERNAL_UNKNOWN: [
+            'LAW ENFORCEMENT AGENCY',   # TODO(2999): Consider adding as enum
+            'COMPACT STATE',            # TODO(2999): Consider adding as enum
+            'PAROLE COMMISSION',        # TODO(2999): Consider adding as enum
+            'WBOR',                     # Data entry error - WBOR is an online form filled out that isn't a location.
+
+            # No longer used
+            'OTHER',
+            'COMMUNITY SERVICE SITE',
+            'FAMILY',
+            'ASSOCIATE',
+            'CRIME SCENE',
+            'CONVERSION',
+        ],
+
+        StateSupervisionContactType.FACE_TO_FACE: [
+            'FACE TO FACE',
+        ],
+        StateSupervisionContactType.TELEPHONE: [
+            'TELEPHONE',
+        ],
+        StateSupervisionContactType.WRITTEN_MESSAGE: [
+            'FAX',
+            'EMAIL',
+            'MAIL',
+        ],
+
+        StateSupervisionContactReason.INITIAL_CONTACT: [
+            '72 HOUR INITIAL'
+        ],
+        StateSupervisionContactReason.EMERGENCY_CONTACT: [
+            'CRITICAL'
+        ],
+        StateSupervisionContactReason.GENERAL_CONTACT: [
+            'GENERAL'
+        ],
+        StateSupervisionContactReason.INTERNAL_UNKNOWN: [
+            # No longer valid codes
+            'CONVERSION',
+            'GENERAL REINFORCEMENT',
+            'GENERAL DISAPPROVAL',
+        ],
+
+        StateSupervisionContactStatus.COMPLETED: [
+            'SUCCESSFUL',
+            'PROGRESS REVIEW',
+            'FACE TO FACE',
+            'ARREST',  # TODO(2999): Is there another place to ingest arrest entities or should we take it from
+                       #  sprvsn_cntc?
+        ],
+        StateSupervisionContactStatus.ATTEMPTED: [
+            'ATTEMPTED',
+            'INQUIRY',
+            'FAILED TO REPORT',
         ],
 
     }
@@ -726,6 +817,28 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     full_name=agent_name,
                     agent_type=StateAgentType.SUPERVISION_OFFICER.value)
                 create_if_not_exists(agent_to_create, obj, 'supervising_officer')
+
+    @staticmethod
+    def _add_supervision_contact_fields(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        """Adds all extra fields needed on SupervisionContact entities that cannot be automatically mapped via YAMLs."""
+        agent_id = row.get('usr_id', '')
+        agent_name = row.get('name', '')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionContact):
+                if agent_id and agent_name:
+                    agent_to_create = StateAgent(
+                        state_agent_id=agent_id,
+                        full_name=agent_name,
+                        agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+                    create_if_not_exists(agent_to_create, obj, 'contacted_agent')
+
+                obj.resulted_in_arrest = str(obj.status == CONTACT_RESULT_ARREST)
+
+                if obj.location in CONTACT_TYPES_TO_BECOME_LOCATIONS:
+                    obj.contact_type = obj.location
+                    obj.location = None
 
 
 def _get_bool_from_row(arg: str, row: Dict[str, str]):
