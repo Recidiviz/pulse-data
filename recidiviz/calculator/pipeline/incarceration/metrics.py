@@ -193,6 +193,9 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
     # Type of incarceration the release was from
     purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 
+    # Supervision type at the time of release, if any.
+    supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationReleaseMetric']:
