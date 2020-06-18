@@ -65,15 +65,9 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with self.mutex:
             return path.abs_path() in [p.abs_path() for p in self.all_paths]
 
-    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
-        """Downloads file contents into local temporary_file, returning path to
-        temp file, or None if the path no-longer exists in the GCS file system.
-        """
-        if not self.exists(path):
-            return None
-
+    def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:
         if path.abs_path() in self.uploaded_test_path_to_actual:
-            return GcsfsFileContentsHandle(self.uploaded_test_path_to_actual[path.abs_path()])
+            return self.uploaded_test_path_to_actual[path.abs_path()]
 
         directory_path, _ = os.path.split(path.abs_path())
 
@@ -86,8 +80,16 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                 os.path.join(directory_path, fixture_filename))
 
         tempfile_path = self.generate_random_temp_path()
+        return shutil.copyfile(actual_fixture_file_path, tempfile_path)
 
-        return GcsfsFileContentsHandle(shutil.copyfile(actual_fixture_file_path, tempfile_path))
+    def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
+        """Downloads file contents into local temporary_file, returning path to
+        temp file, or None if the path no-longer exists in the GCS file system.
+        """
+        if not self.exists(path):
+            return None
+
+        return GcsfsFileContentsHandle(self.real_absolute_path_for_path(path))
 
     def upload_from_string(self,
                            path: GcsfsFilePath,
@@ -122,6 +124,10 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                                                            src_path.file_name)
         else:
             raise ValueError(f'Unexpected path type [{type(dst_path)}]')
+
+        if src_path.abs_path() in self.uploaded_test_path_to_actual:
+            self.uploaded_test_path_to_actual[dst_path.abs_path()] = \
+                self.uploaded_test_path_to_actual[src_path.abs_path()]
 
         self._add_path(path)
 

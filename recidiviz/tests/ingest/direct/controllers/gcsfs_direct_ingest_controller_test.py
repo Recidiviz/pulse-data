@@ -613,7 +613,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # Set line limit to 1
-        controller.file_split_line_limit = 1
+        controller.ingest_file_split_line_limit = 1
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -646,7 +646,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # Set line limit to 1
-        controller.file_split_line_limit = 1
+        controller.ingest_file_split_line_limit = 1
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -682,7 +682,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # Set line limit to 1
-        controller.file_split_line_limit = 1
+        controller.ingest_file_split_line_limit = 1
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -727,7 +727,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=True)
 
         # Set line limit to 1
-        controller.file_split_line_limit = 1
+        controller.ingest_file_split_line_limit = 1
 
         # pylint:disable=protected-access
         file_tags = ['tagWeDoNotIngest']
@@ -768,7 +768,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager = controller.cloud_task_manager
 
         # Set line limit to 1
-        controller.file_split_line_limit = 1
+        controller.ingest_file_split_line_limit = 1
 
         # This file exceeds the split limit, but since we add it with
         # fail_handle_file_call=True, it won't get picked up and split.
