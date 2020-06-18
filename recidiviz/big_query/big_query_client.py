@@ -755,8 +755,8 @@ class BigQueryClientImpl(BigQueryClient):
                     raise ValueError(f"Cannot change the mode of field {existing_field_with_name} to {field.mode}.")
 
         if updated_table_schema == existing_table_schema:
-            logging.info("Schema for table %s.%s already contains all of the following fields: %s.",
-                         dataset_id, table_id, schema_fields)
+            logging.info("Schema for table %s.%s already contains all of the desired fields.",
+                         dataset_id, table_id)
             return
 
         # Update the table schema with the missing fields

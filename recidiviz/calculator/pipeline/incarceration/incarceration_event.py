@@ -101,3 +101,6 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
 
     # Type of incarceration the release was from
     purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+
+    # Supervision type at the time of release, if any.
+    supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
