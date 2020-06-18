@@ -83,7 +83,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             admission_reason=AdmissionReason.PROBATION_REVOCATION,
             admission_reason_raw_text='Revocation',
             release_date=date(2008, 12, 21),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='RPRB'
+        )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             start_date=date(2008, 12, 11),
@@ -132,7 +134,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=revocation_period.release_date,
                 facility=revocation_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=revocation_period.release_reason
+                release_reason=revocation_period.release_reason,
+                release_reason_raw_text=revocation_period.release_reason_raw_text,
+                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
             )
         ], incarceration_events)
 
@@ -1213,6 +1217,20 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 class TestReleaseEventForPeriod(unittest.TestCase):
     """Tests the release_event_for_period function."""
 
+    @staticmethod
+    def _run_release_for_period_with_no_sentences(incarceration_period, county_of_residence):
+        """Runs `release_event_for_period` without providing sentence information. Sentence information
+        is only used to inform supervision_type_at_release for US_MO and US_ID. All tests using this method should
+        not require that state specific logic.
+        """
+        incarceration_sentences = []
+        supervision_sentences = []
+        return identifier.release_event_for_period(
+            incarceration_sentences,
+            supervision_sentences,
+            incarceration_period,
+            county_of_residence)
+
     def test_release_event_for_period(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1228,7 +1246,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 release_reason=ReleaseReason.SENTENCE_SERVED,
                 release_reason_raw_text='SS')
 
-        release_event = identifier.release_event_for_period(
+        release_event = self._run_release_for_period_with_no_sentences(
             incarceration_period, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(IncarcerationReleaseEvent(
@@ -1241,7 +1259,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
         ), release_event)
 
-    def test_admission_event_for_period_all_release_reasons(self):
+    def test_release_event_for_period_all_release_reasons(self):
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1256,7 +1274,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         for release_reason in ReleaseReason:
             incarceration_period.release_reason = release_reason
 
-            release_event = identifier.release_event_for_period(
+            release_event = self._run_release_for_period_with_no_sentences(
                 incarceration_period, _COUNTY_OF_RESIDENCE)
 
             self.assertIsNotNone(release_event)
@@ -1274,9 +1292,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 release_date=date(2019, 12, 4),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
-        release_event = identifier.release_event_for_period(
-            incarceration_period, _COUNTY_OF_RESIDENCE
-        )
+        release_event = self._run_release_for_period_with_no_sentences(
+            incarceration_period, _COUNTY_OF_RESIDENCE)
 
         self.assertEqual(IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
@@ -1284,6 +1301,131 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             facility='CJ19',
             county_of_residence=_COUNTY_OF_RESIDENCE,
             release_reason=incarceration_period.release_reason
+        ), release_event)
+
+    def test_release_event_for_period_us_id(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ID',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='SS')
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=incarceration_period.release_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+        )
+
+        supervision_sentences = [StateSupervisionSentence.new_with_defaults(
+            supervision_periods=[supervision_period]
+        )]
+
+        incarceration_sentences = []
+
+        release_event = identifier.release_event_for_period(
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            incarceration_period=incarceration_period,
+            county_of_residence=_COUNTY_OF_RESIDENCE
+        )
+
+        self.assertEqual(IncarcerationReleaseEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.release_date,
+            facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            release_reason=incarceration_period.release_reason,
+            release_reason_raw_text=incarceration_period.release_reason_raw_text,
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
+        ), release_event)
+
+    def test_release_event_for_period_us_mo(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_MO',
+                facility='PRISON3',
+                admission_date=date(2013, 11, 20),
+                release_date=date(2019, 12, 4),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1111,
+            state_code='US_MO',
+            start_date=date(2019, 12, 4))
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=1111,
+                    state_code='US_MO',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    start_date=date(2019, 11, 24),
+                    supervision_periods=[supervision_period],
+                    incarceration_periods=[incarceration_period]),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=date(2019, 12, 4),
+                        end_date=None,
+                        supervision_type=StateSupervisionType.PROBATION
+                    )
+                ]
+            )
+        incarceration_sentences = []
+
+        release_event = identifier.release_event_for_period(
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=[supervision_sentence],
+            incarceration_period=incarceration_period,
+            county_of_residence=_COUNTY_OF_RESIDENCE
+        )
+
+        self.assertEqual(IncarcerationReleaseEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.release_date,
+            facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            release_reason=incarceration_period.release_reason,
+            release_reason_raw_text=incarceration_period.release_reason_raw_text,
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
+        ), release_event)
+
+    def test_release_event_for_period_us_nd(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=1111,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_ND',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                release_date=date(2010, 12, 4),
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+                release_reason_raw_text='RPAR')
+
+        release_event = self._run_release_for_period_with_no_sentences(incarceration_period, _COUNTY_OF_RESIDENCE)
+
+        self.assertEqual(IncarcerationReleaseEvent(
+            state_code=incarceration_period.state_code,
+            event_date=incarceration_period.release_date,
+            facility='PRISON3',
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            release_reason=incarceration_period.release_reason,
+            release_reason_raw_text=incarceration_period.release_reason_raw_text,
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE
         ), release_event)
 
 

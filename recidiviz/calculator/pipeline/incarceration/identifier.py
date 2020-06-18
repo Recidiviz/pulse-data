@@ -26,7 +26,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    get_pre_incarceration_supervision_type
+    get_pre_incarceration_supervision_type, get_post_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType
@@ -110,7 +110,10 @@ def find_all_admission_release_events(
     de_duplicated_incarceration_releases = de_duplicated_releases(incarceration_periods_for_releases)
 
     for incarceration_period in de_duplicated_incarceration_releases:
-        release_event = release_event_for_period(incarceration_period, county_of_residence)
+        release_event = release_event_for_period(incarceration_sentences,
+                                                 supervision_sentences,
+                                                 incarceration_period,
+                                                 county_of_residence)
 
         if release_event:
             incarceration_events.append(release_event)
@@ -336,15 +339,21 @@ def admission_event_for_period(
 
 
 def release_event_for_period(
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
         county_of_residence: Optional[str]) -> Optional[IncarcerationReleaseEvent]:
     """Returns an IncarcerationReleaseEvent if this incarceration period represents an release from incarceration."""
-
     release_date = incarceration_period.release_date
     release_reason = incarceration_period.release_reason
     purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 
     if release_date and release_reason:
+        supervision_type_at_release = get_post_incarceration_supervision_type(
+            incarceration_sentences,
+            supervision_sentences,
+            incarceration_period)
+
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=release_date,
@@ -353,6 +362,7 @@ def release_event_for_period(
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=purpose_for_incarceration,
             county_of_residence=county_of_residence,
+            supervision_type_at_release=supervision_type_at_release
         )
 
     return None

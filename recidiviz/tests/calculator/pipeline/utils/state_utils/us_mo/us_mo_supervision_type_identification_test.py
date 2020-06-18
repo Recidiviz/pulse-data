@@ -23,7 +23,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
     UsMoIncarcerationSentence, UsMoSupervisionSentence, SupervisionTypeSpan
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import \
     us_mo_get_supervision_period_supervision_type_on_date, us_mo_get_pre_incarceration_supervision_type, \
-    us_mo_get_month_supervision_type, us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day
+    us_mo_get_month_supervision_type, \
+    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
+    us_mo_get_post_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -110,6 +112,91 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
                          us_mo_get_pre_incarceration_supervision_type(
+                             [old_incarceration_sentence],
+                             [supervision_sentence_parole],
+                             incarceration_period))
+
+
+class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
+    """Tests for us_mo_get_post_incarceration_supervision_type"""
+
+    def test_usMo_getPostIncarcerationSupervisionType(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=datetime.date(year=2019, month=9, day=13),
+            release_date=datetime.date(year=2020, month=1, day=11)
+        )
+
+        supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=1,
+                external_id='1167633-20171012-2',
+                start_date=datetime.date(year=2020, month=1, day=11),
+                supervision_type=StateSupervisionType.PROBATION),
+            supervision_type_spans=[SupervisionTypeSpan(
+                start_date=datetime.date(year=2020, month=1, day=11),
+                end_date=None,
+                supervision_type=StateSupervisionType.PAROLE
+            )]
+        )
+
+        # Even though the supervision type of the sentence is PROBATION, we find that it's actually a PAROLE
+        # sentence from the statuses.
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
+                         us_mo_get_post_incarceration_supervision_type(
+                             incarceration_sentences=[],
+                             supervision_sentences=[supervision_sentence_parole],
+                             incarceration_period=incarceration_period))
+
+    def test_usMo_getPostIncarcerationSupervisionType_ignoreOutOfDateSentences(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            external_id='ip1',
+            state_code='US_MO',
+            admission_date=datetime.date(year=2019, month=9, day=13),
+            release_date=datetime.date(year=2020, month=1, day=11)
+        )
+
+        supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=1,
+                external_id='1167633-20171012-2',
+                start_date=datetime.date(2020, 1, 13),
+                supervision_type=StateSupervisionType.PROBATION),
+            supervision_type_spans=[SupervisionTypeSpan(
+                start_date=datetime.date(2020, 1, 13),
+                end_date=None,
+                supervision_type=StateSupervisionType.PAROLE
+            )]
+        )
+
+        old_incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+            StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=1,
+                external_id='US_MO',
+                start_date=datetime.date(2017, 2, 1),
+                completion_date=datetime.date(2017, 3, 4),
+                status=StateSentenceStatus.COMPLETED),
+            supervision_type_spans=[
+                SupervisionTypeSpan(
+                    start_date=datetime.date(2017, 2, 1),
+                    end_date=datetime.date(2017, 3, 4),
+                    supervision_type=StateSupervisionType.PAROLE
+                ),
+                SupervisionTypeSpan(
+                    start_date=datetime.date(2017, 3, 4),
+                    end_date=None,
+                    supervision_type=None
+                )
+            ]
+        )
+
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
+                         us_mo_get_post_incarceration_supervision_type(
                              [old_incarceration_sentence],
                              [supervision_sentence_parole],
                              incarceration_period))
