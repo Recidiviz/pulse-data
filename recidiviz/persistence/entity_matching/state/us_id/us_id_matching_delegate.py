@@ -24,9 +24,10 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import \
-    add_supervising_officer_to_open_supervision_periods, move_periods_onto_sentences_by_date
-from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import \
-    move_violations_onto_supervision_periods_for_person
+    add_supervising_officer_to_open_supervision_periods
+from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import \
+    move_periods_onto_sentences_by_date, move_violations_onto_supervision_periods_for_person, \
+    move_contacts_onto_supervision_periods_for_person
 
 
 class UsIdMatchingDelegate(BaseStateMatchingDelegate):
@@ -53,6 +54,7 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
             - Moves supervising_officer from StatePerson onto open SupervisionPeriods.
             - Moves incarceration and supervision periods onto non-placeholder sentences by date.
             - Moves supervision violations onto supervision periods by date.
+            - Moves supervision contacts onto supervision periods by date.
         """
         logging.info('[Entity matching] Moving supervising officer onto open supervision periods')
         add_supervising_officer_to_open_supervision_periods(matched_persons)
@@ -62,3 +64,6 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
 
         logging.info('[Entity matching] Move supervision violations onto supervision periods by date.')
         move_violations_onto_supervision_periods_for_person(matched_persons, self.get_region_code())
+
+        logging.info('[Entity matching] Move supervision contacts onto supervision periods by date.')
+        move_contacts_onto_supervision_periods_for_person(matched_persons, self.get_region_code())
