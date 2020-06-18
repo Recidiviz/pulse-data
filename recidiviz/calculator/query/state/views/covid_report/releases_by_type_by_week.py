@@ -39,7 +39,7 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
           person_id,
           release_date,
           release_reason,
-          release_reason_raw_text
+          supervision_type_at_release 
         FROM
           `{project_id}.{reference_dataset}.covid_report_weeks` report
         JOIN
@@ -61,10 +61,7 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         start_date,
         end_date,
         COUNT(DISTINCT(person_id)) as total_release_count,
-        COUNT(DISTINCT
-          IF((state_code = 'US_ND' AND release_reason_raw_text = 'RPAR')
-          OR (state_code != 'US_ND' AND release_reason = 'CONDITIONAL_RELEASE'),
-          person_id, NULL)) as release_to_parole_count
+        COUNT(DISTINCT IF(supervision_type_at_release = 'PAROLE', person_id, NULL)) as release_to_parole_count
       FROM releases
       GROUP BY state_code, week_num, start_date, end_date
     )
