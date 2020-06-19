@@ -617,7 +617,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         revocations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationMetric)
         revocation_analysis_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationAnalysisMetric)
         revocation_violation_type_analysis_table_id = \
-            DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationAnalysisMetric)
+            DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationViolationTypeAnalysisMetric)
         successes_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionSuccessMetric)
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES.get(
             SuccessfulSupervisionSentenceDaysServedMetric)
