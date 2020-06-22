@@ -95,4 +95,14 @@ class TestUsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
                          case_number='555.0', charge_notes='Other',
                          court_type='Cambridge DC (52)')
 
+        p3 = expected_info.create_person(
+            person_id='10473       ', birthdate='1111-02-02 00:00:00.000',
+            gender='M', race='BLACK or AFRICAN AMERICAN')
+        b3 = p3.create_booking(
+            booking_id='334.0',
+            admission_date='2018-02-02 00:00:00.000',
+            admission_reason='MITTIMUS FOR FINES',
+            facility='MAIN      ')
+        b3.create_arrest(agency='Cambridge PD')
+
         self.validate_ingest(ingest_info, expected_info, metadata)
