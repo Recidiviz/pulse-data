@@ -201,5 +201,47 @@
       }
     ],
     "hold": []
+  },
+  {
+    "booking": {
+      "pin": "H12346    ",
+      "sysid": "334.0",
+      "pcp": "10473       ",
+      "reldate": "",
+      "race": "BLACK or AFRICAN AMERICAN",
+      "ethnicity": "  ",
+      "hispanic": "N",
+      "birth": "1111-02-02 00:00:00.000",
+      "sex": "M",
+      "comdate": "2018-02-02 00:00:00.000",
+      "reltype": "",
+      "adtype": "HO",
+      "temp_release_start_date": "",
+      "temp_release_end_date": "2018-02-01 14:08:58",
+      "temp_release_due_back_date": "",
+      "jlocat": "MAIN      ",
+      "arresting_agency": "Cambridge PD",
+      "commiting_authority": "Cambridge DC (52)",
+      "export_time": "2019-05-24 03:00:00.460"
+    },
+    "admission": [
+      {
+        "case_pk": "556.0",
+        "sysid": "334.0",
+        "case_number": "17-1403",
+        "booking_admission_doc_type": "FEDERAL DETAINER",
+        "export_time": "2019-05-24 03:00:00.460"
+      },
+      {
+        "booking_admission_doc_type": "MITTIMUS FOR FINES"
+      },
+      {
+        "booking_admission_doc_type": "GOVERNORS WARRANT"
+      }
+    ],
+    "address": [],
+    "bond": [],
+    "charge": [],
+    "hold": []
   }
 ]
