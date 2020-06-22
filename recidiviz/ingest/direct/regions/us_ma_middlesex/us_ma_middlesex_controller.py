@@ -210,6 +210,7 @@ class UsMaMiddlesexController(
         builder.add('END OF SENTENCE', ReleaseReason.EXPIRATION_OF_SENTENCE)
         builder.add('FEDERAL DETAINER', AdmissionReason.NEW_COMMITMENT)
         builder.add('HWO', BondType.DENIED)
+        builder.add('MITTIMUS FOR FINES', AdmissionReason.NEW_COMMITMENT)
         builder.ignore('N', BondStatus)
         builder.add('NB', BondType.NOT_REQUIRED)
         builder.add('NOL PROS', ChargeStatus.DROPPED)

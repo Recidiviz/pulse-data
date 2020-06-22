@@ -149,6 +149,7 @@ class UsMaMiddlesexParser:
             '15-DAY PAROLE DETAINER',
             'PERMANENT PAROLE DETAINER',
             'BAIL MITTIMUS',
+            'MITTIMUS FOR FINES',
             'CRIMINAL COMPLAINT',
             'CIVIL CAPIAS',
             'CONTEMPT OF COURT',
