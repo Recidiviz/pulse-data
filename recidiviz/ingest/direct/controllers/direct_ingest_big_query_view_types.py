@@ -52,7 +52,7 @@ WITH rows_with_recency_rank AS (
     SELECT 
         * {except_clause}, {datetime_cols_clause}
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
-                           ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
+                           ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM 
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
 )
