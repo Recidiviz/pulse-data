@@ -62,6 +62,20 @@ raw_files:
   - file_tag: cis_offender
     primary_key_cols:
       - id
+  - file_tag: cis_offenderaddress
+    primary_key_cols:
+      - personaddressid
+    datetime_cols:
+      - upddate
+      - startdate
+      - enddate
+      - verifydate
+  - file_tag: cis_personaddress
+    primary_key_cols:
+      - id
+    datetime_cols:
+      - insdate
+      - upddate
   - file_tag: cis_personname
     primary_key_cols:
       - id
@@ -112,6 +126,9 @@ raw_files:
   - file_tag: early_discharge_sent
     primary_key_cols:
       - early_discharge_sent_id
+  - file_tag: employee
+    primary_key_cols:
+      - empl_cd
   - file_tag: ethnic
     primary_key_cols:
       - ethnic_cd
