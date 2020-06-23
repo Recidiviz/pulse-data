@@ -33,6 +33,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.query_utils import get_raw_tables_for_state, get_raw_table_config
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
@@ -91,4 +92,5 @@ if __name__ == '__main__':
     parser.add_argument('--state-code', required=True, help='The state to upload views for.')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format='%(message)s')
-    main(project_id=args.project_id, state_code=args.state_code.lower(), dry_run=args.dry_run)
+    with local_project_id_override(args.project_id):
+        main(project_id=args.project_id, state_code=args.state_code.lower(), dry_run=args.dry_run)
