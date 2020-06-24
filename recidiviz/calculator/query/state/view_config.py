@@ -38,7 +38,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
 }
 
 VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT: List[BigQueryViewBuilder] = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
+    PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 ]
 
 # Dictionary mapping the datasets to the state codes and view builders for the views that should be included in the
