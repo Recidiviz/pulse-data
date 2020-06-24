@@ -17,11 +17,13 @@
 """Case Terminations by type by officer by period."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.case_terminations_by_type_by_month import \
     _get_query_prep_statement
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = 'case_terminations_by_type_by_officer_by_period'
 
@@ -71,7 +73,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, supervision_type, district, officer_external_id, metric_period_months
     """
 
-CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = BigQueryView(
+CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE,
@@ -81,5 +83,5 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW.view_id)
-    print(CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER.build_and_print()

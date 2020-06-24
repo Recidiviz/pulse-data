@@ -21,9 +21,10 @@ in static tables.
 
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 AUGMENTED_AGENT_INFO_VIEW_NAME = \
     'augmented_agent_info'
@@ -78,7 +79,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
 
 """
 
-AUGMENTED_AGENT_INFO_VIEW = BigQueryView(
+AUGMENTED_AGENT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=AUGMENTED_AGENT_INFO_VIEW_NAME,
     view_query_template=AUGMENTED_AGENT_INFO_QUERY_TEMPLATE,
@@ -88,5 +89,5 @@ AUGMENTED_AGENT_INFO_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(AUGMENTED_AGENT_INFO_VIEW.view_id)
-    print(AUGMENTED_AGENT_INFO_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        AUGMENTED_AGENT_INFO_VIEW_BUILDER.build_and_print()

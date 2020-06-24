@@ -21,7 +21,7 @@ import unittest
 from mock import patch
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 
@@ -41,15 +41,20 @@ class ViewExportConfigTest(unittest.TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_VIEWS_TO_EXPORT_types(self):
-        """Make sure that all DATASETS_STATES_AND_VIEWS_TO_EXPORT are of type BigQueryView."""
-        for _, state_exports in view_config.DATASETS_STATES_AND_VIEWS_TO_EXPORT.items():
-            for _, views in state_exports.items():
-                for view in views:
+        """Make sure that all view_builders in DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT are of type
+        BigQueryViewBuilder, and that running view_builder.build() produces a BigQueryView."""
+        for _, state_exports in view_config.DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT.items():
+            for _, view_builders in state_exports.items():
+                for view_builder in view_builders:
+                    self.assertIsInstance(view_builder, BigQueryViewBuilder)
+
+                    view = view_builder.build()
                     self.assertIsInstance(view, BigQueryView)
 
     def test_view_dataset_ids(self):
-        for dataset_id, views in view_config.VIEWS_TO_UPDATE.items():
-            for view in views:
+        for dataset_id, view_builders in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
+            for view_builder in view_builders:
+                view = view_builder.build()
                 if view.dataset_id != dataset_id:
                     self.fail(f'{view.view_id} has dataset id {view.dataset_id} that does not match '
                               f'VIEWS_TO_UPDATE id {dataset_id}')

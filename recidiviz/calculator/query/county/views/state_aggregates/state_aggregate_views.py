@@ -17,13 +17,13 @@
 """List all state aggregate views."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county.views.state_aggregates import \
     combined_state_aggregate
 from recidiviz.calculator.query.county.views.state_aggregates import \
     state_aggregate_collapsed_to_fips
 
-STATE_AGGREGATE_VIEWS: List[BigQueryView] = [
-    combined_state_aggregate.COMBINED_STATE_AGGREGATE_VIEW,
-    state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS
+STATE_AGGREGATE_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
+    combined_state_aggregate.COMBINED_STATE_AGGREGATE_VIEW_BUILDER,
+    state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER
 ]

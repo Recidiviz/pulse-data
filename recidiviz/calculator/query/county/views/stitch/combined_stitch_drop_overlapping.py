@@ -16,15 +16,17 @@
 # =============================================================================
 """Define views for combining scraper & state-reports & ITP."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch import combined_stitch
 from recidiviz.calculator.query.county.views.stitch.incarceration_trends_stitch_subset \
-    import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW
+    import INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER
 from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_subset \
-    import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW
+    import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
-    import STATE_AGGREGATE_STITCH_SUBSET_VIEW
+    import STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Combine {itp}, {state}, {scraper} into one unified view. When overlapping data
@@ -35,9 +37,9 @@ data.
 Note: Use we use valid_from to check cutoffs, instead of checking valid_from and
 valid_to (eg: {itp}.valid_to < {state}.valid_from). This is because all data
 points are plotted using valid_from.
-""".format(state=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_id,
-           scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_id,
-           itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW.view_id)
+""".format(state=INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.view_id,
+           scraper=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,
+           itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id)
 
 _QUERY_TEMPLATE = """
 /*{description}*/
@@ -128,14 +130,15 @@ WHERE
   (Data.data_source = 'scraped' AND StateCutoffs.min_valid_from < Data.valid_from)
 """
 
-COMBINED_STITCH_DROP_OVERLAPPING_VIEW = BigQueryView(
+COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_stitch_drop_overlapping',
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
-    combined_stitch=combined_stitch.COMBINED_STITCH_VIEW.view_id,
+    combined_stitch=combined_stitch.COMBINED_STITCH_VIEW_BUILDER.view_id,
     description=_DESCRIPTION
 )
 
 if __name__ == '__main__':
-    print(COMBINED_STITCH_DROP_OVERLAPPING_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.build_and_print()

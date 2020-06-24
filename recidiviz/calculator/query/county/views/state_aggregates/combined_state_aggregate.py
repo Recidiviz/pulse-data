@@ -18,7 +18,7 @@
 
 import sqlalchemy
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.state_aggregates import \
     state_aggregate_mappings
@@ -48,7 +48,7 @@ _BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(str(_UNIONED_STATEMENT.compi
 # this view is to combine it with a view of our "scraped website data" that maps
 # to the same shared column_names. Both of these views should be aggregated to
 # the same level (eg. jurisdiction level via jurisdiction_id).
-COMBINED_STATE_AGGREGATE_VIEW: BigQueryView = BigQueryView(
+COMBINED_STATE_AGGREGATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_state_aggregates',
     view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE

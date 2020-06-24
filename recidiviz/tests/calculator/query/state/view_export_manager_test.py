@@ -22,7 +22,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import view_export_manager
 
 
@@ -45,13 +45,15 @@ class ViewExportManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
 
-        self.mock_view = BigQueryView(dataset_id=self.mock_dataset.dataset_id,
-                                      view_id='test_view',
-                                      view_query_template='SELECT NULL LIMIT 0')
+        self.mock_view_builder = SimpleBigQueryViewBuilder(dataset_id=self.mock_dataset.dataset_id,
+                                                           view_id='test_view',
+                                                           view_query_template='SELECT NULL LIMIT 0')
+
+        self.views_for_dataset = [self.mock_view_builder]
 
         self.views_to_export = {
             "dataset_id": {
-                'US_XX': [self.mock_view],
+                'US_XX': self.views_for_dataset,
             },
         }
 
@@ -59,13 +61,13 @@ class ViewExportManagerTest(unittest.TestCase):
             "dataset_id": "gs://{project_id}-dataset-location/subdirectory/{state_code}/{view_id}.json",
         }
 
-        self.views_to_update = {self.mock_dataset_name: self.views_to_export}
+        self.views_to_update = {self.mock_dataset_name: self.views_for_dataset}
 
         view_config_values = {
             'STATES_TO_EXPORT': ['US_CA'],
-            'DATASETS_STATES_AND_VIEWS_TO_EXPORT': self.views_to_export,
+            'DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT': self.views_to_export,
             'OUTPUT_URI_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
-            'VIEWS_TO_UPDATE': self.views_to_update
+            'VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE': self.views_to_update
         }
         self.view_export_config_patcher = mock.patch(
             'recidiviz.calculator.query.state.view_export_manager.view_config',
@@ -77,11 +79,10 @@ class ViewExportManagerTest(unittest.TestCase):
         self.view_export_config_patcher.stop()
         self.metadata_patcher.stop()
 
-    @mock.patch('recidiviz.big_query.view_manager.create_dataset_and_update_views')
+    @mock.patch('recidiviz.big_query.view_manager.create_dataset_and_update_views_for_view_builders')
     def test_export_dashboard_data_to_cloud_storage(self, mock_view_manager):
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage()
 
-        mock_view_manager.assert_called_with(self.views_to_update)
-
+        mock_view_manager.assert_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_called()

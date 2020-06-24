@@ -16,9 +16,11 @@
 # =============================================================================
 """Revocations by race and ethnicity by metric period months."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME = \
     'revocations_by_race_and_ethnicity_by_period'
@@ -71,7 +73,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     """
 
-REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW = BigQueryView(
+REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE,
@@ -83,5 +85,5 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW.view_id)
-    print(REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER.build_and_print()

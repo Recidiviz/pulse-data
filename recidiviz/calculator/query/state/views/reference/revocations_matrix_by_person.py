@@ -17,9 +17,11 @@
 """Revocations Matrix by Person."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME = 'revocations_matrix_by_person'
 
@@ -68,7 +70,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
     )
     SELECT
-        state_code, year, month, metric_period_months, 
+        state_code, year, month, metric_period_months,
         violation_type, reported_violations,
         officer_recommendation, violation_record,
         supervision_type, charge_category, district, officer,
@@ -77,14 +79,14 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
         CASE WHEN risk_level = 'LOW_MEDIUM' THEN 'LOW' ELSE risk_level END AS risk_level,
         race, ethnicity,
-        (year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 
+        (year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
             AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))) AS current_month
     FROM revocations
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
         AND district IS NOT NULL
     """
 
-REVOCATIONS_MATRIX_BY_PERSON_VIEW = BigQueryView(
+REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
@@ -97,5 +99,5 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(REVOCATIONS_MATRIX_BY_PERSON_VIEW.view_id)
-    print(REVOCATIONS_MATRIX_BY_PERSON_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER.build_and_print()

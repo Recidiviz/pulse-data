@@ -16,8 +16,10 @@
 # =============================================================================
 """Revocations by violation type by month."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_NAME = \
     'revocations_by_violation_type_by_month'
@@ -73,7 +75,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, year, month, district, supervision_type
     """
 
-REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW = BigQueryView(
+REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE,
@@ -82,5 +84,5 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW.view_id)
-    print(REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

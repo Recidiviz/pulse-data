@@ -16,10 +16,13 @@
 # =============================================================================
 """ITP data used for stitch"""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import \
     VERA_DATASET, INCARCERATION_TRENDS_TABLE
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
 _DESCRIPTION = """
 Select ITP data in a format that can be combined with other aggregate data.
 SELECT NULL for unmapped columns to ensure we SELECT the same num of columns.
@@ -75,7 +78,7 @@ FROM
   `{project_id}.{vera_dataset}.{incarceration_trends}`
 """
 
-INCARCERATION_TRENDS_STITCH_SUBSET_VIEW = BigQueryView(
+INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id='incarceration_trends_stitch_subset',
     view_query_template=_QUERY_TEMPLATE,
@@ -85,4 +88,5 @@ INCARCERATION_TRENDS_STITCH_SUBSET_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(INCARCERATION_TRENDS_STITCH_SUBSET_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER.build_and_print()
