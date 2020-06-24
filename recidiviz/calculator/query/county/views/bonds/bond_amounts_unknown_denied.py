@@ -17,7 +17,7 @@
 """View that creates a Bond table with amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 
 from recidiviz.common.constants.enum_canonical_strings import bond_status_posted
@@ -28,6 +28,8 @@ from recidiviz.common.constants.enum_canonical_strings import bond_type_secured
 from recidiviz.common.constants.enum_canonical_strings import present_without_info
 
 from recidiviz.persistence.database.schema.county.schema import Bond
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = 'bond_amounts_unknown_denied'
 
@@ -96,7 +98,7 @@ FROM (
 ) NewBond
 """
 
-BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = BigQueryView(
+BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME,
     view_query_template=BOND_AMOUNTS_UNKNOWN_DENIED_QUERY_TEMPLATE,
@@ -112,5 +114,5 @@ BOND_AMOUNTS_UNKNOWN_DENIED_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_id)
-    print(BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER.build_and_print()

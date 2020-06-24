@@ -20,9 +20,11 @@ termination to the second LSIR score of the person's supervision.
 """
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = \
     'average_change_lsir_score_by_period'
@@ -69,7 +71,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, district, supervision_type, metric_period_months
     """
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = BigQueryView(
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
     view_query_template=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE,
@@ -83,5 +85,5 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW.view_id)
-    print(AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER.build_and_print()

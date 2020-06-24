@@ -17,10 +17,12 @@
 """Scraper data used for stitch"""
 # pylint:disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.population import \
     population_admissions_releases
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Aggregate individual scraper data by summing person_count for each condition
@@ -70,14 +72,15 @@ FROM `{project_id}.{views_dataset}.{population_admissions_releases_race_gender}`
 GROUP BY fips, RaceGender.day
 """
 
-SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW = BigQueryView(
+SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id='scraper_aggregated_stitch_subset',
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
-    population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id,
+    population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER.view_id,
     description=_DESCRIPTION
 )
 
 if __name__ == '__main__':
-    print(SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.build_and_print()

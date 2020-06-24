@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """BQ View containing US_MO state statuses from TAK026"""
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 US_MO_SENTENCE_STATUSES_VIEW_NAME = \
     'us_mo_sentence_statuses'
@@ -63,7 +65,7 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
     WHERE (incarceration_sentences.person_id IS NOT NULL OR supervision_sentences.person_id IS NOT NULL);
 """
 
-US_MO_SENTENCE_STATUSES_VIEW = BigQueryView(
+US_MO_SENTENCE_STATUSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
     view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
@@ -73,5 +75,5 @@ US_MO_SENTENCE_STATUSES_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(US_MO_SENTENCE_STATUSES_VIEW.view_id)
-    print(US_MO_SENTENCE_STATUSES_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        US_MO_SENTENCE_STATUSES_VIEW_BUILDER.build_and_print()

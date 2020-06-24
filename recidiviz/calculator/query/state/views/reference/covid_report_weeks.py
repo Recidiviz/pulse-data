@@ -18,9 +18,10 @@
 
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 COVID_REPORT_WEEKS_VIEW_NAME = 'covid_report_weeks'
 
@@ -37,9 +38,9 @@ COVID_REPORT_WEEKS_QUERY_TEMPLATE = \
       DATE_ADD(start_date, INTERVAL 13 DAY) as end_date
     FROM
     (SELECT * FROM UNNEST(GENERATE_DATE_ARRAY('2020-05-02', CURRENT_DATE('America/Los_Angeles'), INTERVAL 2 WEEK)) as start_date)
-    
+
     UNION ALL
-    
+
     -- US_ND report starting 2020-03-12 --
     SELECT
       'US_ND' as state_code,
@@ -50,7 +51,7 @@ COVID_REPORT_WEEKS_QUERY_TEMPLATE = \
     (SELECT * FROM UNNEST(GENERATE_DATE_ARRAY('2020-03-12', CURRENT_DATE('America/Los_Angeles'), INTERVAL 2 WEEK)) as start_date)
 """
 
-COVID_REPORT_WEEKS_VIEW = BigQueryView(
+COVID_REPORT_WEEKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=COVID_REPORT_WEEKS_VIEW_NAME,
     view_query_template=COVID_REPORT_WEEKS_QUERY_TEMPLATE,
@@ -58,5 +59,5 @@ COVID_REPORT_WEEKS_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(COVID_REPORT_WEEKS_VIEW.view_id)
-    print(COVID_REPORT_WEEKS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        COVID_REPORT_WEEKS_VIEW_BUILDER.build_and_print()

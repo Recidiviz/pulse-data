@@ -19,8 +19,10 @@
 provided by the state."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_NAME = \
@@ -63,7 +65,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     ORDER BY region_code, date_of_stay, facility
 """
 
-INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW = BigQueryView(
+INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_NAME,
     view_query_template=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
@@ -74,5 +76,5 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW.view_id)
-    print(INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()

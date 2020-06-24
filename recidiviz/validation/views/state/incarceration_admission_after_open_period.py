@@ -20,8 +20,10 @@ incarceration period, i.e. one which has no release date yet, is followed by ano
 admission date."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME = 'incarceration_admission_after_open_period'
@@ -43,7 +45,7 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = \
     WHERE release_date IS NULL AND next_admission_date IS NOT NULL
 """
 
-INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = BigQueryView(
+INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_NAME,
     view_query_template=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE,
@@ -52,5 +54,5 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW.view_id)
-    print(INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER.build_and_print()

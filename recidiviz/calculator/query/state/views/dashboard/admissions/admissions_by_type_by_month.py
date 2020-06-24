@@ -16,8 +16,10 @@
 # =============================================================================
 """Admissions by type by month"""
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'admissions_by_type_by_month'
 
@@ -81,7 +83,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, year, month, district, supervision_type
 """
 
-ADMISSIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
+ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
@@ -90,5 +92,5 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(ADMISSIONS_BY_TYPE_BY_MONTH_VIEW.view_id)
-    print(ADMISSIONS_BY_TYPE_BY_MONTH_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

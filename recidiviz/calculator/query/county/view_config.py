@@ -18,22 +18,20 @@
 
 from typing import Dict, List
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.dataset_config import VIEWS_DATASET
 from recidiviz.calculator.query.county.views.bonds import bond_views
 from recidiviz.calculator.query.county.views.charges import charge_views
 from recidiviz.calculator.query.county.views.population import population_views
-from recidiviz.calculator.query.county.views.state_aggregates import state_aggregate_views
-from recidiviz.calculator.query.county.views.stitch import stitch_views
 from recidiviz.calculator.query.county.views.vera import vera_views
 
-VIEWS_TO_UPDATE: Dict[str, List[BigQueryView]] = {
+# NOTE: The views in the STATE_AGGREGATE_VIEW_BUILDERS and the STITCH_VIEW_BUILDERS are not included in this
+# view update list because compiling the views require SQLAlchemy DB connections
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
     VIEWS_DATASET: (
-        state_aggregate_views.STATE_AGGREGATE_VIEWS +
-        vera_views.VERA_VIEWS +
-        bond_views.BOND_VIEWS +
-        charge_views.CHARGE_VIEWS +
-        population_views.POPULATION_VIEWS +
-        stitch_views.STITCH_VIEWS
+        vera_views.VERA_VIEW_BUILDERS +
+        bond_views.BOND_VIEW_BUILDERS +
+        charge_views.CHARGE_VIEW_BUILDERS +
+        population_views.POPULATION_VIEW_BUILDERS
     )
 }

@@ -16,11 +16,13 @@
 # =============================================================================
 """Incarceration facility population by age by day compared to the facility's goal capacity"""
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_DATASET, \
     REFERENCE_TABLES_DATASET
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_NAME = 'facility_population_by_age_with_capacity_by_day'
 
@@ -97,7 +99,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
     ORDER BY state_code, facility, date_of_stay
 """
 
-FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW = BigQueryView(
+FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.COVID_REPORT_DATASET,
     view_id=FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_NAME,
     view_query_template=FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE,
@@ -109,5 +111,5 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW.view_id)
-    print(FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER.build_and_print()

@@ -17,8 +17,12 @@
 """Revocations Matrix Distribution by Risk Level."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import \
+    REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME = 'revocations_matrix_distribution_by_risk_level'
 
@@ -80,7 +84,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
       reported_violations, charge_category
     """
 
-REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW = BigQueryView(
+REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE,
@@ -89,5 +93,5 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW.view_id)
-    print(REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER.build_and_print()

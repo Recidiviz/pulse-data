@@ -16,15 +16,17 @@
 # =============================================================================
 """Total population, admissions, releases by day-fips and race-gender."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender_all import \
-    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW
+    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER
 from recidiviz.calculator.query.county.views.population.resident_population_counts import \
-    RESIDENT_POPULATION_COUNTS_VIEW
-
+    RESIDENT_POPULATION_COUNTS_VIEW_BUILDER
 # Exclude all data <= CUTOFF_YEAR.
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
 CUTOFF_YEAR = 1999
 
 JAIL_POP_AND_RESIDENT_POP_VIEW_NAME = 'jail_pop_and_resident_pop'
@@ -67,17 +69,18 @@ ON
 WHERE EXTRACT(YEAR FROM day) > {cutoff_year}
 """
 
-JAIL_POP_AND_RESIDENT_POP_VIEW = BigQueryView(
+JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=JAIL_POP_AND_RESIDENT_POP_VIEW_NAME,
     view_query_template=JAIL_POP_AND_RESIDENT_POP_QUERY_TEMPLATE,
     description=JAIL_POP_AND_RESIDENT_POP_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
-    population_admissions_releases_race_gender_all_view=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW.view_id,
-    resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW.view_id,
+    population_admissions_releases_race_gender_all_view=
+    POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER.view_id,
+    resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.view_id,
     cutoff_year=CUTOFF_YEAR
 )
 
 if __name__ == '__main__':
-    print(JAIL_POP_AND_RESIDENT_POP_VIEW.view_id)
-    print(JAIL_POP_AND_RESIDENT_POP_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER.build_and_print()

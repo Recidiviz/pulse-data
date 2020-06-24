@@ -20,9 +20,11 @@ months, broken down by LSIR score.
 """
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_NAME = \
     'ftr_referrals_by_lsir_by_period'
@@ -106,7 +108,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, assessment_score_bucket, district, supervision_type, metric_period_months
     """
 
-FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW = BigQueryView(
+FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE,
@@ -117,5 +119,5 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW.view_id)
-    print(FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER.build_and_print()

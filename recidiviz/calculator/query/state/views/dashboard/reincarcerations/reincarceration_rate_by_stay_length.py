@@ -22,9 +22,11 @@ release cohort of 2017 is the most recent calendar year where the next year
 (2018) has completed. The follow-up period is 1 year.
 """
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME = \
     'reincarceration_rate_by_stay_length'
@@ -57,16 +59,17 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
     ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     """
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW = BigQueryView(
+REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(
+        district_column='county_of_residence'),
 )
 
 if __name__ == '__main__':
-    print(REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW.view_id)
-    print(REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER.build_and_print()

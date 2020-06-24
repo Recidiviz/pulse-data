@@ -16,10 +16,12 @@
 # =============================================================================
 """Supervision terminations by week, with subset of discharge terminations"""
 # pylint: disable=trailing-whitespace,line-too-long
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, COVID_REPORT_DATASET, \
     REFERENCE_TABLES_DATASET
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME = 'supervision_terminations_by_type_by_week'
 
@@ -87,7 +89,7 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
     ORDER BY state_code, week_num
 """
 
-SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW = BigQueryView(
+SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.COVID_REPORT_DATASET,
     view_id=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE,
@@ -98,5 +100,5 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW.view_id)
-    print(SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER.build_and_print()

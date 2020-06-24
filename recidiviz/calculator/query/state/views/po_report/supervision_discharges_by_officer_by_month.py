@@ -17,9 +17,11 @@
 """Supervision termination for successful discharge per officer, district, and state, by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_NAME = 'supervision_discharges_by_officer_by_month'
 
@@ -86,17 +88,17 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
-SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW = BigQueryView(
+SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='district'),
-    officer_dimension=
-    bq_utils.unnest_column(input_column_name='officer_external_id', output_column_name='officer_external_id'),
+    officer_dimension=bq_utils.unnest_column(input_column_name='officer_external_id',
+                                             output_column_name='officer_external_id'),
 )
 
 if __name__ == '__main__':
-    print(SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW.view_id)
-    print(SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER.build_and_print()

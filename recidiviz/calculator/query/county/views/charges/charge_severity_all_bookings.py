@@ -16,13 +16,14 @@
 # =============================================================================
 """Assigns a 'most_severe_charge' to each Booking."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.charges.charges_and_severity import CHARGES_AND_SEVERITY_VIEW
-
+from recidiviz.calculator.query.county.views.charges.charges_and_severity import CHARGES_AND_SEVERITY_VIEW_BUILDER
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Booking
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_all_bookings'
 
@@ -34,7 +35,7 @@ See `{views_dataset}.{charges_and_severity_view}` for details.
 Bookings without charges have most_severe_charge listed as 'EXTERNAL_UNKNOWN'.
 """.format(
     views_dataset=dataset_config.VIEWS_DATASET,
-    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id
+    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW_BUILDER.view_id
 )
 
 CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE = \
@@ -60,7 +61,7 @@ RIGHT JOIN
 ON BookingsWithCharges.booking_id = Booking.booking_id
 """
 
-CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = BigQueryView(
+CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME,
     view_query_template=CHARGE_SEVERITY_ALL_BOOKINGS_QUERY_TEMPLATE,
@@ -68,10 +69,10 @@ CHARGE_SEVERITY_ALL_BOOKINGS_VIEW = BigQueryView(
     external_unknown=external_unknown,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
-    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW.view_id,
+    charges_and_severity_view=CHARGES_AND_SEVERITY_VIEW_BUILDER.view_id,
     booking_table=Booking.__tablename__
 )
 
 if __name__ == '__main__':
-    print(CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id)
-    print(CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.build_and_print()

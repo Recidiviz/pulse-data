@@ -16,9 +16,11 @@
 # =============================================================================
 """Resident population counts by race and gender for each year-fips."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 RESIDENT_POPULATION_COUNTS_VIEW_NAME = 'resident_population_counts'
 
@@ -103,7 +105,7 @@ ON
 ORDER BY year DESC, fips, race, gender
 """
 
-RESIDENT_POPULATION_COUNTS_VIEW = BigQueryView(
+RESIDENT_POPULATION_COUNTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=RESIDENT_POPULATION_COUNTS_VIEW_NAME,
     view_query_template=RESIDENT_POPULATION_COUNTS_QUERY_TEMPLATE,
@@ -113,5 +115,5 @@ RESIDENT_POPULATION_COUNTS_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(RESIDENT_POPULATION_COUNTS_VIEW.view_id)
-    print(RESIDENT_POPULATION_COUNTS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.build_and_print()
