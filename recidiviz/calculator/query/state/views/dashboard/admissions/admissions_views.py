@@ -17,20 +17,19 @@
 """Dashboard views related to admissions."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_period import \
-    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW
+    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_month import \
-    ADMISSIONS_BY_TYPE_BY_MONTH_VIEW
+    ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_month import \
-    ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW
+    ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_period import \
-    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW
+    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER
 
-
-ADMISSIONS_VIEWS: List[BigQueryView] = [
-    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW,
-    ADMISSIONS_BY_TYPE_BY_MONTH_VIEW,
-    ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW,
-    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW,
+ADMISSIONS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_BUILDER,
+    ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER,
+    ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER,
+    ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER,
 ]

@@ -16,7 +16,9 @@
 # =============================================================================
 """Every person with their last known address that is not a prison facility or a P&P office."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME = 'persons_with_last_known_address'
 
@@ -28,19 +30,19 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
 
-    SELECT person.person_id, last_known_address  
+    SELECT person.person_id, last_known_address
     FROM
-    `{project_id}.{base_dataset}.state_person` person 
+    `{project_id}.{base_dataset}.state_person` person
     LEFT JOIN
     (SELECT person_id, last_known_address
     FROM
-    (SELECT person_id, 
-    current_address as last_known_address, 
+    (SELECT person_id,
+    current_address as last_known_address,
     row_number() OVER (PARTITION BY person_id ORDER BY valid_from DESC) as recency_rank
     FROM
     `{project_id}.{base_dataset}.state_person_history`
-    WHERE 
-    # Known ND DOCR facilities 
+    WHERE
+    # Known ND DOCR facilities
     (current_address NOT LIKE '%3100 RAILROAD AVE%'
     AND current_address NOT LIKE '%NDSP%ND%'
     AND current_address NOT LIKE '%PO BOX 5521%ND%'
@@ -50,7 +52,7 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     AND current_address NOT LIKE '%461 34TH ST S%ND%'
     AND current_address NOT LIKE '%1600 2ND AVE SW%ND%'
     AND current_address NOT LIKE '%702 1ST AVE S%ND%'
-    AND current_address NOT LIKE '%311 S 4TH ST STE 101%ND%' 
+    AND current_address NOT LIKE '%311 S 4TH ST STE 101%ND%'
     AND current_address NOT LIKE '%222 WALNUT ST W%ND%'
     AND current_address NOT LIKE '%709 DAKOTA AVE STE D%ND%'
     AND current_address NOT LIKE '%113 MAIN AVE E STE B%ND%'
@@ -69,7 +71,7 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     ORDER BY person_id ASC
     """
 
-PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = BigQueryView(
+PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME,
     view_query_template=PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE,
@@ -78,5 +80,5 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW.view_id)
-    print(PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER.build_and_print()

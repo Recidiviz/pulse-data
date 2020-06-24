@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """All views that populate the data in the dashboards."""
+from typing import List
+
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
 from recidiviz.calculator.query.state.views.dashboard.program_evaluation import program_evaluation_views
 from recidiviz.calculator.query.state.views.dashboard.reincarcerations import reincarcerations_views
@@ -22,11 +25,11 @@ from recidiviz.calculator.query.state.views.dashboard.revocation_analysis import
 from recidiviz.calculator.query.state.views.dashboard.revocations import revocations_views
 from recidiviz.calculator.query.state.views.dashboard.supervision import supervision_views
 
-DASHBOARD_VIEWS = (
-    admissions_views.ADMISSIONS_VIEWS +
-    reincarcerations_views.REINCARCERATIONS_VIEWS +
-    revocations_views.REVOCATIONS_VIEWS +
-    supervision_views.SUPERVISION_VIEWS +
-    program_evaluation_views.PROGRAM_EVALUATION_VIEWS +
-    revocation_analysis_views.REVOCATION_ANALYSIS_VIEWS
+DASHBOARD_VIEW_BUILDERS: List[BigQueryViewBuilder] = (
+    admissions_views.ADMISSIONS_VIEW_BUILDERS +
+    reincarcerations_views.REINCARCERATIONS_VIEW_BUILDERS +
+    revocations_views.REVOCATIONS_VIEW_BUILDERS +
+    supervision_views.SUPERVISION_VIEW_BUILDERS +
+    program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS +
+    revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
 )

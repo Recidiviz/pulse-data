@@ -17,8 +17,10 @@
 """Persons to their most recent county of residence."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = \
     'persons_to_recent_county_of_residence'
@@ -29,29 +31,29 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = \
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
     """
 /*{description}*/
-    SELECT 
+    SELECT
       person_id,
       CONCAT('US_', UPPER(state_code), '_', UPPER(county)) AS county_of_residence
     FROM (
-      SELECT 
-        person_id, 
+      SELECT
+        person_id,
         SUBSTR(last_known_address, -9, 2) AS state_code,
         SUBSTR(county, 0, LENGTH(county) -7) AS county
-      FROM 
+      FROM
         `{project_id}.{reference_tables_dataset}.persons_with_last_known_address` as persons_with_address
       JOIN
         `{project_id}.{reference_tables_dataset}.zipcode_county_map` zipcode_county_map
-      ON 
+      ON
         substr(persons_with_address.last_known_address, -5) = zipcode_county_map.zip_code
-      WHERE 
+      WHERE
         persons_with_address.last_known_address IS NOT NULL
     )
 
-    WHERE 
+    WHERE
       state_code IN ('ND', 'MO')
 """
 
-PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
+PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
@@ -60,5 +62,5 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW.view_id)
-    print(PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build_and_print()

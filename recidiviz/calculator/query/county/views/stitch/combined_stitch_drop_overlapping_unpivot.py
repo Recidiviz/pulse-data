@@ -17,10 +17,12 @@
 # pylint: disable=line-too-long
 """Unpivot stitch data"""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.stitch.combined_stitch_drop_overlapping \
-    import COMBINED_STITCH_DROP_OVERLAPPING_VIEW
+    import COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Unpivot stitch data by breaking out gender & race counts.
@@ -345,17 +347,18 @@ UNION ALL
 SELECT * FROM unknown_gender_unknown_race
 """
 
-# TODO(#1578): Export this query once COMBINED_STITCH_DROP_OVERLAPPING_VIEW
+# TODO(#1578): Export this query once COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER
 #  is materialized
-COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW = BigQueryView(
+COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id='combined_stitch_drop_overlapping_unpivot',
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,
     combined_stitch_drop_overlapping=
-    COMBINED_STITCH_DROP_OVERLAPPING_VIEW.view_id,
+    COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.view_id,
     description=_DESCRIPTION
 )
 
 if __name__ == '__main__':
-    print(COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW_BUILDER.build_and_print()

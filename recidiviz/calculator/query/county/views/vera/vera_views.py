@@ -17,9 +17,9 @@
 """Views interacting with Vera data."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.views.vera import county_names
 
-VERA_VIEWS: List[BigQueryView] = [
-    county_names.COUNTY_NAMES_VIEW
+VERA_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    county_names.COUNTY_NAMES_VIEW_BUILDER
 ]

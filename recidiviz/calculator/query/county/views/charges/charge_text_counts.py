@@ -17,12 +17,13 @@
 """Booking counts by day, fips, and most_severe_charge."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
-
+from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
 from recidiviz.persistence.database.schema.county.schema import Booking, \
     Charge, Person
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_TEXT_COUNTS_VIEW_NAME = 'charge_text_counts'
 
@@ -101,7 +102,7 @@ ON
   PersonCountTable.fips = CountyNames.fips
 """
 
-CHARGE_TEXT_COUNTS_VIEW = BigQueryView(
+CHARGE_TEXT_COUNTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_TEXT_COUNTS_VIEW_NAME,
     view_query_template=CHARGE_TEXT_COUNTS_QUERY_TEMPLATE,
@@ -111,9 +112,9 @@ CHARGE_TEXT_COUNTS_VIEW = BigQueryView(
     charge_table=Charge.__tablename__,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
-    county_names_view=COUNTY_NAMES_VIEW.view_id
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
 )
 
 if __name__ == '__main__':
-    print(CHARGE_TEXT_COUNTS_VIEW.view_id)
-    print(CHARGE_TEXT_COUNTS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CHARGE_TEXT_COUNTS_VIEW_BUILDER.build_and_print()

@@ -16,18 +16,46 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance.
 
-This can be run on-demand whenever a set of views needs to be updated, e.g. from a local machine with proper Google
-Cloud authorization initialized. If running locally, be sure to have GOOGLE_CLOUD_PROJECT set as an environment
-variable.
+This can be run on-demand whenever a set of views needs to be updated. Run locally with the following command:
+    python -m recidiviz.big_query.view_manager
+        --project_id [PROJECT_ID]
+        --views_to_update [state, county, validation]
 """
-
+import argparse
+import logging
+import sys
 from typing import Dict, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
+from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
+from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS
+from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, List[BigQueryViewBuilder]]] = {
+    'county': COUNTY_VIEW_BUILDERS,
+    'state': STATE_VIEW_BUILDERS,
+    'validation': VALIDATION_VIEW_BUILDERS
+}
 
 
-def create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]):
+def create_dataset_and_update_views_for_view_builders(view_builders_to_update: Dict[str, List[BigQueryViewBuilder]]):
+    """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
+    building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
+    datasets."""
+    # Convert the map of dataset_ids to BigQueryViewBuilders into a map of dataset_ids to BigQueryViews by building
+    # each of the views
+    views_to_update: Dict[str, List[BigQueryView]] = {
+        dataset: [view_builder.build() for view_builder in view_builders]
+        for dataset, view_builders in view_builders_to_update.items()
+    }
+
+    _create_dataset_and_update_views(views_to_update)
+
+
+def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]):
     """Create and update the given views and their parent datasets.
 
     For each dataset key in the given dictionary, creates the dataset if it does not exist, and creates or updates the
@@ -45,7 +73,33 @@ def create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView
             bq_client.create_or_update_view(views_dataset_ref, view)
 
 
+def parse_arguments(argv):
+    """Parses the required arguments."""
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--project_id',
+                        dest='project_id',
+                        type=str,
+                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        required=True)
+
+    parser.add_argument('--views_to_update',
+                        dest='views_to_update',
+                        type=str,
+                        choices=VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.keys(),
+                        required=True)
+
+    return parser.parse_known_args(argv)
+
+
 if __name__ == '__main__':
-    # To run this locally, replace the argument below with a some dictionary mapping datasets to views, e.g.:
-    # create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
-    create_dataset_and_update_views({})
+    logging.getLogger().setLevel(logging.INFO)
+    known_args, _ = parse_arguments(sys.argv)
+
+    view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.get(known_args.views_to_update)
+
+    if not view_builders:
+        raise ValueError("Unsupported views_to_update parameter. Fix the parser to only allow supported values.")
+
+    with local_project_id_override(known_args.project_id):
+        create_dataset_and_update_views_for_view_builders(view_builders)

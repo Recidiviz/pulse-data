@@ -17,13 +17,14 @@
 """Assigns a severity to each Charge record."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW
-
+from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Charge
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 CHARGES_AND_SEVERITY_VIEW_NAME = 'charges_and_severity'
 
@@ -53,7 +54,7 @@ ON
   Charge.class = ChargeClassSeverity.charge_class
 """
 
-CHARGES_AND_SEVERITY_VIEW = BigQueryView(
+CHARGES_AND_SEVERITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGES_AND_SEVERITY_VIEW_NAME,
     view_query_template=CHARGES_AND_SEVERITY_QUERY_TEMPLATE,
@@ -62,9 +63,9 @@ CHARGES_AND_SEVERITY_VIEW = BigQueryView(
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
     charge_table=Charge.__tablename__,
-    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id
+    charge_class_severity_ranks_view=CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.view_id
 )
 
 if __name__ == '__main__':
-    print(CHARGES_AND_SEVERITY_VIEW.view_id)
-    print(CHARGES_AND_SEVERITY_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CHARGES_AND_SEVERITY_VIEW_BUILDER.build_and_print()

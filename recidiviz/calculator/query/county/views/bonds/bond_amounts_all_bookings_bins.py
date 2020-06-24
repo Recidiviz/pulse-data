@@ -17,13 +17,14 @@
 """Add categorical bins to bond_amounts_all_bookings."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings \
-    import BOND_AMOUNTS_ALL_BOOKINGS_VIEW
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
-
+    import BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME = 'bond_amounts_all_bookings_bins'
 
@@ -41,7 +42,7 @@ with either '{bond_type_denied}', 'UNKNOWN', or bins from:
 Also sums the counts of populations, admissions, and releases for each
 day-fips-category grouping.
 """.format(
-    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW.view_id,
+    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id,
     bond_type_denied=bond_type_denied
 )
 
@@ -138,16 +139,16 @@ ON
 ORDER BY day DESC, fips, bond_amount_category
 """
 
-BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW = BigQueryView(
+BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_NAME,
     view_query_template=BOND_AMOUNTS_ALL_BOOKINGS_BINS_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_ALL_BOOKINGS_BINS_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
-    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW.view_id,
-    county_names_view=COUNTY_NAMES_VIEW.view_id
+    bond_amounts_all_bookings_view=BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER.view_id,
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
 )
 
 if __name__ == '__main__':
-    print(BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW.view_id)
-    print(BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER.build_and_print()

@@ -17,9 +17,11 @@
 """Data to populate the monthly PO report email."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 PO_MONTHLY_REPORT_DATA_VIEW_NAME = 'po_monthly_report_data'
 
@@ -35,7 +37,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     SELECT 'US_ID' as state_code, 'NOT_YET_IMPLEMENTED' AS po_monthly_report
     """
 
-PO_MONTHLY_REPORT_DATA_VIEW = BigQueryView(
+PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=PO_MONTHLY_REPORT_DATA_VIEW_NAME,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
@@ -44,5 +46,5 @@ PO_MONTHLY_REPORT_DATA_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(PO_MONTHLY_REPORT_DATA_VIEW.view_id)
-    print(PO_MONTHLY_REPORT_DATA_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        PO_MONTHLY_REPORT_DATA_VIEW_BUILDER.build_and_print()

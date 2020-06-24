@@ -17,13 +17,14 @@
 """Booking counts by day, fips, and most_severe_charge."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import \
-    CHARGE_SEVERITY_ALL_BOOKINGS_VIEW
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
-
+    CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER
+from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_counts_all_bookings'
 
@@ -95,7 +96,7 @@ ON
 ORDER BY day DESC, fips
 """
 
-CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
+CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_NAME,
     view_query_template=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_QUERY_TEMPLATE,
@@ -104,10 +105,10 @@ CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW = BigQueryView(
     views_dataset=dataset_config.VIEWS_DATASET,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__,
-    charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW.view_id,
-    county_names_view=COUNTY_NAMES_VIEW.view_id
+    charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.view_id,
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id
 )
 
 if __name__ == '__main__':
-    print(CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW.view_id)
-    print(CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER.build_and_print()

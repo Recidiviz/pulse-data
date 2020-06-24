@@ -17,11 +17,13 @@
 """Collapses a booking's bonds into a total amounts and UNKNOWN or DENIED."""
 # pylint: disable=line-too-long
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import BOND_AMOUNTS_UNKNOWN_DENIED_VIEW
+from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER
 
 from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_BY_BOOKING_VIEW_NAME = 'bond_amounts_by_booking'
 
@@ -61,15 +63,15 @@ FROM (
 ) BondAmounts
 """
 
-BOND_AMOUNTS_BY_BOOKING_VIEW = BigQueryView(
+BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=BOND_AMOUNTS_BY_BOOKING_VIEW_NAME,
     view_query_template=BOND_AMOUNTS_BY_BOOKING_QUERY_TEMPLATE,
     description=BOND_AMOUNTS_BY_BOOKING_DESCRIPTION,
     views_dataset=dataset_config.VIEWS_DATASET,
-    bond_amounts_unknown_denied_view=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW.view_id
+    bond_amounts_unknown_denied_view=BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER.view_id
 )
 
 if __name__ == '__main__':
-    print(BOND_AMOUNTS_BY_BOOKING_VIEW.view_id)
-    print(BOND_AMOUNTS_BY_BOOKING_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.build_and_print()

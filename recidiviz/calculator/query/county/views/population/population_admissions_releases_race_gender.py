@@ -16,12 +16,13 @@
 # =============================================================================
 """Total population, admissions, releases by race, gender and day-fips."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 
-from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW
-
+from recidiviz.calculator.query.county.views.vera.county_names import COUNTY_NAMES_VIEW_BUILDER
 from recidiviz.persistence.database.schema.county.schema import Booking, Person
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME = 'population_admissions_releases_race_gender'
 
@@ -107,18 +108,18 @@ ON
 ORDER BY day DESC, fips, race, gender
 """
 
-POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW: BigQueryView = BigQueryView(
+POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_NAME,
     view_query_template=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_QUERY_TEMPLATE,
     description=POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_DESCRIPTION,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
-    county_names_view=COUNTY_NAMES_VIEW.view_id,
+    county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
     booking_table=Booking.__tablename__,
     person_table=Person.__tablename__
 )
 
 if __name__ == '__main__':
-    print(POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_id)
-    print(POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER.build_and_print()

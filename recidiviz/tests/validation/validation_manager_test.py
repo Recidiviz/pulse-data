@@ -140,7 +140,7 @@ class TestHandleRequest(TestCase):
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_called_with([])
 
-    @patch("recidiviz.big_query.view_manager.create_dataset_and_update_views")
+    @patch("recidiviz.big_query.view_manager.create_dataset_and_update_views_for_view_builders")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -159,7 +159,7 @@ class TestHandleRequest(TestCase):
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_called_with([])
-        mock_update_views.assert_called_with(view_config.VIEWS_TO_UPDATE)
+        mock_update_views.assert_called_with(view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
 
 
 class TestFetchValidations(TestCase):

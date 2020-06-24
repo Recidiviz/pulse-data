@@ -16,9 +16,11 @@
 # =============================================================================
 """View that combines county name, state name, and FIPS from Vera's ITP data."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 VERA_DATASET = vera_view_constants.VERA_DATASET
 INCARCERATION_TRENDS_TABLE = vera_view_constants.INCARCERATION_TRENDS_TABLE
@@ -44,7 +46,7 @@ GROUP BY fips, state, county_name
 ORDER BY fips
 """
 
-COUNTY_NAMES_VIEW: BigQueryView = BigQueryView(
+COUNTY_NAMES_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=COUNTY_NAMES_VIEW_NAME,
     view_query_template=COUNTY_NAMES_VIEW_QUERY_TEMPLATE,
@@ -54,5 +56,5 @@ COUNTY_NAMES_VIEW: BigQueryView = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(COUNTY_NAMES_VIEW.view_id)
-    print(COUNTY_NAMES_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        COUNTY_NAMES_VIEW_BUILDER.build_and_print()

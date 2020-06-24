@@ -16,8 +16,10 @@
 # =============================================================================
 """Most recent calculate job_id by metric and state code."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME = \
     'most_recent_job_id_by_metric_and_state_code_view'
@@ -27,7 +29,7 @@ MATERIALIZED_VIEW_TABLE_NAME = \
 
 MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION = \
     """ Job ID of the most recent calculate job by metric and state code.
-    
+
     All job_ids begin with the format: 'YYYY-MM-DD_HH_MM_SS', so ordering
     by job_id gives us the most recent job. This format is true of both jobs
     run locally and run on Dataflow.
@@ -87,15 +89,15 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     ORDER BY metric_type, state_code, year, month, metric_period_months
     """
 
-MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW = BigQueryView(
+MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
     view_id=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_NAME,
     materialized_view_table_id=MATERIALIZED_VIEW_TABLE_NAME,
     view_query_template=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE,
     description=MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET
 )
 
 if __name__ == '__main__':
-    print(MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW.view_id)
-    print(MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER.build_and_print()

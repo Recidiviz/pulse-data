@@ -17,46 +17,47 @@
 """Reference views used by other views."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.state.views.reference.augmented_agent_info import AUGMENTED_AGENT_INFO_VIEW
-from recidiviz.calculator.query.state.views.reference.covid_report_weeks import COVID_REPORT_WEEKS_VIEW
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.reference.augmented_agent_info import AUGMENTED_AGENT_INFO_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.reference.covid_report_weeks import COVID_REPORT_WEEKS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import \
+    US_MO_SENTENCE_STATUSES_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.persons_with_last_known_address import \
-    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW
+    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
-    SSVR_TO_AGENT_ASSOCIATION_VIEW
+    SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_admissions import \
-    EVENT_BASED_ADMISSIONS_VIEW
+    EVENT_BASED_ADMISSIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_program_referrals import \
-    EVENT_BASED_PROGRAM_REFERRALS_VIEW
+    EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_revocations import \
-    EVENT_BASED_REVOCATIONS_VIEW
+    EVENT_BASED_REVOCATIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_supervision import \
-    EVENT_BASED_SUPERVISION_VIEW
+    EVENT_BASED_SUPERVISION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import \
-    REVOCATIONS_MATRIX_BY_PERSON_VIEW
+    REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import \
-    SUPERVISION_MATRIX_BY_PERSON_VIEW
+    SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER
 
-REFERENCE_VIEWS: List[BigQueryView] = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW,
-    AUGMENTED_AGENT_INFO_VIEW,
-    SSVR_TO_AGENT_ASSOCIATION_VIEW,
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW,
-    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW,
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW,
-    EVENT_BASED_ADMISSIONS_VIEW,
-    EVENT_BASED_PROGRAM_REFERRALS_VIEW,
-    EVENT_BASED_REVOCATIONS_VIEW,
-    EVENT_BASED_SUPERVISION_VIEW,
-    REVOCATIONS_MATRIX_BY_PERSON_VIEW,
-    SUPERVISION_MATRIX_BY_PERSON_VIEW,
-    US_MO_SENTENCE_STATUSES_VIEW,
-    COVID_REPORT_WEEKS_VIEW
+REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
+    AUGMENTED_AGENT_INFO_VIEW_BUILDER,
+    SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
+    PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER,
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
+    EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
+    EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER,
+    EVENT_BASED_REVOCATIONS_VIEW_BUILDER,
+    EVENT_BASED_SUPERVISION_VIEW_BUILDER,
+    REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
+    SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
+    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
+    COVID_REPORT_WEEKS_VIEW_BUILDER
 ]
