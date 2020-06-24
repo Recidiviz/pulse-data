@@ -22,7 +22,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_NAME = 'supervision_discharges_by_officer_by_month'
+SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_NAME = 'supervision_compliance_by_officer_by_month'
 
 SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION = """
     Supervision case compliance to state standards by officer by month
