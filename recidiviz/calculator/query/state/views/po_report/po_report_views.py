@@ -19,16 +19,22 @@ from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.revocations_by_officer_by_month import \
+    REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.supervision_absconsion_terminations_by_officer_by_month import \
     SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_officer_by_month import \
     SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.supervision_discharges_by_officer_by_month import \
     SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.supervision_early_discharge_requests_by_officer_by_month import \
+    SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
 
 PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 ]

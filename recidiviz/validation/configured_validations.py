@@ -31,6 +31,12 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
+from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
+    PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER
+from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
+    PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER
+from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER, \
+    PO_REPORT_COMPARISON_COLUMNS
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import \
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import \
@@ -46,6 +52,8 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
     ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER.build()),
     ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER.build()),
     ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER.build()),
+    ExistenceDataValidationCheck(view=PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER.build()),
+    ExistenceDataValidationCheck(view=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER.build()),
     ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER.build()),
 
     SamenessDataValidationCheck(view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build(),
@@ -62,6 +70,9 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
     SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
                                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 comparison_columns=['external_population_count', 'internal_population_count']),
+    SamenessDataValidationCheck(view=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build(),
+                                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                                comparison_columns=PO_REPORT_COMPARISON_COLUMNS),
     SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER.build(),
                                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                                 comparison_columns=['cell_sum', 'caseload_sum']),

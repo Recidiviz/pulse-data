@@ -62,11 +62,13 @@ def export_view_data_to_cloud_storage():
             ExportQueryConfig.from_view_query(
                 view=view,
                 view_filter_clause=f" WHERE state_code = '{state_code}'",
-                intermediate_table_name=f"{view.view_id}_table_{state_code}",
+                intermediate_table_name=(
+                    f"{view.view_id if view.materialized_view_table_id is None else view.materialized_view_table_id}"
+                    f"_table_{state_code}"),
                 output_uri=output_uri_template.format(
                     project_id=project_id,
                     state_code=state_code,
-                    view_id=view.view_id
+                    view_id=view.view_id if view.materialized_view_table_id is None else view.materialized_view_table_id
                 ),
                 output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
             for state_code, view_builders in states_and_view_builders_to_export.items()
