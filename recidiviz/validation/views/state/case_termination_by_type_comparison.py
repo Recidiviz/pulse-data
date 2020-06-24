@@ -19,8 +19,12 @@
   by type."""
 
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_NAME = 'case_termination_by_type_comparison'
@@ -62,7 +66,7 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
       OR by_month.discharge_count != discharges_by_officer.discharge_count
 """
 
-CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW = BigQueryView(
+CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_NAME,
     view_query_template=CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE,
@@ -71,5 +75,5 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW.view_id)
-    print(CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build_and_print()

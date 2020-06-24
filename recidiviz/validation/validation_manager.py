@@ -65,7 +65,7 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
     """Executes all validation checks."""
     if should_update_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
-        view_manager.create_dataset_and_update_views(view_config.VIEWS_TO_UPDATE)
+        view_manager.create_dataset_and_update_views_for_view_builders(view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform()

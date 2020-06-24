@@ -17,21 +17,22 @@
 """All views needed for the COVID-19 Report."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.covid_report.facility_population_by_age_with_capacity_by_day import \
-    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW
-from recidiviz.calculator.query.state.views.covid_report.releases_by_type_by_week import RELEASES_BY_TYPE_BY_WEEK_VIEW
+    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.covid_report.releases_by_type_by_week import \
+    RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.covid_report.supervision_termination_by_type_by_week import \
-    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW
+    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.covid_report.us_nd.admissions_to_cpp_by_week import \
-    ADMISSIONS_TO_CPP_BY_WEEK_VIEW
+    ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.covid_report.us_nd.incidents_by_facility_by_week import \
-    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW
+    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER
 
-COVID_REPORT_VIEWS: List[BigQueryView] = [
-    ADMISSIONS_TO_CPP_BY_WEEK_VIEW,
-    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW,
-    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW,
-    RELEASES_BY_TYPE_BY_WEEK_VIEW,
-    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW
+COVID_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER,
+    FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER,
+    INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER,
+    RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER,
+    SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER
 ]

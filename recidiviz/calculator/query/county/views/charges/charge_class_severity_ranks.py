@@ -16,7 +16,7 @@
 # =============================================================================
 """Creates a View that has a list of charge classes and their severity rank."""
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.common.constants.county.enum_canonical_strings import (
     charge_class_civil,
@@ -32,6 +32,9 @@ from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 # Charge classes by severity.
 # Must be ranked from highest to lowest severity.
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
 CHARGE_CLASSES_BY_SEVERITY = [
     charge_class_parole_violation,
     charge_class_probation_violation,
@@ -64,7 +67,7 @@ WITH OFFSET
 ORDER BY severity
 """
 
-CHARGE_CLASS_SEVERITY_RANKS_VIEW = BigQueryView(
+CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=CHARGE_CLASS_SEVERITY_RANKS_VIEW_NAME,
     view_query_template=CHARGE_CLASS_SEVERITY_RANKS_QUERY_TEMPLATE,
@@ -73,5 +76,5 @@ CHARGE_CLASS_SEVERITY_RANKS_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_id)
-    print(CHARGE_CLASS_SEVERITY_RANKS_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.build_and_print()

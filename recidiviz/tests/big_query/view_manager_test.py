@@ -24,8 +24,7 @@ from unittest.mock import patch
 from google.cloud import bigquery
 
 from recidiviz.big_query import view_manager
-from recidiviz.big_query.big_query_view import BigQueryView
-
+from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 
 _PROJECT_ID = 'fake-recidiviz-project'
 _DATASET_NAME = 'my_views_dataset'
@@ -46,6 +45,27 @@ class ViewManagerTest(unittest.TestCase):
     def tearDown(self):
         self.metadata_patcher.stop()
 
+    def test_create_dataset_and_update_views_for_view_builders(self):
+        """Test that create_dataset_and_update_views_for_view_builders creates a dataset if necessary,
+        and updates all views built by the view builders."""
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+
+        sample_views = [
+            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+            {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+        ]
+        mock_view_builders = [SimpleBigQueryViewBuilder(
+            dataset_id=_DATASET_NAME, view_query_template='a', **view) for view in sample_views]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        view_manager.create_dataset_and_update_views_for_view_builders({_DATASET_NAME: mock_view_builders})
+
+        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_or_update_view.assert_has_calls(
+            [mock.call(dataset, view_builder.build()) for view_builder in mock_view_builders])
+
     def test_create_dataset_and_update_views(self):
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
@@ -58,7 +78,8 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
-        view_manager.create_dataset_and_update_views({_DATASET_NAME: mock_views})
+        # pylint: disable=protected-access
+        view_manager._create_dataset_and_update_views({_DATASET_NAME: mock_views})
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)

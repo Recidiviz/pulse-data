@@ -17,8 +17,10 @@
 """Supervision case compliance to state standards by officer by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_NAME = 'supervision_discharges_by_officer_by_month'
 
@@ -46,7 +48,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         supervising_officer_external_id AS officer_external_id,
         COUNT(DISTINCT(person_id)) AS caseload_count,
         COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date
-      FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics` 
+      FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
       WHERE methodology = 'PERSON'
@@ -59,7 +61,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
-SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW = BigQueryView(
+SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
@@ -69,5 +71,5 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW = BigQueryView(
 )
 
 if __name__ == '__main__':
-    print(SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW.view_id)
-    print(SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW.view_query)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER.build_and_print()
