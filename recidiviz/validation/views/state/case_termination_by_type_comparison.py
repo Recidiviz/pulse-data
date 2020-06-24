@@ -64,6 +64,7 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
     FULL OUTER JOIN discharges_by_officer USING (region_code, year, month)
     WHERE by_month.absconsion_count != absconsions_by_officer.absconsion_count
       OR by_month.discharge_count != discharges_by_officer.discharge_count
+    ORDER BY region_code, year, month
 """
 
 CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
