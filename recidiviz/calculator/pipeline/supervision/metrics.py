@@ -40,6 +40,7 @@ class SupervisionMetricType(Enum):
     """The type of supervision metrics."""
 
     ASSESSMENT_CHANGE = 'ASSESSMENT_CHANGE'
+    COMPLIANCE = 'COMPLIANCE'
     POPULATION = 'POPULATION'
     REVOCATION = 'REVOCATION'
     REVOCATION_ANALYSIS = 'REVOCATION_ANALYSIS'
@@ -381,5 +382,36 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, Person
         supervision_metric = cast(
             TerminatedSupervisionAssessmentScoreChangeMetric,
             TerminatedSupervisionAssessmentScoreChangeMetric.build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
+    """Subclass of SupervisionPopulationMetric for people who are on supervision on a given day that records
+    information regarding whether a supervision case is meeting compliance standards."""
+
+    # The date the on which the case's compliance was evaluated
+    date_of_evaluation: date = attr.ib(default=None)
+
+    # Whether or not a risk assessment has been completed for this person with enough recency to satisfy compliance
+    # measures
+    assessment_up_to_date: bool = attr.ib(default=None)
+
+    # TODO(3304): Implement residence verification and contact compliance measures
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
+            Optional['SupervisionCaseComplianceMetric']:
+        """Builds a SupervisionCaseComplianceMetric object from the given arguments."""
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionCaseComplianceMetric,
+                                  SupervisionCaseComplianceMetric.build_from_dictionary(metric_key))
 
         return supervision_metric

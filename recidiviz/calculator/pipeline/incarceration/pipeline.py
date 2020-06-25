@@ -296,16 +296,17 @@ def get_arg_parser() -> argparse.ArgumentParser:
     # Parse arguments
     add_shared_pipeline_arguments(parser, include_calculation_limit_args=True)
 
+    metric_type_options: List[str] = [
+        metric_type.value for metric_type in IncarcerationMetricType
+    ]
+
+    metric_type_options.append('ALL')
+
     parser.add_argument('--metric_types',
                         dest='metric_types',
                         type=str,
                         nargs='+',
-                        choices=[
-                            'ALL',
-                            IncarcerationMetricType.ADMISSION.value,
-                            IncarcerationMetricType.POPULATION.value,
-                            IncarcerationMetricType.RELEASE.value
-                        ],
+                        choices=metric_type_options,
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
 
