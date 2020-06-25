@@ -16,13 +16,16 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 # TODO(2995): Make a state config file for every state and every one of these state-specific calculation methodologies
-import datetime
+from datetime import date
 import logging
 from typing import List, Optional
 
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
     us_id_is_revocation_admission
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
+    us_id_case_compliance_on_date
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
@@ -38,7 +41,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
-    StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse
+    StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment
 
 
 def supervision_types_distinct_for_state(state_code: str) -> bool:
@@ -121,7 +124,7 @@ def should_collapse_transfers_different_purpose_for_incarceration(state_code: st
 
 
 def get_month_supervision_type(
-        any_date_in_month: datetime.date,
+        any_date_in_month: date,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod
@@ -328,3 +331,20 @@ def produce_supervision_time_bucket_for_period(supervision_period: StateSupervis
             and not investigation_periods_in_supervision_population(supervision_period.state_code)):
         return False
     return True
+
+
+def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
+                                start_of_supervision: date,
+                                compliance_evaluation_date: date,
+                                last_assessment: Optional[StateAssessment]) -> \
+        Optional[SupervisionCaseCompliance]:
+    """Returns the SupervisionCaseCompliance object containing information about whether the given supervision case is
+    in compliance with state-specific standards on the compliance_evaluation_date. If the state of the
+    supervision_period does not have state-specific compliance calculations, returns None."""
+    if supervision_period.state_code == 'US_ID':
+        return us_id_case_compliance_on_date(supervision_period,
+                                             start_of_supervision,
+                                             compliance_evaluation_date,
+                                             last_assessment)
+
+    return None

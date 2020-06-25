@@ -43,13 +43,9 @@ ASSESSMENT_TYPES_TO_INCLUDE = {
 }
 
 
-def find_most_recent_assessment(cutoff_date: date,
-                                assessments: List[StateAssessment]) -> \
-        Tuple[Optional[int], Optional[StateAssessmentLevel],
-              Optional[StateAssessmentType]]:
-    """Finds the assessment that happened before or on the given date and
-    has the date closest to the given date. Returns the assessment score
-    and the assessment type."""
+def find_most_recent_assessment(cutoff_date: date, assessments: List[StateAssessment]) -> Optional[StateAssessment]:
+    """Finds the assessment that happened before or on the given date and has the date closest to the given date.
+    Returns the assessment."""
     if assessments:
         assessments_before_date = [
             assessment for assessment in assessments
@@ -62,9 +58,21 @@ def find_most_recent_assessment(cutoff_date: date,
                 key=lambda b: b.assessment_date)
 
             most_recent_assessment = assessments_before_date[-1]
-            return most_recent_assessment.assessment_score, \
-                most_recent_assessment.assessment_level, \
-                most_recent_assessment.assessment_type
+            return most_recent_assessment
+
+    return None
+
+
+def most_recent_assessment_attributes(cutoff_date: date, assessments: List[StateAssessment]) -> \
+        Tuple[Optional[int], Optional[StateAssessmentLevel], Optional[StateAssessmentType]]:
+    """Finds the assessment that happened before or on the given date and has the date closest to the given date.
+    Returns the assessment score, assessment level, and the assessment type."""
+    most_recent_assessment = find_most_recent_assessment(cutoff_date, assessments)
+
+    if most_recent_assessment:
+        return most_recent_assessment.assessment_score, \
+               most_recent_assessment.assessment_level, \
+               most_recent_assessment.assessment_type
 
     return None, None, None
 

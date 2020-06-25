@@ -27,7 +27,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
 from recidiviz.calculator.pipeline.supervision.metrics import TerminatedSupervisionAssessmentScoreChangeMetric, \
     SupervisionPopulationMetric, SupervisionRevocationMetric, SupervisionRevocationAnalysisMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 7
@@ -54,5 +54,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionRevocationAnalysisMetric: 'supervision_revocation_analysis_metrics',
     SupervisionRevocationViolationTypeAnalysisMetric: 'supervision_revocation_violation_type_analysis_metrics',
     SupervisionSuccessMetric: 'supervision_success_metrics',
-    SuccessfulSupervisionSentenceDaysServedMetric: 'successful_supervision_sentence_days_served_metrics'
+    SuccessfulSupervisionSentenceDaysServedMetric: 'successful_supervision_sentence_days_served_metrics',
+    SupervisionCaseComplianceMetric: 'supervision_case_compliance_metrics'
 }

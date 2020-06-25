@@ -18,13 +18,14 @@
 # pylint: disable=unused-import,wrong-import-order,protected-access
 import unittest
 from datetime import date
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Sequence
 
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
@@ -51,14 +52,8 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
-        SupervisionMetricType.ASSESSMENT_CHANGE: True,
-        SupervisionMetricType.SUCCESS: True,
-        SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
-        SupervisionMetricType.REVOCATION: True,
-        SupervisionMetricType.REVOCATION_ANALYSIS: True,
-        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
-        SupervisionMetricType.POPULATION: True,
-    }
+    metric_type: True for metric_type in SupervisionMetricType
+}
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
@@ -1272,10 +1267,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2010, month=1,
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2010, 1, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
                 revocation_admission_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -2232,6 +2235,60 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                                                 SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations)
 
+    def test_map_supervision_combinations_compliance_metrics(self):
+        """Tests the map_supervision_combinations function when there are compliance metrics to be generated."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                is_on_supervision_last_day_of_month=True,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH',
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                is_on_supervision_last_day_of_month=True,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH',
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1
+        )
+
+        expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
+
 
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
@@ -2514,6 +2571,7 @@ def expected_metric_combos_count(
     if with_methodologies:
         methodology_multiplier *= CALCULATION_METHODOLOGIES
 
+    # Organize buckets by type of metrics they contribute to
     projected_completion_buckets = [
         bucket for bucket in supervision_time_buckets if isinstance(bucket, ProjectedSupervisionCompletionBucket)
     ]
@@ -2530,75 +2588,40 @@ def expected_metric_combos_count(
         if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket))
     ]
 
-    termination_buckets = [
-        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
-    ]
-
-    num_termination_buckets = len(termination_buckets)
-
-    num_duplicated_population_buckets = 0
-    population_months: Set[Tuple[int, int]] = set()
-
-    for bucket in population_buckets:
-        year = bucket.year
-        month = 0 if bucket.month is None else bucket.month
-        if (year, month) in population_months:
-            num_duplicated_population_buckets += 1
-        if month is not None:
-            population_months.add((year, month))
-
-    num_duplicated_projected_completion_months = 0
-    completion_months: Set[Tuple[int, int]] = set()
-
-    for projected_completion_bucket in projected_completion_buckets:
-        if (projected_completion_bucket.year, projected_completion_bucket.month) in completion_months:
-            num_duplicated_projected_completion_months += 1
-        if projected_completion_bucket.month:
-            completion_months.add((projected_completion_bucket.year, projected_completion_bucket.month))
-
-    num_projected_completion_buckets = len(projected_completion_buckets)
-
-    num_duplicated_projected_completion_sentence_length_months = 0
-    completion_sentence_length_months: Set[Tuple[int, int]] = set()
-
-    for completion_sentence_bucket in successful_completion_sentence_length_buckets:
-        if (completion_sentence_bucket.year, completion_sentence_bucket.month) in completion_sentence_length_months:
-            num_duplicated_projected_completion_sentence_length_months += 1
-        if completion_sentence_bucket.month:
-            completion_sentence_length_months.add((completion_sentence_bucket.year, completion_sentence_bucket.month))
-
-    num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
-
-    # Calculate total combos for supervision population
-    num_population_buckets = len(population_buckets)
-
-    num_duplicated_termination_buckets = 0
-    termination_months: Set[Tuple[int, int]] = set()
-
-    for termination_bucket in termination_buckets:
-        year = termination_bucket.year
-        month = 0 if termination_bucket.month is None else termination_bucket.month
-        if (year, month) in termination_months:
-            num_duplicated_termination_buckets += 1
-        if month is not None:
-            termination_months.add((year, month))
-
     revocation_buckets = [
         bucket for bucket in supervision_time_buckets
         if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
     ]
+
+    compliance_buckets = [
+        bucket for bucket in supervision_time_buckets
+        if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
+        and bucket.case_compliance is not None
+    ]
+
+    termination_buckets = [
+        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
+    ]
+
+    # Count number of buckets and number of buckets in the same month
+    num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
+    num_duplicated_projected_completion_sentence_length_months = _duplicated_months(
+        successful_completion_sentence_length_buckets)
+
+    num_projected_completion_buckets = len(projected_completion_buckets)
+    num_duplicated_projected_completion_months = _duplicated_months(projected_completion_buckets)
+
+    num_population_buckets = len(population_buckets)
+    num_duplicated_population_buckets = _duplicated_months(population_buckets)
+
+    num_compliance_buckets = len(compliance_buckets)
+    num_duplicated_compliance_buckets = _duplicated_months(compliance_buckets)
+
     num_revocation_buckets = len(revocation_buckets)
+    num_duplicated_revocation_buckets = _duplicated_months(revocation_buckets)
 
-    num_duplicated_revocation_buckets = 0
-    revocation_months: Set[Tuple[int, int]] = set()
-
-    for bucket in revocation_buckets:
-        year = bucket.year
-        month = 0 if bucket.month is None else bucket.month
-        if (year, month) in revocation_months:
-            num_duplicated_revocation_buckets += 1
-        if month is not None:
-            revocation_months.add((year, month))
+    num_termination_buckets = len(termination_buckets)
+    num_duplicated_termination_buckets = _duplicated_months(termination_buckets)
 
     revocation_violation_type_analysis_dimension_multiplier = 1
     num_violation_types = 0
@@ -2628,6 +2651,8 @@ def expected_metric_combos_count(
     supervision_population_combos = (num_population_buckets +
                                      (num_population_buckets - num_duplicated_population_buckets)*(
                                          num_relevant_periods + 1))
+    supervision_compliance_combos = (num_compliance_buckets +
+                                     (num_compliance_buckets - num_duplicated_compliance_buckets))
     supervision_revocation_combos = (num_revocation_buckets +
                                      (num_revocation_buckets - num_duplicated_revocation_buckets)*(
                                          num_relevant_periods + 1))
@@ -2661,11 +2686,14 @@ def expected_metric_combos_count(
                    supervision_successful_sentence_length_combos +
                    supervision_termination_combos +
                    supervision_revocation_analysis_combos +
-                   revocation_violation_type_analysis_combos)
+                   revocation_violation_type_analysis_combos +
+                   supervision_compliance_combos)
 
     if metric_to_include:
         if metric_to_include == SupervisionMetricType.ASSESSMENT_CHANGE:
             return int(supervision_termination_combos)
+        if metric_to_include == SupervisionMetricType.COMPLIANCE:
+            return int(supervision_compliance_combos)
         if metric_to_include == SupervisionMetricType.SUCCESS:
             return int(supervision_success_combos)
         if metric_to_include == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
@@ -2680,6 +2708,21 @@ def expected_metric_combos_count(
             return int(supervision_population_combos)
 
     return 0
+
+
+def _duplicated_months(supervision_time_buckets: Sequence[SupervisionTimeBucket]) -> int:
+    duplicated_months = 0
+    months: Set[Tuple[int, int]] = set()
+
+    for bucket in supervision_time_buckets:
+        year = bucket.year
+        month = 0 if bucket.month is None else bucket.month
+        if (year, month) in months:
+            duplicated_months += 1
+        if month is not None:
+            months.add((year, month))
+
+    return duplicated_months
 
 
 class TestIncludeDimensionsFunctions(unittest.TestCase):

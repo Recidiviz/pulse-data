@@ -54,6 +54,22 @@ def _drop_placeholder_periods(supervision_periods: List[StateSupervisionPeriod])
     ]
 
 
+def _set_unset_start_dates(supervision_periods: List[StateSupervisionPeriod]) -> \
+        List[StateSupervisionPeriod]:
+    """Sets start_dates on periods where start_date is unset."""
+    updated_periods: List[StateSupervisionPeriod] = []
+
+    for supervision_period in supervision_periods:
+        if not supervision_period.start_date:
+            if not supervision_period.termination_date:
+                # Drop periods without start or termination dates
+                continue
+            supervision_period.start_date = supervision_period.termination_date
+        updated_periods.append(supervision_period)
+
+    return updated_periods
+
+
 def _drop_non_state_custodial_authority_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
         List[StateSupervisionPeriod]:
     """Drops all supervision periods where the custodial_authority is not the state DOC of the state_code on the
