@@ -38,7 +38,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, \
     TerminatedSupervisionAssessmentScoreChangeMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket,\
@@ -90,12 +91,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
         self.metric_inclusions_dict: Dict[str, bool] = {
-            SupervisionMetricType.ASSESSMENT_CHANGE.value: True,
-            SupervisionMetricType.SUCCESS.value: True,
-            SupervisionMetricType.REVOCATION.value: True,
-            SupervisionMetricType.REVOCATION_ANALYSIS.value: True,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value: True,
-            SupervisionMetricType.POPULATION.value: True,
+            metric_type.value: True for metric_type in SupervisionMetricType
         }
 
     @staticmethod
@@ -2569,12 +2565,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_inclusions_dict: Dict[SupervisionMetricType, bool] = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: True,
-            SupervisionMetricType.SUCCESS: True,
-            SupervisionMetricType.REVOCATION: True,
-            SupervisionMetricType.REVOCATION_ANALYSIS: True,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
-            SupervisionMetricType.POPULATION: True,
+            metric_type: True for metric_type in SupervisionMetricType
         }
 
     def testCalculateSupervisionMetricCombinations(self):
@@ -2592,15 +2583,21 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text='MIN',
-                is_on_supervision_last_day_of_month=True
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2015, 3, 31),
+                    assessment_up_to_date=True
+                )
             ),
         ]
 
         # Each characteristic combination will be tracked for each of the months and the two methodology types
         expected_population_metric_count = len(supervision_time_buckets) * 2
+        expected_compliance_metric_count = len(supervision_time_buckets) * 2
 
-        expected_population_combination_counts = \
-            {SupervisionMetricType.POPULATION.value: expected_population_metric_count}
+        expected_combination_counts = \
+            {SupervisionMetricType.POPULATION.value: expected_population_metric_count,
+             SupervisionMetricType.COMPLIANCE.value: expected_compliance_metric_count}
 
         test_pipeline = TestPipeline()
 
@@ -2614,8 +2611,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                   )
 
         assert_that(output, AssertMatchers.
-                    count_combinations(expected_population_combination_counts),
-                    'Assert number of population metrics is expected value')
+                    count_combinations(expected_combination_counts),
+                    'Assert number of metrics is expected value')
 
         test_pipeline.run()
 
@@ -2719,6 +2716,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def testProduceSupervisionMetrics(self):
         metric_value_to_metric_type = {
             SupervisionMetricType.ASSESSMENT_CHANGE: TerminatedSupervisionAssessmentScoreChangeMetric,
+            SupervisionMetricType.COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,
             SupervisionMetricType.REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,

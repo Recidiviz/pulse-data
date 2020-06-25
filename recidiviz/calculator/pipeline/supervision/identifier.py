@@ -25,6 +25,7 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
@@ -36,7 +37,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
     identify_most_severe_response_decision, first_day_of_month, first_day_of_next_month
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    find_most_recent_assessment, find_assessment_score_change
+    find_most_recent_assessment, find_assessment_score_change, most_recent_assessment_attributes
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_distinct_for_state, \
@@ -46,7 +47,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_violation_responses_before_revocation, \
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
-    produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population
+    produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
+    get_case_compliance_on_date
+from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations, \
     get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
@@ -164,8 +167,8 @@ def find_supervision_time_buckets(
         collapse_temporary_custody_periods_with_revocation=False,
         collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi)
 
+    supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
     incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=incarceration_periods)
-    indexed_supervision_periods = _index_supervision_periods_by_termination_month(supervision_periods)
 
     projected_supervision_completion_buckets = classify_supervision_success(supervision_sentences,
                                                                             incarceration_period_index,
@@ -173,12 +176,13 @@ def find_supervision_time_buckets(
 
     supervision_time_buckets.extend(projected_supervision_completion_buckets)
 
-    for supervision_period in supervision_periods:
+    for supervision_period in supervision_period_index.supervision_periods:
         if produce_supervision_time_bucket_for_period(supervision_period):
             supervision_time_buckets = supervision_time_buckets + find_time_buckets_for_supervision_period(
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments,
                 violation_responses,
@@ -188,7 +192,7 @@ def find_supervision_time_buckets(
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
-                indexed_supervision_periods,
+                supervision_period_index,
                 assessments,
                 supervision_period_to_agent_associations,
                 incarceration_period_index
@@ -214,6 +218,7 @@ def find_time_buckets_for_supervision_period(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
+        supervision_period_index: SupervisionPeriodIndex,
         incarceration_period_index: IncarcerationPeriodIndex,
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
@@ -225,6 +230,7 @@ def find_time_buckets_for_supervision_period(
         - supervision_sentences: List of StateSupervisionSentences for a person
         - incarceration_sentences: List of StateIncarcerationSentence for a person
         - supervision_period: The supervision period the person was on
+        - supervision_period_index: Class containing information about this person's supervision periods
         - incarceration_period_index: Class containing information about this person's incarceration periods
         - assessments: List of StateAssessment for a person
         - violation_responses: List of StateSupervisionViolationResponse for a person
@@ -261,7 +267,16 @@ def find_time_buckets_for_supervision_period(
                 start_of_month, supervision_sentences, incarceration_sentences, supervision_period)
             end_of_month = last_day_of_month(start_of_month)
 
-            assessment_score, assessment_level, assessment_type = find_most_recent_assessment(end_of_month, assessments)
+            assessment_score = None
+            assessment_level = None
+            assessment_type = None
+
+            most_recent_assessment = find_most_recent_assessment(end_of_month, assessments)
+
+            if most_recent_assessment:
+                assessment_score = most_recent_assessment.assessment_score
+                assessment_level = most_recent_assessment.assessment_level
+                assessment_type = most_recent_assessment.assessment_type
 
             supervising_officer_external_id, supervising_district_external_id = \
                 _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
@@ -280,6 +295,22 @@ def find_time_buckets_for_supervision_period(
                 supervision_period
             )
 
+            case_compliance: Optional[SupervisionCaseCompliance] = None
+
+            # For now, we are only calculating case compliance at the end of each month
+            if is_on_supervision_last_day_of_month:
+                if not supervision_period.supervision_period_id:
+                    raise ValueError("Unexpected supervision period without a supervision_period_id.")
+
+                start_of_supervision = supervision_period_index.supervision_start_dates_by_period_id.get(
+                    supervision_period.supervision_period_id)
+
+                if not start_of_supervision:
+                    raise ValueError("SupervisionPeriodIndex.supervision_start_dates_by_period_id incomplete.")
+
+                case_compliance = get_case_compliance_on_date(
+                    supervision_period, start_of_supervision, end_of_month, most_recent_assessment)
+
             supervision_month_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
@@ -297,7 +328,8 @@ def find_time_buckets_for_supervision_period(
                     supervising_district_external_id=supervising_district_external_id,
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                    is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month
+                    is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
+                    case_compliance=case_compliance
                 )
             )
 
@@ -393,8 +425,7 @@ def find_supervision_termination_bucket(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
-        indexed_supervision_periods:
-        Dict[int, Dict[int, List[StateSupervisionPeriod]]],
+        supervision_period_index: SupervisionPeriodIndex,
         assessments: List[StateAssessment],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         incarceration_period_index: IncarcerationPeriodIndex
@@ -433,7 +464,8 @@ def find_supervision_termination_bucket(
         termination_year = termination_date.year
         termination_month = termination_date.month
 
-        periods_terminated_in_year = indexed_supervision_periods.get(termination_year)
+        periods_terminated_in_year = supervision_period_index.supervision_periods_by_termination_month.get(
+            termination_year)
 
         if periods_terminated_in_year:
             periods_terminated_in_month = periods_terminated_in_year.get(termination_month)
@@ -781,7 +813,8 @@ def find_revocation_return_buckets(
         admission_year = admission_date.year
         admission_month = admission_date.month
 
-        assessment_score, assessment_level, assessment_type = find_most_recent_assessment(admission_date, assessments)
+        assessment_score, assessment_level, assessment_type = most_recent_assessment_attributes(
+            admission_date, assessments)
 
         if revoked_supervision_periods:
             # Add a RevocationReturnSupervisionTimeBucket for each supervision period that was revoked
@@ -841,11 +874,6 @@ def find_revocation_return_buckets(
 
             # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
             case_type = StateSupervisionCaseType.GENERAL
-
-            end_of_month = last_day_of_month(admission_date)
-
-            assessment_score, assessment_level, assessment_type = find_most_recent_assessment(
-                end_of_month, assessments)
 
             # Get details about the violation and response history leading up to the revocation
             violation_history = get_violation_and_response_history(admission_date, violation_responses)
@@ -1043,31 +1071,6 @@ def _get_supervising_officer_and_district(
     return supervising_officer_external_id, supervising_district_external_id
 
 
-def _index_supervision_periods_by_termination_month(
-        supervision_periods: List[StateSupervisionPeriod]) -> \
-        Dict[int, Dict[int, List[StateSupervisionPeriod]]]:
-    """Organizes the list of StateSupervisionPeriods by the year and month
-     of the termination_date on the period."""
-    indexed_supervision_periods: \
-        Dict[int, Dict[int, List[StateSupervisionPeriod]]] = defaultdict()
-
-    for supervision_period in supervision_periods:
-        if supervision_period.termination_date:
-            year = supervision_period.termination_date.year
-            month = supervision_period.termination_date.month
-
-            if year not in indexed_supervision_periods.keys():
-                indexed_supervision_periods[year] = {
-                    month: [supervision_period]
-                }
-            elif month not in indexed_supervision_periods[year].keys():
-                indexed_supervision_periods[year][month] = [supervision_period]
-            else:
-                indexed_supervision_periods[year][month].append(supervision_period)
-
-    return indexed_supervision_periods
-
-
 def _identify_most_severe_revocation_type(
         response_decision_entries:
         List[StateSupervisionViolationResponseDecisionEntry]) -> \
@@ -1126,6 +1129,7 @@ def _expand_dual_supervision_buckets(supervision_time_buckets: List[SupervisionT
 # Each SupervisionMetricType with a list of the SupervisionTimeBuckets that contribute to that metric
 BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBucket]]] = {
     SupervisionMetricType.ASSESSMENT_CHANGE: [SupervisionTerminationBucket],
+    SupervisionMetricType.COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.POPULATION: [
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
     ],
