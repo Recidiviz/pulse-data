@@ -26,6 +26,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import identifier
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -33,6 +34,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     RevocationReturnSupervisionTimeBucket,\
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -48,7 +50,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, \
-    StateSupervisionLevel
+    StateSupervisionLevel, StateSupervisionPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -1030,14 +1032,23 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
@@ -1074,7 +1085,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         # Supervision period with an unset supervision_period_supervision_type between the terminated period
         # and the revocation incarceration period
         supervision_period_type_unset = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=222,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
@@ -1127,14 +1138,24 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
@@ -1166,13 +1187,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             custodial_authority='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
         )
 
         # Supervision period with an unset supervision_period_supervision_type between the terminated period
         # and the revocation incarceration period
         supervision_period_type_unset = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=222,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
@@ -1225,14 +1247,24 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
@@ -1269,7 +1301,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         # Supervision period with an unset supervision_period_supervision_type between the terminated period
         # and the revocation incarceration period
         supervision_period_type_unset = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=222,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
@@ -1335,14 +1367,24 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
@@ -1486,21 +1528,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=False),
+                is_on_supervision_last_day_of_month=False
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=6,
@@ -1590,21 +1643,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=False),
+                is_on_supervision_last_day_of_month=False
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=6,
@@ -1723,21 +1787,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=4,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_up_to_date=False
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=5,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 most_severe_violation_type_subtype='UNSET',
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=False),
+                is_on_supervision_last_day_of_month=False
+            ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2017, month=11,
@@ -3500,7 +3575,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=4,
@@ -3510,7 +3590,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 4, 30),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5,
@@ -3949,7 +4034,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 3, 31),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=4,
@@ -3959,7 +4049,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                is_on_supervision_last_day_of_month=True),
+                is_on_supervision_last_day_of_month=True,
+                case_compliance=SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 4, 30),
+                    assessment_up_to_date=True
+                )
+            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2018, month=5,
@@ -5377,8 +5472,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -5391,6 +5486,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5475,8 +5571,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
         violation_reports = []
@@ -5488,6 +5584,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5551,8 +5648,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -5565,6 +5662,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5626,8 +5724,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -5640,6 +5738,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5710,8 +5809,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         incarceration_sentences = []
         assessments = []
@@ -5721,6 +5820,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
             identifier.find_time_buckets_for_supervision_period(
                 [supervision_sentence], incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5774,8 +5874,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
         assessments = []
 
         violation_reports = []
@@ -5787,6 +5887,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5861,8 +5962,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -5875,6 +5976,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -5952,8 +6054,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[first_incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[first_incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -5966,6 +6068,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -6060,8 +6163,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -6074,6 +6177,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -6156,8 +6260,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -6170,6 +6274,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -6246,8 +6351,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = []
 
@@ -6260,6 +6365,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_reports,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -6321,8 +6427,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[incarceration_period])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[incarceration_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = [assessment_1, assessment_2]
 
@@ -6334,6 +6440,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [supervision_sentence],
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -6429,8 +6536,8 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
-            incarceration_periods=[])
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         assessments = [assessment]
         violation_responses = []
@@ -6441,6 +6548,7 @@ class TestFindMonthsForSupervisionPeriod(unittest.TestCase):
                 [supervision_sentence],
                 incarceration_sentences,
                 supervision_period,
+                supervision_period_index,
                 incarceration_period_index,
                 assessments, violation_responses,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
@@ -7236,10 +7344,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         assessments = [first_assessment, first_reassessment, last_assessment]
 
-        indexed_supervision_periods = \
-            identifier._index_supervision_periods_by_termination_month(
-                [supervision_period]
-            )
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
@@ -7248,7 +7353,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
-            indexed_supervision_periods,
+            supervision_period_index,
             assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
@@ -7300,10 +7405,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         assessments = []
 
-        indexed_supervision_periods = \
-            identifier._index_supervision_periods_by_termination_month(
-                [supervision_period]
-            )
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
@@ -7312,7 +7414,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
-            indexed_supervision_periods,
+            supervision_period_index,
             assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
@@ -7367,10 +7469,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         assessments = [first_assessment]
 
-        indexed_supervision_periods = \
-            identifier._index_supervision_periods_by_termination_month(
-                [supervision_period]
-            )
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
@@ -7379,7 +7478,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
-            indexed_supervision_periods,
+            supervision_period_index,
             assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
@@ -7425,10 +7524,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         assessments = []
 
-        indexed_supervision_periods = \
-            identifier._index_supervision_periods_by_termination_month(
-                [supervision_period]
-            )
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
@@ -7437,7 +7533,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
-            indexed_supervision_periods,
+            supervision_period_index,
             assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
@@ -7516,9 +7612,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_3
         ]
 
-        indexed_supervision_periods = \
-            identifier._index_supervision_periods_by_termination_month(
-                [first_supervision_period, second_supervision_period]
+        supervision_period_index = \
+            SupervisionPeriodIndex(
+                supervision_periods=[first_supervision_period, second_supervision_period]
             )
 
         incarceration_sentences = []
@@ -7528,7 +7624,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
-            indexed_supervision_periods,
+            supervision_period_index,
             assessments,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
@@ -7576,13 +7672,13 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             source_supervision_violation_response=None
         )
 
-        indexed_supervision_periods = identifier._index_supervision_periods_by_termination_month([supervision_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences=[],
             incarceration_sentences=[],
             supervision_period=supervision_period,
-            indexed_supervision_periods=indexed_supervision_periods,
+            supervision_period_index=supervision_period_index,
             assessments=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             incarceration_period_index=IncarcerationPeriodIndex(
@@ -7631,13 +7727,13 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             ]
         )
 
-        indexed_supervision_periods = identifier._index_supervision_periods_by_termination_month([supervision_period])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=[supervision_period])
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
             supervision_period=supervision_period,
-            indexed_supervision_periods=indexed_supervision_periods,
+            supervision_period_index=supervision_period_index,
             assessments=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             incarceration_period_index=IncarcerationPeriodIndex(

@@ -35,7 +35,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     TerminatedSupervisionAssessmentScoreChangeMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -272,6 +272,11 @@ class ProduceSupervisionMetrics(beam.DoFn):
             supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
+        elif metric_type == SupervisionMetricType.COMPLIANCE:
+            dict_metric_key['count'] = 1
+
+            supervision_metric = SupervisionCaseComplianceMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s",
                           dict_metric_key.get('metric_type'))
@@ -305,7 +310,9 @@ class SupervisionMetricWritableDict(beam.DoFn):
         """
         element_dict = json_serializable_metric_key(element.__dict__)
 
-        if isinstance(element, SupervisionPopulationMetric):
+        if isinstance(element, SupervisionCaseComplianceMetric):
+            yield beam.pvalue.TaggedOutput('compliances', element_dict)
+        elif isinstance(element, SupervisionPopulationMetric):
             yield beam.pvalue.TaggedOutput('populations', element_dict)
         elif isinstance(element, SupervisionRevocationAnalysisMetric):
             yield beam.pvalue.TaggedOutput('revocation_analyses', element_dict)
@@ -332,20 +339,17 @@ def get_arg_parser() -> argparse.ArgumentParser:
     # Parse arguments
     add_shared_pipeline_arguments(parser, include_calculation_limit_args=True)
 
+    metric_type_options: List[str] = [
+        metric_type.value for metric_type in SupervisionMetricType
+    ]
+
+    metric_type_options.append('ALL')
+
     parser.add_argument('--metric_types',
                         dest='metric_types',
                         type=str,
                         nargs='+',
-                        choices=[
-                            'ALL',
-                            SupervisionMetricType.ASSESSMENT_CHANGE.value,
-                            SupervisionMetricType.POPULATION.value,
-                            SupervisionMetricType.REVOCATION.value,
-                            SupervisionMetricType.REVOCATION_ANALYSIS.value,
-                            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
-                            SupervisionMetricType.SUCCESS.value,
-                            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED.value
-                        ],
+                        choices=metric_type_options,
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
 
@@ -607,12 +611,13 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                 SupervisionMetricWritableDict()).with_outputs(
                                     'populations', 'revocations', 'successes',
                                     'successful_sentence_lengths', 'assessment_changes', 'revocation_analyses',
-                                    'revocation_violation_type_analyses'
+                                    'revocation_violation_type_analyses', 'compliances'
                                 )
                             )
 
         # Write the metrics to the output tables in BigQuery
         assessment_changes_table_id = DATAFLOW_METRICS_TO_TABLES.get(TerminatedSupervisionAssessmentScoreChangeMetric)
+        compliance_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionCaseComplianceMetric)
         populations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionPopulationMetric)
         revocations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationMetric)
         revocation_analysis_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationAnalysisMetric)
@@ -682,6 +687,15 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                f"{revocation_violation_type_analysis_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=revocation_violation_type_analysis_table_id,
+                 dataset=output,
+                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+             ))
+
+        _ = (writable_metrics.compliances
+             | f"Write compliance metrics to BQ table: {compliance_table_id}" >>
+             beam.io.WriteToBigQuery(
+                 table=compliance_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND

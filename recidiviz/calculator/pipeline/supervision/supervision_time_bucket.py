@@ -20,6 +20,7 @@ from typing import Optional, List
 
 import attr
 
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -78,6 +79,9 @@ class SupervisionTimeBucket(BuildableAttr):
 
     # External ID of the district of the officer that was supervising the people described by this metric
     supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    # Information related to whether the supervision case is meeting compliance standards
+    case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)

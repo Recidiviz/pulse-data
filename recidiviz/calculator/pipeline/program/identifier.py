@@ -22,7 +22,7 @@ from typing import List, Optional, Dict, Any, Set
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    find_most_recent_assessment
+    most_recent_assessment_attributes
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     only_state_custodial_authority_in_supervision_population
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
@@ -86,20 +86,15 @@ def find_program_referrals(
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
         supervision_periods: List[StateSupervisionPeriod],
-        supervision_period_to_agent_associations:
-        Dict[int, Dict[Any, Any]]) -> \
-        List[ProgramReferralEvent]:
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) -> List[ProgramReferralEvent]:
     """Finds instances of being referred to a program.
 
-    Looks at the program assignments that have a referral date and a program id
-    to find referrals to a program. Then, using date-based logic, connects
-    that referral to assessment and supervision data where possible to build
-    ProgramReferralEvents. For assessments, identifies the most recent
-    assessment at the time of the referral. For supervision, identifies any
-    supervision periods that were active at the time of the referral. If there
-    are multiple overlapping supervision periods, returns one
-    ProgramReferralEvent for each unique supervision type for each supervision
-    period that overlapped.
+    Looks at the program assignments that have a referral date and a program id to find referrals to a program. Then,
+    using date-based logic, connects that referral to assessment and supervision data where possible to build
+    ProgramReferralEvents. For assessments, identifies the most recent assessment at the time of the referral. For
+    supervision, identifies any supervision periods that were active at the time of the referral. If there
+    are multiple overlapping supervision periods, returns one ProgramReferralEvent for each unique supervision type for
+    each supervision period that overlapped.
 
     Returns a list of ProgramReferralEvents.
     """
@@ -113,13 +108,9 @@ def find_program_referrals(
             program_id = 'EXTERNAL_UNKNOWN'
 
         if referral_date and program_id:
-            assessment_score, _, assessment_type = \
-                find_most_recent_assessment(referral_date,
-                                            assessments)
+            assessment_score, _, assessment_type = most_recent_assessment_attributes(referral_date, assessments)
 
-            relevant_supervision_periods = \
-                find_supervision_periods_during_referral(
-                    referral_date, supervision_periods)
+            relevant_supervision_periods = find_supervision_periods_during_referral(referral_date, supervision_periods)
 
             program_referrals.extend(referrals_for_supervision_periods(
                 program_assignment.state_code,
