@@ -13,6 +13,7 @@ child_key_mappings:
   prev_fac_typ: state_supervision_period.admission_reason
   start_date: state_supervision_period.start_date
   statuses: state_supervision_period.supervision_period_supervision_type
+  wrkld_cat_title: state_supervision_period.supervision_level
 
 primary_key:
   docno: state_person.state_person_id
