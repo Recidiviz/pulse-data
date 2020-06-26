@@ -1,0 +1,10 @@
+key_mappings:
+  recidiviz_master_person_id: state_person.state_person_id
+
+primary_key:
+  recidiviz_master_person_id: state_person.state_person_id
+
+keys_to_ignore:
+  - control_numbers   # PA DOC id numbers - Handled manually in controller
+  - state_ids   # State ids linking DOC and Parole numbers - Handled manually in controller
+  - parole_numbers  # Parole numbers - Handled manually in controller
