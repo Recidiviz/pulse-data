@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overri
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_set_agent_type
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
-    StateIncarcerationSentence, StateCharge
+    StateIncarcerationSentence, StateCharge, StateSentenceGroup
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -57,7 +57,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'person_external_ids': [
                 self._hydrate_person_external_ids
             ],
-            'dbo_IcsDoc': [
+            'doc_person_info': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self.gen_hydrate_alternate_external_ids({
                     'SID_Num': US_PA_SID,
@@ -66,6 +66,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 copy_name_to_alias,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
                 self._compose_current_address,
+                self._hydrate_sentence_group_ids
             ],
             'dbo_tblInmTestScore': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
@@ -94,7 +95,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [],
-            'dbo_IcsDoc': [],
+            'doc_person_info': [],
             'dbo_tblInmTestScore': [],
             'dbo_Senrec': [],
             'dbo_Offender': [],
@@ -106,7 +107,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         'person_external_ids',
 
         # Data source: DOC
-        'dbo_IcsDoc',
+        'doc_person_info',
         'dbo_tblInmTestScore',
         'dbo_Senrec',
 
@@ -116,16 +117,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
     ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
-        Race.ASIAN: ['1', 'A'],
-        Race.BLACK: ['2', 'B'],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ['4', 'I'],
-        Race.OTHER: ['5', 'N'],
-        Race.WHITE: ['6', 'W'],
+        Race.ASIAN: ['ASIAN', 'A'],
+        Race.BLACK: ['BLACK', 'B'],
+        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ['AMERICAN INDIAN', 'I'],
+        Race.OTHER: ['OTHER', 'N'],
+        Race.WHITE: ['WHITE', 'W'],
 
-        Ethnicity.HISPANIC: ['3', 'H'],
+        Ethnicity.HISPANIC: ['HISPANIC', 'H'],
 
-        Gender.FEMALE: ['1', 'F'],
-        Gender.MALE: ['2', 'M'],
+        Gender.FEMALE: ['FEMALE', 'F'],
+        Gender.MALE: ['MALE', 'M'],
 
         StateAssessmentType.CSSM: ['CSS-M'],
         StateAssessmentType.LSIR: ['LSI-R'],
@@ -272,18 +273,31 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
 
     @staticmethod
+    def _hydrate_sentence_group_ids(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                inmate_numbers = row['inmate_numbers'].split(',') if row['inmate_numbers'] else []
+
+                sentence_groups_to_create = []
+                for inmate_number in inmate_numbers:
+                    sentence_groups_to_create.append(StateSentenceGroup(state_sentence_group_id=inmate_number))
+
+                for sg_to_create in sentence_groups_to_create:
+                    create_if_not_exists(sg_to_create, obj, 'state_sentence_groups')
+
+    @staticmethod
     def _compose_current_address(
             _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
         """Composes all of the address-related fields into a single address."""
-        line_1 = row['OfndrLegal_AddrLn1']
-        line_2 = row['OfndrLegal_AddrLn2']
-        city = row['OfndrLegal_AddrCity']
-        state = row['OfndrLegalAddr_StateCd']
-        zip_code = row['OfndrLegalAddr_ZipCd']
+        line_1 = row['legal_address_1']
+        line_2 = row['legal_address_2']
+        city = row['legal_city']
+        state = row['legal_state']
+        zip_code = row['legal_zip_code']
         state_and_zip = f"{state} {zip_code}" if zip_code else state
-        country = row['OfndrLegalAddrCntry_Id']
 
-        address = ', '.join(filter(None, (line_1, line_2, city, state_and_zip, country)))
+        address = ', '.join(filter(None, (line_1, line_2, city, state_and_zip)))
 
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
