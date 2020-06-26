@@ -307,7 +307,7 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'sprvsn_cntc'
+    ingest_view_name_: str = 'movement_facility_location_offstat_incarceration_periods'
     upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 2, 27)
     upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 6, 9)
 

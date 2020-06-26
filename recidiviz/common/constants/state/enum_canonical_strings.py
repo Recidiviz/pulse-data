@@ -202,8 +202,11 @@ state_supervision_period_supervision_level_medium = 'MEDIUM'
 state_supervision_period_supervision_level_high = 'HIGH'
 state_supervision_period_supervision_level_maximum = 'MAXIMUM'
 state_supervision_period_supervision_level_incarcerated = 'INCARCERATED'
+state_supervision_period_supervision_level_in_custody = 'IN_CUSTODY'
 state_supervision_period_supervision_level_diversion = 'DIVERSION'
 state_supervision_period_supervision_level_interstate_compact = 'INTERSTATE_COMPACT'
+state_supervision_period_supervision_level_limited = 'LIMITED'
+state_supervision_period_supervision_level_unsupervised = 'UNSUPERVISED'
 
 state_supervision_period_termination_reason_absconsion = 'ABSCONSION'
 state_supervision_period_termination_reason_investigation = 'INVESTIGATION'
@@ -219,9 +222,13 @@ state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
 # state_supervision_case_type_entry.py
 state_supervision_case_type_domestic_violence = 'DOMESTIC_VIOLENCE'
+state_supervision_case_type_drug_court = 'DRUG_COURT'
+state_supervision_case_type_family_court = 'FAMILY_COURT'
 state_supervision_case_type_general = 'GENERAL'
+state_supervision_case_type_mental_health_court = 'MENTAL_HEALTH_COURT'
 state_supervision_case_type_serious_mental_illness = 'SERIOUS_MENTAL_ILLNESS'
 state_supervision_case_type_sex_offender = 'SEX_OFFENDER'
+state_supervision_case_type_veterans_court = 'VETERANS_COURT'
 
 # state_supervision_violation.py
 state_supervision_violation_type_absconded = 'ABSCONDED'

@@ -138,9 +138,13 @@ state_supervision_type = Enum(
 
 state_supervision_case_type = Enum(
     state_enum_strings.state_supervision_case_type_domestic_violence,
+    state_enum_strings.state_supervision_case_type_drug_court,
+    state_enum_strings.state_supervision_case_type_family_court,
     state_enum_strings.state_supervision_case_type_general,
+    state_enum_strings.state_supervision_case_type_mental_health_court,
     state_enum_strings.state_supervision_case_type_serious_mental_illness,
     state_enum_strings.state_supervision_case_type_sex_offender,
+    state_enum_strings.state_supervision_case_type_veterans_court,
     name='state_supervision_case_type')
 
 state_charge_classification_type = Enum(
@@ -272,8 +276,11 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_high,
     state_enum_strings.state_supervision_period_supervision_level_maximum,
     state_enum_strings.state_supervision_period_supervision_level_incarcerated,
+    state_enum_strings.state_supervision_period_supervision_level_in_custody,
     state_enum_strings.state_supervision_period_supervision_level_diversion,
     state_enum_strings.state_supervision_period_supervision_level_interstate_compact,
+    state_enum_strings.state_supervision_period_supervision_level_limited,
+    state_enum_strings.state_supervision_period_supervision_level_unsupervised,
     name='state_supervision_level')
 
 state_supervision_period_termination_reason = Enum(

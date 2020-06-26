@@ -22,12 +22,14 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
-    DOMESTIC_VIOLENCE = \
-        state_enum_strings.state_supervision_case_type_domestic_violence
+    DOMESTIC_VIOLENCE = state_enum_strings.state_supervision_case_type_domestic_violence
+    DRUG_COURT = state_enum_strings.state_supervision_case_type_drug_court
+    FAMILY_COURT = state_enum_strings.state_supervision_case_type_family_court
     GENERAL = state_enum_strings.state_supervision_case_type_general
-    SERIOUS_MENTAL_ILLNESS = \
-        state_enum_strings.state_supervision_case_type_serious_mental_illness
+    MENTAL_HEALTH_COURT = state_enum_strings.state_supervision_case_type_mental_health_court
+    SERIOUS_MENTAL_ILLNESS = state_enum_strings.state_supervision_case_type_serious_mental_illness
     SEX_OFFENDER = state_enum_strings.state_supervision_case_type_sex_offender
+    VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
 
     @staticmethod
     def _get_default_map():
@@ -36,7 +38,11 @@ class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
 
 _STATE_CASE_TYPE_MAP = {
     'DOMESTIC VIOLENCE': StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+    'DRUG COURT': StateSupervisionCaseType.DRUG_COURT,
+    'FAMILY COURT': StateSupervisionCaseType.FAMILY_COURT,
     'GENERAL': StateSupervisionCaseType.GENERAL,
+    'MENTAL HEALTH COURT': StateSupervisionCaseType.MENTAL_HEALTH_COURT,
     'SERIOUS MENTAL ILLNESS': StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
     'SEX OFFENDER': StateSupervisionCaseType.SEX_OFFENDER,
+    'VETERANS COURT': StateSupervisionCaseType.VETERANS_COURT,
 }
