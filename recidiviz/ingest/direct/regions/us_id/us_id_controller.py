@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.external_id_types import US_ID_DOC
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
@@ -33,7 +34,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactLocation, \
     StateSupervisionContactType, StateSupervisionContactReason, StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
@@ -57,7 +58,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, S
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson, \
-    StateEarlyDischarge, StateSupervisionContact
+    StateEarlyDischarge, StateSupervisionContact, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 from recidiviz.utils.params import str_to_bool
@@ -126,7 +127,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._clear_max_dates,
                 self._supervision_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
-                self._override_supervision_fields_from_location_info
+                self._override_supervision_fields_from_location_info,
+                self._set_case_type_from_supervision_level,
             ],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -407,6 +409,95 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'FAILED TO REPORT',
         ],
 
+        StateSupervisionLevel.UNSUPERVISED: [
+            'UNSUPV COURT PROB',
+        ],
+        StateSupervisionLevel.LIMITED: [
+            'LIMITED SUPERVISION',
+        ],
+        StateSupervisionLevel.EXTERNAL_UNKNOWN: [
+            'UNCLASSIFIED',
+        ],
+        StateSupervisionLevel.IN_CUSTODY: [
+            'FEDERAL CUSTODY',
+            'ICE DETAINER',
+        ],
+        StateSupervisionLevel.INTERNAL_UNKNOWN: [
+            'ADMINISTRATIVE',           # Used for a non-standardized set of situations.
+            'GOLD SEAL PENDING',        # Pending supervision termination (after parole board has approved termination)
+            # No longer under IDOC authority
+            'DEPORTED',
+            # Historical values, now unused
+            'CLOSE COMM SUPERVISION',
+            'COMMUNITY',
+            'ELECTRONIC MONITOR',
+            'INTENSE',
+            'SPECIAL NEEDS',
+            'TRANSITION',
+        ],
+        StateSupervisionLevel.MINIMUM: [
+            'LEVEL 1',
+            'MINIMUM',      # Historical value for minimum
+            'SO LEVEL 1',  # Sex offense case load, minimum
+        ],
+        StateSupervisionLevel.MEDIUM: [
+            'LEVEL 2',
+            'MEDIUM',                   # Historical value for medium
+            'MODERATE',                 # Historical value for medium
+            'SO LEVEL 2',               # Sex offense case load, medium
+            'SO TO GENERAL LEVEL2',     # Previously sex offender case load, medium
+            'DUI OVERRIDE LEVEL 2',     # Previously DUI, medium
+            'O R MODERATE',             # Historical value
+        ],
+        StateSupervisionLevel.HIGH: [
+            'LEVEL 3',
+            'SO LEVEL 3',               # Sex offense case load, high
+            'SO TO GENERAL LEVEL3',     # Previously sex offender case load, high
+            'O R HIGH',                 # Historical value
+        ],
+        StateSupervisionLevel.MAXIMUM: [
+            'LEVEL 4',
+            'MAXIMUM',                  # Historical value for maximum
+            'SO LEVEL 4',               # Sex offense case load, maximum
+            'SO TO GENERAL LEVEL4',     # Previously sex offense caseload, maximum
+        ],
+        StateSupervisionLevel.DIVERSION: [
+            'DRUG COURT',
+            'MENTAL HEALTH COURT',
+            'VETERANS COURT',
+            'FAMILY COURT',
+            # Historical values below, duplicates of above.
+            'DRUG COURT DIV',
+            'VETERANS COURT DIV',
+            'MENTAL HLTH CRT DIV',
+            'SUBSTANCE ABUSE',
+        ],
+        StateSupervisionLevel.INTERSTATE_COMPACT: [
+            'INTERSTATE',
+        ],
+
+        StateSupervisionCaseType.SEX_OFFENDER: [
+            'SO LEVEL 1',
+            'SO LEVEL 2',
+            'SO LEVEL 3',
+            'SO LEVEL 4',
+            'SEX OFFENSE',          # Historical value
+        ],
+        StateSupervisionCaseType.DRUG_COURT: [
+            'DRUG COURT',
+            'DRUG COURT DIV',       # Historical value
+        ],
+        StateSupervisionCaseType.MENTAL_HEALTH_COURT: [
+            'MENTAL HEALTH COURT',
+            'MENTAL HLTH CRT DIV',  # Historical value
+        ],
+        StateSupervisionCaseType.VETERANS_COURT: [
+            'VETERANS COURT',
+            'VETERANS COURT DIV',   # Historical value
+        ],
+        StateSupervisionCaseType.FAMILY_COURT: [
+            'FAMILY COURT',
+        ],
     }
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -702,6 +793,21 @@ class UsIdController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionPeriod):
                 if obj.termination_date == MAX_DATE_STR:
                     obj.termination_date = None
+
+    def _set_case_type_from_supervision_level(
+            self,
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets supervision period case type from the supervision level if necessary."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                supervision_level = obj.supervision_level
+                if supervision_level and \
+                        self.get_enum_overrides().parse(supervision_level, StateSupervisionCaseType) is not None:
+                    case_type_to_create = StateSupervisionCaseTypeEntry(case_type=supervision_level)
+                    create_if_not_exists(case_type_to_create, obj, 'state_supervision_case_type_entries')
 
     @staticmethod
     def _supervision_period_admission_and_termination_overrides(

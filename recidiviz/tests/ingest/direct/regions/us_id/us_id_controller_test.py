@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.external_id_types import US_ID_DOC
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -37,7 +38,7 @@ from recidiviz.common.constants.state.state_supervision_contact import StateSupe
     StateSupervisionContactStatus, StateSupervisionContactType, StateSupervisionContactReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
     StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason, \
-    StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecision
@@ -47,7 +48,8 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
     StateCourtCase, StateAgent, StateSupervisionSentence, StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, StateSupervisionViolationTypeEntry, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry, StateEarlyDischarge, StateSupervisionContact
+    StateSupervisionViolationResponseDecisionEntry, StateEarlyDischarge, StateSupervisionCaseTypeEntry, \
+    StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -697,14 +699,16 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='I',
                                             termination_date='2018-12-31',
                                             supervision_period_supervision_type='PB',
+                                            supervision_level='UNCLASSIFIED',
                                             custodial_authority='US_ID_DOC',
-                                        ),
+                                            ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-4',
                                             supervision_site='DISTRICT 1|OFFICE 2',
                                             admission_reason='I',
                                             supervision_period_supervision_type='PR',
                                             start_date='2020-01-01',
+                                            supervision_level='LEVEL 4',
                                             custodial_authority='US_ID_DOC',
                                         ),
                                     ]
@@ -732,6 +736,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='F',
                                             termination_date='2009-07-01',
                                             supervision_period_supervision_type='CP',
+                                            supervision_level='UNSUPV/COURT PROB',
                                             custodial_authority='US_ID_DOC',
                                         ),
                                         StateSupervisionPeriod(
@@ -741,6 +746,12 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='RETURN_FROM_ABSCONSION',
                                             termination_date='2009-12-01',
                                             supervision_period_supervision_type='PB',
+                                            supervision_level='SO LEVEL 2',
+                                            state_supervision_case_type_entries=[
+                                                StateSupervisionCaseTypeEntry(
+                                                    case_type='SO LEVEL 2'
+                                                ),
+                                            ],
                                             custodial_authority='US_ID_DOC',
                                         ),
                                         StateSupervisionPeriod(
@@ -751,6 +762,12 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='I',
                                             termination_date='2009-12-31',
                                             supervision_period_supervision_type='PB,PR',
+                                            supervision_level='SO LEVEL 2',
+                                            state_supervision_case_type_entries=[
+                                                StateSupervisionCaseTypeEntry(
+                                                    case_type='SO LEVEL 2'
+                                                ),
+                                            ],
                                             custodial_authority='US_ID_DOC',
                                         ),
                                     ]
@@ -778,12 +795,19 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='TRANSFER_OUT_OF_STATE',
                                             termination_date='2018-01-01',
                                             supervision_period_supervision_type='BW',
+                                            supervision_level='DRUG COURT',
+                                            state_supervision_case_type_entries=[
+                                                StateSupervisionCaseTypeEntry(
+                                                    case_type='DRUG COURT'
+                                                ),
+                                            ],
                                             custodial_authority='US_ID_DOC',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='3333-2',
                                             admission_reason='TRANSFER_OUT_OF_STATE',
                                             supervision_site='INTERSTATE PROBATION|WASHINGTON',
+                                            supervision_level='INTERSTATE',
                                             supervision_period_supervision_type='PB',
                                             start_date='2018-01-01',
                                             custodial_authority='WASHINGTON',
@@ -1815,6 +1839,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='I',
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='PB',
+            supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
+            supervision_level_raw_text='UNCLASSIFIED',
             termination_date=datetime.date(year=2018, month=12, day=31),
             supervision_sentences=[ss_1111_2],
             person=ss_1111_2.person,
@@ -1830,6 +1856,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             start_date=datetime.date(year=2020, month=1, day=1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='PR',
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='LEVEL 4',
             incarceration_sentences=[is_1111_3],
             supervising_officer=po_1,
             person=is_1111_3.person,
@@ -1852,6 +1880,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='COURT_SENTENCE',
+            supervision_level=StateSupervisionLevel.UNSUPERVISED,
+            supervision_level_raw_text='UNSUPV/COURT PROB',
             start_date=datetime.date(year=2009, month=1, day=1),
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
             termination_reason_raw_text='F',
@@ -1873,9 +1903,18 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='RETURN_FROM_ABSCONSION',
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='PB',
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='SO LEVEL 2',
             termination_date=datetime.date(year=2009, month=12, day=1),
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
+        )
+        sc_2222_2_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='SO LEVEL 2',
+            supervision_period=sp_2222_2,
+            person=sp_2222_2.person,
         )
         sp_2222_3 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1891,9 +1930,20 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_date=datetime.date(year=2009, month=12, day=31),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
             supervision_period_supervision_type_raw_text='PB,PR',
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='SO LEVEL 2',
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
+        sc_2222_3_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='SO LEVEL 2',
+            supervision_period=sp_2222_3,
+            person=sp_2222_3.person,
+        )
+        sp_2222_2.case_type_entries.append(sc_2222_2_so)
+        sp_2222_3.case_type_entries.append(sc_2222_3_so)
         sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
         ss_2222_1.supervision_periods.extend([sp_2222_1, sp_2222_2, sp_2222_3])
 
@@ -1914,10 +1964,19 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
             termination_reason_raw_text='TRANSFER_OUT_OF_STATE',
             termination_date=datetime.date(year=2018, month=1, day=1),
+            supervision_level=StateSupervisionLevel.DIVERSION,
+            supervision_level_raw_text='DRUG COURT',
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
             supervision_period_supervision_type_raw_text='BW',
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
+        )
+        sc_3333_1_dc = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.DRUG_COURT,
+            case_type_raw_text='DRUG COURT',
+            supervision_period=sp_3333_1,
+            person=sp_3333_1.person,
         )
         sp_3333_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1930,10 +1989,13 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             start_date=datetime.date(year=2018, month=1, day=1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='PB',
+            supervision_level=StateSupervisionLevel.INTERSTATE_COMPACT,
+            supervision_level_raw_text='INTERSTATE',
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
             supervising_officer=po_2,
         )
+        sp_3333_1.case_type_entries.append(sc_3333_1_dc)
         sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
         ss_3333_1.supervision_periods.extend([sp_3333_1, sp_3333_2])
 

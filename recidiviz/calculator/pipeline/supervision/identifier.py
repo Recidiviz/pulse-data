@@ -90,6 +90,11 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.SEX_OFFENDER,
     StateSupervisionCaseType.DOMESTIC_VIOLENCE,
     StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+    # Diversionary courts
+    StateSupervisionCaseType.DRUG_COURT,
+    StateSupervisionCaseType.MENTAL_HEALTH_COURT,
+    StateSupervisionCaseType.FAMILY_COURT,
+    StateSupervisionCaseType.VETERANS_COURT,
     StateSupervisionCaseType.GENERAL
 ]
 
