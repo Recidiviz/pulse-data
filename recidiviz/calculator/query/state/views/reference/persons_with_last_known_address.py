@@ -64,8 +64,14 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     AND current_address NOT LIKE '%206 MAIN ST W%ND%'
     AND current_address NOT LIKE '%519 MAIN ST STE 8%ND%'
     AND current_address NOT LIKE '%115 S 5TH ST STE A%ND%'
-    AND current_address NOT LIKE '%117 HWY 49%ND%'
-    AND current_address NOT LIKE '%JAIL%ND%'))
+    AND current_address NOT LIKE '%117 HWY 49%ND%')
+
+    -- General filter for addresses that seem to be correctional facilities of some sort
+    AND current_address NOT LIKE '%JAIL%'
+    AND current_address NOT LIKE '%PRISON%'
+    AND current_address NOT LIKE '%CCC%'
+    AND current_address NOT LIKE '%PENITENTIARY%'
+    )
     WHERE recency_rank = 1) people_with_last_known_address
     ON person.person_id = people_with_last_known_address.person_id
     ORDER BY person_id ASC
