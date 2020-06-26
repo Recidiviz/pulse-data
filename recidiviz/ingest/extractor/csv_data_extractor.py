@@ -192,6 +192,14 @@ class CsvDataExtractor(DataExtractor):
                 if k not in self.all_keys:
                     raise ValueError("Unmapped key: [%s]" % k)
 
+                if k in self.keys:
+                    cls, field = self.keys[k].split('.')
+                    if cls == primary_coordinates.class_name and field == primary_coordinates.field_name:
+                        # It's possible that the primary key field has been listed in key_mappings in the YAML to make
+                        # it so that section is not empty. However, if there is a primary coordinates override, we want
+                        # the value to match the overridden value so we don't skip this field if the row value is empty.
+                        v = primary_coordinates.field_value
+
                 if not v and not self.set_with_empty_value:
                     continue
 
