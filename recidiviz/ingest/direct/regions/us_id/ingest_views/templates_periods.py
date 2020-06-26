@@ -40,6 +40,29 @@ def create_period_split_criteria(period_type: PeriodType) -> str:
         return criteria
     raise ValueError(f'Unexpected PeriodType {period_type}')
 
+def create_important_date_union(period_type: PeriodType) -> str:
+    important_date_union = """
+      SELECT 
+        *
+      FROM 
+        facility_dates
+      UNION DISTINCT
+      SELECT
+        * 
+      FROM
+        filtered_offstat_dates
+    """
+    if period_type == PeriodType.SUPERVISION:
+        important_date_union += """
+          UNION DISTINCT
+          SELECT
+            *
+          FROM
+            filtered_wrkld_dates
+          """
+
+    return important_date_union
+
 
 def get_status_code(period_type: PeriodType) -> str:
     """Returns the relevant offstat stat_cd for the given |period_type|"""
@@ -165,6 +188,30 @@ PERIOD_TO_DATES_FRAGMENT_TEMPLATE = """
         {periods}
 """
 
+PERIOD_TO_DATES_NO_INCRNO_FRAGMENT = """
+    # All wrkld period start/end dates
+    WITH {periods}_dates_without_incrno AS (
+      SELECT
+        docno,
+        start_date AS important_date
+      FROM 
+        {periods}
+      UNION DISTINCT
+      SELECT
+        docno,
+        end_date AS important_date
+      FROM 
+        {periods}
+    )
+    SELECT
+      *
+    FROM
+      {periods}_dates_without_incrno
+    FULL OUTER JOIN
+      (SELECT docno, incrno FROM facility_dates GROUP BY 1, 2)
+      USING (docno)
+"""
+
 
 FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
       SELECT 
@@ -238,7 +285,40 @@ ALL_PERIODS_FRAGMENT = f"""
         stat_rls_typ, 
       FROM {{{{offstat}}}}
     ),
-
+    wrkld_with_default_end_dates AS (
+        SELECT
+            ofndr_wrkld_id,
+            ofndr_num AS docno,
+            wrkld_cat_title,
+            CAST(CAST(strt_dt AS DATETIME) AS DATE) AS start_date,
+            COALESCE(
+                SAFE_CAST(SAFE_CAST(end_dt AS DATETIME) AS DATE),
+                CAST('9999-12-31' AS DATE)
+            ) AS end_date
+        FROM {{{{ofndr_wrkld}}}}
+        LEFT JOIN {{{{wrkld_cat}}}}
+        USING (wrkld_cat_id)
+    ),
+    wrkld_with_next_date AS (
+        SELECT
+            ofndr_wrkld_id,
+            docno,
+            wrkld_cat_title,
+            start_date,
+            end_date,
+            LEAD(start_date)
+                OVER (PARTITION BY docno ORDER BY start_date, end_date) AS next_start_date
+        FROM wrkld_with_default_end_dates
+    ),
+    wrkld_periods AS (
+        SELECT
+            docno,
+            ofndr_wrkld_id,
+            wrkld_cat_title,
+            start_date,
+            LEAST(end_date, COALESCE(next_start_date, CAST('9999-12-31' AS DATE))) AS end_date,
+        FROM wrkld_with_next_date
+    ),
     # Create view with all important dates
 
     # All facility period start/end dates
@@ -248,6 +328,23 @@ ALL_PERIODS_FRAGMENT = f"""
     # All offstat period start/end dates
     offstat_dates AS (
         {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='offstat_periods')}
+    ),
+    # All wrkld period start/end dates
+    wrkld_dates AS (
+        {PERIOD_TO_DATES_NO_INCRNO_FRAGMENT.format(periods='wrkld_periods')}
+    ),
+    filtered_wrkld_dates AS (
+      SELECT
+         docno,
+         incrno,
+         important_date
+      FROM
+        wrkld_dates
+      WHERE 
+        important_date <= (
+            SELECT MAX(important_date) 
+            FROM facility_dates 
+            WHERE important_date != CAST('9999-12-31' AS DATE))
     ),
     # Offstat dates occasionally have information going into the future which is unreliable. Filter offstat dates to
     # only those that are within the bounds of real facility dates.
@@ -266,15 +363,7 @@ ALL_PERIODS_FRAGMENT = f"""
     ),
     # All dates where something we care about changed.
     all_dates AS (
-      SELECT 
-        *
-      FROM 
-        facility_dates
-      UNION DISTINCT
-      SELECT
-        * 
-      FROM
-        filtered_offstat_dates
+        {{important_date_union}}
     ),
 
     # Create time spans from the important dates
@@ -310,6 +399,24 @@ ALL_PERIODS_FRAGMENT = f"""
         AND o.stat_cd = '{{period_status_code}}')
       GROUP BY a.docno, a.incrno, a.start_date, a.end_date
     ),
+    periods_with_all_non_facility_info AS (
+        SELECT
+            p.docno,
+            p.incrno,
+            p.start_date,
+            p.end_date,
+            p.statuses,
+            w.wrkld_cat_title
+        FROM
+            periods_with_offstat_info p
+        LEFT JOIN
+            wrkld_periods w
+        ON
+            (p.docno = w.docno
+            AND (p.start_date
+                 BETWEEN w.start_date
+                 AND IF (w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
+    ),
 
     # Join date spans with status information back with the facility spans from Part 1.
     periods_with_facility_and_offstat_info AS (
@@ -326,9 +433,10 @@ ALL_PERIODS_FRAGMENT = f"""
         f.loc_ldesc,
         f.lu_cd,
         f.lu_ldesc,
-        p.statuses
+        p.statuses,
+        p.wrkld_cat_title
       FROM 
-        periods_with_offstat_info p
+        periods_with_all_non_facility_info p
       # Inner join to only get periods of time where there is a matching facility
       JOIN
         facility_periods f
@@ -359,6 +467,7 @@ ALL_PERIODS_FRAGMENT = f"""
           lu_cd,
           lu_ldesc,
           statuses,
+          wrkld_cat_title,
           LEAD(fac_typ)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
           LEAD(fac_cd)
@@ -372,4 +481,5 @@ ALL_PERIODS_FRAGMENT = f"""
 def get_all_periods_query_fragment(period_type: PeriodType) -> str:
     return ALL_PERIODS_FRAGMENT.format(
         period_split_criteria=create_period_split_criteria(period_type),
-        period_status_code=get_status_code(period_type))
+        period_status_code=get_status_code(period_type),
+        important_date_union=create_important_date_union(period_type))

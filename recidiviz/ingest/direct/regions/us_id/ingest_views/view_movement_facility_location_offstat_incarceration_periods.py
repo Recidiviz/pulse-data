@@ -30,7 +30,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
     SELECT
       # Living unit codes are not yet needed, so ignore them here. If
-      * EXCEPT(lu_cd, lu_ldesc),
+      * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title),
       ROW_NUMBER() 
         OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
     FROM

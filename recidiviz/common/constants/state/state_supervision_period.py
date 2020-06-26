@@ -81,13 +81,16 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
+    INCARCERATED = state_enum_strings.state_supervision_period_supervision_level_incarcerated
+    IN_CUSTODY = state_enum_strings.state_supervision_period_supervision_level_in_custody
+    INTERSTATE_COMPACT = state_enum_strings.state_supervision_period_supervision_level_interstate_compact
+    LIMITED = state_enum_strings.state_supervision_period_supervision_level_limited
     MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
     MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
     HIGH = state_enum_strings.state_supervision_period_supervision_level_high
     MAXIMUM = state_enum_strings.state_supervision_period_supervision_level_maximum
-    INCARCERATED = state_enum_strings.state_supervision_period_supervision_level_incarcerated
-    DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
-    INTERSTATE_COMPACT = state_enum_strings.state_supervision_period_supervision_level_interstate_compact
+    UNSUPERVISED = state_enum_strings.state_supervision_period_supervision_level_unsupervised
 
     @staticmethod
     def _get_default_map():
@@ -159,6 +162,7 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     'INTERNAL UNKNOWN': StateSupervisionLevel.INTERNAL_UNKNOWN,
     'PRESENT WITHOUT INFO': StateSupervisionLevel.PRESENT_WITHOUT_INFO,
     'INCARCERATED': StateSupervisionLevel.INCARCERATED,
+    'IN CUSTODY': StateSupervisionLevel.IN_CUSTODY,
     'MINIMUM': StateSupervisionLevel.MINIMUM,
     'MIN': StateSupervisionLevel.MINIMUM,
     'MEDIUM': StateSupervisionLevel.MEDIUM,
@@ -169,6 +173,8 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     'DIVERSION': StateSupervisionLevel.DIVERSION,
     'INTERSTATE COMPACT': StateSupervisionLevel.INTERSTATE_COMPACT,
     'INTERSTATE': StateSupervisionLevel.INTERSTATE_COMPACT,
+    'UNSUPERVISED': StateSupervisionLevel.UNSUPERVISED,
+    'LIMITED': StateSupervisionLevel.LIMITED,
 }
 
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
