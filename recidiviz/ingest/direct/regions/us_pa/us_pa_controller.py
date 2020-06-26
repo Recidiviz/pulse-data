@@ -54,6 +54,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.enum_overrides = self.generate_enum_overrides()
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+            'person_external_ids': [
+                self._hydrate_person_external_ids
+            ],
             'dbo_IcsDoc': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self.gen_hydrate_alternate_external_ids({
@@ -90,6 +93,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
+            'person_external_ids': [],
             'dbo_IcsDoc': [],
             'dbo_tblInmTestScore': [],
             'dbo_Senrec': [],
@@ -98,6 +102,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
     FILE_TAGS = [
+        # Data source: Mixed
+        'person_external_ids',
+
         # Data source: DOC
         'dbo_IcsDoc',
         'dbo_tblInmTestScore',
@@ -241,6 +248,28 @@ class UsPaController(CsvGcsfsDirectIngestController):
                         create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
 
         return _hydrate_external_id
+
+    @staticmethod
+    def _hydrate_person_external_ids(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                control_numbers = row['control_numbers'].split(',') if row['control_numbers'] else []
+                state_ids = row['state_ids'].split(',') if row['state_ids'] else []
+                parole_numbers = row['parole_numbers'].split(',') if row['parole_numbers'] else []
+
+                external_ids_to_create = []
+                for state_id in state_ids:
+                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=state_id,
+                                                                        id_type=US_PA_SID))
+                for control_number in control_numbers:
+                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=control_number,
+                                                                        id_type=US_PA_CONTROL))
+                for parole_number in parole_numbers:
+                    external_ids_to_create.append(StatePersonExternalId(state_person_external_id_id=parole_number,
+                                                                        id_type=US_PA_PBPP))
+                for id_to_create in external_ids_to_create:
+                    create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
 
     @staticmethod
     def _compose_current_address(
