@@ -108,22 +108,19 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'person_external_ids')
 
-
-    def test_populate_data_dbo_IcsDoc(self):
+    def test_populate_data_doc_person_info(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='123456',
                             surname='RUSSELL',
                             given_names='BERTRAND',
-                            gender='2',
+                            gender='MALE',
                             birthdate='19760318',
                             current_address='123 Easy Street, PITTSBURGH, PA 16161',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONTROL),
-                                StatePersonExternalId(state_person_external_id_id='12345678', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='123A', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='2')],
+                            state_person_races=[StatePersonRace(race='BLACK')],
                             state_aliases=[
                                 StateAlias(
                                     surname='RUSSELL',
@@ -137,15 +134,13 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_person_id='654321',
                             surname='SARTRE',
                             given_names='JEAN-PAUL',
-                            gender='2',
+                            gender='MALE',
                             birthdate='19821002',
                             current_address='555 FLATBUSH DR, NEW YORK, NY 10031',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONTROL),
-                                StatePersonExternalId(state_person_external_id_id='55554444', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='2')],
+                            state_person_races=[StatePersonRace(race='BLACK')],
                             state_aliases=[
                                 StateAlias(
                                     surname='SARTRE',
@@ -159,19 +154,19 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_person_id='445566',
                             surname='KIERKEGAARD',
                             given_names='SOREN',
-                            name_suffix='JR ',
-                            gender='1',
+                            name_suffix='JR',
+                            gender='FEMALE',
                             birthdate='19911120',
                             current_address='5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONTROL),
                             ],
-                            state_person_races=[StatePersonRace(race='6')],
+                            state_person_races=[StatePersonRace(race='WHITE')],
                             state_aliases=[
                                 StateAlias(
                                     surname='KIERKEGAARD',
                                     given_names='SOREN',
-                                    name_suffix='JR ',
+                                    name_suffix='JR',
                                     alias_type='GIVEN_NAME'
                                 )
                             ],
@@ -181,15 +176,13 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_person_id='778899',
                             surname='RAWLS',
                             given_names='JOHN',
-                            gender='2',
+                            gender='MALE',
                             birthdate='19890617',
                             current_address='214 HAPPY PLACE, PHILADELPHIA, PA 19129',
                             state_person_external_ids=[
                                 StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONTROL),
-                                StatePersonExternalId(state_person_external_id_id='09876543', id_type=US_PA_SID),
-                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                             ],
-                            state_person_ethnicities=[StatePersonEthnicity(ethnicity='3')],
+                            state_person_ethnicities=[StatePersonEthnicity(ethnicity='HISPANIC')],
                             state_aliases=[
                                 StateAlias(
                                     surname='RAWLS',
@@ -202,7 +195,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             ]),
             ])
 
-        self.run_parse_file_test(expected, 'dbo_IcsDoc')
+        self.run_parse_file_test(expected, 'doc_person_info')
 
     def test_populate_data_dbo_tblInmTestScore(self):
         expected = IngestInfo(
@@ -606,12 +599,12 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # dbo_IcsDoc
+        # doc_person_info
         ######################################
         # Arrange
         person_1.full_name = '{"given_names": "BERTRAND", "surname": "RUSSELL"}'
         person_1.gender = Gender.MALE
-        person_1.gender_raw_text = '2'
+        person_1.gender_raw_text = 'MALE'
         person_1.birthdate = datetime.date(year=1976, month=3, day=18)
         person_1.birthdate_inferred_from_age = False
         person_1.current_address = '123 EASY STREET, PITTSBURGH, PA 16161'
@@ -625,7 +618,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ]
         person_1.races = [
             entities.StatePersonRace.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
+                state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='BLACK'),
         ]
 
         p1_sg = entities.StateSentenceGroup.new_with_defaults(
@@ -636,7 +629,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         person_2.full_name = '{"given_names": "JEAN-PAUL", "surname": "SARTRE"}'
         person_2.gender = Gender.MALE
-        person_2.gender_raw_text = '2'
+        person_2.gender_raw_text = 'MALE'
         person_2.birthdate = datetime.date(year=1982, month=10, day=2)
         person_2.birthdate_inferred_from_age = False
         person_2.current_address = '555 FLATBUSH DR, NEW YORK, NY 10031'
@@ -650,7 +643,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ]
         person_2.races = [
             entities.StatePersonRace.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='2'),
+                state_code=_STATE_CODE_UPPER, race=Race.BLACK, race_raw_text='BLACK'),
         ]
 
         p2_sg = entities.StateSentenceGroup.new_with_defaults(
@@ -661,7 +654,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         person_3.full_name = '{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}'
         person_3.gender = Gender.FEMALE
-        person_3.gender_raw_text = '1'
+        person_3.gender_raw_text = 'FEMALE'
         person_3.birthdate = datetime.date(year=1991, month=11, day=20)
         person_3.birthdate_inferred_from_age = False
         person_3.current_address = '5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129'
@@ -675,7 +668,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ]
         person_3.races = [
             entities.StatePersonRace.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text='6'),
+                state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text='WHITE'),
         ]
 
         p3_sg = entities.StateSentenceGroup.new_with_defaults(
@@ -686,7 +679,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         person_4.full_name = '{"given_names": "JOHN", "surname": "RAWLS"}'
         person_4.gender = Gender.MALE
-        person_4.gender_raw_text = '2'
+        person_4.gender_raw_text = 'MALE'
         person_4.birthdate = datetime.date(year=1989, month=6, day=17)
         person_4.birthdate_inferred_from_age = False
         person_4.current_address = '214 HAPPY PLACE, PHILADELPHIA, PA 19129'
@@ -700,7 +693,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ]
         person_4.ethnicities = [
             entities.StatePersonEthnicity.new_with_defaults(
-                state_code=_STATE_CODE_UPPER, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='3'),
+                state_code=_STATE_CODE_UPPER, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='HISPANIC'),
         ]
 
         p4_sg = entities.StateSentenceGroup.new_with_defaults(
@@ -712,7 +705,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('dbo_IcsDoc.csv')
+        self._run_ingest_job_for_filename('doc_person_info.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
