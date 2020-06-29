@@ -20,7 +20,7 @@ from typing import Type
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -69,7 +69,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsIdController
 
-    def test_populate_data_offender_ofndr_dob(self):
+    def test_populate_data_offender_ofndr_dob_address(self):
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='1111',
@@ -88,7 +88,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                     given_names='FIRST_1',
                                     middle_names='MIDDLE_1',
                                     alias_type='GIVEN_NAME')
-                                ]),
+                                ],
+                            current_address="11 HOME ST, CITY, ID, 99999"),
                 StatePerson(state_person_id='2222',
                             surname='LAST_2',
                             given_names='FIRST_2',
@@ -105,7 +106,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                     given_names='FIRST_2',
                                     middle_names='MIDDLE_2',
                                     alias_type='GIVEN_NAME')
-                                ]),
+                                ],
+                            current_address="22 HOME ST, CITY, ID, 99999"),
                 StatePerson(state_person_id='3333',
                             surname='LAST_3',
                             given_names='FIRST_3',
@@ -122,10 +124,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                     given_names='FIRST_3',
                                     middle_names='MIDDLE_3',
                                     alias_type='GIVEN_NAME')
-                                ]),
+                                ],
+                            current_address="33 HOME ST, CITY, ID, 99999"),
             ])
 
-        self.run_parse_file_test(expected, 'offender_ofndr_dob')
+        self.run_parse_file_test(expected, 'offender_ofndr_dob_address')
 
     def test_populate_data_ofndr_agnt_applc_usr_body_loc_cd_current_pos(self):
         expected = IngestInfo(
@@ -1116,6 +1119,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             gender_raw_text='M',
             birthdate=datetime.date(year=1975, month=1, day=1),
             birthdate_inferred_from_age=False,
+            current_address="11 HOME ST, CITY, ID, 99999",
+            residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='1111', id_type=US_ID_DOC),
@@ -1138,6 +1143,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             gender_raw_text='F',
             birthdate=datetime.date(year=1985, month=1, day=1),
             birthdate_inferred_from_age=False,
+            current_address="22 HOME ST, CITY, ID, 99999",
+            residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='2222', id_type=US_ID_DOC),
@@ -1160,6 +1167,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             gender_raw_text='F',
             birthdate=datetime.date(year=1995, month=1, day=1),
             birthdate_inferred_from_age=False,
+            current_address="33 HOME ST, CITY, ID, 99999",
+            residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='3333', id_type=US_ID_DOC),
@@ -1180,7 +1189,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('offender_ofndr_dob.csv')
+        self._run_ingest_job_for_filename('offender_ofndr_dob_address.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

@@ -20,7 +20,31 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """SELECT
+VIEW_QUERY_TEMPLATE = """
+WITH current_address_view AS (
+    SELECT * EXCEPT(row_num) FROM
+        (SELECT
+          personid,
+          ARRAY_TO_STRING([line1, city, state_abbreviation, {cis_personaddress}.zipcode], ', ') AS current_address,
+          ROW_NUMBER() OVER (PARTITION BY personid ORDER BY startdate DESC) as row_num
+        FROM
+            {cis_offenderaddress}
+        FULL OUTER JOIN
+            {cis_personaddress}
+        ON
+            id = personaddressid
+        LEFT JOIN
+            `{{project_id}}.reference_tables.state_ids`
+        ON
+            codestateid = CAST(state_id AS STRING)
+        WHERE personid IS NOT NULL
+            AND {cis_offenderaddress}.validaddress = 'T' -- Valid address
+            AND {cis_offenderaddress}.enddate IS NULL -- Active address
+            AND {cis_personaddress}.codeaddresstypeid IN ('1')) -- Physical address
+    WHERE row_num = 1)
+
+
+SELECT
     *
     EXCEPT(updt_dt, updt_usr_id)  # Seem to update every week? (table is generated)
 FROM
@@ -29,11 +53,15 @@ LEFT JOIN
     {ofndr_dob}
 ON
   {offender}.docno = {ofndr_dob}.ofndr_num
+LEFT JOIN
+    current_address_view
+ON
+  current_address_view.personid = {offender}.docno
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
-    ingest_view_name='offender_ofndr_dob',
+    ingest_view_name='offender_ofndr_dob_address',
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 
