@@ -26,7 +26,6 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.pvalue import AsDict
 from apache_beam.typehints import with_input_types, with_output_types
-from more_itertools import one
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.supervision import identifier, calculator
@@ -43,7 +42,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
@@ -119,48 +118,25 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
     """Classifies time on supervision according to multiple types of measurement."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations, **kwargs):
+    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations):
         """Identifies various events related to supervision relevant to calculations."""
         _, person_entities = element
 
-        # Get the StateSupervisionSentences as a list
-        supervision_sentences = list(person_entities['supervision_sentences'])
+        person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
-        # Get the StateIncarcerationSentences as a list
-        incarceration_sentences = list(person_entities['incarceration_sentences'])
-
-        # Get the StateSupervisionPeriods as a list
-        supervision_periods = list(person_entities['supervision_periods'])
-
-        # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = list(person_entities['incarceration_periods'])
-
-        # Get the StateAssessments as a list
-        assessments = list(person_entities['assessments'])
-
-        # Get the StateSupervisionViolationResponses as a list
-        violation_responses = list(person_entities['violation_responses'])
-
-        # Get the StatePerson
-        person = one(person_entities['person'])
+        # Add these arguments to the keyword args for the identifier
+        kwargs['ssvr_agent_associations'] = ssvr_agent_associations
+        kwargs['supervision_period_to_agent_associations'] = supervision_period_to_agent_associations
 
         # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods,
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            ssvr_agent_associations,
-            supervision_period_to_agent_associations)
+        supervision_time_buckets = identifier.find_supervision_time_buckets(**kwargs)
 
         if not supervision_time_buckets:
             logging.info("No valid supervision time buckets for person with id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield (person, supervision_time_buckets)
+            yield person, supervision_time_buckets
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -463,6 +439,15 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             state_code=state_code
         ))
 
+        supervision_contacts = (p | 'Load StateSupervisionContacts' >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateSupervisionContact,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=False,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code
+        ))
+
         # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
         ssvr_to_agent_association_query = f"SELECT * FROM `{reference_dataset}.ssvr_to_agent_association`"
 
@@ -570,7 +555,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              'supervision_periods': supervision_periods,
              'supervision_sentences': sentences_converted.supervision_sentences,
              'incarceration_sentences': sentences_converted.incarceration_sentences,
-             'violation_responses': violation_responses_with_hydrated_violations
+             'violation_responses': violation_responses_with_hydrated_violations,
+             'supervision_contacts': supervision_contacts
              }
             | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()

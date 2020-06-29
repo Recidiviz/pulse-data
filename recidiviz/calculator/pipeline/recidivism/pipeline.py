@@ -28,7 +28,6 @@ from typing import Any, Dict, List, Tuple, Set, Optional
 import datetime
 
 from apache_beam.pvalue import AsDict
-from more_itertools import one
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -45,7 +44,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
@@ -132,32 +131,27 @@ class ClassifyReleaseEvents(beam.DoFn):
             Tuple containing the StatePerson and a collection
             of ReleaseEvents.
         """
-        _, person_incarceration_periods = element
+        _, person_entities = element
 
-        # Get the StateIncarcerationPeriods as a list
-        incarceration_periods = \
-            list(person_incarceration_periods['incarceration_periods'])
-
-        # Get the StatePerson
-        person = one(person_incarceration_periods['person'])
+        person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
         # Get the person's county of residence, if present
-        person_id_to_county_fields = person_id_to_county.get(
-            person.person_id, None)
-        county_of_residence = \
-            person_id_to_county_fields.get('county_of_residence', None) \
-            if person_id_to_county_fields else None
+        person_id_to_county_fields = person_id_to_county.get(person.person_id, None)
+        county_of_residence = (person_id_to_county_fields.get('county_of_residence', None)
+                               if person_id_to_county_fields else None)
+
+        # Add this arguments to the keyword args for the identifier
+        kwargs['county_of_residence'] = county_of_residence
 
         release_events_by_cohort_year = \
-            identifier.find_release_events_by_cohort_year(
-                incarceration_periods, county_of_residence)
+            identifier.find_release_events_by_cohort_year(**kwargs)
 
         if not release_events_by_cohort_year:
             logging.info("No valid release events identified for person with"
                          "id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield (person, release_events_by_cohort_year)
+            yield person, release_events_by_cohort_year
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

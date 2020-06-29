@@ -1272,7 +1272,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2010, 1, 31),
-                    assessment_up_to_date=True
+                    assessment_up_to_date=True,
+                    face_to_face_frequency_sufficient=True
                 )
             ),
             RevocationReturnSupervisionTimeBucket(
@@ -2261,7 +2262,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH',
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
-                    assessment_up_to_date=True
+                    assessment_up_to_date=True,
+                    face_to_face_frequency_sufficient=False
                 )
             ),
             NonRevocationReturnSupervisionTimeBucket(
@@ -2273,7 +2275,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH',
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
-                    assessment_up_to_date=False
+                    assessment_up_to_date=False,
+                    face_to_face_frequency_sufficient=False
                 )
             ),
         ]

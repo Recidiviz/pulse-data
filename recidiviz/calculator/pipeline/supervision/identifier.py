@@ -73,7 +73,7 @@ from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
     StateAssessment, StateSupervisionViolation, \
-    StateSupervisionViolationResponse, StateIncarcerationSentence
+    StateSupervisionViolationResponse, StateIncarcerationSentence, StateSupervisionContact
 
 # The number of months for the window of time prior to a revocation return in which violations and violation responses
 # should be considered when producing metrics related to a person's violation history leading up to the revocation
@@ -106,6 +106,7 @@ def find_supervision_time_buckets(
         incarceration_periods: List[StateIncarcerationPeriod],
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
+        supervision_contacts: List[StateSupervisionContact],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
 ) -> List[SupervisionTimeBucket]:
@@ -191,6 +192,7 @@ def find_supervision_time_buckets(
                 incarceration_period_index,
                 assessments,
                 violation_responses,
+                supervision_contacts,
                 supervision_period_to_agent_associations)
 
             supervision_termination_bucket = find_supervision_termination_bucket(
@@ -227,6 +229,7 @@ def find_time_buckets_for_supervision_period(
         incarceration_period_index: IncarcerationPeriodIndex,
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
+        supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) -> List[SupervisionTimeBucket]:
     """Finds months that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated for the full month and did not have a revocation admission that month.
@@ -313,8 +316,12 @@ def find_time_buckets_for_supervision_period(
                 if not start_of_supervision:
                     raise ValueError("SupervisionPeriodIndex.supervision_start_dates_by_period_id incomplete.")
 
-                case_compliance = get_case_compliance_on_date(
-                    supervision_period, start_of_supervision, end_of_month, most_recent_assessment)
+                case_compliance = get_case_compliance_on_date(supervision_period,
+                                                              case_type,
+                                                              start_of_supervision,
+                                                              end_of_month,
+                                                              most_recent_assessment,
+                                                              supervision_contacts)
 
             supervision_month_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
@@ -1060,7 +1067,8 @@ def _get_supervising_officer_and_district(
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
         -> Tuple[Optional[str], Optional[str]]:
-
+    # TODO(3433): Implement state-specific logic for finding a person's most recent PO instead of their current
+    #  officer (to use for US_ID if they are currently on a bench warrant)
     supervising_officer_external_id = None
     supervising_district_external_id = supervision_period.supervision_site
 
