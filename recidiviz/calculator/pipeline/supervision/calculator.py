@@ -281,6 +281,8 @@ def characteristics_dict(person: StatePerson,
             and metric_type == SupervisionMetricType.COMPLIANCE):
         if supervision_time_bucket.case_compliance:
             characteristics['assessment_up_to_date'] = supervision_time_bucket.case_compliance.assessment_up_to_date
+            characteristics['face_to_face_frequency_sufficient'] = \
+                supervision_time_bucket.case_compliance.face_to_face_frequency_sufficient
 
     if supervision_time_bucket.supervision_type:
         characteristics['supervision_type'] = supervision_time_bucket.supervision_type

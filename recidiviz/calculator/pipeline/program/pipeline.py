@@ -26,7 +26,6 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.pvalue import AsDict
 from apache_beam.typehints import with_input_types, with_output_types
-from more_itertools import one
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.program import identifier, calculator
@@ -35,7 +34,7 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
@@ -120,26 +119,14 @@ class ClassifyProgramAssignments(beam.DoFn):
         """Identifies instances of referrals to a program."""
         _, person_entities = element
 
-        # Get the StateProgramAssignments as a list
-        program_assignments = \
-            list(person_entities['program_assignments'])
+        person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
-        # Get the StateAssessments as a list
-        assessments = list(person_entities['assessments'])
-
-        # Get the StateSupervisionPeriods as a list
-        supervision_periods = list(person_entities['supervision_periods'])
-
-        # Get the StatePerson
-        person = one(person_entities['person'])
+        # Add this arguments to the keyword args for the identifier
+        kwargs['supervision_period_to_agent_associations'] = supervision_period_to_agent_associations
 
         # Find the ProgramEvents from the StateProgramAssignments
         program_events = \
-            identifier.find_program_events(
-                program_assignments,
-                assessments,
-                supervision_periods,
-                supervision_period_to_agent_associations)
+            identifier.find_program_events(**kwargs)
 
         if not program_events:
             logging.info(

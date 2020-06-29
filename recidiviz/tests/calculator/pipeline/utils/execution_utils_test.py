@@ -32,6 +32,8 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils import execution_utils
+from recidiviz.calculator.pipeline.utils.execution_utils import person_and_kwargs_for_identifier
+from recidiviz.persistence.entity.state.entities import StatePerson, StateAssessment
 
 
 class TestGetJobID(unittest.TestCase):
@@ -155,3 +157,64 @@ class TestCalculationEndMonthArg(unittest.TestCase):
             _ = execution_utils.calculation_end_month_arg(value)
 
         assert "calculation_end_month parameter must be in the format YYYY-MM." in str(e.value)
+
+
+class TestPersonAndKwargsForIdentifier(unittest.TestCase):
+    """Tests the person_and_kwargs_for_identifier function."""
+    def test_person_and_kwargs_for_identifier(self):
+        person_input = StatePerson.new_with_defaults(
+            person_id=123
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_XX'
+        )
+
+        arg_to_entities_map = {
+            'person': iter([person_input]),
+            'assessments': iter([assessment])
+        }
+
+        person, kwargs = person_and_kwargs_for_identifier(arg_to_entities_map)
+
+        expected_kwargs = {
+            'assessments': [assessment]
+        }
+
+        self.assertEqual(person, person_input)
+        self.assertEqual(expected_kwargs, kwargs)
+
+    def test_person_and_kwargs_for_identifier_two_people_same_id(self):
+        person_input_1 = StatePerson.new_with_defaults(
+            person_id=123
+        )
+
+        person_input_2 = StatePerson.new_with_defaults(
+            person_id=123
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_XX'
+        )
+
+        arg_to_entities_map = {
+            # There should never be two StatePerson entities with the same person_id. This should fail loudly.
+            'person': iter([person_input_1, person_input_2]),
+            'assessments': iter([assessment])
+        }
+
+        with pytest.raises(ValueError):
+            _ = person_and_kwargs_for_identifier(arg_to_entities_map)
+
+    def test_person_and_kwargs_for_identifier_no_person(self):
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_XX'
+        )
+
+        arg_to_entities_map = {
+            # There should never be two StatePerson entities with the same person_id. This should fail loudly.
+            'assessments': iter([assessment])
+        }
+
+        with pytest.raises(ValueError):
+            _ = person_and_kwargs_for_identifier(arg_to_entities_map)

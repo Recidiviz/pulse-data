@@ -27,7 +27,6 @@ from typing import Any, Dict, List, Tuple, Set, Optional
 import datetime
 
 from apache_beam.pvalue import AsDict
-from more_itertools import one
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -43,7 +42,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.persistence.database.schema.state import schema
@@ -124,25 +123,24 @@ class ClassifyIncarcerationEvents(beam.DoFn):
         """Identifies instances of admission and release from incarceration."""
         _, person_entities = element
 
-        # Get the StateSentenceGroups as a list
-        sentence_groups = list(person_entities['sentence_groups'])
-
-        # Get the StatePerson
-        person = one(person_entities['person'])
+        person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
         # Get the person's county of residence, if present
         person_id_to_county_fields = person_id_to_county.get(person.person_id, None)
         county_of_residence = person_id_to_county_fields.get('county_of_residence', None) \
             if person_id_to_county_fields else None
 
+        # Add this arguments to the keyword args for the identifier
+        kwargs['county_of_residence'] = county_of_residence
+
         # Find the IncarcerationEvents
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, county_of_residence)
+        incarceration_events = identifier.find_incarceration_events(**kwargs)
 
         if not incarceration_events:
             logging.info("No valid incarceration events for person with id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield (person, incarceration_events)
+            yield person, incarceration_events
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

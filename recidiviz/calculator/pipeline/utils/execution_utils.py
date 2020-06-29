@@ -20,10 +20,13 @@ import datetime
 import logging
 from datetime import date
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any, List, Iterable
 
 from googleapiclient.discovery import build
+from more_itertools import one
 from oauth2client.client import GoogleCredentials
+
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 def get_job_id(pipeline_options: Dict[str, str]) -> str:
@@ -154,3 +157,30 @@ def year_and_month_for_today() -> Tuple[int, int]:
     today = date.today()
 
     return today.year, today.month
+
+
+def person_and_kwargs_for_identifier(arg_to_entities_map: Dict[str, Iterable[Any]]) -> \
+        Tuple[StatePerson, Dict[str, List]]:
+    """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
+    entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the
+    identifier step of the pipeline, and the values are iterables of the associated entities.
+
+    This function unpacks the output of CoGroupByKey (the given arg_to_entities_map) into the person (StatePerson)
+    entity, and a kwarg dictionary mapping all of the arguments expected by the identifier to the list of entities the
+    identifier needs.
+
+    Returns a tuple containing the StatePerson and the kwarg dictionary.
+    """
+    kwargs: Dict[str, Any] = {}
+    person = None
+
+    for key, values in arg_to_entities_map.items():
+        if key == 'person':
+            person = one(arg_to_entities_map[key])
+        else:
+            kwargs[key] = list(values)
+
+    if not person:
+        raise ValueError(f"No StatePerson associated with these entities: {arg_to_entities_map}")
+
+    return person, kwargs

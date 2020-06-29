@@ -16,48 +16,97 @@
 # =============================================================================
 """State-specific utils for determining compliance with supervision standards for US_ID."""
 import logging
+import sys
 from datetime import date
-from typing import Optional
+from typing import Optional, List, Tuple
 
+import numpy
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
+    StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
     StateSupervisionLevel
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
 
+NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
+
 
 def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
+                                  case_type: StateSupervisionCaseType,
                                   start_of_supervision: date,
                                   compliance_evaluation_date: date,
-                                  most_recent_assessment: Optional[StateAssessment]) -> SupervisionCaseCompliance:
+                                  most_recent_assessment: Optional[StateAssessment],
+                                  supervision_contacts: List[StateSupervisionContact]) -> \
+        Optional[SupervisionCaseCompliance]:
     """Determines whether the supervision case represented by the given supervision_period is in compliance with US_ID
     state standards. Measures compliance with the following standards:
         - Up-to-date Assessments
-        - TODO(3304): Implement residence verification and contact compliance measures
+        - Face-to-Face Contact Frequency
+
+    These compliance standards are only applicable to a certain subset of cases that have clear, documented guidelines.
+    If the compliance guidelines are not applicable for the given supervision case, then case compliance is not
+    calculated.
 
     Args:
         supervision_period: The supervision_period representing the supervision case
+        case_type: The "most severe" case type for the given supervision period
         start_of_supervision: The date the person started serving this supervision
         compliance_evaluation_date: The date that the compliance of the given case is being evaluated
         most_recent_assessment: The most recent assessment taken before the compliance_evaluation_date
+        supervision_contacts: The instances of contact between supervision officers and the person on supervision
 
     Returns:
          A SupervisionCaseCompliance object containing information regarding the ways the case is or isn't in compliance
          with state standards on the given compliance_evaluation_date.
     """
+    if not _guidelines_applicable_for_case(supervision_period, case_type):
+        return None
+
     assessment_is_up_to_date = _assessment_is_up_to_date(supervision_period,
                                                          start_of_supervision,
                                                          compliance_evaluation_date,
                                                          most_recent_assessment)
 
+    face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                      start_of_supervision,
+                                                                                      compliance_evaluation_date,
+                                                                                      supervision_contacts)
+
     return SupervisionCaseCompliance(
         date_of_evaluation=compliance_evaluation_date,
-        assessment_up_to_date=assessment_is_up_to_date
+        assessment_up_to_date=assessment_is_up_to_date,
+        face_to_face_frequency_sufficient=face_to_face_frequency_sufficient
     )
+
+
+def _guidelines_applicable_for_case(supervision_period: StateSupervisionPeriod,
+                                    case_type: StateSupervisionCaseType) -> bool:
+    """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
+    guidelines are only applicable for supervision cases of GENERAL case type with a supervision level of
+    MINIMUM, MEDIUM, HIGH, or MAXIMUM and a supervision_type of DUAL, PROBATION, PAROLE, or INTERNAL_UNKNOWN
+    (BW - Bench Warrant)."""
+    supervision_type = supervision_period.supervision_period_supervision_type
+
+    return (case_type == StateSupervisionCaseType.GENERAL
+            and supervision_period.supervision_level in (
+                StateSupervisionLevel.MINIMUM,
+                StateSupervisionLevel.MEDIUM,
+                StateSupervisionLevel.HIGH,
+                StateSupervisionLevel.MAXIMUM
+            )
+            and (supervision_type in (
+                StateSupervisionPeriodSupervisionType.DUAL,
+                StateSupervisionPeriodSupervisionType.PAROLE,
+                StateSupervisionPeriodSupervisionType.PROBATION,
+            ) or (supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+                  and supervision_period.supervision_type_raw_text == 'BW'))
+            )
 
 
 def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
@@ -109,7 +158,7 @@ def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
         return False
 
     if supervision_period.supervision_level == StateSupervisionLevel.MINIMUM:
-        # People on minimum supervision do not need to be re-assessed.
+        # People on MINIMUM (Level 1) supervision do not need to be re-assessed.
         logging.debug("Supervision period %d has a MINIMUM supervision level. Does not need to be re-assessed.",
                       supervision_period.supervision_period_id)
         return True
@@ -120,3 +169,85 @@ def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
     logging.debug("Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
                   most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
     return compliance_evaluation_date < reassessment_deadline
+
+
+def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSupervisionPeriod,
+                                                  start_of_supervision: date,
+                                                  compliance_evaluation_date: date,
+                                                  supervision_contacts: List[StateSupervisionContact]) -> bool:
+    """Calculates whether the frequency of face-to-face contacts between the officer and the person on supervision is
+    sufficient with respect to the state standards for the level of supervision of the case.
+    """
+    business_days_since_start = numpy.busday_count(start_of_supervision, compliance_evaluation_date)
+
+    if business_days_since_start <= NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS:
+        # This is a recently started supervision period, and the person has not yet hit the number of business days from
+        # the start of their supervision at which the officer is required to have been in contact with the person. This
+        # face-to-face contact is up to date regardless of when the last contact was completed.
+        logging.debug("Supervision period %d started %d business days before the compliance date %s. Contact is not "
+                      "overdue.",
+                      supervision_period.supervision_period_id, business_days_since_start, compliance_evaluation_date)
+        return True
+
+    applicable_contacts = [
+        contact for contact in supervision_contacts
+        # These are the types of contacts that can satisfy the face-to-face contact requirement
+        if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE)
+        # Contact must be marked as completed
+        and contact.status == StateSupervisionContactStatus.COMPLETED
+        and contact.contact_date is not None
+        # Contact must have occurred since the start of supervision and prior to the compliance_evaluation_date
+        and start_of_supervision <= contact.contact_date < compliance_evaluation_date
+    ]
+
+    if not applicable_contacts:
+        # This person has been on supervision for longer than the allowed number of days without an initial contact.
+        # The face-to-face contact standard is not in compliance.
+        return False
+
+    supervision_level = supervision_period.supervision_level
+
+    required_contacts, period_days = _get_required_face_to_face_contacts_and_period_days_for_level(supervision_level)
+
+    days_since_start = (compliance_evaluation_date - start_of_supervision).days
+
+    if days_since_start < period_days:
+        # If they've had a contact since the start of their supervision, and they have been on supervision for less than
+        # the number of days in which they would need another contact, then the case is in compliance
+        return True
+
+    contacts_within_period = [
+        contact for contact in applicable_contacts
+        if contact.contact_date is not None and (compliance_evaluation_date - contact.contact_date).days < period_days
+    ]
+
+    return len(contacts_within_period) >= required_contacts
+
+
+def _get_required_face_to_face_contacts_and_period_days_for_level(
+        supervision_level: Optional[StateSupervisionLevel]) -> Tuple[int, int]:
+    """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision case
+    with the given supervision level.
+
+    The required frequencies are as follows for each supervision level:
+
+        MINIMUM:
+            - After the initial face-to-face contact, zero follow-up contacts are required
+        MEDIUM:
+            - 1 face-to-face contact every 180 days
+        HIGH:
+            - 1 face-to-face contact every 30 days
+        MAXIMUM:
+            - 2 face-to-face contacts per 30 day period
+    """
+    if supervision_level == StateSupervisionLevel.MINIMUM:
+        return 0, sys.maxsize
+    if supervision_level == StateSupervisionLevel.MEDIUM:
+        return 1, 180
+    if supervision_level == StateSupervisionLevel.HIGH:
+        return 1, 30
+    if supervision_level == StateSupervisionLevel.MAXIMUM:
+        return 2, 30
+
+    raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
+                     f"of {supervision_level}. Should not be calculating compliance for this supervision case.")

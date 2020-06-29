@@ -398,7 +398,9 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     # measures
     assessment_up_to_date: bool = attr.ib(default=None)
 
-    # TODO(3304): Implement residence verification and contact compliance measures
+    # Whether or not the supervision officer has had face-to-face contact with the person on supervision recently
+    # enough to satisfy compliance measures
+    face_to_face_frequency_sufficient: bool = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \

@@ -38,10 +38,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_typ
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
     us_mo_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
-    StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment
+    StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment, \
+    StateSupervisionContact
 
 
 def supervision_types_distinct_for_state(state_code: str) -> bool:
@@ -334,17 +336,21 @@ def produce_supervision_time_bucket_for_period(supervision_period: StateSupervis
 
 
 def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
+                                case_type: StateSupervisionCaseType,
                                 start_of_supervision: date,
                                 compliance_evaluation_date: date,
-                                last_assessment: Optional[StateAssessment]) -> \
+                                last_assessment: Optional[StateAssessment],
+                                supervision_contacts: List[StateSupervisionContact]) -> \
         Optional[SupervisionCaseCompliance]:
     """Returns the SupervisionCaseCompliance object containing information about whether the given supervision case is
     in compliance with state-specific standards on the compliance_evaluation_date. If the state of the
     supervision_period does not have state-specific compliance calculations, returns None."""
     if supervision_period.state_code == 'US_ID':
         return us_id_case_compliance_on_date(supervision_period,
+                                             case_type,
                                              start_of_supervision,
                                              compliance_evaluation_date,
-                                             last_assessment)
+                                             last_assessment,
+                                             supervision_contacts)
 
     return None
