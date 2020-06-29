@@ -126,6 +126,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             schema.state_incarceration_period_program_assignment_association_table.name: [],
             schema.StateEarlyDischarge.__tablename__: [],
+            schema.StateSupervisionContact.__tablename__: []
         }
 
     def build_supervision_pipeline_data_dict(
@@ -206,7 +207,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             incarceration_sentence_id=123,
             state_code='US_ND',
             person_id=fake_person_id,
-            incarceration_periods=[initial_incarceration, subsequent_reincarceration, first_reincarceration]
+            incarceration_periods=[initial_incarceration,
+                                   subsequent_reincarceration, first_reincarceration]
         )
 
         supervision_sentence_supervision_period_association = [
@@ -227,6 +229,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             assessment_id=298374,
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
+            person_id=fake_person_id
+        )
+
+        supervision_contact = schema.StateSupervisionContact(
+            contact_date=supervision_period.start_date,
             person_id=fake_person_id
         )
 
@@ -277,6 +284,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
+        supervision_contact_data = [
+            normalized_database_base_dict(supervision_contact)
+        ]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -290,6 +301,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
+            schema.StateSupervisionContact.__tablename__: supervision_contact_data
         }
         data_dict.update(data_dict_overrides)
 
@@ -302,10 +314,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id).supervision_violation_response_id
 
-        data_dict = self.build_supervision_pipeline_data_dict(fake_person_id, fake_supervision_period_id)
+        data_dict = self.build_supervision_pipeline_data_dict(
+            fake_person_id, fake_supervision_period_id)
         dataset = 'recidiviz-123.state'
 
-        expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
 
         # We do not expect any aggregate metrics
         expected_aggregate_metric_types = set()
@@ -326,10 +340,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id).supervision_violation_response_id
 
-        data_dict = self.build_supervision_pipeline_data_dict(fake_person_id, fake_supervision_period_id)
+        data_dict = self.build_supervision_pipeline_data_dict(
+            fake_person_id, fake_supervision_period_id)
         dataset = 'recidiviz-123.state'
 
-        expected_metric_types = {SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+        expected_metric_types = {
+            SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
 
         # We do not expect any aggregate metrics
         expected_aggregate_metric_types = set()
@@ -374,8 +390,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  | 'Load IncarcerationPeriods' >>  # type: ignore
                                  extractor_utils.BuildRootEntity(
                                      dataset=dataset,
-                                     root_entity_class=
-                                     entities.StateIncarcerationPeriod,
+                                     root_entity_class=entities.StateIncarcerationPeriod,
                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True,
                                      unifying_id_field_filter_set=unifying_id_field_filter_set
@@ -410,8 +425,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                  | 'Load SupervisionSentences' >>  # type: ignore
                                  extractor_utils.BuildRootEntity(
                                      dataset=dataset,
-                                     root_entity_class=
-                                     entities.StateSupervisionSentence,
+                                     root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True,
                                      unifying_id_field_filter_set=unifying_id_field_filter_set))
@@ -431,8 +445,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                | 'Load SupervisionPeriods' >>  # type: ignore
                                extractor_utils.BuildRootEntity(
                                    dataset=dataset,
-                                   root_entity_class=
-                                   entities.StateSupervisionPeriod,
+                                   root_entity_class=entities.StateSupervisionPeriod,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=False,
                                    unifying_id_field_filter_set=unifying_id_field_filter_set))
@@ -442,11 +455,20 @@ class TestSupervisionPipeline(unittest.TestCase):
                        | 'Load Assessments' >>  # type: ignore
                        extractor_utils.BuildRootEntity(
                            dataset=dataset,
-                           root_entity_class=
-                           entities.StateAssessment,
+                           root_entity_class=entities.StateAssessment,
                            unifying_id_field=entities.StatePerson.get_class_id_name(),
                            build_related_entities=False,
                            unifying_id_field_filter_set=unifying_id_field_filter_set))
+
+        supervision_contacts = (test_pipeline
+                                | 'Load SupervisionContacts' >>  # type: ignore
+                                extractor_utils.BuildRootEntity(
+                                    dataset=dataset,
+                                    root_entity_class=entities.StateSupervisionContact,
+                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
+                                    build_related_entities=False,
+                                    unifying_id_field_filter_set=unifying_id_field_filter_set)
+                                )
 
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
@@ -497,7 +519,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         us_mo_sentence_statuses = (
-            test_pipeline | 'Create MO sentence statuses' >> beam.Create(us_mo_sentence_status_rows)
+            test_pipeline | 'Create MO sentence statuses' >> beam.Create(
+                us_mo_sentence_status_rows)
         )
 
         us_mo_sentence_status_rankings_as_kv = (
@@ -530,7 +553,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              'incarceration_periods': incarceration_periods_with_source_violations,
              'supervision_sentences': sentences_converted.supervision_sentences,
              'incarceration_sentences': sentences_converted.incarceration_sentences,
-             'violation_responses': violation_responses_with_hydrated_violations
+             'violation_responses': violation_responses_with_hydrated_violations,
+             'supervision_contacts': supervision_contacts
              }
             | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>
             beam.CoGroupByKey()
@@ -544,12 +568,14 @@ class TestSupervisionPipeline(unittest.TestCase):
         }
 
         ssvr_to_agent_associations = (
-            test_pipeline | 'Create SSVR to Agent table' >> beam.Create([ssvr_to_agent_map])
+            test_pipeline | 'Create SSVR to Agent table' >> beam.Create(
+                [ssvr_to_agent_map])
         )
 
         ssvr_agent_associations_as_kv = (
             ssvr_to_agent_associations | 'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(), 'supervision_violation_response_id')
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_violation_response_id')
         )
 
         supervision_period_to_agent_map = {
@@ -560,18 +586,16 @@ class TestSupervisionPipeline(unittest.TestCase):
         }
 
         supervision_period_to_agent_associations = (
-            test_pipeline | 'Create SupervisionPeriod to Agent table' >> beam.Create([supervision_period_to_agent_map])
+            test_pipeline | 'Create SupervisionPeriod to Agent table' >> beam.Create(
+                [supervision_period_to_agent_map])
         )
 
         supervision_periods_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(), 'supervision_period_id')
+            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+                       'supervision_period_id')
         )
-
-        identifier_options = {
-            'state_code': 'ALL'
-        }
 
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
@@ -580,8 +604,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             | beam.ParDo(
                 pipeline.ClassifySupervisionTimeBuckets(),
                 AsDict(ssvr_agent_associations_as_kv),
-                AsDict(supervision_periods_to_agent_associations_as_kv),
-                **identifier_options))
+                AsDict(supervision_periods_to_agent_associations_as_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -607,7 +630,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         if expected_violation_types:
             for expected_violation_type in expected_violation_types:
                 assert_that(supervision_metrics,
-                            AssertMatchers.assert_source_violation_type_set(expected_violation_type),
+                            AssertMatchers.assert_source_violation_type_set(
+                                expected_violation_type),
                             f"Assert source violation {expected_violation_type} type is set")
 
         test_pipeline.run()
@@ -665,8 +689,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
-            termination_reason=
-            StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id
         )
@@ -831,7 +854,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.ASSESSMENT_CHANGE
         }
 
-        expected_aggregate_metric_types = {SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+        expected_aggregate_metric_types = {
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
@@ -866,8 +890,10 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         initial_supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=105109,
                                                                        state_code='US_ND',
-                                                                       supervision_periods=[initial_supervision_period],
-                                                                       projected_completion_date=date(2016, 10, 31),
+                                                                       supervision_periods=[
+                                                                           initial_supervision_period],
+                                                                       projected_completion_date=date(
+                                                                           2016, 10, 31),
                                                                        person_id=fake_person_id
                                                                        )
 
@@ -925,10 +951,14 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=116412, state_code='US_ND',
-                                                               supervision_periods=[supervision_period],
-                                                               start_date=date(2016, 11, 22),
-                                                               completion_date=date(2017, 2, 6),
-                                                               projected_completion_date=date(2017, 7, 24),
+                                                               supervision_periods=[
+                                                                   supervision_period],
+                                                               start_date=date(
+                                                                   2016, 11, 22),
+                                                               completion_date=date(
+                                                                   2017, 2, 6),
+                                                               projected_completion_date=date(
+                                                                   2017, 7, 24),
                                                                status=StateSentenceStatus.COMPLETED,
                                                                person_id=fake_person_id)
 
@@ -1007,7 +1037,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             incarceration_sentence_id=123,
             state_code='US_ND',
             person_id=fake_person_id,
-            incarceration_periods=[initial_incarceration, revocation_reincarceration]
+            incarceration_periods=[
+                initial_incarceration, revocation_reincarceration]
         )
 
         incarceration_periods_data = [
@@ -1076,9 +1107,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
         }
 
-        expected_aggregate_metric_types = {SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+        expected_aggregate_metric_types = {
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
 
-        expected_violation_types = {ViolationType.FELONY, ViolationType.TECHNICAL}
+        expected_violation_types = {
+            ViolationType.FELONY, ViolationType.TECHNICAL}
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset,
@@ -1143,8 +1176,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
-            termination_reason=
-            StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id
         )
@@ -1531,6 +1563,28 @@ class TestSupervisionPipeline(unittest.TestCase):
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
 
+    @staticmethod
+    def load_person_entities_dict(
+            person: StatePerson,
+            supervision_periods: List[entities.StateSupervisionPeriod] = None,
+            incarceration_periods: List[entities.StateIncarcerationPeriod] = None,
+            incarceration_sentences: List[entities.StateIncarcerationSentence] = None,
+            supervision_sentences: List[entities.StateSupervisionSentence] = None,
+            violation_responses: List[entities.StateSupervisionViolationResponse] = None,
+            assessments: List[entities.StateAssessment] = None,
+            supervision_contacts: List[entities.StateSupervisionContact] = None,
+    ):
+        return {
+            'person': [person],
+            'supervision_periods': supervision_periods if supervision_periods else [],
+            'assessments': assessments if assessments else [],
+            'incarceration_periods': incarceration_periods if incarceration_periods else [],
+            'incarceration_sentences': incarceration_sentences if incarceration_sentences else [],
+            'supervision_sentences': supervision_sentences if supervision_sentences else [],
+            'violation_responses': violation_responses if violation_responses else [],
+            'supervision_contacts': supervision_contacts if supervision_contacts else []
+        }
+
     def testClassifySupervisionTimeBuckets(self):
         """Tests the ClassifySupervisionTimeBuckets DoFn."""
         fake_person_id = 12345
@@ -1586,14 +1640,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        person_periods = {'person': [fake_person],
-                          'supervision_periods': [supervision_period],
-                          'assessments': [assessment],
-                          'incarceration_periods': [incarceration_period],
-                          'incarceration_sentences': [incarceration_sentence],
-                          'supervision_sentences': [supervision_sentence],
-                          'violation_responses': []
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            supervision_periods=[supervision_period],
+            assessments=[assessment],
+            incarceration_periods=[incarceration_period],
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence]
+        )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
@@ -1606,7 +1660,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id='10',
                 successful_completion=True,
                 incarcerated_during_sentence=True,
-                sentence_days_served=(supervision_sentence.completion_date - supervision_sentence.start_date).days
+                sentence_days_served=(
+                    supervision_sentence.completion_date - supervision_sentence.start_date).days
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -1713,8 +1768,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -1794,14 +1848,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        person_periods = {'person': [fake_person],
-                          'assessments': [assessment],
-                          'supervision_periods': [supervision_period],
-                          'incarceration_periods': [incarceration_period],
-                          'incarceration_sentences': [],
-                          'supervision_sentences': [supervision_sentence],
-                          'violation_responses': [violation_report]
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            assessments=[assessment],
+            supervision_periods=[supervision_period],
+            incarceration_periods=[incarceration_period],
+            supervision_sentences=[supervision_sentence],
+            violation_responses=[violation_report]
+        )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
@@ -1915,8 +1969,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -2007,14 +2060,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        person_periods = {'person': [fake_person],
-                          'assessments': [assessment],
-                          'supervision_periods': [supervision_period],
-                          'incarceration_periods': [incarceration_period],
-                          'incarceration_sentences': [],
-                          'supervision_sentences': [supervision_sentence],
-                          'violation_responses': [violation_report]
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            assessments=[assessment],
+            supervision_periods=[supervision_period],
+            incarceration_periods=[incarceration_period],
+            supervision_sentences=[supervision_sentence],
+            violation_responses=[violation_report]
+        )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
@@ -2129,8 +2182,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -2181,14 +2233,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 23)
         )
 
-        person_periods = {'person': [fake_person],
-                          'assessments': [assessment],
-                          'supervision_periods': [supervision_period],
-                          'incarceration_periods': [],
-                          'incarceration_sentences': [],
-                          'supervision_sentences': [supervision_sentence],
-                          'violation_responses': []
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            assessments=[assessment],
+            supervision_periods=[supervision_period],
+            supervision_sentences=[supervision_sentence],
+        )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_time_buckets = [
@@ -2297,8 +2347,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -2342,14 +2391,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        person_periods = {'person': [fake_person],
-                          'assessments': [],
-                          'supervision_periods': [supervision_period],
-                          'incarceration_periods': [],
-                          'incarceration_sentences': [],
-                          'supervision_sentences': [supervision_sentence],
-                          'violation_responses': []
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            supervision_periods=[supervision_period],
+            supervision_sentences=[supervision_sentence],
+        )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -2450,8 +2496,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -2492,14 +2537,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        person_periods = {'person': [fake_person],
-                          'assessments': [assessment],
-                          'supervision_periods': [],
-                          'incarceration_periods': [incarceration_period],
-                          'incarceration_sentences': [],
-                          'supervision_sentences': [],
-                          'violation_responses': []
-                          }
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            assessments=[assessment],
+            incarceration_periods=[incarceration_period],
+        )
 
         correct_output = []
 
@@ -2546,8 +2588,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         output = (test_pipeline
-                  | beam.Create([(fake_person_id,
-                                  person_periods)])
+                  | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
                       pipeline.ClassifySupervisionTimeBuckets(),
@@ -2751,7 +2792,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                       | f"Produce {metric_type}" >>
                       beam.ParDo(pipeline.ProduceSupervisionMetrics(), **all_pipeline_options))
 
-            assert_that(output, AssertMatchers.validate_metric_is_expected_type(metric_type))
+            assert_that(
+                output, AssertMatchers.validate_metric_is_expected_type(metric_type))
 
             test_pipeline.run()
 
@@ -2770,7 +2812,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([(metric_key_dict, value)])
                   | 'Produce Supervision Metric' >>
-                  beam.ParDo(pipeline.ProduceSupervisionMetrics(), **all_pipeline_options)
+                  beam.ParDo(pipeline.ProduceSupervisionMetrics(),
+                             **all_pipeline_options)
                   )
 
         assert_that(output, equal_to([]))
@@ -2793,36 +2836,46 @@ class AssertMatchers:
 
             for metric in output:
                 if not isinstance(metric, SupervisionMetric):
-                    raise BeamAssertException('Failed assert. Output is not of type SupervisionMetric.')
+                    raise BeamAssertException(
+                        'Failed assert. Output is not of type SupervisionMetric.')
 
                 if isinstance(metric, TerminatedSupervisionAssessmentScoreChangeMetric):
-                    observed_metric_types.add(SupervisionMetricType.ASSESSMENT_CHANGE)
+                    observed_metric_types.add(
+                        SupervisionMetricType.ASSESSMENT_CHANGE)
 
                     if metric.person_id is None:
-                        observed_aggregate_metric_types.add(SupervisionMetricType.ASSESSMENT_CHANGE)
+                        observed_aggregate_metric_types.add(
+                            SupervisionMetricType.ASSESSMENT_CHANGE)
                 elif isinstance(metric, SupervisionSuccessMetric):
                     observed_metric_types.add(SupervisionMetricType.SUCCESS)
 
                     if metric.person_id is None:
-                        observed_aggregate_metric_types.add(SupervisionMetricType.SUCCESS)
+                        observed_aggregate_metric_types.add(
+                            SupervisionMetricType.SUCCESS)
                 elif isinstance(metric, SupervisionPopulationMetric):
                     observed_metric_types.add(SupervisionMetricType.POPULATION)
 
                     if metric.person_id is None:
-                        observed_aggregate_metric_types.add(SupervisionMetricType.POPULATION)
+                        observed_aggregate_metric_types.add(
+                            SupervisionMetricType.POPULATION)
                 elif isinstance(metric, SupervisionRevocationAnalysisMetric):
-                    observed_metric_types.add(SupervisionMetricType.REVOCATION_ANALYSIS)
+                    observed_metric_types.add(
+                        SupervisionMetricType.REVOCATION_ANALYSIS)
 
                     if metric.person_id is None:
-                        observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION_ANALYSIS)
+                        observed_aggregate_metric_types.add(
+                            SupervisionMetricType.REVOCATION_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationViolationTypeAnalysisMetric):
-                    observed_metric_types.add(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
-                    observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                    observed_metric_types.add(
+                        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                    observed_aggregate_metric_types.add(
+                        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationMetric):
                     observed_metric_types.add(SupervisionMetricType.REVOCATION)
 
                     if metric.person_id is None:
-                        observed_aggregate_metric_types.add(SupervisionMetricType.REVOCATION)
+                        observed_aggregate_metric_types.add(
+                            SupervisionMetricType.REVOCATION)
 
             if observed_metric_types != expected_metric_types:
                 raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
@@ -2841,11 +2894,13 @@ class AssertMatchers:
         def _assert_source_violation_type_set(output):
 
             with_violation_types = [metric for metric in output if
-                                    isinstance(metric, SupervisionRevocationMetric)
+                                    isinstance(
+                                        metric, SupervisionRevocationMetric)
                                     and metric.source_violation_type == expected_violation]
 
             if len(with_violation_types) == 0:
-                raise BeamAssertException('No metrics with source violation type {} set.'.format(expected_violation))
+                raise BeamAssertException(
+                    'No metrics with source violation type {} set.'.format(expected_violation))
 
         return _assert_source_violation_type_set
 
@@ -2898,6 +2953,7 @@ class AssertMatchers:
             supervision_metric = output[0]
 
             if not isinstance(supervision_metric, expected_metric_type):
-                raise BeamAssertException(f"Failed assert. Metric not of expected type {expected_metric_type}.")
+                raise BeamAssertException(
+                    f"Failed assert. Metric not of expected type {expected_metric_type}.")
 
         return _validate_metric_is_expected_type

@@ -14,7 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Manages the storage of data produced by calculations."""
+"""Manages the storage of data produced by calculations.
+
+Run locally with the following command:
+
+    python -m recidiviz.calculator.calculation_data_storage_manager \
+        --project_id [PROJECT_ID]
+        --function_to_execute [cold_storage_export, update_schemas]
+
+"""
 import argparse
 import logging
 import sys
