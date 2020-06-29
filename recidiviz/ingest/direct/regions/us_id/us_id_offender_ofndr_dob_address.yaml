@@ -5,6 +5,7 @@ key_mappings:
   mnam: state_person.middle_names
   sex_cd: state_person.gender
   dob: state_person.birthdate
+  current_address: state_person.current_address
 
 child_key_mappings:
   ethnic_cd: state_person_race.race
@@ -49,3 +50,4 @@ keys_to_ignore:
   - birth_ctry_cd       # Unused - birth country code (mostly null)
   - birth_city          # Unused - birth city (mostly null)
   - dob_dtd             # Unused - birth date (not present in manual files)
+  - personid            # Unused - duplicate of docno
