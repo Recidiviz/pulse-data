@@ -249,6 +249,8 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         'Annex',
         'CCA (MDF)',
         '(closed)',
+        '(closed 4/24)',
+        '(closed 5/31)',
         'Co. Det. Center',
         'CJC',
         'CWC (CDC',
