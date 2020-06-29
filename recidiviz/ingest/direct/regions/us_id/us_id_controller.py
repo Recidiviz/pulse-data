@@ -81,7 +81,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             max_delay_sec_between_files=max_delay_sec_between_files)
         self.enum_overrides = self.generate_enum_overrides()
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            'offender_ofndr_dob': [
+            'offender_ofndr_dob_address': [
                 copy_name_to_alias,
                 # When first parsed, the info object just has a single external id - the DOC id.
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -154,7 +154,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
-            'offender_ofndr_dob': [],
+            'offender_ofndr_dob_address': [],
             'ofndr_tst_ofndr_tst_cert': [],
             'mittimus_judge_sentence_offense_sentprob_incarceration_sentences': [],
             'mittimus_judge_sentence_offense_sentprob_supervision_sentences': [],
@@ -175,7 +175,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         }
 
     FILE_TAGS = [
-        'offender_ofndr_dob',
+        'offender_ofndr_dob_address',
         'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
         'ofndr_tst_ofndr_tst_cert',
         'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
@@ -533,7 +533,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
-                'offender_ofndr_dob',
+                'offender_ofndr_dob_address',
                 'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
                 'ofndr_tst_ofndr_tst_cert',
                 'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
