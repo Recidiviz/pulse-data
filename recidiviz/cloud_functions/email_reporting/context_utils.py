@@ -51,3 +51,14 @@ def round_float_value_to_int(value: str) -> str:
     to_round = float(value)
     rounded = int(round(to_round))
     return str(rounded)
+
+
+def round_float_value_to_number_of_digits(value: str, num_digits: int) -> str:
+    """Rounds the given float value to the number of digits. Values are provided as strings and returned as
+    strings to work with the interfaces in data preparation."""
+    to_round = float(value)
+    if to_round < 1:
+        # If the value is less than 1.0, then we want one less digit because the 0 will be one of the digits
+        num_digits -= 1
+    rounded = round(to_round, ndigits=num_digits)
+    return str(rounded)
