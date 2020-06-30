@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Data to populate the monthly PO report email."""
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace,line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -49,10 +49,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         absconsions,
         crime_revocations,
         assessments_up_to_date as assessments,
-        assessments_percent,
-        home_visits,
-        home_visits_percent,
-        facetoface,
+        assessment_percent,
+        facetoface_frequencies_sufficient as facetoface,
         facetoface_percent,
       FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month`
       FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_officer_by_month`
@@ -83,11 +81,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       report_month.crime_revocations,
       report_month.crime_revocations - IFNULL(last_month.crime_revocations, 0) as crime_revocations_change,
       report_month.assessments,
-      report_month.assessments_percent,
-      report_month.assessments_percent - IFNULL(last_month.assessments_percent, 0) as assessments_percent_change,
-      report_month.home_visits,
-      report_month.home_visits_percent,
-      report_month.home_visits_percent - IFNULL(last_month.home_visits_percent, 0) as home_visits_percent_change,
+      report_month.assessment_percent,
+      report_month.assessment_percent - IFNULL(last_month.assessment_percent, 0) as assessment_percent_change,
       report_month.facetoface,
       report_month.facetoface_percent,
       report_month.facetoface_percent - IFNULL(last_month.facetoface_percent, 0) as facetoface_percent_change
@@ -103,7 +98,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       FROM report_data
     ) last_month
       USING (state_code, year, month, officer_external_id, district)
-    WHERE year = EXTRACT(YEAR FROM CURRENT_DATE())
+    -- Only include output for the month before the current month
+    WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
     ORDER BY review_month, email_address
     """
 
