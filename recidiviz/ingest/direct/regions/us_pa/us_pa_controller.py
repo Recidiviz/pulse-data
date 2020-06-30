@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils import environment
 
 
 class UsPaController(CsvGcsfsDirectIngestController):
@@ -101,20 +102,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Offender': [],
             'dbo_LSIR': [],
         }
-
-    FILE_TAGS = [
-        # Data source: Mixed
-        'person_external_ids',
-
-        # Data source: DOC
-        'doc_person_info',
-        'dbo_tblInmTestScore',
-        'dbo_Senrec',
-
-        # Data source: PBPP
-        'dbo_Offender',
-        'dbo_LSIR',
-    ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
         Race.ASIAN: ['ASIAN', 'A'],
@@ -205,7 +192,31 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
-        return cls.FILE_TAGS
+        launched_file_tags = [
+            # Data source: Mixed
+            'person_external_ids',
+
+            # Data source: DOC
+            'doc_person_info',
+
+        ]
+
+        # TODO(3024): Move these tags to the list above as each one is ready to run in stage
+        unlaunched_file_tags = [
+            # Data source: DOC
+            'dbo_tblInmTestScore',
+            'dbo_Senrec',
+
+            # Data source: PBPP
+            'dbo_Offender',
+            'dbo_LSIR',
+        ]
+
+        file_tags = launched_file_tags
+        if not environment.in_gae():
+            file_tags += unlaunched_file_tags
+
+        return file_tags
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Pennsylvania-specific overrides for enum mappings."""
