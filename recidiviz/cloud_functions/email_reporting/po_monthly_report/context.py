@@ -26,9 +26,12 @@ import copy
 import json
 from typing import List
 
-from context_utils import singular_or_plural, month_number_to_name, round_float_value_to_int
+from context_utils import singular_or_plural, month_number_to_name, round_float_value_to_int, \
+    round_float_value_to_number_of_digits
 import email_reporting_utils as utils
 from report_context import ReportContext
+
+AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 
 
 class PoMonthlyReportContext(ReportContext):
@@ -71,8 +74,6 @@ class PoMonthlyReportContext(ReportContext):
                                 self.properties["percent_increase"], self.properties["percent_decrease"], True)
         self._color_change_text("facetoface_percent_change", "facetoface_percent_change_color",
                                 self.properties["percent_increase"], self.properties["percent_decrease"], True)
-        self._color_change_text("home_visits_percent_change", "home_visits_percent_change_color",
-                                self.properties["percent_increase"], self.properties["percent_decrease"], True)
 
         self._choose_comparison_icon("pos_discharges_icon",
                                      "pos_discharges",
@@ -92,7 +93,12 @@ class PoMonthlyReportContext(ReportContext):
 
         self._earned_discharges_tip()
         self._singular_or_plural_labels()
-        self._round_float_values(['assessment_percent', 'home_visits_percent', 'facetoface_percent'])
+        self._round_float_values_to_ints(['assessment_percent', 'facetoface_percent'])
+        self._round_float_values_to_number_of_digits(['pos_discharges_district_average',
+                                                      'pos_discharges_state_average',
+                                                      'earned_discharges_district_average',
+                                                      'earned_discharges_state_average'],
+                                                     number_of_digits=AVERAGE_VALUES_SIGNIFICANT_DIGITS)
 
         return self.prepared_data
 
@@ -115,18 +121,22 @@ class PoMonthlyReportContext(ReportContext):
         singular_or_plural(self.prepared_data, "assessments", "assessments_label",
                            "Risk Assessment", "Risk Assessments")
 
-        singular_or_plural(self.prepared_data, "home_visits", "home_visits_label", "Home Visit", "Home Visits")
-
     def _convert_month_to_name(self, month_key: str):
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
         month_number = self.recipient_data[month_key]
         month_name = month_number_to_name(month_number)
         self.prepared_data[month_key] = month_name
 
-    def _round_float_values(self, float_keys: List[str]):
+    def _round_float_values_to_ints(self, float_keys: List[str]):
         """Rounds all of the values with the given keys to their nearest integer values for display."""
         for float_key in float_keys:
             self.prepared_data[float_key] = round_float_value_to_int(self.recipient_data[float_key])
+
+    def _round_float_values_to_number_of_digits(self, float_keys: List[str], number_of_digits: int):
+        """Rounds all of the values with the given keys to the given number of digits."""
+        for float_key in float_keys:
+            self.prepared_data[float_key] = round_float_value_to_number_of_digits(
+                self.recipient_data[float_key], number_of_digits)
 
     def _choose_comparison_icon(self,
                                 icon_to_choose: str,

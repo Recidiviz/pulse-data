@@ -28,17 +28,13 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION = """
     Supervision case compliance to state standards by officer by month
  """
 
-# TODO(3364): Implement home visit and face-to-face calculation support
 SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
       *,
-      IEEE_DIVIDE(assessments_up_to_date, caseload_count) AS assessments_percent,
-      NULL AS home_visits,
-      NULL AS home_visits_percent,
-      NULL AS facetoface,
-      NULL AS facetoface_percent
+      IEEE_DIVIDE(assessments_up_to_date, caseload_count) * 100 AS assessment_percent,
+      IEEE_DIVIDE(facetoface_frequencies_sufficient, caseload_count) * 100 as facetoface_percent
     FROM
       (SELECT
         state_code,
@@ -47,7 +43,8 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         SPLIT(supervising_district_external_id, '|')[OFFSET(0)] AS district,
         supervising_officer_external_id AS officer_external_id,
         COUNT(DISTINCT(person_id)) AS caseload_count,
-        COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date
+        COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) as facetoface_frequencies_sufficient
       FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
