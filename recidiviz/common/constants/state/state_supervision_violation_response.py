@@ -42,6 +42,7 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     SHOCK_INCARCERATION = state_enum_strings.state_supervision_violation_response_decision_shock_incarceration
     SUSPENSION = state_enum_strings.state_supervision_violation_response_decision_suspension
     TREATMENT_IN_PRISON = state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison
+    WARRANT_ISSUED = state_enum_strings.state_supervision_violation_response_decision_warrant_issued
 
     @staticmethod
     def _get_default_map():
@@ -89,6 +90,7 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     'SHOCK INCARCERATION': StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
     'SUSPENSION': StateSupervisionViolationResponseDecision.SUSPENSION,
     'TREATMENT IN PRISON': StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+    'WARRANT ISSUED': StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {

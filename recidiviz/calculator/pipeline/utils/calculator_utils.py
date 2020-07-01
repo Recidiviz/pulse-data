@@ -50,6 +50,7 @@ DECISION_SEVERITY_ORDER = [
         StateSupervisionViolationResponseDecision.REVOCATION,
         StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+        StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
         StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
         StateSupervisionViolationResponseDecision.EXTENSION,
         StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
