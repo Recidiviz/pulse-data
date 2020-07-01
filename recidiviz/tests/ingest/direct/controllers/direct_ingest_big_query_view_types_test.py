@@ -189,6 +189,59 @@ USING (col1);"""
         self.assertEqual(expected_parametrized_view_query,
                          view.date_parametrized_view_query('my_update_timestamp_param_name'))
 
+    def test_direct_ingest_preprocessed_view_with_reference_table(self):
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
+USING (col1);"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config
+        )
+
+        self.assertEqual(['file_tag_first'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
+        expected_view_query = """WITH
+file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
+USING (col1);"""
+
+        self.assertEqual(expected_view_query, view.view_query)
+
+        expected_date_parametrized_view_query = """WITH
+file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE 
+            update_datetime <= @my_param
+    )
+
+    SELECT * 
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
+USING (col1);"""
+
+        self.assertEqual(expected_date_parametrized_view_query, view.date_parametrized_view_query('my_param'))
+
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self):
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',

@@ -194,10 +194,11 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                          view_query_template=latest_view_query)
 
         self._raw_table_dependency_configs = raw_table_dependency_configs
-        self._date_parametrized_view_query = self._format_view_query(region_code,
-                                                                     raw_table_dependency_configs,
-                                                                     view_query_template,
-                                                                     parametrize_query=True)
+        date_parametrized_view_query = self._format_view_query(region_code,
+                                                               raw_table_dependency_configs,
+                                                               view_query_template,
+                                                               parametrize_query=True)
+        self._date_parametrized_view_query = date_parametrized_view_query.format(**self._query_format_args())
 
     @property
     def file_tag(self):
