@@ -40,21 +40,28 @@ RECIDIVIZ_DATE_FORMAT = '%m/%d/%Y'
 MISSING_DATE_VALUES = ['', 'NA']
 
 # Column names in output file
-DATE_COLUMN = 'Date'
-FACILITY_TYPE_COLUMN = 'Facility Type'
-STATE_COLUMN = 'State'
-FACILITY_NAME_COLUMN = 'Canonical Facility Name'
-POP_TESTED_COLUMN = 'Pop Tested'
-POP_TESTED_POSITIVE_COLUMN = 'Pop Tested Positive'
-POP_TESTED_NEGATIVE_COLUMN = 'Pop Tested Negative'
-POP_DEATHS_COLUMN = 'Pop Deaths'
-STAFF_TESTED_COLUMN = 'Staff Tested'
-STAFF_TESTED_POSITIVE_COLUMN = 'Staff Tested Postitive'
-STAFF_TESTED_NEGATIVE_COLUMN = 'Staff Tested Negative'
-STAFF_DEATHS_COLUMN = 'Staff Deaths'
-SOURCE_COLUMN = 'Source'
-COMPILATION_COLUMN = 'Compilation'
-NOTES_COLUMN = 'Notes'
+DATE_COLUMN = 'date'
+FACILITY_TYPE_COLUMN = 'facility_type'
+STATE_COLUMN = 'location_state'
+FACILITY_NAME_COLUMN = 'facility_name'
+POP_TESTED_COLUMN = 'pop_tested_to_date'
+POP_TESTED_POSITIVE_COLUMN = 'pop_positives_to_date'
+POP_TESTED_NEGATIVE_COLUMN = 'pop_negatives_to_date'
+POP_PENDING_COLUMN = 'pop_pending'
+POP_DEATHS_COLUMN = 'pop_deaths_to_date'
+POP_ACTIVE_CASES_COLUMN = 'pop_active_cases'
+POP_RECOVERED_CASES_COLUMN = 'pop_recovered_cases'
+STAFF_TESTED_COLUMN = 'staff_tested_to_date'
+STAFF_TESTED_POSITIVE_COLUMN = 'staff_positives_to_date'
+STAFF_TESTED_NEGATIVE_COLUMN = 'staff_negatives_to_date'
+STAFF_PENDING_COLUMN = 'staff_pending'
+STAFF_DEATHS_COLUMN = 'staff_deaths_to_date'
+STAFF_ACTIVE_CASES_COLUMN = 'staff_active_cases'
+STAFF_RECOVERED_CASES_COLUMN = 'staff_recovered_cases'
+SOURCE_COLUMN = 'source'
+COMPILATION_COLUMN = 'compilation'
+NOTES_COLUMN = 'notes'
+AGGREGATION_NOTES_COLUMN = 'aggregation_notes'
 
 OUTPUT_COLUMN_ORDER = [
     DATE_COLUMN,
@@ -64,14 +71,21 @@ OUTPUT_COLUMN_ORDER = [
     POP_TESTED_COLUMN,
     POP_TESTED_POSITIVE_COLUMN,
     POP_TESTED_NEGATIVE_COLUMN,
+    POP_PENDING_COLUMN,
     POP_DEATHS_COLUMN,
+    POP_ACTIVE_CASES_COLUMN,
+    POP_RECOVERED_CASES_COLUMN,
     STAFF_TESTED_COLUMN,
     STAFF_TESTED_POSITIVE_COLUMN,
     STAFF_TESTED_NEGATIVE_COLUMN,
+    STAFF_PENDING_COLUMN,
     STAFF_DEATHS_COLUMN,
+    STAFF_ACTIVE_CASES_COLUMN,
+    STAFF_RECOVERED_CASES_COLUMN,
     SOURCE_COLUMN,
     COMPILATION_COLUMN,
-    NOTES_COLUMN
+    NOTES_COLUMN,
+    AGGREGATION_NOTES_COLUMN
 ]
 
 
@@ -107,9 +121,10 @@ def aggregate(prison_csv_reader, ucla_workbook, recidiviz_csv_reader):
         'UCLA Law Behind Bars': mapped_ucla_data,
         'Recidiviz': mapped_recidiviz_data
         })
-    aggregated_csv = _to_csv_string(aggregated_data)
 
-    return aggregated_csv
+    amended_data = _amend_data(aggregated_data)
+    formatted_output = _format_output(amended_data)
+    return _to_csv_string(formatted_output)
 
 
 def _parse_prison_csv(prison_csv_reader):
@@ -126,7 +141,22 @@ def _parse_prison_csv(prison_csv_reader):
         formatted_date = datetime.datetime.strptime(
             date, PRISON_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
 
-        # Extract subset of columns we care about.
+        # Two different columns can correspond to deaths. Need to convert them
+        # to ints so they can be summed.
+        deaths = _int_or_none(row['inmates_deaths'])
+        deaths_confirmed = _int_or_none(row['inmates_deaths_confirmed'])
+        pop_deaths = None
+        aggregation_notes = None
+        # Explicit None checks, since 0 is a valid value
+        if deaths is not None and deaths_confirmed is not None:
+            pop_deaths = deaths + deaths_confirmed
+            aggregation_notes = 'Summed pop deaths from two columns'
+        elif deaths_confirmed is not None:
+            pop_deaths = deaths_confirmed
+        elif deaths is not None:
+            pop_deaths = deaths
+
+        # Extract subset of columns we care about
         data_row = {
             DATE_COLUMN: formatted_date,
             STATE_COLUMN: row['state'],
@@ -134,11 +164,14 @@ def _parse_prison_csv(prison_csv_reader):
             POP_TESTED_COLUMN: row['inmates_tested'],
             POP_TESTED_POSITIVE_COLUMN: row['inmates_positive'],
             POP_TESTED_NEGATIVE_COLUMN: row['inmates_negative'],
-            POP_DEATHS_COLUMN: row['inmates_deaths_confirmed'],
+            POP_PENDING_COLUMN: row['inmates_pending'],
+            POP_DEATHS_COLUMN: pop_deaths,
             STAFF_TESTED_COLUMN: row['staff_tested'],
             STAFF_TESTED_POSITIVE_COLUMN: row['staff_positive'],
             STAFF_TESTED_NEGATIVE_COLUMN: row['staff_negative'],
-            STAFF_DEATHS_COLUMN: row['staff_deaths']
+            STAFF_PENDING_COLUMN: row['staff_pending'],
+            STAFF_DEATHS_COLUMN: row['staff_deaths'],
+            AGGREGATION_NOTES_COLUMN: aggregation_notes
         }
 
         data.append(data_row)
@@ -251,7 +284,7 @@ def _parse_recidiviz_csv(recidiviz_csv_reader):
         formatted_date = datetime.datetime.strptime(
             date, RECIDIVIZ_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
 
-        # Extract subset of columns we care about.
+        # Extract subset of columns we care about
         data_row = {
             DATE_COLUMN: formatted_date,
             FACILITY_TYPE_COLUMN: row['Facility Type'],
@@ -355,21 +388,13 @@ def _combine_by_facility(sources):
     for source in sources.values():
         for key in source:
             all_keys.add(key)
-    # Because of the choice of output date format and key structure, sorting by
-    # key will conveniently sort by date, state, and facility, in that order.
-    # This is obviously brittle, so this sort will need to be made more
-    # careful if either the date format or key structure needs to be changed.
-    sorted_keys = sorted(all_keys)
 
-    aggregated_data = []
+    aggregated_data = {}
 
-    header_row = list(OUTPUT_COLUMN_ORDER)
-    aggregated_data.append(header_row)
-
-    for key in sorted_keys:
+    for key in all_keys:
         # The key fields and facility info fields will be the same for any
         # sources in which the key is present, so the first non-null value can
-        # be used.
+        # be used
         date = _get_first_non_null(key, DATE_COLUMN, sources)
         facility_type = _get_first_non_null(key, FACILITY_TYPE_COLUMN, sources)
         state = _get_first_non_null(key, STATE_COLUMN, sources)
@@ -377,52 +402,205 @@ def _combine_by_facility(sources):
 
         source = _combine_non_null_text(key, SOURCE_COLUMN, sources)
         notes = _combine_non_null_text(key, NOTES_COLUMN, sources)
+        aggregation_notes = _combine_non_null_text(
+            key, AGGREGATION_NOTES_COLUMN, sources)
 
         # Create initial row data, so numeric and compilation values will have
-        # a place to go.
-        column_values = {
+        # a place to go
+        combined_row = {
             DATE_COLUMN: date,
             FACILITY_TYPE_COLUMN: facility_type,
             STATE_COLUMN: state,
             FACILITY_NAME_COLUMN: facility_name,
             SOURCE_COLUMN: source,
-            NOTES_COLUMN: notes
+            NOTES_COLUMN: notes,
+            AGGREGATION_NOTES_COLUMN: aggregation_notes
         }
 
         # Easier to handle the numeric fields in a loop, since we also have to
-        # keep track of the source for all of them.
+        # keep track of the source for all of them
         numeric_columns = [
             POP_TESTED_COLUMN,
             POP_TESTED_POSITIVE_COLUMN,
             POP_TESTED_NEGATIVE_COLUMN,
+            POP_PENDING_COLUMN,
             POP_DEATHS_COLUMN,
+            POP_ACTIVE_CASES_COLUMN,
+            POP_RECOVERED_CASES_COLUMN,
             STAFF_TESTED_COLUMN,
             STAFF_TESTED_POSITIVE_COLUMN,
             STAFF_TESTED_NEGATIVE_COLUMN,
-            STAFF_DEATHS_COLUMN
+            STAFF_PENDING_COLUMN,
+            STAFF_DEATHS_COLUMN,
+            STAFF_ACTIVE_CASES_COLUMN,
+            STAFF_RECOVERED_CASES_COLUMN
         ]
         numeric_value_sources = set()
+        numeric_value_present = False
         for column in numeric_columns:
             # For all numeric fields, the assumption is that the largest value
             # was obtained last on the given date and so should be the most
             # up-to-date value.
+            #
+            # Note that this step also converts all numeric fields from string
+            # to int values.
             value, value_source = _get_max(key, column, sources)
             # Always include value even if it's null, to ensure all required
-            # columns are present.
-            column_values[column] = value
-            if value:
+            # columns are present
+            combined_row[column] = value
+            # Check for None explicitly to avoid skipping 0 values
+            if value is not None:
+                numeric_value_present = True
                 numeric_value_sources.add(value_source)
+
+        # If no value was set for any numeric column in the row, the row has no
+        # useful data and should be excluded from the output
+        if not numeric_value_present:
+            continue
 
         # Compilation column is comma-joined list of all sources from which at
         # least one numeric value was taken. The list is sorted to enable
         # easier comparison in the output data.
-        column_values[COMPILATION_COLUMN] = \
+        combined_row[COMPILATION_COLUMN] = \
             ', '.join(sorted(numeric_value_sources))
 
-        row = [column_values[column] for column in OUTPUT_COLUMN_ORDER]
-        aggregated_data.append(row)
+        aggregated_data[key] = combined_row
 
     return aggregated_data
+
+
+def _amend_data(data):
+    """Performs corrections and additional calculations on aggregated data"""
+    amended_data = {}
+
+    for key, row in data.items():
+        output_row = dict(row)
+        aggregation_notes = []
+
+        # Include any existing aggregation notes, to make sure they aren't
+        # dropped
+        if row[AGGREGATION_NOTES_COLUMN]:
+            aggregation_notes.append(row[AGGREGATION_NOTES_COLUMN])
+
+        # If date can't be parsed, the date is invalid and the row should be
+        # skipped.
+        date = None
+        try:
+            date = datetime.datetime.strptime(
+                row[DATE_COLUMN], OUTPUT_DATE_FORMAT)
+        except ValueError:
+            continue
+
+        # Pull out values to be used, to make things a little more readable than
+        # bracketing into the row dict every time
+        state = row[STATE_COLUMN]
+        facility_type = row[FACILITY_TYPE_COLUMN]
+        pop_tested = row[POP_TESTED_COLUMN]
+        pop_tested_positive = row[POP_TESTED_POSITIVE_COLUMN]
+        pop_tested_negative = row[POP_TESTED_NEGATIVE_COLUMN]
+        pop_pending = row[POP_PENDING_COLUMN]
+        pop_recovered = row[POP_RECOVERED_CASES_COLUMN]
+        staff_tested = row[STAFF_TESTED_COLUMN]
+        staff_tested_positive = row[STAFF_TESTED_POSITIVE_COLUMN]
+        staff_tested_negative = row[STAFF_TESTED_NEGATIVE_COLUMN]
+        staff_pending = row[STAFF_PENDING_COLUMN]
+        staff_recovered = row[STAFF_RECOVERED_CASES_COLUMN]
+
+        # Below logic uses None identity checks because we want to distinguish
+        # missing values from zero values
+
+        # 1. If total tested is absent, sum positive, negative, and pending to
+        # calculate it
+        if pop_tested is None \
+                and pop_tested_positive is not None \
+                and pop_tested_negative is not None \
+                and pop_pending is not None:
+            output_row[POP_TESTED_COLUMN] = \
+                pop_tested_positive + pop_tested_negative + pop_pending
+            aggregation_notes.append(
+                'Pop tested calculated from sum of positive, negative, and '
+                + 'pending')
+
+        if staff_tested is None \
+                and staff_tested_positive is not None \
+                and staff_tested_negative is not None \
+                and staff_pending is not None:
+            output_row[STAFF_TESTED_COLUMN] = \
+                staff_tested_positive + staff_tested_negative + staff_pending
+            aggregation_notes.append(
+                'Staff tested calculated from sum of positive, negative, and '
+                + 'pending')
+
+        # 2. If negative is absent, subtract positive and pending from total to
+        # calculate it
+        if pop_tested_negative is None \
+                and pop_tested is not None \
+                and pop_tested_positive is not None \
+                and pop_pending is not None:
+            output_row[POP_TESTED_NEGATIVE_COLUMN] = \
+                pop_tested - (pop_tested_positive + pop_pending)
+            aggregation_notes.append(
+                'Pop negative calculated by subtracting positive and pending '
+                + ' from tested')
+
+        if staff_tested_negative is None \
+                and staff_tested is not None \
+                and staff_tested_positive is not None \
+                and staff_pending is not None:
+            output_row[STAFF_TESTED_NEGATIVE_COLUMN] = \
+                staff_tested - (staff_tested_positive + staff_pending)
+            aggregation_notes.append(
+                'Staff negative calculated by subtracting positive and pending '
+                + ' from tested')
+
+        # 3. Correct rows showing active as positive
+        is_tn_oh_ok = state in ['Tennessee', 'Ohio', 'Oklahoma']
+        is_de_on_or_after_5_20 = \
+            state == 'Delaware' and date >= datetime.datetime(2020, 5, 20)
+        is_federal_facility = \
+            state == 'Federal' or facility_type == 'Federal Prisons'
+        if is_tn_oh_ok or is_de_on_or_after_5_20 or is_federal_facility:
+            if pop_tested_positive is not None and pop_recovered is not None:
+                output_row[POP_ACTIVE_CASES_COLUMN] = pop_tested_positive
+                output_row[POP_TESTED_POSITIVE_COLUMN] = \
+                    pop_tested_positive + pop_recovered
+                aggregation_notes.append(
+                    'Corrected pop active shown as total positive')
+            if staff_tested_positive is not None \
+                    and staff_recovered is not None:
+                output_row[STAFF_ACTIVE_CASES_COLUMN] = staff_tested_positive
+                output_row[STAFF_TESTED_POSITIVE_COLUMN] = \
+                    staff_tested_positive + staff_recovered
+                aggregation_notes.append(
+                    'Corrected staff active shown as total positive')
+
+        if aggregation_notes:
+            output_row[AGGREGATION_NOTES_COLUMN] = ', '.join(aggregation_notes)
+
+        amended_data[key] = output_row
+
+    return amended_data
+
+
+def _format_output(data):
+    """Sorts rows and columns and adds header"""
+    output = []
+
+    header_row = list(OUTPUT_COLUMN_ORDER)
+    output.append(header_row)
+
+    # Because of the choice of output date format and key structure, sorting by
+    # key will conveniently sort by date, state, and facility, in that order.
+    # This is obviously brittle, so this sort will need to be made more
+    # careful if either the date format or key structure needs to be changed.
+    sorted_keys = sorted(data.keys())
+
+    for key in sorted_keys:
+        row = data[key]
+        sorted_row = [row[column] for column in OUTPUT_COLUMN_ORDER]
+        output.append(sorted_row)
+
+    return output
 
 
 def _to_csv_string(rows):
@@ -458,13 +636,9 @@ def _get_max(key, column, sources):
     current_max_source = None
     for source_name, source in sources.items():
         if key in source and column in source[key] and source[key][column]:
-            value = None
-            try:
-                value = int(source[key][column])
-            except ValueError:
-                continue
-
-            if not current_max or value > current_max:
+            value = _int_or_none(source[key][column])
+            # Explicit None check since 0 is a valid value
+            if value is not None and (not current_max or value > current_max):
                 current_max = value
                 current_max_source = source_name
     return current_max, current_max_source
@@ -521,6 +695,18 @@ def _get_cell_value_if_present(column_label, column_indices, row):
     return row[column_indices[column_label]]
 
 
+def _int_or_none(string):
+    """Converts a string to an int, or returns None if the string cannot be
+    converted
+    """
+    value = None
+    try:
+        value = int(string)
+    except ValueError:
+        pass
+    return value
+
+
 class FacilityInfoMapping:
     """Map from state and facility name to info on facility"""
 
@@ -544,3 +730,29 @@ class FacilityInfoMapping:
     def _key(self, state, facility_name):
         return '{}:{}'.format(
             state.strip().lower(), facility_name.strip().lower())
+
+
+# Convenience entry point for local testing and debugging
+# TODO(zdg2102): remove this once the aggregation logic has settled into more of
+# a finalized state
+if __name__ == '__main__':
+    prison_file_path = '<path here>'
+    ucla_file_path = '<path here>'
+
+    prison_file_content = None
+    with open(prison_file_path, 'rt') as prison_file:
+        prison_file_content = prison_file.read()
+    prison_csv = csv.DictReader(
+        prison_file_content.splitlines(), delimiter=',')
+
+    ucla_wb = xlrd.open_workbook(ucla_file_path)
+
+    recidiviz_url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTbxP67VHDHQt4xvpNmzbsXyT0pSh_b1Pn7aY5Ac089KKYnPDT6PpskMBMvhOX_PA08Zqkxt4zNn8_y/pub?gid=0&single=true&output=csv' # pylint:disable=line-too-long
+    recidiviz_response = requests.get(recidiviz_url)
+    recidiviz_file_content = recidiviz_response.content.decode('utf-8')
+    recidiviz_csv = csv.DictReader(
+        recidiviz_file_content.splitlines(), delimiter=',')
+
+    aggregated_csv = aggregate(prison_csv, ucla_wb, recidiviz_csv)
+
+    print(aggregated_csv)
