@@ -35,7 +35,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_iden
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
-    identify_most_severe_response_decision, first_day_of_month, first_day_of_next_month
+    identify_most_severe_response_decision, first_day_of_month, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change, most_recent_assessment_attributes
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
@@ -719,7 +719,8 @@ def _get_violation_history_description(violations: List[StateSupervisionViolatio
 
     if state_code.upper() == 'US_MO':
         ranked_violation_type_and_subtype_counts = \
-            us_mo_violation_utils.get_ranked_violation_type_and_subtype_counts(violations)
+            us_mo_violation_utils.get_ranked_violation_type_and_subtype_counts(violations,
+                                                                               VIOLATION_TYPE_SEVERITY_ORDER)
 
     descriptions = [f"{count}{label}" for label, count in
                     ranked_violation_type_and_subtype_counts.items() if count > 0]
