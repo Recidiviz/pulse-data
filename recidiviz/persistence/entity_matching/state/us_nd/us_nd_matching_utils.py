@@ -464,9 +464,9 @@ def is_incarceration_period_match(
     incomplete_external_id = incomplete.external_id
 
     if len(complete_external_ids) != 2:
-        raise ValueError(
+        raise EntityMatchingError(
             f"Could not split external id [{complete.external_id}] of complete incarceration period [{complete}] as "
-            f"expected")
+            f"expected", ingested_entity.get_entity_name())
 
     return incomplete_external_id in complete_external_ids
 
