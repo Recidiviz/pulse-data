@@ -360,6 +360,7 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_specialized_court,
     state_enum_strings.state_supervision_violation_response_decision_suspension,
     state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison,
+    state_enum_strings.state_supervision_violation_response_decision_warrant_issued,
     name='state_supervision_violation_response_decision')
 
 state_supervision_violation_response_revocation_type = Enum(

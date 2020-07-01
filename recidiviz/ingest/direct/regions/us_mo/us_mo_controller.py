@@ -360,10 +360,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationType.TECHNICAL: ['T'],
 
         StateSupervisionViolationResponseDecision.REVOCATION: [
-            'A',  # Capias
+            'A',  # Capias  # TODO(3350): Map this to WARRANT_ISSUED
             'I',  # Inmate Return
             'R',  # Revocation
-            'CO',  # Court Ordered Detention Sanction
+            'CO',  # Court Ordered Detention Sanction  # TODO(3350): Map this to SHOCK_INCARCERATION
         ],
         StateSupervisionViolationResponseDecision.CONTINUANCE: ['C'],
         StateSupervisionViolationResponseDecision.DELAYED_ACTION: ['D'],
