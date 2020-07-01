@@ -128,27 +128,29 @@ def _is_violation_of_type(violation: StateSupervisionViolation, violation_type: 
     return False
 
 
-def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisionViolation]) -> Dict[str, int]:
+def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisionViolation],
+                                                 violation_type_severity_order: List[StateSupervisionViolationType]) \
+        -> Dict[str, int]:
     """Given a list of violations, returns a dictionary containing violation type/subtypes and their relative
-    frequency. All keys are shorthand versions of the violation type/subtype for ease of display in our front end.
-    Entries in the dictionary are ordered by decreasing severity.
+    frequency as the most severe violation type listed on a report. All keys are shorthand versions of the violation
+    type/subtype for ease of display in our front end. Entries in the dictionary are ordered by decreasing severity.
     """
     type_and_subtype_counts: Dict[Any, int] = defaultdict(int)
 
     # Count all violation types and subtypes
     for violation in violations:
-        # If all violation types are technical, then we want to replace it with the relevant subtype, when present.
-        all_technicals = all([vte.violation_type == StateSupervisionViolationType.TECHNICAL
-                              for vte in violation.supervision_violation_types])
+        most_severe_violation_type = us_mo_identify_most_severe_violation_type([violation],
+                                                                               violation_type_severity_order)
 
-        for violation_type_entry in violation.supervision_violation_types:
-            violation_type = violation_type_entry.violation_type
-            if not violation_type:
-                continue
-            subtype = us_mo_identify_violation_subtype(violation_type, [violation])
+        if not most_severe_violation_type:
+            continue
 
-            to_increment = subtype if subtype and all_technicals else violation_type.value
-            type_and_subtype_counts[to_increment] += 1
+        is_technical = most_severe_violation_type == StateSupervisionViolationType.TECHNICAL
+
+        subtype = us_mo_identify_violation_subtype(most_severe_violation_type, [violation])
+
+        to_increment = subtype if subtype and is_technical else most_severe_violation_type.value
+        type_and_subtype_counts[to_increment] += 1
 
     # Convert to string shorthand
     ranked_shorthand_counts: Dict[str, int] = OrderedDict()

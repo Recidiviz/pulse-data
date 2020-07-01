@@ -4980,7 +4980,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype='UNSET',
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
-                violation_history_description='1fel;1tech',
+                violation_history_description='1fel',
                 violation_type_frequency_counter=[['FELONY']],
                 supervising_officer_external_id=r'ZZZ',
                 supervising_district_external_id='Z',
@@ -8005,7 +8005,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                          violation_history.most_severe_response_decision)
         self.assertEqual(1, violation_history.response_count)
         self.assertEqual(
-            violation_history.violation_history_description, '1fel;1absc;1tech')
+            violation_history.violation_history_description, '1fel')
         self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY', 'ABSCONDED']])
 
     def test_get_violation_and_response_history_date_before_cutoff(self):
@@ -8078,13 +8078,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(StateSupervisionViolationType.FELONY,
                          violation_history.most_severe_violation_type)
-        self.assertEqual(
-            'UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
         self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
                          violation_history.most_severe_response_decision)
         self.assertEqual(1, violation_history.response_count)
         self.assertEqual(
-            violation_history.violation_history_description, '1fel;1absc;1tech')
+            violation_history.violation_history_description, '1fel')
         self.assertEqual(violation_history.violation_type_frequency_counter, [['FELONY', 'ABSCONDED']])
 
     def test_get_violation_and_response_history_date_in_cutoff(self):
@@ -8352,13 +8351,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(StateSupervisionViolationType.MISDEMEANOR,
                          violation_history.most_severe_violation_type)
-        self.assertEqual(
-            'UNSET', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual('UNSET', violation_history.most_severe_violation_type_subtype)
         self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
                          violation_history.most_severe_response_decision)
         self.assertEqual(1, violation_history.response_count)
-        self.assertEqual(
-            '1misd;1absc', violation_history.violation_history_description)
+        self.assertEqual('1misd', violation_history.violation_history_description)
         self.assertEqual([['ABSCONDED', 'MISDEMEANOR']],
                          violation_history.violation_type_frequency_counter)
 
@@ -8605,13 +8602,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
-        self.assertEqual(
-            'LAW_CITATION', violation_history.most_severe_violation_type_subtype)
+        self.assertEqual('LAW_CITATION', violation_history.most_severe_violation_type_subtype)
         self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
                          violation_history.most_severe_response_decision)
         self.assertEqual(2, violation_history.response_count)
-        self.assertEqual('1law_cit;1absc;1muni',
-                         violation_history.violation_history_description)
+        self.assertEqual('1law_cit;1absc', violation_history.violation_history_description)
         self.assertEqual([['LAW_CITATION'], ['ABSCONDED', 'MUNICIPAL']],
                          violation_history.violation_type_frequency_counter)
 

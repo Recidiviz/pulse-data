@@ -20,7 +20,8 @@ from collections import OrderedDict
 
 import pytest
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violation_subtype
+from recidiviz.calculator.pipeline.utils.calculator_utils import identify_violation_subtype, \
+    VIOLATION_TYPE_SEVERITY_ORDER
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import \
     get_ranked_violation_type_and_subtype_counts, \
@@ -191,18 +192,19 @@ class TestUsMoViolationUtils(unittest.TestCase):
                 state_code=_STATE_CODE,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
-                        violation_type=StateSupervisionViolationType.MISDEMEANOR)
+                        violation_type=StateSupervisionViolationType.MISDEMEANOR),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        violation_type=StateSupervisionViolationType.FELONY)
                 ]
             )
         ]
 
         # Act
-        ordered_counts = get_ranked_violation_type_and_subtype_counts(violations)
+        ordered_counts = get_ranked_violation_type_and_subtype_counts(violations, VIOLATION_TYPE_SEVERITY_ORDER)
 
         # Assert
         expected_counts = OrderedDict([
-            ('fel', 1),
-            ('misd', 1),
+            ('fel', 2),
             ('subs', 1),
             ('tech', 1)
         ])
