@@ -84,12 +84,16 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     EXECUTION = state_enum_strings.state_incarceration_period_release_reason_execution
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    PARDONED = state_enum_strings.state_incarceration_period_release_reason_pardoned
+    RELEASED_FROM_ERRONEOUS_ADMISSION = \
+        state_enum_strings.state_incarceration_period_release_reason_released_from_erroneous_admission
     RELEASED_FROM_TEMPORARY_CUSTODY = \
         state_enum_strings.state_incarceration_period_release_reason_released_from_temporary_custody
     RELEASED_IN_ERROR = state_enum_strings.state_incarceration_period_release_reason_released_in_error
     SENTENCE_SERVED = state_enum_strings.state_incarceration_period_release_reason_sentence_served
     TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
     TRANSFERRED_OUT_OF_STATE = state_enum_strings.state_incarceration_period_release_reason_transferred_out_of_state
+    VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
 
     @staticmethod
     def _get_default_map():
@@ -208,6 +212,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'EXTERNAL UNKNOWN': StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
     'GOOD TIME': StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     'INTERNAL UNKNOWN': StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+    'PARDONED': StateIncarcerationPeriodReleaseReason.PARDONED,
     'PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PARL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RPAR': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
@@ -215,6 +220,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'SUPL': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'RELEASE TO PAROLE': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+    'RELEASED FROM ERRONEOUS ADMISSION': StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
     'RELEASED FROM TEMPORARY CUSTODY': StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
     'RELEASE TO PROBATION': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
     'ERR': StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
@@ -234,6 +240,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     'TRANSFER': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRN': StateIncarcerationPeriodReleaseReason.TRANSFER,
     'TRANSFERRED OUT OF STATE': StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE,
+    'VACATED': StateIncarcerationPeriodReleaseReason.VACATED,
 }
 
 _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
