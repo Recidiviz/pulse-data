@@ -83,14 +83,7 @@ class PoMonthlyReportContext(ReportContext):
                                      "pos_discharges_icon_good",
                                      "pos_discharges_icon_low")
 
-        self._choose_comparison_icon("earned_discharges_icon",
-                                     "earned_discharges",
-                                     "earned_discharges_district_average",
-                                     "earned_discharges_state_average",
-                                     "earned_discharges_icon_great",
-                                     "earned_discharges_icon_good",
-                                     "earned_discharges_icon_low")
-
+        self._choose_early_discharges_icon()
         self._earned_discharges_tip()
         self._singular_or_plural_labels()
         self._round_float_values_to_ints(['assessment_percent', 'facetoface_percent'])
@@ -105,18 +98,18 @@ class PoMonthlyReportContext(ReportContext):
     def _singular_or_plural_labels(self):
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
         singular_or_plural(self.prepared_data, "pos_discharges", "pos_discharges_label",
-                           "Positive&nbsp;Discharge", "Positive&nbsp;Discharges")
+                           "Successful&nbsp;Completion", "Successful&nbsp;Completions")
 
         singular_or_plural(self.prepared_data, "earned_discharges", "earned_discharges_label",
-                           "Earned Discharge Filed", "Earned Discharges Filed")
+                           "Early Discharge Filed", "Early Discharges Filed")
 
         singular_or_plural(self.prepared_data, "technical_revocations", "technical_revocations_label",
-                           "Technical Revocation", "Technical Revocations")
+                           "Technical-Only Revocation", "Technical-Only Revocations")
 
-        singular_or_plural(self.prepared_data, "absconsions", "absconsions_label", "Absconsion", "Absconsions")
+        singular_or_plural(self.prepared_data, "absconsions", "absconsions_label", "Absconder", "Absconders")
 
         singular_or_plural(self.prepared_data, "crime_revocations", "crime_revocations_label",
-                           "New Crime Revocation", "New Crime Revocations")
+                           "Revocation for New Criminal Charges", "Revocations for New Criminal Charges")
 
         singular_or_plural(self.prepared_data, "assessments", "assessments_label",
                            "Risk Assessment", "Risk Assessments")
@@ -161,6 +154,14 @@ class PoMonthlyReportContext(ReportContext):
         else:
             self.prepared_data[icon_to_choose] = self.properties[low_icon]
 
+    def _choose_early_discharges_icon(self):
+        change = int(self.recipient_data["earned_discharges_change"])
+
+        if change >= 0:
+            self.prepared_data["earned_discharges_icon"] = self.properties["earned_discharges_icon_good"]
+        else:
+            self.prepared_data["earned_discharges_icon"] = self.properties["earned_discharges_icon_low"]
+
     def _earned_discharges_tip(self):
         """Sets the title and text of the earned discharges tip."""
         earned_discharges = int(self.recipient_data["earned_discharges"])
@@ -190,18 +191,26 @@ class PoMonthlyReportContext(ReportContext):
         str_value = self.recipient_data[base_key]
         float_value = float(str_value)
         int_value = int(round(float_value))
+        blue = self.properties["blue"]
+        red = self.properties["red"]
 
         if blue_on_increase:
             if float_value >= 0:
-                self.prepared_data[color_key] = self.properties["blue"]
+                self.prepared_data[color_key] = blue
                 self.prepared_data[base_key] = str(int_value) + increase_text
             else:
-                self.prepared_data[color_key] = self.properties["red"]
+                self.prepared_data[color_key] = red
                 self.prepared_data[base_key] = str(abs(int_value)) + decrease_text
         else:
             if float_value <= 0:
-                self.prepared_data[color_key] = self.properties["blue"]
+                self.prepared_data[color_key] = blue
                 self.prepared_data[base_key] = str(abs(int_value)) + decrease_text
             else:
-                self.prepared_data[color_key] = self.properties["red"]
+                self.prepared_data[color_key] = red
                 self.prepared_data[base_key] = str(int_value) + increase_text
+
+        # If it's the same (a float which rounds up or down to the integer 0 is effectively "the same"),
+        # then we override the text and color
+        if float_value == 0 or int_value == 0:
+            self.prepared_data[color_key] = blue
+            self.prepared_data[base_key] = self.properties["same"]

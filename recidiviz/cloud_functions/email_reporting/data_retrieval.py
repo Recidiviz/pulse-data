@@ -79,7 +79,7 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
     try:
         data_filename = utils.get_data_filename(state_code, report_type)
         file_contents_string = utils.load_string_from_storage(data_bucket, data_filename)
-    except Exception:
+    except:
         logging.error("Unable to load data file %s/%s", data_bucket, data_filename)
         raise
 

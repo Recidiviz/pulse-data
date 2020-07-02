@@ -32,6 +32,7 @@ import email_delivery
 import email_generation
 
 
+# pylint:disable=bare-except
 def report_start_new_batch(request):
     """Start a new batch of email generation for the indicated state.
 
@@ -46,20 +47,23 @@ def report_start_new_batch(request):
         An HTTP status based on the outcome of the data retrieval process.
 
     Raises:
-        Errors will be caught in the called function and logged to StackDriver.
+        Nothing.  Catch everything so that we can exit gracefully
     """
-    request_json = request.get_json()
+    try:
+        request_json = request.get_json()
 
-    if request_json and 'state_code' in request_json and 'report_type' in request_json:
-        state_code = request_json.get('state_code')
-        report_type = request_json.get('report_type')
-        batch_id = data_retrieval.start(state_code, report_type)
-        return (f"New batch started for {state_code} and {report_type}.  Batch "
-                f"id = {batch_id}"), 200
+        if request_json and 'state_code' in request_json and 'report_type' in request_json:
+            state_code = request_json.get('state_code')
+            report_type = request_json.get('report_type')
+            batch_id = data_retrieval.start(state_code, report_type)
+            return (f"New batch started for {state_code} and {report_type}.  Batch "
+                    f"id = {batch_id}"), 200
 
-    msg = "Request does not include JSON with 'state_code' and 'report_type' keys"
-    logging.error(msg)
-    return msg, 400
+        msg = "Request does not include JSON with 'state_code' and 'report_type' keys"
+        logging.error(msg)
+        return msg, 400
+    except:
+        return "Fatal error occurred during execution. Review logs.", 500
 
 
 def report_generate_email_for_recipient(event, _context):
@@ -96,22 +100,28 @@ def report_deliver_emails_for_batch(request):
 
     Returns:
         An HTTP response code and informative text
+
+    Raises:
+        Nothing.  Catch everything so that we can exit gracefully
     """
-    request_json = request.get_json()
-    batch_id_param = "batch_id"
+    try:
+        request_json = request.get_json()
+        batch_id_param = "batch_id"
 
-    if request_json and batch_id_param in request_json:
-        batch_id = request_json.get(batch_id_param)
-    else:
-        msg = f"Query parameter '{batch_id_param}' not received"
-        logging.error(msg)
-        return msg, 400
+        if request_json and batch_id_param in request_json:
+            batch_id = request_json.get(batch_id_param)
+        else:
+            msg = f"Query parameter '{batch_id_param}' not received"
+            logging.error(msg)
+            return msg, 400
 
-    if "test_address" in request_json:
-        test_address = request_json.get("test_address")
-        results = email_delivery.deliver(batch_id, test_address=test_address)
-        return (f"Sent {results[0]} emails to the test address {test_address}. "
-                f"{results[1]} emails failed to send"), 200
+        if "test_address" in request_json:
+            test_address = request_json.get("test_address")
+            results = email_delivery.deliver(batch_id, test_address=test_address)
+            return (f"Sent {results[0]} emails to the test address {test_address}. "
+                    f"{results[1]} emails failed to send"), 200
 
-    results = email_delivery.deliver(batch_id)
-    return f"Sent {results[0]} emails. {results[1]} emails failed to send", 200
+        results = email_delivery.deliver(batch_id)
+        return f"Sent {results[0]} emails. {results[1]} emails failed to send", 200
+    except:
+        return "Fatal error occurred during execution. Review logs.", 500
