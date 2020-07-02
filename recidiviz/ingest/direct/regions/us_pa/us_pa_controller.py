@@ -198,18 +198,17 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
             # Data source: DOC
             'doc_person_info',
-
+            'dbo_tblInmTestScore',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
         unlaunched_file_tags = [
             # Data source: DOC
-            'dbo_tblInmTestScore',
             'dbo_Senrec',
 
             # Data source: PBPP
             'dbo_Offender',
-            'dbo_LSIR',
+            'dbo_LSIR',  # TODO(3024): Ready to launch, just blocked on preceding tags
         ]
 
         file_tags = launched_file_tags
@@ -330,9 +329,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                              _cache: IngestObjectCache):
         """Adds the assessment external_id to the extracted state assessment."""
         control_number = row['Control_Number']
+        inmate_number = row['Inmate_number']
         test_id = row['Test_Id']
         version_number = row['AsmtVer_Num']
-        external_id = '-'.join([control_number, test_id, version_number])
+        external_id = '-'.join([control_number, inmate_number, test_id, version_number])
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):

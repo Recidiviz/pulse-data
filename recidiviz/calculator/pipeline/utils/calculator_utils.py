@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StateSuperv
 # Relevant metric period month lengths for dashboard person-based calculations
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
+# TODO(3449): Update to handle the fact that multiple IDs of the same type can now exist for PA
 PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     'incarceration': {
         'US_ID': [US_ID_DOC],

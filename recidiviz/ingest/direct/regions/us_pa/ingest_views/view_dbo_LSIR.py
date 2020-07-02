@@ -21,7 +21,10 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = "SELECT * FROM {dbo_LSIR};"
+VIEW_QUERY_TEMPLATE = """SELECT *
+FROM {dbo_LSIR}
+ORDER BY ParoleNumber;
+"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
