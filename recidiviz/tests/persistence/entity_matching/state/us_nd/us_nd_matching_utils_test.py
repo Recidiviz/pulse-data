@@ -34,8 +34,7 @@ from recidiviz.persistence.database.schema_entity_converter import \
     schema_entity_converter as converter
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StatePerson, StateSentenceGroup, \
-    StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationSentence, StateSupervisionSentence, \
+    StateIncarcerationPeriod, StateIncarcerationSentence, StateSupervisionSentence, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
@@ -43,8 +42,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import \
 from recidiviz.persistence.entity_matching.state.us_nd.\
     us_nd_matching_utils import \
     merge_incomplete_periods, _update_temporary_holds_helper, \
-    associate_revocation_svrs_with_ips, _merge_incarceration_periods_helper, \
-    move_incidents_onto_periods
+    associate_revocation_svrs_with_ips, _merge_incarceration_periods_helper
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import \
     BaseStateMatchingUtilsTest
 from recidiviz.utils.regions import Region
@@ -821,84 +819,3 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         merged_periods = _merge_incarceration_periods_helper(
             ingested_incarceration_periods)
         self.assertCountEqual(expected_periods, merged_periods)
-
-    def test_moveIncidentsOntoPeriods(self):
-        merged_incarceration_period_1 = \
-            StateIncarcerationPeriod.new_with_defaults(
-                external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                facility=_FACILITY, admission_date=_DATE_1,
-                admission_reason=
-                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                release_date=_DATE_3,
-                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
-        merged_incarceration_period_2 = \
-            StateIncarcerationPeriod.new_with_defaults(
-                external_id=_EXTERNAL_ID_3 + '|' + _EXTERNAL_ID_4,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                facility=_FACILITY_2, admission_date=_DATE_3,
-                admission_reason=
-                StateIncarcerationPeriodAdmissionReason.TRANSFER,
-                release_date=_DATE_5,
-                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
-        unmerged_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                external_id=_EXTERNAL_ID_5,
-                status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                facility=_FACILITY_3, admission_date=_DATE_5,
-                admission_reason=
-                StateIncarcerationPeriodAdmissionReason.TRANSFER)
-
-        incident_1 = StateIncarcerationIncident.new_with_defaults(
-            external_id=_EXTERNAL_ID, facility=_FACILITY, incident_date=_DATE_2)
-        incident_2 = StateIncarcerationIncident.new_with_defaults(
-            external_id=_EXTERNAL_ID_2, facility=_FACILITY_2,
-            incident_date=_DATE_4)
-        incident_3 = StateIncarcerationIncident.new_with_defaults(
-            external_id=_EXTERNAL_ID_3, facility=_FACILITY_4,
-            incident_date=_DATE_7)
-        placeholder_incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_incidents=[incident_1, incident_2, incident_3])
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            incarceration_periods=[
-                merged_incarceration_period_1,
-                merged_incarceration_period_2,
-                unmerged_incarceration_period])
-        placeholder_incarceration_sentence = \
-            StateIncarcerationSentence.new_with_defaults(
-                external_id=_EXTERNAL_ID_2,
-                incarceration_periods=[placeholder_incarceration_period])
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[incarceration_sentence,
-                                     placeholder_incarceration_sentence])
-
-        person = StatePerson.new_with_defaults(sentence_groups=[sentence_group])
-
-        expected_merged_period = attr.evolve(
-            merged_incarceration_period_1, incarceration_incidents=[incident_1])
-        expected_merged_period_2 = attr.evolve(
-            merged_incarceration_period_2, incarceration_incidents=[incident_2])
-        expected_unmerged_period = attr.evolve(unmerged_incarceration_period)
-        expected_placeholder_period = attr.evolve(
-            placeholder_incarceration_period,
-            incarceration_incidents=[incident_3])
-        expected_sentence = attr.evolve(
-            incarceration_sentence,
-            incarceration_periods=[
-                expected_merged_period,
-                expected_merged_period_2,
-                expected_unmerged_period])
-        expected_placeholder_sentence = attr.evolve(
-            placeholder_incarceration_sentence,
-            incarceration_periods=[expected_placeholder_period])
-        expected_sentence_group = attr.evolve(
-            sentence_group, incarceration_sentences=[
-                expected_sentence, expected_placeholder_sentence])
-        expected_person = attr.evolve(
-            person, sentence_groups=[expected_sentence_group])
-
-        move_incidents_onto_periods([person])
-        self.assertEqual(expected_person, person)

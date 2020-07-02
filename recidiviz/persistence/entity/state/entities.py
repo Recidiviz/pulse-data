@@ -791,6 +791,8 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity, BuildableAttr, Default
     # Attributes
     #   - When
     date_effective: Optional[datetime.date] = attr.ib()
+    hearing_date: Optional[datetime.date] = attr.ib()
+    report_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable

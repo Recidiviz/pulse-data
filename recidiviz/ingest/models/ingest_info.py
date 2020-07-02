@@ -1319,10 +1319,13 @@ class StateIncarcerationIncidentOutcome(IngestObject):
     """Class for information about a incarceration incident outcome. Referenced from StateIncarcerationIncident."""
 
     def __init__(self, state_incarceration_incident_outcome_id=None, outcome_type=None, date_effective=None,
-                 state_code=None, outcome_description=None, punishment_length_days=None):
+                 hearing_date=None, report_date=None, state_code=None, outcome_description=None,
+                 punishment_length_days=None):
         self.state_incarceration_incident_outcome_id: Optional[str] = state_incarceration_incident_outcome_id
         self.outcome_type: Optional[str] = outcome_type
         self.date_effective: Optional[str] = date_effective
+        self.hearing_date: Optional[str] = hearing_date
+        self.report_date: Optional[str] = report_date
         self.state_code: Optional[str] = state_code
         self.outcome_description: Optional[str] = outcome_description
         self.punishment_length_days: Optional[str] = punishment_length_days

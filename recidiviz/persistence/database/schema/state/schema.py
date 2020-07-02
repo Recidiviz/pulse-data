@@ -324,6 +324,7 @@ state_incarceration_incident_type = Enum(
     name='state_incarceration_incident_type')
 
 state_incarceration_incident_outcome_type = Enum(
+    state_enum_strings.state_incarceration_incident_outcome_cell_confinement,
     state_enum_strings.state_incarceration_incident_outcome_disciplinary_labor,
     state_enum_strings.state_incarceration_incident_outcome_dismissed,
     state_enum_strings.state_incarceration_incident_outcome_external_prosecution,
@@ -332,6 +333,7 @@ state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_miscellaneous,
     state_enum_strings.state_incarceration_incident_outcome_not_guilty,
     state_enum_strings.state_incarceration_incident_outcome_privilege_loss,
+    state_enum_strings.state_incarceration_incident_outcome_restricted_confinement,
     state_enum_strings.state_incarceration_incident_outcome_solitary,
     state_enum_strings.state_incarceration_incident_outcome_treatment,
     state_enum_strings.state_incarceration_incident_outcome_warning,
@@ -1796,6 +1798,8 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
     outcome_type_raw_text = Column(String(255))
     state_code = Column(String(255), nullable=False, index=True)
     date_effective = Column(Date)
+    hearing_date = Column(Date)
+    report_date = Column(Date)
     outcome_description = Column(String(255))
     punishment_length_days = Column(Integer)
 
