@@ -325,9 +325,22 @@ class GcsfsDirectIngestController(
         tasks_to_schedule = self.ingest_view_export_manager.get_ingest_view_export_task_args()
 
         rank_list = self.get_file_tag_rank_list()
+        ingest_view_name_rank = {ingest_view_name: i for i, ingest_view_name in enumerate(rank_list)}
+
+        # Filter out views that aren't in ingest view tags.
+        filtered_tasks_to_schedule = []
+        for args in tasks_to_schedule:
+            if args.ingest_view_name not in ingest_view_name_rank:
+                logging.warning(
+                    'Skipping ingest view task export for [%s] - not in controller ingest tags.',
+                    args.ingest_view_name)
+                continue
+            filtered_tasks_to_schedule.append(args)
+
+        tasks_to_schedule = filtered_tasks_to_schedule
 
         # Sort by tag order and export datetime
-        tasks_to_schedule.sort(key=lambda args: (rank_list.index(args.ingest_view_name),
+        tasks_to_schedule.sort(key=lambda args: (ingest_view_name_rank[args.ingest_view_name],
                                                  args.upper_bound_datetime_to_export))
 
         for task_args in tasks_to_schedule:
