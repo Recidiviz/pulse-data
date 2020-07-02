@@ -119,7 +119,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'person_external_ids': [],
             'doc_person_info': [],
             'dbo_tblInmTestScore': [],
-            'dbo_Senrec': [],
+            'dbo_Senrec': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
             'incarceration_period': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -284,15 +286,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: DOC
             'doc_person_info',
             'dbo_tblInmTestScore',
+            'dbo_Senrec',
+            'incarceration_period',
+            'dbo_Miscon',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
         unlaunched_file_tags = [
-            # Data source: DOC
-            'dbo_Senrec',
-            'incarceration_period',
-            'dbo_Miscon',
-
             # Data source: PBPP
             'dbo_Offender',
             'dbo_LSIR',  # TODO(3024): Ready to launch, just blocked on preceding tags
@@ -355,7 +355,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
-        if file_tag in ['incarceration_period', 'dbo_Miscon']:
+        if file_tag in ['dbo_Senrec', 'incarceration_period', 'dbo_Miscon']:
             return US_PA_CONTROL
         return None
 
