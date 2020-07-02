@@ -1184,6 +1184,8 @@ class StateIncarcerationIncidentOutcome(google___protobuf___message___Message):
     state_incarceration_incident_outcome_id = ... # type: typing___Text
     outcome_type = ... # type: typing___Text
     date_effective = ... # type: typing___Text
+    hearing_date = ... # type: typing___Text
+    report_date = ... # type: typing___Text
     state_code = ... # type: typing___Text
     outcome_description = ... # type: typing___Text
     punishment_length_days = ... # type: typing___Text
@@ -1193,6 +1195,8 @@ class StateIncarcerationIncidentOutcome(google___protobuf___message___Message):
         state_incarceration_incident_outcome_id : typing___Optional[typing___Text] = None,
         outcome_type : typing___Optional[typing___Text] = None,
         date_effective : typing___Optional[typing___Text] = None,
+        hearing_date : typing___Optional[typing___Text] = None,
+        report_date : typing___Optional[typing___Text] = None,
         state_code : typing___Optional[typing___Text] = None,
         outcome_description : typing___Optional[typing___Text] = None,
         punishment_length_days : typing___Optional[typing___Text] = None,
@@ -1205,8 +1209,8 @@ class StateIncarcerationIncidentOutcome(google___protobuf___message___Message):
         def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> StateIncarcerationIncidentOutcome: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
-    def HasField(self, field_name: typing_extensions___Literal[u"date_effective",b"date_effective",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"date_effective",b"date_effective",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> None: ...
+    def HasField(self, field_name: typing_extensions___Literal[u"date_effective",b"date_effective",u"hearing_date",b"hearing_date",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"report_date",b"report_date",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> builtin___bool: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"date_effective",b"date_effective",u"hearing_date",b"hearing_date",u"outcome_description",b"outcome_description",u"outcome_type",b"outcome_type",u"punishment_length_days",b"punishment_length_days",u"report_date",b"report_date",u"state_code",b"state_code",u"state_incarceration_incident_outcome_id",b"state_incarceration_incident_outcome_id"]) -> None: ...
 global___StateIncarcerationIncidentOutcome = StateIncarcerationIncidentOutcome
 
 class StateParoleDecision(google___protobuf___message___Message):

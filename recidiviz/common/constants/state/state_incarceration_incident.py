@@ -46,6 +46,8 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
 class StateIncarcerationIncidentOutcomeType(EntityEnum,
                                             metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident outcome types."""
+    # A form of confinement when a person cannot generally leave their own cell, regardless of who else occupies it
+    CELL_CONFINEMENT = state_enum_strings.state_incarceration_incident_outcome_cell_confinement
     DISCIPLINARY_LABOR = \
         state_enum_strings.\
         state_incarceration_incident_outcome_disciplinary_labor
@@ -66,6 +68,10 @@ class StateIncarcerationIncidentOutcomeType(EntityEnum,
         state_enum_strings.state_incarceration_incident_outcome_not_guilty
     PRIVILEGE_LOSS = \
         state_enum_strings.state_incarceration_incident_outcome_privilege_loss
+    # A form of confinement when a person is limited to certain areas of the facility, including their own cell/bunk
+    RESTRICTED_CONFINEMENT = \
+        state_enum_strings.state_incarceration_incident_outcome_restricted_confinement
+    # A form of confinement when a person cannot leave a separate solitary cell, generally at all
     SOLITARY = \
         state_enum_strings.state_incarceration_incident_outcome_solitary
     TREATMENT = \
@@ -95,6 +101,7 @@ _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
 
 
 _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
+    'CELL CONFINEMENT': StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
     'DISCIPLINARY LABOR': StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
     'DISMISSED': StateIncarcerationIncidentOutcomeType.DISMISSED,
     'EXTERNAL PROSECUTION': StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
@@ -104,6 +111,7 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
     'PRIVILEGE LOSS': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
     'LOSS OF PRIVILEGE': StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
     'NOT GUILTY': StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
+    'RESTRICTED CONFINEMENT': StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
     'SOLITARY': StateIncarcerationIncidentOutcomeType.SOLITARY,
     'SOLITARY CONFINEMENT': StateIncarcerationIncidentOutcomeType.SOLITARY,
     'TREATMENT': StateIncarcerationIncidentOutcomeType.TREATMENT,
