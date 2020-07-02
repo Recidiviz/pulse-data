@@ -199,6 +199,12 @@ class GcsfsDirectIngestController(
                 did_split = True
 
         if did_split:
+            if self.region.are_ingest_view_exports_enabled_in_env():
+                post_split_unprocessed_ingest_view_paths = \
+                    self.fs.get_unprocessed_file_paths(self.ingest_directory_path,
+                                                       file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW)
+                self._register_all_new_paths_in_metadata(post_split_unprocessed_ingest_view_paths)
+
             logging.info(
                 "Split at least one path - returning, will handle split "
                 "files separately.")
@@ -366,10 +372,16 @@ class GcsfsDirectIngestController(
 
         discovered = self.file_metadata_manager.has_file_been_discovered(args.file_path)
 
-        # If the file path has not actually been discovered by the controller yet, it likely was just added and a
-        # subsequent call to handle_files will register it and trigger another call to this function so we can
-        # schedule the appropriate job.
-        return args if discovered else None
+        if not discovered:
+            # If the file path has not actually been discovered by the controller yet, it likely was just added and a
+            # subsequent call to handle_files will register it and trigger another call to this function so we can
+            # schedule the appropriate job.
+            logging.info(
+                'Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.',
+                args)
+            return None
+
+        return args
 
     def _wait_time_sec_for_next_args(self, args: GcsfsIngestArgs) -> int:
         if self.file_prioritizer.are_next_args_expected(args):
