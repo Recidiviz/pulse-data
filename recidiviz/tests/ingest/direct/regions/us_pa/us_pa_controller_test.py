@@ -305,6 +305,10 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
+                    state_person_id='123456',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='123456', id_type=US_PA_CONTROL),
+                    ],
                     state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="AB7413",
@@ -326,7 +330,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     ]
                                 )
                             ]
-                        ),
+                        )]
+                ),
+                StatePerson(
+                    state_person_id='654321',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="GF3374",
                             state_incarceration_sentences=[
@@ -347,7 +358,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     ]
                                 )
                             ]
-                        ),
+                        )]
+                ),
+                StatePerson(
+                    state_person_id='445566',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="CJ1991",
                             state_incarceration_sentences=[
@@ -368,7 +386,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     ]
                                 )
                             ]
-                        ),
+                        )]
+                ),
+                StatePerson(
+                    state_person_id='778899',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
                         StateSentenceGroup(
                             state_sentence_group_id="JE1989",
                             state_incarceration_sentences=[

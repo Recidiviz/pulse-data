@@ -17,6 +17,9 @@ child_key_mappings:
 primary_key:
   curr_inmate_num: state_sentence_group.state_sentence_group_id
 
+ancestor_keys:
+  control_number: state_person.state_person_id
+
 enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
 
