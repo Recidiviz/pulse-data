@@ -749,10 +749,10 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='RETURN_FROM_ABSCONSION',
                                             termination_date='2009-12-01',
                                             supervision_period_supervision_type='PB',
-                                            supervision_level='SO LEVEL 2',
+                                            supervision_level='SEX OFFENSE',
                                             state_supervision_case_type_entries=[
                                                 StateSupervisionCaseTypeEntry(
-                                                    case_type='SO LEVEL 2'
+                                                    case_type='SEX OFFENSE'
                                                 ),
                                             ],
                                             custodial_authority='US_ID_DOC',
@@ -1912,8 +1912,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_reason_raw_text='RETURN_FROM_ABSCONSION',
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='PB',
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO LEVEL 2',
+            supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
+            supervision_level_raw_text='SEX OFFENSE',
             termination_date=datetime.date(year=2009, month=12, day=1),
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
@@ -1921,7 +1921,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         sc_2222_2_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
-            case_type_raw_text='SO LEVEL 2',
+            case_type_raw_text='SEX OFFENSE',
             supervision_period=sp_2222_2,
             person=sp_2222_2.person,
         )
