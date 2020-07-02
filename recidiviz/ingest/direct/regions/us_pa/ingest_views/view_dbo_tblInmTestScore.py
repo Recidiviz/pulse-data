@@ -22,35 +22,41 @@ from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT 
-  Test_Id,
-  Control_Number,
-  Test_Desc,
-  Inmate_number,
-  Test_Dt,
-  Fac_Cd,
-  Test_Score,
-  ModBy_EmpNum,
-  LstMod_Dt,
-  AsmtVer_Num,
-  Fab_ind,
-  RSTRvsd_Flg
-FROM {dbo_tblInmTestScore}
-UNION DISTINCT
-SELECT 
-  Test_Id,
-  Control_Number,
-  Test_Desc,
-  Inmate_number,
-  Test_Dt,
-  Fac_Cd,
-  Test_Score,
-  ModBy_EmpNum,
-  LstMod_Dt,
-  AsmtVer_Num,
-  Fab_ind,
-  RSTRvsd_Flg
-FROM {dbo_tblInmTestScoreHist};"""
+WITH all_test_scores AS (
+    SELECT 
+      Test_Id,
+      Control_Number,
+      Test_Desc,
+      Inmate_number,
+      Test_Dt,
+      Fac_Cd,
+      Test_Score,
+      ModBy_EmpNum,
+      LstMod_Dt,
+      AsmtVer_Num,
+      Fab_ind,
+      RSTRvsd_Flg
+    FROM {dbo_tblInmTestScore}
+    UNION DISTINCT
+    SELECT 
+      Test_Id,
+      Control_Number,
+      Test_Desc,
+      Inmate_number,
+      Test_Dt,
+      Fac_Cd,
+      Test_Score,
+      ModBy_EmpNum,
+      LstMod_Dt,
+      AsmtVer_Num,
+      Fab_ind,
+      RSTRvsd_Flg
+    FROM {dbo_tblInmTestScoreHist}
+)
+SELECT *
+FROM all_test_scores
+ORDER BY Control_Number, Inmate_number;
+"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
