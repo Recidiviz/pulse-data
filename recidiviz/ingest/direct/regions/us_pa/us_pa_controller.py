@@ -26,15 +26,21 @@ from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
+from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
+    concatenate_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
+    concatenate_incarceration_period_purpose_codes
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_set_agent_type
+    gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects
+from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
-    StateIncarcerationSentence, StateCharge, StateSentenceGroup
+    StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -80,6 +86,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._strip_id_whitespace,
                 gen_set_agent_type(StateAgentType.JUDGE),
             ],
+            'incarceration_period': [
+                self.gen_hydrate_alternate_external_ids({
+                    'control_number': US_PA_CONTROL,
+                }),
+                self._concatenate_release_reason_codes,
+                self._concatenate_incarceration_purpose_codes,
+            ],
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self.gen_hydrate_alternate_external_ids({
@@ -99,8 +112,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'doc_person_info': [],
             'dbo_tblInmTestScore': [],
             'dbo_Senrec': [],
+            'incarceration_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
             'dbo_Offender': [],
             'dbo_LSIR': [],
+        }
+
+        self.primary_key_override_hook_by_file: Dict[str, Callable] = {
+            'incarceration_period': _generate_incarceration_period_primary_key,
+        }
+
+        self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
+            'incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
         }
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -151,7 +175,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSentenceStatus.SERVING: [
             'AS',  # Actively Serving
             'CT',  # In Court
-            'DC',  # Diag/Class
+            'DC',  # Diag/Class (Diagnostics / Classification)
             'EC',  # Escape CSC
             'EI',  # Escape Institution
             'F',   # Furloughed
@@ -185,9 +209,52 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'P',  # SIP Program
             'E',  # SIP Evaluation
         ],
+
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
+            'AOTH',  # Other - Use Sparingly
+        ],
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
+            'AA',    # Administrative
+            'AB',    # Bail
+            'AC',    # Court Commitment
+            'ADET',  # Detentioner
+            'AFED',  # Federal Commitment
+        ],
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
+            'AOPV',  # Out Of State Probation/Parole Violator
+            'APV',   # Parole Violator
+        ],
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
+            'AE',  # Escape
+        ],
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
+            'APD',  # Parole Detainee
+        ],
+        StateIncarcerationPeriodAdmissionReason.TRANSFER: [
+            'ACT',  # County Transfer
+            'AIT',  # In Transit
+            'ASH',  # State Hospital
+            'ATT',  # [Unlisted Transfer]
+            'AW',   # WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
+            'PLC',  # Permanent Location Change
+            'RTT',  # Return Temporary Transfer
+            'STT',  # Send Temporary Transfer
+            'TFM',  # From Medical Facility
+            'TRN',  # To Other Institution Or CCC
+            'TTM',  # To Medical Facility
+            'XPT',  # Transfer Point
+            # In this context, SC is being used as a transfer from one type of
+            # incarceration to another, either between facilities or within the same facility
+            'SC',  # Status Change
+        ],
     }
+
+    ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
+        StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
+        StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
+    }
+
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
-    ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
     @classmethod
@@ -205,6 +272,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         unlaunched_file_tags = [
             # Data source: DOC
             'dbo_Senrec',
+            'incarceration_period',
 
             # Data source: PBPP
             'dbo_Offender',
@@ -231,6 +299,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
         return self.file_post_processors_by_file.get(file_tag, [])
+
+    def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
+        return self.primary_key_override_hook_by_file.get(file, None)
+
+    def _get_ancestor_chain_overrides_callback_for_file(self, file: str) -> Optional[Callable]:
+        return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
     @staticmethod
     def gen_hydrate_alternate_external_ids(columns_to_id_types: Dict[str, str]) -> Callable:
@@ -259,6 +333,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
                         create_if_not_exists(id_to_create, obj, 'state_person_external_ids')
 
         return _hydrate_external_id
+
+    @staticmethod
+    def _get_id_type(file_tag: str) -> Optional[str]:
+        if file_tag in ['incarceration_period']:
+            return US_PA_CONTROL
+        return None
 
     @staticmethod
     def _hydrate_person_external_ids(
@@ -446,3 +526,50 @@ class UsPaController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateCharge):
                 if obj.state_charge_id:
                     obj.state_charge_id = obj.state_charge_id.strip()
+
+    @staticmethod
+    def _concatenate_release_reason_codes(_file_tag: str,
+                                          row: Dict[str, str],
+                                          extracted_objects: List[IngestObject],
+                                          _cache: IngestObjectCache):
+        """Concatenates the incarceration period release reason-related codes to be parsed in the enum mapper."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.release_reason = concatenate_incarceration_period_end_codes(row)
+
+    @staticmethod
+    def _concatenate_incarceration_purpose_codes(_file_tag: str,
+                                                 row: Dict[str, str],
+                                                 extracted_objects: List[IngestObject],
+                                                 _cache: IngestObjectCache):
+        """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.specialized_purpose_for_incarceration = concatenate_incarceration_period_purpose_codes(row)
+
+
+def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+    person_id = row['control_number']
+    sentence_group_id = row['inmate_number']
+    sequence_number = row['sequence_number']
+    incarceration_period_id = f"{person_id}-{sentence_group_id}-{sequence_number}"
+
+    return IngestFieldCoordinates('state_incarceration_period',
+                                  'state_incarceration_period_id',
+                                  incarceration_period_id)
+
+
+def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
+    """This creates an incarceration sentence id for specifying the ancestor of a supervision period.
+
+    Incarceration periods only have explicit links to sentence groups. However, we know that the vast majority of
+    sentence groups in PA have a single sentence with a type number of 01, and the rest have 2 sentences with type
+    numbers of 01 and 02. The fields for sentences 01 and 02 are highly similar and usually differ only as it
+    relates to charge information. Thus, tying each incarceration period to sentence 01 in a given group appears
+    to be safe.
+    """
+    sentence_group_id = row['inmate_number']
+    assumed_type_number = '01'
+    incarceration_sentence_id = f"{sentence_group_id}-{assumed_type_number}"
+
+    return {'state_incarceration_sentence': incarceration_sentence_id}
