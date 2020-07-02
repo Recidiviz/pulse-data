@@ -433,6 +433,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ELECTRONIC MONITOR',
             'INTENSE',
             'SPECIAL NEEDS',
+            'SEX OFFENSE',
             'TRANSITION',
         ],
         StateSupervisionLevel.MINIMUM: [
