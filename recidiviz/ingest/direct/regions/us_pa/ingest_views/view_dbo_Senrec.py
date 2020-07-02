@@ -21,7 +21,14 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = "SELECT * FROM {dbo_Senrec};"
+VIEW_QUERY_TEMPLATE = """SELECT ids.control_number AS control_number, sentences.*
+FROM 
+    {dbo_Senrec} sentences
+LEFT OUTER JOIN
+    (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
+ON ids.inmate_number = sentences.curr_inmate_num
+ORDER BY control_number, curr_inmate_num;
+"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
