@@ -109,6 +109,23 @@ class StateTestGcsfsDirectIngestController(
         return ['tagA', 'tagB', 'tagC']
 
 
+class SingleTagStateTestGcsfsDirectIngestController(
+        BaseTestCsvGcsfsDirectIngestController):
+    def __init__(self,
+                 ingest_directory_path: str,
+                 storage_directory_path: str,
+                 max_delay_sec_between_files: int = 0):
+        super().__init__(TEST_STATE_REGION.region_code,
+                         SystemLevel.STATE,
+                         ingest_directory_path,
+                         storage_directory_path,
+                         max_delay_sec_between_files)
+
+    @classmethod
+    def get_file_tag_rank_list(cls) -> List[str]:
+        return ['tagC']
+
+
 class CountyTestGcsfsDirectIngestController(
         BaseTestCsvGcsfsDirectIngestController):
     def __init__(self,
@@ -328,6 +345,53 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(
             controller,
             expected_raw_metadata_tags_with_is_processed=expected_raw_metadata_tags_with_is_processed)
+
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
+    def test_state_single_split_tag_sql_preprocessing_fully_launched(self):
+        controller = build_gcsfs_controller_for_tests(
+            SingleTagStateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=True)
+
+        # Set line limit to 1
+        controller.ingest_file_split_line_limit = 1
+
+        file_tags = ['tagC']
+        unexpected_tags = []
+
+        add_paths_with_tags_and_process(
+            self, controller, file_tags, unexpected_tags)
+
+        processed_split_file_paths = defaultdict(list)
+        for path in controller.fs.all_paths:
+            if self._path_in_split_file_storage_subdir(path, controller):
+                file_tag = filename_parts_from_path(path).file_tag
+                processed_split_file_paths[file_tag].append(path)
+
+        self.assertEqual(1, len(processed_split_file_paths.keys()))
+        self.assertEqual(2, len(processed_split_file_paths['tagC']))
+
+        found_suffixes = {filename_parts_from_path(p).filename_suffix
+                          for p in processed_split_file_paths['tagC']}
+        self.assertEqual(found_suffixes, {'00001_file_split_size1',
+                                          '00002_file_split_size1'})
+
+        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
+        self.assertEqual(1, len(controller.raw_file_import_manager.imported_paths))
+
+        expected_raw_metadata_tags_with_is_processed = [('tagC', True)]
+        expected_ingest_metadata_tags_with_is_processed = [('tagC', True), ('tagC', True), ('tagC', True)]
+        self.validate_file_metadata(
+            controller,
+            expected_raw_metadata_tags_with_is_processed=expected_raw_metadata_tags_with_is_processed,
+            expected_ingest_metadata_tags_with_is_processed=expected_ingest_metadata_tags_with_is_processed
+        )
+
+        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
+        self.assertCountEqual(controller.get_file_tag_rank_list(),
+                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_state_unexpected_tag_sql_preprocessing_fully_launched(self):
