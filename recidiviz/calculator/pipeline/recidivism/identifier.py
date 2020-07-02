@@ -211,7 +211,10 @@ def for_last_incarceration_period(
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.INTERNAL_UNKNOWN,
-                          ReleaseReason.SENTENCE_SERVED]:
+                          ReleaseReason.PARDONED,
+                          ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+                          ReleaseReason.SENTENCE_SERVED,
+                          ReleaseReason.VACATED]:
 
         return NonRecidivismReleaseEvent(
             state_code=state_code,
@@ -361,7 +364,10 @@ def should_include_in_release_cohort(
                           ReleaseReason.CONDITIONAL_RELEASE,
                           ReleaseReason.EXTERNAL_UNKNOWN,
                           ReleaseReason.INTERNAL_UNKNOWN,
-                          ReleaseReason.SENTENCE_SERVED):
+                          ReleaseReason.PARDONED,
+                          ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+                          ReleaseReason.SENTENCE_SERVED,
+                          ReleaseReason.VACATED):
         if reincarceration_admission_reason in (
                 AdmissionReason.RETURN_FROM_ESCAPE,
                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE):
