@@ -26,6 +26,8 @@ from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentOutcomeType, \
+    StateIncarcerationIncidentType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -40,7 +42,8 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
     gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
-    StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod
+    StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
+    StateIncarcerationIncidentOutcome
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -87,11 +90,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 gen_set_agent_type(StateAgentType.JUDGE),
             ],
             'incarceration_period': [
-                self.gen_hydrate_alternate_external_ids({
-                    'control_number': US_PA_CONTROL,
-                }),
+                gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._concatenate_release_reason_codes,
                 self._concatenate_incarceration_purpose_codes,
+            ],
+            'dbo_Miscon': [
+                gen_label_single_external_id_hook(US_PA_CONTROL),
+                self._specify_incident_location,
+                self._specify_incident_type,
+                self._specify_incident_details,
+                self._specify_incident_outcome,
             ],
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
@@ -113,6 +121,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_tblInmTestScore': [],
             'dbo_Senrec': [],
             'incarceration_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            'dbo_Miscon': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             'dbo_Offender': [],
@@ -247,6 +258,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # incarceration to another, either between facilities or within the same facility
             'SC',  # Status Change
         ],
+
+        StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: [
+            'C',  # Cell Confinement
+        ],
+        StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT: [
+            'Y',  # Restricted Confinement
+        ],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -273,6 +291,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: DOC
             'dbo_Senrec',
             'incarceration_period',
+            'dbo_Miscon',
 
             # Data source: PBPP
             'dbo_Offender',
@@ -336,7 +355,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
-        if file_tag in ['incarceration_period']:
+        if file_tag in ['incarceration_period', 'dbo_Miscon']:
             return US_PA_CONTROL
         return None
 
@@ -515,7 +534,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 obj.is_life = str(is_life)
                 obj.is_capital_punishment = str(is_capital_punishment)
 
-    # TODO(3020): When PA is switched to use SQL pre-processing, this will no longer be necessary
+    # TODO(3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
     @staticmethod
     def _strip_id_whitespace(_file_tag: str,
                              _row: Dict[str, str],
@@ -546,6 +565,83 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.specialized_purpose_for_incarceration = concatenate_incarceration_period_purpose_codes(row)
+
+    @staticmethod
+    def _specify_incident_location(_file_tag: str,
+                                   row: Dict[str, str],
+                                   extracted_objects: List[IngestObject],
+                                   _cache: IngestObjectCache):
+        """Specifies the exact location where the incarceration incident took place."""
+        place_code = row.get('place_hvl_code', None)
+        place_extended = row.get('place_extended', None)
+        location = '-'.join(filter(None, [place_code, place_extended]))
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationIncident):
+                if location:
+                    obj.location_within_facility = location
+
+    @staticmethod
+    def _specify_incident_type(_file_tag: str,
+                               row: Dict[str, str],
+                               extracted_objects: List[IngestObject],
+                               _cache: IngestObjectCache):
+        """Specifies the type of incarceration incident."""
+        drug_related = row.get('drug_related', None)
+        is_contraband = drug_related == 'Y'
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationIncident):
+                if is_contraband:
+                    obj.incident_type = StateIncarcerationIncidentType.CONTRABAND.value
+                else:
+                    obj.incident_type = StateIncarcerationIncidentType.REPORT.value
+
+    @staticmethod
+    def _specify_incident_details(_file_tag: str,
+                                  row: Dict[str, str],
+                                  extracted_objects: List[IngestObject],
+                                  _cache: IngestObjectCache):
+        """Specifies the incarceration incident details. This is a grouping of flags indicating whether certain
+        "classes" of charges are involved in the incident."""
+        category_1 = row.get('ctgory_of_chrgs_1', None)
+        category_2 = row.get('ctgory_of_chrgs_2', None)
+        category_3 = row.get('ctgory_of_chrgs_3', None)
+        category_4 = row.get('ctgory_of_chrgs_4', None)
+        category_5 = row.get('ctgory_of_chrgs_5', None)
+
+        details_mapping = {
+            'category_1': category_1,
+            'category_2': category_2,
+            'category_3': category_3,
+            'category_4': category_4,
+            'category_5': category_5,
+        }
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationIncident):
+                obj.incident_details = json.dumps(details_mapping)
+
+    @staticmethod
+    def _specify_incident_outcome(_file_tag: str,
+                                  row: Dict[str, str],
+                                  extracted_objects: List[IngestObject],
+                                  _cache: IngestObjectCache):
+        """Specifies the type of outcome of the incarceration incident."""
+        misconduct_number = row.get('misconduct_number', None)
+        confinement_code = row.get('confinement', None)
+        confinement_date = row.get('confinement_date', None)
+        is_restricted = confinement_code == 'Y'
+        is_cell = confinement_code == 'C'
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationIncidentOutcome):
+                if misconduct_number:
+                    obj.state_incarceration_incident_outcome_id = misconduct_number
+
+                if is_restricted or is_cell:
+                    obj.outcome_type = confinement_code
+                    obj.date_effective = confinement_date
 
 
 def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:

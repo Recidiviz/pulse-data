@@ -54,6 +54,8 @@ def convert(
     new.external_id = \
         fn(parse_external_id, 'state_incarceration_incident_outcome_id', proto)
     new.date_effective = fn(parse_date, 'date_effective', proto)
+    new.hearing_date = fn(parse_date, 'hearing_date', proto)
+    new.report_date = fn(parse_date, 'report_date', proto)
     new.state_code = parse_region_code_with_override(
         proto, 'state_code', metadata)
     new.outcome_description = fn(normalize, 'outcome_description', proto)

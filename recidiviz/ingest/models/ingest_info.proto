@@ -428,9 +428,11 @@ message StateIncarcerationIncidentOutcome {
     optional string state_incarceration_incident_outcome_id = 1;
     optional string outcome_type = 2;
     optional string date_effective = 3;
-    optional string state_code = 4;
-    optional string outcome_description = 5;
-    optional string punishment_length_days = 6;
+    optional string hearing_date = 4;
+    optional string report_date = 5;
+    optional string state_code = 6;
+    optional string outcome_description = 7;
+    optional string punishment_length_days = 8;
 }
 
 message StateParoleDecision {
