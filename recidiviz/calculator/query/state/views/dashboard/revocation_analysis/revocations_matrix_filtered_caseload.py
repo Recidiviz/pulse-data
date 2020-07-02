@@ -35,7 +35,10 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       state_code,
       person_external_id AS state_id,
       supervising_officer_external_id AS officer,
-      most_severe_response_decision AS officer_recommendation,
+      CASE WHEN most_severe_response_decision = 'SHOCK_INCARCERATION' THEN 'CODS'
+           WHEN most_severe_response_decision = 'WARRANT_ISSUED' THEN 'CAPIAS'
+           ELSE most_severe_response_decision
+      END AS officer_recommendation,
       violation_history_description AS violation_record,
       supervising_district_external_id AS district,
       supervision_type,

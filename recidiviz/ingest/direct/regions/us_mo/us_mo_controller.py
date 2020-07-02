@@ -360,19 +360,23 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationType.TECHNICAL: ['T'],
 
         StateSupervisionViolationResponseDecision.REVOCATION: [
-            'A',  # Capias  # TODO(3350): Map this to WARRANT_ISSUED
             'I',  # Inmate Return
             'R',  # Revocation
-            'CO',  # Court Ordered Detention Sanction  # TODO(3350): Map this to SHOCK_INCARCERATION
         ],
         StateSupervisionViolationResponseDecision.CONTINUANCE: ['C'],
         StateSupervisionViolationResponseDecision.DELAYED_ACTION: ['D'],
         StateSupervisionViolationResponseDecision.EXTENSION: ['E'],
+        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
+            'CO',  # Court Ordered Detention Sanction
+        ],
         StateSupervisionViolationResponseDecision.SUSPENSION: ['S'],
         StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED: [
             'RN'  # SIS revoke to SES
         ],
         StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: ['T'],
+        StateSupervisionViolationResponseDecision.WARRANT_ISSUED: [
+            'A',  # Capias,
+        ],
         StateAssessmentType.INTERNAL_UNKNOWN:  [
             'Diversion Instrument'  # One record with this entry in DB.
         ],
@@ -872,14 +876,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
         """
 
         revocation_type = None
-        if recommendation in ('A', 'I', 'R'):
+        if recommendation in ('I', 'R'):
             revocation_type = StateSupervisionViolationResponseRevocationType.REINCARCERATION.value
         elif recommendation == 'CO':
-            revocation_type = StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value
+            revocation_type = StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION.value
 
         recommendation_is_revocation = self.enum_overrides.parse(
             recommendation, StateSupervisionViolationResponseDecision) \
-            == StateSupervisionViolationResponseDecision.REVOCATION
+            in (StateSupervisionViolationResponseDecision.REVOCATION,
+                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION)
 
         if recommendation_is_revocation and not revocation_type:
             raise ValueError(f'Unclassified revocation type for REVOCATION recommendation [{recommendation}]')
