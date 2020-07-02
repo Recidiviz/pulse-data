@@ -1361,7 +1361,6 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='A',
-                                            revocation_type='REINCARCERATION',
                                         ),
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='C',
@@ -1488,7 +1487,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='CO',
-                                            revocation_type='TREATMENT_IN_PRISON',
+                                            revocation_type='SHOCK_INCARCERATION',
                                         ),
                                     ]
                                 )])])])
@@ -1527,7 +1526,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision='CO',
-                                            revocation_type='TREATMENT_IN_PRISON',
+                                            revocation_type='SHOCK_INCARCERATION',
                                         ),
                                     ]
                                 )]),
@@ -3388,10 +3387,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         ssvrd_110035_20040712_r1_1_a = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            decision=StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
             decision_raw_text='A',
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text='REINCARCERATION',
             supervision_violation_response=ssvr_110035_20040712_r1_1,
             person=person_110035,
         )
@@ -3538,10 +3535,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         ssvrd_910324_19890825_r1_1_co = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             decision_raw_text='CO',
-            revocation_type=StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
-            revocation_type_raw_text='TREATMENT_IN_PRISON',
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            revocation_type_raw_text='SHOCK_INCARCERATION',
             supervision_violation_response=ssvr_910324_19890825_r1_1,
             person=person_910324,
         )
