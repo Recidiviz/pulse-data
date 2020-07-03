@@ -12,6 +12,7 @@ primary_key:
 
 ancestor_keys:
   control_number: state_person.state_person_id
+  inmate_number: state_sentence_group.state_sentence_group_id
 
 enforced_ancestor_types:
   state_sentence: state_incarceration_sentence

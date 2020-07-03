@@ -25,38 +25,11 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import add
     remove_child_from_entity
 
 
-def move_incidents_onto_periods(merged_persons: List[schema.StatePerson], move_across_sentence_groups: bool = False):
-    """Moves all StateIncarcerationIncidents that have placeholder StateIncarcerationPeriod parents onto non-placeholder
-    StateIncarcerationPeriods if appropriate."""
-    if move_across_sentence_groups:
-        move_incidents_onto_periods_across_groups(merged_persons)
-    else:
-        move_incidents_onto_periods_within_groups(merged_persons)
-
-
-def move_incidents_onto_periods_across_groups(merged_persons: List[schema.StatePerson]):
+def move_incidents_onto_periods(merged_persons: List[schema.StatePerson]):
     """Moves all StateIncarcerationIncidents that have placeholder StateIncarcerationPeriod parents onto non-placeholder
     StateIncarcerationPeriods if appropriate.
 
-    This version will only move incidents between periods regardless of which sentence group they are in."""
-    for person in merged_persons:
-        placeholder_periods = []
-        non_placeholder_periods = []
-
-        for sentence_group in person.sentence_groups:
-            placeholders, non_placeholders = _get_periods_in_sentence_group(sentence_group)
-            placeholder_periods.extend(placeholders)
-            non_placeholder_periods.extend(non_placeholders)
-
-        _move_incidents_onto_periods_helper(
-            placeholder_periods=placeholder_periods, non_placeholder_periods=non_placeholder_periods)
-
-
-def move_incidents_onto_periods_within_groups(merged_persons: List[schema.StatePerson]):
-    """Moves all StateIncarcerationIncidents that have placeholder StateIncarcerationPeriod parents onto non-placeholder
-    StateIncarcerationPeriods if appropriate.
-
-    This version will only move incidents between periods that are part of the same sentence group."""
+    This will only move incidents between periods that are part of the same sentence group."""
     for person in merged_persons:
         for sentence_group in person.sentence_groups:
             placeholder_periods, non_placeholder_periods = _get_periods_in_sentence_group(sentence_group)
