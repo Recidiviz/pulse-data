@@ -193,7 +193,7 @@ raw_files:
       - inmate_cnt_num2
       - miscndct_number
   - file_tag: dbo_Miscon
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - control_number
       - misconduct_number
   - file_tag: dbo_Mishea
@@ -202,7 +202,7 @@ raw_files:
       - Miscndct_Number
       - Sequence_Number
   - file_tag: dbo_Movrec
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - mov_cnt_num
       - mov_seq_num
   - file_tag: dbo_NEWParoleDecisionGuideline
