@@ -69,4 +69,4 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
               date.
         """
         logging.info("[Entity matching] Move incidents into periods")
-        move_incidents_onto_periods(matched_persons, move_across_sentence_groups=True)
+        move_incidents_onto_periods(matched_persons)

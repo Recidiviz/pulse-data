@@ -22,8 +22,34 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
-SELECT * FROM {dbo_Miscon}
+VIEW_QUERY_TEMPLATE = """WITH
+inmate_number_time_spans AS (
+  SELECT
+      mov_cnt_num,
+      mov_cur_inmt_num,
+      mov_move_date AS inmate_num_lower_bound_date_inclusive,
+      LEAD(mov_move_date) OVER (PARTITION BY mov_cnt_num ORDER BY mov_seq_num) AS inmate_num_upper_bound_date_exclusive
+  FROM (
+    SELECT 
+      mov_cnt_num,
+      mov_cur_inmt_num,
+      mov_seq_num,
+      mov_move_date,
+      mov_move_time,
+      ROW_NUMBER() OVER (PARTITION BY mov_cnt_num, mov_cur_inmt_num ORDER BY mov_seq_num) AS seq_rank_among_inmate_numbers
+    FROM {dbo_Movrec}
+  )
+  WHERE seq_rank_among_inmate_numbers = 1
+)
+SELECT m.control_number, spans.mov_cur_inmt_num AS inmate_number, m.* EXCEPT (control_number)
+FROM 
+  {dbo_Miscon} m
+LEFT OUTER JOIN
+  inmate_number_time_spans spans
+ON 
+  m.control_number = spans.mov_cnt_num 
+  AND m.misconduct_date >= spans.inmate_num_lower_bound_date_inclusive 
+  AND (spans.inmate_num_upper_bound_date_exclusive IS NULL OR m.misconduct_date < spans.inmate_num_upper_bound_date_exclusive)
 ORDER BY control_number ASC, misconduct_number ASC
 """
 
