@@ -14,13 +14,13 @@ keys_to_ignore:
 
   - usr_id              # Unused - Duplicate of agnt_id
   - ofndr_agent_agcy    # Unused - agent agency
-  - applc_usr_agcy      # Unused - agent agency TODO(2999): Understand why this differs from ofndr_agent_agcy
+  - applc_usr_agcy      # Unused - agent agency TODO(3506): Understand why this differs from ofndr_agent_agcy
   - agnt_strt_dt        # Unused - start date of this agent's assignment
   - end_dt              # Unused - agent's end date (always null)
   - usr_typ_cd          # Unused - user type code
-  - lan_id              # Unused - TODO(2999): Understand what this column means
-  - st_id_num           # Unused - TODO(2999): Understand what type of state id this is.
+  - lan_id              # Unused - TODO(3506): Understand what this column means
+  - st_id_num           # Unused - TODO(3506): Understand what type of state id this is.
   - body_loc_cd         # Unused - agent's district code
-  - body_loc_desc       # Unused - name of agent's district TODO(2999): consider adding location to state agent
+  - body_loc_desc       # Unused - name of agent's district TODO(3519): consider adding location to state agent
   - loc_typ_cd          # Unused - location type information
-  - body_loc_cd_id      # Unused - TODO(2999): How is this different from body_loc_cd?
+  - body_loc_cd_id      # Unused - TODO(3506): How is this different from body_loc_cd?

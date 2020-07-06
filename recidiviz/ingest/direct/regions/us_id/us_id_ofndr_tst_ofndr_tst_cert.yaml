@@ -15,5 +15,5 @@ keys_to_ignore:
   - tst_dt              # Unused - Date the test was administered. Usually the same as the date the test was certified
                         #         (cert_dt)
   - cert_pass_flg       # Unused - Whether or not the test was certified. Always 'Y' because of SQL query.
-  - body_loc_cdNEW      # Unused - TODO(2999): Get more details from ID.
-  - cert_xml_doc        # Unused - TODO(2999): Get more details from ID.
+  - body_loc_cdNEW      # Unused - Temporary field on ID end, should ignore.
+  - cert_xml_doc        # Unused - XML version of assessment
