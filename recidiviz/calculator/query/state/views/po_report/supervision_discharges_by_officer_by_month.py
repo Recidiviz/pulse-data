@@ -45,9 +45,8 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{state_dataset}.state_supervision_period`
       LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
-      -- Do not include any investigative or informal probation supervision periods for ID
-      WHERE (state_code != 'US_ID'
-             OR supervision_period_supervision_type NOT IN ('INVESTIGATION', 'INFORMAL_PROBATION'))
+      -- Only the following supervision types should be included in the PO report
+      WHERE supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     ),
     supervision_discharges AS (
       -- Gather all supervision discharges from the last 3 years
@@ -81,7 +80,8 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         officer_external_id
       FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
-        AND (state_code != 'US_ID' OR supervision_type NOT IN ('ALL', 'INVESTIGATION', 'INFORMAL_PROBATION'))
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     ),
     discharges_per_officer AS (
       -- Count the discharges per officer, excluding any non-eligible discharges
