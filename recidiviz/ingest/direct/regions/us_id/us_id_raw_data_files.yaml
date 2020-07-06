@@ -51,6 +51,9 @@ raw_files:
     primary_key_cols:
       - move_srl
       - case_dtd
+  - file_tag: cis_codeaddresstype
+    primary_key_cols:
+      - id
   - file_tag: cis_codecounty
     primary_key_cols:
       - id
@@ -245,12 +248,6 @@ raw_files:
     datetime_cols:
       - strt_dt
       - end_dt
-  - file_tag: raw_x_body_loc_cd
-    primary_key_cols:
-      - fac_cd
-      - lu_cd
-      - pod
-      - loc_cd
   - file_tag: reldest
     primary_key_cols:
       - rel_dest_cd
@@ -306,3 +303,9 @@ raw_files:
   - file_tag: wrkld_cat
     primary_key_cols:
       - wrkld_cat_id
+  - file_tag: x_body_loc_cd
+    primary_key_cols:
+      - fac_cd
+      - lu_cd
+      - pod
+      - loc_cd
