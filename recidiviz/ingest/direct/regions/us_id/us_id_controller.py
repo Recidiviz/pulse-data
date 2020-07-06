@@ -64,8 +64,6 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils.params import str_to_bool
 
 
-# TODO(2999): Consider adding completion date to sentences even if the sentence is completed and we have a
-#  `projected_completion_date` that has passed.
 class UsIdController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_ID."""
 
@@ -213,7 +211,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSentenceStatus.COMMUTED: [
             'M',  # Commuted
         ],
-        # TODO(2999): Consider breaking out these sentence status enums in our schema (
+        # TODO(3517): Consider breaking out these sentence status enums in our schema (
         #  vacated, sealed, early discharge, expired, etc)
         StateSentenceStatus.COMPLETED: [
             'C',  # Completed
@@ -227,7 +225,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'S',  # Satisfied
             'V',  # Vacated Sentence
             'X',  # Rule 35 - Reduction of illegal or overly harsh sentence.
-            'Z',  # Reduced to misdemeanor TODO(2999): When is this used?
+            'Z',  # Reduced to misdemeanor - person should not be in prison and no longer tracked by IDOC.
         ],
         StateSentenceStatus.REVOKED: [
             'K',  # Revoked
@@ -236,14 +234,14 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'I',  # Imposed
             'J',  # RJ To Court - Used for probation after treatment
             'N',  # Interstate Parole
-            'O',  # Correctional Compact - TODO(2999): Get more info from ID.
+            'O',  # Correctional Compact - TODO(3506): Get more info from ID.
             'P',  # Bond Appeal - unused, but present in ID status table.
-            'R',  # Court Retains Jurisdiction - used when a person on a rider. TODO(2999): Whats the difference
+            'R',  # Court Retains Jurisdiction - used when a person on a rider. TODO(3506): Whats the difference
             # between this and 'W'?
             'T',  # Interstate probation - unused, but present in ID status table.
             'U',  # Unsupervised - probation
             'W',  # Witheld judgement - used when a person is on a rider.
-            'Y',  # Drug Court - TODO(2999): Consider adding this as a court type.
+            'Y',  # Drug Court
         ],
         StateSentenceStatus.SUSPENDED: [
             'B',  # Suspended sentence - probation
@@ -264,10 +262,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'Technical',                        # From violation report 204
         ],
 
-        # TODO(2999): Go through values with ID to ensure we have the correct mappings
+        # TODO(3510): Go through values with ID to ensure we have the correct mappings
         StateSupervisionViolationResponseDecision.CONTINUANCE: [
             'Reinstatement',    # Parole/probation recommendation from violation report 210
-            # TODO(2999): Is there a better enum for this (recommendation that max release date is used instead of min)?
+            # TODO(3510): Is there a better enum for this (recommendation that max release date is used instead of min)?
             'Recommended Full Term Release Date',  # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SPECIALIZED_COURT: [
@@ -276,7 +274,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'Referral to Problem Solving Court',    # Probation recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            # TODO(2999): Are these 'Diversion' recs shock incarceration or treatment in prison?
+            # TODO(3510): Are these 'Diversion' recs shock incarceration or treatment in prison?
             'Diversion - Jail',     # Parole recommendation from violation report 210
             'Diversion - CRC',      # Parole recommendation from violation report 210
             'Diversion - Prison',   # Parole recommendation from violation report 210
@@ -285,7 +283,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
             'Rider',                            # Probation recommendation from violation report 210
             'Rider Recommendation',             # Probation recommendation from violation report 204
-            # TODO(2999): is this shock incarceration or treatment in prison?
+            # TODO(3510): is this shock incarceration or treatment in prison?
             'PVC - Parole Violator Program',    # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.REVOCATION: [
@@ -354,9 +352,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'EMPLOYER',
         ],
         StateSupervisionContactLocation.INTERNAL_UNKNOWN: [
-            'LAW ENFORCEMENT AGENCY',   # TODO(2999): Consider adding as enum
-            'COMPACT STATE',            # TODO(2999): Consider adding as enum
-            'PAROLE COMMISSION',        # TODO(2999): Consider adding as enum
+            'LAW ENFORCEMENT AGENCY',   # TODO(3511): Consider adding as enum
+            'COMPACT STATE',            # TODO(3511): Consider adding as enum
+            'PAROLE COMMISSION',        # TODO(3511): Consider adding as enum
             'WBOR',                     # Data entry error - WBOR is an online form filled out that isn't a location.
 
             # No longer used
@@ -400,7 +398,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'SUCCESSFUL',
             'PROGRESS REVIEW',
             'FACE TO FACE',
-            'ARREST',  # TODO(2999): Is there another place to ingest arrest entities or should we take it from
+            'ARREST',  # TODO(3506): Is there another place to ingest arrest entities or should we take it from
                        #  sprvsn_cntc?
         ],
         StateSupervisionContactStatus.ATTEMPTED: [
