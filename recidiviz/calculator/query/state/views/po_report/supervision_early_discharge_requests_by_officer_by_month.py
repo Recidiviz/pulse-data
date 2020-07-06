@@ -53,7 +53,8 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         USING (state_code, supervision_period_id, person_id)
       LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
-      WHERE state_code = 'US_ID'
+      -- Only the following supervision types should be included in the PO report
+      WHERE supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
       GROUP BY state_code, year, month, officer_external_id, district
     ),
     officers_with_supervision AS (
@@ -64,8 +65,8 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         SPLIT(district, '|')[OFFSET(0)] AS district
       FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
-        -- Do not include any investigative or informal probation supervision periods for ID
-        AND (state_code != 'US_ID' OR supervision_type NOT IN ('ALL', 'INVESTIGATION', 'INFORMAL_PROBATION'))
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     ),
     avg_requests_by_district_state AS (
       -- Get the average monthly discharges by district and state

@@ -47,9 +47,8 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       WHERE termination_date IS NOT NULL
         AND supervision_period.termination_reason = 'ABSCONSION'
         AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-        -- Do not include any investigative or informal probation supervision periods for ID
-        AND (state_code != 'US_ID'
-             OR supervision_period_supervision_type NOT IN ('INVESTIGATION', 'INFORMAL_PROBATION'))
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
       GROUP BY state_code, year, month, district, officer_external_id
     ),
     officers_with_supervision AS (
@@ -60,7 +59,8 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         officer_external_id
       FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
-        AND (state_code != 'US_ID' OR supervision_type NOT IN ('ALL', 'INVESTIGATION', 'INFORMAL_PROBATION'))
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     )
     SELECT
       state_code, year, month,
