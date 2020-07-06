@@ -15,7 +15,7 @@ primary_key:
   docno: state_person.state_person_id
 
 keys_to_ignore:
-  - fbi_nbr             # Unused - FBI Number. TODO(2999): Get more details from ID and consider adding as external id.
+  - fbi_nbr             # Unused - FBI Number. Not a unique identifier.
   - title               # Unused - Title.
   - activ_flg           # Unused - Whether the person is currently under state authority
   - sealed_flg          # Unused - Not used reliably by ID.
@@ -30,21 +30,20 @@ keys_to_ignore:
   - par_revokes         # Unused - Always null
   - off_docket_no       # Unused - Most recent docket number
   - incrno              # Unused - Most recent incarceration cycle
-                        #        - TODO(2999): Consider processing this as sentence group info here.
   - move_srl            # Unused - Most recent move id
   - fac_cd              # Unused - Current facility
   - lu_cd               # Unused - Current living unit (within a facility)
   - loc_cd              # Unused - Current location (county if on supervision)
-  - perm_fac_cd         # Unused - TODO(2999): Get more details from ID.
+  - perm_fac_cd         # Unused - TODO(3506): Get more details from ID.
   - move_dtd            # Unused - Here through move_bunk are details surrounding the persons most recent move
   - move_typ            # Unused
   - move_pod            # Unused
   - move_tier           # Unused
   - move_cell           # Unused
   - move_bunk           # Unused
-  - cnty_cd             # Unused - County code TODO(2999): Get more details from ID.
-  - empl_cd             # Unused - Employment code TODO(2999): Get more details from ID.
-  - bank_cd             # Unused - Bank code TODO(2999): Get more details from ID.
+  - cnty_cd             # Unused - County code TODO(3506): Get more details from ID.
+  - empl_cd             # Unused - Employment code TODO(3506): Get more details from ID.
+  - bank_cd             # Unused - Bank code TODO(3506): Get more details from ID.
   - ofndr_num           # Unused - duplicate of docno
   - st                  # Unused - birth state (mostly null)
   - birth_ctry_cd       # Unused - birth country code (mostly null)
