@@ -32,6 +32,7 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
  from supervision, and keeping cases in compliance with state standards.
  """
 
+# TODO(3514): handle officers with caseloads across multiple districts
 PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -88,7 +89,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       report_month.facetoface_percent - IFNULL(last_month.facetoface_percent, 0) as facetoface_percent_change
     FROM `{project_id}.{po_report_dataset}.po_report_recipients`
     LEFT JOIN report_data report_month
-      USING (state_code, officer_external_id)
+      USING (state_code, officer_external_id, district)
     LEFT JOIN (
       SELECT
         * EXCEPT (year, month),
