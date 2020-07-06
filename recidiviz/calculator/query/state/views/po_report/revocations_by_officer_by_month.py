@@ -65,8 +65,8 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         officer_external_id
       FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
-        -- Do not include any investigative or informal probation supervision periods for ID
-        AND (state_code != 'US_ID' OR supervision_type NOT IN ('ALL', 'INVESTIGATION', 'INFORMAL_PROBATION'))
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     )
     SELECT
       state_code, year, month,
