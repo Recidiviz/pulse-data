@@ -1517,6 +1517,65 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_time_buckets = []
         self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
 
+    def test_findSupervisionTimeBuckets_usNd_admittedAfterPreConfinement(self):
+        """Tests the find_supervision_time_buckets function for state code US_ND where the person is admitted after
+        being on PRE-CONFINEMENT supervision. These periods should produce no SupervisionTimeBuckets, and the admission
+        to prison should not be counted as a revocation.
+
+        TODO(2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
+        """
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_ND',
+            custodial_authority='US_ND_DOCR',
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 5, 9),
+            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ND',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 9),
+            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
+        )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_sentences = []
+        supervision_periods = [supervision_period]
+        incarceration_periods = [incarceration_period]
+        assessments = []
+        violation_responses = []
+        supervision_contacts = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences, incarceration_sentences,
+            supervision_periods, incarceration_periods,
+            assessments, violation_responses,
+            supervision_contacts,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        expected_time_buckets = []
+        self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
+
     def test_findSupervisionTimeBuckets_usId_revokedAfterBoardHold(self):
         """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked after
         being held for a board hold."""
