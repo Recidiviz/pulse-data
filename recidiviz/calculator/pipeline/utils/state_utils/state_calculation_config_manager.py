@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_typ
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment, \
@@ -91,15 +92,15 @@ def non_prison_periods_under_state_authority(state_code: str) -> bool:
     return state_code.upper() in ('US_ID', 'US_ND')
 
 
-def investigation_periods_in_supervision_population(state_code: str) -> bool:
+def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     """Whether or not supervision periods that have a supervision_period_supervision_type of INVESTIGATION should be
     counted in the supervision calculations.
 
     - US_ID: False
     - US_MO: False
-    - US_ND: True
+    - US_ND: False
     """
-    return state_code.upper() == 'US_ND'
+    return False
 
 
 def only_state_custodial_authority_in_supervision_population(state_code: str) -> bool:
@@ -329,7 +330,9 @@ def produce_supervision_time_bucket_for_period(supervision_period: StateSupervis
     """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases, we do
     not want to drop periods entirely because we need them for context in some of the calculations, but we do not want
     to create metrics using the periods."""
-    if (supervision_period.supervision_period_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION
+    if ((supervision_period.supervision_period_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION
+         # TODO(2891): Remove this check when we remove supervision_type from StateSupervisionPeriods
+         or supervision_period.supervision_type == StateSupervisionType.PRE_CONFINEMENT)
             and not investigation_periods_in_supervision_population(supervision_period.state_code)):
         return False
     return True

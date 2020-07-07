@@ -759,6 +759,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
             StateSupervisionType.HALFWAY_HOUSE: ['COMMUNITY PLACEMENT PGRM'],
             StateSupervisionType.PAROLE: ['SSOP'],
+            # TODO(2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION
+            # on the supervision period that this gets copied down to in the hook for Docstars Offender Cases
+            StateSupervisionType.PRE_CONFINEMENT: ['PRE-TRIAL'],
 
             StateSupervisionViolationResponseRevocationType.REINCARCERATION:
                 ['COUNTY JAIL SENTENCE',
