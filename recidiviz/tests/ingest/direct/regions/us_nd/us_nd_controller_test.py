@@ -1050,7 +1050,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                 state_supervision_sentences=[
                                     StateSupervisionSentence(
                                         state_supervision_sentence_id='117109',
-                                        supervision_type='Parole',
+                                        supervision_type='Pre-Trial',
                                         start_date='1/1/2013',
                                         projected_completion_date='3/3/2013',
                                         completion_date='2/2/2013',
@@ -1061,7 +1061,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                                 start_date='1/1/2013',
                                                 termination_date='2/2/2013',
                                                 termination_reason='4',
-                                                supervision_type='Parole',
+                                                supervision_type='Pre-Trial',
                                                 supervising_officer=agent_63,
                                                 county_code='US_ND_CASS')
                                         ],
@@ -2593,8 +2593,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             person=person_1)
         supervision_sentence_117109 = entities.StateSupervisionSentence.new_with_defaults(
             external_id='117109',
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_type_raw_text='PAROLE',
+            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
+            supervision_type_raw_text='PRE-TRIAL',
             start_date=datetime.date(year=2013, month=1, day=1),
             projected_completion_date=datetime.date(year=2013, month=3, day=3),
             completion_date=datetime.date(year=2013, month=2, day=2),
@@ -2610,8 +2610,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='4',
             supervising_officer=agent_63,
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_type_raw_text='PAROLE',
+            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
+            supervision_type_raw_text='PRE-TRIAL',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code='US_ND_CASS',
