@@ -280,7 +280,9 @@ def characteristics_dict(person: StatePerson,
     if (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
             and metric_type == SupervisionMetricType.COMPLIANCE):
         if supervision_time_bucket.case_compliance:
+            characteristics['assessment_count'] = supervision_time_bucket.case_compliance.assessment_count
             characteristics['assessment_up_to_date'] = supervision_time_bucket.case_compliance.assessment_up_to_date
+            characteristics['face_to_face_count'] = supervision_time_bucket.case_compliance.face_to_face_count
             characteristics['face_to_face_frequency_sufficient'] = \
                 supervision_time_bucket.case_compliance.face_to_face_frequency_sufficient
 

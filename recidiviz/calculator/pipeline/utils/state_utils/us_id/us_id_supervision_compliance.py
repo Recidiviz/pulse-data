@@ -24,6 +24,7 @@ import numpy
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
+from recidiviz.calculator.pipeline.utils.assessment_utils import find_most_recent_assessment
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactStatus
@@ -41,48 +42,107 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
                                   case_type: StateSupervisionCaseType,
                                   start_of_supervision: date,
                                   compliance_evaluation_date: date,
-                                  most_recent_assessment: Optional[StateAssessment],
+                                  assessments: List[StateAssessment],
                                   supervision_contacts: List[StateSupervisionContact]) -> \
         Optional[SupervisionCaseCompliance]:
-    """Determines whether the supervision case represented by the given supervision_period is in compliance with US_ID
-    state standards. Measures compliance with the following standards:
-        - Up-to-date Assessments
-        - Face-to-Face Contact Frequency
+    """
+    Calculates several different compliance values for the supervision case represented by the supervision period, based
+    on US_ID compliance standards. Measures compliance values for the following types of supervision events:
+        - Assessments
+        - Face-to-Face Contacts
 
-    These compliance standards are only applicable to a certain subset of cases that have clear, documented guidelines.
-    If the compliance guidelines are not applicable for the given supervision case, then case compliance is not
-    calculated.
+    For each event, we calculate two types of metrics when possible.
+        - The total number of events that have occurred for this person this month (until the
+          |compliance_evaluation_date|).
+        - Whether or not the compliance standards have been met for this event type (this is set to None if we do not
+          have clear, documented guidelines applicable to this case).
 
     Args:
         supervision_period: The supervision_period representing the supervision case
         case_type: The "most severe" case type for the given supervision period
         start_of_supervision: The date the person started serving this supervision
         compliance_evaluation_date: The date that the compliance of the given case is being evaluated
-        most_recent_assessment: The most recent assessment taken before the compliance_evaluation_date
+        assessments: The risk assessments completed on this person
         supervision_contacts: The instances of contact between supervision officers and the person on supervision
 
     Returns:
          A SupervisionCaseCompliance object containing information regarding the ways the case is or isn't in compliance
          with state standards on the given compliance_evaluation_date.
     """
-    if not _guidelines_applicable_for_case(supervision_period, case_type):
-        return None
+    assessment_count = _assessments_in_compliance_month(compliance_evaluation_date, assessments)
+    face_to_face_count = _face_to_face_contacts_in_compliance_month(compliance_evaluation_date, supervision_contacts)
 
-    assessment_is_up_to_date = _assessment_is_up_to_date(supervision_period,
-                                                         start_of_supervision,
-                                                         compliance_evaluation_date,
-                                                         most_recent_assessment)
+    assessment_is_up_to_date = None
+    face_to_face_frequency_sufficient = None
 
-    face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
-                                                                                      start_of_supervision,
-                                                                                      compliance_evaluation_date,
-                                                                                      supervision_contacts)
+    if _guidelines_applicable_for_case(supervision_period, case_type):
+        most_recent_assessment = find_most_recent_assessment(compliance_evaluation_date, assessments)
+
+        assessment_is_up_to_date = _assessment_is_up_to_date(supervision_period,
+                                                             start_of_supervision,
+                                                             compliance_evaluation_date,
+                                                             most_recent_assessment)
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
 
     return SupervisionCaseCompliance(
         date_of_evaluation=compliance_evaluation_date,
+        assessment_count=assessment_count,
         assessment_up_to_date=assessment_is_up_to_date,
+        face_to_face_count=face_to_face_count,
         face_to_face_frequency_sufficient=face_to_face_frequency_sufficient
     )
+
+
+def _assessments_in_compliance_month(compliance_evaluation_date: date, assessments: List[StateAssessment]) -> int:
+    """Returns the number of assessments that were conducted between the first of the month of the
+    compliance_evaluation_date and the compliance_evaluation_date (inclusive)."""
+    compliance_month = compliance_evaluation_date.month
+    compliance_year = compliance_evaluation_date.year
+    first_day_of_month = date(compliance_year, compliance_month, 1)
+
+    num_assessments_this_month = [
+        assessment for assessment in assessments
+        if assessment.assessment_date is not None
+        and first_day_of_month <= assessment.assessment_date <= compliance_evaluation_date
+    ]
+
+    return len(num_assessments_this_month)
+
+
+def _face_to_face_contacts_in_compliance_month(compliance_evaluation_date: date,
+                                               supervision_contacts: List[StateSupervisionContact]) -> int:
+    """Returns the number of face-to-face contacts that were completed between the first of the month of the
+    compliance_evaluation_date and the compliance_evaluation_date (inclusive)."""
+    compliance_month = compliance_evaluation_date.month
+    compliance_year = compliance_evaluation_date.year
+    first_day_of_month = date(compliance_year, compliance_month, 1)
+
+    applicable_contacts = _get_applicable_face_to_face_contacts_between_dates(
+        supervision_contacts=supervision_contacts,
+        lower_bound_inclusive=first_day_of_month,
+        upper_bound_inclusive=compliance_evaluation_date)
+
+    return len(applicable_contacts)
+
+
+def _get_applicable_face_to_face_contacts_between_dates(supervision_contacts: List[StateSupervisionContact],
+                                                        lower_bound_inclusive: date,
+                                                        upper_bound_inclusive: date) -> List[StateSupervisionContact]:
+    """Returns the completed contacts that can be counted as face-to-face contacts and occurred between the
+    lower_bound_inclusive date and the upper_bound_inclusive date."""
+    return [
+        contact for contact in supervision_contacts
+        # These are the types of contacts that can satisfy the face-to-face contact requirement
+        if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE)
+        # Contact must be marked as completed
+        and contact.status == StateSupervisionContactStatus.COMPLETED
+        and contact.contact_date is not None
+        and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+    ]
 
 
 def _guidelines_applicable_for_case(supervision_period: StateSupervisionPeriod,
@@ -189,16 +249,11 @@ def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSuper
                       supervision_period.supervision_period_id, business_days_since_start, compliance_evaluation_date)
         return True
 
-    applicable_contacts = [
-        contact for contact in supervision_contacts
-        # These are the types of contacts that can satisfy the face-to-face contact requirement
-        if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE)
-        # Contact must be marked as completed
-        and contact.status == StateSupervisionContactStatus.COMPLETED
-        and contact.contact_date is not None
-        # Contact must have occurred since the start of supervision and prior to the compliance_evaluation_date
-        and start_of_supervision <= contact.contact_date < compliance_evaluation_date
-    ]
+    # Get applicable contacts that occurred between the start of supervision and the
+    # compliance_evaluation_date (inclusive)
+    applicable_contacts = _get_applicable_face_to_face_contacts_between_dates(supervision_contacts,
+                                                                              start_of_supervision,
+                                                                              compliance_evaluation_date)
 
     if not applicable_contacts:
         # This person has been on supervision for longer than the allowed number of days without an initial contact.
