@@ -44,17 +44,16 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         COALESCE(SPLIT(supervision_site, '|')[OFFSET(0)],
                  agent.district_external_id) AS district,
         COUNT(DISTINCT person_id) AS earned_discharges
-      FROM `{project_id}.{state_dataset}.state_early_discharge`
-      JOIN `{project_id}.{state_dataset}.state_supervision_sentence`
-        USING (state_code, supervision_sentence_id, person_id)
-      JOIN `{project_id}.{state_dataset}.state_supervision_sentence_supervision_period_association`
-        USING (supervision_sentence_id)
-      JOIN `{project_id}.{state_dataset}.state_supervision_period`
-        USING (state_code, supervision_period_id, person_id)
+      FROM `{project_id}.{state_dataset}.state_early_discharge` discharge
+      JOIN `{project_id}.{state_dataset}.state_supervision_period` period
+        USING (state_code, person_id)
       LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
-      -- Only the following supervision types should be included in the PO report
-      WHERE supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      -- Attribute an early discharge to a supervision period when it was requested before the period was terminated
+      WHERE period.start_date <= discharge.request_date
+        AND discharge.request_date < COALESCE(period.termination_date, '9999-12-31')
+        -- Only the following supervision types should be included in the PO report
+        AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
       GROUP BY state_code, year, month, officer_external_id, district
     ),
     officers_with_supervision AS (
