@@ -33,8 +33,8 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       *,
-      IEEE_DIVIDE(assessments_up_to_date, caseload_count) * 100 AS assessment_percent,
-      IEEE_DIVIDE(facetoface_frequencies_sufficient, caseload_count) * 100 as facetoface_percent
+      IEEE_DIVIDE(assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
+      IEEE_DIVIDE(facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
     FROM
       (SELECT
         state_code,
@@ -42,9 +42,13 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         month,
         SPLIT(supervising_district_external_id, '|')[OFFSET(0)] AS district,
         supervising_officer_external_id AS officer_external_id,
-        COUNT(DISTINCT(person_id)) AS caseload_count,
+        SUM(assessment_count) AS assessments,
         COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
-        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) as facetoface_frequencies_sufficient
+        COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
+        SUM(face_to_face_count) AS facetoface,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) as facetoface_frequencies_sufficient,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) 
+            AS facetoface_compliance_caseload_count
       FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)

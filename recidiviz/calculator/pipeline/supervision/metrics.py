@@ -389,18 +389,27 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, Person
 @attr.s
 class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     """Subclass of SupervisionPopulationMetric for people who are on supervision on a given day that records
-    information regarding whether a supervision case is meeting compliance standards."""
+    information regarding whether a supervision case is meeting compliance standards, as well as counts of
+    compliance-related tasks that occurred in the month of the evaluation."""
 
     # The date the on which the case's compliance was evaluated
     date_of_evaluation: date = attr.ib(default=None)
 
+    # The number of risk assessments conducted on this person in the month of the date_of_evaluation, preceding the
+    # date_of_evaluation
+    assessment_count: int = attr.ib(default=None)
+
     # Whether or not a risk assessment has been completed for this person with enough recency to satisfy compliance
-    # measures
-    assessment_up_to_date: bool = attr.ib(default=None)
+    # measures. Should be unset if we do not know the compliance standards for this person.
+    assessment_up_to_date: Optional[bool] = attr.ib(default=None)
+
+    # The number of face-to-face contacts with this person in the month of the date_of_evaluation, preceding the
+    # date_of_evaluation
+    face_to_face_count: int = attr.ib(default=None)
 
     # Whether or not the supervision officer has had face-to-face contact with the person on supervision recently
-    # enough to satisfy compliance measures
-    face_to_face_frequency_sufficient: bool = attr.ib(default=None)
+    # enough to satisfy compliance measures. Should be unset if we do not know the compliance standards for this person.
+    face_to_face_frequency_sufficient: Optional[bool] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \

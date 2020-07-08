@@ -24,7 +24,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
     us_id_case_compliance_on_date, NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS, _assessment_is_up_to_date, \
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS, _face_to_face_contact_frequency_is_sufficient, \
-    _guidelines_applicable_for_case
+    _guidelines_applicable_for_case, _assessments_in_compliance_month, _face_to_face_contacts_in_compliance_month
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
@@ -42,36 +42,43 @@ class TestCaseCompliance(unittest.TestCase):
     """Tests the us_id_case_compliance_on_date function."""
 
     def test_us_id_case_compliance_on_date(self):
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id='sp1',
-                state_code='US_ID',
-                custodial_authority='US_ID_DOC',
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MEDIUM
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM
+        )
 
         case_type = StateSupervisionCaseType.GENERAL
 
-        assessment = StateAssessment.new_with_defaults(
+        assessments = [StateAssessment.new_with_defaults(
             state_code='US_ID',
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 10)
-        )
-
-        supervision_contacts = [StateSupervisionContact.new_with_defaults(
-            state_code='US_ID',
-            contact_date=date(2018, 3, 6),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            status=StateSupervisionContactStatus.COMPLETED
         )]
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=date(2018, 4, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+        ]
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = date(2018, 4, 30)
@@ -81,14 +88,16 @@ class TestCaseCompliance(unittest.TestCase):
             case_type,
             start_of_supervision,
             compliance_evaluation_date,
-            assessment,
+            assessments,
             supervision_contacts
         )
 
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
                 assessment_up_to_date=True,
+                face_to_face_count=1,
                 face_to_face_frequency_sufficient=True
             ), compliance)
 
@@ -117,14 +126,16 @@ class TestCaseCompliance(unittest.TestCase):
             case_type,
             start_of_supervision,
             compliance_evaluation_date,
-            most_recent_assessment=None,
+            assessments=[],
             supervision_contacts=[]
         )
 
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
                 assessment_up_to_date=False,
+                face_to_face_count=0,
                 face_to_face_frequency_sufficient=False
             ), compliance)
 
@@ -143,21 +154,123 @@ class TestCaseCompliance(unittest.TestCase):
                 supervision_level=None  # Must have a supervision level to be evaluated
             )
 
+        assessments = [StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 10)
+        )]
+
+        supervision_contacts = [StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 3, 6),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED
+        )]
+
         case_type = StateSupervisionCaseType.GENERAL
 
         start_of_supervision = date(2018, 1, 5)
-        compliance_evaluation_date = date(2018, 4, 30)
+        compliance_evaluation_date = date(2018, 3, 31)
 
         compliance = us_id_case_compliance_on_date(
             supervision_period,
             case_type,
             start_of_supervision,
             compliance_evaluation_date,
-            most_recent_assessment=None,
-            supervision_contacts=[]
+            assessments,
+            supervision_contacts
         )
 
-        self.assertIsNone(compliance)
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=1,
+                assessment_up_to_date=None,
+                face_to_face_count=1,
+                face_to_face_frequency_sufficient=None
+            ), compliance)
+
+
+class TestAssessmentsInComplianceMonth(unittest.TestCase):
+    """Tests for _assessments_in_compliance_month."""
+    def test_assessments_in_compliance_month(self):
+        evaluation_date = date(2018, 4, 30)
+        assessment_out_of_range = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 3, 10)
+        )
+        assessment_out_of_range_2 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 5, 10)
+        )
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 2)
+        )
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 10)
+        )
+        assessment_3 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28)
+        )
+        assessments = [assessment_out_of_range, assessment_out_of_range_2, assessment_1, assessment_2, assessment_3]
+        expected_assessments = [assessment_1, assessment_2, assessment_3]
+
+        self.assertEqual(len(expected_assessments), _assessments_in_compliance_month(evaluation_date, assessments))
+
+
+class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
+    """Tests for _face_to_face_contacts_in_compliance_month."""
+    def test_face_to_face_contacts_in_compliance_month(self):
+        evaluation_date = date(2018, 4, 30)
+        contact_1 = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 4, 1),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        contact_2 = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 4, 15),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        contact_3 = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 4, 30),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        contact_out_of_range = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 3, 30),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        contact_incomplete = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 4, 30),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.ATTEMPTED,
+        )
+        contact_wrong_type = StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=date(2018, 4, 30),
+            contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        contacts = [contact_1, contact_2, contact_3, contact_incomplete, contact_out_of_range, contact_wrong_type]
+        expected_contacts = [contact_1, contact_2, contact_3]
+        self.assertEqual(len(expected_contacts), _face_to_face_contacts_in_compliance_month(evaluation_date, contacts))
 
 
 class TestAssessmentIsUpToDate(unittest.TestCase):
