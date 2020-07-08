@@ -758,6 +758,22 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                         )
                                                     ]
                                                 ),
+                                                StateIncarcerationIncident(
+                                                    state_incarceration_incident_id='B444556',
+                                                    incident_type='CONTRABAND', incident_date='19931217',
+                                                    facility='SMI', location_within_facility='RHU-A 200',
+                                                    incident_details=json.dumps(
+                                                        {'category_1': '', 'category_2': 'X', 'category_3': '',
+                                                         'category_4': '', 'category_5': ''}
+                                                    ),
+                                                    state_incarceration_incident_outcomes=[
+                                                        StateIncarcerationIncidentOutcome(
+                                                            state_incarceration_incident_outcome_id='B444556',
+                                                            report_date='0 0 0',
+                                                            hearing_date='0 0 0',
+                                                        )
+                                                    ]
+                                                ),
                                             ]
                                         )
                                     ],
@@ -1774,6 +1790,21 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
         p4_ii_3.incarceration_incident_outcomes.append(p4_ii_3_outcome)
         p4_is_2_ip_10.incarceration_incidents.append(p4_ii_3)
+
+        p4_ii_4 = entities.StateIncarcerationIncident.new_with_defaults(
+            external_id='B444556', state_code=_STATE_CODE_UPPER,
+            person=person_4, incarceration_period=p4_is_2_ip_10,
+            incident_type=StateIncarcerationIncidentType.CONTRABAND, incident_type_raw_text='CONTRABAND',
+            incident_date=datetime.date(year=1993, month=12, day=17), facility='SMI',
+            location_within_facility='RHU-A 200',
+            incident_details=json.dumps(
+                {'CATEGORY_1': '', 'CATEGORY_2': 'X', 'CATEGORY_3': '', 'CATEGORY_4': '', 'CATEGORY_5': ''}),
+        )
+        p4_ii_4_outcome = entities.StateIncarcerationIncidentOutcome.new_with_defaults(
+            external_id='B444556', state_code=_STATE_CODE_UPPER, person=person_4, incarceration_incident=p4_ii_4,
+        )
+        p4_ii_4.incarceration_incident_outcomes.append(p4_ii_4_outcome)
+        p4_is_2_ip_10.incarceration_incidents.append(p4_ii_4)
 
         p4_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

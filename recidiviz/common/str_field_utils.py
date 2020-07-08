@@ -144,14 +144,24 @@ def parse_days_from_duration_pieces(
 
 
 def _is_str_field_zeros(str_field: str) -> bool:
-    """Checks if a string field is a procession of any number of zeros, i.e. '0' or '000000'."""
+    """Checks if a string field is a procession of any number of zeros, i.e. '0' or '000000', or all zeroes separated by
+    punctuation/spacing."""
     try:
         field_as_int = int(str_field)
         return field_as_int == 0
     except ValueError:
-        # This was a check for date strings that are just processions of 0s. If it's not a parseable int, that means it
-        # is not.
-        return False
+        pass
+
+    # Look for strings like '0 0 0' or '0000-00-00'
+    parts = normalize(str_field, remove_punctuation=True).split()
+
+    if len(parts) > 1:
+        if all(_is_str_field_zeros(p) for p in parts):
+            return True
+
+    # This was a check for date strings that are just processions of 0s. If the string or all its non-punctuation parts
+    # are not parseable ints, that means is not.
+    return False
 
 
 def parse_datetime(
