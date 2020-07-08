@@ -226,6 +226,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
             'AOTH',  # Other - Use Sparingly
         ],
+        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+            'RTN'  # (Not in PA data dictionary, no instances after 1996)
+        ],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
             'AA',    # Administrative
             'AB',    # Bail
