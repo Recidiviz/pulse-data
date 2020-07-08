@@ -251,13 +251,13 @@ raw_files:
       - curr_inmate_num
       - type_number
   - file_tag: dbo_Sentence
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - Sent16DGroupNumber
       - SentenceID
   - file_tag: dbo_SentenceGroup
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - Sent16DGroupNumber
