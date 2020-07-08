@@ -129,6 +129,16 @@ class TestStrFieldUtils(TestCase):
             '1y 1m 1d', from_dt=datetime.datetime(2000, 1, 1)) == \
                datetime.datetime(year=1998, month=11, day=30)
 
+    def test_parseDateTime_zero(self):
+        assert parse_datetime('0') is None
+
+    def test_parseDateTime_zeroes(self):
+        assert parse_datetime('00000000') is None
+
+    def test_parseDateTime_zeroes_weird(self):
+        assert parse_datetime('0 0 0') is None
+        assert parse_datetime('0000-00-00') is None
+
     def test_parseDate(self):
         assert parse_date('Jan 1, 2018') == \
                datetime.date(year=2018, month=1, day=1)
@@ -138,6 +148,10 @@ class TestStrFieldUtils(TestCase):
 
     def test_parseDate_zeroes(self):
         assert parse_date('00000000') is None
+
+    def test_parseDate_zeroes_weird(self):
+        assert parse_date('0 0 0') is None
+        assert parse_date('0000-00-00') is None
 
     def test_parseNoDate(self):
         assert parse_date('None set') is None
