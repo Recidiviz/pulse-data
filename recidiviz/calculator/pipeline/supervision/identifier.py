@@ -320,7 +320,7 @@ def find_time_buckets_for_supervision_period(
                                                               case_type,
                                                               start_of_supervision,
                                                               end_of_month,
-                                                              most_recent_assessment,
+                                                              assessments,
                                                               supervision_contacts)
 
             supervision_month_buckets.append(

@@ -342,7 +342,7 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
                                 case_type: StateSupervisionCaseType,
                                 start_of_supervision: date,
                                 compliance_evaluation_date: date,
-                                last_assessment: Optional[StateAssessment],
+                                assessments: List[StateAssessment],
                                 supervision_contacts: List[StateSupervisionContact]) -> \
         Optional[SupervisionCaseCompliance]:
     """Returns the SupervisionCaseCompliance object containing information about whether the given supervision case is
@@ -353,7 +353,7 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
                                              case_type,
                                              start_of_supervision,
                                              compliance_evaluation_date,
-                                             last_assessment,
+                                             assessments,
                                              supervision_contacts)
 
     return None

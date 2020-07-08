@@ -49,9 +49,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         technical_revocations,
         absconsions,
         crime_revocations,
-        assessments_up_to_date as assessments,
+        assessments,
         assessment_percent,
-        facetoface_frequencies_sufficient as facetoface,
+        facetoface,
         facetoface_percent,
       FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month`
       FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_officer_by_month`
