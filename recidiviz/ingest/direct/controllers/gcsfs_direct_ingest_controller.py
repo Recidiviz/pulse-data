@@ -318,6 +318,10 @@ class GcsfsDirectIngestController(
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
     def _schedule_ingest_view_export_tasks(self) -> bool:
+        """Schedules all pending ingest view export tasks for launched ingest view tags, if they have not been
+        scheduled. If tasks are scheduled or are still running, returns True. Otherwise, if it's safe to proceed with
+        next steps of ingest, returns False."""
+
         if not self.region.are_ingest_view_exports_enabled_in_env():
             return False
 
@@ -507,27 +511,36 @@ class GcsfsDirectIngestController(
         output_dir = GcsfsDirectoryPath.from_file_path(path)
 
         split_contents_paths = self._split_file(path)
+        upload_paths = []
         for i, split_contents_path in enumerate(split_contents_paths):
             upload_path = self._create_split_file_path(path, output_dir, split_num=i)
 
-            ingest_file_metadata = None
+            logging.info("Copying split [%s] to direct ingest directory at path [%s].", i, upload_path.abs_path())
 
-            if self.region.are_ingest_view_exports_enabled_in_env():
-                if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
-                    raise ValueError('Attempting to split a non-ingest view type file')
+            upload_paths.append(upload_path)
+            try:
+                self.fs.mv(split_contents_path, upload_path)
+            except Exception as e:
+                logging.error(
+                    'Threw error while copying split files from temp bucket - attempting to clean up before rethrowing.'
+                    ' [%s]', e)
+                for p in upload_paths:
+                    self.fs.delete(p)
+                raise e
 
+        # We wait to register files with metadata manager until all files have been successfully copied to avoid leaving
+        # the metadata manager in an inconsistent state.
+        if self.region.are_ingest_view_exports_enabled_in_env():
+            if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
+                raise ValueError('Attempting to split a non-ingest view type file')
+
+            logging.info('Registering [%s] split files with the metadata manager.', len(upload_paths))
+
+            for upload_path in upload_paths:
                 ingest_file_metadata = self.file_metadata_manager.register_ingest_file_split(original_metadata,
                                                                                              upload_path)
-            logging.info("Copying split [%s] to direct ingest directory at path [%s].", i, upload_path.abs_path())
-            self.fs.mv(split_contents_path, upload_path)
-
-            if self.region.are_ingest_view_exports_enabled_in_env():
-                if not ingest_file_metadata:
-                    raise ValueError(f'Split file metadata for path unexpectedly none [{upload_path.abs_path()}]')
-
                 self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
 
-        if self.region.are_ingest_view_exports_enabled_in_env():
             self.file_metadata_manager.mark_file_as_processed(path)
 
         logging.info("Done splitting file [%s] into [%s] paths, moving it to storage.",

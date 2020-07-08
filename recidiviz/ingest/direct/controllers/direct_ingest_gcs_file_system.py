@@ -24,8 +24,9 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Iterator
+from typing import List, Optional, Union, Iterator, Callable
 
+from google.api_core import retry, exceptions
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
@@ -441,6 +442,11 @@ class DirectIngestGCSFileSystem:
         return os.path.join(temp_dir, str(uuid.uuid4()))
 
 
+def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
+    """"A function that will determine whether we should retry a given Google exception."""
+    return retry.if_transient_error(exception) or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
+
+
 class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     """An implementation of the DirectIngestGCSFileSystem built on top of a real
     GCSFileSystem.
@@ -448,6 +454,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     def __init__(self, client: storage.Client):
         self.storage_client = client
 
+    @retry.Retry(predicate=retry_predicate)
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         if isinstance(path, GcsfsBucketPath):
@@ -461,6 +468,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
 
+    @retry.Retry(predicate=retry_predicate)
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
@@ -484,6 +492,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
                 "been processed or deleted", path.abs_path())
             return None
 
+    @retry.Retry(predicate=retry_predicate)
     def upload_from_string(self, path: GcsfsFilePath,
                            contents: str,
                            content_type: str):
@@ -491,6 +500,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         bucket.blob(path.blob_name).upload_from_string(
             contents, content_type=content_type)
 
+    @retry.Retry(predicate=retry_predicate)
     def upload_from_contents_handle(self,
                                     path: GcsfsFilePath,
                                     contents_handle: GcsfsFileContentsHandle,
@@ -499,6 +509,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         bucket.blob(path.blob_name).upload_from_filename(
             contents_handle.local_file_path, content_type=content_type)
 
+    @retry.Retry(predicate=retry_predicate)
     def copy(self,
              src_path: GcsfsFilePath,
              dst_path: GcsfsPath) -> None:
@@ -520,6 +531,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         src_bucket.copy_blob(src_blob, dst_bucket, dst_blob_name)
 
+    @retry.Retry(predicate=retry_predicate)
     def delete(self, path: GcsfsFilePath) -> None:
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f'Unexpected path type [{type(path)}]')
@@ -534,6 +546,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
 
         blob.delete(self.storage_client)
 
+    @retry.Retry(predicate=retry_predicate)
     def _ls_with_blob_prefix(
             self,
             bucket_name: str,
