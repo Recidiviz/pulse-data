@@ -56,7 +56,7 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         |db_entity_trees| that does not rely solely on matching by external_id.
         If such a match is found, it is returned.
         """
-        if isinstance(ingested_entity_tree.entity, schema.StateAssessment):
+        if isinstance(ingested_entity_tree.entity, (schema.StateAssessment, schema.StateCharge)):
             return entity_matching_utils.get_only_match(ingested_entity_tree,
                                                         db_entity_trees,
                                                         nonnull_fields_entity_match)

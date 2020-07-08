@@ -143,6 +143,23 @@ def parse_days_from_duration_pieces(
     return int(years * 365.25) + (months * 30) + days
 
 
+def safe_parse_date_from_date_pieces(year: Optional[str], month: Optional[str], day: Optional[str]) \
+        -> Optional[datetime.date]:
+    """Same as parse_date_from_date_pieces below, but returns None if a given string field cannot be parsed."""
+    try:
+        return parse_date_from_date_pieces(year, month, day)
+    except ValueError:
+        return None
+
+
+def parse_date_from_date_pieces(year: Optional[str], month: Optional[str], day: Optional[str]) \
+        -> Optional[datetime.date]:
+    """Parses a date from the provided year, month, and day strings."""
+    if year and month and day:
+        return datetime.date(year=int(year), month=int(month), day=int(day))
+    return None
+
+
 def _is_str_field_zeros(str_field: str) -> bool:
     """Checks if a string field is a procession of any number of zeros, i.e. '0' or '000000', or all zeroes separated by
     punctuation/spacing."""

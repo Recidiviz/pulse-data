@@ -21,7 +21,8 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.common.str_field_utils import parse_days, parse_dollars, \
-    parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces, parse_int
+    parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces, parse_int, parse_date_from_date_pieces, \
+    safe_parse_date_from_date_pieces
 
 
 class TestStrFieldUtils(TestCase):
@@ -90,6 +91,22 @@ class TestStrFieldUtils(TestCase):
                                                    days_str='-15')
 
         assert duration == (2*365 + -5*30 - 15)
+
+    def test_parseDateFromDatePieces(self):
+        parsed = parse_date_from_date_pieces('2005', '10', '12')
+        assert parsed == datetime.date(year=2005, month=10, day=12)
+
+    def test_parseDateFromDatePieces_noneValues(self):
+        parsed = parse_date_from_date_pieces(None, None, None)
+        assert parsed is None
+
+    def test_parseDateFromDatePieces_invalidValues(self):
+        with pytest.raises(ValueError):
+            parse_date_from_date_pieces('abc', 'def', 'LIFE')
+
+    def test_safeParseDateFromDatePieces_invalidValues(self):
+        parsed = safe_parse_date_from_date_pieces('abc', 'def', 'LIFE')
+        assert parsed is None
 
     def test_parseBadTimeDuration(self):
         with pytest.raises(ValueError):
