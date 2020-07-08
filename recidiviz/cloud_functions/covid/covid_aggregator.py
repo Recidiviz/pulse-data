@@ -71,14 +71,12 @@ OUTPUT_COLUMN_ORDER = [
     POP_TESTED_COLUMN,
     POP_TESTED_POSITIVE_COLUMN,
     POP_TESTED_NEGATIVE_COLUMN,
-    POP_PENDING_COLUMN,
     POP_DEATHS_COLUMN,
     POP_ACTIVE_CASES_COLUMN,
     POP_RECOVERED_CASES_COLUMN,
     STAFF_TESTED_COLUMN,
     STAFF_TESTED_POSITIVE_COLUMN,
     STAFF_TESTED_NEGATIVE_COLUMN,
-    STAFF_PENDING_COLUMN,
     STAFF_DEATHS_COLUMN,
     STAFF_ACTIVE_CASES_COLUMN,
     STAFF_RECOVERED_CASES_COLUMN,
@@ -87,6 +85,45 @@ OUTPUT_COLUMN_ORDER = [
     NOTES_COLUMN,
     AGGREGATION_NOTES_COLUMN
 ]
+
+DEATH_SUMMED_NOTE = f'{POP_DEATHS_COLUMN} calculated as sum of both probable and confirmed deaths'
+
+POP_TESTED_THREE_OPERANDS_NOTE = \
+    (f'{POP_TESTED_COLUMN} calculated as sum of {POP_TESTED_POSITIVE_COLUMN}, {POP_TESTED_NEGATIVE_COLUMN}, and '
+     f'{POP_PENDING_COLUMN} (not reported in output dataset)')
+
+STAFF_TESTED_THREE_OPERANDS_NOTE = \
+    (f'{STAFF_TESTED_COLUMN} calculated as sum of {STAFF_TESTED_POSITIVE_COLUMN}, {STAFF_TESTED_NEGATIVE_COLUMN}, and '
+     f'{STAFF_PENDING_COLUMN} (not reported in output dataset)')
+
+POP_TESTED_TWO_OPERANDS_NOTE = \
+    f'{POP_TESTED_COLUMN} calculated as sum of {POP_TESTED_POSITIVE_COLUMN} and {POP_TESTED_NEGATIVE_COLUMN}'
+
+STAFF_TESTED_TWO_OPERANDS_NOTE = \
+    f'{STAFF_TESTED_COLUMN} calculated as sum of {STAFF_TESTED_POSITIVE_COLUMN} and {STAFF_TESTED_NEGATIVE_COLUMN}'
+
+POP_NEGATIVES_THREE_OPERANDS_NOTE = \
+    (f'{POP_TESTED_NEGATIVE_COLUMN} calculated as difference between {POP_TESTED_COLUMN} and sum of '
+     f'{POP_TESTED_POSITIVE_COLUMN} and {POP_PENDING_COLUMN}')
+
+STAFF_NEGATIVES_THREE_OPERANDS_NOTE = \
+    (f'{STAFF_TESTED_NEGATIVE_COLUMN} calculated as difference between {STAFF_TESTED_COLUMN} and sum of '
+     f'{STAFF_TESTED_POSITIVE_COLUMN} and {STAFF_PENDING_COLUMN}')
+
+POP_NEGATIVES_TWO_OPERANDS_NOTE = \
+    (f'{POP_TESTED_NEGATIVE_COLUMN} calculated as difference between {POP_TESTED_COLUMN} and '
+     f'{POP_TESTED_POSITIVE_COLUMN}')
+
+STAFF_NEGATIVES_TWO_OPERANDS_NOTE = \
+    (f'{STAFF_TESTED_NEGATIVE_COLUMN} calculated as difference between {STAFF_TESTED_COLUMN} and '
+     f'{STAFF_TESTED_POSITIVE_COLUMN}')
+
+POP_POSITIVE_FROM_ACTIVE_AND_RECOVERED_NOTE = \
+    f'{POP_TESTED_POSITIVE_COLUMN} calculated as sum of {POP_ACTIVE_CASES_COLUMN} and {POP_RECOVERED_CASES_COLUMN}'
+
+STAFF_POSITIVE_FROM_ACTIVE_AND_RECOVERED_NOTE = \
+    (f'{STAFF_TESTED_POSITIVE_COLUMN} calculated as sum of {STAFF_ACTIVE_CASES_COLUMN} and '
+     f'{STAFF_RECOVERED_CASES_COLUMN}')
 
 
 def aggregate(prison_csv_reader, ucla_workbook, recidiviz_csv_reader):
@@ -150,7 +187,7 @@ def _parse_prison_csv(prison_csv_reader):
         # Explicit None checks, since 0 is a valid value
         if deaths is not None and deaths_confirmed is not None:
             pop_deaths = deaths + deaths_confirmed
-            aggregation_notes = 'Summed pop deaths from two columns'
+            aggregation_notes = DEATH_SUMMED_NOTE
         elif deaths_confirmed is not None:
             pop_deaths = deaths_confirmed
         elif deaths is not None:
@@ -509,49 +546,59 @@ def _amend_data(data):
         # Below logic uses None identity checks because we want to distinguish
         # missing values from zero values
 
-        # 1. If total tested is absent, sum positive, negative, and pending to
-        # calculate it
+        # 1. If total tested is absent, sum positive and negative (and pending
+        # if available) to calculate it
         if pop_tested is None \
                 and pop_tested_positive is not None \
-                and pop_tested_negative is not None \
-                and pop_pending is not None:
-            output_row[POP_TESTED_COLUMN] = \
-                pop_tested_positive + pop_tested_negative + pop_pending
-            aggregation_notes.append(
-                'Pop tested calculated from sum of positive, negative, and '
-                + 'pending')
+                and pop_tested_negative is not None:
+            if pop_pending is not None:
+                output_row[POP_TESTED_COLUMN] = \
+                    pop_tested_positive + pop_tested_negative + pop_pending
+                aggregation_notes.append(POP_TESTED_THREE_OPERANDS_NOTE)
+            else:
+                output_row[POP_TESTED_COLUMN] = \
+                    pop_tested_positive + pop_tested_negative
+                aggregation_notes.append(POP_TESTED_TWO_OPERANDS_NOTE)
 
         if staff_tested is None \
                 and staff_tested_positive is not None \
-                and staff_tested_negative is not None \
-                and staff_pending is not None:
-            output_row[STAFF_TESTED_COLUMN] = \
-                staff_tested_positive + staff_tested_negative + staff_pending
-            aggregation_notes.append(
-                'Staff tested calculated from sum of positive, negative, and '
-                + 'pending')
+                and staff_tested_negative is not None:
+            if staff_pending is not None:
+                output_row[STAFF_TESTED_COLUMN] = \
+                    staff_tested_positive \
+                    + staff_tested_negative \
+                    + staff_pending
+                aggregation_notes.append(STAFF_TESTED_THREE_OPERANDS_NOTE)
+            else:
+                output_row[STAFF_TESTED_COLUMN] = \
+                    staff_tested_positive + staff_tested_negative
+                aggregation_notes.append(STAFF_TESTED_TWO_OPERANDS_NOTE)
 
-        # 2. If negative is absent, subtract positive and pending from total to
-        # calculate it
+        # 2. If negative is absent, subtract positive (and pending if available)
+        # from total to calculate it
         if pop_tested_negative is None \
                 and pop_tested is not None \
-                and pop_tested_positive is not None \
-                and pop_pending is not None:
-            output_row[POP_TESTED_NEGATIVE_COLUMN] = \
-                pop_tested - (pop_tested_positive + pop_pending)
-            aggregation_notes.append(
-                'Pop negative calculated by subtracting positive and pending '
-                + ' from tested')
+                and pop_tested_positive is not None:
+            if pop_pending is not None:
+                output_row[POP_TESTED_NEGATIVE_COLUMN] = \
+                    pop_tested - (pop_tested_positive + pop_pending)
+                aggregation_notes.append(POP_NEGATIVES_THREE_OPERANDS_NOTE)
+            else:
+                output_row[POP_TESTED_NEGATIVE_COLUMN] = \
+                    pop_tested - pop_tested_positive
+                aggregation_notes.append(POP_NEGATIVES_TWO_OPERANDS_NOTE)
 
         if staff_tested_negative is None \
                 and staff_tested is not None \
-                and staff_tested_positive is not None \
-                and staff_pending is not None:
-            output_row[STAFF_TESTED_NEGATIVE_COLUMN] = \
-                staff_tested - (staff_tested_positive + staff_pending)
-            aggregation_notes.append(
-                'Staff negative calculated by subtracting positive and pending '
-                + ' from tested')
+                and staff_tested_positive is not None:
+            if staff_pending is not None:
+                output_row[STAFF_TESTED_NEGATIVE_COLUMN] = \
+                    staff_tested - (staff_tested_positive + staff_pending)
+                aggregation_notes.append(STAFF_NEGATIVES_THREE_OPERANDS_NOTE)
+            else:
+                output_row[STAFF_TESTED_NEGATIVE_COLUMN] = \
+                    staff_tested - staff_tested_positive
+                aggregation_notes.append(STAFF_NEGATIVES_TWO_OPERANDS_NOTE)
 
         # 3. Correct rows showing active as positive
         is_tn_oh_ok = state in ['Tennessee', 'Ohio', 'Oklahoma']
@@ -560,19 +607,30 @@ def _amend_data(data):
         is_federal_facility = \
             state == 'Federal' or facility_type == 'Federal Prisons'
         if is_tn_oh_ok or is_de_on_or_after_5_20 or is_federal_facility:
-            if pop_tested_positive is not None and pop_recovered is not None:
+            if pop_tested_positive is not None:
+                # Note that fixing this erroneous column mapping intentionally
+                # does not have an aggregation note
                 output_row[POP_ACTIVE_CASES_COLUMN] = pop_tested_positive
-                output_row[POP_TESTED_POSITIVE_COLUMN] = \
-                    pop_tested_positive + pop_recovered
-                aggregation_notes.append(
-                    'Corrected pop active shown as total positive')
-            if staff_tested_positive is not None \
-                    and staff_recovered is not None:
+                output_row[POP_TESTED_POSITIVE_COLUMN] = None
+                # If recovered is also available, actual positives value can be
+                # calculated
+                if pop_recovered is not None:
+                    output_row[POP_TESTED_POSITIVE_COLUMN] = \
+                        pop_tested_positive + pop_recovered
+                    aggregation_notes.append(
+                        POP_POSITIVE_FROM_ACTIVE_AND_RECOVERED_NOTE)
+            if staff_tested_positive is not None:
+                # Note that fixing this erroneous column mapping intentionally
+                # does not have an aggregation note
                 output_row[STAFF_ACTIVE_CASES_COLUMN] = staff_tested_positive
-                output_row[STAFF_TESTED_POSITIVE_COLUMN] = \
-                    staff_tested_positive + staff_recovered
-                aggregation_notes.append(
-                    'Corrected staff active shown as total positive')
+                output_row[STAFF_TESTED_POSITIVE_COLUMN] = None
+                # If recovered is also available, actual positives value can be
+                # calculated
+                if staff_recovered is not None:
+                    output_row[STAFF_TESTED_POSITIVE_COLUMN] = \
+                        staff_tested_positive + staff_recovered
+                    aggregation_notes.append(
+                        STAFF_POSITIVE_FROM_ACTIVE_AND_RECOVERED_NOTE)
 
         if aggregation_notes:
             output_row[AGGREGATION_NOTES_COLUMN] = ', '.join(aggregation_notes)
