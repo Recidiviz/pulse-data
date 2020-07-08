@@ -281,7 +281,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         raw_table_dependency_configs = []
         for raw_table_tag in raw_table_dependencies:
             if raw_table_tag not in region_raw_table_config.raw_file_configs:
-                raise ValueError(f'Found unexpected raw table tag {raw_table_tag}')
+                raise ValueError(f'Found unexpected raw table tag [{raw_table_tag}]')
             raw_table_dependency_configs.append(region_raw_table_config.raw_file_configs[raw_table_tag])
         return raw_table_dependency_configs
 

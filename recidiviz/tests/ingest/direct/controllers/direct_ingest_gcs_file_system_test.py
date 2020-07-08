@@ -19,16 +19,46 @@ import datetime
 import os
 from unittest import TestCase
 
+from google.api_core import exceptions
+from google.cloud import storage
+from google.cloud.storage import Bucket
+from mock import create_autospec
+
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path_from_normalized_path
+    to_normalized_unprocessed_file_path_from_normalized_path, DirectIngestGCSFileSystemImpl
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
-    GcsfsDirectoryPath
+    GcsfsDirectoryPath, GcsfsBucketPath
 from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 
 
 class TestDirectIngestGcsFileSystem(TestCase):
+    def setUp(self) -> None:
+        self.mock_storage_client = create_autospec(storage.Client)
+        self.fs = DirectIngestGCSFileSystemImpl(self.mock_storage_client)
+
+    def test_retry(self):
+        mock_bucket = create_autospec(Bucket)
+        mock_bucket.exists.return_value = True
+        # Client first raises a Gateway timeout, then returns a normal bucket.
+        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'), mock_bucket]
+
+        # Should not crash!
+        self.assertTrue(self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket')))
+
+    def test_retry_with_fatal_error(self):
+        mock_bucket = create_autospec(Bucket)
+        mock_bucket.exists.return_value = True
+        # Client first raises a Gateway timeout, then on retry will raise a ValueError
+        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'),
+                                                           ValueError('This will crash')]
+
+        with self.assertRaises(ValueError):
+            self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket'))
+
+
+class TestFakeDirectIngestGcsFileSystem(TestCase):
     """Tests for the DirectIngestGCSFileSystem."""
 
     STORAGE_DIR_PATH = GcsfsDirectoryPath(bucket_name='storage_bucket',
@@ -38,7 +68,6 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
     def setUp(self) -> None:
         self.fs = FakeDirectIngestGCSFileSystem()
-
 
     def fully_process_file(self,
                            dt: datetime.datetime,
