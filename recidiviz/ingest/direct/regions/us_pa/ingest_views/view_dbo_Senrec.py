@@ -24,7 +24,9 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """SELECT ids.control_number AS control_number, sentences.*
 FROM 
     {dbo_Senrec} sentences
-LEFT OUTER JOIN
+-- As of 2020-06-10, there are only 6 sentences with no control numbers - we omit these since there's not way for us to
+link to a person.
+JOIN
     (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
 ON ids.inmate_number = sentences.curr_inmate_num
 ORDER BY control_number, curr_inmate_num;

@@ -45,6 +45,7 @@ LOWER_BOUND_TIMESTAMP_PARAM_NAME = 'update_timestamp_lower_bound_exclusive'
 
 @attr.s(frozen=True)
 class _IngestViewExportState:
+    ingest_view_file_tag: str = attr.ib()
 
     # The last ingest metadata row written for the view this represents. May be for an export job that has not yet
     # completed.
@@ -120,22 +121,22 @@ class DirectIngestIngestViewExportManager:
 
         logging.info('Generating new ingest jobs.')
         for ingest_view_tag, export_state in ingest_view_to_export_state.items():
-            lower_bound_date_exclusive = \
+            lower_bound_datetime_exclusive = \
                 export_state.last_export_metadata.datetimes_contained_upper_bound_inclusive \
                 if export_state.last_export_metadata else None
 
             ingest_args_list = []
-            for _date, upper_bound_date_inclusive in export_state.max_update_datetime_by_date:
+            for _date, upper_bound_datetime_inclusive in export_state.max_update_datetime_by_date:
                 args = GcsfsIngestViewExportArgs(
                     ingest_view_name=ingest_view_tag,
-                    upper_bound_datetime_prev=lower_bound_date_exclusive,
-                    upper_bound_datetime_to_export=upper_bound_date_inclusive
+                    upper_bound_datetime_prev=lower_bound_datetime_exclusive,
+                    upper_bound_datetime_to_export=upper_bound_datetime_inclusive
                 )
                 logging.info('Generating job args for tag [%s]: [%s].', ingest_view_tag, args)
 
                 self.file_metadata_manager.register_ingest_file_export_job(args)
                 ingest_args_list.append(args)
-                lower_bound_date_exclusive = upper_bound_date_inclusive
+                lower_bound_datetime_exclusive = upper_bound_datetime_inclusive
 
             jobs_to_schedule.extend(ingest_args_list)
 
@@ -272,6 +273,7 @@ class DirectIngestIngestViewExportManager:
             raw_table_dependency_updated_metadatas.extend(raw_file_metadata_list)
 
         return _IngestViewExportState(
+            ingest_view_file_tag=ingest_view.file_tag,
             last_export_metadata=last_export_metadata,
             raw_table_dependency_updated_metadatas=raw_table_dependency_updated_metadatas
         )
