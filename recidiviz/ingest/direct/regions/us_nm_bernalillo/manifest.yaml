@@ -1,6 +1,6 @@
 agency_name: Bernalillo County Sheriff Department
 agency_type: jail
 timezone: America/New_York
-environment: staging
+environment: production
 shared_queue: direct-ingest-jpp-process-job-queue-v2
 jurisdiction_id: '35001002'
