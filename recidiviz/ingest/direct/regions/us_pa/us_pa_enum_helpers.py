@@ -30,6 +30,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
         'RP',  # Re-Parole (Paroled for the non-first time in this sentence group)
         'SP',  # State Parole (Paroled for the first time in this sentence group)
+        'P',  # Paroled (relatively rare)
     ],
     StateIncarcerationPeriodReleaseReason.DEATH: [
         'DA',  # Deceased - Assault
@@ -43,6 +44,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     ],
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: [
         'AOTH',  # Other - Use Sparingly
+        'X',  # Unknown
     ],
     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN: [
         'AA',    # Administrative
@@ -53,6 +55,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'APD',  # Parole Detainee
         'AS',    # Actively Serving
         'CS',    # Change Other Sentence
+        'RTN',  # (Not in PA data dictionary, no instances after 1996)
     ],
     StateIncarcerationPeriodReleaseReason.ESCAPE: [
         'AE',  # Escape
@@ -61,6 +64,9 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     ],
     StateIncarcerationPeriodReleaseReason.PARDONED: [
         'PD',  # Pardoned
+    ],
+    StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
+        'APV',  # Parole Violator
     ],
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: [
         'RE',  # Received In Error
@@ -165,9 +171,15 @@ def incarceration_period_release_reason_mapper(concatenated_codes: str) -> State
 
     if is_generic_release:
         # In case of a generic release reason, the ending sentence status code is the most informative
+        if end_sentence_status_code == 'NONE':
+            return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+
         return _retrieve_release_reason_mapping(end_sentence_status_code)
 
     # If none of the above are true, base this on the movement code itself
+    if end_movement_code == 'NONE':
+        return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+
     return _retrieve_release_reason_mapping(end_movement_code)
 
 
@@ -214,15 +226,15 @@ def _retrieve_purpose_mapping(code: str) -> StateSpecializedPurposeForIncarcerat
 
 
 def concatenate_incarceration_period_end_codes(row: Dict[str, str]) -> str:
-    end_sentence_status_code = row['end_sentence_status_code']
-    end_parole_status_code = row['end_parole_status_code']
-    end_movement_code = row['end_movement_code']
+    end_sentence_status_code = row['end_sentence_status_code'] or 'None'
+    end_parole_status_code = row['end_parole_status_code'] or 'None'
+    end_movement_code = row['end_movement_code'] or 'None'
 
     return f"{end_sentence_status_code}-{end_parole_status_code}-{end_movement_code}"
 
 
 def concatenate_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
-    start_parole_status_code = row['start_parole_status_code']
-    sentence_type = row.get('sentence_type', 'None')
+    start_parole_status_code = row['start_parole_status_code'] or 'None'
+    sentence_type = row['sentence_type'] or 'None'
 
     return f"{start_parole_status_code}-{sentence_type}"
