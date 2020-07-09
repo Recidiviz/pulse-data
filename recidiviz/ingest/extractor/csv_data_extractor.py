@@ -428,27 +428,28 @@ class CsvDataExtractor(DataExtractor):
         if self.primary_key:
             coordinates = self._get_coordinates_from_mapping(self.primary_key,
                                                              row)
-            return more_itertools.one(coordinates)
+            coordinates = more_itertools.one(coordinates)
+            if not coordinates.field_value:
+                raise ValueError(
+                    f"Found empty primary coordinates mapping in col [{self.primary_key}] for "
+                    f"[{coordinates.class_name}.{coordinates.field_name}]")
+            return coordinates
 
         raise ValueError(
             'Must either define a primary_key or primary_key_override_callback,'
             'but neither found.')
 
     @staticmethod
-    def _get_coordinates_from_mapping(key_mapping: Dict[str, str],
-                                      row: Dict[str, str]) \
-            -> List[IngestFieldCoordinates]:
+    def _get_coordinates_from_mapping(
+            key_mapping: Dict[str, str], row: Dict[str, str]) -> List[IngestFieldCoordinates]:
         coordinates = []
 
         for lookup_key, cls_and_field in key_mapping.items():
             if not cls_and_field:
-                raise TypeError(f"Expected truthy key mapping [{key_mapping}] "
-                                f"to have a value inside")
+                raise TypeError(f"Expected truthy key mapping [{key_mapping}] to have a value inside")
+
             cls, field = cls_and_field.split('.')
             id_value = row[lookup_key.strip()]
-
-            if not id_value:
-                raise ValueError(f"Found empty coordinates mapping in col {lookup_key} for {cls}.{field}")
 
             coordinates.append(IngestFieldCoordinates(cls, field, id_value))
 
