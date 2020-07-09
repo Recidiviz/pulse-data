@@ -394,6 +394,15 @@ class BigQueryClient:
             schema_fields: A list of fields to add to the table
         """
 
+    @abc.abstractmethod
+    def delete_table(self, dataset_id: str, table_id: str) -> None:
+        """Provied the |dataset_id| and |table_id|, attempts to delete the given table from BigQuery.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to delete.
+        """
+
 
 class BigQueryClientImpl(BigQueryClient):
     """Wrapper around the bigquery.Client with convenience functions for querying, creating, copying and exporting
@@ -418,8 +427,7 @@ class BigQueryClientImpl(BigQueryClient):
         return self._project_id
 
     def dataset_ref_for_id(self, dataset_id: str) -> bigquery.DatasetReference:
-        return bigquery.DatasetReference.from_string(dataset_id,
-                                                     default_project=self._project_id)
+        return bigquery.DatasetReference.from_string(dataset_id, default_project=self._project_id)
 
     def create_dataset_if_necessary(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
         try:
@@ -569,12 +577,15 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info('Deleting [%d] temporary intermediate tables.', len(export_configs))
         for export_config in export_configs:
-            intermediate_dataset_ref = self.dataset_ref_for_id(export_config.intermediate_dataset_id)
-            intermediate_table_ref = intermediate_dataset_ref.table(export_config.intermediate_table_name)
-            logging.info('Deleting temporary table [%s] from dataset [%s].',
-                         intermediate_table_ref.table_id, intermediate_dataset_ref.dataset_id)
-            self.client.delete_table(intermediate_table_ref)
+            self.delete_table(dataset_id=export_config.intermediate_dataset_id,
+                              table_id=export_config.intermediate_table_name)
         logging.info('Done deleting temporary intermediate tables.')
+
+    def delete_table(self, dataset_id: str, table_id: str):
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+        table_ref = dataset_ref.table(table_id)
+        logging.info('Deleting temporary table [%s] from dataset [%s].', table_id, dataset_id)
+        self.client.delete_table(table_ref)
 
     def run_query_async(self, query_str: str) -> bigquery.QueryJob:
         return self.client.query(query_str)

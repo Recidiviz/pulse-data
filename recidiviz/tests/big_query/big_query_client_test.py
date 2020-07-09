@@ -42,8 +42,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.client_patcher = mock.patch(
-            'recidiviz.big_query.big_query_client.client')
+        self.client_patcher = mock.patch('recidiviz.big_query.big_query_client.client')
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_view = BigQueryView(
@@ -336,3 +335,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
 
         self.mock_client.update_table.assert_not_called()
+
+    def test_delete_table(self):
+        """Tests that our delete table function calls the correct client method."""
+        self.bq_client.delete_table(self.mock_dataset_id, self.mock_table_id)
+        self.mock_client.delete_table.assert_called()

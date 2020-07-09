@@ -39,8 +39,11 @@ from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
 
+UPDATE_TIMESTAMP_PARAM_NAME = 'update_timestamp'
 UPPER_BOUND_TIMESTAMP_PARAM_NAME = 'update_timestamp_upper_bound_inclusive'
 LOWER_BOUND_TIMESTAMP_PARAM_NAME = 'update_timestamp_lower_bound_exclusive'
+SELECT_SUBQUERY = 'SELECT * FROM `{project_id}.{dataset_id}.{table_name}`;'
+TABLE_NAME_DATE_FORMAT = '%Y_%m_%d_%H_%M_%S'
 
 
 @attr.s(frozen=True)
@@ -143,8 +146,35 @@ class DirectIngestIngestViewExportManager:
         logging.info('Returning [%s] jobs to schedule.', len(jobs_to_schedule))
         return jobs_to_schedule
 
+    def _generate_export_job_for_date(
+            self,
+            table_name: str,
+            ingest_view: DirectIngestPreProcessedIngestView,
+            date_bound: datetime.datetime) -> bigquery.QueryJob:
+        """Generates a query for the provided |ingest view| on the given |date bound| and starts a job to load the
+        results of that query into the provided |table_name|. Returns the potentially in progress QueryJob to the
+        caller.
+        """
+        query, query_params = self._generate_query_and_params_for_date(ingest_view, date_bound)
+        query_job = self.big_query_client.create_table_from_query_async(
+            dataset_id=ingest_view.dataset_id,
+            table_id=table_name,
+            query=query,
+            query_parameters=query_params,
+            overwrite=True)
+        return query_job
+
     def export_view_for_args(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> bool:
-        """Performs an export of a single ingest view with date bounds specified in the provided args."""
+        """Performs an Cloud Storage export of a single ingest view with date bounds specified in the provided args. If
+        the provided args contain an upper and lower bound date, the exported view contains only the delta between the
+        two dates. If only the upper bound is provided, then the exported view contains historical results up until the
+        bound date.
+
+        Note: In order to prevent resource exhaustion in BigQuery, the ultimate query in this method is broken down
+        into distinct parts. This method first persists the results of historical queries for each given bound date
+        (upper and lower) into temporary tables. The delta between those tables is then queried separately using
+        SQL's `EXCEPT DISTINCT` and those final results are exported to Cloud Storage.
+        """
         if not self.region.are_ingest_view_exports_enabled_in_env():
             raise ValueError(f'Ingest view exports not enabled for region [{self.region.region_code}]')
 
@@ -157,28 +187,62 @@ class DirectIngestIngestViewExportManager:
             logging.warning('Already exported view for args [%s] - returning.', ingest_view_export_args)
             return False
 
-        logging.info('Beginning export for view tag [%s] with args: [%s].',
-                     ingest_view_export_args.ingest_view_name, ingest_view_export_args)
-
-        query, query_params = self._generate_query_with_params(
-            self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
-            ingest_view_export_args)
-
-        logging.info('Generated export query [%s]', query)
-        logging.info('Generated export query params [%s]', query_params)
-
         output_path = self._generate_output_path(ingest_view_export_args, metadata)
-
         logging.info('Generated output path [%s]', output_path.uri())
 
         if not metadata.normalized_file_name:
             self.file_metadata_manager.register_ingest_view_export_file_name(metadata, output_path)
 
         ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        single_date_table_ids = []
+        single_date_table_export_jobs = []
+
+        upper_bound_table_name = \
+            f'{ingest_view_export_args.ingest_view_name}_' \
+            f'{ingest_view_export_args.upper_bound_datetime_to_export.strftime(TABLE_NAME_DATE_FORMAT)}_' \
+            f'upper_bound'
+        export_job = self._generate_export_job_for_date(
+            table_name=upper_bound_table_name,
+            ingest_view=ingest_view,
+            date_bound=ingest_view_export_args.upper_bound_datetime_to_export)
+        single_date_table_ids.append(upper_bound_table_name)
+        single_date_table_export_jobs.append(export_job)
+
+        query = SELECT_SUBQUERY.format(
+            project_id=self.big_query_client.project_id,
+            dataset_id=ingest_view.dataset_id,
+            table_name=upper_bound_table_name)
+
+        if ingest_view_export_args.upper_bound_datetime_prev:
+            lower_bound_table_name = \
+                f'{ingest_view_export_args.ingest_view_name}_' \
+                f'{ingest_view_export_args.upper_bound_datetime_prev.strftime(TABLE_NAME_DATE_FORMAT)}_' \
+                f'lower_bound'
+            export_job = self._generate_export_job_for_date(
+                table_name=lower_bound_table_name,
+                ingest_view=ingest_view,
+                date_bound=ingest_view_export_args.upper_bound_datetime_prev)
+            single_date_table_export_jobs.append(export_job)
+            single_date_table_ids.append(lower_bound_table_name)
+
+            filter_query = SELECT_SUBQUERY.format(
+                project_id=self.big_query_client.project_id,
+                dataset_id=ingest_view.dataset_id,
+                table_name=lower_bound_table_name).rstrip().rstrip(';')
+            query = query.rstrip().rstrip(';')
+            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n)'
+
+        # Wait for completion of all async date queries
+        for query_job in single_date_table_export_jobs:
+            query_job.result()
+        logging.info('Completed loading results of individual date queries into intermediate tables.')
+
+        logging.info('Generated final export query [%s]', str(query))
+
         export_configs = [
             ExportQueryConfig(
                 query=query,
-                query_parameters=query_params,
+                query_parameters=[],
                 intermediate_dataset_id=ingest_view.dataset_id,
                 intermediate_table_name=f'{ingest_view_export_args.ingest_view_name}_latest_export',
                 output_uri=output_path.uri(),
@@ -187,10 +251,15 @@ class DirectIngestIngestViewExportManager:
         ]
 
         logging.info('Starting export to cloud storage.')
-        self.big_query_client.export_query_results_to_cloud_storage(export_configs)
+        self.big_query_client.export_query_results_to_cloud_storage(export_configs=export_configs)
         logging.info('Export to cloud storage complete.')
 
+        for table_id in single_date_table_ids:
+            self.big_query_client.delete_table(dataset_id=ingest_view.dataset_id, table_id=table_id)
+            logging.info('Deleted intermediate table [%s]', table_id)
+
         self.file_metadata_manager.mark_ingest_view_exported(metadata)
+
         return True
 
     @classmethod
@@ -198,7 +267,7 @@ class DirectIngestIngestViewExportManager:
                                    ingest_views_by_tag: Dict[str, DirectIngestPreProcessedIngestView],
                                    ingest_view_export_args: GcsfsIngestViewExportArgs):
         """Prints a version of the export query for the provided args that can be run in the BigQuery UI."""
-        query, query_params = cls._generate_query_with_params(
+        query, query_params = cls._debug_generate_unified_query(
             ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
             ingest_view_export_args)
 
@@ -211,17 +280,19 @@ class DirectIngestIngestViewExportManager:
         print(query)
 
     @staticmethod
-    def _generate_query_with_params(
+    def _debug_generate_unified_query(
             ingest_view: DirectIngestPreProcessedIngestView,
             ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
-        """Generates a date bounded query that represents the data that has changed for this view between the specified
-        date bounds in the provided export args.
+        """Generates a single query that is date bounded such that it represents the data that has changed for this view
+        between the specified date bounds in the provided export args.
 
         If there is no lower bound, this produces a query for a historical query up to the upper bound date. Otherwise,
         it diffs two historical queries to produce a delta query, using the SQL 'EXCEPT DISTINCT' function.
 
-        Returns the query, along with the query params that must be passed to the BigQuery query job.
+        Important Note: This query is meant for debug use only. In the actual DirectIngest flow, query results for
+        individual dates are persisted into temporary tables, and those temporary tables are then diff'd using SQL's
+        `EXCEPT DISTINCT` function.
         """
 
         query_params = [
@@ -241,6 +312,21 @@ class DirectIngestIngestViewExportManager:
                 ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME).rstrip().rstrip(';')
             query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n)'
 
+        return query, query_params
+
+    @staticmethod
+    def _generate_query_and_params_for_date(
+            ingest_view: DirectIngestPreProcessedIngestView,
+            update_timestamp: datetime.datetime
+    ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
+        """Generates a single query for the provided |ingest view| that is date bounded by |update_timestamp|."""
+        query_params = [
+            bigquery.ScalarQueryParameter(UPDATE_TIMESTAMP_PARAM_NAME,
+                                          bigquery.enums.SqlTypeNames.DATETIME.value,
+                                          update_timestamp)
+        ]
+        query = ingest_view.date_parametrized_view_query(UPDATE_TIMESTAMP_PARAM_NAME)
+        logging.info('Generated bound query with params \nquery: [%s]\nparams: [%s]', query, query_params)
         return query, query_params
 
     def _generate_output_path(self,
@@ -309,9 +395,9 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'movement_facility_location_offstat_incarceration_periods'
-    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 2, 27)
-    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 6, 9)
+    ingest_view_name_: str = 'offender_ofndr_dob_address'
+    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 23)
+    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 6, 29)
 
     with local_project_id_override(GAE_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
