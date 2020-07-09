@@ -47,7 +47,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateSupervisionSentence
+    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StatePersonRace
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -107,9 +107,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
-                self.gen_hydrate_alternate_external_ids({
-                    'OffSID': US_PA_SID,
-                }),
+                self._hydrate_races,
                 gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
             ],
             'dbo_LSIR': [
@@ -310,13 +308,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Senrec',
             'incarceration_period',
             'dbo_Miscon',
+
+            # Data source: PBPP
+            'dbo_Offender',
+            'dbo_LSIR',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
         unlaunched_file_tags = [
             # Data source: PBPP
-            'dbo_Offender',
-            'dbo_LSIR',  # TODO(3024): Ready to launch, just blocked on preceding tags
             'supervision_sentence',
         ]
 
@@ -418,6 +418,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
                 for sg_to_create in sentence_groups_to_create:
                     create_if_not_exists(sg_to_create, obj, 'state_sentence_groups')
+
+    @staticmethod
+    def _hydrate_races(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                races = row['races_ethnicities_list'].split(',') if row['races_ethnicities_list'] else []
+                for race in races:
+                    race_obj = StatePersonRace(race=race)
+                    create_if_not_exists(race_obj, obj, 'state_person_external_ids')
 
     @staticmethod
     def _compose_current_address(
