@@ -466,7 +466,6 @@ class GcsfsDirectIngestController(
                contents_handle: GcsfsFileContentsHandle) -> IngestInfo:
         pass
 
-
     def _should_split_file(self, path: GcsfsFilePath) -> bool:
         """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)

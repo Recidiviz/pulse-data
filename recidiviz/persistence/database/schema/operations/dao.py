@@ -85,7 +85,6 @@ def get_ingest_view_metadata_for_export_job(
     """Returns the ingest file metadata row corresponding to the export job with the provided args. Throws if such a
     row does not exist.
     """
-
     results = session.query(schema.DirectIngestIngestFileMetadata).filter_by(
         region_code=region_code,
         file_tag=file_tag,
