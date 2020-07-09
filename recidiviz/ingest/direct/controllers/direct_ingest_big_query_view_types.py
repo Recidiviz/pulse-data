@@ -215,8 +215,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """Non-parametrized query on the latest version of each raw table."""
         return self.view_query
 
-    def date_parametrized_view_query(self,
-                                     param_name: Optional[str] = None):
+    def date_parametrized_view_query(self, param_name: Optional[str] = None):
         """Parametrized query on the version of each raw table on a given date. If provided, the parameter name for the
         max update date will have the provided |param_name|, otherwise the parameter name will be the default
         UPDATE_DATETIME_PARAM_NAME.
