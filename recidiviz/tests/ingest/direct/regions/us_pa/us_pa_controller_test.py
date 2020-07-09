@@ -791,36 +791,34 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
     def test_populate_data_dbo_Offender(self):
         expected = IngestInfo(
             state_people=[
-                StatePerson(state_person_id=' 123A ',
-                            gender='M       ',
+                StatePerson(state_person_id='123A',
+                            gender='M',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id=' 123A ', id_type=US_PA_PBPP),
-                                StatePersonExternalId(state_person_external_id_id='12345678', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='123A', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='B    ')],
+                            state_person_races=[StatePersonRace(race='B')],
                             ),
-                StatePerson(state_person_id='456B ',
-                            gender='M       ',
+                StatePerson(state_person_id='456B',
+                            gender='M',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='456B ', id_type=US_PA_PBPP),
-                                StatePersonExternalId(state_person_external_id_id='55554444', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='I    ')],
+                            state_person_races=[StatePersonRace(race='I')],
+                            state_person_ethnicities=[StatePersonEthnicity(ethnicity='H')],
                             ),
-                StatePerson(state_person_id='789C ',
-                            gender='  F      ',
+                StatePerson(state_person_id='789C',
+                            gender='F',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='789C ', id_type=US_PA_PBPP),
+                                StatePersonExternalId(state_person_external_id_id='789C', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='N    ')],
+                            state_person_races=[StatePersonRace(race='N')],
                             ),
-                StatePerson(state_person_id='345E ',
-                            gender='  M     ',
+                StatePerson(state_person_id='345E',
+                            gender='M',
                             state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='345E ', id_type=US_PA_PBPP),
-                                StatePersonExternalId(state_person_external_id_id='09876543', id_type=US_PA_SID),
+                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                             ],
-                            state_person_races=[StatePersonRace(race='W    ')],
+                            state_person_races=[StatePersonRace(race='W')],
                             )
             ])
 
@@ -1940,6 +1938,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         person_2.gender_raw_text = 'M'
         person_2.races.append(entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE_UPPER, race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE, race_raw_text='I'
+        ))
+        person_2.ethnicities.append(entities.StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='H'
         ))
 
         person_4.gender_raw_text = 'M'
