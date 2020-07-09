@@ -971,7 +971,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_raw_metadata_tags_with_is_processed=expected_raw_metadata_tags_with_is_processed)
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
-    def test_move_files_from_previous_days_to_storage_sql_preprocessing_fully_launached(self):
+    def test_move_files_from_previous_days_to_storage_sql_preprocessing_fully_launched(self):
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,

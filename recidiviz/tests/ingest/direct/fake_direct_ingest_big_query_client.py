@@ -26,6 +26,12 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 
 
+class FakeQueryJob:
+    """A fake implementation of bigquery.QueryJob for use in direct ingest tests."""
+    def result(self, _page_size=None, _max_results=None, _retry=None, _timeout=None):
+        return
+
+
 class FakeDirectIngestBigQueryClient(BigQueryClient):
     """A fake implementation of BigQueryClient for use in direct ingest tests."""
     def __init__(self,
@@ -91,7 +97,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str,
                                       query_parameters: List[bigquery.ScalarQueryParameter],
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
-        raise ValueError('Must be implemented for use in tests.')
+        return FakeQueryJob()
 
     def insert_into_table_from_table_async(self, source_dataset_id: str, source_table_id: str,
                                            destination_dataset_id: str, destination_table_id: str,
@@ -118,3 +124,6 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
             bigquery.Table:
         raise ValueError('Must be implemented for use in tests.')
+
+    def delete_table(self, dataset_id: str, table_id: str) -> None:
+        return
