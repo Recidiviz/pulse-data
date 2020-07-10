@@ -26,7 +26,7 @@ from typing import List, Dict, Tuple, Any, Sequence, Optional
 
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
-    ProgramReferralEvent
+    ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
     augmented_combo_for_calculations, include_in_historical_metrics, \
     get_calculation_month_lower_bound_date, \
@@ -35,6 +35,8 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import \
     assessment_score_bucket, include_assessment_in_metric
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
+    supervision_types_distinct_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -106,6 +108,23 @@ def map_program_combinations(person: StatePerson,
             )
 
             metrics.extend(program_referral_metrics_event_based)
+        elif (isinstance(program_event, ProgramParticipationEvent)
+              and metric_inclusions.get(ProgramMetricType.PARTICIPATION)):
+            characteristic_combo = characteristics_dict(person, program_event)
+
+            program_participation_metrics_event_based = map_metric_combinations(
+                characteristic_combo,
+                program_event,
+                calculation_month_upper_bound,
+                calculation_month_lower_bound,
+                program_events,
+                periods_and_events,
+                ProgramMetricType.PARTICIPATION,
+                # The ProgramParticipationMetric is explicitly a daily metric
+                include_metric_period_output=False
+            )
+
+            metrics.extend(program_participation_metrics_event_based)
 
     return metrics
 
@@ -122,6 +141,8 @@ def characteristics_dict(person: StatePerson,
         A dictionary populated with all relevant characteristics.
     """
     characteristics: Dict[str, Any] = {}
+
+    event_date = program_event.event_date
 
     if isinstance(program_event, ProgramReferralEvent):
         if program_event.supervision_type:
@@ -143,11 +164,16 @@ def characteristics_dict(person: StatePerson,
             characteristics['supervising_officer_external_id'] = program_event.supervising_officer_external_id
         if program_event.supervising_district_external_id:
             characteristics['supervising_district_external_id'] = program_event.supervising_district_external_id
+    elif isinstance(program_event, ProgramParticipationEvent):
+        characteristics['date_of_participation'] = event_date
+
+        if program_event.supervision_type:
+            characteristics['supervision_type'] = program_event.supervision_type
+        if program_event.program_location_id:
+            characteristics['program_location_id'] = program_event.program_location_id
 
     if program_event.program_id:
         characteristics['program_id'] = program_event.program_id
-
-    event_date = program_event.event_date
 
     characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
@@ -189,36 +215,35 @@ def map_metric_combinations(
     """
     metrics = []
 
-    all_referral_events = [
-        event for event in all_program_events
-        if isinstance(event, ProgramReferralEvent)
-    ]
+    characteristic_combo['metric_type'] = metric_type
 
-    if metric_type == ProgramMetricType.REFERRAL and isinstance(program_event, ProgramReferralEvent):
-        characteristic_combo['metric_type'] = metric_type
+    if include_in_historical_metrics(program_event.event_date.year, program_event.event_date.month,
+                                     calculation_month_upper_bound, calculation_month_lower_bound):
+        # ProgramParticipationMetrics are point-in-time metrics for the date of the participation, all
+        # other ProgramMetrics are metrics based on the month of the event
+        is_daily_metric = metric_type == ProgramMetricType.PARTICIPATION
 
-        if include_in_historical_metrics(
-                program_event.event_date.year, program_event.event_date.month,
-                calculation_month_upper_bound, calculation_month_lower_bound):
+        metrics.extend(combination_program_monthly_metrics(
+            characteristic_combo, program_event, metric_type, all_program_events, is_daily_metric))
 
-            metrics.extend(
-                combination_referral_monthly_metrics(characteristic_combo, program_event, all_referral_events))
+    if include_metric_period_output:
+        if not isinstance(program_event, ProgramReferralEvent):
+            raise ValueError("Unexpected metric period calculation of an event that's not a ProgramReferralEvent.")
 
-        if include_metric_period_output:
-            metrics.extend(combination_referral_metric_period_metrics(characteristic_combo,
-                                                                      program_event,
-                                                                      calculation_month_upper_bound,
-                                                                      periods_and_events))
+        metrics.extend(combination_program_metric_period_metrics(characteristic_combo,
+                                                                 program_event,
+                                                                 calculation_month_upper_bound,
+                                                                 periods_and_events))
 
     return metrics
 
 
-def combination_referral_monthly_metrics(
+def combination_program_monthly_metrics(
         combo: Dict[str, Any],
-        program_event: ProgramReferralEvent,
-        all_referral_events:
-        List[ProgramReferralEvent]) \
-        -> List[Tuple[Dict[str, Any], int]]:
+        program_event: ProgramEvent,
+        metric_type: ProgramMetricType,
+        all_program_events: List[ProgramEvent],
+        is_daily_metric: bool) -> List[Tuple[Dict[str, Any], int]]:
     """Returns all unique referral metrics for the given event and combination.
 
     First, includes an event-based count for the month the event occurred with a metric period of 1 month. Then, if
@@ -228,7 +253,10 @@ def combination_referral_monthly_metrics(
     Args:
         combo: A characteristic combination to convert into metrics
         program_event: The program event from which the combination was derived
-        all_referral_events: All of this person's ProgramReferralEvents
+        metric_type: The type of metric being tracked by this combo
+        all_program_events: All of this person's ProgramEvents
+        is_daily_metric:  If True, limits person-based counts to the date of the event. If False, limits person-based
+            counts to the month of the event.
 
     Returns:
         A list of key-value tuples representing specific metric combination dictionaries and the number 1 representing
@@ -240,40 +268,52 @@ def combination_referral_monthly_metrics(
     event_year = event_date.year
     event_month = event_date.month
 
-    # Add event-based combo for the 1-month period the month of the event
+    base_metric_period = 0 if is_daily_metric else 1
+
+    # Add event-based combo for the base metric period the month of the event
     event_based_same_month_combo = augmented_combo_for_calculations(
         combo, program_event.state_code,
         event_year, event_month,
-        MetricMethodologyType.EVENT, 1)
+        MetricMethodologyType.EVENT, base_metric_period)
 
     metrics.append((event_based_same_month_combo, 1))
 
-    # Create the person-based combo for the 1-month period of the month of the event
+    # Create the person-based combo for the base metric period of the month of the event
     person_based_same_month_combo = augmented_combo_for_calculations(
         combo, program_event.state_code,
         event_year, event_month,
-        MetricMethodologyType.PERSON, 1
+        MetricMethodologyType.PERSON, base_metric_period
     )
 
-    # Get all other referral events that happened the same month as this one
-    all_referral_events_in_event_month = [
-        event for event in all_referral_events
-        if event.event_date.year == event_date.year and
-        event.event_date.month == event_date.month
-    ]
+    events_in_period: List[ProgramEvent] = []
 
-    if include_referral_in_count(
-            combo,
-            program_event,
-            last_day_of_month(event_date),
-            all_referral_events_in_event_month):
+    if metric_type == ProgramMetricType.PARTICIPATION:
+        # Get all other participation events that happened on the same day as this one
+        events_in_period = [
+            event for event in all_program_events
+            if (isinstance(event, ProgramParticipationEvent))
+            and event.event_date == program_event.event_date
+        ]
+    elif metric_type == ProgramMetricType.REFERRAL:
+        # Get all other referral events that happened in the same month as this one
+        events_in_period = [
+            event for event in all_program_events
+            if isinstance(event, ProgramReferralEvent)
+            and event.event_date.year == event_year and
+            event.event_date.month == event_month
+        ]
+
+    if include_event_in_count(combo,
+                              program_event,
+                              last_day_of_month(event_date),
+                              events_in_period):
         # Include this event in the person-based count
         metrics.append((person_based_same_month_combo, 1))
 
     return metrics
 
 
-def combination_referral_metric_period_metrics(
+def combination_program_metric_period_metrics(
         combo: Dict[str, Any],
         program_event: ProgramReferralEvent,
         metric_period_end_date: date,
@@ -312,7 +352,7 @@ def combination_referral_metric_period_metrics(
                 if isinstance(event, ProgramReferralEvent)
             ]
 
-            if include_referral_in_count(
+            if include_event_in_count(
                     combo,
                     program_event,
                     metric_period_end_date,
@@ -323,11 +363,10 @@ def combination_referral_metric_period_metrics(
     return metrics
 
 
-def include_referral_in_count(combo: Dict[str, Any],
-                              program_event: ProgramReferralEvent,
-                              metric_period_end_date: date,
-                              all_events_in_period:
-                              List[ProgramReferralEvent]) -> bool:
+def include_event_in_count(combo: Dict[str, Any],
+                           program_event: ProgramEvent,
+                           metric_period_end_date: date,
+                           all_events_in_period: Sequence[ProgramEvent]) -> bool:
     """Determines whether the given program_event should be included in a person-based count for this given
     calculation_month_upper_bound.
 
@@ -338,25 +377,56 @@ def include_referral_in_count(combo: Dict[str, Any],
 
     This event is included only if it is the last event to happen before the end of the metric period.
     """
-    supervision_type_specific_metric = combo.get('supervision_type') is not None
+    if not isinstance(program_event, (ProgramReferralEvent, ProgramParticipationEvent)):
+        raise ValueError(f"Unexpected program_event of type {program_event.__class__}")
 
-    # If the combination specifies the supervision type, then remove any events of other supervision types
+    # If supervision types are distinct for a given state, then a person who has events with different types of
+    # supervision cannot contribute to counts for more than one type
+    if supervision_types_distinct_for_state(program_event.state_code):
+        supervision_type_specific_metric = False
+    else:
+        # If this combo specifies the supervision type, then limit this inclusion logic to only buckets of the same
+        # supervision type
+        supervision_type_specific_metric = combo.get('supervision_type') is not None
+
+    # If this is a supervision_type_specific_metric, filter to only the events with the same supervision_type
     relevant_events = [
         event for event in all_events_in_period
-        if not (supervision_type_specific_metric and event.supervision_type != program_event.supervision_type)
+        if isinstance(event, (ProgramReferralEvent, ProgramParticipationEvent))
+        and not (supervision_type_specific_metric and event.supervision_type != program_event.supervision_type)
     ]
 
-    events_rest_of_period = program_events_in_period(
-        program_event.event_date,
-        metric_period_end_date,
-        relevant_events)
+    if isinstance(program_event, ProgramReferralEvent):
+        # If the combination specifies the supervision type, then remove any events of other supervision types
+        relevant_referral_events = [
+            event for event in relevant_events
+            if isinstance(event, ProgramReferralEvent)
+        ]
 
-    events_rest_of_period.sort(key=lambda b: b.event_date)
+        events_rest_of_period = program_events_in_period(
+            program_event.event_date,
+            metric_period_end_date,
+            relevant_referral_events)
 
-    if events_rest_of_period and id(program_event) == id(events_rest_of_period[-1]):
-        # If this is the last instance of a referral before the end of the period, then include it in the person-based
-        # count.
-        return True
+        events_rest_of_period.sort(key=lambda b: b.event_date)
+
+        if events_rest_of_period and id(program_event) == id(events_rest_of_period[-1]):
+            # If this is the last instance of a referral before the end of the period, then include it in the
+            # person-based count.
+            return True
+    elif isinstance(program_event, ProgramParticipationEvent):
+        # If the combination specifies the supervision type, then remove any events of other supervision types
+        relevant_participation_events = [
+            event for event in relevant_events
+            if isinstance(event, ProgramParticipationEvent)
+        ]
+
+        # Sort by the program_location_id, with unset program_location_ids at the end. This sort is done to ensure
+        # deterministic person-based output.
+        relevant_participation_events.sort(key=lambda b: (b.program_location_id, b.program_location_id is None))
+
+        # Include this event if it's the first event in the sorted list.
+        return id(program_event) == id(relevant_participation_events[0])
 
     return False
 
