@@ -29,17 +29,19 @@ from apache_beam.options.pipeline_options import PipelineOptions
 import datetime
 from datetime import date
 
+from freezegun import freeze_time
 from mock import patch
 
 from recidiviz.calculator.pipeline.program import pipeline
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
-    ProgramReferralEvent
+    ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -55,7 +57,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQue
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_METRIC_INCLUSIONS_DICT = {
-    ProgramMetricType.REFERRAL: True
+    metric_type: True for metric_type in ProgramMetricType
 }
 
 
@@ -103,7 +105,8 @@ class TestProgramPipeline(unittest.TestCase):
             state_code='CA',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS
         )
 
         assessment = schema.StateAssessment(
@@ -349,7 +352,8 @@ class TestProgramPipeline(unittest.TestCase):
             state_code='CA',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
-            person_id=fake_person_id_2
+            person_id=fake_person_id_2,
+            participation_status=StateProgramAssignmentParticipationStatus.DENIED
         )
 
         assessment = schema.StateAssessment(
@@ -416,6 +420,7 @@ class TestProgramPipeline(unittest.TestCase):
 class TestClassifyProgramAssignments(unittest.TestCase):
     """Tests the ClassifyProgramAssignments DoFn."""
 
+    @freeze_time('2009-10-19')
     def testClassifyProgramAssignments(self):
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
@@ -429,7 +434,10 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            program_location_id='XYZ',
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            start_date=date(2009, 10, 19)
         )
 
         assessment = entities.StateAssessment.new_with_defaults(
@@ -445,9 +453,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='UT',
                 start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
@@ -457,19 +462,26 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                           'supervision_periods': [supervision_period]
                           }
 
-        program_event = ProgramReferralEvent(
+        program_events = [ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10'
-        )
+        ), ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            program_location_id=program_assignment.program_location_id,
+            event_date=date.today(),
+            supervision_type=supervision_period.supervision_type
+        )]
 
         correct_output = [
-            (fake_person, [program_event])]
+            (fake_person, program_events)]
 
         test_pipeline = TestPipeline()
 
@@ -746,17 +758,25 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        program_events = [ProgramReferralEvent(
-            state_code='US_TX',
-            event_date=date(2011, 4, 3),
-            program_id='program'
-        )]
+        program_events = [
+            ProgramReferralEvent(
+                state_code='US_TX',
+                event_date=date(2011, 4, 3),
+                program_id='program',
+                participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS
+            ),
+            ProgramParticipationEvent(
+                state_code='US_TX',
+                event_date=date(2011, 6, 3),
+                program_id='program'
+            )]
 
         # Each event will be have an output for each methodology type
-        expected_population_metric_count = len(program_events) * 2
+        expected_metric_count = 2
 
         expected_combination_counts = \
-            {'referrals': expected_population_metric_count}
+            {'referrals': expected_metric_count,
+             'participation': expected_metric_count}
 
         test_pipeline = TestPipeline()
 
@@ -905,6 +925,8 @@ class AssertMatchers:
 
                 if metric_type == ProgramMetricType.REFERRAL:
                     actual_combination_counts['referrals'] = actual_combination_counts['referrals'] + 1
+                elif metric_type == ProgramMetricType.PARTICIPATION:
+                    actual_combination_counts['participation'] = actual_combination_counts['participation'] + 1
 
             for key in expected_combination_counts:
                 if expected_combination_counts[key] != actual_combination_counts[key]:

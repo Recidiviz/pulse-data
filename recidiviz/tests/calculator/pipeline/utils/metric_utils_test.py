@@ -22,7 +22,8 @@ from google.cloud.bigquery import SchemaField
 
 from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationAdmissionMetric, IncarcerationMetricType, \
     IncarcerationPopulationMetric, IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramReferralMetric
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramReferralMetric, \
+    ProgramParticipationMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType, \
     ReincarcerationRecidivismCountMetric, ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType, SupervisionPopulationMetric, \
@@ -160,6 +161,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
     def test_bq_schema_for_metric_table_program(self):
         program_metrics_for_type = {
             ProgramMetricType.REFERRAL: ProgramReferralMetric,
+            ProgramMetricType.PARTICIPATION: ProgramParticipationMetric
         }
 
         for metric_type in ProgramMetricType:

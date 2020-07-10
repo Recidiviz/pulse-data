@@ -25,7 +25,7 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.program import calculator
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
-    ProgramReferralEvent, ProgramEvent
+    ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
@@ -42,7 +42,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
-    ProgramMetricType.REFERRAL: True
+    metric_type: True for metric_type in ProgramMetricType
 }
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
@@ -76,7 +76,7 @@ class TestMapProgramCombinations(unittest.TestCase):
                 event_date=date(2019, 10, 10),
                 program_id='XXX'
             ),
-            ProgramReferralEvent(
+            ProgramParticipationEvent(
                 state_code='US_ND',
                 event_date=date(2019, 2, 2),
                 program_id='ZZZ'
@@ -122,6 +122,13 @@ class TestMapProgramCombinations(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id='OFFICERZ',
                 supervising_district_external_id='135'
+            ),
+            ProgramParticipationEvent(
+                state_code='US_ND',
+                event_date=event_date,
+                program_id='XXX',
+                program_location_id='YYY',
+                supervision_type=StateSupervisionType.PAROLE,
             )
         ]
 
@@ -164,6 +171,13 @@ class TestMapProgramCombinations(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id='OFFICERZ',
                 supervising_district_external_id='135'
+            ),
+            ProgramParticipationEvent(
+                state_code='US_ND',
+                event_date=event_date,
+                program_id='XXX',
+                program_location_id='YYY',
+                supervision_type=StateSupervisionType.PROBATION,
             )
         ]
 
@@ -216,6 +230,20 @@ class TestMapProgramCombinations(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id='OFFICERZ',
                 supervising_district_external_id='135'
+            ),
+            ProgramParticipationEvent(
+                state_code='US_ND',
+                event_date=event_date,
+                program_id='XXX',
+                program_location_id='YYY',
+                supervision_type=StateSupervisionType.PAROLE,
+            ),
+            ProgramParticipationEvent(
+                state_code='US_ND',
+                event_date=event_date,
+                program_id='XXX',
+                program_location_id='YYY',
+                supervision_type=StateSupervisionType.PROBATION,
             )
         ]
 
@@ -625,18 +653,43 @@ class TestCharacteristicsDict(unittest.TestCase):
 
         self.assertEqual(expected_output, characteristic_dict)
 
+    def test_characteristics_dict_program_participation_event(self):
 
-class TestIncludeReferralInCount(unittest.TestCase):
-    """Tests the include_referral_in_count function."""
-    def test_include_referral_in_count(self):
-        """Tests the include_referral_in_count function when the referral
-        should be included."""
+        program_referral_event = ProgramParticipationEvent(
+            state_code='US_ND',
+            program_id='XXX',
+            program_location_id='YYY',
+            event_date=date(2009, 10, 1),
+            supervision_type=StateSupervisionType.PAROLE,
+        )
 
-        combo = {
-            'metric_type': 'REFERRAL'
+        characteristic_dict = calculator.characteristics_dict(self.person, program_referral_event)
+
+        expected_output = {
+            'date_of_participation': program_referral_event.event_date,
+            'program_id': 'XXX',
+            'age_bucket': '25-29',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'supervision_type': StateSupervisionType.PAROLE,
+            'program_location_id': 'YYY'
         }
 
-        program_event = ProgramReferralEvent(
+        self.assertEqual(expected_output, characteristic_dict)
+
+
+class TestIncludeEventInCount(unittest.TestCase):
+    """Tests the include_referral_in_count function."""
+    def test_include_event_in_count(self):
+        """Tests the include_event_in_count function when the referral should be included."""
+
+        combo = {
+            'metric_type': 'PARTICIPATION'
+        }
+
+        program_event = ProgramParticipationEvent(
             state_code='US_ND',
             event_date=date(2020, 1, 3),
             program_id='XXX'
@@ -644,15 +697,87 @@ class TestIncludeReferralInCount(unittest.TestCase):
 
         end_date = date(2020, 1, 31)
 
-        include = calculator.include_referral_in_count(
-            combo, program_event, end_date, [program_event])
+        include = calculator.include_event_in_count(combo, program_event, end_date, [program_event])
 
         self.assertTrue(include)
 
-    def test_include_referral_in_count_last_of_many(self):
-        """Tests the include_referral_in_count function when the referral
-        should be included because it is the last one before the end of the
-        time period."""
+    def test_include_participation_event_in_count_multiple_same_day(self):
+        """Tests the include_event_in_count function when the participation event should be included because its
+        program_location_id alphabetically before the other program_location_ids."""
+
+        combo = {
+            'metric_type': 'PARTICIPATION'
+        }
+
+        program_event_1 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='A'
+        )
+
+        program_event_2 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='B'
+        )
+
+        program_event_3 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='C'
+        )
+
+        end_date = date(2020, 1, 31)
+
+        program_events = [program_event_1, program_event_2, program_event_3]
+
+        include = calculator.include_event_in_count(combo, program_event_1, end_date, program_events)
+
+        self.assertTrue(include)
+
+    def test_include_participation_event_in_count_multiple_same_day_do_not_include(self):
+        """Tests the include_event_in_count function when the participation event should not be included because its
+        program_location_id is not alphabetically before the other program_location_ids."""
+
+        combo = {
+            'metric_type': 'PARTICIPATION'
+        }
+
+        program_event_1 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='Z'
+        )
+
+        program_event_2 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='B'
+        )
+
+        program_event_3 = ProgramParticipationEvent(
+            state_code='US_ND',
+            event_date=date(2020, 1, 3),
+            program_id='XXX',
+            program_location_id='C'
+        )
+
+        end_date = date(2020, 1, 31)
+
+        program_events = [program_event_1, program_event_2, program_event_3]
+
+        include = calculator.include_event_in_count(combo, program_event_1, end_date, program_events)
+
+        self.assertFalse(include)
+
+    def test_include_event_in_count_last_of_many(self):
+        """Tests the include_event_in_count function when the referral should be included because it is the last one
+        before the end of the time period."""
 
         combo = {
             'metric_type': 'REFERRAL'
@@ -680,15 +805,14 @@ class TestIncludeReferralInCount(unittest.TestCase):
 
         end_date = date(2020, 1, 31)
 
-        include = calculator.include_referral_in_count(
+        include = calculator.include_event_in_count(
             combo, program_event_3, end_date, events_in_period)
 
         self.assertTrue(include)
 
-    def test_include_referral_in_count_last_of_many_unsorted(self):
-        """Tests the include_referral_in_count function when the referral
-        should be included because it is the last one before the end of the
-        time period."""
+    def test_include_event_in_count_last_of_many_unsorted(self):
+        """Tests the include_event_in_count function when the event should be included because it is the last one before
+        the end of the time period."""
 
         combo = {
             'metric_type': 'REFERRAL'
@@ -716,15 +840,14 @@ class TestIncludeReferralInCount(unittest.TestCase):
 
         end_date = date(2020, 1, 31)
 
-        include = calculator.include_referral_in_count(
+        include = calculator.include_event_in_count(
             combo, program_event_2, end_date, events_in_period)
 
         self.assertTrue(include)
 
-    def test_include_referral_in_count_supervision_type_unset(self):
-        """Tests the include_referral_in_count function when there are two
-        events in the same month, but of different supervision types, and the
-        combo does not specify the supervision type."""
+    def test_include_event_in_count_supervision_type_unset(self):
+        """Tests the include_event_in_count function when there are two events in the same month, but of different
+        supervision types, and the combo does not specify the supervision type."""
 
         combo = {
             'metric_type': 'REFERRAL'
@@ -748,20 +871,19 @@ class TestIncludeReferralInCount(unittest.TestCase):
 
         end_date = date(2020, 1, 31)
 
-        include_first = calculator.include_referral_in_count(
+        include_first = calculator.include_event_in_count(
             combo, program_event_1, end_date, events_in_period)
 
         self.assertFalse(include_first)
 
-        include_second = calculator.include_referral_in_count(
+        include_second = calculator.include_event_in_count(
             combo, program_event_2, end_date, events_in_period)
 
         self.assertTrue(include_second)
 
-    def test_include_referral_in_count_supervision_type_set(self):
-        """Tests the include_referral_in_count function when there are two
-        events in the same month, but of different supervision types, and the
-        combo does specify the supervision type."""
+    def test_include_event_in_count_supervision_type_set(self):
+        """Tests the include_event_in_count function when there are two events in the same month, but of different
+        supervision types, and the combo does specify the supervision type."""
 
         combo = {
             'metric_type': 'REFERRAL',
@@ -786,7 +908,7 @@ class TestIncludeReferralInCount(unittest.TestCase):
 
         end_date = date(2020, 1, 31)
 
-        include_first = calculator.include_referral_in_count(
+        include_first = calculator.include_event_in_count(
             combo, program_event_1, end_date, events_in_period)
 
         self.assertTrue(include_first)
@@ -828,4 +950,21 @@ def expected_metric_combos_count(
         num_referral_events - duplication_multiplier*num_duplicated_referral_months)*(
             num_relevant_periods + 1))
 
-    return program_referral_combos
+    participation_events = [
+        bucket for bucket in program_events
+        if isinstance(bucket, ProgramParticipationEvent)
+    ]
+    num_participation_events = len(participation_events)
+
+    num_duplicated_participation_days = 0
+    days: Set[date] = set()
+
+    for participation_event in participation_events:
+        if participation_event.event_date in days:
+            num_duplicated_participation_days += 1
+        days.add(participation_event.event_date)
+
+    program_participation_combos = (num_participation_events + (
+        num_participation_events - duplication_multiplier*num_duplicated_participation_days))
+
+    return program_referral_combos + program_participation_combos

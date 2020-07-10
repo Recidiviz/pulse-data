@@ -83,6 +83,9 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
             UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_REFERRAL' as metric_type
             FROM `{project_id}.{metrics_dataset}.program_referral_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_PARTICIPATION' as metric_type
+            FROM `recidiviz-staging.dataflow_metrics.program_participation_metrics`)
         )
     )
     WHERE recency_rank = 1

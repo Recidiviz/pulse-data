@@ -21,7 +21,7 @@ from typing import Dict, Type
 
 from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationAdmissionMetric, \
     IncarcerationPopulationMetric, IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.program.metrics import ProgramReferralMetric
+from recidiviz.calculator.pipeline.program.metrics import ProgramReferralMetric, ProgramParticipationMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.supervision.metrics import TerminatedSupervisionAssessmentScoreChangeMetric, \
@@ -44,6 +44,7 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     IncarcerationReleaseMetric: 'incarceration_release_metrics',
     # ProgramMetrics
     ProgramReferralMetric: 'program_referral_metrics',
+    ProgramParticipationMetric: 'program_participation_metrics',
     # ReincarcerationRecidivismMetrics
     ReincarcerationRecidivismCountMetric: 'recidivism_count_metrics',
     ReincarcerationRecidivismRateMetric: 'recidivism_rate_metrics',
