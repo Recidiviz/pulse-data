@@ -53,11 +53,11 @@ from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarcerati
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
+    gen_rationalize_race_and_ethnicity
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, StatePerson, \
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, \
     StateEarlyDischarge, StateSupervisionContact, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
@@ -127,6 +127,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._add_default_admission_reason,
                 self._override_supervision_fields_from_location_info,
                 self._set_case_type_from_supervision_level,
+                self._add_supervising_officer,
             ],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -141,10 +142,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._set_violation_violent_sex_offense,
                 self._hydrate_violation_types,
                 self._hydrate_violation_report_fields,
-            ],
-            'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
-                gen_label_single_external_id_hook(US_ID_DOC),
-                self._add_supervising_officer,
             ],
             'sprvsn_cntc': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -162,19 +159,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'movement_facility_location_offstat_supervision_periods': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [],
             'ofndr_tst_tst_qstn_rspns_violation_reports_old': [],
-            'ofndr_agnt_applc_usr_body_loc_cd_current_pos': [
-                # TODO(1883): Would not need this file postprocessor if our data extractor would add the main entity to
-                #  our 'extracted_objects' cache when a single id field is used in the following situation:
-                #   - the only key in "keys"
-                #   - reused as a child key
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             'sprvsn_cntc': [],
         }
 
     FILE_TAGS = [
         'offender_ofndr_dob_address',
-        'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
         'ofndr_tst_ofndr_tst_cert',
         'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
         'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
@@ -533,7 +522,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
                 'offender_ofndr_dob_address',
-                'ofndr_agnt_applc_usr_body_loc_cd_current_pos',
                 'ofndr_tst_ofndr_tst_cert',
                 'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
                 'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
@@ -910,13 +898,13 @@ class UsIdController(CsvGcsfsDirectIngestController):
     @staticmethod
     def _add_supervising_officer(
             _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
-        agent_id = row.get('agnt_id', '')
-        agent_name = row.get('name', '')
+        agent_id = row.get('empl_sdesc', '')
+        agent_name = row.get('empl_ldesc', '')
         if not agent_id or not agent_name:
             return
 
         for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
+            if isinstance(obj, StateSupervisionPeriod):
                 agent_to_create = StateAgent(
                     state_agent_id=agent_id,
                     full_name=agent_name,
