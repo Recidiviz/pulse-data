@@ -21,9 +21,12 @@ from datetime import date
 
 import unittest
 
+from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
+
 from recidiviz.calculator.pipeline.program import identifier
 from recidiviz.calculator.pipeline.program.program_event import \
-    ProgramReferralEvent
+    ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
@@ -44,8 +47,84 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
 }
 
 
+class TestFindProgramEvents(unittest.TestCase):
+    """Tests the find_program_events function."""
+
+    @freeze_time('2020-01-02')
+    def test_find_program_events(self):
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            state_code='US_CA',
+            program_id='PG3',
+            referral_date=date(2020, 1, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            program_location_id='LOCATION X',
+            start_date=date(2020, 1, 1)
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_CA',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2019, 7, 10)
+        )
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2019, 3, 5),
+            supervision_type=StateSupervisionType.PAROLE
+        )
+
+        program_assignments = [program_assignment]
+        assessments = [assessment]
+        supervision_periods = [supervision_period]
+
+        program_events = identifier.find_program_events(
+            program_assignments,
+            assessments,
+            supervision_periods,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        expected_events = [
+            ProgramReferralEvent(
+                state_code=program_assignment.state_code,
+                event_date=program_assignment.referral_date,
+                program_id=program_assignment.program_id,
+                supervision_type=supervision_period.supervision_type,
+                participation_status=program_assignment.participation_status,
+                assessment_score=assessment.assessment_score,
+                assessment_type=assessment.assessment_type),
+            ProgramParticipationEvent(
+                state_code=program_assignment.state_code,
+                event_date=program_assignment.start_date,
+                program_id=program_assignment.program_id,
+                program_location_id=program_assignment.program_location_id,
+                supervision_type=supervision_period.supervision_type
+            ),
+            ProgramParticipationEvent(
+                state_code=program_assignment.state_code,
+                event_date=program_assignment.start_date + relativedelta(days=1),
+                program_id=program_assignment.program_id,
+                program_location_id=program_assignment.program_location_id,
+                supervision_type=supervision_period.supervision_type
+            )
+        ]
+
+        self.assertListEqual(program_events, expected_events)
+
+    def test_find_program_events_no_program_assignments(self):
+        program_events = identifier.find_program_events(
+            [], [], [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+
+        self.assertEqual([], program_events)
+
+
 class TestFindProgramReferrals(unittest.TestCase):
     """Tests the find_program_referrals function."""
+
     def test_find_program_referrals(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_CA',
@@ -61,30 +140,25 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 7, 10)
         )
 
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE
+        )
 
-        program_assignments = [program_assignment]
         assessments = [assessment]
         supervision_periods = [supervision_period]
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([ProgramReferralEvent(
+        self.assertListEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
@@ -100,23 +174,15 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_id='PG3',
         )
 
-        program_assignments = [program_assignment]
         assessments = []
         supervision_periods = []
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual([], program_referrals)
-
-    def test_find_program_referrals_no_assignments(self):
-        program_referrals = identifier.find_program_referrals(
-            [], [], [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
-        )
-
-        self.assertEqual([], program_referrals)
+        self.assertListEqual([], program_referrals)
 
     def test_find_program_referrals_multiple_assessments(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
@@ -147,23 +213,19 @@ class TestFindProgramReferrals(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
-        program_assignments = [program_assignment]
         assessments = [assessment_1, assessment_2]
         supervision_periods = [supervision_period]
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([ProgramReferralEvent(
+        self.assertListEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
@@ -195,18 +257,15 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 10, 4)
         )
 
-        program_assignments = [program_assignment]
         assessments = [assessment_1, assessment_2]
         supervision_periods = []
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([ProgramReferralEvent(
+        self.assertListEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
@@ -237,8 +296,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
@@ -249,23 +307,19 @@ class TestFindProgramReferrals(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2006, 12, 1),
                 termination_date=date(2013, 1, 4),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PROBATION
             )
 
-        program_assignments = [program_assignment]
         assessments = [assessment]
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(2, len(program_referrals))
-
-        self.assertEqual(
+        self.assertListEqual(
             [
                 ProgramReferralEvent(
                     state_code=program_assignment.state_code,
@@ -310,12 +364,10 @@ class TestFindProgramReferrals(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
-        program_assignments = [program_assignment]
         assessments = [assessment]
         supervision_periods = [supervision_period]
 
@@ -330,13 +382,11 @@ class TestFindProgramReferrals(unittest.TestCase):
         }
 
         program_referrals = identifier.find_program_referrals(
-            program_assignments, assessments, supervision_periods,
+            program_assignment, assessments, supervision_periods,
             supervision_period_agent_associations
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([ProgramReferralEvent(
+        self.assertListEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
@@ -349,80 +399,202 @@ class TestFindProgramReferrals(unittest.TestCase):
         )], program_referrals)
 
 
-class TestFindSupervisionPeriodsDuringReferral(unittest.TestCase):
-    """Tests the find_supervision_periods_during_referral function."""
+class TestFindProgramParticipationEvents(unittest.TestCase):
+    """Tests the find_program_participation_events function."""
+    @freeze_time('2000-01-01')
+    def test_find_program_participation_events(self):
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            state_code='US_CA',
+            program_id='PG3',
+            referral_date=date(1999, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            program_location_id='LOCATION',
+            start_date=date(1999, 12, 31)
+        )
 
-    def test_find_supervision_periods_during_referral(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            state_code='UT',
+            start_date=date(1990, 3, 5),
+            supervision_type=StateSupervisionType.PAROLE
+        )
+
+        supervision_periods = [supervision_period]
+
+        participation_events = identifier.find_program_participation_events(
+            program_assignment, supervision_periods
+        )
+
+        expected_events = [ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.start_date,
+            program_location_id=program_assignment.program_location_id,
+            supervision_type=supervision_period.supervision_type
+        ), ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.start_date + relativedelta(days=1),
+            program_location_id=program_assignment.program_location_id,
+            supervision_type=supervision_period.supervision_type
+        )]
+
+        self.assertListEqual(expected_events, participation_events)
+
+    def test_find_program_participation_events_not_actively_participating(self):
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            state_code='US_CA',
+            program_id='PG3',
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            program_location_id='LOCATION',
+            start_date=date(2009, 11, 5),
+            discharge_date=date(2009, 11, 8)
+        )
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            state_code='UT',
+            start_date=date(1990, 3, 5),
+            supervision_type=StateSupervisionType.PAROLE
+        )
+
+        supervision_periods = [supervision_period]
+
+        participation_events = identifier.find_program_participation_events(
+            program_assignment, supervision_periods
+        )
+
+        expected_events = [ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.start_date,
+            program_location_id=program_assignment.program_location_id,
+            supervision_type=supervision_period.supervision_type
+        ), ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.start_date + relativedelta(days=1),
+            program_location_id=program_assignment.program_location_id,
+            supervision_type=supervision_period.supervision_type
+        ), ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.start_date + relativedelta(days=2),
+            program_location_id=program_assignment.program_location_id,
+            supervision_type=supervision_period.supervision_type
+        )]
+
+        self.assertListEqual(expected_events, participation_events)
+
+    def test_find_program_participation_events_no_start_date(self):
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            state_code='US_CA',
+            program_id='PG3',
+            referral_date=date(1999, 10, 3),
+            # This program assignment is in progress, but it's missing a required start_date
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            program_location_id='LOCATION'
+        )
+
+        supervision_periods = []
+
+        participation_events = identifier.find_program_participation_events(
+            program_assignment, supervision_periods
+        )
+
+        self.assertEqual([], participation_events)
+
+    def test_find_program_participation_events_no_discharge_date(self):
+        program_assignment = StateProgramAssignment.new_with_defaults(
+            state_code='US_CA',
+            program_id='PG3',
+            referral_date=date(1999, 10, 3),
+            # This program assignment has a DISCHARGED status, but it's missing a required discharge_date
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            program_location_id='LOCATION',
+            start_date=date(1999, 11, 2)
+        )
+
+        supervision_periods = []
+
+        participation_events = identifier.find_program_participation_events(
+            program_assignment, supervision_periods
+        )
+
+        self.assertEqual([], participation_events)
+
+
+class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
+    """Tests the find_supervision_periods_overlapping_with_date function."""
+
+    def test_find_supervision_periods_overlapping_with_date(self):
         referral_date = date(2013, 3, 1)
 
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2008, 3, 5),
-                termination_date=date(2015, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2008, 3, 5),
+            termination_date=date(2015, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE
+        )
 
         supervision_periods = [supervision_period]
 
         supervision_periods_during_referral = \
-            identifier.find_supervision_periods_during_referral(
+            identifier.find_supervision_periods_overlapping_with_date(
                 referral_date, supervision_periods
             )
 
-        self.assertEqual(supervision_periods,
-                         supervision_periods_during_referral)
+        self.assertListEqual(supervision_periods,
+                             supervision_periods_during_referral)
 
-    def test_find_supervision_periods_during_referral_no_termination(self):
+    def test_find_supervision_periods_overlapping_with_date_no_termination(self):
         referral_date = date(2013, 3, 1)
 
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2002, 11, 5),
-                supervision_type=StateSupervisionType.PAROLE
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2002, 11, 5),
+            supervision_type=StateSupervisionType.PAROLE
+        )
 
         supervision_periods = [supervision_period]
 
         supervision_periods_during_referral = \
-            identifier.find_supervision_periods_during_referral(
+            identifier.find_supervision_periods_overlapping_with_date(
                 referral_date, supervision_periods
             )
 
-        self.assertEqual(supervision_periods,
-                         supervision_periods_during_referral)
+        self.assertListEqual(supervision_periods,
+                             supervision_periods_during_referral)
 
-    def test_find_supervision_periods_during_referral_no_overlap(self):
+    def test_find_supervision_periods_overlapping_with_date_no_overlap(self):
         referral_date = date(2019, 3, 1)
 
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2008, 3, 5),
-                termination_date=date(2015, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2008, 3, 5),
+            termination_date=date(2015, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE
+        )
 
         supervision_periods = [supervision_period]
 
         supervision_periods_during_referral = \
-            identifier.find_supervision_periods_during_referral(
+            identifier.find_supervision_periods_overlapping_with_date(
                 referral_date, supervision_periods
             )
 
-        self.assertEqual([],
-                         supervision_periods_during_referral)
+        self.assertListEqual([], supervision_periods_during_referral)
 
 
 class TestReferralsForSupervisionPeriods(unittest.TestCase):
@@ -436,8 +608,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
@@ -452,9 +623,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([
+        self.assertListEqual([
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
@@ -467,29 +636,25 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         ], program_referrals)
 
     def test_referrals_for_supervision_periods_same_type(self):
-        supervision_period_1 = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION
-            )
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PROBATION
+        )
 
-        supervision_period_2 = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PROBATION
-            )
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='UT',
+            start_date=date(2008, 3, 5),
+            termination_date=date(2010, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PROBATION
+        )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
 
@@ -504,9 +669,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(1, len(program_referrals))
-
-        self.assertEqual([
+        self.assertListEqual([
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
@@ -515,8 +678,16 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 assessment_score=39,
                 assessment_type=StateAssessmentType.LSIR,
                 supervision_type=StateSupervisionType.PROBATION
-            )
-        ], program_referrals)
+            ),
+            ProgramReferralEvent(
+                state_code='UT',
+                program_id='XXX',
+                event_date=date(2009, 3, 19),
+                participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+                assessment_score=39,
+                assessment_type=StateAssessmentType.LSIR,
+                supervision_type=StateSupervisionType.PROBATION
+            )], program_referrals)
 
     def test_referrals_for_supervision_periods_different_types(self):
         supervision_period_1 = \
@@ -526,8 +697,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PAROLE
             )
 
@@ -538,8 +708,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 state_code='UT',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
-                termination_reason=
-                StateSupervisionPeriodTerminationReason.DISCHARGE,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_type=StateSupervisionType.PROBATION
             )
 
@@ -556,9 +725,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual(2, len(program_referrals))
-
-        self.assertEqual([
+        self.assertListEqual([
             ProgramReferralEvent(
                 state_code='UT',
                 program_id='XXX',
