@@ -67,3 +67,15 @@ class ProgramReferralEvent(ProgramEvent):
     # External ID of the district of the officer that was supervising the
     # person
     supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+
+@attr.s(frozen=True)
+class ProgramParticipationEvent(ProgramEvent):
+    """Models a ProgramEvent where a the person was actively participating in a program."""
+
+    # Program location ID
+    program_location_id: Optional[str] = attr.ib(default=None)
+
+    # The type of supervision the person was on
+    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
