@@ -40,6 +40,7 @@ def create_period_split_criteria(period_type: PeriodType) -> str:
         return criteria
     raise ValueError(f'Unexpected PeriodType {period_type}')
 
+
 def create_important_date_union(period_type: PeriodType) -> str:
     important_date_union = """
       SELECT 
@@ -50,16 +51,21 @@ def create_important_date_union(period_type: PeriodType) -> str:
       SELECT
         * 
       FROM
-        filtered_offstat_dates
+        offstat_dates
     """
     if period_type == PeriodType.SUPERVISION:
         important_date_union += """
-          UNION DISTINCT
-          SELECT
-            *
-          FROM
-            filtered_wrkld_dates
-          """
+      UNION DISTINCT
+      SELECT
+        *
+      FROM
+        po_dates
+      UNION DISTINCT
+      SELECT
+        *
+      FROM
+        wrkld_dates
+      """
 
     return important_date_union
 
@@ -204,12 +210,32 @@ PERIOD_TO_DATES_NO_INCRNO_FRAGMENT = """
         {periods}
     )
     SELECT
-      *
+      docno,
+      incrno,
+      important_date
     FROM
       {periods}_dates_without_incrno
     FULL OUTER JOIN
       (SELECT docno, incrno FROM facility_dates GROUP BY 1, 2)
       USING (docno)
+"""
+
+# Filters the provided |dates_to_filter| based on the maximum date in "facility dates". Occasionally data in other ID
+# tables goes into the future; however it's not trustworthy so we limit all information at the max facility date, which
+# should be the current date.
+FILTERED_DATES_BY_FACILITY_DATES = """
+      SELECT
+         docno,
+         incrno,
+         important_date
+      FROM
+        {dates_to_filter}
+      WHERE 
+        important_date <= (
+            SELECT MAX(important_date) 
+            FROM facility_dates 
+            WHERE important_date != CAST('9999-12-31' AS DATE))
+
 """
 
 
@@ -226,7 +252,87 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
         AND p.incrno = s.incrno
         AND (p.start_date
              BETWEEN s.start_date
-             AND IF (s.start_date = s.end_date, s.start_date, DATE_SUB(s.end_date, INTERVAL 1 DAY))))
+             AND IF(s.start_date = s.end_date, s.start_date, DATE_SUB(s.end_date, INTERVAL 1 DAY))))
+"""
+
+# This fragment takes their casemgr table, which is combination of movements, case assignment dates, and employee codes
+# and transforms it into spans of time for which a person is under supervision and has a valid agent assigned to them.
+PO_PERIODS_FRAGMENT = """
+    # TODO(3554): Update all queries to use distinct_employees rather than applc_usr as it has job roles. 
+    distinct_employees AS (
+      SELECT * EXCEPT (row_num)
+      FROM (
+          # Choose the most recent job role if the person has multiple
+          SELECT *, row_number() OVER (PARTITION BY empl_sdesc ORDER BY empl_cd DESC) AS row_num 
+          FROM {{employee}}
+      )
+      WHERE row_num = 1
+    ),
+    casemgr_movements AS (
+      SELECT 
+        docno,
+        incrno,
+        CAST(move_srl AS INT64) AS move_srl, 
+        CAST(CAST(move_dtd AS TIMESTAMP) AS DATE) AS move_dtd,
+        move_typ,
+        fac_cd,
+        CAST(CAST(case_dtd AS TIMESTAMP) AS DATE) AS case_dtd,
+        empl_cd,
+        empl_sdesc,
+        empl_ldesc,
+        empl_title
+      FROM {{casemgr}}
+      JOIN {{movement}}
+      USING (move_srl)
+      LEFT JOIN (
+        SELECT empl_cd, empl_sdesc, empl_ldesc, empl_title
+        FROM distinct_employees
+      ) 
+      USING (empl_cd)
+    ),
+    casemgr_movements_with_next_empl AS (
+      SELECT *,
+      LAG(empl_cd) OVER(
+        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC) AS prev_empl_cd,
+      LAG(empl_sdesc) OVER(
+        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC) AS prev_empl_sdesc,
+      LAG(move_typ) OVER(
+        PARTITION BY docno ORDER BY case_dtd ASC, move_dtd ASC) AS prev_move_typ,
+      FROM casemgr_movements
+    ),
+    # Only keep periods where the person transitioned POs or transitioned between supervision, prison, or history.
+    filtered_casemgr AS (
+      SELECT *
+      FROM casemgr_movements_with_next_empl
+      WHERE 
+        (prev_empl_cd IS NULL OR empl_cd != prev_empl_cd)
+        OR (prev_move_typ IS NULL OR move_typ != prev_move_typ)
+    ),
+    all_casemgr_periods AS (
+      SELECT 
+        docno,
+        incrno,
+        empl_cd,
+        empl_sdesc,
+        empl_ldesc,
+        empl_title,
+        move_typ,
+        CAST(CAST(case_dtd AS TIMESTAMP) AS DATE) AS start_date,
+        COALESCE(
+          LEAD(CAST(CAST(case_dtd AS TIMESTAMP) AS DATE))
+          OVER (PARTITION BY docno, incrno ORDER BY case_dtd, move_dtd),
+          CAST('9999-12-31' AS DATE)) AS end_date
+       FROM filtered_casemgr
+    ),
+    # Only keep periods while a person is on supervision and we know who the assigned agent is.
+    po_periods AS (
+      SELECT 
+        *
+       EXCEPT(move_typ)
+       FROM all_casemgr_periods
+       WHERE empl_cd != '0000' # Unknown
+       AND move_typ = 'P'      # Assignments while someone is on supervision. 
+    )
 """
 
 
@@ -245,8 +351,8 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
 #
 # At a high level, our approach is:
 # 1. Create time spans for each person's stay in a specific facility (prison facility or supervision district).
-# 2. Create time spans for each person's "offender statuses"
-# 3. Add all significant dates for a person (start/end dates of each facility and of each status term) into a single
+# 2. Create time spans for each person's "offender statuses", "parole officer assignments", and "supervision level"
+# 3. Add all significant dates for a person (start/end dates of each facility the spans from part 2) into a single
 #    view. These ordered dates signify dates at which something changed that indicates we need to create a new
 #    incarceration period.
 # 4. Create new time spans based on the important dates from part 3. This is a superset of the distinct
@@ -254,7 +360,9 @@ FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
 #    supervision, but b) because includes spans for which a person is not currently under DOC custody, but is
 #    between sentences (i.e. span between the end date of one sentence and the beginning of another).
 # 5. Left join the time spans from part 4 to those of part 2. If multiple status spans from part 2 overlap with the
-#    spans created in part 4, then all overlapping statuses are captured.
+#    spans created in part 4, then all overlapping statuses are captured. Parole officer assignments and supervision
+#    levels are joined at this time, although there should always be a maximum of 1 PO assignment or supervision level
+#    for the generated time span.
 # 6. Inner joins these new time spans from part 5 back onto the facility spans in part 1. Any span which represents
 #    a time period where the person was not under DOC supervision will not have a facility, and therefore will fall
 #    out of our query.
@@ -265,6 +373,9 @@ ALL_PERIODS_FRAGMENT = f"""
     # Create facility time spans
 
     {FACILITY_PERIOD_FRAGMENT},
+
+    # Create PO periods 
+    {PO_PERIODS_FRAGMENT},
 
     # Create status time spans
 
@@ -325,6 +436,9 @@ ALL_PERIODS_FRAGMENT = f"""
     facility_dates AS (
         {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='facility_periods')}
     ),
+    po_dates AS (
+        {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='po_periods')}
+    ),
     # All offstat period start/end dates
     offstat_dates AS (
         {PERIOD_TO_DATES_FRAGMENT_TEMPLATE.format(periods='offstat_periods')}
@@ -333,37 +447,22 @@ ALL_PERIODS_FRAGMENT = f"""
     wrkld_dates AS (
         {PERIOD_TO_DATES_NO_INCRNO_FRAGMENT.format(periods='wrkld_periods')}
     ),
-    filtered_wrkld_dates AS (
+    # All dates where something we care about changed.
+    all_dates AS (
+        {{important_date_union}}
+    ),
+    filtered_all_dates AS (
       SELECT
          docno,
          incrno,
          important_date
       FROM
-        wrkld_dates
+        all_dates
       WHERE 
         important_date <= (
             SELECT MAX(important_date) 
             FROM facility_dates 
             WHERE important_date != CAST('9999-12-31' AS DATE))
-    ),
-    # Offstat dates occasionally have information going into the future which is unreliable. Filter offstat dates to
-    # only those that are within the bounds of real facility dates.
-    filtered_offstat_dates AS (
-        SELECT 
-            docno,
-            incrno,
-            important_date
-        FROM 
-            offstat_dates
-        WHERE 
-            important_date <= (
-                SELECT MAX(important_date) 
-                FROM facility_dates 
-                WHERE important_date != CAST('9999-12-31' AS DATE))
-    ),
-    # All dates where something we care about changed.
-    all_dates AS (
-        {{important_date_union}}
     ),
 
     # Create time spans from the important dates
@@ -372,10 +471,10 @@ ALL_PERIODS_FRAGMENT = f"""
         docno,
         incrno,
         important_date AS start_date,
-        LEAD(important_date) 
+        LEAD(important_date, 1, CAST('9999-12-31' AS DATE)) 
           OVER (PARTITION BY docno, incrno ORDER BY important_date) AS end_date
       FROM 
-        all_dates
+        filtered_all_dates
     ),
 
     # Get all statuses that were relevant for each of the created date periods.
@@ -384,7 +483,8 @@ ALL_PERIODS_FRAGMENT = f"""
         a.docno,
         a.incrno,
         a.start_date,
-        a.end_date,
+        # Choose smaller of two dates to handle offstat_periods that last 1 day
+        IF(o.end_date IS NULL, a.end_date, LEAST(a.end_date, o.end_date)) AS end_date,
         STRING_AGG(o.stat_strt_typ ORDER BY o.stat_strt_typ) AS statuses
       FROM 
         all_periods a
@@ -395,31 +495,61 @@ ALL_PERIODS_FRAGMENT = f"""
         AND a.incrno = o.incrno
         AND (a.start_date
              BETWEEN o.start_date
-             AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY)))
+             AND IF(o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY)))
         AND o.stat_cd = '{{period_status_code}}')
-      GROUP BY a.docno, a.incrno, a.start_date, a.end_date
+      GROUP BY a.docno, a.incrno, a.start_date, end_date
     ),
+    # Get all POs that were relevant for each of the created date periods.
+    periods_with_offstat_and_po_info AS (
+        SELECT
+            p.docno,
+            p.incrno,
+            p.start_date,
+            # Choose smaller of two dates to handle po_periods that last 1 day
+            IF(po.end_date IS NULL, p.end_date, LEAST(po.end_date, p.end_date)) AS end_date,
+            p.statuses,
+            po.empl_cd,
+            po.empl_sdesc,
+            po.empl_ldesc,
+            po.empl_title,
+        FROM
+            periods_with_offstat_info p
+        LEFT JOIN
+            po_periods po
+        ON
+            (p.docno = po.docno
+            AND p.incrno = po.incrno
+            AND (p.start_date
+                 BETWEEN po.start_date
+                 AND IF(po.start_date = po.end_date, po.start_date, DATE_SUB(po.end_date, INTERVAL 1 DAY))))
+    ),
+    # Add supervision level info
     periods_with_all_non_facility_info AS (
         SELECT
             p.docno,
             p.incrno,
             p.start_date,
-            p.end_date,
+            # Choose smaller of two dates to handle supervision_level_periods that last 1 day
+            IF(w.end_date IS NULL, p.end_date, LEAST(w.end_date, p.end_date)) AS end_date,
             p.statuses,
+            p.empl_cd,
+            p.empl_sdesc,
+            p.empl_ldesc,
+            p.empl_title,
             w.wrkld_cat_title
         FROM
-            periods_with_offstat_info p
+            periods_with_offstat_and_po_info p
         LEFT JOIN
             wrkld_periods w
         ON
             (p.docno = w.docno
             AND (p.start_date
                  BETWEEN w.start_date
-                 AND IF (w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
+                 AND IF(w.start_date = w.end_date, w.start_date, DATE_SUB(w.end_date, INTERVAL 1 DAY))))
     ),
 
     # Join date spans with status information back with the facility spans from Part 1.
-    periods_with_facility_and_offstat_info AS (
+    periods_with_all_info AS (
       SELECT
         p.docno,
         p.incrno,
@@ -434,7 +564,11 @@ ALL_PERIODS_FRAGMENT = f"""
         f.lu_cd,
         f.lu_ldesc,
         p.statuses,
-        p.wrkld_cat_title
+        p.wrkld_cat_title,
+        p.empl_cd,
+        p.empl_sdesc,
+        p.empl_ldesc,
+        p.empl_title,
       FROM 
         periods_with_all_non_facility_info p
       # Inner join to only get periods of time where there is a matching facility
@@ -468,12 +602,16 @@ ALL_PERIODS_FRAGMENT = f"""
           lu_ldesc,
           statuses,
           wrkld_cat_title,
+          empl_cd,
+          empl_sdesc,
+          empl_ldesc,
+          empl_title,
           LEAD(fac_typ)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
           LEAD(fac_cd)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_cd,
         FROM 
-          periods_with_facility_and_offstat_info
+          periods_with_all_info
     )
 """
 
