@@ -41,7 +41,7 @@ PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-      state_code, review_month,
+      state_code as region_code, review_month,
       COUNT(*) AS total_rows,
       {non_null_column_count}
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
