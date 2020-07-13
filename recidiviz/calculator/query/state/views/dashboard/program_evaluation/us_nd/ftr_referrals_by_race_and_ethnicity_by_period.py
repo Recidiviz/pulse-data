@@ -75,7 +75,7 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
     USING (state_code, supervision_type, district, metric_period_months, race_or_ethnicity)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
-      AND race_or_ethnicity NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
+      AND race_or_ethnicity != 'EXTERNAL_UNKNOWN'
       AND state_code = 'US_ND'
     ORDER BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     """

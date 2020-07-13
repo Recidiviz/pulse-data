@@ -39,9 +39,17 @@ def unnest_metric_period_months():
 
 
 def unnest_race_and_ethnicity():
-    return "UNNEST (ARRAY_CONCAT(IFNULL(SPLIT(race), []), IFNULL(SPLIT(ethnicity), []))) race_or_ethnicity"
+    return """UNNEST(SPLIT(IFNULL(ARRAY_TO_STRING(
+                    (SELECT ARRAY_AGG(col) FROM UNNEST([race, ethnicity]) AS col 
+                     WHERE col IS NOT NULL AND col != 'NOT_HISPANIC'),
+                    ','), 'EXTERNAL_UNKNOWN'))) race_or_ethnicity"""
 
 
 def metric_period_condition(month_offset=1):
     return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                                 INTERVAL metric_period_months - {month_offset} MONTH)"""
+
+
+def current_month_condition():
+    return """year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
+        AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))"""
