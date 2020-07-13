@@ -33,13 +33,6 @@ from recidiviz.utils.regions import Region
 _REGION_CODE = 'us_al_jackson'
 _TODAY = datetime.date(2000, 1, 1)
 
-
-class MockDate(datetime.date):
-    @classmethod
-    def today(cls):
-        return cls(2000, 1, 1)
-
-
 class TestScraperStop(TestCase):
     """Tests for requests to the Scraper Stop API."""
 
@@ -50,9 +43,7 @@ class TestScraperStop(TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     # pylint:disable=unused-argument
-    @patch('recidiviz.ingest.models.model_utils.datetime.date', MockDate)
-    @patch('recidiviz.ingest.models.single_count.datetime.date', MockDate)
-    @patch('google.cloud.datastore.Client')
+    @patch("google.cloud.datastore.Client")
     @patch("recidiviz.utils.regions.get_region")
     def test_scraper_success(self, mock_get_region, mock_client):
         mock_get_region.return_value = _mock_region()
@@ -62,6 +53,8 @@ class TestScraperStop(TestCase):
             scrape_type=constants.ScrapeType.BACKGROUND,
             phase=scrape_phase.ScrapePhase.RELEASE
         )
+        session.start = datetime.datetime.strptime("2000-01-01 9:01",
+                                                   "%Y-%d-%m %H:%M")
 
         sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
 
