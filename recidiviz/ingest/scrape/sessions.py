@@ -212,7 +212,8 @@ def update_phase(session: ScrapeSession, phase: scrape_phase.ScrapePhase):
     if previous_phase == scrape_phase.ScrapePhase.RELEASE and \
        phase == scrape_phase.ScrapePhase.DONE:
         jid = regions.get_region(session.region).jurisdiction_id
-        store_scraper_success(ScraperSuccess(), jid)
+        success_date = session.start.date()
+        store_scraper_success(ScraperSuccess(date=success_date), jid)
 
 
 def add_docket_item_to_current_session(
