@@ -69,7 +69,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
     ) rev
     USING (state_code, supervision_type, district, metric_period_months, race_or_ethnicity)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
-        AND race_or_ethnicity NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
+        AND race_or_ethnicity != 'EXTERNAL_UNKNOWN'
     ORDER BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     """
 

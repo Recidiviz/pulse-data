@@ -84,7 +84,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
     ) rev
     USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months)
-    WHERE race NOT IN ('EXTERNAL_UNKNOWN', 'NOT_HISPANIC')
+    WHERE race != 'EXTERNAL_UNKNOWN'
     ORDER BY state_code, district, supervision_type, race, risk_level, metric_period_months, violation_type,
       reported_violations, charge_category
     """
