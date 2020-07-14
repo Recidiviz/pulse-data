@@ -25,7 +25,8 @@ from google.cloud.storage import Bucket
 from mock import create_autospec
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path_from_normalized_path, DirectIngestGCSFileSystemImpl
+    to_normalized_unprocessed_file_path_from_normalized_path, to_normalized_processed_file_path_from_normalized_path, \
+    to_normalized_processed_file_name, to_normalized_unprocessed_file_name, DirectIngestGCSFileSystemImpl
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
@@ -161,7 +162,7 @@ class TestFakeDirectIngestGcsFileSystem(TestCase):
         expected_final_total_files = start_num_total_files + splitting_factor - 1
         self.assertEqual(len(self.fs.all_paths), expected_final_total_files)
         self.assertEqual(len(end_ingest_paths), len(start_ingest_paths) - 1)
-        self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1*splitting_factor)
+        self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1 * splitting_factor)
         if file_type_differentiation_on:
             self.assertEqual(len(end_raw_storage_paths) + len(end_ingest_view_storage_paths), len(end_storage_paths))
             self.assertEqual(len(end_raw_storage_paths), len(start_raw_storage_paths) + 1)
@@ -264,3 +265,41 @@ class TestFakeDirectIngestGcsFileSystem(TestCase):
 
         self.assertTrue(found_first_file)
         self.assertTrue(found_second_file)
+
+
+class TestPathNormalization(TestCase):
+    """Class that tests path normalization functions created for both processed and unprocessed file paths"""
+
+    def test_to_normalized_processed_file_path_from_normalized_path(self):
+        original_file_path = 'gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/' \
+                             'unprocessed_2019-08-12T00:00:00:000000_test_file_tag.csv'
+        expected_file_path = 'gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/' \
+                             'processed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv'
+        self.assertEqual(expected_file_path,
+                         to_normalized_processed_file_path_from_normalized_path(original_file_path,
+                                                                                GcsfsDirectIngestFileType.RAW_DATA))
+
+    def test_to_normalized_unprocessed_file_path_from_normalized_path(self):
+        original_file_path = 'gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/' \
+                             'processed_2019-08-12T00:00:00:000000_test_file_tag.csv'
+        expected_file_path = 'gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/' \
+                             'unprocessed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv'
+        self.assertEqual(expected_file_path,
+                         to_normalized_unprocessed_file_path_from_normalized_path(original_file_path,
+                                                                                  GcsfsDirectIngestFileType.RAW_DATA))
+
+    def test_to_normalized_processed_file_name(self):
+        original_file_name = 'test_file_tag.csv'
+        expected_file_name = 'processed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv'
+        self.assertEqual(expected_file_name,
+                         to_normalized_processed_file_name(original_file_name,
+                                                           GcsfsDirectIngestFileType.RAW_DATA,
+                                                           datetime.datetime(2019, 8, 12, 0, 0, 0)))
+
+    def test_to_normalized_unprocessed_file_name(self):
+        original_file_name = 'test_file_tag.csv'
+        expected_file_name = 'unprocessed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv'
+        self.assertEqual(expected_file_name,
+                         to_normalized_unprocessed_file_name(original_file_name,
+                                                             GcsfsDirectIngestFileType.RAW_DATA,
+                                                             datetime.datetime(2019, 8, 12, 0, 0, 0)))

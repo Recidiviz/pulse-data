@@ -49,6 +49,14 @@ class GcsfsDirectIngestUtilsTest(TestCase):
             'recidiviz-staging-direct-ingest-state-storage/us_nd')
 
     @patch('recidiviz.utils.metadata.project_id',
+           Mock(return_value='recidiviz-staging'))
+    def test_get_state_storage_directory_path_file_type_raw(self) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_storage_directory_path_for_region(
+                'us_nd', SystemLevel.STATE, GcsfsDirectIngestFileType.RAW_DATA),
+            'recidiviz-staging-direct-ingest-state-storage/us_nd/raw')
+
+    @patch('recidiviz.utils.metadata.project_id',
            Mock(return_value='recidiviz-123'))
     def test_get_county_ingest_directory_path_for_region(self):
         self.assertEqual(

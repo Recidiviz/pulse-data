@@ -91,6 +91,7 @@ class CopyFilesFromProdToStagingController:
         if self.dry_run:
             logging.info("[DRY RUN] Found [%d] subdirectories to copy",
                          len(subdirs_to_copy))
+
         else:
             i = input(
                 f"Found [{len(subdirs_to_copy)}] subdirectories to copy - "

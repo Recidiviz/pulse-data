@@ -26,6 +26,7 @@ import tempfile
 import uuid
 from typing import List, Optional, Union, Iterator, Callable
 
+
 from google.api_core import retry, exceptions
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
@@ -42,15 +43,15 @@ SPLIT_FILE_SUFFIX = 'file_split'
 SPLIT_FILE_STORAGE_SUBDIR = 'split_files'
 
 
-def _build_unprocessed_file_name(
+def _build_file_name(
         *,
         utc_iso_timestamp_str: str,
         file_type: GcsfsDirectIngestFileType,
         base_file_name: str,
-        extension: str) -> str:
-
+        extension: str,
+        prefix: str) -> str:
     file_name_parts = [
-        DIRECT_INGEST_UNPROCESSED_PREFIX,
+        prefix,
         utc_iso_timestamp_str,
     ]
 
@@ -64,9 +65,36 @@ def _build_unprocessed_file_name(
     return "_".join(file_name_parts) + f".{extension}"
 
 
-def to_normalized_unprocessed_file_name(
+def _build_unprocessed_file_name(
+        *,
+        utc_iso_timestamp_str: str,
+        file_type: GcsfsDirectIngestFileType,
+        base_file_name: str,
+        extension: str) -> str:
+    return _build_file_name(utc_iso_timestamp_str=utc_iso_timestamp_str,
+                            file_type=file_type,
+                            base_file_name=base_file_name,
+                            extension=extension,
+                            prefix=DIRECT_INGEST_UNPROCESSED_PREFIX)
+
+
+def _build_processed_file_name(
+        *,
+        utc_iso_timestamp_str: str,
+        file_type: GcsfsDirectIngestFileType,
+        base_file_name: str,
+        extension: str) -> str:
+    return _build_file_name(utc_iso_timestamp_str=utc_iso_timestamp_str,
+                            file_type=file_type,
+                            base_file_name=base_file_name,
+                            extension=extension,
+                            prefix=DIRECT_INGEST_PROCESSED_PREFIX)
+
+
+def _to_normalized_file_name(
         file_name: str,
         file_type: GcsfsDirectIngestFileType,
+        build_function: Callable,
         dt: Optional[datetime.datetime] = None) -> str:
     if not dt:
         dt = datetime.datetime.utcnow()
@@ -74,11 +102,32 @@ def to_normalized_unprocessed_file_name(
     utc_iso_timestamp_str = dt.strftime('%Y-%m-%dT%H:%M:%S:%f')
     file_name, extension = file_name.split('.')
 
-    return _build_unprocessed_file_name(
-        utc_iso_timestamp_str=utc_iso_timestamp_str,
+    return build_function(utc_iso_timestamp_str=utc_iso_timestamp_str,
+                          file_type=file_type,
+                          base_file_name=file_name,
+                          extension=extension)
+
+
+def to_normalized_unprocessed_file_name(
+        file_name: str,
+        file_type: GcsfsDirectIngestFileType,
+        dt: Optional[datetime.datetime] = None) -> str:
+    return _to_normalized_file_name(
+        file_name=file_name,
         file_type=file_type,
-        base_file_name=file_name,
-        extension=extension)
+        build_function=_build_unprocessed_file_name,
+        dt=dt)
+
+
+def to_normalized_processed_file_name(
+        file_name: str,
+        file_type: GcsfsDirectIngestFileType,
+        dt: Optional[datetime.datetime] = None) -> str:
+    return _to_normalized_file_name(
+        file_name=file_name,
+        file_type=file_type,
+        build_function=_build_processed_file_name,
+        dt=dt)
 
 
 def to_normalized_unprocessed_file_path(
@@ -92,13 +141,13 @@ def to_normalized_unprocessed_file_path(
     return os.path.join(directory, updated_relative_path)
 
 
-def to_normalized_unprocessed_file_path_from_normalized_path(
+def _to_normalized_file_path_from_normalized_path(
         original_normalized_file_path: str,
-        file_type_override: Optional[GcsfsDirectIngestFileType] = None
-) -> str:
-    """Moves any normalized path back to an unprocessed path with the same information embedded in the file name. If
-    |file_type_override| is provided, we will always overwrite the original path file type with the override file type.
-    """
+        build_function: Callable,
+        file_type_override: Optional[GcsfsDirectIngestFileType] = None) -> str:
+    """Moves any normalized path back to a unprocessed/processed path with the same information embedded in the file
+    name. If |file_type_override| is provided, we will always overwrite the original path file type with the override
+    file type."""
     directory, _ = os.path.split(original_normalized_file_path)
     parts = filename_parts_from_path(GcsfsFilePath.from_absolute_path(original_normalized_file_path))
 
@@ -110,13 +159,32 @@ def to_normalized_unprocessed_file_path_from_normalized_path(
         f'_{parts.filename_suffix}' if parts.filename_suffix else ''
     base_file_name = f'{parts.file_tag}{suffix_str}'
 
-    path_as_unprocessed = _build_unprocessed_file_name(
-        utc_iso_timestamp_str=utc_iso_timestamp_str,
-        file_type=file_type,
-        base_file_name=base_file_name,
-        extension=parts.extension)
+    path_to_return = build_function(utc_iso_timestamp_str=utc_iso_timestamp_str,
+                                    file_type=file_type,
+                                    base_file_name=base_file_name,
+                                    extension=parts.extension)
 
-    return os.path.join(directory, path_as_unprocessed)
+    return os.path.join(directory, path_to_return)
+
+
+def to_normalized_unprocessed_file_path_from_normalized_path(
+        original_normalized_file_path: str,
+        file_type_override: Optional[GcsfsDirectIngestFileType] = None
+) -> str:
+    return _to_normalized_file_path_from_normalized_path(
+        original_normalized_file_path=original_normalized_file_path,
+        build_function=_build_unprocessed_file_name,
+        file_type_override=file_type_override)
+
+
+def to_normalized_processed_file_path_from_normalized_path(
+        original_normalized_file_path: str,
+        file_type_override: Optional[GcsfsDirectIngestFileType] = None
+) -> str:
+    return _to_normalized_file_path_from_normalized_path(
+        original_normalized_file_path=original_normalized_file_path,
+        build_function=_build_processed_file_name,
+        file_type_override=file_type_override)
 
 
 class GcsfsFileContentsHandle(IngestContentsHandle[str]):
@@ -209,7 +277,7 @@ class DirectIngestGCSFileSystem:
     @staticmethod
     def is_normalized_file_path(path: GcsfsFilePath) -> bool:
         return DirectIngestGCSFileSystem.is_seen_unprocessed_file(path) or \
-            DirectIngestGCSFileSystem.is_processed_file(path)
+               DirectIngestGCSFileSystem.is_processed_file(path)
 
     def get_unnormalized_file_paths(
             self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
@@ -451,6 +519,7 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
     """An implementation of the DirectIngestGCSFileSystem built on top of a real
     GCSFileSystem.
     """
+
     def __init__(self, client: storage.Client):
         self.storage_client = client
 
