@@ -40,7 +40,7 @@ _FILEPATH_REGEX = \
         r'((raw|ingest_view)_)?'  # file_type
         r'([A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)'  # file_tag
         r'(_(\d+([^-]*)))?'  # Optional filename_suffix
-        r'(-\(\d+\))?'    # Optional file conflict suffix (e.g. '-(1)')
+        r'(-\(\d+\))?'  # Optional file conflict suffix (e.g. '-(1)')
         r'\.([A-Za-z]+)')  # Extension
 
 _FILENAME_SUFFIX_REGEX = re.compile(r'.*(_file_split(_size(\d+))?)')
@@ -161,8 +161,8 @@ def gcsfs_direct_ingest_temporary_output_directory_path(project_id: Optional[str
 def gcsfs_direct_ingest_storage_directory_path_for_region(
         region_code: str,
         system_level: SystemLevel,
+        file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED,
         project_id: Optional[str] = None) -> str:
-
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
@@ -170,14 +170,17 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
 
     storage_bucket = \
         f'{project_id}-direct-ingest-{system_level.value.lower()}-storage'
-    return os.path.join(storage_bucket, region_code)
+
+    if file_type is GcsfsDirectIngestFileType.UNSPECIFIED:
+        return os.path.join(storage_bucket, region_code)
+
+    return os.path.join(storage_bucket, region_code, file_type.value)
 
 
 def gcsfs_direct_ingest_directory_path_for_region(
         region_code: str,
         system_level: SystemLevel,
         project_id: Optional[str] = None) -> str:
-
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
@@ -202,7 +205,7 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     if not match:
         raise DirectIngestError(
             msg=f"Could not parse upload_ts, file_tag, extension "
-            f"from path [{file_path.abs_path()}]",
+                f"from path [{file_path.abs_path()}]",
             error_type=DirectIngestErrorType.INPUT_ERROR)
 
     full_upload_timestamp_str = match.group(2)
