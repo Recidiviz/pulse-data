@@ -42,9 +42,15 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
+    select_all_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
+from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import \
+    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW_NAME
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -119,7 +125,9 @@ class ClassifyIncarcerationEvents(beam.DoFn):
     """Classifies incarceration periods as admission and release events."""
 
     # pylint: disable=arguments-differ
-    def process(self, element, person_id_to_county):
+    def process(self,
+                element,
+                person_id_to_county):
         """Identifies instances of admission and release from incarceration."""
         _, person_entities = element
 
@@ -380,7 +388,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         if state_code is None or state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
-            us_mo_sentence_status_query = f"SELECT * FROM `{reference_dataset}.us_mo_sentence_statuses`"
+            us_mo_sentence_status_query = select_all_query(reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME)
 
             us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
                                        beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
@@ -424,17 +432,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             beam.ParDo(SetSentencesOnSentenceGroup())
         )
 
-        # Group each StatePerson with their related entities
-        person_and_sentence_groups = (
-            {'person': persons,
-             'sentence_groups': sentence_groups_with_hydrated_sentences}
-            | 'Group StatePerson to SentenceGroups' >>
-            beam.CoGroupByKey()
-        )
-
         # Bring in the table that associates people and their county of residence
-        person_id_to_county_query = \
-            f"SELECT * FROM `{reference_dataset}.persons_to_recent_county_of_residence`"
+        person_id_to_county_query = select_all_query(reference_dataset, PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME)
 
         person_id_to_county_kv = (
             p | "Read person_id to county associations from BigQuery" >>
@@ -445,9 +444,33 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
+        # Bring in the judicial districts associated with incarceration_periods
+        ip_to_judicial_district_query = select_all_query(reference_dataset,
+                                                         INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME)
+
+        ip_to_judicial_district_kv = (
+            p | "Read incarceration_period to judicial_district associations from BigQuery" >>
+            beam.io.Read(beam.io.BigQuerySource(
+                query=ip_to_judicial_district_query,
+                use_standard_sql=True))
+            | "Convert incarceration_period to judicial_district association table to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
+        # Group each StatePerson with their related entities
+        person_entities = (
+            {'person': persons,
+             'sentence_groups': sentence_groups_with_hydrated_sentences,
+             'incarceration_period_judicial_district_association': ip_to_judicial_district_kv
+             }
+            | 'Group StatePerson to SentenceGroups' >>
+            beam.CoGroupByKey()
+        )
+
         # Identify IncarcerationEvents events from the StatePerson's StateIncarcerationPeriods
-        person_events = (person_and_sentence_groups | 'Classify Incarceration Events' >>
-                         beam.ParDo(ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
+        person_events = (person_entities | 'Classify Incarceration Events' >>
+                         beam.ParDo(ClassifyIncarcerationEvents(),
+                                    AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = apache_beam_pipeline_options.get_all_options()

@@ -23,6 +23,7 @@ from pydot import frozendict
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent, IncarcerationStayEvent
+from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
@@ -34,15 +35,19 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 def find_incarceration_events(
         sentence_groups: List[StateSentenceGroup],
+        incarceration_period_judicial_district_association: List[Dict[str, Any]],
         county_of_residence: Optional[str]) -> List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
 
-    Transforms StateIncarcerationPeriods into IncarcerationAdmissionEvents,
-    IncarcerationStayEvents, and IncarcerationReleaseEvents, representing
-    admissions, stays in, and releases from incarceration in a state prison.
+    Transforms the person's StateIncarcerationPeriods, which are connected to their StateSentenceGroups, into
+    IncarcerationAdmissionEvents, IncarcerationStayEvents, and IncarcerationReleaseEvents, representing admissions,
+    stays in, and releases from incarceration in a state prison.
 
     Args:
-        - incarceration_periods: All of the person's StateIncarcerationPeriods
+        - sentence_groups: All of the person's StateSentenceGroups
+        - incarceration_period_judicial_district_association: A list of dictionaries with information connecting
+            StateIncarcerationPeriod ids to the judicial district responsible for the period of incarceration
+        - county_of_residence: The person's most recent county of residence
 
     Returns:
         A list of IncarcerationEvents for the person.
@@ -59,10 +64,15 @@ def find_incarceration_events(
     if not incarceration_periods:
         return incarceration_events
 
+    # Convert the list of dictionaries into one dictionary where the keys are the incarceration_period_id values
+    incarceration_period_to_judicial_district = list_of_dicts_to_dict_with_keys(
+        incarceration_period_judicial_district_association, key=StateIncarcerationPeriod.get_class_id_name())
+
     incarceration_events.extend(find_all_stay_events(
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
+        incarceration_period_to_judicial_district,
         county_of_residence))
 
     incarceration_events.extend(find_all_admission_release_events(
@@ -125,6 +135,7 @@ def find_all_stay_events(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
 ) -> List[IncarcerationStayEvent]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationStayEvents based on the
@@ -140,6 +151,7 @@ def find_all_stay_events(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            incarceration_period_to_judicial_district,
             county_of_residence)
 
         if period_stay_events:
@@ -152,6 +164,7 @@ def find_incarceration_stays(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
+        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str]) -> List[IncarcerationStayEvent]:
     """Finds all days for which this person was incarcerated."""
     incarceration_stay_events: List[IncarcerationStayEvent] = []
@@ -175,6 +188,8 @@ def find_incarceration_stays(
         incarceration_sentences, supervision_sentences, incarceration_period)
 
     sentence_group = _get_sentence_group_for_incarceration_period(incarceration_period)
+    judicial_district_code = _get_judicial_district_code(incarceration_period,
+                                                         incarceration_period_to_judicial_district)
 
     stay_date = admission_date
 
@@ -194,12 +209,30 @@ def find_incarceration_stays(
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
                 supervision_type_at_admission=supervision_type_at_admission,
+                judicial_district_code=judicial_district_code
             )
         )
 
         stay_date = stay_date + relativedelta(days=1)
 
     return incarceration_stay_events
+
+
+def _get_judicial_district_code(
+        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]]) -> Optional[str]:
+    """Retrieves the judicial_district_code corresponding to the incarceration period, if one exists."""
+    incarceration_period_id = incarceration_period.incarceration_period_id
+
+    if incarceration_period_id is None:
+        raise ValueError("Unexpected unset incarceration_period_id.")
+
+    ip_info = incarceration_period_to_judicial_district.get(incarceration_period_id)
+
+    if ip_info is not None:
+        return ip_info.get('judicial_district_code')
+
+    return None
 
 
 def _get_sentence_group_for_incarceration_period(

@@ -25,6 +25,7 @@ from more_itertools import one
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.pipeline.utils.execution_utils import select_all_query
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import is_property_list, \
     is_property_forward_ref
@@ -204,7 +205,7 @@ class _ExtractEntityBase(beam.PTransform):
                              f"{self._unifying_id_field} - these values will never get grouped with results, so it's "
                              f"a waste to query for them.")
 
-        entity_query = f"SELECT * FROM `{self._dataset}.{self._entity_table_name}`"
+        entity_query = select_all_query(self._dataset, self._entity_table_name)
 
         if self._entity_has_unifying_id_field() and self._unifying_id_field_filter_set:
             id_str_set = {str(unifying_id) for unifying_id in self._unifying_id_field_filter_set if str(unifying_id)}
