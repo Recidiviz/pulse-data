@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 
+read -p "Have you run any new migrations added since the last release for all prod DBs (jails, state, operations)? (y/n):" -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    exit 1
+fi
+
 echo "Fetching all tags"
 git fetch --all --tags --prune
 
