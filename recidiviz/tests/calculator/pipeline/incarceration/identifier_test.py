@@ -52,9 +52,222 @@ from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSuperv
 
 _COUNTY_OF_RESIDENCE = 'county'
 
+_DEFAULT_IP_ID = 123
+
+_DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
+    {'incarceration_period_id': _DEFAULT_IP_ID, 'judicial_district_code': 'NW'}
+]
+
 
 class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
+
+    def test_find_incarceration_events(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=_DEFAULT_IP_ID,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2008, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
+                release_date=date(2009, 1, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    ncic_code='0901',
+                    statute='9999'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+
+        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
+            incarceration_period,
+            most_serious_offense_ncic_code='0901',
+            most_serious_offense_statute='9999',
+            judicial_district_code='NW'
+        )
+
+        expected_events.extend(
+            [IncarcerationAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text='ADMISSION',
+            ),
+             IncarcerationReleaseEvent(
+                 state_code=incarceration_period.state_code,
+                 event_date=incarceration_period.release_date,
+                 facility=incarceration_period.facility,
+                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                 release_reason=ReleaseReason.SENTENCE_SERVED
+             )
+            ]
+        )
+
+        self.assertCountEqual(expected_events, incarceration_events)
+
+    def test_find_incarceration_events_transfer(self):
+        incarceration_period_1 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=_DEFAULT_IP_ID,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON3',
+                admission_date=date(2009, 11, 20),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2009, 12, 1),
+                release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_period_2 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='TX',
+                facility='PRISON 10',
+                admission_date=date(2009, 12, 1),
+                admission_reason=AdmissionReason.TRANSFER,
+                release_date=date(2010, 2, 4),
+                release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 1, 11),
+            incarceration_periods=[incarceration_period_1, incarceration_period_2],
+            charges=[
+                StateCharge.new_with_defaults(
+                    offense_date=date(2007, 12, 11),
+                    ncic_code='5511',
+                    statute='9999'
+                )
+            ]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence]
+        )
+
+        incarceration_period_1.incarceration_sentences = [incarceration_sentence]
+        incarceration_period_2.incarceration_sentences = [incarceration_sentence]
+        incarceration_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+
+        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
+            incarceration_period_1,
+            most_serious_offense_ncic_code='5511',
+            most_serious_offense_statute='9999',
+            judicial_district_code='NW'
+        )
+
+        expected_events.extend(expected_incarceration_stay_events(
+            incarceration_period_2,
+            most_serious_offense_ncic_code='5511',
+            most_serious_offense_statute='9999'
+        ))
+
+        expected_events.extend(
+            [
+                IncarcerationAdmissionEvent(
+                    state_code=incarceration_period_1.state_code,
+                    event_date=incarceration_period_1.admission_date,
+                    facility=incarceration_period_1.facility,
+                    admission_reason=AdmissionReason.NEW_ADMISSION,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                ),
+                IncarcerationReleaseEvent(
+                    state_code=incarceration_period_2.state_code,
+                    event_date=incarceration_period_2.release_date,
+                    facility=incarceration_period_2.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    release_reason=ReleaseReason.SENTENCE_SERVED
+                )
+            ]
+        )
+
+        self.assertCountEqual(expected_events, incarceration_events)
+
+    def test_find_incarceration_events_multiple_sentences(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='TX',
+            facility='PRISON3',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 1, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period]
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence]
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+        supervision_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+
+        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
+            incarceration_period,
+            judicial_district_code='NW'
+        )
+
+        expected_events.extend(
+            [IncarcerationAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.NEW_ADMISSION
+            ),
+             IncarcerationReleaseEvent(
+                 state_code=incarceration_period.state_code,
+                 event_date=incarceration_period.release_date,
+                 facility=incarceration_period.facility,
+                 county_of_residence=_COUNTY_OF_RESIDENCE,
+                 release_reason=ReleaseReason.SENTENCE_SERVED
+             )])
+
+        self.assertCountEqual(expected_events, incarceration_events)
 
     def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self):
         """Tests that with state code US_ND, temporary custody periods are dropped before finding all incarceration
@@ -106,7 +319,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         sentence_groups = [sentence_group]
 
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
 
         self.assertCountEqual([
             IncarcerationStayEvent(
@@ -242,7 +456,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         sentence_groups = [sentence_group]
 
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
 
         self.maxDiff = None
         self.assertCountEqual([
@@ -286,205 +501,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             )
         ], incarceration_events)
 
-    def test_find_incarceration_events(self):
-        incarceration_period = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                facility='PRISON3',
-                admission_date=date(2008, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='ADMISSION',
-                release_date=date(2009, 1, 4),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period],
-            charges=[
-                StateCharge.new_with_defaults(
-                    offense_date=date(2007, 12, 11),
-                    ncic_code='0901',
-                    statute='9999'
-                )
-            ]
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[incarceration_sentence]
-        )
-
-        incarceration_sentence.sentence_group = sentence_group
-
-        sentence_groups = [sentence_group]
-
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
-
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period,
-            most_serious_offense_ncic_code='0901',
-            most_serious_offense_statute='9999'
-        )
-
-        expected_events.extend(
-            [IncarcerationAdmissionEvent(
-                state_code=incarceration_period.state_code,
-                event_date=incarceration_period.admission_date,
-                facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='ADMISSION',
-            ),
-             IncarcerationReleaseEvent(
-                 state_code=incarceration_period.state_code,
-                 event_date=incarceration_period.release_date,
-                 facility=incarceration_period.facility,
-                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                 release_reason=ReleaseReason.SENTENCE_SERVED
-             )
-            ]
-        )
-
-        self.assertCountEqual(expected_events, incarceration_events)
-
-    def test_find_incarceration_events_transfer(self):
-        incarceration_period_1 = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                facility='PRISON3',
-                admission_date=date(2009, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2009, 12, 1),
-                release_reason=ReleaseReason.TRANSFER)
-
-        incarceration_period_2 = \
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=2222,
-                incarceration_type=StateIncarcerationType.STATE_PRISON,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
-                facility='PRISON 10',
-                admission_date=date(2009, 12, 1),
-                admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2010, 2, 4),
-                release_reason=ReleaseReason.SENTENCE_SERVED)
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            start_date=date(2008, 1, 11),
-            incarceration_periods=[incarceration_period_1, incarceration_period_2],
-            charges=[
-                StateCharge.new_with_defaults(
-                    offense_date=date(2007, 12, 11),
-                    ncic_code='5511',
-                    statute='9999'
-                )
-            ]
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[incarceration_sentence]
-        )
-
-        incarceration_period_1.incarceration_sentences = [incarceration_sentence]
-        incarceration_period_2.incarceration_sentences = [incarceration_sentence]
-        incarceration_sentence.sentence_group = sentence_group
-
-        sentence_groups = [sentence_group]
-
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
-
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period_1,
-            most_serious_offense_ncic_code='5511',
-            most_serious_offense_statute='9999'
-        )
-
-        expected_events.extend(expected_incarceration_stay_events(
-            incarceration_period_2,
-            most_serious_offense_ncic_code='5511',
-            most_serious_offense_statute='9999'
-        ))
-
-        expected_events.extend(
-            [
-                IncarcerationAdmissionEvent(
-                    state_code=incarceration_period_1.state_code,
-                    event_date=incarceration_period_1.admission_date,
-                    facility=incarceration_period_1.facility,
-                    admission_reason=AdmissionReason.NEW_ADMISSION,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period_2.state_code,
-                    event_date=incarceration_period_2.release_date,
-                    facility=incarceration_period_2.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=ReleaseReason.SENTENCE_SERVED
-                )
-            ]
-        )
-
-        self.assertCountEqual(expected_events, incarceration_events)
-
-    def test_find_incarceration_events_multiple_sentences(self):
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
-            facility='PRISON3',
-            admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 1, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED)
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period]
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period]
-        )
-
-        sentence_group = StateSentenceGroup.new_with_defaults(
-            incarceration_sentences=[incarceration_sentence],
-            supervision_sentences=[supervision_sentence]
-        )
-
-        incarceration_sentence.sentence_group = sentence_group
-        supervision_sentence.sentence_group = sentence_group
-
-        sentence_groups = [sentence_group]
-
-        incarceration_events = identifier.find_incarceration_events(sentence_groups, _COUNTY_OF_RESIDENCE)
-
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(incarceration_period)
-
-        expected_events.extend(
-            [IncarcerationAdmissionEvent(
-                state_code=incarceration_period.state_code,
-                event_date=incarceration_period.admission_date,
-                facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=AdmissionReason.NEW_ADMISSION
-            ),
-             IncarcerationReleaseEvent(
-                 state_code=incarceration_period.state_code,
-                 event_date=incarceration_period.release_date,
-                 facility=incarceration_period.facility,
-                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                 release_reason=ReleaseReason.SENTENCE_SERVED
-             )])
-
-        self.assertCountEqual(expected_events, incarceration_events)
-
 
 class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
     """Tests the find_incarceration_stays function."""
@@ -497,10 +513,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         """
         incarceration_sentences = []
         supervision_sentences = []
+        default_incarceration_period_judicial_district_association = {
+            123: _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION[0]
+        }
+
         return identifier.find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            default_incarceration_period_judicial_district_association,
             county_of_residence)
 
     def test_find_incarceration_stays_type_us_mo(self):
@@ -544,11 +565,19 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         sentence_group = StateSentenceGroup.new_with_defaults(sentence_group_id=6666, external_id='12345')
         supervision_sentence.sentence_group = sentence_group
 
+        incarceration_period_judicial_district_association = {
+            incarceration_period.incarceration_period_id: {
+                'incarceration_period_id': incarceration_period.incarceration_period_id,
+                'judicial_district_code': 'XXX'
+            }
+        }
+
         incarceration_sentences = []
         incarceration_events = identifier.find_incarceration_stays(
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
+            incarceration_period_judicial_district_association,
             _COUNTY_OF_RESIDENCE)
 
         expected_incarceration_events = expected_incarceration_stay_events(incarceration_period)
@@ -557,6 +586,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         for expected_event in expected_incarceration_events:
             updated_expected_events.append(
                 attr.evolve(expected_event,
+                            judicial_district_code='XXX',
                             supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION))
 
         self.assertEqual(updated_expected_events, incarceration_events)
@@ -1950,7 +1980,8 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
 
 def expected_incarceration_stay_events(incarceration_period: StateIncarcerationPeriod,
                                        most_serious_offense_statute: Optional[str] = None,
-                                       most_serious_offense_ncic_code: Optional[str] = None) -> \
+                                       most_serious_offense_ncic_code: Optional[str] = None,
+                                       judicial_district_code: Optional[str] = None) -> \
         List[IncarcerationStayEvent]:
     """Returns the expected incarceration stay events based on the provided |incarceration_period|."""
 
@@ -1985,7 +2016,8 @@ def expected_incarceration_stay_events(incarceration_period: StateIncarcerationP
                 event_date=stay_date,
                 supervision_type_at_admission=supervision_type,
                 most_serious_offense_statute=most_serious_offense_statute,
-                most_serious_offense_ncic_code=most_serious_offense_ncic_code
+                most_serious_offense_ncic_code=most_serious_offense_ncic_code,
+                judicial_district_code=judicial_district_code
             )
 
             expected_incarceration_events.append(event)

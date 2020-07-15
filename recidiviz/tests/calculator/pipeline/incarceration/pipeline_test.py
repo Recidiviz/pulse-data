@@ -407,14 +407,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             beam.ParDo(SetSentencesOnSentenceGroup())
         )
 
-        # Group each StatePerson with their related entities
-        person_and_sentence_groups = (
-            {'person': persons,
-             'sentence_groups': sentence_groups_with_hydrated_sentences}
-            | 'Group StatePerson to SentenceGroups' >>
-            beam.CoGroupByKey()
-        )
-
         # Identify IncarcerationEvents events from the StatePerson's
         # StateIncarcerationPeriods
         fake_person_id_to_county_query_result = [
@@ -424,16 +416,35 @@ class TestIncarcerationPipeline(unittest.TestCase):
             test_pipeline
             | "Read person id to county associations from BigQuery" >>
             beam.Create(fake_person_id_to_county_query_result)
-            | "Convert to KV" >>
+            | "Convert person_id to counties to KV" >>
             beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
+        incarceration_period_judicial_district_association_row = \
+            {'person_id': fake_person_id, 'incarceration_period_id': 123, 'judicial_district_code': 'NW'}
+
+        ip_to_judicial_district_kv = (
+            test_pipeline
+            | "Read incarceration_period to judicial_district associations from BigQuery" >>
+            beam.Create([incarceration_period_judicial_district_association_row])
+            | "Convert ips to judicial districts to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
+        # Group each StatePerson with their related entities
+        person_entities = (
+            {'person': persons,
+             'sentence_groups': sentence_groups_with_hydrated_sentences,
+             'incarceration_period_judicial_district_association': ip_to_judicial_district_kv
+             }
+            | 'Group StatePerson to SentenceGroups' >>
+            beam.CoGroupByKey()
+        )
+
         person_events = (
-            person_and_sentence_groups |
+            person_entities |
             'Classify Incarceration Events' >>
-            beam.ParDo(
-                pipeline.ClassifyIncarcerationEvents(),
-                AsDict(person_id_to_county_kv)))
+            beam.ParDo(pipeline.ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -609,10 +620,11 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         incarceration_period.incarceration_sentences = [incarceration_sentence]
 
-        person_entities = {'person': [fake_person], 'sentence_groups': [sentence_group]}
-
         fake_person_id_to_county_query_result = [
             {'person_id': fake_person_id, 'county_of_residence': _COUNTY_OF_RESIDENCE}]
+
+        fake_incarceration_period_judicial_district_association_result = \
+            {'person_id': fake_person_id, 'incarceration_period_id': 123, 'judicial_district_code': 'NW'}
 
         incarceration_events = [
             IncarcerationStayEvent(
@@ -655,10 +667,18 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | "Convert to KV" >> beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
+        person_entities = {'person': [fake_person],
+                           'sentence_groups': [sentence_group],
+                           'incarceration_period_judicial_district_association':
+                               [fake_incarceration_period_judicial_district_association_result]
+                           }
+
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Incarceration Events' >> beam.ParDo(
-                      pipeline.ClassifyIncarcerationEvents(), AsDict(person_id_to_county_kv)))
+                      pipeline.ClassifyIncarcerationEvents(),
+                      AsDict(person_id_to_county_kv))
+                  )
 
         assert_that(output, equal_to(correct_output))
 
@@ -672,7 +692,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT)
 
         person_periods = {'person': [fake_person],
-                          'sentence_groups': []}
+                          'sentence_groups': [],
+                          'incarceration_period_judicial_district_association': []
+                          }
 
         test_pipeline = TestPipeline()
 

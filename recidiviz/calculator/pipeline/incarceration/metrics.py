@@ -111,6 +111,9 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Supervision type at the time of admission, if any.
     supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
+    # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
+    judicial_district_code: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationPopulationMetric']:

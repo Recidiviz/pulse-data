@@ -42,11 +42,17 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
+    select_all_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
+from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
+    SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW_NAME
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -449,7 +455,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         ))
 
         # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
-        ssvr_to_agent_association_query = f"SELECT * FROM `{reference_dataset}.ssvr_to_agent_association`"
+        ssvr_to_agent_association_query = select_all_query(reference_dataset, SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME)
 
         ssvr_to_agent_associations = (p | "Read SSVR to Agent table from BigQuery" >>
                                       beam.io.Read(beam.io.BigQuerySource
@@ -463,8 +469,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                                     'supervision_violation_response_id')
                                          )
 
-        supervision_period_to_agent_association_query = f"SELECT * FROM `{reference_dataset}." \
-                                                        f"supervision_period_to_agent_association`"
+        supervision_period_to_agent_association_query = select_all_query(
+            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME)
 
         supervision_period_to_agent_associations = (p | "Read Supervision Period to Agent table from BigQuery" >>
                                                     beam.io.Read(beam.io.BigQuerySource
@@ -481,7 +487,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         if state_code is None or state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
-            us_mo_sentence_status_query = f"SELECT * FROM `{reference_dataset}.us_mo_sentence_statuses`"
+            us_mo_sentence_status_query = select_all_query(reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME)
 
             us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
                                        beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
@@ -546,8 +552,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             'the StateIncarcerationPeriods' >>
             beam.ParDo(SetViolationResponseOnIncarcerationPeriod()))
 
-        # Group each StatePerson with their StateIncarcerationPeriods and StateSupervisionSentences
-        person_periods_and_sentences = (
+        # Group each StatePerson with their related entities
+        person_entities = (
             {'person': persons,
              'assessments': assessments,
              'incarceration_periods':
@@ -564,7 +570,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         # Identify SupervisionTimeBuckets from the StatePerson's StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
-            person_periods_and_sentences
+            person_entities
             | 'Get SupervisionTimeBuckets' >>
             beam.ParDo(ClassifySupervisionTimeBuckets(),
                        AsDict(ssvr_agent_associations_as_kv),

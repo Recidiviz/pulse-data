@@ -166,6 +166,8 @@ def characteristics_dict(person: StatePerson,
             characteristics['admission_reason'] = incarceration_event.admission_reason
         if incarceration_event.supervision_type_at_admission:
             characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
+        if incarceration_event.judicial_district_code:
+            characteristics['judicial_district_code'] = incarceration_event.judicial_district_code
 
     # Always include facility as a dimension
     if incarceration_event.facility:

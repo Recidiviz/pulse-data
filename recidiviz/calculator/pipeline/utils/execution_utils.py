@@ -18,6 +18,7 @@
 import argparse
 import datetime
 import logging
+from collections import defaultdict
 from datetime import date
 
 from typing import Dict, Tuple, Any, List, Iterable
@@ -184,3 +185,24 @@ def person_and_kwargs_for_identifier(arg_to_entities_map: Dict[str, Iterable[Any
         raise ValueError(f"No StatePerson associated with these entities: {arg_to_entities_map}")
 
     return person, kwargs
+
+
+def select_all_query(dataset: str, table: str) -> str:
+    """Returns a query string formatted to select all contents of the table in the given dataset."""
+    return f"SELECT * FROM `{dataset}.{table}`"
+
+
+def list_of_dicts_to_dict_with_keys(list_of_dicts: List[Dict[str, Any]], key: str) -> Dict[Any, Dict[str, Any]]:
+    """Converts a list of dictionaries to a dictionary, where they keys are the values in each dictionary corresponding
+    to the |key| argument. Each dictionary must contain the |key| key."""
+    result_dict: Dict[str, Dict[str, Any]] = defaultdict()
+
+    for dict_entry in list_of_dicts:
+        key_value = dict_entry.get(key)
+
+        if not key_value:
+            raise ValueError(f"Key {key} must be present in all dictionaries: {dict_entry}.")
+
+        result_dict[key_value] = dict_entry
+
+    return result_dict

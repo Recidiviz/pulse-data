@@ -44,11 +44,14 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
+    select_all_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
+from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.utils import environment
@@ -429,11 +432,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             beam.CoGroupByKey()
         )
 
-        # Bring in the table that associates people and their county of
-        # residence
-        person_id_to_county_query = \
-            f"SELECT * FROM " \
-            f"`{reference_dataset}.persons_to_recent_county_of_residence`"
+        # Bring in the table that associates people and their county of residence
+        person_id_to_county_query = select_all_query(reference_dataset, PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME)
 
         person_id_to_county_kv = (
             p
