@@ -14,36 +14,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query that generates incarceration periods."""
+"""Query that associates a person with their current parole/probation officer."""
+
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import get_all_periods_query_fragment, \
-    PeriodType
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""
-    WITH 
-    {get_all_periods_query_fragment(period_type=PeriodType.INCARCERATION)}
-
-    # Filter to just incarceration periods
-
-    SELECT
-      # Living unit codes are not yet needed, so ignore them here. If
-      * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title),
-      ROW_NUMBER() 
-        OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
-    FROM
-      periods_with_previous_and_next_info
-    WHERE 
-      fac_typ = 'I'                             # Facility type incarceration
-    # TODO(3509): Consider tracking escape incarceration periods in the same way we track absconscion.
-    ORDER BY docno, incrno, start_date, end_date
+# TODO(3366): Integrate PO assignments into supervision query once we have a loss-less table with POs and their
+#  assignments through history.
+VIEW_QUERY_TEMPLATE = """SELECT
+      ofndr_num, 
+      agnt_id,
+      usr_id,
+      name,
+      a.agcy_id AS ofndr_agent_agcy,
+      u.agcy_id AS applc_usr_agcy,
+      agnt_strt_dt,
+      end_dt,
+      usr_typ_cd,
+      # updt_usr_id,
+      # updt_dt,
+      lan_id,
+      st_id_num,
+      body_loc_cd,
+      body_loc_desc,
+      loc_typ_cd,
+      body_loc_cd_id
+    FROM 
+      {ofndr_agnt} a
+    LEFT JOIN 
+      {applc_usr} u
+    ON 
+      (agnt_id = usr_id)
+    LEFT JOIN 
+      {body_loc_cd}
+    USING
+      (body_loc_cd)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
-    ingest_view_name='movement_facility_location_offstat_incarceration_periods',
+    ingest_view_name='ofndr_agnt_applc_usr_body_loc_cd_current_pos',
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 
