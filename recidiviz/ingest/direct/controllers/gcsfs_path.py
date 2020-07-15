@@ -126,9 +126,15 @@ class GcsfsDirectoryPath(GcsfsPath):
         )
 
     @classmethod
-    def from_file_path(cls, path: 'GcsfsFilePath'):
+    def from_file_path(cls, path: 'GcsfsFilePath') -> 'GcsfsDirectoryPath':
         return GcsfsDirectoryPath(bucket_name=path.bucket_name,
                                   relative_path=path.relative_dir)
+
+    @classmethod
+    def from_dir_and_subdir(cls, dir_path: 'GcsfsDirectoryPath', subdir: str) -> 'GcsfsDirectoryPath':
+        relative_path = os.path.join(dir_path.relative_path, subdir)
+        return GcsfsDirectoryPath(bucket_name=dir_path.bucket_name,
+                                  relative_path=relative_path)
 
 
 @attr.s(frozen=True)
