@@ -148,6 +148,7 @@ def _to_normalized_file_path_from_normalized_path(
     """Moves any normalized path back to a unprocessed/processed path with the same information embedded in the file
     name. If |file_type_override| is provided, we will always overwrite the original path file type with the override
     file type."""
+
     directory, _ = os.path.split(original_normalized_file_path)
     parts = filename_parts_from_path(GcsfsFilePath.from_absolute_path(original_normalized_file_path))
 
