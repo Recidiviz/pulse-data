@@ -127,6 +127,7 @@ class CommonScraperTest(IndividualIngestTest):
         """
         result = self.scraper.get_more_tasks(content, task)
         assert result == expected_result
+        return result
 
     def validate_and_return_populate_data(
             self, content, expected_ingest_info=None,
