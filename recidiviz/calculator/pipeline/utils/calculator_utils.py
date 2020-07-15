@@ -189,7 +189,7 @@ def identify_most_severe_violation_type_and_subtype(violations: List[StateSuperv
     most_severe_violation_type = _identify_most_severe_violation_type(violations)
     identified_subtype = identify_violation_subtype(most_severe_violation_type, violations)
     # TODO(2853): Figure out how to model unset variables generally in the calculation pipeline.
-    violation_subtype = identified_subtype if identified_subtype else 'UNSET'
+    violation_subtype = identified_subtype
     return most_severe_violation_type, violation_subtype
 
 
