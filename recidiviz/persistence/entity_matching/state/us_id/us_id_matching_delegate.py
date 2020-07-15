@@ -23,6 +23,8 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
 from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls
+from recidiviz.persistence.entity_matching.state.state_period_matching_utils import \
+    add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import \
     move_periods_onto_sentences_by_date, move_violations_onto_supervision_periods_for_person, \
     move_contacts_onto_supervision_periods_for_person
@@ -49,10 +51,14 @@ class UsIdMatchingDelegate(BaseStateMatchingDelegate):
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ID specific postprocessing on the provided |matched_persons| directly after they have
         been entity matched:
+            - Moves supervising_officer from StatePerson onto open SupervisionPeriods.
             - Moves incarceration and supervision periods onto non-placeholder sentences by date.
             - Moves supervision violations onto supervision periods by date.
             - Moves supervision contacts onto supervision periods by date.
         """
+        logging.info('[Entity matching] Moving supervising officer onto open supervision periods')
+        add_supervising_officer_to_open_supervision_periods(matched_persons)
+
         logging.info('[Entity matching] Move periods onto sentences by date.')
         move_periods_onto_sentences_by_date(matched_persons)
 
