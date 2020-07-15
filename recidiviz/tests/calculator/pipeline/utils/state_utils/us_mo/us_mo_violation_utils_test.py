@@ -334,7 +334,8 @@ class TestUsMoViolationUtils(unittest.TestCase):
             )
         ]
 
-        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
+                                                              include_follow_up_responses=True)
 
         self.assertEqual(supervision_violation_responses, filtered_responses)
 
@@ -351,11 +352,12 @@ class TestUsMoViolationUtils(unittest.TestCase):
             )
         ]
 
-        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
+                                                              include_follow_up_responses=True)
 
         self.assertEqual(supervision_violation_responses, filtered_responses)
 
-    def test_filter_violation_responses_do_not_include(self):
+    def test_filter_violation_responses_do_not_include_supplemental(self):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -368,12 +370,41 @@ class TestUsMoViolationUtils(unittest.TestCase):
             )
         ]
 
-        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
-
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
+                                                              include_follow_up_responses=False)
         expected_output = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
                 response_type=StateSupervisionViolationResponseType.CITATION,
+            )
+        ]
+
+        self.assertEqual(expected_output, filtered_responses)
+
+    def test_filter_violation_responses_do_include_supplemental(self):
+        supervision_violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='SUP'  # Should be included
+            )
+        ]
+
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
+                                                              include_follow_up_responses=True)
+        expected_output = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.CITATION,
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='SUP'  # Should be included
             )
         ]
 
@@ -393,8 +424,8 @@ class TestUsMoViolationUtils(unittest.TestCase):
             )
         ]
 
-        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses)
-
+        filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
+                                                              include_follow_up_responses=False)
         expected_output = []
 
         self.assertEqual(expected_output, filtered_responses)
@@ -409,4 +440,4 @@ class TestUsMoViolationUtils(unittest.TestCase):
         ]
 
         with pytest.raises(ValueError):
-            _ = us_mo_filter_violation_responses(supervision_violation_responses)
+            _ = us_mo_filter_violation_responses(supervision_violation_responses, include_follow_up_responses=True)
