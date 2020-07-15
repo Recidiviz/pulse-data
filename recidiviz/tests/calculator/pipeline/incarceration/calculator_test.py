@@ -1040,6 +1040,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             event_date=date(2018, 9, 13),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            judicial_district_code='NORTHEAST'
         )
 
         characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
@@ -1052,7 +1053,8 @@ class TestCharacteristicsDict(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'date_of_stay': date(2018, 9, 13)
+            'date_of_stay': date(2018, 9, 13),
+            'judicial_district_code': 'NORTHEAST'
         }
 
         self.assertEqual(expected_output, characteristic_dict)

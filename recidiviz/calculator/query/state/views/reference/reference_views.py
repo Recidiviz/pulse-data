@@ -20,6 +20,10 @@ from typing import List
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.augmented_agent_info import AUGMENTED_AGENT_INFO_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.covid_report_weeks import COVID_REPORT_WEEKS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import \
+    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.reference.sentence_group_judicial_district_association import \
+    SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import \
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
@@ -59,5 +63,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-    COVID_REPORT_WEEKS_VIEW_BUILDER
+    COVID_REPORT_WEEKS_VIEW_BUILDER,
+    SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 ]
