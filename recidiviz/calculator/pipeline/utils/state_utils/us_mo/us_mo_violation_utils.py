@@ -40,24 +40,31 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP = OrderedDict([
     (StateSupervisionViolationType.TECHNICAL.value, 'tech')
 ])
 
+FOLLOW_UP_RESPONSE_SUBTYPE = 'SUP'
 
-def us_mo_filter_violation_responses(violation_responses: List[StateSupervisionViolationResponse]) -> \
+
+def us_mo_filter_violation_responses(violation_responses: List[StateSupervisionViolationResponse],
+                                     include_follow_up_responses: bool) -> \
         List[StateSupervisionViolationResponse]:
     """Filters out VIOLATION_REPORT responses that are not of type INI (Initial) or ITR (Inter district)."""
     filtered_responses = [
         response for response in violation_responses
         if response.response_type != StateSupervisionViolationResponseType.VIOLATION_REPORT
-        or _get_violation_report_subtype_should_be_included_in_calculations(response.response_subtype)
+        or _get_violation_report_subtype_should_be_included_in_calculations(
+            response.response_subtype, include_follow_up_responses)
     ]
 
     return filtered_responses
 
 
-def _get_violation_report_subtype_should_be_included_in_calculations(response_subtype: Optional[str]) -> bool:
+def _get_violation_report_subtype_should_be_included_in_calculations(response_subtype: Optional[str],
+                                                                     include_follow_up_responses) -> bool:
     """Returns whether a VIOLATION_REPORT with the given response_subtype should be included in calculations."""
     if response_subtype in ['INI', 'ITR']:
         return True
-    if response_subtype is None or response_subtype in ['HOF', 'MOS', 'ORI', 'SUP']:
+    if response_subtype == FOLLOW_UP_RESPONSE_SUBTYPE:
+        return include_follow_up_responses
+    if response_subtype is None or response_subtype in ['HOF', 'MOS', 'ORI']:
         return False
 
     raise ValueError(f"Unexpected violation response subtype {response_subtype} for a US_MO VIOLATION_REPORT.")

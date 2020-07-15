@@ -126,6 +126,18 @@ def should_collapse_transfers_different_purpose_for_incarceration(state_code: st
     return state_code.upper() != 'US_ID'
 
 
+def include_decisions_on_follow_up_responses(state_code: str) -> bool:
+    """Some StateSupervisionViolationResponses are a 'follow-up' type of reponse, which is a state-defined response
+    that is related to a previously submitted response. This returns whether or not the decision entries on
+    follow-up responses should be considered in the calculations.
+
+        - US_ID: False
+        - US_MO: True
+        - US_ND: False
+    """
+    return state_code.upper() == 'US_MO'
+
+
 def get_month_supervision_type(
         any_date_in_month: date,
         supervision_sentences: List[StateSupervisionSentence],
@@ -297,13 +309,14 @@ def terminating_supervision_period_supervision_type(
         supervision_period.termination_date, supervision_sentences, incarceration_sentences, supervision_period)
 
 
-def filter_violation_responses_before_revocation(violation_responses: List[StateSupervisionViolationResponse]) -> \
+def filter_violation_responses_before_revocation(violation_responses: List[StateSupervisionViolationResponse],
+                                                 include_follow_up_responses: bool) -> \
         List[StateSupervisionViolationResponse]:
     """State-specific filtering of the violation responses that should be included in pre-revocation analysis."""
     if violation_responses:
         state_code = violation_responses[0].state_code
         if state_code == 'US_MO':
-            return us_mo_filter_violation_responses(violation_responses)
+            return us_mo_filter_violation_responses(violation_responses, include_follow_up_responses)
     return violation_responses
 
 

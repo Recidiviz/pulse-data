@@ -19,7 +19,7 @@ supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import List, Dict, Tuple, Optional, Any, NamedTuple, Type
+from typing import List, Dict, Tuple, Optional, Any, NamedTuple, Type, Set
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -48,7 +48,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
-    get_case_compliance_on_date
+    get_case_compliance_on_date, include_decisions_on_follow_up_responses
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations, \
     get_relevant_supervision_periods_before_admission_date
@@ -293,7 +293,9 @@ def find_time_buckets_for_supervision_period(
 
             end_of_violation_window = \
                 end_of_month if (termination_date is None or end_of_month < termination_date) else termination_date
-            violation_history = get_violation_and_response_history(end_of_violation_window, violation_responses)
+            violation_history = get_violation_and_response_history(supervision_period.state_code,
+                                                                   end_of_violation_window,
+                                                                   violation_responses)
 
             is_on_supervision_last_day_of_month = _get_is_on_supervision_last_day_of_month(
                 end_of_month,
@@ -603,42 +605,70 @@ ViolationHistory = NamedTuple('ViolationHistory', [
 
 
 def get_violation_and_response_history(
+        state_code: str,
         revocation_date: date,
         violation_responses: List[StateSupervisionViolationResponse]
 ) -> ViolationHistory:
     """Identifies and returns the most severe violation type, the most severe decision on the responses, and the total
     number of responses that were recorded during a window of time preceding a revocation.
     """
-    responses_in_window = _get_responses_in_window_before_revocation(revocation_date, violation_responses)
+    if not violation_responses:
+        return ViolationHistory(
+            most_severe_violation_type=None,
+            most_severe_violation_type_subtype=None,
+            most_severe_response_decision=None,
+            response_count=0,
+            violation_history_description=None,
+            violation_type_frequency_counter=None)
+
+    responses_in_window = _get_responses_in_window_before_revocation(revocation_date, violation_responses,
+                                                                     include_follow_up_responses=False)
 
     violations_in_window: List[StateSupervisionViolation] = []
+    violation_ids_in_window: Set[int] = set()
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
     updated_responses: List[StateSupervisionViolationResponse] = []
 
     for response in responses_in_window:
         # TODO(2995): Formalize state-specific calc logic
-        if response.state_code == 'US_MO':
+        if state_code == 'US_MO':
             updated_responses.append(us_mo_violation_utils.normalize_violations_on_responses(response))
         else:
             updated_responses.append(response)
 
     for response in updated_responses:
-        if response.supervision_violation:
-            violations_in_window.append(response.supervision_violation)
+        violation = response.supervision_violation
 
-        if response.supervision_violation_response_decisions:
-            decision_entries = response.supervision_violation_response_decisions
-
-            for decision_entry in decision_entries:
-                if decision_entry.decision:
-                    response_decisions.append(decision_entry.decision)
+        if (violation and violation.supervision_violation_id
+                and violation.supervision_violation_id not in violation_ids_in_window):
+            violations_in_window.append(violation)
+            violation_ids_in_window.add(violation.supervision_violation_id)
 
     # Find the most severe violation type info of all of the entries in the window
     most_severe_violation_type, most_severe_violation_type_subtype = \
         identify_most_severe_violation_type_and_subtype(violations_in_window)
 
-    # Find the most severe decision in all of the responses in the window
-    most_severe_response_decision = identify_most_severe_response_decision(response_decisions)
+    responses_in_window_for_decision_evaluation = responses_in_window
+
+    if include_decisions_on_follow_up_responses(state_code):
+        responses_in_window_for_decision_evaluation = _get_responses_in_window_before_revocation(
+            revocation_date, violation_responses, include_follow_up_responses=True)
+
+    most_severe_response_decision = None
+    if responses_in_window_for_decision_evaluation:
+        # Find the most recent response
+        responses_in_window_for_decision_evaluation.sort(key=lambda b: b.response_date)
+        most_recent_response = responses_in_window_for_decision_evaluation[-1]
+
+        if most_recent_response.supervision_violation_response_decisions:
+            decision_entries = most_recent_response.supervision_violation_response_decisions
+
+            for decision_entry in decision_entries:
+                if decision_entry.decision:
+                    response_decisions.append(decision_entry.decision)
+
+        # Find the most severe decision on the most recent response
+        most_severe_response_decision = identify_most_severe_response_decision(response_decisions)
 
     violation_type_entries = []
     for violation in violations_in_window:
@@ -663,7 +693,8 @@ def get_violation_and_response_history(
 
 
 def _get_responses_in_window_before_revocation(revocation_date: date,
-                                               violation_responses: List[StateSupervisionViolationResponse]) \
+                                               violation_responses: List[StateSupervisionViolationResponse],
+                                               include_follow_up_responses: bool) \
         -> List[StateSupervisionViolationResponse]:
     """Looks at the series of violation responses that preceded a revocation. Finds the last violation response that was
     written before the revocation_date. Then, returns the violation responses that were written within
@@ -678,7 +709,8 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
         and response.response_date <= revocation_date
     ]
 
-    responses_before_revocation = filter_violation_responses_before_revocation(responses_before_revocation)
+    responses_before_revocation = filter_violation_responses_before_revocation(responses_before_revocation,
+                                                                               include_follow_up_responses)
 
     if not responses_before_revocation:
         logging.warning("No recorded responses before the revocation date.")
@@ -844,7 +876,9 @@ def find_revocation_return_buckets(
                 supervision_level_raw_text = supervision_period.supervision_level_raw_text
 
                 # Get details about the violation and response history leading up to the revocation
-                violation_history = get_violation_and_response_history(admission_date, violation_responses)
+                violation_history = get_violation_and_response_history(incarceration_period.state_code,
+                                                                       admission_date,
+                                                                       violation_responses)
 
                 if pre_revocation_supervision_type is not None:
                     revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
@@ -889,7 +923,9 @@ def find_revocation_return_buckets(
             case_type = StateSupervisionCaseType.GENERAL
 
             # Get details about the violation and response history leading up to the revocation
-            violation_history = get_violation_and_response_history(admission_date, violation_responses)
+            violation_history = get_violation_and_response_history(incarceration_period.state_code,
+                                                                   admission_date,
+                                                                   violation_responses)
 
             if pre_revocation_supervision_type is not None:
                 revocation_month_bucket = RevocationReturnSupervisionTimeBucket(

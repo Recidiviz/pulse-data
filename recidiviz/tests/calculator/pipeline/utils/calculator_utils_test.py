@@ -308,7 +308,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
 
         self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
-        self.assertEqual('UNSET', most_severe_violation_type_subtype)
+        self.assertIsNone(most_severe_violation_type_subtype)
 
     def test_identify_most_severe_violation_type_test_all_types(self):
         for violation_type in StateSupervisionViolationType:
@@ -322,7 +322,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
                 calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
 
             self.assertEqual(most_severe_violation_type, violation_type)
-            self.assertEqual('UNSET', most_severe_violation_type_subtype)
+            self.assertIsNone(most_severe_violation_type_subtype)
 
 
 class TestAddDemographicCharacteristics(unittest.TestCase):

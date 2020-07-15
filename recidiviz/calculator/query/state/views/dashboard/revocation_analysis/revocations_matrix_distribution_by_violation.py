@@ -32,7 +32,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  violation reports filed during that period. 
  """
 
-# TODO(2853): Handle unset violation type in the calc step
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
