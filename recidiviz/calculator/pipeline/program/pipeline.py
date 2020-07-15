@@ -34,11 +34,14 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
+    select_all_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -359,8 +362,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                                unifying_id_field_filter_set=person_id_filter_set,
                                                state_code=state_code))
 
-        supervision_period_to_agent_association_query = \
-            f"SELECT * FROM `{reference_dataset}.supervision_period_to_agent_association`"
+        supervision_period_to_agent_association_query = select_all_query(
+            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME)
 
         supervision_period_to_agent_associations = (
             p | "Read Supervision Period to Agent table from BigQuery" >>
