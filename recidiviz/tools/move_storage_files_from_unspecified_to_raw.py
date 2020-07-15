@@ -86,6 +86,7 @@ class MoveFilesFromUnspecifiedToRawController:
             logging.info("[DRY RUN] Moving files from [%s] to "
                          "[%s]", self.region_storage_dir_path.abs_path(),
                          self.region_storage_raw_dir_path.abs_path())
+
         else:
             i = input(f"Moving files from [{self.region_storage_dir_path.abs_path()}] to "
                       f"[{self.region_storage_raw_dir_path.abs_path()}] - continue? [y/n]: ")

@@ -177,6 +177,7 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
     return os.path.join(storage_bucket, region_code, file_type.value)
 
 
+
 def gcsfs_direct_ingest_directory_path_for_region(
         region_code: str,
         system_level: SystemLevel,
