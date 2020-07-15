@@ -157,12 +157,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
         Race.BLACK: ['BLACK', 'B'],
         Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ['AMERICAN INDIAN', 'I'],
         Race.OTHER: ['OTHER', 'N'],
-        Race.WHITE: ['WHITE', 'W'],
+        Race.WHITE: ['WHITE', 'W', 'WW'],
 
         Ethnicity.HISPANIC: ['HISPANIC', 'H'],
 
         Gender.FEMALE: ['FEMALE', 'F'],
-        Gender.MALE: ['MALE', 'M'],
+        Gender.MALE: ['MALE', 'M', 'MM'],
 
         StateAssessmentType.CSSM: ['CSS-M'],
         StateAssessmentType.LSIR: ['LSI-R'],
@@ -293,7 +293,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
     }
 
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
+    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
+        Gender: ['W', 'B', 'U', 'A', '1'],  # Unexplained rare values
+        Race: ['M', 'U', 'F', 'QW', 'WSW', 'QB', 'EW', 'Q', 'S'],  # Unexplained rare values
+    }
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
     @classmethod

@@ -11,3 +11,4 @@ primary_key:
 keys_to_ignore:
   - recidiviz_master_person_id  # Internal Recidiviz person ID - Unused
   - races_ethnicities_list  # Handled manually in controller
+  - OffRaceEthnicGroup  # Redundant of races_ethnicities_list - Unused
