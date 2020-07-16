@@ -119,8 +119,9 @@ class BaseScraper(Scraper):
         # If the character set was not explicitly set in the response, use the
         # detected encoding instead of defaulting to 'ISO-8859-1'. See
         # http://docs.python-requests.org/en/master/user/advanced/#encodings
-        if 'charset' not in response.headers['content-type'] and \
-                not response.apparent_encoding == 'ascii':
+        if ('content-type' not in response.headers or \
+            'charset' not in response.headers['content-type']) and \
+            not response.apparent_encoding == 'ascii':
             response.encoding = response.apparent_encoding
 
         if response_type is constants.ResponseType.HTML:
@@ -132,6 +133,8 @@ class BaseScraper(Scraper):
             try:
                 return json.loads(response.text), cookies
             except json.JSONDecodeError:
+                if not response.text:
+                    return [], cookies
                 raise ParsingError(response_type, response.text)
         if response_type is constants.ResponseType.JSONP:
             json_text = self._jsonp_to_json(response.text)
