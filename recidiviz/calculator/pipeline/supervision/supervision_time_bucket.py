@@ -83,6 +83,9 @@ class SupervisionTimeBucket(BuildableAttr):
     # Information related to whether the supervision case is meeting compliance standards
     case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
 
+    # Area of jurisdictional coverage of the court that sentenced the person to this supervision
+    judicial_district_code: Optional[str] = attr.ib(default=None)
+
 
 @attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):

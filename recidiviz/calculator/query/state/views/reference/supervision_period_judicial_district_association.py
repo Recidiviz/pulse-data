@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
-     the incarceration."""
+"""Maps supervision_period_ids to the area of jurisdictional coverage of the court that sentenced the person to the
+supervision."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -23,42 +23,42 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = 'incarceration_period_judicial_district_association'
+SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME = 'supervision_period_judicial_district_association'
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = \
-    """Maps incarceration_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
-     the incarceration. If there are multiple non-null judicial districts associated with a supervision period,
+SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = \
+    """Maps supervision_period_ids to the area of jurisdictional coverage of the court that sentenced the person to
+     the supervision. If there are multiple non-null judicial districts associated with a supervision period,
     prioritizes ones associated with controlling charges on the sentence."""
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
+SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
     """
     /*{{description}}*/
-    WITH ips_to_sentence_groups AS (
+    WITH sps_to_sentence_groups AS (
       -- Sentence groups from incarceration sentences --
       SELECT
-        period.state_code,
-        period.person_id,
-        incarceration_period_id,
+        sp.state_code,
+        sp.person_id,
+        supervision_period_id,
         sentence_group_id
-      FROM 
+      FROM
         {period_to_sentence_group_incarceration_join}
       
       UNION ALL
       
       -- Sentence groups from supervision sentences --
       SELECT
-        period.state_code,
-        period.person_id,
-        incarceration_period_id,
+        sp.state_code,
+        sp.person_id,
+        supervision_period_id,
         sentence_group_id
       FROM
         {period_to_sentence_group_supervision_join}
     ), ranked_judicial_districts AS (
       SELECT
         * EXCEPT(sentence_group_id),
-        ROW_NUMBER() OVER (PARTITION BY person_id, incarceration_period_id ORDER BY judicial_district_code IS NULL, is_controlling DESC) AS ranking
+        ROW_NUMBER() OVER (PARTITION BY person_id, supervision_period_id ORDER BY judicial_district_code IS NULL, is_controlling DESC) AS ranking
       FROM
-        ips_to_sentence_groups
+        sps_to_sentence_groups
       LEFT JOIN
         `{{project_id}}.{{reference_dataset}}.sentence_group_judicial_district_association`
       USING (state_code, person_id, sentence_group_id)
@@ -67,7 +67,7 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
     SELECT
       state_code,
       person_id,
-      incarceration_period_id,
+      supervision_period_id,
       judicial_district_code
     FROM
       ranked_judicial_districts
@@ -78,19 +78,19 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
         # This is formatted first so that the joins can contain arguments that will be formatted later during
         # the creation of the view
         period_to_sentence_group_incarceration_join=
-        bq_utils.period_to_sentence_group_joins('incarceration', 'incarceration'),
+        bq_utils.period_to_sentence_group_joins('supervision', 'incarceration'),
         period_to_sentence_group_supervision_join=
-        bq_utils.period_to_sentence_group_joins('incarceration', 'supervision'))
+        bq_utils.period_to_sentence_group_joins('supervision', 'supervision'))
 
-INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
-    view_id=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-    view_query_template=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
-    description=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
+    view_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+    view_query_template=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
+    description=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':
     with local_project_id_override(GAE_PROJECT_STAGING):
-        INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()
+        SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()

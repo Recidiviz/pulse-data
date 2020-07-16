@@ -53,3 +53,18 @@ def metric_period_condition(month_offset=1):
 def current_month_condition():
     return """year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))"""
+
+
+def period_to_sentence_group_joins(period_type: str, sentence_type: str) -> str:
+    """Returns joins to connect supervision or incarceration periods to sentence groups through either supervision
+    or incarceration sentences. {project_id} and {base_dataset} arguments are not evaluated at this stage."""
+    return f"""`{{project_id}}.{{base_dataset}}.state_{period_type}_period` period
+      LEFT JOIN
+        `{{project_id}}.{{base_dataset}}.state_{sentence_type}_sentence_{period_type}_period_association`
+      USING ({period_type}_period_id)
+      LEFT JOIN
+        `{{project_id}}.{{base_dataset}}.state_{sentence_type}_sentence`
+      USING ({sentence_type}_sentence_id)
+      LEFT JOIN
+        `{{project_id}}.{{base_dataset}}.state_sentence_group`
+      USING (sentence_group_id)"""

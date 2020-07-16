@@ -83,6 +83,9 @@ class SupervisionMetric(RecidivizMetric):
     # External ID of the district of the officer that was supervising the people described by this metric.
     supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
+    # Area of jurisdictional coverage of the court that sentenced the person to this supervision
+    judicial_district_code: Optional[str] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionMetric']:
         """Builds a SupervisionMetric object from the given arguments."""
