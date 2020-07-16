@@ -38,7 +38,7 @@ from collections import deque
 from datetime import datetime
 from functools import partial
 
-from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import constants, scraper as scraper_module
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.persistence.database.base_schema import \
@@ -101,6 +101,8 @@ def run_scraper_for_region(region, args):
     Creates and manages an in-memory FIFO queue to replicate production.
     """
 
+    # Don't initialize a ScraperCloudTaskManager when running locally.
+    scraper_module.ScraperCloudTaskManager = lambda: None  # type: ignore
     scraper = region.get_ingestor()
     scraper.BATCH_WRITES = False
     task_queue = deque()
