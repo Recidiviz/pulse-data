@@ -29,6 +29,7 @@ from recidiviz.big_query import view_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 
 from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state.view_materialization_manager import materialize_views
 from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,13 +42,10 @@ def export_view_data_to_cloud_storage():
     bq_client = BigQueryClientImpl()
     project_id = bq_client.project_id
 
-    view_builders_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
-
     # This step has to happen before the export because some views in views_to_export depend on the materialized
     # version of a view
-    for view_builder in view_builders_to_materialize:
-        view = view_builder.build()
-        bq_client.materialize_view_to_table(view)
+    view_builders_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
+    materialize_views(view_builders_to_materialize)
 
     datasets_to_export = view_config.DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT.keys()
 
