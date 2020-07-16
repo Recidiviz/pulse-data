@@ -50,6 +50,8 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
     SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
+from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import \
+    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import US_MO_SENTENCE_STATUSES_VIEW_NAME
@@ -517,6 +519,19 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                                                            'supervision_sentences')
         )
 
+        # Bring in the judicial districts associated with supervision_periods
+        sp_to_judicial_district_query = select_all_query(reference_dataset,
+                                                         SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME)
+
+        sp_to_judicial_district_kv = (
+            p | "Read supervision_period to judicial_district associations from BigQuery" >>
+            beam.io.Read(beam.io.BigQuerySource(
+                query=sp_to_judicial_district_query,
+                use_standard_sql=True))
+            | "Convert supervision_period to judicial_district association table to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
         supervision_violations_and_responses = (
             {'violations': supervision_violations,
@@ -562,7 +577,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              'supervision_sentences': sentences_converted.supervision_sentences,
              'incarceration_sentences': sentences_converted.incarceration_sentences,
              'violation_responses': violation_responses_with_hydrated_violations,
-             'supervision_contacts': supervision_contacts
+             'supervision_contacts': supervision_contacts,
+             'supervision_period_judicial_district_association': sp_to_judicial_district_kv
              }
             | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()

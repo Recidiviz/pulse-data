@@ -24,6 +24,8 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.sentence_group_judicial_district_association import \
     SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import \
+    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import \
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
@@ -65,5 +67,6 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
     COVID_REPORT_WEEKS_VIEW_BUILDER,
     SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
+    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 ]
