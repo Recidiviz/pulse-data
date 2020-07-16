@@ -64,6 +64,9 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
       IFNULL(termination_count - LAG(termination_count) OVER (PARTITION BY state_code ORDER BY week_num), 0) as termination_count_diff,
       discharge_count,
       IFNULL(discharge_count - LAG(discharge_count) OVER (PARTITION BY state_code ORDER BY week_num), 0) as discharge_count_diff,
+      negative_termination_count,
+      IFNULL(negative_termination_count - LAG(negative_termination_count) OVER (PARTITION BY state_code ORDER BY week_num), 0)
+        as negative_termination_count_diff,
     FROM
       (SELECT
         report.state_code,
@@ -72,6 +75,8 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         end_date,
         COUNT(DISTINCT(person_id)) as termination_count,
         COUNT(DISTINCT IF(termination_reason = 'DISCHARGE', person_id, NULL)) as discharge_count,
+        COUNT(DISTINCT IF(termination_reason IN ('REVOCATION', 'ABSCONSION', 'RETURN_TO_INCARCERATION'),
+                          person_id, NULL)) as negative_termination_count,
       FROM
         `{project_id}.{reference_dataset}.covid_report_weeks` report
       LEFT JOIN
@@ -83,7 +88,9 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         FROM supervision_terminations
         LEFT JOIN overlapping_open_period USING (supervision_period_id)
           -- Do not count any discharges that are overlapping with another open supervision period
-          WHERE overlapping_open_period.supervision_period_id IS NULL) terminations
+          WHERE overlapping_open_period.supervision_period_id IS NULL
+            AND termination_reason NOT IN ('TRANSFER_WITHIN_STATE', 'TRANSFER_OUT_OF_STATE', 'RETURN_FROM_ABSCONSION')
+      ) terminations
       ON report.state_code = terminations.state_code AND termination_date BETWEEN start_date AND end_date
       GROUP BY state_code, week_num, start_date, end_date)
     ORDER BY state_code, week_num
