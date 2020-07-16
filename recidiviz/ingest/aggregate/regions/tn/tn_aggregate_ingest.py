@@ -90,7 +90,7 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     is_female = 'female' in filename
     report_date = _parse_date(filename)
 
-    table = _parse_table(location, filename, is_female, report_date.year)
+    table = _parse_table(location, filename, is_female, report_date)
 
     names = table.facility_name.apply(_pretend_facility_is_county)
     table = fips.add_column_to_df(table, names, us.states.TN)
@@ -107,14 +107,20 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 
 def _parse_table(location: str, filename: str, is_female: bool,
-                 year: int) -> pd.DataFrame:
+                 report_date: datetime.date) -> pd.DataFrame:
     # Most but not all PDFs have data on pages 2-4.
-    pages = ([1, 2] if 2000 <= year <= 2005
-             else [3, 4, 5] if year in (2006, 2009)
+    pages = ([1, 2] if 2000 <= report_date.year <= 2005
+             else [3, 4, 5] if report_date.year in (2006, 2009)
              else [2, 3, 4])
     table = read_pdf(location, filename, pages=pages, multiple_tables=True)
 
-    formatted_dfs = [_format_table(df, is_female, year) for df in table]
+    if report_date.year == 2020 and report_date.month in (4, 5):
+        table = [table[0],
+                 pd.concat((table[1], table[2])),
+                 pd.concat((table[3], table[4]))]
+
+    formatted_dfs = [_format_table(df, is_female, report_date.year)
+                     for df in table]
 
     table = pd.concat(formatted_dfs, ignore_index=True)
 
@@ -153,7 +159,7 @@ def _expand_columns_with_spaces_to_new_columns(
         # Just copy over the first column and columns with no spaces,
         # which haven't been smashed together, presumably.
         if col_ind == 0 or not col.str.contains(' ').any():
-            expanded_df = expanded_df.join(col)
+            expanded_df = expanded_df.join(col, rsuffix=' ')
         else:
             # Extract all the smashed together columns into their own
             # columns.
