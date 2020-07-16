@@ -21,7 +21,7 @@ import logging
 from collections import defaultdict
 from datetime import date
 
-from typing import Dict, Tuple, Any, List, Iterable
+from typing import Dict, Tuple, Any, List, Iterable, Set, Optional
 
 from googleapiclient.discovery import build
 from more_itertools import one
@@ -160,8 +160,8 @@ def year_and_month_for_today() -> Tuple[int, int]:
     return today.year, today.month
 
 
-def person_and_kwargs_for_identifier(arg_to_entities_map: Dict[str, Iterable[Any]]) -> \
-        Tuple[StatePerson, Dict[str, List]]:
+def person_and_kwargs_for_identifier(
+        arg_to_entities_map: Dict[str, Iterable[Any]]) -> Tuple[StatePerson, Dict[str, List]]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
     entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the
     identifier step of the pipeline, and the values are iterables of the associated entities.
@@ -187,9 +187,38 @@ def person_and_kwargs_for_identifier(arg_to_entities_map: Dict[str, Iterable[Any
     return person, kwargs
 
 
-def select_all_query(dataset: str, table: str) -> str:
-    """Returns a query string formatted to select all contents of the table in the given dataset."""
-    return f"SELECT * FROM `{dataset}.{table}`"
+def select_all_by_person_query(
+        dataset: str,
+        table: str,
+        state_code_filter: Optional[str],
+        person_id_filter_set: Optional[Set[int]]) -> str:
+    return select_all_query(dataset, table, state_code_filter, 'person_id', person_id_filter_set)
+
+
+def select_all_query(dataset: str,
+                     table: str,
+                     state_code_filter: Optional[str],
+                     unifying_id_field: Optional[str],
+                     unifying_id_field_filter_set: Optional[Set[int]]) -> str:
+    """Returns a query string formatted to select all contents of the table in the given dataset, filtering by the
+    provided state code and unifying id filter sets, if necessary."""
+    entity_query = f"SELECT * FROM `{dataset}.{table}`"
+
+    if unifying_id_field_filter_set:
+        if not unifying_id_field:
+            raise ValueError(
+                f'Expected nonnull unifying_id_field for nonnull unifying_id_field_filter_set when querying'
+                f'dataset [{dataset}] and table [{table}].')
+
+        id_str_set = {str(unifying_id) for unifying_id in unifying_id_field_filter_set if str(unifying_id)}
+
+        entity_query = entity_query + f" WHERE {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
+
+    if state_code_filter:
+        conjunctive_word = 'AND' if unifying_id_field_filter_set else 'WHERE'
+        entity_query = entity_query + f" {conjunctive_word} state_code IN ('{state_code_filter}')"
+
+    return entity_query
 
 
 def list_of_dicts_to_dict_with_keys(list_of_dicts: List[Dict[str, Any]], key: str) -> Dict[Any, Dict[str, Any]]:

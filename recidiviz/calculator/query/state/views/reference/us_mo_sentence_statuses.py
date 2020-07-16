@@ -32,6 +32,7 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
         COALESCE(incarceration_sentences.person_id, supervision_sentences.person_id) AS person_id,
+        'US_MO' AS state_code,
         all_statuses.*
     FROM (
         SELECT

@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
-    select_all_query
+    select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     json_serializable_metric_key
@@ -457,7 +457,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         ))
 
         # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
-        ssvr_to_agent_association_query = select_all_query(reference_dataset, SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME)
+        ssvr_to_agent_association_query = select_all_by_person_query(
+            reference_dataset, SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME, state_code, person_id_filter_set)
 
         ssvr_to_agent_associations = (p | "Read SSVR to Agent table from BigQuery" >>
                                       beam.io.Read(beam.io.BigQuerySource
@@ -471,8 +472,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                                     'supervision_violation_response_id')
                                          )
 
-        supervision_period_to_agent_association_query = select_all_query(
-            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME)
+        supervision_period_to_agent_association_query = select_all_by_person_query(
+            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME, state_code, person_id_filter_set)
 
         supervision_period_to_agent_associations = (p | "Read Supervision Period to Agent table from BigQuery" >>
                                                     beam.io.Read(beam.io.BigQuerySource
@@ -489,7 +490,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         if state_code is None or state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
-            us_mo_sentence_status_query = select_all_query(reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME)
+            us_mo_sentence_status_query = select_all_by_person_query(
+                reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME, state_code, person_id_filter_set)
 
             us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
                                        beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
@@ -520,8 +522,11 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Bring in the judicial districts associated with supervision_periods
-        sp_to_judicial_district_query = select_all_query(reference_dataset,
-                                                         SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME)
+        sp_to_judicial_district_query = select_all_by_person_query(
+            reference_dataset,
+            SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+            state_code,
+            person_id_filter_set)
 
         sp_to_judicial_district_kv = (
             p | "Read supervision_period to judicial_district associations from BigQuery" >>

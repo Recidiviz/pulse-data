@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
-    select_all_query
+    select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import \
@@ -388,7 +388,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         if state_code is None or state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
-            us_mo_sentence_status_query = select_all_query(reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME)
+            us_mo_sentence_status_query = select_all_by_person_query(
+                reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME, state_code, person_id_filter_set)
 
             us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
                                        beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
@@ -433,7 +434,14 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Bring in the table that associates people and their county of residence
-        person_id_to_county_query = select_all_query(reference_dataset, PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME)
+        person_id_to_county_query = select_all_by_person_query(
+            reference_dataset,
+            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+            # TODO(3602): Once we put state_code on StatePerson objects, we can update the
+            # persons_to_recent_county_of_residence query to have a state_code field, allowing us to also filter the
+            # output by state_code.
+            state_code_filter=None,
+            person_id_filter_set=person_id_filter_set)
 
         person_id_to_county_kv = (
             p | "Read person_id to county associations from BigQuery" >>
@@ -445,8 +453,11 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Bring in the judicial districts associated with incarceration_periods
-        ip_to_judicial_district_query = select_all_query(reference_dataset,
-                                                         INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME)
+        ip_to_judicial_district_query = select_all_by_person_query(
+            reference_dataset,
+            INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+            state_code,
+            person_id_filter_set)
 
         ip_to_judicial_district_kv = (
             p | "Read incarceration_period to judicial_district associations from BigQuery" >>

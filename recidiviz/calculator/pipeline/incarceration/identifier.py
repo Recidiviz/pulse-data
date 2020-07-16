@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     get_pre_incarceration_supervision_type, get_post_incarceration_supervision_type
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
+from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType
 
@@ -64,11 +65,14 @@ def find_incarceration_events(
     if not incarceration_periods:
         return incarceration_events
 
+    state_code = get_single_state_code(incarceration_periods)
+
     # Convert the list of dictionaries into one dictionary where the keys are the incarceration_period_id values
     incarceration_period_to_judicial_district = list_of_dicts_to_dict_with_keys(
         incarceration_period_judicial_district_association, key=StateIncarcerationPeriod.get_class_id_name())
 
     incarceration_events.extend(find_all_stay_events(
+        state_code,
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
@@ -76,6 +80,7 @@ def find_incarceration_events(
         county_of_residence))
 
     incarceration_events.extend(find_all_admission_release_events(
+        state_code,
         incarceration_sentences,
         supervision_sentences,
         incarceration_periods,
@@ -85,6 +90,7 @@ def find_incarceration_events(
 
 
 def find_all_admission_release_events(
+        state_code: str,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
@@ -96,6 +102,7 @@ def find_all_admission_release_events(
     incarceration_events: List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]] = []
 
     incarceration_periods_for_admissions = prepare_incarceration_periods_for_calculations(
+        state_code,
         original_incarceration_periods,
         collapse_temporary_custody_periods_with_revocation=True,
         overwrite_facility_information_in_transfers=False)
@@ -113,6 +120,7 @@ def find_all_admission_release_events(
             incarceration_events.append(admission_event)
 
     incarceration_periods_for_releases = prepare_incarceration_periods_for_calculations(
+        state_code,
         original_incarceration_periods,
         collapse_temporary_custody_periods_with_revocation=True,
         overwrite_facility_information_in_transfers=True)
@@ -132,6 +140,7 @@ def find_all_admission_release_events(
 
 
 def find_all_stay_events(
+        state_code: str,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         original_incarceration_periods: List[StateIncarcerationPeriod],
@@ -144,6 +153,7 @@ def find_all_stay_events(
     incarceration_stay_events: List[IncarcerationStayEvent] = []
 
     incarceration_periods = prepare_incarceration_periods_for_calculations(
+        state_code,
         original_incarceration_periods, collapse_transfers=False)
 
     for incarceration_period in incarceration_periods:

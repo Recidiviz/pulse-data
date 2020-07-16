@@ -174,6 +174,7 @@ def find_supervision_time_buckets(
     # We don't want to collapse temporary custody periods with revocations because we want to use the actual date
     # of the revocation admission for the revocation buckets
     incarceration_periods = prepare_incarceration_periods_for_calculations(
+        state_code,
         incarceration_periods,
         collapse_temporary_custody_periods_with_revocation=False,
         collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi)

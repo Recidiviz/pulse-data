@@ -43,6 +43,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionViolationResponse
 
@@ -78,7 +79,10 @@ def find_release_events_by_cohort_year(
     if not incarceration_periods:
         return release_events
 
-    incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(incarceration_periods)
+    state_code = get_single_state_code(incarceration_periods)
+
+    incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(
+        state_code, incarceration_periods)
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code
@@ -130,12 +134,12 @@ def find_release_events_by_cohort_year(
     return release_events
 
 
-def prepare_incarceration_periods_for_recidivism_calculations(incarceration_periods: List[StateIncarcerationPeriod])\
-        -> List[StateIncarcerationPeriod]:
+def prepare_incarceration_periods_for_recidivism_calculations(
+        state_code: str, incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """Returns a filtered list of the provided |incarceration_periods| to be used for recidivism calculation."""
 
     incarceration_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
+        state_code, incarceration_periods, collapse_temporary_custody_periods_with_revocation=True)
 
     # TODO(2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states
     #  that may have temporary custody periods at this point (currently just US_MO).

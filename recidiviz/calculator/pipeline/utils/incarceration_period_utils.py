@@ -33,7 +33,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
-from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
+from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 
 def drop_placeholder_periods(
@@ -212,6 +212,7 @@ def standard_date_sort_for_incarceration_periods(incarceration_periods: List[Sta
 
 
 def prepare_incarceration_periods_for_calculations(
+        state_code: str,
         incarceration_periods: List[StateIncarcerationPeriod],
         collapse_transfers: bool = True,
         collapse_temporary_custody_periods_with_revocation: bool = False,
@@ -225,7 +226,7 @@ def prepare_incarceration_periods_for_calculations(
     StateIncarcerationPeriods by admission_date, and collapses the ones connected by a transfer.
     """
 
-    updated_periods = _filter_and_update_incarceration_periods_for_calculations(incarceration_periods)
+    updated_periods = _filter_and_update_incarceration_periods_for_calculations(state_code, incarceration_periods)
 
     sorted_periods = standard_date_sort_for_incarceration_periods(updated_periods)
 
@@ -239,6 +240,7 @@ def prepare_incarceration_periods_for_calculations(
 
 
 def _filter_and_update_incarceration_periods_for_calculations(
+        state_code: str,
         incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """Returns a modified and filtered subset of the provided |incarceration_periods| list so that all remaining
     periods have the the fields necessary for calculations.
@@ -250,7 +252,8 @@ def _filter_and_update_incarceration_periods_for_calculations(
 
     filtered_incarceration_periods = _infer_missing_dates_and_statuses(filtered_incarceration_periods)
 
-    filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(filtered_incarceration_periods)
+    filtered_incarceration_periods = drop_periods_not_under_state_custodial_authority(
+        state_code, filtered_incarceration_periods)
 
     return filtered_incarceration_periods
 
@@ -336,8 +339,8 @@ def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarce
     incarceration_periods.sort(key=cmp_to_key(_sort_function))
 
 
-def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]) -> \
-        List[StateIncarcerationPeriod]:
+def _infer_missing_dates_and_statuses(
+        incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """First, sorts the incarceration_periods in chronological order of the admission and release dates. Then, for any
     periods missing dates and statuses, infers this information given the other incarceration periods.
     """
@@ -405,13 +408,12 @@ def _infer_missing_dates_and_statuses(incarceration_periods: List[StateIncarcera
     return incarceration_periods
 
 
-def drop_periods_not_under_state_custodial_authority(incarceration_periods: List[StateIncarcerationPeriod]) \
-        -> List[StateIncarcerationPeriod]:
+def drop_periods_not_under_state_custodial_authority(
+        state_code: str, incarceration_periods: List[StateIncarcerationPeriod]) -> List[StateIncarcerationPeriod]:
     """Returns a filtered subset of the provided |incarceration_periods| where all periods that are not under state
     custodial authority are filtered out.
     """
     # TODO(2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
-    state_code = get_single_state_code(incarceration_periods)
     filtered_incarceration_periods = incarceration_periods
     if not temporary_custody_periods_under_state_authority(state_code):
         filtered_incarceration_periods = drop_temporary_custody_periods(filtered_incarceration_periods)
