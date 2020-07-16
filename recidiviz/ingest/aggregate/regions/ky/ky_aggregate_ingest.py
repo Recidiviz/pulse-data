@@ -62,6 +62,33 @@ def _parse_table(location, filename: str) -> pd.DataFrame:
 
     if filename.endswith('04-16-20.pdf'):
         whole_df[323:331] = whole_df[323:331].shift(-1, axis='columns')
+    elif filename.endswith('07-09-20.pdf'):
+        whole_df.loc[432] = whole_df.iloc[432].shift(-1)
+        whole_df.loc[434:436] = whole_df.loc[434:436].shift(-1, axis='columns')
+        whole_df.loc[438] = whole_df.iloc[438].shift(-1)
+        whole_df.loc[440] = whole_df.iloc[440].shift(-1)
+        whole_df.loc[442:445] = whole_df.loc[442:445].shift(-1, axis='columns')
+        whole_df.loc[447:462] = whole_df.loc[447:462].shift(-1, axis='columns')
+        whole_df.loc[464:] = whole_df.loc[464:].shift(-1, axis='columns')
+        whole_df.loc[451, 'County'] = 86
+        whole_df.loc[456, 'County'] = 264
+        whole_df.loc[461, 'County'] = 52
+        whole_df.loc[464, 'County'] = 161
+        whole_df.loc[469, 'County'] = 70
+        whole_df.loc[472, 'County'] = 204
+        whole_df.loc[477, 'County'] = 182
+        whole_df.loc[482, 'County'] = 137
+        whole_df.loc[487, 'County'] = 45
+        whole_df.loc[492, 'County'] = 410
+        whole_df.loc[497, 'County'] = 152
+        whole_df.loc[500, 'County'] = 95
+        whole_df.loc[505, 'County'] = 85
+        whole_df.loc[508, 'County'] = 194
+        whole_df.loc[513, 'County'] = 72
+        whole_df.loc[516, 'County'] = 134
+        whole_df.loc[521, 'County'] = 50
+        whole_df.loc[524, 'County'] = 63
+        whole_df.loc[529, 'County'] = 32
 
     # Remove totals separate from parsing since it's a variable length
     totals_start_index = np.where(whole_df['Date'].str.contains('Totals'))[0][0]
