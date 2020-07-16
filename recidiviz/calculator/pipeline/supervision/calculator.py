@@ -290,6 +290,8 @@ def characteristics_dict(person: StatePerson,
         characteristics['supervision_type'] = supervision_time_bucket.supervision_type
     if supervision_time_bucket.case_type:
         characteristics['case_type'] = supervision_time_bucket.case_type
+    if supervision_time_bucket.judicial_district_code:
+        characteristics['judicial_district_code'] = supervision_time_bucket.judicial_district_code
 
     if not include_revocation_dimensions and supervision_time_bucket.supervision_level:
         characteristics['supervision_level'] = supervision_time_bucket.supervision_level

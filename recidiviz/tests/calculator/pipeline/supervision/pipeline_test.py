@@ -544,6 +544,18 @@ class TestSupervisionPipeline(unittest.TestCase):
                                                                            'supervision_sentences')
         )
 
+        supervision_period_judicial_district_association_rows = [{
+            'supervision_period_id': 999,
+            'judicial_district_code': 'XXX',
+        }]
+
+        sp_to_judicial_district_kv = (
+            test_pipeline | "Read supervision_period to judicial_district associations from BigQuery" >>
+            beam.Create(supervision_period_judicial_district_association_rows)
+            | "Convert supervision_period to judicial_district association table to KV" >>
+            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
+        )
+
         # Group each StatePerson with their StateIncarcerationPeriods and
         # StateSupervisionSentences
         person_periods_and_sentences = (
@@ -554,7 +566,8 @@ class TestSupervisionPipeline(unittest.TestCase):
              'supervision_sentences': sentences_converted.supervision_sentences,
              'incarceration_sentences': sentences_converted.incarceration_sentences,
              'violation_responses': violation_responses_with_hydrated_violations,
-             'supervision_contacts': supervision_contacts
+             'supervision_contacts': supervision_contacts,
+             'supervision_period_judicial_district_association': sp_to_judicial_district_kv
              }
             | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>
             beam.CoGroupByKey()
@@ -1573,6 +1586,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             violation_responses: List[entities.StateSupervisionViolationResponse] = None,
             assessments: List[entities.StateAssessment] = None,
             supervision_contacts: List[entities.StateSupervisionContact] = None,
+            supervision_period_judicial_district_association: List[Dict[Any, Any]] = None
     ):
         return {
             'person': [person],
@@ -1582,7 +1596,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'incarceration_sentences': incarceration_sentences if incarceration_sentences else [],
             'supervision_sentences': supervision_sentences if supervision_sentences else [],
             'violation_responses': violation_responses if violation_responses else [],
-            'supervision_contacts': supervision_contacts if supervision_contacts else []
+            'supervision_contacts': supervision_contacts if supervision_contacts else [],
+            'supervision_period_judicial_district_association': (supervision_period_judicial_district_association
+                                                                 if supervision_period_judicial_district_association
+                                                                 else [])
         }
 
     def testClassifySupervisionTimeBuckets(self):
@@ -1640,13 +1657,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
+        judicial_district_code = 'NORTHEAST'
+
+        supervision_period_to_judicial_district_row = {
+            'person_id': fake_person_id,
+            'supervision_period_id': supervision_period.supervision_period_id,
+            'judicial_district_code': judicial_district_code
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             supervision_periods=[supervision_period],
             assessments=[assessment],
             incarceration_periods=[incarceration_period],
             incarceration_sentences=[incarceration_sentence],
-            supervision_sentences=[supervision_sentence]
+            supervision_sentences=[supervision_sentence],
+            supervision_period_judicial_district_association=[supervision_period_to_judicial_district_row]
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1661,7 +1687,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=True,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                    supervision_sentence.completion_date - supervision_sentence.start_date).days,
+                judicial_district_code=judicial_district_code
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -1676,6 +1703,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=StateSupervisionLevel.MEDIUM,
                 supervision_level_raw_text='MEDM',
                 is_on_supervision_last_day_of_month=True,
+                judicial_district_code=judicial_district_code
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -1690,6 +1718,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=StateSupervisionLevel.MEDIUM,
                 supervision_level_raw_text='MEDM',
                 is_on_supervision_last_day_of_month=True,
+                judicial_district_code=judicial_district_code
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -1704,6 +1733,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=StateSupervisionLevel.MEDIUM,
                 supervision_level_raw_text='MEDM',
                 is_on_supervision_last_day_of_month=False,
+                judicial_district_code=judicial_district_code
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -1714,7 +1744,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
+                supervising_district_external_id='10',
+                judicial_district_code=judicial_district_code
             )
         ]
 

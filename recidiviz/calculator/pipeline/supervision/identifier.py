@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
+from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_revoked_supervision_period_if_revocation_occurred
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
@@ -108,7 +109,8 @@ def find_supervision_time_buckets(
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_judicial_district_association: List[Dict[str, Any]],
 ) -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines if they resulted in revocation return.
 
@@ -140,8 +142,8 @@ def find_supervision_time_buckets(
             corresponding StateAgent on the response
         - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
             about the corresponding StateAgent
-        - state_code_filter: the state_code to limit the output to. If this is 'ALL' or is omitted, then all states
-        will be included in the result.
+        - supervision_period_judicial_district_association: a list of dictionaries with information connecting
+            StateSupervisionPeriod ids to the judicial district responsible for the period of supervision
 
     Returns:
         A list of SupervisionTimeBuckets for the person.
@@ -153,6 +155,9 @@ def find_supervision_time_buckets(
         state_code = get_single_state_code(supervision_periods)
     else:
         state_code = get_single_state_code(incarceration_periods)
+
+    supervision_period_to_judicial_district_associations = list_of_dicts_to_dict_with_keys(
+        supervision_period_judicial_district_association, StateSupervisionPeriod.get_class_id_name())
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
@@ -176,14 +181,20 @@ def find_supervision_time_buckets(
     supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
     incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=incarceration_periods)
 
-    projected_supervision_completion_buckets = classify_supervision_success(supervision_sentences,
-                                                                            incarceration_period_index,
-                                                                            supervision_period_to_agent_associations)
+    projected_supervision_completion_buckets = classify_supervision_success(
+        supervision_sentences,
+        incarceration_period_index,
+        supervision_period_to_agent_associations,
+        supervision_period_to_judicial_district_associations)
 
     supervision_time_buckets.extend(projected_supervision_completion_buckets)
 
     for supervision_period in supervision_period_index.supervision_periods:
         if produce_supervision_time_bucket_for_period(supervision_period):
+            judicial_district_code = _get_judicial_district_code(
+                supervision_period, supervision_period_to_judicial_district_associations
+            )
+
             supervision_time_buckets = supervision_time_buckets + find_time_buckets_for_supervision_period(
                 supervision_sentences,
                 incarceration_sentences,
@@ -193,7 +204,9 @@ def find_supervision_time_buckets(
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                supervision_period_to_agent_associations)
+                supervision_period_to_agent_associations,
+                judicial_district_code
+            )
 
             supervision_termination_bucket = find_supervision_termination_bucket(
                 supervision_sentences,
@@ -202,16 +215,23 @@ def find_supervision_time_buckets(
                 supervision_period_index,
                 assessments,
                 supervision_period_to_agent_associations,
-                incarceration_period_index
+                incarceration_period_index,
+                judicial_district_code
             )
 
             if supervision_termination_bucket:
                 supervision_time_buckets.append(supervision_termination_bucket)
 
     supervision_time_buckets = supervision_time_buckets + find_revocation_return_buckets(
-        supervision_sentences, incarceration_sentences, supervision_periods,
-        assessments, violation_responses, ssvr_agent_associations,
-        supervision_period_to_agent_associations, incarceration_period_index)
+        supervision_sentences,
+        incarceration_sentences,
+        supervision_periods,
+        assessments,
+        violation_responses,
+        ssvr_agent_associations,
+        supervision_period_to_agent_associations,
+        supervision_period_to_judicial_district_associations,
+        incarceration_period_index)
 
     if supervision_types_distinct_for_state(state_code):
         supervision_time_buckets = _convert_buckets_to_dual(supervision_time_buckets)
@@ -230,7 +250,9 @@ def find_time_buckets_for_supervision_period(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) -> List[SupervisionTimeBucket]:
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        judicial_district_code: Optional[str] = None
+) -> List[SupervisionTimeBucket]:
     """Finds months that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated for the full month and did not have a revocation admission that month.
 
@@ -244,6 +266,7 @@ def find_time_buckets_for_supervision_period(
         - violation_responses: List of StateSupervisionViolationResponse for a person
         - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
             about the corresponding StateAgent on the period
+        - judicial_district_code: The judicial district responsible for the period of supervision
     Returns
         - A set of unique SupervisionTimeBuckets for the person for the given StateSupervisionPeriod.
     """
@@ -343,7 +366,8 @@ def find_time_buckets_for_supervision_period(
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
-                    case_compliance=case_compliance
+                    case_compliance=case_compliance,
+                    judicial_district_code=judicial_district_code
                 )
             )
 
@@ -442,7 +466,8 @@ def find_supervision_termination_bucket(
         supervision_period_index: SupervisionPeriodIndex,
         assessments: List[StateAssessment],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        incarceration_period_index: IncarcerationPeriodIndex
+        incarceration_period_index: IncarcerationPeriodIndex,
+        judicial_district_code: Optional[str] = None
 ) -> Optional[SupervisionTimeBucket]:
     """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
     termination_date, then returns a SupervisionTerminationBucket with the details of the termination.
@@ -520,7 +545,8 @@ def find_supervision_termination_bucket(
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=assessment_score_change,
             supervising_officer_external_id=supervising_officer_external_id,
-            supervising_district_external_id=supervising_district_external_id
+            supervising_district_external_id=supervising_district_external_id,
+            judicial_district_code=judicial_district_code
         )
 
     return None
@@ -826,6 +852,7 @@ def find_revocation_return_buckets(
         violation_responses: List[StateSupervisionViolationResponse],
         ssvr_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
         incarceration_period_index: IncarcerationPeriodIndex
 ) -> List[SupervisionTimeBucket]:
     """Looks at all incarceration periods to see if they were revocation returns. For each revocation admission, adds
@@ -880,6 +907,9 @@ def find_revocation_return_buckets(
                                                                        admission_date,
                                                                        violation_responses)
 
+                judicial_district_code = _get_judicial_district_code(
+                    supervision_period, supervision_period_to_judicial_district_associations)
+
                 if pre_revocation_supervision_type is not None:
                     revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                         state_code=incarceration_period.state_code,
@@ -906,7 +936,8 @@ def find_revocation_return_buckets(
                         # Note: This is incorrect in the case where you are revoked, then released by the end of the
                         #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
                         #  non-existent since we don't count temporary / board hold periods as revocations.
-                        is_on_supervision_last_day_of_month=False
+                        is_on_supervision_last_day_of_month=False,
+                        judicial_district_code=judicial_district_code
                     )
 
                     revocation_return_buckets.append(revocation_month_bucket)
@@ -961,7 +992,8 @@ def find_revocation_return_buckets(
 
 def classify_supervision_success(supervision_sentences: List[StateSupervisionSentence],
                                  incarceration_period_index: IncarcerationPeriodIndex,
-                                 supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+                                 supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+                                 supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]]
                                  ) -> List[ProjectedSupervisionCompletionBucket]:
     """This classifies whether supervision projected to end in a given month was completed successfully.
 
@@ -998,7 +1030,8 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
                     supervision_sentence,
                     latest_supervision_period,
                     incarceration_period_index,
-                    supervision_period_to_agent_associations
+                    supervision_period_to_agent_associations,
+                    supervision_period_to_judicial_district_associations
                 )
 
                 if completion_bucket:
@@ -1011,7 +1044,8 @@ def _get_projected_completion_bucket(
         supervision_sentence,
         supervision_period: StateSupervisionPeriod,
         incarceration_period_index: IncarcerationPeriodIndex,
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]]
 ) -> Optional[ProjectedSupervisionCompletionBucket]:
     """Returns a ProjectedSupervisionCompletionBucket for the given supervision sentence and its last terminated period,
     if the sentence should be included in the success metric counts. If the sentence should not be included in success
@@ -1044,6 +1078,9 @@ def _get_projected_completion_bucket(
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
+    judicial_district_code = _get_judicial_district_code(supervision_period,
+                                                         supervision_period_to_judicial_district_associations)
+
     # TODO(2975): Note that this metric measures success by projected completion month. Update or expand this
     #  metric to capture the success of early termination as well
     return ProjectedSupervisionCompletionBucket(
@@ -1056,7 +1093,8 @@ def _get_projected_completion_bucket(
         incarcerated_during_sentence=incarcerated_during_sentence,
         sentence_days_served=sentence_days_served,
         supervising_officer_external_id=supervising_officer_external_id,
-        supervising_district_external_id=supervising_district_external_id
+        supervising_district_external_id=supervising_district_external_id,
+        judicial_district_code=judicial_district_code
     )
 
 
@@ -1289,3 +1327,20 @@ def _revoked_supervision_periods_if_revocation_occurred(
                                                                                  supervision_periods)
 
     return admission_is_revocation, revoked_periods
+
+
+def _get_judicial_district_code(
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_judicial_district: Dict[int, Dict[Any, Any]]) -> Optional[str]:
+    """Retrieves the judicial_district_code corresponding to the supervision_period, if one exists."""
+    supervision_period_id = supervision_period.supervision_period_id
+
+    if supervision_period_id is None:
+        raise ValueError("Unexpected unset supervision_period_id.")
+
+    ip_info = supervision_period_to_judicial_district.get(supervision_period_id)
+
+    if ip_info is not None:
+        return ip_info.get('judicial_district_code')
+
+    return None
