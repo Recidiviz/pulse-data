@@ -53,6 +53,7 @@ from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSuperv
 _COUNTY_OF_RESIDENCE = 'county'
 
 _DEFAULT_IP_ID = 123
+_DEFAULT_SP_ID = 456
 
 _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
     {'incarceration_period_id': _DEFAULT_IP_ID, 'judicial_district_code': 'NW'}
@@ -268,6 +269,40 @@ class TestFindIncarcerationEvents(unittest.TestCase):
              )])
 
         self.assertCountEqual(expected_events, incarceration_events)
+
+    def testFindIncarcerationEvents_only_placeholder_ips_and_sps(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            state_code='US_XX')
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            state_code='US_XX')
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period]
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            start_date=date(2008, 10, 11),
+            incarceration_periods=[incarceration_period]
+        )
+
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            incarceration_sentences=[incarceration_sentence],
+            supervision_sentences=[supervision_sentence]
+        )
+
+        incarceration_sentence.sentence_group = sentence_group
+        supervision_sentence.sentence_group = sentence_group
+
+        sentence_groups = [sentence_group]
+
+        incarceration_events = identifier.find_incarceration_events(
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+
+        self.assertCountEqual([], incarceration_events)
 
     def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self):
         """Tests that with state code US_ND, temporary custody periods are dropped before finding all incarceration

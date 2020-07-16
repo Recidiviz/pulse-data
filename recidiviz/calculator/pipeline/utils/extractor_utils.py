@@ -205,16 +205,14 @@ class _ExtractEntityBase(beam.PTransform):
                              f"{self._unifying_id_field} - these values will never get grouped with results, so it's "
                              f"a waste to query for them.")
 
-        entity_query = select_all_query(self._dataset, self._entity_table_name)
-
-        if self._entity_has_unifying_id_field() and self._unifying_id_field_filter_set:
-            id_str_set = {str(unifying_id) for unifying_id in self._unifying_id_field_filter_set if str(unifying_id)}
-
-            entity_query = entity_query + f" WHERE {self._unifying_id_field} IN ({', '.join(id_str_set)})"
-
-        if self._entity_has_state_code_field() and self._state_code:
-            conjunctive_word = 'AND' if 'WHERE' in entity_query else 'WHERE'
-            entity_query = entity_query + f" {conjunctive_word} state_code IN ('{self._state_code}')"
+        unifying_id_field_filter_set = \
+            self._unifying_id_field_filter_set if self._entity_has_unifying_id_field() else None
+        state_code_filter = self._state_code if self._entity_has_state_code_field() else None
+        entity_query = select_all_query(self._dataset,
+                                        self._entity_table_name,
+                                        state_code_filter,
+                                        self._unifying_id_field,
+                                        unifying_id_field_filter_set)
 
         return entity_query
 

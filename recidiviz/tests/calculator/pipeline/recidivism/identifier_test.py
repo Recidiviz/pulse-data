@@ -691,6 +691,18 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None)]
 
+    def test_find_release_events_by_cohort_year_only_placeholder_periods(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            state_code='US_XX')
+
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                incarceration_periods=[incarceration_period],
+                county_of_residence=_COUNTY_OF_RESIDENCE)
+
+        assert len(release_events_by_cohort) == 0
+
 
 _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
     AdmissionReason, ReincarcerationReturnType] = {
