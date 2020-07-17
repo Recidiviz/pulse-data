@@ -107,7 +107,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     # TODO(3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
-    INVESTIGATION = state_enum_strings.state_supervision_period_admission_reason_investigation
+    INVESTIGATION = state_enum_strings.state_supervision_period_termination_reason_investigation
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state
     TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion

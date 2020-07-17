@@ -491,7 +491,7 @@ def characteristics_dict(person: StatePerson,
 
         characteristics['days_at_liberty'] = time_at_liberty
 
-    characteristics = characteristics_with_person_id_fields(characteristics, person, 'recidivism')
+    characteristics = characteristics_with_person_id_fields(characteristics, event.state_code, person, 'recidivism')
 
     return characteristics
 

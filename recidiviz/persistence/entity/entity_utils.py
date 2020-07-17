@@ -40,6 +40,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities, \
     entities
+from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.errors import PersistenceError
 
 _STATE_CLASS_HIERARCHY = [
@@ -726,7 +727,7 @@ def get_ids(entities_list: Iterable[CoreEntity]) -> Set[int]:
     return {e.get_id() for e in entities_list}
 
 
-def get_single_state_code(external_id_entities: Iterable[ExternalIdEntity]) -> str:
+def get_single_state_code(external_id_entities: Iterable[Union[ExternalIdEntity, StatePersonExternalId]]) -> str:
     """Returns the state code corresponding to the list of objects. Asserts if the list is empty or if there are
     multiple different state codes."""
     state_code = None

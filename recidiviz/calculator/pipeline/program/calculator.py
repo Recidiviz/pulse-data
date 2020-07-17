@@ -177,7 +177,8 @@ def characteristics_dict(person: StatePerson,
 
     characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
-    characteristics_with_person_details = characteristics_with_person_id_fields(characteristics, person, 'program')
+    characteristics_with_person_details = characteristics_with_person_id_fields(
+        characteristics, program_event.state_code, person, 'program')
 
     return characteristics_with_person_details
 
