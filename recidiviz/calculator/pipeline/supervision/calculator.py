@@ -339,7 +339,8 @@ def characteristics_dict(person: StatePerson,
         characteristics = add_demographic_characteristics(characteristics, person, event_date)
 
     if include_person_level_dimensions:
-        characteristics = characteristics_with_person_id_fields(characteristics, person, 'supervision')
+        characteristics = characteristics_with_person_id_fields(
+            characteristics, supervision_time_bucket.state_code, person, 'supervision')
 
         if not include_revocation_dimensions and supervision_time_bucket.supervision_level_raw_text:
             characteristics['supervision_level_raw_text'] = \

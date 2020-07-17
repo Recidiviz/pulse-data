@@ -194,7 +194,7 @@ def add_person_level_characteristics(person, incarceration_event, characteristic
     """
 
     characteristics_with_person_details = characteristics_with_person_id_fields(
-        characteristics, person, 'incarceration')
+        characteristics, incarceration_event.state_code, person, 'incarceration')
 
     if isinstance(incarceration_event, IncarcerationStayEvent):
         if incarceration_event.most_serious_offense_statute:
