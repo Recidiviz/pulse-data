@@ -226,7 +226,8 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         person.external_ids = [person_external_id]
 
         for pipeline_type in INCLUDED_PIPELINES:
-            external_id = calculator_utils.person_external_id_to_include(pipeline_type, person)
+            external_id = calculator_utils.person_external_id_to_include(
+                pipeline_type, person_external_id.state_code, person)
 
             self.assertEqual(external_id, person_external_id.external_id)
 
@@ -244,29 +245,63 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         person.external_ids = [person_external_id]
 
         for pipeline_type in INCLUDED_PIPELINES:
-            external_id = calculator_utils.person_external_id_to_include(pipeline_type, person)
+            external_id = calculator_utils.person_external_id_to_include(
+                pipeline_type, person_external_id.state_code, person)
             self.assertIsNone(external_id)
 
-    def test_person_external_id_to_include_multiple(self):
+    def test_person_has_external_ids_from_multiple_states(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        person_external_id_exclude = StatePersonExternalId.new_with_defaults(
+        person_external_id_1 = StatePersonExternalId.new_with_defaults(
             external_id='SID10928',
             id_type='US_ND_SID',
             state_code='US_ND'
         )
 
-        person_external_id_include = StatePersonExternalId.new_with_defaults(
+        person_external_id_2 = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
             state_code='US_MO'
         )
 
-        person.external_ids = [person_external_id_exclude, person_external_id_include]
+        person.external_ids = [person_external_id_1, person_external_id_2]
 
-        external_id = calculator_utils.person_external_id_to_include(INCLUDED_PIPELINES[0], person)
+        with self.assertRaises(ValueError):
+            _ = calculator_utils.person_external_id_to_include(
+                INCLUDED_PIPELINES[0], person_external_id_2.state_code, person)
+
+    def test_person_has_multiple_external_ids_of_the_same_type(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        # Wrong ID type
+        person_external_id_exclude = StatePersonExternalId.new_with_defaults(
+            external_id='0123',
+            id_type='US_PA_PBPP',
+            state_code='US_PA'
+        )
+
+        # Lowest value of the two 'US_PA_CONT' ids - pick this one
+        person_external_id_include = StatePersonExternalId.new_with_defaults(
+            external_id='1234',
+            id_type='US_PA_CONT',
+            state_code='US_PA'
+        )
+
+        # Other 'US_PA_CONT' should be picked
+        person_external_id_exclude_2 = StatePersonExternalId.new_with_defaults(
+            external_id='2345',
+            id_type='US_PA_CONT',
+            state_code='US_PA'
+        )
+
+        person.external_ids = [person_external_id_exclude, person_external_id_include, person_external_id_exclude_2]
+
+        external_id = calculator_utils.person_external_id_to_include(
+            INCLUDED_PIPELINES[0], person_external_id_include.state_code, person)
 
         self.assertEqual(external_id, person_external_id_include.external_id)
 

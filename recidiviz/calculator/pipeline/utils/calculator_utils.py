@@ -35,17 +35,16 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StateSuperv
 # Relevant metric period month lengths for dashboard person-based calculations
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
-# TODO(3449): Update to handle the fact that multiple IDs of the same type can now exist for PA
 PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     'incarceration': {
-        'US_ID': [US_ID_DOC],
-        'US_MO': [US_MO_DOC],
-        'US_PA': [US_PA_CONTROL],
+        'US_ID': US_ID_DOC,
+        'US_MO': US_MO_DOC,
+        'US_PA': US_PA_CONTROL,
     },
     'supervision': {
-        'US_ID': [US_ID_DOC],
-        'US_MO': [US_MO_DOC],
-        'US_PA': [US_PA_PBPP],
+        'US_ID': US_ID_DOC,
+        'US_MO': US_MO_DOC,
+        'US_PA': US_PA_PBPP,
     },
 }
 
@@ -310,22 +309,40 @@ def augmented_combo_for_calculations(combo: Dict[str, Any],
     return augment_combination(combo, parameters)
 
 
-def person_external_id_to_include(pipeline: str, person: StatePerson) -> Optional[str]:
+def person_external_id_to_include(pipeline: str,
+                                  state_code: str,
+                                  person: StatePerson) -> Optional[str]:
     """Finds an external_id on the person that should be included in calculations for person-level metrics in the
     given pipeline."""
     external_ids = person.external_ids
 
-    values_for_pipeline = PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
+    if not external_ids:
+        return None
 
-    if values_for_pipeline:
-        for external_id in external_ids:
-            if external_id.state_code in values_for_pipeline.keys():
-                id_types_to_include = values_for_pipeline.get(external_id.state_code)
+    id_types_to_include_for_pipeline = PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
 
-                if id_types_to_include and external_id.id_type in id_types_to_include:
-                    return external_id.external_id
+    if not id_types_to_include_for_pipeline or state_code not in id_types_to_include_for_pipeline:
+        return None
 
-    return None
+    id_type_to_include = id_types_to_include_for_pipeline.get(state_code)
+
+    if not id_type_to_include:
+        return None
+
+    external_ids_with_type = []
+    for external_id in external_ids:
+        if external_id.state_code != state_code:
+            raise ValueError(
+                f'Found unexpected state code [{external_id.state_code}] on external_id [{external_id.external_id}]. '
+                f'Expected state code: [{state_code}].')
+
+        if external_id.id_type == id_type_to_include:
+            external_ids_with_type.append(external_id.external_id)
+
+    if not external_ids_with_type:
+        return None
+
+    return sorted(external_ids_with_type)[0]
 
 
 def include_in_historical_metrics(year: int,
@@ -372,8 +389,8 @@ def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, 
     return calculation_month_lower_bound
 
 
-def characteristics_with_person_id_fields(characteristics: Dict[str, Any], person: StatePerson, pipeline: str) -> \
-        Dict[str, Any]:
+def characteristics_with_person_id_fields(
+        characteristics: Dict[str, Any], state_code: str, person: StatePerson, pipeline: str) -> Dict[str, Any]:
     """Returns an updated characteristics dictionary with the person's person_id and, if applicable, a
     person_external_id."""
     updated_characteristics = characteristics.copy()
@@ -384,7 +401,7 @@ def characteristics_with_person_id_fields(characteristics: Dict[str, Any], perso
 
     updated_characteristics['person_id'] = person_id
 
-    person_external_id = person_external_id_to_include(pipeline, person)
+    person_external_id = person_external_id_to_include(pipeline, state_code, person)
 
     if person_external_id is not None:
         updated_characteristics['person_external_id'] = person_external_id
