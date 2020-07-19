@@ -29,13 +29,13 @@ link to a person.
 JOIN
     (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
 ON ids.inmate_number = sentences.curr_inmate_num
-ORDER BY control_number, curr_inmate_num;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='dbo_Senrec',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='control_number, curr_inmate_num',
 )
 
 if __name__ == '__main__':

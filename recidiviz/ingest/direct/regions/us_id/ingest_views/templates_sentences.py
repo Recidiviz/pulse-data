@@ -140,9 +140,6 @@ LEFT JOIN
     FROM {{offense}})
 USING
     (off_cat, off_cd, off_deg)
-ORDER BY
-    CAST(docno AS INT64),
-    CAST(sent_no AS INT64)
 """
 
 

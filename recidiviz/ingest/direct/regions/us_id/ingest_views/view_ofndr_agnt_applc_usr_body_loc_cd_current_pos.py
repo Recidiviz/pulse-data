@@ -57,6 +57,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='ofndr_agnt_applc_usr_body_loc_cd_current_pos',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols=None,
 )
 
 if __name__ == '__main__':

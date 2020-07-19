@@ -55,13 +55,13 @@ WITH all_test_scores AS (
 )
 SELECT *
 FROM all_test_scores
-ORDER BY Control_Number, Inmate_number;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='dbo_tblInmTestScore',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='Control_Number, Inmate_number',
 )
 
 if __name__ == '__main__':

@@ -36,7 +36,8 @@ GROUP BY recidiviz_master_person_id;"""
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='person_external_ids',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols=None,
 )
 
 if __name__ == '__main__':

@@ -177,15 +177,20 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def __init__(self, *,
                  ingest_view_name: str,
                  view_query_template: str,
-                 region_raw_table_config: DirectIngestRegionRawFileConfig):
+                 region_raw_table_config: DirectIngestRegionRawFileConfig,
+                 order_by_cols: Optional[str]):
+        DirectIngestPreProcessedIngestView._validate_order_by(
+            ingest_view_name=ingest_view_name, view_query_template=view_query_template)
 
         region_code = region_raw_table_config.region_code
+        self._order_by_cols = order_by_cols
         raw_table_dependency_configs = self._get_raw_table_dependency_configs(view_query_template,
                                                                               region_raw_table_config)
 
-        latest_view_query = self._format_view_query(region_code,
-                                                    raw_table_dependency_configs,
-                                                    view_query_template,
+        latest_view_query = self._format_view_query(region_code=region_code,
+                                                    raw_table_dependency_configs=raw_table_dependency_configs,
+                                                    view_query_template=view_query_template,
+                                                    order_by_cols=order_by_cols,
                                                     parametrize_query=False)
 
         dataset_id = f'{region_code.lower()}_ingest_views'
@@ -194,10 +199,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                          view_query_template=latest_view_query)
 
         self._raw_table_dependency_configs = raw_table_dependency_configs
-        date_parametrized_view_query = self._format_view_query(region_code,
-                                                               raw_table_dependency_configs,
-                                                               view_query_template,
-                                                               parametrize_query=True)
+        date_parametrized_view_query = self._format_view_query(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            view_query_template=view_query_template,
+            order_by_cols=order_by_cols,
+            parametrize_query=True)
         self._date_parametrized_view_query = date_parametrized_view_query.format(**self._query_format_args())
 
     @property
@@ -215,6 +222,19 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """Non-parametrized query on the latest version of each raw table."""
         return self.view_query
 
+    @property
+    def order_by_cols(self):
+        """String containing any columns used to order the ingest view query results. This string will be appended to
+        ingest view queries in the format `ORDER BY {order_by_cols}, and therefore |order_by_cols| must create valid
+        SQL when appended in that fashion.
+
+        Examples values:
+            "col1, col2"
+            "col1 ASC, col2 DESC"
+            "CAST(col1) AS INT64, col2"
+        """
+        return self._order_by_cols
+
     def date_parametrized_view_query(self, param_name: Optional[str] = None):
         """Parametrized query on the version of each raw table on a given date. If provided, the parameter name for the
         max update date will have the provided |param_name|, otherwise the parameter name will be the default
@@ -230,11 +250,19 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """The name for the expanded subquery on this raw table."""
         return f'{raw_table_config.file_tag}_generated_view'
 
+    @staticmethod
+    def add_order_by_suffix(query: str, order_by_cols: Optional[str]):
+        if order_by_cols:
+            query = query.rstrip().rstrip(';')
+            query = f'{query} \nORDER BY {order_by_cols};'
+        return query
+
     @classmethod
     def _format_view_query(cls,
                            region_code: str,
                            raw_table_dependency_configs: List[DirectIngestRawFileConfig],
                            view_query_template: str,
+                           order_by_cols: Optional[str],
                            parametrize_query: bool) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency."""
         table_subquery_strs = []
@@ -251,6 +279,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             table_subquery_clause = table_subquery_clause + ','
 
         view_query_template = f'{cls.WITH_PREFIX}\n{table_subquery_clause}\n{view_query_template}'
+        view_query_template = cls.add_order_by_suffix(query=view_query_template, order_by_cols=order_by_cols)
+
         return view_query_template.format(**format_args)
 
     @classmethod
@@ -303,6 +333,21 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return DirectIngestRawDataTableLatestView(region_code=region_code,
                                                   raw_file_config=raw_table_config).select_query
 
+    @staticmethod
+    def _validate_order_by(ingest_view_name: str, view_query_template: str):
+        query = view_query_template.upper()
+        final_sub_query = query.split('FROM')[-1]
+        order_by_count = final_sub_query.count('ORDER BY')
+        if order_by_count:
+            raise ValueError(
+                f'Found ORDER BY after the final FROM statement in the SQL view_query_template for '
+                f'{ingest_view_name}. Please ensure that all ordering of the final query is done by specifying '
+                f'DirectIngestPreProcessedIngestView.order_by_cols instead of putting an ORDER BY '
+                f'clause in DirectIngestPreProcessingIngestView.view_query_template. If this ORDER BY is a result'
+                f'of an inline subquery in the final SELECT statement, please consider moving alias-ing the subquery '
+                f'or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`')
+
+
 
 class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
     """Factory class for building DirectIngestPreProcessedIngestView"""
@@ -310,17 +355,20 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
     def __init__(self, *,
                  region: str,
                  ingest_view_name: str,
-                 view_query_template: str):
+                 view_query_template: str,
+                 order_by_cols: Optional[str]):
         self.region = region
         self.ingest_view_name = ingest_view_name
         self.view_query_template = view_query_template
+        self.order_by_cols = order_by_cols
 
     def build(self) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.ingest_view_name,
             view_query_template=self.view_query_template,
-            region_raw_table_config=get_region_raw_file_config(self.region)
+            region_raw_table_config=get_region_raw_file_config(self.region),
+            order_by_cols=self.order_by_cols
         )
 
     def build_and_print(self):

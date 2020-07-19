@@ -73,7 +73,8 @@ class _ViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name=tag,
                 view_query_template=query,
-                region_raw_table_config=region_config
+                region_raw_table_config=region_config,
+                order_by_cols='colA, colC',
             )
             for tag in self.controller_file_tags
         ]
@@ -125,7 +126,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_config = one(kwargs['export_configs'])
         normalized_exported_query = export_config.query.replace('\n', '')
         normalized_expected_query = expected_query.replace('\n', '')
-        self.assertEqual(normalized_exported_query, normalized_expected_query)
+        self.assertEqual(normalized_expected_query, normalized_exported_query)
 
     def test_exportViewForArgs_ingestViewExportsDisabled(self):
         # Arrange
@@ -243,7 +244,9 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)],
                 table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
         ])
-        expected_query = 'SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;'
+        expected_query = \
+            'SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound` ' \
+            'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
             mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2020_07_20_00_00_00_upper_bound')])
@@ -301,7 +304,8 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         expected_query = \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
             'EXCEPT DISTINCT ' \
-            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`)'
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) ' \
+            'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
             mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
