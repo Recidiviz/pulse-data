@@ -63,6 +63,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='offender_ofndr_dob_address',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='docno'
 )
 
 if __name__ == '__main__':

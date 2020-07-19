@@ -50,7 +50,8 @@ WHERE recency_rank = 1
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='dbo_Offender',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols=None,
 )
 
 if __name__ == '__main__':

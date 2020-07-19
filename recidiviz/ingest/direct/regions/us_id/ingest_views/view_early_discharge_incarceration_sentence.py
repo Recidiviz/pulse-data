@@ -27,7 +27,8 @@ VIEW_QUERY_TEMPLATE = early_discharge_view_template(discharge_type=EarlyDischarg
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='early_discharge_incarceration_sentence',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ofndr_num, early_discharge_id',
 )
 
 if __name__ == '__main__':

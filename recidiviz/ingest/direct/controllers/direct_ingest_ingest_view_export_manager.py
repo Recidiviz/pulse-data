@@ -230,7 +230,10 @@ class DirectIngestIngestViewExportManager:
                 dataset_id=ingest_view.dataset_id,
                 table_name=lower_bound_table_name).rstrip().rstrip(';')
             query = query.rstrip().rstrip(';')
-            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n)'
+            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
+
+        query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
+            query=query, order_by_cols=ingest_view.order_by_cols)
 
         # Wait for completion of all async date queries
         for query_job in single_date_table_export_jobs:
@@ -310,8 +313,10 @@ class DirectIngestIngestViewExportManager:
             query = query.rstrip().rstrip(';')
             filter_query = \
                 ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME).rstrip().rstrip(';')
-            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n)'
+            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
 
+        query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
+            query=query, order_by_cols=ingest_view.order_by_cols)
         return query, query_params
 
     @staticmethod

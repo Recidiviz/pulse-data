@@ -21,27 +21,27 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """SELECT
-        *
-    EXCEPT
-        (updt_usr_id, updt_dt, cert_xml_doc)
-    FROM
-        {ofndr_tst}
-    LEFT JOIN
-        {ofndr_tst_cert}
-    USING
-        (ofndr_tst_id, assess_tst_id)
-    WHERE
-        {ofndr_tst}.assess_tst_id = '2'  # LSIR assessments
-        AND {ofndr_tst_cert}.cert_pass_flg = 'Y'  # Test score has been certified
-    ORDER BY
-        {ofndr_tst}.ofndr_num
+VIEW_QUERY_TEMPLATE = """
+SELECT
+    *
+EXCEPT
+    (updt_usr_id, updt_dt, cert_xml_doc)
+FROM
+    {ofndr_tst}
+LEFT JOIN
+    {ofndr_tst_cert}
+USING
+    (ofndr_tst_id, assess_tst_id)
+WHERE
+    {ofndr_tst}.assess_tst_id = '2'  # LSIR assessments
+    AND {ofndr_tst_cert}.cert_pass_flg = 'Y'  # Test score has been certified
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='ofndr_tst_ofndr_tst_cert',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ofndr_num',
 )
 
 if __name__ == '__main__':

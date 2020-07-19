@@ -23,13 +23,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """SELECT *
 FROM {dbo_LSIR}
-ORDER BY ParoleNumber;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='dbo_LSIR',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ParoleNumber',
 )
 
 if __name__ == '__main__':

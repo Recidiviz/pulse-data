@@ -128,7 +128,8 @@ USING (col1);"""
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
             view_query_template=view_query_template,
-            region_raw_table_config=region_config
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
         )
 
         self.assertEqual(['file_tag_first', 'file_tag_second'],
@@ -143,7 +144,8 @@ file_tag_second_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_view_query, view.view_query)
 
@@ -184,7 +186,8 @@ file_tag_second_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_parametrized_view_query,
                          view.date_parametrized_view_query('my_update_timestamp_param_name'))
@@ -202,7 +205,8 @@ USING (col1);"""
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
             view_query_template=view_query_template,
-            region_raw_table_config=region_config
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2'
         )
 
         self.assertEqual(['file_tag_first'],
@@ -214,7 +218,8 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_view_query, view.view_query)
 
@@ -238,7 +243,8 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_date_parametrized_view_query, view.date_parametrized_view_query('my_param'))
 
@@ -255,7 +261,8 @@ USING (col1);"""
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
             view_query_template=view_query_template,
-            region_raw_table_config=region_config
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
         )
 
         self.assertEqual(['file_tag_first'],
@@ -267,7 +274,8 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_first_generated_view
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_view_query, view.view_query)
 
@@ -286,7 +294,8 @@ USING (col1);"""
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
             view_query_template=view_query_template,
-            region_raw_table_config=region_config
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
         )
 
         self.assertEqual(['file_tag_first', 'file_tag_second'],
@@ -302,7 +311,8 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_view_query, view.view_query)
 
@@ -344,7 +354,8 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1);"""
+USING (col1) 
+ORDER BY col1, col2;"""
 
         self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
 
@@ -354,7 +365,8 @@ USING (col1);"""
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
             view_query_template=view_query_template,
-            region_raw_table_config=region_config
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
         )
 
         self.assertEqual(['file_tag_first', 'file_tag_second'],
@@ -376,4 +388,5 @@ USING (col1);"""
         with self.assertRaises(ValueError):
             DirectIngestPreProcessedIngestView(ingest_view_name='ingest_view_tag',
                                                view_query_template=view_query_template,
-                                               region_raw_table_config=region_config)
+                                               region_raw_table_config=region_config,
+                                               order_by_cols=None)

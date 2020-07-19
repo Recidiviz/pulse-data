@@ -125,13 +125,13 @@ filtered_periods AS (
 -- TODO(3447): Investigate why there are a bunch of non-prison location codes in the results    
 SELECT *
 FROM filtered_periods
-ORDER BY control_number, sequence_number;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='incarceration_period',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='control_number, sequence_number',
 )
 
 if __name__ == '__main__':
