@@ -50,13 +50,13 @@ ON
   m.control_number = spans.mov_cnt_num 
   AND m.misconduct_date >= spans.inmate_num_lower_bound_date_inclusive 
   AND (spans.inmate_num_upper_bound_date_exclusive IS NULL OR m.misconduct_date < spans.inmate_num_upper_bound_date_exclusive)
-ORDER BY control_number ASC, misconduct_number ASC
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='dbo_Miscon',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='control_number ASC, misconduct_number ASC'
 )
 
 if __name__ == '__main__':

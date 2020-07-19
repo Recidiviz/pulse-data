@@ -120,13 +120,13 @@ people AS (
 SELECT 
   *
 FROM people
-ORDER BY recidiviz_master_person_id;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='doc_person_info',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='recidiviz_master_person_id',
 )
 
 if __name__ == '__main__':

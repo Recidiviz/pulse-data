@@ -41,13 +41,13 @@ SELECT
 FROM {dbo_Sentence} sent
 LEFT JOIN {dbo_SentenceGroup} sg
 USING (ParoleNumber, ParoleCountID, Sent16DGroupNumber)
-ORDER BY ParoleNumber ASC, ParoleCountID ASC, Sent16DGroupNumber ASC, SentenceID ASC;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='supervision_sentence',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ParoleNumber ASC, ParoleCountID ASC, Sent16DGroupNumber ASC, SentenceID ASC'
 )
 
 if __name__ == '__main__':

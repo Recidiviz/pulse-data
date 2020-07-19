@@ -29,7 +29,8 @@ with local_project_id_override('my-project-id'):
             region_code='us_xx',
             yaml_config_file_path='/a/path/to/a.yaml',
             raw_file_configs={}
-        )
+        ),
+        order_by_cols=None,
     )
 
 VIEW_BUILDER = FakeBigQueryViewBuilder(GOOD_VIEW_2)
