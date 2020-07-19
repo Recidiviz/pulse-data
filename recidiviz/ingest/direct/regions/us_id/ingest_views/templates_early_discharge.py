@@ -116,8 +116,6 @@ JOIN
   relevant_sentences
 USING
   (mitt_srl, sent_no)
-ORDER BY 
-  ofndr_num, early_discharge_id;
 """
 
 

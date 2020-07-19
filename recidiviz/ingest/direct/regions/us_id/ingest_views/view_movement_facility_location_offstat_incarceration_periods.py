@@ -23,28 +23,28 @@ from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
-    WITH 
-    {get_all_periods_query_fragment(period_type=PeriodType.INCARCERATION)}
+WITH 
+{get_all_periods_query_fragment(period_type=PeriodType.INCARCERATION)}
 
-    # Filter to just incarceration periods
+# Filter to just incarceration periods
 
-    SELECT
-      # Living unit codes are not yet needed, so ignore them here. If
-      * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title),
-      ROW_NUMBER() 
-        OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
-    FROM
-      periods_with_previous_and_next_info
-    WHERE 
-      fac_typ = 'I'                             # Facility type incarceration
-    # TODO(3509): Consider tracking escape incarceration periods in the same way we track absconscion.
-    ORDER BY docno, incrno, start_date, end_date
+SELECT
+  # Living unit codes are not yet needed, so ignore them here. If
+  * EXCEPT(lu_cd, lu_ldesc, wrkld_cat_title),
+  ROW_NUMBER() 
+    OVER (PARTITION BY docno ORDER BY start_date, end_date) AS period_id
+FROM
+  periods_with_previous_and_next_info
+WHERE 
+  fac_typ = 'I'                             # Facility type incarceration
+# TODO(3509): Consider tracking escape incarceration periods in the same way we track absconscion.
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='movement_facility_location_offstat_incarceration_periods',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='docno, incrno, start_date, end_date',
 )
 
 if __name__ == '__main__':

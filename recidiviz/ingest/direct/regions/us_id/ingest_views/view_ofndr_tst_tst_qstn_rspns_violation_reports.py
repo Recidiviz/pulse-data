@@ -47,15 +47,13 @@ VIEW_QUERY_TEMPLATE = f"""WITH
       assess_tst_id,
       tst_dt,
       score_by_name
-    ORDER BY 
-      ofndr_num,
-      ofndr_tst_id
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='ofndr_tst_tst_qstn_rspns_violation_reports',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ofndr_num, ofndr_tst_id',
 )
 
 if __name__ == '__main__':

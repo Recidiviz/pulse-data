@@ -26,7 +26,8 @@ VIEW_QUERY_TEMPLATE = sentence_view_template(sentence_type=SentenceType.SUPERVIS
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='mittimus_judge_sentence_offense_sentprob_supervision_sentences',
-    view_query_template=VIEW_QUERY_TEMPLATE
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='docno, sent_no',
 )
 
 if __name__ == '__main__':

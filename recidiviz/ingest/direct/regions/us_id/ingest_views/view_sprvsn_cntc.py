@@ -49,14 +49,13 @@ WHERE
     cntc_typ_desc = 'FACE TO FACE'
     # TOOD(3394): Ingest all of contacts not just those since 2019 once we have time / need.
     AND CAST(cntc_dt AS DATETIME) > CAST('2019-01-01' AS DATETIME) 
-
-ORDER BY ofndr_num, cntc_dt
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_id',
     ingest_view_name='sprvsn_cntc',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='ofndr_num, cntc_dt'
 )
 
 if __name__ == '__main__':
