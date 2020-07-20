@@ -37,6 +37,7 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLAT
         year,
         month,
         person_id,
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         supervision_type,
         IFNULL(source_violation_type, 'EXTERNAL_UNKNOWN') as source_violation_type,
         race_or_ethnicity,
@@ -52,6 +53,7 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLAT
       state_code,
       year,
       month,
+      district,
       supervision_type,
       COUNT(DISTINCT IF(source_violation_type IN ('FELONY', 'MISDEMEANOR'), person_id, NULL)) AS new_crime_count,
       COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
@@ -65,13 +67,14 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLAT
     FROM monthly_revocations,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
-      {age_dimension}
+      {age_dimension},
+      {district_dimension}
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Overall breakdown
-    GROUP BY state_code, year, month, supervision_type, race_or_ethnicity, gender, age_bucket
-    ORDER BY state_code, year, month, supervision_type, race_or_ethnicity, gender, age_bucket
+    GROUP BY state_code, year, month, district, supervision_type, race_or_ethnicity, gender, age_bucket
+    ORDER BY state_code, year, month, district, supervision_type, race_or_ethnicity, gender, age_bucket
     """
 
 SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -84,7 +87,8 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = Sim
     current_month_condition=bq_utils.current_month_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket')
+    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
+    district_dimension=bq_utils.unnest_district('district')
 )
 
 if __name__ == '__main__':

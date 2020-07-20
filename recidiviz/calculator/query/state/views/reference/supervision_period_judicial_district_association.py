@@ -36,8 +36,8 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
     WITH sps_to_sentence_groups AS (
       -- Sentence groups from incarceration sentences --
       SELECT
-        sp.state_code,
-        sp.person_id,
+        period.state_code,
+        period.person_id,
         supervision_period_id,
         sentence_group_id
       FROM
@@ -47,8 +47,8 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
       
       -- Sentence groups from supervision sentences --
       SELECT
-        sp.state_code,
-        sp.person_id,
+        period.state_code,
+        period.person_id,
         supervision_period_id,
         sentence_group_id
       FROM
