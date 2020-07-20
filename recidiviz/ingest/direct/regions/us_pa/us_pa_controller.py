@@ -315,12 +315,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: PBPP
             'dbo_Offender',
             'dbo_LSIR',
-            'supervision_sentence',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
-        unlaunched_file_tags: List[str] = [
-            # Empty for now
+        unlaunched_file_tags = [
+            # Data source: PBPP
+            'supervision_sentence',
         ]
 
         file_tags = launched_file_tags
