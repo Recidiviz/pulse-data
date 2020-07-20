@@ -34,8 +34,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     /*{description}*/
     WITH dashboard_revocations_all_districts AS (
       SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_violation_type_by_month`
-      WHERE district = 'ALL'
-      AND supervision_type != 'ALL'
+      WHERE supervision_type != 'ALL'
     ), public_dashboard_revocations_no_breakdowns AS (
       SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_month_by_type_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
@@ -47,6 +46,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       state_code as region_code,
       year,
       month,
+      district,
       supervision_type,
       IFNULL(dashboard_revocations_all_districts.absconsion_count, 0) as dashboard_absconsion_count,
       IFNULL(dashboard_revocations_all_districts.felony_count, 0) as dashboard_new_crime_count,
@@ -60,8 +60,8 @@ REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       dashboard_revocations_all_districts
     FULL OUTER JOIN
       public_dashboard_revocations_no_breakdowns
-    USING (state_code, year, month, supervision_type)
-    ORDER BY state_code, year, month, supervision_type
+    USING (state_code, year, month, district, supervision_type)
+    ORDER BY state_code, year, month, district, supervision_type
 """
 
 REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
