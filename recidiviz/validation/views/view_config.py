@@ -29,6 +29,8 @@ from recidiviz.validation.views.state.incarceration_admission_after_open_period 
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
+    INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
@@ -62,6 +64,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
         INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
         INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
+        INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
         PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,

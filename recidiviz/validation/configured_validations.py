@@ -29,6 +29,8 @@ from recidiviz.validation.views.state.incarceration_admission_after_open_period 
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
+    INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
@@ -140,6 +142,11 @@ _ALL_DATA_VALIDATIONS: List[DataValidationCheck] = [
         view=SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
         sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
         comparison_columns=['dashboard_projected_completion', 'public_dashboard_projected_completion']
+    ),
+    SamenessDataValidationCheck(
+        view=INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
+        sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+        comparison_columns=['covid_report_facility_population', 'public_dashboard_facility_population']
     ),
 ]
 
