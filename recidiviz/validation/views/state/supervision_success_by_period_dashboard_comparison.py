@@ -35,8 +35,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     /*{description}*/
     WITH dashboard_success AS (
       SELECT * FROM `recidiviz-staging.dashboard_views.supervision_termination_by_type_by_period`  
-      WHERE district = 'ALL'
-      AND supervision_type != 'ALL'
+      WHERE supervision_type != 'ALL'
     ), public_dashboard_success AS (
       SELECT * FROM `recidiviz-staging.public_dashboard_views.supervision_success_by_period_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
@@ -46,6 +45,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     
     SELECT
       state_code as region_code,
+      district,
       supervision_type,
       metric_period_months,
       dashboard_success.successful_termination as dashboard_successful_termination,
@@ -56,8 +56,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       dashboard_success
     FULL OUTER JOIN
       public_dashboard_success
-    USING (state_code, metric_period_months, supervision_type)
-    ORDER BY state_code, metric_period_months, supervision_type
+    USING (state_code, metric_period_months, district, supervision_type)
+    ORDER BY state_code, metric_period_months, district, supervision_type
 """
 
 SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

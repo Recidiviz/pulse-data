@@ -17,6 +17,7 @@
 """Rates of successful supervision completion by month."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,6 +34,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         state_code,
         year as projected_year,
         month as projected_month,
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         supervision_type,
         -- Only count as success if all completed periods were successful per person
         -- Take the MIN so that successful_termination is 1 only if all periods were 1 (successful)
@@ -40,24 +42,26 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         person_id,
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months),
+      {district_dimension}
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND person_id IS NOT NULL
         AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
         AND job.metric_type = 'SUPERVISION_SUCCESS'
-      GROUP BY state_code, projected_year, projected_month, supervision_type, person_id
+      GROUP BY state_code, projected_year, projected_month, district, supervision_type, person_id
     ), success_counts AS (
       SELECT
         state_code,
         projected_year,
         projected_month,
+        district,
         supervision_type,
         COUNT(DISTINCT IF(successful_termination = 1, person_id, NULL)) AS successful_termination_count,
         COUNT(DISTINCT(person_id)) AS projected_completion_count
       FROM success_classifications
-      GROUP BY state_code, projected_year, projected_month, supervision_type
+      GROUP BY state_code, projected_year, projected_month, district, supervision_type
     )
     
     
@@ -74,7 +78,8 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    district_dimension=bq_utils.unnest_district()
 )
 
 if __name__ == '__main__':

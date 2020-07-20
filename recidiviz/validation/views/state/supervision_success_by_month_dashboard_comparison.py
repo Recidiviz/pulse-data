@@ -35,14 +35,14 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     /*{description}*/
     WITH dashboard_success AS (
       SELECT * FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_month` 
-      WHERE district = 'ALL'
-      AND supervision_type != 'ALL'
+      WHERE supervision_type != 'ALL'
     ), public_dashboard_success AS (
       SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_success_by_month`
     )
     
     SELECT
       state_code as region_code,
+      district,
       supervision_type,
       dashboard_success.successful_termination as dashboard_successful_termination,
       public_dashboard_success.successful_termination_count as public_dashboard_successful_termination,
@@ -52,8 +52,8 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       dashboard_success
     FULL OUTER JOIN
       public_dashboard_success
-    USING (state_code, projected_year, projected_month, supervision_type)
-    ORDER BY state_code, supervision_type
+    USING (state_code, projected_year, projected_month, district, supervision_type)
+    ORDER BY state_code, district, supervision_type
 """
 
 SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

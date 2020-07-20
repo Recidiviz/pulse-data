@@ -35,28 +35,34 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         state_code,
         MIN(successful_completion_count) as successful_termination,
         person_id,
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         race_or_ethnicity,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
+      FROM `{project_id}.{metrics_dataset}.supervision_success_metrics` success_metrics
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months),
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
-      {metric_period_dimension}
-      WHERE methodology = 'EVENT'
+      {district_dimension},
+      -- We only want a 36-month period for this view --
+      UNNEST ([36]) AS metric_period_months
+      WHERE success_metrics.metric_period_months = 1
+        AND {metric_period_condition}
+        AND methodology = 'EVENT'
         AND person_id IS NOT NULL
         AND DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                              INTERVAL metric_period_months - 1 MONTH)
         AND job.metric_type = 'SUPERVISION_SUCCESS'
-      GROUP BY state_code, person_id, metric_period_months, gender, race_or_ethnicity, age_bucket, supervision_type
+      GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), successful_termination_counts AS (
       SELECT
           state_code,
           metric_period_months,
+          district,
           supervision_type,
           CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
           ELSE race_or_ethnicity END AS race_or_ethnicity,
@@ -67,7 +73,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       FROM
           supervision_completions,
           {unnested_race_or_ethnicity_dimension}
-      GROUP BY state_code, metric_period_months, supervision_type, race_or_ethnicity, gender, age_bucket
+      GROUP BY state_code, metric_period_months, district, supervision_type, race_or_ethnicity, gender, age_bucket
     )
     
     SELECT
@@ -76,11 +82,11 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     FROM
       successful_termination_counts 
     WHERE
-      (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
+      ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
-      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Overall success rate
-    ORDER BY state_code, supervision_type, metric_period_months, race_or_ethnicity, gender, age_bucket
+      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- Overall success rate
+    ORDER BY state_code, supervision_type, metric_period_months, district, race_or_ethnicity, gender, age_bucket
     """
 
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -92,9 +98,11 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewB
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket')
+    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
+    district_dimension=bq_utils.unnest_district()
 )
 
 if __name__ == '__main__':
