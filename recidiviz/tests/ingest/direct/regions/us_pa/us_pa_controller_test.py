@@ -440,6 +440,16 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(expected, 'dbo_Senrec')
 
     def test_populate_data_incarceration_period(self):
+        gf3374_incarceration_periods = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='654321-GF3374-1',
+                admission_date='20081010',
+                admission_reason='AC',
+                facility='PNG', incarceration_type='S',
+                specialized_purpose_for_incarceration='NA-S',
+            ),
+        ]
+
         cj1991_incarceration_periods = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='445566-CJ1991-1',
@@ -623,6 +633,21 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                StateIncarcerationSentence(
                                                    state_incarceration_sentence_id='CJ1991-01',
                                                    state_incarceration_periods=cj1991_incarceration_periods
+                                               )
+                                           ]),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id='654321',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='654321', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(state_sentence_group_id='GF3374',
+                                           state_incarceration_sentences=[
+                                               StateIncarcerationSentence(
+                                                   state_incarceration_sentence_id='GF3374-01',
+                                                   state_incarceration_periods=gf3374_incarceration_periods
                                                )
                                            ]),
                     ],
@@ -1465,6 +1490,21 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ######################################
         # incarceration_period
         ######################################
+
+        # Person 2 Incarceration Periods
+        p2_is_ip1 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id='654321-GF3374-1', state_code=_STATE_CODE_UPPER,
+            person=person_2, incarceration_sentences=[p2_is],
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=datetime.date(year=2008, month=10, day=10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION, admission_reason_raw_text='AC',
+            facility='PNG',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='S',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='NA-S',
+        )
+
+        p2_is.incarceration_periods.append(p2_is_ip1)
 
         # Person 3 Incarceration Periods
         p3_is_ip_1 = entities.StateIncarcerationPeriod.new_with_defaults(

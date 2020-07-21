@@ -33,6 +33,8 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_inter
     INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_release_reason_no_release_date import \
+    INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
     PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
@@ -66,6 +68,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
         INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
+        INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
         PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
         PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,

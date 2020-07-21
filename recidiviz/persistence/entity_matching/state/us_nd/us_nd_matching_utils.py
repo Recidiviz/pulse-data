@@ -130,8 +130,9 @@ def _update_ips_to_holds(
             if _is_hold(ip):
                 ip.admission_reason = StateIncarcerationPeriodAdmissionReason. \
                     TEMPORARY_CUSTODY.value
-                ip.release_reason = StateIncarcerationPeriodReleaseReason. \
-                    RELEASED_FROM_TEMPORARY_CUSTODY.value
+                if ip.release_date:
+                    ip.release_reason = StateIncarcerationPeriodReleaseReason. \
+                        RELEASED_FROM_TEMPORARY_CUSTODY.value
             previous_ip = ip
             continue
 
@@ -143,8 +144,9 @@ def _update_ips_to_holds(
             if not _are_consecutive(previous_ip, ip) or not after_non_hold:
                 ip.admission_reason = StateIncarcerationPeriodAdmissionReason. \
                     TEMPORARY_CUSTODY.value
-                ip.release_reason = StateIncarcerationPeriodReleaseReason. \
-                    RELEASED_FROM_TEMPORARY_CUSTODY.value
+                if ip.release_date:
+                    ip.release_reason = StateIncarcerationPeriodReleaseReason. \
+                        RELEASED_FROM_TEMPORARY_CUSTODY.value
                 after_non_hold = False
         else:
             after_non_hold = True
