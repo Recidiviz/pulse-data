@@ -17,6 +17,9 @@
 
 """Constants that correspond to column/field names from the ID DOC data warehouse."""
 
+# Unknown constants
+UNKNOWN_EMPLOYEE_SDESC = 'UNKNOWN'
+
 # Facility constants
 INTERSTATE_FACILITY_CODE = 'IS'
 PAROLE_COMMISSION_CODE = 'PC'
