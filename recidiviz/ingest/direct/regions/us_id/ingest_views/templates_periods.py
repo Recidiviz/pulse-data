@@ -40,6 +40,7 @@ def create_period_split_criteria(period_type: PeriodType) -> str:
         return criteria
     raise ValueError(f'Unexpected PeriodType {period_type}')
 
+
 def create_important_date_union(period_type: PeriodType) -> str:
     important_date_union = """
       SELECT 
@@ -204,7 +205,9 @@ PERIOD_TO_DATES_NO_INCRNO_FRAGMENT = """
         {periods}
     )
     SELECT
-      *
+      docno,
+      incrno,
+      important_date
     FROM
       {periods}_dates_without_incrno
     FULL OUTER JOIN
@@ -212,6 +215,22 @@ PERIOD_TO_DATES_NO_INCRNO_FRAGMENT = """
       USING (docno)
 """
 
+# Filters the provided |dates_to_filter| based on the maximum date in "facility dates". Occasionally data in other ID
+# tables goes into the future; however it's not trustworthy so we limit all information at the max facility date, which
+# should be the current date.
+FILTERED_DATES_BY_FACILITY_DATES = """
+      SELECT
+         docno,
+         incrno,
+         important_date
+      FROM
+        {dates_to_filter}
+      WHERE 
+        important_date <= (
+            SELECT MAX(important_date) 
+            FROM facility_dates 
+            WHERE important_date != CAST('9999-12-31' AS DATE))
+"""
 
 FACILITY_PERIOD_TO_STATUS_INFO_FRAGMENT_TEMPLATE = """
       SELECT 
@@ -333,34 +352,12 @@ ALL_PERIODS_FRAGMENT = f"""
     wrkld_dates AS (
         {PERIOD_TO_DATES_NO_INCRNO_FRAGMENT.format(periods='wrkld_periods')}
     ),
-    filtered_wrkld_dates AS (
-      SELECT
-         docno,
-         incrno,
-         important_date
-      FROM
-        wrkld_dates
-      WHERE 
-        important_date <= (
-            SELECT MAX(important_date) 
-            FROM facility_dates 
-            WHERE important_date != CAST('9999-12-31' AS DATE))
-    ),
+    # Wrkld dates occasionally have information going into the future which is unreliable. Filter offstat dates to
+    # only those that are within the bounds of real facility dates.
+    filtered_wrkld_dates AS ({FILTERED_DATES_BY_FACILITY_DATES.format(dates_to_filter='wrkld_dates')}),
     # Offstat dates occasionally have information going into the future which is unreliable. Filter offstat dates to
     # only those that are within the bounds of real facility dates.
-    filtered_offstat_dates AS (
-        SELECT 
-            docno,
-            incrno,
-            important_date
-        FROM 
-            offstat_dates
-        WHERE 
-            important_date <= (
-                SELECT MAX(important_date) 
-                FROM facility_dates 
-                WHERE important_date != CAST('9999-12-31' AS DATE))
-    ),
+    filtered_offstat_dates AS ({FILTERED_DATES_BY_FACILITY_DATES.format(dates_to_filter='offstat_dates')}),
     # All dates where something we care about changed.
     all_dates AS (
         {{important_date_union}}
@@ -372,7 +369,7 @@ ALL_PERIODS_FRAGMENT = f"""
         docno,
         incrno,
         important_date AS start_date,
-        LEAD(important_date) 
+        LEAD(important_date, 1, CAST('9999-12-31' AS DATE)) 
           OVER (PARTITION BY docno, incrno ORDER BY important_date) AS end_date
       FROM 
         all_dates
@@ -384,7 +381,8 @@ ALL_PERIODS_FRAGMENT = f"""
         a.docno,
         a.incrno,
         a.start_date,
-        a.end_date,
+        # Choose smaller of two dates to handle offstat_periods that last 1 day
+        IF(o.end_date IS NULL, a.end_date, LEAST(a.end_date, o.end_date)) AS end_date,
         STRING_AGG(o.stat_strt_typ ORDER BY o.stat_strt_typ) AS statuses
       FROM 
         all_periods a
@@ -397,14 +395,15 @@ ALL_PERIODS_FRAGMENT = f"""
              BETWEEN o.start_date
              AND IF (o.start_date = o.end_date, o.start_date, DATE_SUB(o.end_date, INTERVAL 1 DAY)))
         AND o.stat_cd = '{{period_status_code}}')
-      GROUP BY a.docno, a.incrno, a.start_date, a.end_date
+      GROUP BY a.docno, a.incrno, a.start_date, end_date
     ),
     periods_with_all_non_facility_info AS (
         SELECT
             p.docno,
             p.incrno,
             p.start_date,
-            p.end_date,
+             # Choose smaller of two dates to handle supervision_level_periods that last 1 day
+            IF(w.end_date IS NULL, p.end_date, LEAST(w.end_date, p.end_date)) AS end_date,
             p.statuses,
             w.wrkld_cat_title
         FROM
