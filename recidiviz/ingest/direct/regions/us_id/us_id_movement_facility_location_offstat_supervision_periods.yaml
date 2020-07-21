@@ -29,6 +29,10 @@ keys_to_ignore:
   - fac_typ                 # Facility type - handled manually in controller for periods of absconscion.
   - loc_cd                  # Location code - handled manually in controller.
   - lu_cd                   # Living unit code - handled manually in controller.
+  - empl_ldesc              # Supervising agent name - handled manually in controller
+  - empl_sdesc              # Supervising agent external id - handled manually in controller.
 
+  - empl_cd                 # Unused - Employee code
+  - empl_title              # Unused - Supervising officer role
   - loc_ldesc               # Unused - Location name
   - lu_ldesc                # Unused - Living unit named.

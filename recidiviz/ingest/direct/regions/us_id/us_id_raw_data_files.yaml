@@ -51,6 +51,8 @@ raw_files:
     primary_key_cols:
       - move_srl
       - case_dtd
+    datetime_cols:
+      - case_dtd
   - file_tag: cis_codeaddresstype
     primary_key_cols:
       - id
