@@ -314,9 +314,8 @@ class DirectIngestIngestViewExportManager:
             filter_query = \
                 ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME).rstrip().rstrip(';')
             query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
-
-        query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
-            query=query, order_by_cols=ingest_view.order_by_cols)
+            query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
+                query=query, order_by_cols=ingest_view.order_by_cols)
         return query, query_params
 
     @staticmethod
@@ -400,9 +399,9 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'offender_ofndr_dob_address'
-    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 23)
-    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 6, 29)
+    ingest_view_name_: str = 'movement_facility_location_offstat_supervision_periods'
+    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 29)
+    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 7, 29)
 
     with local_project_id_override(GAE_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)

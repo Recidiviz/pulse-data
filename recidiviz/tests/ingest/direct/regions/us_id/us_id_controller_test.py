@@ -18,6 +18,8 @@
 import datetime
 from typing import Type
 
+import attr
+
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
@@ -129,40 +131,6 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             ])
 
         self.run_parse_file_test(expected, 'offender_ofndr_dob_address')
-
-    def test_populate_data_ofndr_agnt_applc_usr_body_loc_cd_current_pos(self):
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(state_person_id='1111',
-                            state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
-                            ],
-                            supervising_officer=StateAgent(
-                                state_agent_id='po1',
-                                full_name='NAME1',
-                                agent_type='SUPERVISION_OFFICER',
-                            )),
-                StatePerson(state_person_id='2222',
-                            state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='2222', id_type=US_ID_DOC)
-                            ],
-                            supervising_officer=StateAgent(
-                                state_agent_id='po1',
-                                full_name='NAME1',
-                                agent_type='SUPERVISION_OFFICER',
-                            )),
-                StatePerson(state_person_id='3333',
-                            state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
-                            ],
-                            supervising_officer=StateAgent(
-                                state_agent_id='po2',
-                                full_name='NAME2',
-                                agent_type='SUPERVISION_OFFICER',
-                            )),
-            ])
-
-        self.run_parse_file_test(expected, 'ofndr_agnt_applc_usr_body_loc_cd_current_pos')
 
     def test_populate_data_ofndr_tst_ofndr_tst_cert(self):
         expected = IngestInfo(
@@ -674,7 +642,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2008-01-01',
                                             supervision_period_supervision_type='PS',
                                             custodial_authority='US_ID_DOC',
-                                        ),
+                                            supervising_officer=StateAgent(
+                                                state_agent_id='po1',
+                                                full_name='NAME1',
+                                                agent_type='SUPERVISION_OFFICER',
+                                            )),
                                     ],
                                 )
                             ]
@@ -693,7 +665,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2018-01-01',
                                             supervision_period_supervision_type='PS',
                                             custodial_authority='US_ID_DOC',
-                                        ),
+                                            supervising_officer=StateAgent(
+                                                state_agent_id='po1',
+                                                full_name='NAME1',
+                                                agent_type='SUPERVISION_OFFICER',
+                                            )),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-3',
                                             supervision_site='DISTRICT 0|LIMITED SUPERVISION UNIT',
@@ -713,7 +689,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2020-01-01',
                                             supervision_level='LEVEL 4',
                                             custodial_authority='US_ID_DOC',
-                                        ),
+                                            supervising_officer=StateAgent(
+                                                state_agent_id='po2',
+                                                full_name='NAME2',
+                                                agent_type='SUPERVISION_OFFICER',
+                                            )),
                                     ]
                                 )
                             ],
@@ -772,7 +752,11 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                 ),
                                             ],
                                             custodial_authority='US_ID_DOC',
-                                        ),
+                                            supervising_officer=StateAgent(
+                                                state_agent_id='po3',
+                                                full_name='NAME3',
+                                                agent_type='SUPERVISION_OFFICER',
+                                            )),
                                     ]
                                 )
                             ],
@@ -1193,35 +1177,6 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         # Assert
         self.assert_expected_db_people(expected_people)
-
-        ######################################
-        # US_ID_OFNDR_AGNT_APPLC_USR_BODY_LOC_CD_CURRENT_POS
-        ######################################
-        # Arrange
-        po_1 = entities.StateAgent.new_with_defaults(
-            external_id='PO1',
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "NAME1"}',
-            agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text='SUPERVISION_OFFICER',
-        )
-        po_2 = entities.StateAgent.new_with_defaults(
-            external_id='PO2',
-            state_code=_STATE_CODE_UPPER,
-            full_name='{"full_name": "NAME2"}',
-            agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text='SUPERVISION_OFFICER',
-        )
-        person_1.supervising_officer = po_1
-        person_2.supervising_officer = po_1
-        person_3.supervising_officer = po_2
-
-        # Act
-        self._run_ingest_job_for_filename('ofndr_agnt_applc_usr_body_loc_cd_current_pos.csv')
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
 
         ######################################
         # OFNDR_TST_OFNDR_TST_CERT
@@ -1788,6 +1743,27 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
+        po_1 = entities.StateAgent.new_with_defaults(
+            external_id='PO1',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME1"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
+        po_2 = entities.StateAgent.new_with_defaults(
+            external_id='PO2',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME2"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
+        po_3 = entities.StateAgent.new_with_defaults(
+            external_id='PO3',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME3"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
         ss_1111_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -1809,6 +1785,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_period_supervision_type_raw_text='PS',
             supervision_sentences=[ss_1111_1_placeholder],
             person=ss_1111_1_placeholder.person,
+            supervising_officer=po_1,
         )
         sg_1111_1.supervision_sentences.append(ss_1111_1_placeholder)
         ss_1111_1_placeholder.supervision_periods.append(sp_1111_1)
@@ -1834,6 +1811,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_period_supervision_type_raw_text='PS',
             supervision_sentences=[ss_1111_2_placeholder],
             person=ss_1111_2_placeholder.person,
+            supervising_officer=attr.evolve(po_1),
         )
         sp_1111_3 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1868,8 +1846,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text='LEVEL 4',
             incarceration_sentences=[is_1111_3],
-            supervising_officer=po_1,
             person=is_1111_3.person,
+            supervising_officer=po_2,
         )
         sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
         ss_1111_2.supervision_periods.append(sp_1111_3)
@@ -1943,6 +1921,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_level_raw_text='SO LEVEL 2',
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
+            supervising_officer=po_3,
         )
         sc_2222_3_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2002,7 +1981,6 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_level_raw_text='INTERSTATE',
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
-            supervising_officer=po_2,
         )
         sp_3333_1.case_type_entries.append(sc_3333_1_dc)
         sg_3333_1.supervision_sentences.append(ss_3333_1_placeholder)
