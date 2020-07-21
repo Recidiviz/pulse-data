@@ -28,6 +28,8 @@ from flask import Blueprint, request
 from recidiviz.big_query import view_manager
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import get_bool_param_value
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
@@ -132,4 +134,5 @@ def _readable_response(failed_validations: List[DataValidationJobResult]) -> str
 
 
 if __name__ == '__main__':
-    execute_validation(should_update_views=True)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        execute_validation(should_update_views=True)
