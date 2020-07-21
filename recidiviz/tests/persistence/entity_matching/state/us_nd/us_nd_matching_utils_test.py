@@ -317,6 +317,31 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         entity_ips = [self.to_entity(ip) for ip in ips]
         self.assertCountEqual(entity_ips, expected_ips)
 
+    def test_transformToHoldsOpenPeriod(self):
+        # Arrange
+        ip = schema.StateIncarcerationPeriod(
+            external_id='123-1',
+            admission_date=_DATE_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value,
+            admission_reason_raw_text='PV',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value
+        )
+
+        expected_ip = attr.evolve(self.to_entity(ip))
+
+        ips = [ip]
+        expected_ips = [expected_ip]
+
+        overrides = self.create_fake_nd_region().get_enum_overrides()
+
+        # Act
+        _update_temporary_holds_helper(ips, overrides)
+
+        # Assert
+        entity_ips = [self.to_entity(ip) for ip in ips]
+
+        self.assertCountEqual(entity_ips, expected_ips)
+
     def test_associateSvrsWithIps(self):
         # Arrange
         ip_1 = StateIncarcerationPeriod.new_with_defaults(

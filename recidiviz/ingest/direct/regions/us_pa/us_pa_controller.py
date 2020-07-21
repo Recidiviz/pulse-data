@@ -591,7 +591,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Concatenates the incarceration period release reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                obj.release_reason = concatenate_incarceration_period_end_codes(row)
+                if obj.release_date:
+                    obj.release_reason = concatenate_incarceration_period_end_codes(row)
 
     @staticmethod
     def _concatenate_incarceration_purpose_codes(_file_tag: str,
