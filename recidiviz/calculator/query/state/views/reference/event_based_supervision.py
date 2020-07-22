@@ -39,7 +39,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
       supervision_type,
       district,
       supervising_officer_external_id AS officer_external_id,
-      gender, age_bucket, race, ethnicity, assessment_score_bucket
+      gender, age_bucket, race, ethnicity, assessment_score_bucket, judicial_district_code
     FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months),

@@ -35,7 +35,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         state_code,
         person_id,
         supervision_type,
-        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
+        {grouped_districts} as district,
         race_or_ethnicity,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
@@ -43,6 +43,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       {race_or_ethnicity_dimension}
       WHERE {current_month_condition}
         AND supervision_type IN ('PROBATION', 'PAROLE')
+        AND district != 'ALL'
     )
           
     
@@ -58,7 +59,8 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     FROM supervision_populations,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
-      {age_dimension}
+      {age_dimension},
+      {district_dimension}
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
@@ -74,11 +76,13 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQuery
     view_query_template=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    grouped_districts=bq_utils.supervision_specific_district_groupings('district', 'judicial_district_code'),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     current_month_condition=bq_utils.current_month_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket')
+    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
+    district_dimension=bq_utils.unnest_district('district')
 )
 
 if __name__ == '__main__':

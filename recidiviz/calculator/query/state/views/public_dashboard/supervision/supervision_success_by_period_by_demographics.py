@@ -47,7 +47,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
-      {district_dimension},
+      UNNEST ([{grouped_districts}, 'ALL']) AS district,
       -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months
       WHERE success_metrics.metric_period_months = 1
@@ -96,13 +96,14 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewB
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    grouped_districts=
+    bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    district_dimension=bq_utils.unnest_district()
+    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket')
 )
 
 if __name__ == '__main__':

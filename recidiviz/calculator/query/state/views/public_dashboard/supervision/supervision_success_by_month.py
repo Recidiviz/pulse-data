@@ -34,8 +34,8 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         state_code,
         year as projected_year,
         month as projected_month,
-        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         supervision_type,
+        {grouped_districts} as district,
         -- Only count as success if all completed periods were successful per person
         -- Take the MIN so that successful_termination is 1 only if all periods were 1 (successful)
         MIN(successful_completion_count) as successful_termination,
@@ -79,6 +79,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    grouped_districts=bq_utils.supervision_specific_district_groupings('district', 'judicial_district_code'),
     district_dimension=bq_utils.unnest_district()
 )
 
