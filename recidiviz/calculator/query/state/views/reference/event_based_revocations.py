@@ -38,9 +38,14 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
       person_id, state_code, year, month,
       supervision_type,
       district,
+      judicial_district_code,
       supervising_officer_external_id AS officer_external_id,
-      source_violation_type, revocation_admission_date,
-      race, ethnicity, gender, age_bucket
+      source_violation_type,
+      revocation_admission_date,
+      race,
+      ethnicity,
+      gender,
+      age_bucket
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics` m
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
       USING (state_code, job_id, year, month, metric_period_months),
