@@ -18,39 +18,39 @@
 """Helper functions for building BQ views."""
 
 
-def unnest_column(input_column_name, output_column_name):
+def unnest_column(input_column_name, output_column_name) -> str:
     return f"UNNEST ([{input_column_name}, 'ALL']) AS {output_column_name}"
 
 
-def unnest_district(district_column='supervising_district_external_id'):
+def unnest_district(district_column='supervising_district_external_id') -> str:
     return unnest_column(district_column, 'district')
 
 
-def unnest_supervision_type(supervision_type_column='supervision_type'):
+def unnest_supervision_type(supervision_type_column='supervision_type') -> str:
     return unnest_column(supervision_type_column, 'supervision_type')
 
 
-def unnest_charge_category(category_column='case_type'):
+def unnest_charge_category(category_column='case_type') -> str:
     return unnest_column(category_column, 'charge_category')
 
 
-def unnest_metric_period_months():
+def unnest_metric_period_months() -> str:
     return "UNNEST ([1, 3, 6, 12, 36]) AS metric_period_months"
 
 
-def unnest_race_and_ethnicity():
+def unnest_race_and_ethnicity() -> str:
     return """UNNEST(SPLIT(IFNULL(ARRAY_TO_STRING(
                     (SELECT ARRAY_AGG(col) FROM UNNEST([race, ethnicity]) AS col 
                      WHERE col IS NOT NULL AND col != 'NOT_HISPANIC'),
                     ','), 'EXTERNAL_UNKNOWN'))) race_or_ethnicity"""
 
 
-def metric_period_condition(month_offset=1):
+def metric_period_condition(month_offset=1) -> str:
     return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                                 INTERVAL metric_period_months - {month_offset} MONTH)"""
 
 
-def current_month_condition():
+def current_month_condition() -> str:
     return """year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))"""
 
@@ -68,3 +68,12 @@ def period_to_sentence_group_joins(period_type: str, sentence_type: str) -> str:
       LEFT JOIN
         `{{project_id}}.{{base_dataset}}.state_sentence_group`
       USING (sentence_group_id)"""
+
+
+def supervision_specific_district_groupings(district_column: str, judicial_district_column: str) -> str:
+    return f"""IFNULL(CASE WHEN supervision_type = 'PROBATION' THEN
+          (CASE WHEN state_code = 'US_ND'
+           AND ({judicial_district_column} IS NULL
+                OR {judicial_district_column} IN ('OUT_OF_STATE', 'EXTERNAL_UNKNOWN', 'FEDERAL'))
+          THEN 'OTHER' else {judicial_district_column} END)
+        ELSE {district_column} END, 'EXTERNAL_UNKNOWN')"""
