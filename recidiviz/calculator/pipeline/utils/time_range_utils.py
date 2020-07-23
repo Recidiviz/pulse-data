@@ -20,6 +20,7 @@ from datetime import date, timedelta
 from typing import List, Tuple, Optional
 
 import attr
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import first_day_of_next_month
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
@@ -88,10 +89,18 @@ class TimeRange:
         return TimeRange(lower_bound_inclusive_date=start_of_month,
                          upper_bound_exclusive_date=start_of_next_month)
 
+    @classmethod
+    def for_day(cls, day: date) -> 'TimeRange':
+        return TimeRange(day, day + relativedelta(days=1))
+
     def portion_overlapping_with_month(self, year: int, month: int) -> Optional['TimeRange']:
         month_range = TimeRange.for_month(year, month)
         return TimeRangeDiff(range_1=self, range_2=month_range).overlapping_range
 
+    def contains_day(self, day: date) -> bool:
+        day_range = self.for_day(day)
+        overlapping_range = TimeRangeDiff(range_1=day_range, range_2=self).overlapping_range
+        return overlapping_range is not None
 
 @attr.s
 class TimeRangeDiff:

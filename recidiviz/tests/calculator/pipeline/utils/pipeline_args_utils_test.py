@@ -41,7 +41,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         'subnetwork':
             'https://www.googleapis.com/compute/v1/projects/recidiviz-staging/regions/us-west1/subnetworks/default',
         'use_public_ips': False,
-        'experiments': ['shuffle_mode=service'],
+        'experiments': ['shuffle_mode=service', 'use_beam_bq_sink'],
         'setup_file': './setup.py'
     }
 
@@ -120,7 +120,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             'subnetwork':
             'https://www.googleapis.com/compute/v1/projects/recidiviz-staging/regions/us-central1/subnetworks/default',
             'use_public_ips': False,
-            'experiments': ['shuffle_mode=service'],
+            'experiments': ['shuffle_mode=service', 'use_beam_bq_sink'],
             'setup_file': './setup2.py'
         }
 

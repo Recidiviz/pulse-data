@@ -83,24 +83,21 @@ class IncarcerationPeriodIndex:
 
         return months_fully_incarcerated
 
-    # A dictionary mapping years and months of admissions to prison to the StateIncarcerationPeriods that started in
-    # that month.
-    incarceration_periods_by_admission_month: Dict[int, Dict[int, List[StateIncarcerationPeriod]]] = attr.ib()
+    # A dictionary mapping admission dates of admissions to prison to the StateIncarcerationPeriods that happened on
+    # that day.
+    incarceration_periods_by_admission_date: Dict[date, List[StateIncarcerationPeriod]] = attr.ib()
 
-    @incarceration_periods_by_admission_month.default
-    def _incarceration_periods_by_admission_month(self) -> Dict[int, Dict[int, List[StateIncarcerationPeriod]]]:
-        """Organizes the list of StateIncarcerationPeriods by the year and month of the admission_date on the period."""
-        incarceration_periods_by_admission_month: Dict[
-            int, Dict[int, List[StateIncarcerationPeriod]]] = defaultdict(lambda: defaultdict(list))
+    @incarceration_periods_by_admission_date.default
+    def _incarceration_periods_by_admission_date(self) -> Dict[date, List[StateIncarcerationPeriod]]:
+        """Organizes the list of StateIncarcerationPeriods by the admission_date on the period."""
+        incarceration_periods_by_admission_date: Dict[date, List[StateIncarcerationPeriod]] = defaultdict(list)
 
         for incarceration_period in self.incarceration_periods:
             if incarceration_period.admission_date:
-                year = incarceration_period.admission_date.year
-                month = incarceration_period.admission_date.month
+                incarceration_periods_by_admission_date[
+                    incarceration_period.admission_date].append(incarceration_period)
 
-                incarceration_periods_by_admission_month[year][month].append(incarceration_period)
-
-        return incarceration_periods_by_admission_month
+        return incarceration_periods_by_admission_date
 
     def is_fully_incarcerated_for_range(self, range_to_cover: TimeRange) -> bool:
         """Returns True if this person is incarcerated for the full duration of the time range."""

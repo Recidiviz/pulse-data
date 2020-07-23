@@ -81,6 +81,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -89,6 +90,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
+                bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -129,6 +131,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -139,7 +142,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=31,
@@ -180,6 +184,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -190,7 +195,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score=31,
@@ -231,6 +237,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=31,
@@ -242,7 +249,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
@@ -291,7 +299,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2018,
                 month=3,
-                revocation_admission_date=date(2018, 3, 1),
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -342,6 +350,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
@@ -352,6 +361,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -360,7 +370,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
@@ -404,6 +415,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
@@ -413,6 +425,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -421,7 +434,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
@@ -467,7 +481,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_ND', year=2018, month=3,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
                 incarcerated_during_sentence=True,
@@ -475,7 +490,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_district_external_id='district5'
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_ND', year=2018, month=3,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=True,
                 incarcerated_during_sentence=False,
@@ -484,12 +500,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_district_external_id='district5'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_ND', year=2018, month=3,
-                is_on_supervision_last_day_of_month=True,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 4, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
@@ -544,18 +562,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2017, month=6,
+                state_code='US_MO', year=2017, month=6, bucket_date=date(2017, 6, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2020, month=1,
+                state_code='US_MO', year=2020, month=1, bucket_date=date(2020, 1, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
                 supervising_officer_external_id='officer45', supervising_district_external_id='district5'
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=12,
+                state_code='US_MO', year=2018, month=12, bucket_date=date(2018, 12, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False
             )
@@ -611,7 +629,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=2,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 2, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
                 assessment_level=StateAssessmentLevel.MEDIUM,
@@ -623,6 +642,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
@@ -635,8 +655,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
-                revocation_admission_date=date(2018, 4, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
                 assessment_level=StateAssessmentLevel.MEDIUM,
@@ -681,20 +701,21 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 5, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 4, date(2018, 4, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 6, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 4, date(2018, 4, 3), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 7, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 4, date(2018, 4, 4), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -708,7 +729,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
 
-    def test_map_supervision_combinations_overlapping_months(self):
+    def test_map_supervision_combinations_overlapping_days(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month."""
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -727,14 +748,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 3, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 3, date(2018, 3, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 3, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2018, 3, date(2018, 3, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -768,19 +789,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_ND', year=2018, month=3,
+                state_code='US_ND', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 4, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=5,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 5, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
         ]
 
@@ -816,28 +841,34 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_ND', year=2018, month=3,
-                is_on_supervision_last_day_of_month=True,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_ND', year=2018, month=3,
-                is_on_supervision_last_day_of_month=True,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_ND', year=2018, month=3,
-                is_on_supervision_last_day_of_month=True,
+                state_code='US_ND', year=2010, month=2,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 4, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 4, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 4, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
         ]
 
@@ -878,15 +909,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
-                revocation_admission_date=date(2018, 3, 13),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 3, 13),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervising_officer_external_id='FAKE_ID_1'
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
-                revocation_admission_date=date(2018, 3, 29),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 3, 29),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervising_officer_external_id='FAKE_ID_2'
             ),
@@ -907,7 +938,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(_combination.get('supervising_officer_external_id') == 'FAKE_ID_2'
                    or _combination.get('supervising_officer_external_id') is None
                    for _combination, _ in supervision_combinations
-                   if _combination.get('methodology') == MetricMethodologyType.PERSON)
+                   if _combination.get('methodology') == MetricMethodologyType.PERSON
+                   and _combination.get('metric_type') != SupervisionMetricType.POPULATION)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods(self):
@@ -927,8 +959,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -961,14 +993,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            is_on_supervision_last_day_of_month=True,
+            bucket_date=date(2010, 1, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         not_relevant_bucket = RevocationReturnSupervisionTimeBucket(
             state_code='US_MO',
             year=1980,
             month=1,
-            revocation_admission_date=date(1980, 1, 1),
-            is_on_supervision_last_day_of_month=True,
+            bucket_date=date(1980, 1, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
 
         supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
@@ -1019,8 +1052,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
-                revocation_admission_date=date(1980, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(1980, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
@@ -1056,11 +1089,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1098,6 +1131,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
+                bucket_date=date(2010, 1, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
                 incarcerated_during_sentence=False,
@@ -1107,6 +1141,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
+                bucket_date=date(2010, 1, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
                 incarcerated_during_sentence=False,
@@ -1161,14 +1196,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True),
+                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=True)
+                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.DUAL,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1209,7 +1244,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_ND',
                 year=2010,
                 month=1,
-                termination_date=date(2010, 1, 1),
+                bucket_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=12,
@@ -1219,7 +1254,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_ND',
                 year=2010,
                 month=1,
-                termination_date=date(2010, 1, 3),
+                bucket_date=date(2010, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=12,
@@ -1269,7 +1304,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2010, 1, 31),
                     assessment_up_to_date=True,
@@ -1278,7 +1314,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
-                revocation_admission_date=date(2010, 1, 1),
+                bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
@@ -1295,7 +1331,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
-                termination_date=date(2010, 1, 16),
+                bucket_date=date(2010, 1, 16),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 assessment_level=StateAssessmentLevel.LOW,
@@ -1306,6 +1342,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
+                bucket_date=date(2010, 1, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
                 incarcerated_during_sentence=False,
@@ -1363,7 +1400,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            termination_date=date(2000, 1, 13),
+            bucket_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1408,7 +1445,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2000,
             month=1,
-            termination_date=date(2000, 1, 13),
+            bucket_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1454,7 +1491,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            termination_date=date(2000, 1, 13),
+            bucket_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1467,7 +1504,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            termination_date=date(2000, 1, 13),
+            bucket_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1511,7 +1548,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_level=StateAssessmentLevel.LOW,
@@ -1524,6 +1561,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=398,
@@ -1532,11 +1570,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
@@ -1590,7 +1628,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1602,17 +1640,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
@@ -1666,7 +1705,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1678,6 +1717,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=500,
@@ -1685,11 +1725,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True),
+                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 2, StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=True)
+                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
@@ -1739,7 +1779,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1751,6 +1791,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1758,13 +1799,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
-                revocation_admission_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO',
                 year=2010, month=2,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
@@ -1825,7 +1867,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1837,6 +1879,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1844,13 +1887,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
-                revocation_admission_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO',
                 year=2010, month=2,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
@@ -1911,7 +1955,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1923,6 +1967,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2010, month=3,
+                bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1930,8 +1975,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2010, month=1,
-                revocation_admission_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -1946,7 +1991,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO',
                 year=2010, month=2,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 2, 2),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
@@ -2002,7 +2048,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_MO',
             year=2010,
             month=1,
-            termination_date=date(2010, 1, 13),
+            bucket_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -2013,7 +2059,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_MO', year=2010, month=3, bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -2023,14 +2069,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_MO',
                 year=2010,
                 month=1,
-                revocation_admission_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 1, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO',
                 year=2010,
                 month=2,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2010, 2, 22),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION)
         ]
 
@@ -2083,11 +2130,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        included_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2010, 1, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+        included_bucket = RevocationReturnSupervisionTimeBucket(
+            'US_MO', 2010, 1, date(2010, 1, 1),
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            is_on_supervision_last_day_of_month=False
+        )
 
-        not_included_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2005, 1, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True
+        not_included_bucket = RevocationReturnSupervisionTimeBucket(
+            'US_MO', 2005, 1, date(2010, 1, 3),
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            is_on_supervision_last_day_of_month=False
         )
 
         supervision_time_buckets = [included_bucket, not_included_bucket]
@@ -2125,8 +2177,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         # This bucket will be included in the MoM metrics, but does not fall in any of the metric_period_months metrics
-        included_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2007, 12, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+        included_bucket = RevocationReturnSupervisionTimeBucket(
+            'US_MO', 2007, 12, date(2007, 12, 1),
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [included_bucket]
 
@@ -2161,8 +2215,9 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         # This bucket will be included in the MoM metrics, but does not fall in any of the metric_period_months metrics
-        included_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2007, 12, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+        included_bucket = RevocationReturnSupervisionTimeBucket(
+            'US_MO', 2007, 12, date(2007, 12, 8),
+            StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [included_bucket]
 
@@ -2193,6 +2248,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=500,
@@ -2200,6 +2256,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=501,
@@ -2255,6 +2312,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2268,7 +2326,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_MO', year=2018, month=4,
-                is_on_supervision_last_day_of_month=True,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.HIGH,
@@ -2313,7 +2372,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=3,
-            is_on_supervision_last_day_of_month=True,
+            bucket_date=date(2018, 3, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             response_count=None
         )
@@ -2329,7 +2389,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'is_on_supervision_last_day_of_month': True
+            'is_on_supervision_last_day_of_month': False,
+            'date_of_supervision': date(2018, 3, 1)
         }
 
         self.assertEqual(expected_output, characteristics_dict)
@@ -2345,12 +2406,13 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=4,
-            revocation_admission_date=date(2010, 4, 1),
-            is_on_supervision_last_day_of_month=True,
+            bucket_date=date(2010, 4, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
         non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+            is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
 
@@ -2374,12 +2436,13 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
             state_code='US_MO', year=2018, month=4,
-            revocation_admission_date=date(2010, 4, 1),
-            is_on_supervision_last_day_of_month=True,
+            bucket_date=date(2010, 4, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
         non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=4, is_on_supervision_last_day_of_month=True,
+            state_code='US_MO', year=2018, month=4, bucket_date=date(2018, 4, 1),
+            is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
 
         supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
@@ -2403,9 +2466,11 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         }
 
         first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True)
+            'US_MO', 2018, 4, date(2018, 4, 1),
+            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
         second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True)
+            'US_MO', 2018, 4, date(2018, 4, 1),
+            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [first_bucket, second_bucket]
 
@@ -2429,9 +2494,11 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         }
 
         first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_XX', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+            'US_XX', 2018, 4, date(2018, 4, 1),
+            StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=False)
         second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_XX', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True)
+            'US_XX', 2018, 4, date(2018, 4, 1),
+            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [first_bucket, second_bucket]
 
@@ -2449,9 +2516,11 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
         }
 
         first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=True)
+            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+            is_on_supervision_last_day_of_month=False)
         second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=True)
+            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+            is_on_supervision_last_day_of_month=False)
 
         supervision_time_buckets = [first_bucket, second_bucket]
 
@@ -2470,7 +2539,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
             if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
                 bucket = ProjectedSupervisionCompletionBucket(
-                    'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
+                    'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
                     successful_completion=True, incarcerated_during_sentence=False, sentence_days_served=100)
 
                 # Assert that this does not raise an error
@@ -2482,7 +2551,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
                     state_code='XX',
                     year=2018,
                     month=4,
-                    revocation_admission_date=date(2018, 4, 1),
+                    bucket_date=date(2018, 4, 1),
                     is_on_supervision_last_day_of_month=False
                 )
 
@@ -2491,69 +2560,12 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
                     combo, revocation_bucket, [revocation_bucket], metric_type)
             else:
                 non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-                    'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
-                    is_on_supervision_last_day_of_month=True)
+                    'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                    is_on_supervision_last_day_of_month=False)
 
                 # Assert that this does not raise an error
                 _ = calculator.include_supervision_in_count(
                     combo, non_revocation_bucket, [non_revocation_bucket], metric_type)
-
-    def test_include_supervision_in_count_is_on_supervision_last_day_of_month_no_revocation(self):
-        """Tests that the bucket with is_on_supervision_last_day_of_month=True is included over others."""
-        combo = {
-            'metric_type': SupervisionMetricType.POPULATION,
-            'supervision_type': StateSupervisionPeriodSupervisionType.PROBATION
-        }
-
-        first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=True)
-        second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION,
-            is_on_supervision_last_day_of_month=False)
-
-        supervision_time_buckets = [first_bucket, second_bucket]
-
-        include_first_bucket = calculator.include_supervision_in_count(
-            combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
-
-        self.assertTrue(include_first_bucket)
-
-        include_second_bucket = calculator.include_supervision_in_count(
-            combo, second_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
-
-        self.assertFalse(include_second_bucket)
-
-    def test_include_supervision_in_count_is_on_supervision_last_day_of_month_with_revocation(self):
-        """Tests that the bucket with is_on_supervision_last_day_of_month=True is included over others, unless there is
-        a revocation bucket present."""
-        combo = {
-            'metric_type': SupervisionMetricType.POPULATION,
-            'supervision_type': StateSupervisionPeriodSupervisionType.PROBATION
-        }
-
-        first_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False)
-        second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, StateSupervisionPeriodSupervisionType.PROBATION,
-            is_on_supervision_last_day_of_month=True)
-
-        supervision_time_buckets = [first_bucket, second_bucket]
-
-        include_first_bucket = calculator.include_supervision_in_count(
-            combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
-
-        self.assertTrue(include_first_bucket)
-
-        include_second_bucket = calculator.include_supervision_in_count(
-            combo, second_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
-
-        self.assertFalse(include_second_bucket)
 
 
 def expected_metric_combos_count(
@@ -2615,7 +2627,7 @@ def expected_metric_combos_count(
     num_duplicated_projected_completion_months = _duplicated_months(projected_completion_buckets)
 
     num_population_buckets = len(population_buckets)
-    num_duplicated_population_buckets = _duplicated_months(population_buckets)
+    num_duplicated_population_buckets = _duplicated_days(population_buckets)
 
     num_compliance_buckets = len(compliance_buckets)
     num_duplicated_compliance_buckets = _duplicated_months(compliance_buckets)
@@ -2652,8 +2664,7 @@ def expected_metric_combos_count(
 
     # Person-level metrics for the metric types that limit to only person-output
     supervision_population_combos = (num_population_buckets +
-                                     (num_population_buckets - num_duplicated_population_buckets)*(
-                                         num_relevant_periods + 1))
+                                     (num_population_buckets - num_duplicated_population_buckets))
     supervision_compliance_combos = (num_compliance_buckets +
                                      (num_compliance_buckets - num_duplicated_compliance_buckets))
     supervision_revocation_combos = (num_revocation_buckets +
@@ -2726,6 +2737,19 @@ def _duplicated_months(supervision_time_buckets: Sequence[SupervisionTimeBucket]
             months.add((year, month))
 
     return duplicated_months
+
+
+def _duplicated_days(supervision_time_buckets: Sequence[SupervisionTimeBucket]) -> int:
+    duplicated_days = 0
+    days: Set[date] = set()
+
+    for bucket in supervision_time_buckets:
+        if bucket.bucket_date in days:
+            duplicated_days += 1
+        if bucket.bucket_date is not None:
+            days.add(bucket.bucket_date)
+
+    return duplicated_days
 
 
 class TestIncludeDimensionsFunctions(unittest.TestCase):

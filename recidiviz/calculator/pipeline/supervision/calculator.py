@@ -142,7 +142,9 @@ def map_supervision_combinations(person: StatePerson,
                     characteristic_combo_population, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.POPULATION, include_metric_period_output)
+                    SupervisionMetricType.POPULATION,
+                    # The SupervisionPopulationMetric metric is explicitly a daily metric
+                    include_metric_period_output=False)
 
                 metrics.extend(population_metrics)
 
@@ -276,7 +278,6 @@ def characteristics_dict(person: StatePerson,
     if isinstance(supervision_time_bucket, SupervisionTerminationBucket):
         if supervision_time_bucket.termination_reason:
             characteristics['termination_reason'] = supervision_time_bucket.termination_reason
-
     if (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
             and metric_type == SupervisionMetricType.COMPLIANCE):
         if supervision_time_bucket.case_compliance:
@@ -316,24 +317,23 @@ def characteristics_dict(person: StatePerson,
     if supervision_time_bucket.supervising_district_external_id:
         characteristics['supervising_district_external_id'] = supervision_time_bucket.supervising_district_external_id
 
-    if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
-        event_date = supervision_time_bucket.revocation_admission_date
+    event_date = supervision_time_bucket.bucket_date
 
+    if (isinstance(supervision_time_bucket, (NonRevocationReturnSupervisionTimeBucket,
+                                             RevocationReturnSupervisionTimeBucket))
+            and metric_type == SupervisionMetricType.POPULATION):
+        characteristics['date_of_supervision'] = event_date
+
+    if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
         if include_revocation_dimensions:
-            characteristics['revocation_admission_date'] = supervision_time_bucket.revocation_admission_date
+            characteristics['revocation_admission_date'] = event_date
     elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
-        event_date = supervision_time_bucket.termination_date
-        characteristics['termination_date'] = supervision_time_bucket.termination_date
+        characteristics['termination_date'] = event_date
     elif (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
           and metric_type == SupervisionMetricType.COMPLIANCE
           and supervision_time_bucket.case_compliance):
         event_date = supervision_time_bucket.case_compliance.date_of_evaluation
         characteristics['date_of_evaluation'] = event_date
-    else:
-        year = supervision_time_bucket.year
-        month = supervision_time_bucket.month
-
-        event_date = date(year, month, 1)
 
     if include_demographic_dimensions:
         characteristics = add_demographic_characteristics(characteristics, person, event_date)
@@ -384,7 +384,7 @@ def map_metric_combinations(
             that period.
         metric_type: The metric type to set on each combination.
         include_metric_period_output: Whether or not to include metrics for the various metric periods before the
-            current month. If False, will still include metric_period_months = 1 for the current month.
+            current month. If False, will still include metric_period_months = 0 or 1 for the current month.
 
     Returns:
         A list of key-value tuples representing specific metric combinations and the metric value corresponding to that
@@ -397,9 +397,9 @@ def map_metric_combinations(
     if include_in_historical_metrics(
             supervision_time_bucket.year, supervision_time_bucket.month,
             calculation_month_upper_bound, calculation_month_lower_bound):
-        # SupervisionCaseComplianceMetrics are point-in-time metrics for the date of the compliance evaluation, all
+        # SupervisionPopulationMetrics and SupervisionCaseComplianceMetrics are point-in-time metrics, all
         # other SupervisionMetrics are metrics based on the month of the event
-        is_daily_metric = metric_type == SupervisionMetricType.COMPLIANCE
+        is_daily_metric = metric_type in (SupervisionMetricType.POPULATION, SupervisionMetricType.COMPLIANCE)
 
         metrics.extend(combination_supervision_monthly_metrics(
             characteristic_combo, supervision_time_bucket,
@@ -560,12 +560,11 @@ def combination_supervision_monthly_metrics(
     buckets_in_period: List[SupervisionTimeBucket] = []
 
     if metric_type == SupervisionMetricType.POPULATION:
-        # Get all other supervision time buckets for the same month as this one
+        # Get all other supervision time buckets for the same day as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
             if (isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)))
-            and bucket.year == bucket_year and
-            bucket.month == bucket_month
+            and bucket.bucket_date == supervision_time_bucket.bucket_date
         ]
     elif metric_type == SupervisionMetricType.REVOCATION:
         # Get all other revocation supervision buckets for the same month as this one
@@ -675,13 +674,6 @@ def combination_supervision_metric_period_metrics(
                     bucket for bucket in buckets_in_period
                     if (isinstance(bucket, SupervisionTerminationBucket))
                 ]
-            elif metric_type == SupervisionMetricType.POPULATION:
-                # Get all other supervision time buckets for this period that should contribute to a population metric
-                relevant_buckets_in_period = [
-                    bucket for bucket in buckets_in_period
-                    if (isinstance(bucket, (RevocationReturnSupervisionTimeBucket,
-                                            NonRevocationReturnSupervisionTimeBucket)))
-                ]
             elif metric_type in (SupervisionMetricType.REVOCATION,
                                  SupervisionMetricType.REVOCATION_ANALYSIS,
                                  SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
@@ -762,7 +754,7 @@ def include_supervision_in_count(combo: Dict[str, Any],
     ]
 
     # Sort by the revocation admission date
-    revocation_buckets.sort(key=lambda b: b.revocation_admission_date)
+    revocation_buckets.sort(key=lambda b: b.bucket_date)
 
     if metric_type == SupervisionMetricType.POPULATION:
         if revocation_buckets:
@@ -871,7 +863,7 @@ def _classify_buckets_by_relevant_metric_periods(
         metric_period_end_date: date
 ) -> Dict[int, List[SupervisionTimeBucket]]:
     """Returns a dictionary mapping metric period month values to the corresponding relevant SupervisionTimeBuckets."""
-    periods_and_buckets: Dict[int, List[SupervisionTimeBucket]] = defaultdict()
+    periods_and_buckets: Dict[int, List[SupervisionTimeBucket]] = defaultdict(list)
 
     # Organize the month buckets by the relevant metric periods
     for supervision_time_bucket in supervision_time_buckets:
@@ -884,12 +876,7 @@ def _classify_buckets_by_relevant_metric_periods(
 
         if relevant_periods:
             for period in relevant_periods:
-                period_events = periods_and_buckets.get(period)
-
-                if period_events:
-                    period_events.append(supervision_time_bucket)
-                else:
-                    periods_and_buckets[period] = [supervision_time_bucket]
+                periods_and_buckets[period].append(supervision_time_bucket)
 
     return periods_and_buckets
 

@@ -61,10 +61,10 @@ class SupervisionMetric(RecidivizMetric):
     # Year
     year: int = attr.ib(default=None)
 
-    # Optional characteristics
-
     # Month
     month: int = attr.ib(default=None)
+
+    # Optional characteristics
 
     # The number of months this metric describes, starting with the month of the metric and going back in time.
     metric_period_months: Optional[int] = attr.ib(default=None)
@@ -110,6 +110,9 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
     # Population count
     count: int = attr.ib(default=None)
 
+    # Date of the supervision population count
+    date_of_supervision: date = attr.ib(default=None)
+
     # Optional characteristics
 
     # Assessment score
@@ -133,6 +136,7 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
     # Raw text of the level of supervision
     supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
+    # TODO(3600): This field should be removed because the daily output makes this unnecessary
     # For person-level metrics only, indicates whether this person was on supervision at the end of the month
     is_on_supervision_last_day_of_month: Optional[bool] = attr.ib(default=None)
 

@@ -54,7 +54,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
         district,
         metric_period_months
       FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
-      WHERE current_month
       GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
     ) pop
     LEFT JOIN (
