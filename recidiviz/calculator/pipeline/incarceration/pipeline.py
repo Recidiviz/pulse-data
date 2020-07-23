@@ -521,7 +521,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=admissions_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.populations
@@ -530,7 +531,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=population_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.releases
@@ -539,5 +541,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=releases_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))

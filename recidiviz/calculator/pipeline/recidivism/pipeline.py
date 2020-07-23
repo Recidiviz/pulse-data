@@ -497,7 +497,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=rates_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.counts
@@ -506,5 +507,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=counts_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))

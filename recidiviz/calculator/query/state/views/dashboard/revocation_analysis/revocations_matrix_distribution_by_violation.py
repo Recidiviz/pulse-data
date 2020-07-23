@@ -44,12 +44,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         charge_category,
         district,
         IF(response_count > 8, 8, response_count) as reported_violations,
-        CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-          CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-               WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-               ELSE most_severe_violation_type END
-          ELSE most_severe_violation_type
-          END AS violation_type,
+        {most_severe_violation_type_subtype_grouping},
         SUM(IF(violation_count_type = 'ABSCONDED', count, 0)) AS absconded_count,
         SUM(IF(violation_count_type = 'ASC', count, 0)) AS association_count,
         SUM(IF(violation_count_type = 'DIR', count, 0)) AS directive_count,
@@ -90,6 +85,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = SimpleBigQueryViewBu
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

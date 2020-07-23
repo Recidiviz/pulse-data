@@ -31,55 +31,90 @@ SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
  violations and the most severe violation while on supervision.
  """
 
+# TODO: Left join on the people row number prioritizing supervision
 SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH supervision_matrix AS (
         SELECT
-            state_code, year, month, metric_period_months,
-            CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-                CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-                     WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-                     ELSE most_severe_violation_type END
-                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
-                ELSE most_severe_violation_type
-            END AS violation_type,
+            state_code, year, month, date_of_supervision,
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
             IF(response_count > 8, 8, response_count) as reported_violations,
             person_id, person_external_id,
             gender,
-            IFNULL(assessment_score_bucket, 'OVERALL') AS risk_level,
+            assessment_score_bucket,
             age_bucket,
             race, ethnicity,
             supervision_type,
-            charge_category,
-            district,
-            supervising_officer_external_id AS officer
+            case_type,
+            supervising_district_external_id AS district,
+            supervising_officer_external_id AS officer,
+            FALSE AS is_revocation
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
         JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
-        {district_dimension},
-        {supervision_dimension},
-        {charge_category_dimension}
-        WHERE methodology = 'PERSON'
+        USING (state_code, job_id, year, month, metric_period_months)
+        WHERE methodology = 'EVENT'
+            AND metric_period_months = 0
             AND month IS NOT NULL
             AND person_id IS NOT NULL
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
             AND job.metric_type = 'SUPERVISION_POPULATION'
+    ), revocations_matrix AS (
+        SELECT
+            state_code, year, month, revocation_admission_date as date_of_supervision,
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
+            IF(response_count > 8, 8, response_count) as reported_violations,
+            person_id, person_external_id,
+            gender,
+            assessment_score_bucket,
+            age_bucket,
+            race, ethnicity,
+            supervision_type,
+            case_type,
+            supervising_district_external_id AS district,
+            supervising_officer_external_id AS officer,
+            TRUE AS is_revocation
+        FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics` 
+        JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+        USING (state_code, job_id, year, month, metric_period_months)
+        WHERE methodology = 'EVENT'
+            AND metric_period_months = 1
+            AND month IS NOT NULL
+            AND person_id IS NOT NULL
+            AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+            AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
+    ), revocations_and_supervisions AS (
+      SELECT * FROM supervision_matrix
+        UNION ALL
+      SELECT * FROM revocations_matrix
+    ), person_based_supervision AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY is_revocation DESC, date_of_supervision DESC) as ranking
+      FROM revocations_and_supervisions,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
     )
+
     SELECT
-        state_code, year, month, metric_period_months, 
-        violation_type, reported_violations,
+        state_code, metric_period_months, 
+        {most_severe_violation_type_subtype_grouping},
+        reported_violations,
         supervision_type, charge_category, district, officer,
         person_id, person_external_id,
         gender, age_bucket,
         -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
-        CASE WHEN risk_level = 'LOW_MEDIUM' THEN 'LOW' ELSE risk_level END AS risk_level,
-        race, ethnicity,
-        (year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific')) 
-            AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))) AS current_month
-    FROM supervision_matrix
-    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-        AND district IS NOT NULL
+        IFNULL(CASE WHEN assessment_score_bucket = 'LOW_MEDIUM' THEN 'LOW' ELSE assessment_score_bucket END, 'OVERALL') as risk_level,
+        race, ethnicity
+    FROM person_based_supervision,
+    {district_dimension},
+    {supervision_dimension},
+    {charge_category_dimension}
+    WHERE ranking = 1
+      AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
+      AND district IS NOT NULL
     """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -89,9 +124,12 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    district_dimension=bq_utils.unnest_district(),
+    most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
+    district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition()
 )
 
 if __name__ == '__main__':

@@ -51,6 +51,9 @@ class SupervisionTimeBucket(BuildableAttr):
     # Month for when the person was on supervision
     month: int = attr.ib()
 
+    # Date of the supervision bucket
+    bucket_date: date = attr.ib()
+
     # TODO(2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
@@ -91,9 +94,6 @@ class SupervisionTimeBucket(BuildableAttr):
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
-    # The date of the revocation admission
-    revocation_admission_date: date = attr.ib(default=None)
-
     # The type of revocation of supervision
     revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
 
@@ -121,6 +121,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # were listed on the given violation.
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
 
+    # TODO(3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
@@ -142,6 +143,7 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # The number of violation responses leading up to the revocation
     response_count: Optional[int] = attr.ib(default=0)
 
+    # TODO(3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
@@ -174,9 +176,6 @@ class SupervisionTerminationBucket(SupervisionTimeBucket):
     Describes the reason for termination, and the change in assessment score between first reassessment and termination
     of supervision.
     """
-    # The date of the termination
-    termination_date: date = attr.ib(default=None)
-
     # The reason for supervision termination
     termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
 

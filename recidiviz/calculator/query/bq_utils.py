@@ -77,3 +77,13 @@ def supervision_specific_district_groupings(district_column: str, judicial_distr
                 OR {judicial_district_column} IN ('OUT_OF_STATE', 'EXTERNAL_UNKNOWN', 'FEDERAL'))
           THEN 'OTHER' else {judicial_district_column} END)
         ELSE {district_column} END, 'EXTERNAL_UNKNOWN')"""
+
+
+def most_severe_violation_type_subtype_grouping() -> str:
+    return """CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+                CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+                     WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+                     ELSE most_severe_violation_type END
+                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
+                ELSE most_severe_violation_type
+            END AS violation_type"""
