@@ -32,10 +32,10 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
-    """Tests the index_incarceration_periods_by_admission_month function."""
+    """Tests the index_incarceration_periods_by_admission_date function."""
 
-    def test_index_incarceration_periods_by_admission_month(self):
-        """Tests the index_incarceration_periods_by_admission_month function."""
+    def test_index_incarceration_periods_by_admission_date(self):
+        """Tests the index_incarceration_periods_by_admission_date function."""
 
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -49,14 +49,12 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_month, {
-            2018: {
-                6: [incarceration_period]
-            }
+        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_date, {
+            incarceration_period.admission_date: [incarceration_period]
         })
 
-    def test_index_incarceration_periods_by_admission_month_multiple(self):
-        """Tests the index_incarceration_periods_by_admission_month function
+    def test_index_incarceration_periods_by_admission_date_multiple(self):
+        """Tests the index_incarceration_periods_by_admission_date function
         when there are multiple incarceration periods."""
 
         first_incarceration_period = \
@@ -82,19 +80,14 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 
         incarceration_period_index = IncarcerationPeriodIndex([first_incarceration_period, second_incarceration_period])
 
-        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_month, {
-            2018: {
-                6: [first_incarceration_period]
-            },
-            2019: {
-                3: [second_incarceration_period]
-            }
+        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_date, {
+            first_incarceration_period.admission_date: [first_incarceration_period],
+            second_incarceration_period.admission_date: [second_incarceration_period]
         })
 
-    def test_index_incarceration_periods_by_admission_month_multiple_month(self):
-        """Tests the index_incarceration_periods_by_admission_month function
-        when there are multiple incarceration periods with admission dates
-        in the same month."""
+    def test_index_incarceration_periods_by_admission_date_multiple_in_day(self):
+        """Tests the index_incarceration_periods_by_admission_date function when there are multiple incarceration
+        periods with the same admission dates."""
 
         first_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -113,24 +106,22 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
                 incarceration_period_id=111,
                 external_id='ip2',
                 state_code='US_XX',
-                admission_date=date(2018, 6, 30),
+                admission_date=date(2018, 6, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([first_incarceration_period, second_incarceration_period])
 
-        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_month, {
-            2018: {
-                6: [first_incarceration_period, second_incarceration_period]
-            },
+        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_date, {
+            first_incarceration_period.admission_date: [first_incarceration_period, second_incarceration_period]
         })
 
-    def test_index_incarceration_periods_by_admission_month_none(self):
-        """Tests the index_incarceration_periods_by_admission_month function
+    def test_index_incarceration_periods_by_admission_date_none(self):
+        """Tests the index_incarceration_periods_by_admission_date function
         when there are no incarceration periods."""
         incarceration_period_index = IncarcerationPeriodIndex([])
 
-        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_month, {})
+        self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_date, {})
 
 
 class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):

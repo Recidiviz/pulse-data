@@ -182,6 +182,13 @@ def _get_parsed_full_apache_beam_args(argv: List[str],
                         help='Enables service-based Dataflow Shuffle in the pipeline.',
                         default=True)
 
+    parser.add_argument('--experiments=use_beam_bq_sink',
+                        action='store_true',
+                        help='Uses the new BigQuery sink to utilize the FILE_LOADS write option for batch pipelines'
+                             ' like ours. This avoids hitting a \'Too many sources provided\' error for pipelines with'
+                             ' large outputs.',
+                        default=True)
+
     parser.add_argument('--network=default',
                         action='store_true',
                         help='The Compute Engine network for launching Compute Engine instances to run the pipeline. '

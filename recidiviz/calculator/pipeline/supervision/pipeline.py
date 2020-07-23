@@ -646,7 +646,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=populations_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.revocations
@@ -655,7 +656,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=revocations_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.successes
@@ -664,7 +666,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=successes_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.successful_sentence_lengths
@@ -674,7 +677,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=successful_sentence_lengths_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.assessment_changes
@@ -683,7 +687,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=assessment_changes_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.revocation_analyses
@@ -692,7 +697,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=revocation_analysis_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.revocation_violation_type_analyses
@@ -702,7 +708,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=revocation_violation_type_analysis_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
         _ = (writable_metrics.compliances
@@ -711,5 +718,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  table=compliance_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))

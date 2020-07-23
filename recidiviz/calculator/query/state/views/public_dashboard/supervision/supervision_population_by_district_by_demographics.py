@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Supervision population this month broken down by district and demographic categories."""
+"""Most recent daily supervision population counts broken down by district and demographic categories."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -25,25 +25,46 @@ from recidiviz.utils.metadata import local_project_id_override
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME = 'supervision_population_by_district_by_demographics'
 
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
-    """Supervision population this month by district and demographic breakdowns"""
+    """Most recent daily supervision population counts broken down by district and demographic categories."""
 
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH supervision_populations AS (
+    WITH most_recent_dates_by_state_code AS (
+      SELECT
+        state_code,
+        job_id,
+        date_of_supervision,
+        ROW_NUMBER() OVER (PARTITION BY state_code ORDER BY date_of_supervision DESC) AS recency_rank
+      FROM
+        `{project_id}.{metrics_dataset}.supervision_population_metrics`
+      JOIN
+        `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
+      USING (state_code, job_id, year, month, metric_period_months)
+      WHERE metric_period_months = 0
+      AND methodology = 'EVENT'
+      AND metric_type = 'SUPERVISION_POPULATION'
+      AND EXTRACT(YEAR FROM date_of_supervision) = EXTRACT(YEAR FROM CURRENT_DATE())
+    ), supervision_populations AS (
       SELECT
         state_code,
         person_id,
         supervision_type,
+        date_of_supervision,
         {grouped_districts} as district,
         race_or_ethnicity,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      FROM
+         most_recent_dates_by_state_code
+      LEFT JOIN
+        `{project_id}.{metrics_dataset}.supervision_population_metrics`
+      USING (state_code, job_id, date_of_supervision),
       {race_or_ethnicity_dimension}
-      WHERE {current_month_condition}
-        AND supervision_type IN ('PROBATION', 'PAROLE')
-        AND district != 'ALL'
+      WHERE recency_rank = 1
+      AND metric_period_months = 0
+      AND methodology = 'EVENT'
+      AND supervision_type IN ('PROBATION', 'PAROLE')
     )
           
     
@@ -76,7 +97,8 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQuery
     view_query_template=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    grouped_districts=bq_utils.supervision_specific_district_groupings('district', 'judicial_district_code'),
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    grouped_districts=bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     current_month_condition=bq_utils.current_month_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
