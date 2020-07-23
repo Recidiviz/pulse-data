@@ -37,13 +37,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     WITH revocations AS (
         SELECT
             state_code, year, month, metric_period_months,
-            CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-                CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-                     WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-                     ELSE most_severe_violation_type END
-                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
-                ELSE most_severe_violation_type
-            END AS violation_type,
+            {most_severe_violation_type_subtype_grouping},
             IF(response_count > 8, 8, response_count) as reported_violations,
             most_severe_response_decision AS officer_recommendation,
             violation_history_description AS violation_record,
@@ -93,6 +87,7 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

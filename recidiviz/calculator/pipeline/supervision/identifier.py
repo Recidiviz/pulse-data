@@ -18,7 +18,7 @@
 supervision sentences as successfully completed or not."""
 import logging
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from typing import List, Dict, Tuple, Optional, Any, NamedTuple, Type, Set
 
 import attr
@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_iden
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
-    identify_most_severe_response_decision, first_day_of_month, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
+    identify_most_severe_response_decision, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
     find_most_recent_assessment, find_assessment_score_change, most_recent_assessment_attributes
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
@@ -254,8 +254,8 @@ def find_time_buckets_for_supervision_period(
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         judicial_district_code: Optional[str] = None
 ) -> List[SupervisionTimeBucket]:
-    """Finds months that this person was on supervision for the given StateSupervisionPeriod, where the person was not
-    incarcerated for the full month and did not have a revocation admission that month.
+    """Finds days that this person was on supervision for the given StateSupervisionPeriod, where the person was not
+    incarcerated and did not have a revocation admission that day.
 
     Args:
         - supervision_sentences: List of StateSupervisionSentences for a person
@@ -271,39 +271,34 @@ def find_time_buckets_for_supervision_period(
     Returns
         - A set of unique SupervisionTimeBuckets for the person for the given StateSupervisionPeriod.
     """
-    supervision_month_buckets: List[SupervisionTimeBucket] = []
+    supervision_day_buckets: List[SupervisionTimeBucket] = []
 
     start_date = supervision_period.start_date
     termination_date = supervision_period.termination_date
 
     if start_date is None:
-        return supervision_month_buckets
+        return supervision_day_buckets
 
-    start_of_month = first_day_of_month(start_date)
+    bucket_date = start_date
 
-    # The last month this person will count towards supervision population is the month of the last full day on
-    # supervision.
-    month_upper_bound = \
-        first_day_of_month(termination_date - timedelta(days=1)) \
-        if termination_date else first_day_of_month(date.today())
+    end_date = termination_date if termination_date else date.today() + relativedelta(days=1)
 
-    while start_of_month <= month_upper_bound:
-        if month_is_non_revocation_supervision_bucket(
-                start_of_month,
+    while bucket_date < end_date:
+        if on_supervision_on_date(
+                bucket_date,
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
                 incarceration_period_index):
 
             supervision_type = get_month_supervision_type(
-                start_of_month, supervision_sentences, incarceration_sentences, supervision_period)
-            end_of_month = last_day_of_month(start_of_month)
+                bucket_date, supervision_sentences, incarceration_sentences, supervision_period)
 
             assessment_score = None
             assessment_level = None
             assessment_type = None
 
-            most_recent_assessment = find_most_recent_assessment(end_of_month, assessments)
+            most_recent_assessment = find_most_recent_assessment(bucket_date, assessments)
 
             if most_recent_assessment:
                 assessment_score = most_recent_assessment.assessment_score
@@ -315,19 +310,11 @@ def find_time_buckets_for_supervision_period(
 
             case_type = _identify_most_severe_case_type(supervision_period)
 
-            end_of_violation_window = \
-                end_of_month if (termination_date is None or end_of_month < termination_date) else termination_date
             violation_history = get_violation_and_response_history(supervision_period.state_code,
-                                                                   end_of_violation_window,
+                                                                   bucket_date,
                                                                    violation_responses)
 
-            is_on_supervision_last_day_of_month = _get_is_on_supervision_last_day_of_month(
-                end_of_month,
-                incarceration_period_index,
-                supervision_sentences,
-                incarceration_sentences,
-                supervision_period
-            )
+            is_on_supervision_last_day_of_month = (bucket_date == last_day_of_month(bucket_date))
 
             case_compliance: Optional[SupervisionCaseCompliance] = None
 
@@ -345,15 +332,16 @@ def find_time_buckets_for_supervision_period(
                 case_compliance = get_case_compliance_on_date(supervision_period,
                                                               case_type,
                                                               start_of_supervision,
-                                                              end_of_month,
+                                                              bucket_date,
                                                               assessments,
                                                               supervision_contacts)
 
-            supervision_month_buckets.append(
+            supervision_day_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
-                    year=start_of_month.year,
-                    month=start_of_month.month,
+                    year=bucket_date.year,
+                    month=bucket_date.month,
+                    bucket_date=bucket_date,
                     supervision_type=supervision_type,
                     case_type=case_type,
                     assessment_score=assessment_score,
@@ -372,22 +360,21 @@ def find_time_buckets_for_supervision_period(
                 )
             )
 
-        start_of_month = start_of_month + relativedelta(months=1)
+        bucket_date = bucket_date + relativedelta(days=1)
 
-    return supervision_month_buckets
+    return supervision_day_buckets
 
 
-def has_revocation_admission_in_month(
+def has_revocation_admission_on_date(
         date_in_month: date,
         incarceration_period_index: IncarcerationPeriodIndex) -> bool:
-
-    incarceration_periods_by_admission_month = incarceration_period_index.incarceration_periods_by_admission_month
-    if date_in_month.year not in incarceration_periods_by_admission_month or \
-            date_in_month.month not in incarceration_periods_by_admission_month[date_in_month.year]:
+    """Returns whether or not a revocation admission occurred on the |date_in_month|."""
+    incarceration_periods_by_admission_date = incarceration_period_index.incarceration_periods_by_admission_date
+    if date_in_month not in incarceration_periods_by_admission_date:
         return False
 
-    # An admission to prison happened during this month
-    incarceration_periods = incarceration_periods_by_admission_month[date_in_month.year][date_in_month.month]
+    # An admission to prison happened on this day
+    incarceration_periods = incarceration_periods_by_admission_date[date_in_month]
     for incarceration_period in incarceration_periods:
         ip_index = incarceration_period_index.incarceration_periods.index(incarceration_period)
         preceding_incarceration_period = None
@@ -429,35 +416,32 @@ def supervision_period_counts_towards_supervision_population_in_date_range(
     )
 
 
-def month_is_non_revocation_supervision_bucket(
-        start_of_month: date,
+def on_supervision_on_date(
+        evaluation_date: date,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
         incarceration_period_index: IncarcerationPeriodIndex):
-    """Determines whether the given month was a month on supervision without a revocation and without being
-    incarcerated for the full time spent on supervision that month.
-    """
-
-    if has_revocation_admission_in_month(start_of_month, incarceration_period_index):
+    """Determines whether the person was on supervision on a given date. We do not count someone as being on supervision
+     for a given date if they were incarcerated or revoked that day."""
+    if has_revocation_admission_on_date(evaluation_date, incarceration_period_index):
         return False
 
-    month_range = TimeRange.for_month(start_of_month.year, start_of_month.month)
-    sp_range = TimeRange.for_supervision_period(supervision_period)
-    overlapping_range = TimeRangeDiff(range_1=month_range, range_2=sp_range).overlapping_range
+    # This should never happen
+    if not TimeRange.for_supervision_period(supervision_period).contains_day(evaluation_date):
+        raise ValueError("evaluation_date must fall between the start and end of the supervision_period")
 
-    if not overlapping_range:
-        return False
+    day_range = TimeRange.for_day(evaluation_date)
 
-    supervision_period_counts_towards_supervision_population_in_month = \
+    supervision_period_counts_towards_supervision_population_on_date = \
         supervision_period_counts_towards_supervision_population_in_date_range(
-            date_range=overlapping_range,
+            date_range=day_range,
             supervision_sentences=supervision_sentences,
             incarceration_sentences=incarceration_sentences,
             supervision_period=supervision_period,
             incarceration_period_index=incarceration_period_index)
 
-    return supervision_period_counts_towards_supervision_population_in_month
+    return supervision_period_counts_towards_supervision_population_on_date
 
 
 def find_supervision_termination_bucket(
@@ -535,7 +519,7 @@ def find_supervision_termination_bucket(
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
-            termination_date=termination_date,
+            bucket_date=termination_date,
             year=termination_date.year,
             month=termination_date.month,
             supervision_type=supervision_type,
@@ -916,7 +900,7 @@ def find_revocation_return_buckets(
                         state_code=incarceration_period.state_code,
                         year=admission_year,
                         month=admission_month,
-                        revocation_admission_date=admission_date,
+                        bucket_date=admission_date,
                         supervision_type=pre_revocation_supervision_type,
                         case_type=case_type,
                         assessment_score=assessment_score,
@@ -964,7 +948,7 @@ def find_revocation_return_buckets(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
                     month=admission_month,
-                    revocation_admission_date=admission_date,
+                    bucket_date=admission_date,
                     supervision_type=pre_revocation_supervision_type,
                     case_type=case_type,
                     assessment_score=assessment_score,
@@ -1082,12 +1066,15 @@ def _get_projected_completion_bucket(
     judicial_district_code = _get_judicial_district_code(supervision_period,
                                                          supervision_period_to_judicial_district_associations)
 
+    last_day_of_projected_month = last_day_of_month(projected_completion_date)
+
     # TODO(2975): Note that this metric measures success by projected completion month. Update or expand this
     #  metric to capture the success of early termination as well
     return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
         year=projected_completion_date.year,
         month=projected_completion_date.month,
+        bucket_date=last_day_of_projected_month,
         supervision_type=supervision_type,
         case_type=case_type,
         successful_completion=supervision_success,
@@ -1233,37 +1220,37 @@ BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBu
 def _convert_buckets_to_dual(supervision_time_buckets: List[SupervisionTimeBucket]) -> \
         List[SupervisionTimeBucket]:
     """For some states, we want to track DUAL supervision as distinct from both PAROLE and PROBATION. For these states,
-    if someone has two buckets in the same month that will contribute to the same type of metric, and these buckets are
+    if someone has two buckets on the same day that will contribute to the same type of metric, and these buckets are
     of different supervision types (one is PAROLE and one is PROBATION, or one is DUAL and the other is something other
     than DUAL), then we want that person to only contribute to metrics with a supervision type of DUAL. All buckets of
-    that type in that month are then replaced with ones that have DUAL as the set supervision_type.
+    that type on that day are then replaced with ones that have DUAL as the set supervision_type.
 
     Returns an updated list of SupervisionTimeBuckets.
     """
-    buckets_by_month: Dict[int, Dict[int, List[SupervisionTimeBucket]]] = defaultdict(lambda: defaultdict(list))
+    buckets_by_date: Dict[date, List[SupervisionTimeBucket]] = defaultdict(list)
 
     for bucket in supervision_time_buckets:
-        year = bucket.year
-        month = bucket.month
+        bucket_date = bucket.bucket_date
+        buckets_by_date[bucket_date].append(bucket)
 
-        buckets_by_month[year][month].append(bucket)
-
-    month_bucket_groups = [
-        month_bucket_group for _, months in buckets_by_month.items()
-        for _, month_bucket_group in months.items()
-    ]
+    day_bucket_groups = list(buckets_by_date.values())
 
     updated_supervision_time_buckets: List[SupervisionTimeBucket] = []
 
-    for month_bucket_group in month_bucket_groups:
+    for day_bucket_group in day_bucket_groups:
+        if len(day_bucket_group) < 2:
+            # We only need to convert buckets if there are two that fall in the same time period
+            updated_supervision_time_buckets.extend(day_bucket_group)
+            continue
+
         for _, bucket_types in BUCKET_TYPES_FOR_METRIC.items():
             buckets_for_this_metric = [
-                bucket for bucket in month_bucket_group
+                bucket for bucket in day_bucket_group
                 for bucket_type in bucket_types
                 if isinstance(bucket, bucket_type)
             ]
 
-            # If there is more than one bucket for this metric in this month
+            # If there is more than one bucket for this metric on this day
             if buckets_for_this_metric and len(buckets_for_this_metric) > 1:
                 parole_buckets = _get_buckets_with_supervision_type(buckets_for_this_metric,
                                                                     StateSupervisionPeriodSupervisionType.PAROLE)
@@ -1273,16 +1260,16 @@ def _convert_buckets_to_dual(supervision_time_buckets: List[SupervisionTimeBucke
                 dual_buckets = _get_buckets_with_supervision_type(buckets_for_this_metric,
                                                                   StateSupervisionPeriodSupervisionType.DUAL)
 
-                # If they were on both parole and probation in this month, change every bucket for this metric
+                # If they were on both parole and probation on this day, change every bucket for this metric
                 # to have a supervision type of DUAL
                 if (parole_buckets and probation_buckets) or dual_buckets:
                     for bucket in buckets_for_this_metric:
                         updated_bucket = attr.evolve(
                             bucket, supervision_type=StateSupervisionPeriodSupervisionType.DUAL)
-                        month_bucket_group.remove(bucket)
-                        month_bucket_group.append(updated_bucket)
+                        day_bucket_group.remove(bucket)
+                        day_bucket_group.append(updated_bucket)
 
-        updated_supervision_time_buckets.extend(month_bucket_group)
+        updated_supervision_time_buckets.extend(day_bucket_group)
 
     return updated_supervision_time_buckets
 
