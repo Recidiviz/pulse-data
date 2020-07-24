@@ -237,6 +237,17 @@ general code score out of 10. Fix any new violations in your commit. If you beli
 e.g. if you believe a particular rule is inappropriate in the codebase, then submit that change as part of your
 inbound pull request.
 
+**NOTE:** Until is microsoft/vscode-python#11995 fixed, VSCode users should explicitly set `"python.linting.pylintUseMinimalCheckers": false` to ensure the pylint settings in `pyproject.toml` are used.
+
+#### Autoformatting
+
+`autopep8` can be used to autoformat files that you change to help automatically meet some of the standards defined by `pylint`. It can either be run manually with `autopep8 --(diff|inplace) files...` or as part of your editor:
+
+* Vim: add `au FileType python setlocal formatprg=autopep8\ -` to your vimrc; reformat using `gq` and related commands
+* VSCode: uses `autopep8` by default for formatting
+
+**NOTE:** We currently use `autopep8` because it introduces the least change to the code base. We may consider moving to a more opinionated formatter (e.g. Black) in the future but would require significant modification to existing code.
+
 #### Static type checking
 Run Mypy across all code to check for static type errors: `mypy recidiviz`.
 
