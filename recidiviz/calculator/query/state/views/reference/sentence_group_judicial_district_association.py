@@ -94,7 +94,8 @@ SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
       offense_date,
       date_charged,
       date_convicted,
-      COALESCE(sentence_groups.judicial_district_code, county_judicial_district.judicial_district_code) as judicial_district_code,
+      -- Trims the leading and trailing whitespaces from the judicial_district_code --
+      TRIM(COALESCE(sentence_groups.judicial_district_code, county_judicial_district.judicial_district_code)) as judicial_district_code,
       is_controlling
     FROM
       sentence_groups
