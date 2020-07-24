@@ -35,7 +35,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         year as projected_year,
         month as projected_month,
         supervision_type,
-        {grouped_districts} as district,
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         -- Only count as success if all completed periods were successful per person
         -- Take the MIN so that successful_termination is 1 only if all periods were 1 (successful)
         MIN(successful_completion_count) as successful_termination,
@@ -43,7 +43,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months),
-      {district_dimension}
+      UNNEST ([{grouped_districts}, 'ALL']) AS district
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND person_id IS NOT NULL
@@ -79,7 +79,8 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    grouped_districts=bq_utils.supervision_specific_district_groupings('district', 'judicial_district_code'),
+    grouped_districts=bq_utils.supervision_specific_district_groupings('supervising_district_external_id',
+                                                                       'judicial_district_code'),
     district_dimension=bq_utils.unnest_district()
 )
 
