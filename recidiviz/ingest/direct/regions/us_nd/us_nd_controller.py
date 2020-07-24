@@ -810,6 +810,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['1', '2', '5', '8', '12', '15', '16', '17'],
             StateSupervisionPeriodTerminationReason.EXPIRATION: ['4', '7', '19', '20'],
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
+            # TODO(2891): Ensure that all of these codes are migrated to to new admission and release reasons
+            # when we migrate these periods to a supervision_period_supervision_type of INVESTIGATION
+            StateSupervisionPeriodTerminationReason.INVESTIGATION: ['21', '22', '23', '24', '25', '26', '27', '28'],
             StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10', '18'],
             StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
 
