@@ -1,51 +1,43 @@
-[tool.autopep8]
-aggressive = 1
-max-line-length = 120
-
-[tool.coverage.run]
-omit = "lib/*,recidiviz/tests/*,recidiviz/utils/data_migration.py"
-
-# TODO(python/mypy#5205): Move mypy settings from setup.cfg once github.com/python/mypy/pull/5208 is merged.
-
-[tool.pylint.MASTER]
 # Copies what should be a general Pylint config matching the Google Python Style Guide:
 # https://github.com/google/timesketch/blob/a5cf220cc09e9feb794601b9bafcd6f8729a0d4b/.pylintrc
 # Date: 2018-04-22.
 
+[MASTER]
+
 # Specify a configuration file.
-#rcfile = ""
+#rcfile=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook = ""
+#init-hook=
 
 # Profiled execution.
-#profile = "no"
+#profile=no
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore = "CVS,lib"
+ignore=CVS,lib
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
-ignore-patterns = ".*node_modules.*,.*pb2.*"
+ignore-patterns=.*node_modules.*,.*pb2.*
 
 # Pickle collected data for later comparisons.
-persistent = "yes"
+persistent=yes
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins = ""
+load-plugins=
 
 # Whitelists trusted C extensions outside of the standard library.
-extension-pkg-whitelist = "lxml"
+extension-pkg-whitelist=lxml
 
-[tool.pylint."MESSAGES CONTROL"]
+[MESSAGES CONTROL]
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time.
-#enable = ""
+#enable=
 
 # Disable the message, report, category or checker with the given id(s). You
 # can either give multiple identifier separated by comma (,) or put this option
@@ -86,210 +78,220 @@ extension-pkg-whitelist = "lxml"
 # W0703: Catch "Exception"
 # W1201: Specify string format arguments as logging function parameters
 # W0201: Variables defined initially outside the scope of __init__ (reconsider this, added by Kristinn).
-#disable = "C0103,C0111,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W1201,W0201"
-disable = "C0103,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,RP0401,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W0201,R0401,no-member,useless-super-delegation"
+#disable=C0103,C0111,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W1201,W0201
+disable=C0103,C0302,F0401,I0010,I0011,R0201,R0801,R0901,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R0921,R0922,R0924,RP0401,W0122,W0141,W0142,W0402,W0404,W0511,W0603,W0703,W0201,R0401,no-member,useless-super-delegation
 
-[tool.pylint.REPORTS]
+
+[REPORTS]
 
 # Set the output format. Available formats are text, parseable, colorized, msvs
 # (visual studio) and html
-output-format = "text"
+output-format=text
 
 # Put messages in a separate file for each module / package specified on the
 # command line instead of printing them on stdout. Reports (if any) will be
 # written in a file name "pylint_global.[txt|html]".
-files-output = "no"
+files-output=no
 
 # Tells whether to display a full report or only the messages
 # CHANGED:
-reports = "no"
+reports=no
 
 # Python expression which should return a note less than 10 (10 is the highest
 # note). You have access to the variables errors warning, statement which
 # respectively contain the number of errors / warnings messages and the total
 # number of statements analyzed. This is used by the global evaluation report
 # (RP0004).
-evaluation = "10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)"
+evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)
 
 # Add a comment according to your evaluation note. This is used by the global
 # evaluation report (RP0004).
-#comment = "no"
+#comment=no
 
-[tool.pylint.VARIABLES]
+
+[VARIABLES]
 
 # Tells whether we should check for unused import in __init__ files.
-init-import = "no"
+init-import=no
 
 # A regular expression matching the beginning of the name of unused variables.
 # By default this is _ and dummy but we prefer _ and unused.
-dummy-variables-rgx = "_|unused"
+dummy-variables-rgx=_|unused
 
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
-additional-builtins = ""
+additional-builtins=
 
-[tool.pylint.TYPECHECK]
+
+[TYPECHECK]
 
 # Tells whether missing members accessed in mixin class should be ignored. A
 # mixin class is detected if its name ends with "mixin" (case insensitive).
-ignore-mixin-members = "yes"
+ignore-mixin-members=yes
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes = "SQLObject,twisted.internet.reactor,hashlib"
+ignored-classes=SQLObject,twisted.internet.reactor,hashlib
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
-#zope = "no"
+#zope=no
 
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E0201 when accessed. Python regular
 # expressions are accepted.
-generated-members = "REQUEST,acl_users,aq_parent,multiprocessing.managers.SyncManager"
+generated-members=REQUEST,acl_users,aq_parent,multiprocessing.managers.SyncManager
 
-[tool.pylint.MISCELLANEOUS]
+
+[MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.
-notes = "FIXME,XXX,TODO"
+notes=FIXME,XXX,TODO
 
-[tool.pylint.SIMILARITIES]
+
+[SIMILARITIES]
 
 # Minimum lines number of a similarity.
-min-similarity-lines = "4"
+min-similarity-lines=4
 
 # Ignore comments when computing similarities.
-ignore-comments = "yes"
+ignore-comments=yes
 
 # Ignore docstrings when computing similarities.
-ignore-docstrings = "yes"
+ignore-docstrings=yes
 
-[tool.pylint.FORMAT]
+
+[FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length = "120"
+max-line-length=120
 
 # Maximum number of lines in a module
-max-module-lines = "1000"
+max-module-lines=1000
 
 # String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
 # tab).
 # CHANGED:
-indent-string = "    "
+indent-string='    '
 
-[tool.pylint.BASIC]
+
+[BASIC]
 
 # Required attributes for module, separated by a comma
-#required-attributes = ""
+#required-attributes=
 
 # List of builtins function names that should not be used, separated by a comma
-bad-functions = "map,filter,apply,input"
+bad-functions=map,filter,apply,input
 
 # Regular expression which should only match correct module names
-module-rgx = "(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$"
+module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression which should only match correct module level names
-const-rgx = "(([A-Z_][A-Z0-9_]*)|(__.*__))$"
+const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match correct class names
-class-rgx = "[A-Z_][a-zA-Z0-9]+$"
+class-rgx=[A-Z_][a-zA-Z0-9]+$
 
 # Regular expression which should only match correct function names
-function-rgx = "[a-z_][a-z0-9_]{2,30}$"
+function-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct method names
-method-rgx = "[a-z_][a-z0-9_]{2,30}$"
+method-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct instance attribute names
-attr-rgx = "[a-z_][a-z0-9_]{2,30}$"
+attr-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct argument names
-argument-rgx = "[a-z_][a-z0-9_]{2,30}$"
+argument-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct variable names
-variable-rgx = "[a-z_][a-z0-9_]{2,30}$"
+variable-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct list comprehension /
 # generator expression variable names
-inlinevar-rgx = "[A-Za-z_][A-Za-z0-9_]*$"
+inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names = "i,j,k,ex,Run,_"
+good-names=i,j,k,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
-bad-names = "foo,bar,baz,toto,tutu,tata"
+bad-names=foo,bar,baz,toto,tutu,tata
 
 # Regular expression which should only match functions or classes name which do
 # not require a docstring
-no-docstring-rgx = "__.*__|test.*"
+no-docstring-rgx=__.*__|test.*
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
-docstring-min-length = "30"
+docstring-min-length=30
 
-[tool.pylint.DESIGN]
+[DESIGN]
 
 # Maximum number of arguments for function / method
-max-args = "5"
+max-args=5
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore
-ignored-argument-names = "_.*"
+ignored-argument-names=_.*
 
 # Maximum number of locals for function / method body
-max-locals = "15"
+max-locals=15
 
 # Maximum number of return / yield for function / method body
-max-returns = "6"
+max-returns=6
 
 # Maximum number of branch for function / method body
-max-branchs = "12"
+max-branchs=12
 
 # Maximum number of statements in function / method body
-max-statements = "50"
+max-statements=50
 
 # Maximum number of parents for a class (see R0901).
-max-parents = "7"
+max-parents=7
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes = "7"
+max-attributes=7
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods = "2"
+min-public-methods=2
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods = "20"
+max-public-methods=20
 
-[tool.pylint.CLASSES]
+
+[CLASSES]
 
 # List of interface methods to ignore, separated by a comma. This is used for
 # instance to not check methods defines in Zope's Interface base class.
-#ignore-iface-methods = "isImplementedBy,extends,names,namesAndDescriptions,queryDescriptionFor,getBases,getDescriptionFor,getDoc,getName,getTaggedValue,getTaggedValueTags,isEqualOrExtendedBy,setTaggedValue,isImplementedByInstancesOf,adaptWith,is_implemented_by"
+#ignore-iface-methods=isImplementedBy,extends,names,namesAndDescriptions,queryDescriptionFor,getBases,getDescriptionFor,getDoc,getName,getTaggedValue,getTaggedValueTags,isEqualOrExtendedBy,setTaggedValue,isImplementedByInstancesOf,adaptWith,is_implemented_by
 
 # List of method names used to declare (i.e. assign) instance attributes.
-defining-attr-methods = "__init__,__new__,setUp"
+defining-attr-methods=__init__,__new__,setUp
 
 # List of valid names for the first argument in a class method.
-valid-classmethod-first-arg = "cls"
+valid-classmethod-first-arg=cls
 
-[tool.pylint.IMPORTS]
+
+[IMPORTS]
 
 # Deprecated modules which should not be used, separated by a comma
-deprecated-modules = "regsub,string,TERMIOS,Bastion,rexec"
+deprecated-modules=regsub,string,TERMIOS,Bastion,rexec
 
 # Create a graph of every (i.e. internal and external) dependencies in the
 # given file (report RP0402 must not be disabled)
-import-graph = ""
+import-graph=
 
 # Create a graph of external dependencies in the given file (report RP0402 must
 # not be disabled)
-ext-import-graph = ""
+ext-import-graph=
 
 # Create a graph of internal dependencies in the given file (report RP0402 must
 # not be disabled)
-int-import-graph = ""
+int-import-graph=
 
-[tool.pylint.EXCEPTIONS]
+
+[EXCEPTIONS]
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception"
-overgeneral-exceptions = "Exception"
+overgeneral-exceptions=Exception
