@@ -168,6 +168,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Start Cloud SQL to BigQuery export tasks for operations tables
+    url: /export_manager/create_operations_export_tasks
+    schedule: every day 6:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Move old Dataflow metric output to cold storage
     url: /calculation_data_storage_manager/prune_old_dataflow_data
     schedule: every day 00:00
