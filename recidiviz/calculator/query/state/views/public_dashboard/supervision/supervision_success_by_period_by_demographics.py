@@ -64,8 +64,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           metric_period_months,
           district,
           supervision_type,
-          CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
-          ELSE race_or_ethnicity END AS race_or_ethnicity,
+          {state_specific_race_or_ethnicity_groupings},
           gender,
           age_bucket,
           COUNT(DISTINCT IF(successful_termination = 1, person_id, NULL)) as successful_termination_count,
@@ -103,7 +102,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewB
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
-    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket')
+    age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
+    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':
