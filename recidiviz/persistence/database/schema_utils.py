@@ -28,7 +28,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.base_schema import JailsBase, \
-    StateBase
+    StateBase, OperationsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import \
     schema as aggregate_schema
@@ -36,9 +36,10 @@ from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema.operations import schema as operations_schema
 
 _SCHEMA_MODULES: List[ModuleType] = \
-    [aggregate_schema, county_schema, state_schema]
+    [aggregate_schema, county_schema, state_schema, operations_schema]
 
 
 def get_all_table_classes() -> Iterator[Table]:
@@ -69,6 +70,10 @@ def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 
 
+def get_operations_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(operations_schema)
+
+
 def get_non_history_state_database_entities():
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):
@@ -93,7 +98,9 @@ def _is_database_entity_subclass(member) -> bool:
             and issubclass(member, DatabaseEntity)
             and member is not DatabaseEntity
             and member is not JailsBase
-            and member is not StateBase)
+            and member is not StateBase
+            and member is not OperationsBase)
+
 
 
 @lru_cache(maxsize=None)
@@ -141,6 +148,8 @@ def schema_base_for_schema_module(module: ModuleType) -> DeclarativeMeta:
         return JailsBase
     if module == state_schema:
         return StateBase
+    if module == operations_schema:
+        return OperationsBase
 
     raise ValueError(f"Unsupported module: {module}")
 
@@ -150,6 +159,8 @@ def schema_base_for_object(schema_object: DatabaseEntity):
         return JailsBase
     if isinstance(schema_object, StateBase):
         return StateBase
+    if isinstance(schema_object, OperationsBase):
+        return OperationsBase
 
     raise ValueError(
         f"Object of type [{type(schema_object)}] has unknown schema base.")

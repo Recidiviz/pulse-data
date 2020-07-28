@@ -69,6 +69,8 @@ def start_table_load(
         export_schema = export_config.COUNTY_TABLE_EXPORT_SCHEMA
     elif schema_type == SchemaType.STATE:
         export_schema = export_config.STATE_TABLE_EXPORT_SCHEMA
+    elif schema_type == SchemaType.OPERATIONS:
+        export_schema = export_config.OPERATIONS_TABLE_EXPORT_SCHEMA
     else:
         logging.exception("Unknown schema type: %s", schema_type)
         return None

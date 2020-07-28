@@ -84,6 +84,12 @@ STATE_COLUMNS_TO_EXCLUDE: Dict[str, List[str]] = {}
 
 STATE_BASE_TABLES_BQ_DATASET = 'state'
 
+######### OPERATIONS EXPORT VALUES #########
+
+OPERATIONS_TABLES_TO_EXPORT = tuple(
+    table for table in schema_utils.get_operations_table_classes()
+)
+
 def gcs_export_uri(table_name: str) -> str:
     """Return export URI location in Google Cloud Storage given a table name."""
     project_id = str(metadata.project_id())
@@ -174,4 +180,34 @@ STATE_TABLE_EXPORT_SCHEMA = {
         if column.name in STATE_TABLE_COLUMNS_TO_EXPORT[table.name]
     ]
     for table in STATE_TABLES_TO_EXPORT
+}
+
+### OPERATIONS VALUES ###
+
+OPERATIONS_ALL_TABLE_COLUMNS = {
+    table.name: [column.name for column in table.columns]
+    for table in OPERATIONS_TABLES_TO_EXPORT
+}
+
+OPERATIONS_TABLE_COLUMNS_TO_EXPORT = {
+    table_name: list(
+        column for column in OPERATIONS_ALL_TABLE_COLUMNS.get(table_name)  # type: ignore
+    )
+    for table_name in OPERATIONS_ALL_TABLE_COLUMNS
+}
+
+OPERATIONS_TABLE_EXPORT_QUERIES = {
+    table: TABLE_EXPORT_QUERY.format(columns=', '.join(columns), table=table)
+    for table, columns in OPERATIONS_TABLE_COLUMNS_TO_EXPORT.items()
+}
+
+OPERATIONS_TABLE_EXPORT_SCHEMA = {
+    table.name: [
+        {'name': column.name,
+         'type': BQ_TYPES[type(column.type)],
+         'mode': 'NULLABLE' if column.nullable else 'REQUIRED'}
+        for column in table.columns
+        if column.name in OPERATIONS_TABLE_COLUMNS_TO_EXPORT[table.name]
+    ]
+    for table in OPERATIONS_TABLES_TO_EXPORT
 }

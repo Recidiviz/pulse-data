@@ -29,6 +29,7 @@ from recidiviz.persistence.database.schema.county import (
     schema as county_schema
 )
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema.operations import schema as operations_schema
 
 
 def test_get_all_database_entity_classes():
@@ -125,6 +126,10 @@ def test_get_all_database_entity_classes():
         'StateSupervisionViolationResponseDecisionEntry',
         'StateSupervisionViolationResponseDecisionEntryHistory',
     ]
+    operations_database_entity_names = [
+        'DirectIngestIngestFileMetadata',
+        'DirectIngestRawFileMetadata',
+    ]
 
     expected_qualified_names = \
         _prefix_module_name(aggregate_schema.__name__,
@@ -132,12 +137,15 @@ def test_get_all_database_entity_classes():
         _prefix_module_name(county_schema.__name__,
                             county_database_entity_names) + \
         _prefix_module_name(state_schema.__name__,
-                            state_database_entity_names)
+                            state_database_entity_names) + \
+        _prefix_module_name(operations_schema.__name__,
+                            operations_database_entity_names)
 
     all_database_entity_names = \
         list(_get_all_database_entities_in_module(aggregate_schema)) + \
         list(_get_all_database_entities_in_module(county_schema)) + \
-        list(_get_all_database_entities_in_module(state_schema))
+        list(_get_all_database_entities_in_module(state_schema)) + \
+        list(_get_all_database_entities_in_module(operations_schema))
 
     all_database_entity_names = \
         _database_entities_to_qualified_names(all_database_entity_names)
@@ -252,21 +260,25 @@ def test_get_all_table_classes():
         'state_supervision_violation_response_decision_agent_association',
         'state_supervision_period_supervision_violation_association',
     ]
+    operations_table_names = [
+        'direct_ingest_ingest_file_metadata',
+        'direct_ingest_raw_file_metadata',
+    ]
 
     expected_table_class_names = \
-        aggregate_table_names + county_table_names + state_table_names
+        aggregate_table_names + county_table_names + state_table_names + operations_table_names
 
     all_table_classes = get_all_table_classes()
 
     assert sorted(expected_table_class_names) == \
-        sorted(_table_classes_to_qualified_names(all_table_classes))
+           sorted(_table_classes_to_qualified_names(all_table_classes))
 
 
 def test_get_state_table_class_with_name():
     class_name = 'StateSupervisionViolation'
 
     assert get_state_database_entity_with_name(class_name) == \
-        state_schema.StateSupervisionViolation
+           state_schema.StateSupervisionViolation
 
 
 def test_get_state_table_class_with_name_invalid_name():
