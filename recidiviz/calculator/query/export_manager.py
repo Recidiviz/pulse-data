@@ -16,9 +16,11 @@
 # =============================================================================
 
 """Export data from Cloud SQL and load it into BigQuery."""
+import argparse
 from http import HTTPStatus
 import json
 import logging
+import sys
 
 import flask
 from flask import request
@@ -31,9 +33,12 @@ from recidiviz.calculator.query.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
 from recidiviz.calculator.query.county import dataset_config as county_dataset_config
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.calculator.query.operations import dataset_config as operations_dataset_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
+from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
 
 
 def export_table_then_load_table(
@@ -51,8 +56,8 @@ def export_table_then_load_table(
             in the TABLES_TO_EXPORT for its corresponding schema.
         dataset_ref: The BigQuery dataset to load the table into.
             Gets created if it does not already exist.
-        schema_type: The schema, either SchemaType.COUNTY or SchemaType.STATE
-            where this table lives.
+        schema_type: The schema, SchemaType.COUNTY, SchemaType.STATE,
+        or SchemaType.OPERATIONS, where this table lives.
     Returns:
         True if load succeeds, else False.
     """
@@ -60,6 +65,8 @@ def export_table_then_load_table(
         export_queries = export_config.COUNTY_TABLE_EXPORT_QUERIES
     elif schema_type == SchemaType.STATE:
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
+    elif schema_type == SchemaType.OPERATIONS:
+        export_queries = export_config.OPERATIONS_TABLE_EXPORT_QUERIES
     else:
         logging.error("Unknown schema_type: %s", schema_type)
         return False
@@ -106,9 +113,13 @@ def export_all_then_load_all(big_query_client: BigQueryClient, schema_type: Sche
         tables_to_export = export_config.STATE_TABLES_TO_EXPORT
         base_tables_dataset_ref = big_query_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
         export_queries = export_config.STATE_TABLE_EXPORT_QUERIES
+    elif schema_type == SchemaType.OPERATIONS:
+        tables_to_export = export_config.OPERATIONS_TABLES_TO_EXPORT
+        base_tables_dataset_ref = big_query_client.dataset_ref_for_id(operations_dataset_config.OPERATIONS_BASE_DATASET)
+        export_queries = export_config.OPERATIONS_TABLE_EXPORT_QUERIES
     else:
-        logging.error("Invalid schema_type requested. Must be either"
-                      " SchemaType.JAILS or SchemaType.STATE.")
+        logging.error("Invalid schema_type requested. Must be"
+                      " SchemaType.JAILS, or SchemaType.STATE or SchemaType.OPERATIONS.")
         return
 
     logging.info("Beginning CloudSQL export")
@@ -147,6 +158,9 @@ def handle_bq_export_task():
     elif schema_type_str == SchemaType.STATE.value:
         schema_type = SchemaType.STATE
         dataset_ref = bq_client.dataset_ref_for_id(state_dataset_config.STATE_BASE_DATASET)
+    elif schema_type_str == SchemaType.OPERATIONS.value:
+        schema_type = SchemaType.OPERATIONS
+        dataset_ref = bq_client.dataset_ref_for_id(operations_dataset_config.OPERATIONS_BASE_DATASET)
     else:
         return '', HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -190,8 +204,7 @@ def handle_bq_monitor_task():
 def create_all_bq_export_tasks():
     """Creates an export task for each table to be exported.
 
-    A task is created for each table defined in
-    export_config.COUNTY_TABLES_TO_EXPORT.
+    A task is created for each table defined in export_config.COUNTY_TABLES_TO_EXPORT.
 
     Re-creates all tasks if any task fails to be created.
     """
@@ -210,8 +223,7 @@ def create_all_bq_export_tasks():
 def create_all_state_bq_export_tasks():
     """Creates an export task for each table to be exported.
 
-    A task is created for each table defined in
-    export_config.STATE_TABLES_TO_EXPORT.
+    A task is created for each table defined in export_config.STATE_TABLES_TO_EXPORT.
 
     Re-creates all tasks if any task fails to be created.
     """
@@ -229,9 +241,54 @@ def create_all_state_bq_export_tasks():
     return ('', HTTPStatus.OK)
 
 
+@export_manager_blueprint.route('/create_operations_export_tasks')
+@authenticate_request
+def create_all_operations_bq_export_tasks():
+    """Creates an export task for each table to be exported.
+
+    A task is created for each table defined in export_config.OPERATIONS_TABLES_TO_EXPORT.
+
+    Re-creates all tasks if any task fails to be created.
+    """
+    schema_type_str = SchemaType.OPERATIONS.value
+
+    logging.info("Beginning BQ export for operations schema tables.")
+
+    task_manager = BQExportCloudTaskManager()
+    for table in export_config.OPERATIONS_TABLES_TO_EXPORT:
+        task_manager.create_bq_task(table.name, schema_type_str)
+    return ('', HTTPStatus.OK)
+
+
+def parse_arguments(argv):
+    """Parses the required arguments."""
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--project_id',
+                        dest='project_id',
+                        type=str,
+                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        required=True)
+
+    parser.add_argument('--schema_type',
+                        dest='local_export_schema_type',
+                        type=str.upper,
+                        choices=[SchemaType.STATE.value, SchemaType.JAILS.value, SchemaType.OPERATIONS.value],
+                        required=True)
+
+    return parser.parse_known_args(argv)
+
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
+    known_args, _ = parse_arguments(sys.argv)
 
-    local_export_schema_type = SchemaType.STATE
+    if known_args.local_export_schema_type == SchemaType.JAILS.value:
+        local_export_schema_type = SchemaType.JAILS
+    elif known_args.local_export_schema_type == SchemaType.STATE.value:
+        local_export_schema_type = SchemaType.STATE
+    elif known_args.local_export_schema_type == SchemaType.OPERATIONS.value:
+        local_export_schema_type = SchemaType.OPERATIONS
 
-    export_all_then_load_all(BigQueryClientImpl(), local_export_schema_type)
+    with local_project_id_override(GAE_PROJECT_STAGING):
+        export_all_then_load_all(BigQueryClientImpl(), local_export_schema_type)
