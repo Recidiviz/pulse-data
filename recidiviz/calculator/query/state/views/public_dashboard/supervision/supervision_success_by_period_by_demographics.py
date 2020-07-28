@@ -54,8 +54,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         AND {metric_period_condition}
         AND methodology = 'EVENT'
         AND person_id IS NOT NULL
-        AND DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
-                                             INTERVAL metric_period_months - 1 MONTH)
         AND job.metric_type = 'SUPERVISION_SUCCESS'
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), successful_termination_counts AS (
@@ -98,7 +96,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewB
     grouped_districts=
     bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),

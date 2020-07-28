@@ -23,8 +23,11 @@ from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incar
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_facility_by_demographics import \
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_releases_by_type_by_period import \
+    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER
 
 INCARCERATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER,
-    INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER
+    INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER,
+    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER
 ]
