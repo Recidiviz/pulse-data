@@ -72,8 +72,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       state_code,
       supervision_type,
       district,
-      CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
-      ELSE race_or_ethnicity END AS race_or_ethnicity,
+      {state_specific_race_or_ethnicity_groupings},
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS total_supervision_count
@@ -104,7 +103,8 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQuery
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    district_dimension=bq_utils.unnest_district('district')
+    district_dimension=bq_utils.unnest_district('district'),
+    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':

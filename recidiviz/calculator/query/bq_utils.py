@@ -87,3 +87,10 @@ def most_severe_violation_type_subtype_grouping() -> str:
                 WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
             END AS violation_type"""
+
+
+# TODO(3675): Formalize state-specific logic in queries
+def state_specific_race_or_ethnicity_groupings() -> str:
+    return """CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN
+              ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
+              ELSE race_or_ethnicity END AS race_or_ethnicity"""

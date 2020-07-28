@@ -59,8 +59,7 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLAT
       COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
       COUNT(DISTINCT IF(source_violation_type = 'ABSCONDED', person_id, NULL)) AS absconsion_count,
       COUNT(DISTINCT IF(source_violation_type = 'EXTERNAL_UNKNOWN', person_id, NULL)) as unknown_count,
-      CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
-      ELSE race_or_ethnicity END AS race_or_ethnicity,
+      {state_specific_race_or_ethnicity_groupings},
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS revocation_count
@@ -89,7 +88,8 @@ SUPERVISION_REVOCATIONS_BY_MONTH_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = Sim
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    district_dimension=bq_utils.unnest_district('district')
+    district_dimension=bq_utils.unnest_district('district'),
+    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':

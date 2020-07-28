@@ -19,9 +19,12 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_admission_reason import \
+    INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_facility_by_demographics import \
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER
 
 INCARCERATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER
 ]
