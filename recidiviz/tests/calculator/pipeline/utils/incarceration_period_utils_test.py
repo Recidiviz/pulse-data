@@ -1044,8 +1044,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         input_incarceration_periods = [
             initial_incarceration_period, first_reincarceration_period, second_reincarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         input_incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            input_incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, input_incarceration_periods)
 
@@ -1080,8 +1086,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         input_incarceration_periods = [first_incarceration_period, second_incarceration_period]
 
-        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         input_incarceration_periods)
+        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            input_incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(collapsed_incarceration_periods, [
             StateIncarcerationPeriod.new_with_defaults(
@@ -1133,8 +1145,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period_1, temporary_custody, valid_incarceration_period_2]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period_1, valid_incarceration_period_2])
 
@@ -1176,8 +1194,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         input_incarceration_periods = [
             initial_incarceration_period, second_reincarceration_period, first_reincarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         input_incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            input_incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [
             initial_incarceration_period,
@@ -1220,8 +1244,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         input_incarceration_periods = [
             initial_incarceration_period, second_reincarceration_period, first_reincarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         input_incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            input_incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [
             initial_incarceration_period,
@@ -1264,8 +1294,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         input_incarceration_periods = [third_incarceration_period, second_incarceration_period,
                                        initial_incarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         input_incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            input_incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [
             initial_incarceration_period,
@@ -1299,8 +1335,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_periods = [initial_incarceration_period,
                                  first_reincarceration_period]
 
-        collapsed_incarceration_periods = \
-            prepare_incarceration_periods_for_calculations(state_code, incarceration_periods)
+        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(len(collapsed_incarceration_periods), 1)
 
@@ -1352,8 +1394,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                                  first_reincarceration_period,
                                  second_reincarceration_period]
 
-        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        collapsed_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         expected_collapsed_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
@@ -1407,8 +1455,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [jail_period_1, jail_period_2, valid_incarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 
@@ -1480,8 +1534,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  valid_incarceration_period_3]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         collapsed_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1525,8 +1585,14 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period, jail_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 
@@ -1573,8 +1639,14 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [temporary_custody_1, temporary_custody_2, valid_incarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 
@@ -1641,8 +1713,14 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  valid_incarceration_period_3]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         collapsed_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -1683,8 +1761,14 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period, temporary_custody]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(state_code,
-                                                                                         incarceration_periods)
+        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+            state_code,
+            incarceration_periods,
+            collapse_transfers=True,
+            collapse_temporary_custody_periods_with_revocation=False,
+            collapse_transfers_with_different_pfi=True,
+            overwrite_facility_information_in_transfers=True
+        )
 
         self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 

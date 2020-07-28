@@ -28,7 +28,8 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     get_pre_incarceration_supervision_type, get_post_incarceration_supervision_type
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus, \
+    StateIncarcerationPeriodAdmissionReason, is_official_admission, is_official_release
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, StateSupervisionPeriod, PeriodType
@@ -104,7 +105,9 @@ def find_all_admission_release_events(
     incarceration_periods_for_admissions = prepare_incarceration_periods_for_calculations(
         state_code,
         original_incarceration_periods,
+        collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
+        collapse_transfers_with_different_pfi=True,
         overwrite_facility_information_in_transfers=False)
 
     de_duplicated_incarceration_admissions = de_duplicated_admissions(incarceration_periods_for_admissions)
@@ -122,7 +125,9 @@ def find_all_admission_release_events(
     incarceration_periods_for_releases = prepare_incarceration_periods_for_calculations(
         state_code,
         original_incarceration_periods,
+        collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=True,
+        collapse_transfers_with_different_pfi=True,
         overwrite_facility_information_in_transfers=True)
 
     de_duplicated_incarceration_releases = de_duplicated_releases(incarceration_periods_for_releases)
@@ -154,13 +159,21 @@ def find_all_stay_events(
 
     incarceration_periods = prepare_incarceration_periods_for_calculations(
         state_code,
-        original_incarceration_periods, collapse_transfers=False)
+        original_incarceration_periods,
+        collapse_transfers=False,
+        collapse_temporary_custody_periods_with_revocation=False,
+        collapse_transfers_with_different_pfi=False,
+        overwrite_facility_information_in_transfers=False)
+
+    original_admission_reasons_by_period_id = _original_admission_reasons_by_period_id(
+        sorted_incarceration_periods=incarceration_periods)
 
     for incarceration_period in incarceration_periods:
         period_stay_events = find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
+            original_admission_reasons_by_period_id,
             incarceration_period_to_judicial_district,
             county_of_residence)
 
@@ -174,6 +187,8 @@ def find_incarceration_stays(
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
+        original_admission_reasons_by_period_id:
+        Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]],
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str]) -> List[IncarcerationStayEvent]:
     """Finds all days for which this person was incarcerated."""
@@ -203,6 +218,14 @@ def find_incarceration_stays(
 
     stay_date = admission_date
 
+    incarceration_period_id = incarceration_period.incarceration_period_id
+
+    if not incarceration_period_id:
+        raise ValueError("Unexpected incarceration period without an incarceration_period_id.")
+
+    original_admission_reason, original_admission_reason_raw_text = \
+        original_admission_reasons_by_period_id[incarceration_period_id]
+
     while stay_date < release_date:
         most_serious_charge = find_most_serious_prior_charge_in_sentence_group(sentence_group, stay_date)
         most_serious_offense_ncic_code = most_serious_charge.ncic_code if most_serious_charge else None
@@ -216,8 +239,8 @@ def find_incarceration_stays(
                 county_of_residence=county_of_residence,
                 most_serious_offense_ncic_code=most_serious_offense_ncic_code,
                 most_serious_offense_statute=most_serious_offense_statute,
-                admission_reason=incarceration_period.admission_reason,
-                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
+                admission_reason=original_admission_reason,
+                admission_reason_raw_text=original_admission_reason_raw_text,
                 supervision_type_at_admission=supervision_type_at_admission,
                 judicial_district_code=judicial_district_code
             )
@@ -463,3 +486,47 @@ def _set_backedges_and_return_unique_periods(
             unique_periods.append(period)
 
     return unique_periods
+
+
+def _original_admission_reasons_by_period_id(sorted_incarceration_periods: List[StateIncarcerationPeriod]) -> \
+        Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]]:
+    """Determines the original admission reason each period of incarceration. Returns a dictionary mapping
+    incarceration_period_id values to the original admission_reason and corresponding admission_reason_raw_text that
+    started the period of being incarcerated. People are often transferred between facilities during their time
+    incarcerated, so this in practice is the most recent non-transfer admission reason for the given incarceration
+    period."""
+    original_admission_reasons_by_period_id: \
+        Dict[int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]] = {}
+
+    most_recent_official_admission_reason = None
+    most_recent_official_admission_reason_raw_text = None
+
+    for index, incarceration_period in enumerate(sorted_incarceration_periods):
+        incarceration_period_id = incarceration_period.incarceration_period_id
+
+        if not incarceration_period_id:
+            raise ValueError("Unexpected incarceration period without a incarceration_period_id.")
+
+        if not incarceration_period.admission_reason:
+            raise ValueError(
+                "Incarceration period pre-processing is not setting missing admission_reasons correctly.")
+
+        if index == 0 or is_official_admission(incarceration_period.admission_reason):
+            # These indicate that incarceration is "officially" starting
+            most_recent_official_admission_reason = incarceration_period.admission_reason
+            most_recent_official_admission_reason_raw_text = incarceration_period.admission_reason_raw_text
+
+        if not most_recent_official_admission_reason:
+            original_admission_reasons_by_period_id[incarceration_period_id] = \
+                (incarceration_period.admission_reason, incarceration_period.admission_reason_raw_text)
+        else:
+            original_admission_reasons_by_period_id[incarceration_period_id] = \
+                (most_recent_official_admission_reason, most_recent_official_admission_reason_raw_text)
+
+        if is_official_release(incarceration_period.release_reason):
+            # If the release from this period of incarceration indicates an official end to the period of incarceration,
+            # then subsequent periods should not share the most recent admission reason.
+            most_recent_official_admission_reason = None
+            most_recent_official_admission_reason_raw_text = None
+
+    return original_admission_reasons_by_period_id

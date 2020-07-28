@@ -102,10 +102,10 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # this stay event is derived
     most_serious_offense_statute: Optional[str] = attr.ib(default=None)
 
-    # Admission reason for the incarceration period that overlaps with relevant day.
+    # The most recent "official" admission reason for this time of incarceration
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
 
-    # Admission reason raw text
+    # Raw text value of the most recent "official" admission reason for this time of incarceration
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
     # Supervision type at the time of admission, if any.
