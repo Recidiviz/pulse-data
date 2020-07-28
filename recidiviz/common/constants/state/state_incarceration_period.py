@@ -144,6 +144,83 @@ def is_revocation_admission(admission_reason: Optional[StateIncarcerationPeriodA
     raise ValueError(f"Unexpected StateIncarcerationPeriodAdmissionReason {admission_reason}.")
 
 
+def is_official_admission(admission_reason: Optional[StateIncarcerationPeriodAdmissionReason]) -> bool:
+    """Returns whether or not the |admission_reason| is considered an official start of incarceration, i.e. the root
+    cause for being admitted to prison at all, not transfers or other unknown statuses resulting in facility changes."""
+    if not admission_reason:
+        return False
+
+    # An incarceration period that has one of these admission reasons indicates the official start of incarceration
+    official_admission_types = [
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE
+    ]
+
+    non_official_admission_types = [
+        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER
+    ]
+
+    if admission_reason in official_admission_types:
+        return True
+    if admission_reason in non_official_admission_types:
+        return False
+
+    raise ValueError(f"Unsupported StateSupervisionPeriodAdmissionReason value: {admission_reason}")
+
+
+def is_official_release(release_reason: Optional[StateIncarcerationPeriodReleaseReason]) -> bool:
+    """Returns whether or not the |release_reason| is considered an official end of incarceration, i.e. a release that
+     terminates the continuous period of time spent incarcerated for a specific reason, not transfers or other unknown
+     statuses resulting in facility changes."""
+    if not release_reason:
+        return False
+
+    # An incarceration period that has one of these release reasons indicates the official end of that period of
+    # incarceration
+    official_release_types = [
+        StateIncarcerationPeriodReleaseReason.COMMUTED,
+        StateIncarcerationPeriodReleaseReason.COMPASSIONATE,
+        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        StateIncarcerationPeriodReleaseReason.DEATH,
+        StateIncarcerationPeriodReleaseReason.EXECUTION,
+        StateIncarcerationPeriodReleaseReason.PARDONED,
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        # Someone may be released from temporary custody and immediately admitted to full custody. This is considered
+        # an official release because it is an end to the period of temporary custody.
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        # Transfers out of state are classified as official releases because the custodial authority is changing.
+        StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE,
+        StateIncarcerationPeriodReleaseReason.VACATED
+    ]
+
+    non_official_release_types = [
+        StateIncarcerationPeriodReleaseReason.COURT_ORDER,
+        StateIncarcerationPeriodReleaseReason.ESCAPE,
+        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
+        StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+        StateIncarcerationPeriodReleaseReason.TRANSFER
+    ]
+
+    if release_reason in official_release_types:
+        return True
+    if release_reason in non_official_release_types:
+        return False
+
+    raise ValueError(f"Unsupported StateSupervisionPeriodReleaseReason value: {release_reason}")
+
+
 _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     'MAXIMUM': StateIncarcerationFacilitySecurityLevel.MAXIMUM,
     'MAX': StateIncarcerationFacilitySecurityLevel.MAXIMUM,

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Most recent daily incarceration population count with facility and demographic breakdowns."""
+"""Most recent daily incarceration population count broken down by reason for admission and demographics."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -22,13 +22,15 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME = 'incarceration_population_by_facility_by_demographics'
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME = 'incarceration_population_by_admission_reason'
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most recent daily incarceration population count with facility and demographic breakdowns."""
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION = \
+"""Most recent daily incarceration population count broken down by reason for admission and demographics."""
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    
     WITH most_recent_dates_by_state_code AS (
       SELECT
         state_code,
@@ -48,11 +50,11 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       SELECT
         state_code,
         person_id,
-        facility,
+        admission_reason,
         race_or_ethnicity,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
-        date_of_stay,
+        date_of_stay
       FROM
          most_recent_dates_by_state_code
       LEFT JOIN
@@ -68,34 +70,33 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     SELECT
       state_code,
       date_of_stay,
-      IFNULL(facility_shorthand, facility) as facility,
       {state_specific_race_or_ethnicity_groupings},
       gender,
       age_bucket,
+      COUNT(DISTINCT IF(admission_reason = 'NEW_ADMISSION', person_id, NULL)) as new_admission_count,
+      COUNT(DISTINCT IF(admission_reason = 'PAROLE_REVOCATION', person_id, NULL)) as parole_revocation_count,
+      COUNT(DISTINCT IF(admission_reason = 'PROBATION_REVOCATION', person_id, NULL)) as probation_revocation_count,
+      COUNT(DISTINCT IF(admission_reason NOT IN ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION'), person_id, NULL)) as other_count,
       COUNT(DISTINCT(person_id)) as total_population
     FROM
-      most_recent_incarcerations
-    LEFT JOIN
-      `{project_id}.{reference_dataset}.state_incarceration_facility_capacity`
-    USING (state_code, facility),
-      {facility_dimension},
+      most_recent_incarcerations,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
-      OR (facility != 'ALL' AND race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Facility breakdown
-      OR (facility = 'ALL' AND race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- State-wide count
-    GROUP BY state_code, date_of_stay,  facility, race_or_ethnicity, gender, age_bucket
-    ORDER BY state_code, date_of_stay, facility, race_or_ethnicity, gender, age_bucket
+      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- State-wide count
+    GROUP BY state_code, date_of_stay,  race_or_ethnicity, gender, age_bucket
+    ORDER BY state_code, date_of_stay, race_or_ethnicity, gender, age_bucket
+    
     """
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    view_id=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME,
-    view_query_template=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
-    description=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
+    view_id=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME,
+    view_query_template=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE,
+    description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
@@ -103,10 +104,9 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQue
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    facility_dimension=bq_utils.unnest_column('facility', 'facility'),
     state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':
     with local_project_id_override(GAE_PROJECT_STAGING):
-        INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()
+        INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER.build_and_print()

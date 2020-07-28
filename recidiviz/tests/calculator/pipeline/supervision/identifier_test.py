@@ -50,7 +50,7 @@ from recidiviz.common.constants.state.state_supervision import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodReleaseReason as ReleaseReason, \
-    StateIncarcerationPeriodStatus, StateSpecializedPurposeForIncarceration
+    StateIncarcerationPeriodStatus, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactStatus, \
     StateSupervisionContactType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -586,7 +586,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code='US_ND',
             admission_date=date(2017, 4, 11),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 5, 17),
             release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
         )
@@ -598,7 +598,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
@@ -679,7 +679,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code='US_MO',
             admission_date=date(2017, 4, 11),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 5, 17),
             release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
         )
@@ -691,7 +691,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
@@ -793,7 +793,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -910,7 +910,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1021,7 +1021,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1130,7 +1130,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1143,7 +1143,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2011, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 9, 13),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1239,7 +1239,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 9),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1299,7 +1299,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 9),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1356,7 +1356,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2017, 6, 3),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
@@ -1369,7 +1369,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 6, 3),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1465,7 +1465,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2017, 6, 3),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
@@ -1478,7 +1478,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 6, 3),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1575,7 +1575,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2017, 6, 3),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
@@ -1589,7 +1589,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 6, 3),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2017, 6, 3),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
@@ -1603,7 +1603,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 6, 3),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2017, 11, 19),
             release_reason=ReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
@@ -1616,7 +1616,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 11, 19),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -1712,7 +1712,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2017, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2017, 8, 3),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -1735,7 +1735,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_ND',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 admission_date=date(2018, 12, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2019, 3, 3),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -1847,7 +1847,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2017, 5, 11),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2017, 5, 15),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -1859,7 +1859,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_ND',
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 admission_date=date(2017, 5, 17),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2019, 3, 3),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -1956,7 +1956,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2017, 5, 15),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2017, 9, 20),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -2179,7 +2179,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2017, 5, 15),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2017, 9, 20),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -2301,7 +2301,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='US_ND',
                 admission_date=date(2018, 6, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
@@ -2402,7 +2402,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='US_ND',
                 admission_date=date(2018, 6, 3),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
@@ -2501,7 +2501,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2019, 1, 5),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
@@ -2601,7 +2601,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 10, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
             )
 
         supervision_sentence = \
@@ -2687,7 +2687,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2017, 10, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
             )
 
         supervision_sentence = \
@@ -2773,7 +2773,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 3, 25),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 8, 2),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -2785,7 +2785,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 9, 25),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 12, 2),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -2895,7 +2895,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 3, 25),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 8, 2),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -2907,7 +2907,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 9, 25),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 12, 2),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -3063,7 +3063,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
             )
 
         supervision_sentence = \
@@ -3830,7 +3830,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date.today(),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
             )
 
         supervision_sentence = \
@@ -3903,7 +3903,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 6, 2),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 9, 3),
                 release_reason=date(2018, 10, 30)
             )
@@ -3915,7 +3915,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
                 state_code='US_ND',
                 admission_date=date(2018, 11, 17),
-                admission_reason=AdmissionReason.PAROLE_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -4046,7 +4046,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code='US_MO',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=source_supervision_violation_response
         )
 
@@ -4239,7 +4239,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code='US_MO',
                 admission_date=date(2018, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=source_supervision_violation_response
             )
 
@@ -4785,7 +4785,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2003, 10, 10),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
             )
 
         supervision_sentence = \
@@ -4850,7 +4850,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2018, 4, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2018, 5, 22),
                 release_reason=ReleaseReason.SENTENCE_SERVED
             )
@@ -4914,7 +4914,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2019, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2019, 10, 17)
             )
 
@@ -4987,7 +4987,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2018, 6, 2),
-                admission_reason=AdmissionReason.NEW_ADMISSION
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
             )
 
         supervision_sentence = \
@@ -5055,7 +5055,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2008, 6, 2),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2009, 12, 3),
                 release_reason=ReleaseReason.CONDITIONAL_RELEASE
             )
@@ -5314,7 +5314,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='ip1',
                 state_code='US_ND',
                 admission_date=date(2018, 5, 25),
-                admission_reason=AdmissionReason.PROBATION_REVOCATION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2018, 10, 27)
             )
 
@@ -5534,7 +5534,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             external_id='ip1',
             state_code='US_ND',
             admission_date=date(2018, 6, 1),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2018, 6, 21)
         )
 
@@ -6167,6 +6167,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             admission_date=date(2017, 6, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2017, 10, 5)
         )
 
@@ -6573,7 +6574,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_ND',
             admission_date=date(2018, 3, 5),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2018, 5, 19),
             release_reason=ReleaseReason.COMMUTED,
             source_supervision_violation_response=None
@@ -7791,7 +7792,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_ND',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=source_supervision_violation_response
         )
 
@@ -7826,7 +7827,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_XX',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=None
         )
 
@@ -7859,7 +7860,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_MO',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=None
         )
 
@@ -7909,7 +7910,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_MO',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=source_supervision_violation_response
         )
 
@@ -7961,7 +7962,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_ND',
             admission_date=date(2018, 5, 25),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             source_supervision_violation_response=source_supervision_violation_response
         )
 
@@ -7990,7 +7991,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2019, 5, 29),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -8013,7 +8014,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             release_date=date(2019, 5, 29),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
@@ -8049,7 +8050,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=
             supervision_period.termination_date + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1),
-            admission_reason=AdmissionReason.RETURN_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
         )
 

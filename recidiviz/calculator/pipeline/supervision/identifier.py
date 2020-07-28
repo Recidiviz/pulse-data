@@ -176,8 +176,10 @@ def find_supervision_time_buckets(
     incarceration_periods = prepare_incarceration_periods_for_calculations(
         state_code,
         incarceration_periods,
+        collapse_transfers=True,
         collapse_temporary_custody_periods_with_revocation=False,
-        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi)
+        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
+        overwrite_facility_information_in_transfers=True)
 
     supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
     incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=incarceration_periods)

@@ -30,7 +30,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
-    StateIncarcerationPeriodStatus
+    StateIncarcerationPeriodStatus, is_official_admission
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
 from recidiviz.persistence.entity.entity_utils import is_placeholder
@@ -72,7 +72,10 @@ def collapse_incarceration_period_transfers(
     #  aren't counting stacked sentences or related periods as recidivism.
     for incarceration_period in sorted_incarceration_periods:
         if open_transfer:
-            if incarceration_period.admission_reason == AdmissionReason.TRANSFER:
+            admission_reason = incarceration_period.admission_reason
+
+            # Do not collapse any period with an official admission reason
+            if not is_official_admission(admission_reason) and admission_reason == AdmissionReason.TRANSFER:
                 # If there is an open transfer period and they were
                 # transferred into this incarceration period, then combine this
                 # period with the open transfer period.
@@ -214,10 +217,10 @@ def standard_date_sort_for_incarceration_periods(incarceration_periods: List[Sta
 def prepare_incarceration_periods_for_calculations(
         state_code: str,
         incarceration_periods: List[StateIncarcerationPeriod],
-        collapse_transfers: bool = True,
-        collapse_temporary_custody_periods_with_revocation: bool = False,
-        collapse_transfers_with_different_pfi: bool = True,
-        overwrite_facility_information_in_transfers: bool = True,
+        collapse_transfers: bool,
+        collapse_temporary_custody_periods_with_revocation: bool,
+        collapse_transfers_with_different_pfi: bool,
+        overwrite_facility_information_in_transfers: bool,
 ) -> List[StateIncarcerationPeriod]:
     """Validates, sorts, and collapses the incarceration period inputs.
 
