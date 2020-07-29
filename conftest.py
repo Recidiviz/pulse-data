@@ -23,6 +23,7 @@ import subprocess
 from time import sleep
 from typing import Tuple
 
+from mock import patch
 import pytest
 import yaml
 
@@ -45,10 +46,21 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    if ('emulator' in item.fixturenames and
-            not item.config.getoption('with_emulator', default=None)):
-        pytest.skip("requires datastore emulator")
+    if 'emulator' in item.fixturenames:
+        if not item.config.getoption('with_emulator', default=None):
+            pytest.skip("requires datastore emulator")
+    else:
+        # For tests wihtout the emulator, prevent them from trying to create google cloud clients.
+        item.google_auth_patcher = patch("google.auth.default")
+        mock_google_auth = item.google_auth_patcher.start()
+        mock_google_auth.side_effect = AssertionError(
+            "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
+            " (e.g. `patch('google.cloud.bigquery.Client')`).")
 
+
+def pytest_runtest_teardown(item):
+    if hasattr(item, 'google_auth_patcher') and item.google_auth_patcher is not None:
+        item.google_auth_patcher.stop()
 
 # TODO(263): return the datastore client from this fixture
 @pytest.fixture(scope='session')
@@ -78,16 +90,14 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     """Start gcloud datastore and pubsub emulators."""
     # Create a new process group for each subprocess to enable killing each
     # subprocess and their subprocesses without killing ourselves
-    preexec_fn = os.setsid
-
     datastore_emulator = subprocess.Popen(
         shlex.split('gcloud beta emulators datastore start --no-store-on-disk '
                     '--consistency=1.0 --project=test-project'),
-        preexec_fn=preexec_fn)
+        start_new_session=True)
     pubsub_emulator = subprocess.Popen(
         shlex.split('gcloud beta emulators pubsub start '
                     '--project=test-project'),
-        preexec_fn=preexec_fn)
+        start_new_session=True)
 
     # Sleep to ensure emulators successfully start
     sleep(5)
