@@ -40,19 +40,19 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code, termination_year, termination_month,
-      IFNULL(AVG(average_score_change), 0.0) AS average_change,
+      IFNULL(AVG(assessment_score_change), 0.0) AS average_change,
       supervision_type,
       district
     FROM (
       SELECT
         state_code, year as termination_year, month as termination_month,
-        average_score_change,
+        assessment_score_change,
         supervision_type,
         district,
         -- Use the most recent termination per person/year/month/supervision/district
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervision_type, district, person_id
                            ORDER BY termination_date DESC) AS supervision_rank
-      FROM `{project_id}.{metrics_dataset}.terminated_supervision_assessment_score_change_metrics`
+      FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months),
       {district_dimension},
@@ -60,10 +60,11 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND assessment_type = 'LSIR'
+        AND assessment_score_change IS NOT NULL
         AND person_id IS NOT NULL
         AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-        AND job.metric_type = 'SUPERVISION_ASSESSMENT_CHANGE'
+        AND job.metric_type = 'SUPERVISION_TERMINATION'
     )
     WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
       AND supervision_rank = 1
