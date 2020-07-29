@@ -1166,10 +1166,20 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             state_supervision_period_id='710448-20010414-2-0',
             start_date='20020117',
             admission_reason='40O4199',
-            termination_date='20020912',
-            termination_reason='45O1010',
+            termination_date='20020401',
+            termination_reason='TRANSFER_WITHIN_STATE',
             supervision_site='ERA',
             supervising_officer=po_E567,
+        )
+
+        sp_710448_20010414_3_0 = StateSupervisionPeriod(
+            state_supervision_period_id='710448-20010414-3-0',
+            start_date='20020401',
+            admission_reason='TRANSFER_WITHIN_STATE',
+            termination_date='20020912',
+            termination_reason='45O1010',
+            supervision_site='14',
+            supervising_officer=po_E123,
         )
 
         sp_710448_20010414_4_0 = StateSupervisionPeriod(
@@ -1272,6 +1282,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     StateSupervisionSentence(
                                         state_supervision_periods=[
                                             sp_710448_20010414_2_0,
+                                            sp_710448_20010414_3_0,
                                             sp_710448_20010414_4_0,
                                         ]
                                     ),
@@ -3057,15 +3068,32 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             start_date=datetime.date(year=2002, month=1, day=17),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='40O4199',
-            termination_date=datetime.date(year=2002, month=9, day=12),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            termination_reason_raw_text='45O1010',
+            termination_date=datetime.date(year=2002, month=4, day=1),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text='TRANSFER_WITHIN_STATE',
             supervision_site='ERA',
             supervising_officer=agent_567,
             person=person_710448,
             incarceration_sentences=[sis_710448_20010414_1]
         )
         sis_710448_20010414_1.supervision_periods = [sp_710448_20010414_2_0]
+
+        sp_710448_20010414_3_0 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='710448-20010414-3-0',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            start_date=datetime.date(year=2002, month=4, day=1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text='TRANSFER_WITHIN_STATE',
+            termination_date=datetime.date(year=2002, month=9, day=12),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_reason_raw_text='45O1010',
+            supervision_site='14',
+            supervising_officer=agent_123,
+            person=person_710448,
+            incarceration_sentences=[sis_710448_20010414_1]
+        )
+        sis_710448_20010414_1.supervision_periods.append(sp_710448_20010414_3_0)
 
         sp_710448_20010414_4_0 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,

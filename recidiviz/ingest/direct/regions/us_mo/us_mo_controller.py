@@ -543,6 +543,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     StateSupervisionPeriod),
                 self._set_supervising_officer_on_period,
                 self._parse_case_types,
+                self._set_empty_admisssion_releases_as_transfers
             ],
             'tak028_tak042_tak076_tak024_violation_reports': [
                 self._gen_violation_response_type_posthook(
@@ -944,6 +945,21 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 for case_type in case_types:
                     case_type_to_create = StateSupervisionCaseTypeEntry(case_type=case_type)
                     create_if_not_exists(case_type_to_create, obj, 'state_supervision_case_type_entries')
+
+    @classmethod
+    def _set_empty_admisssion_releases_as_transfers(
+            cls,
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                if not obj.admission_reason and obj.start_date:
+                    obj.admission_reason = StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value
+                if not obj.termination_reason and obj.termination_date:
+                    obj.termination_reason = StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE.value
 
     @classmethod
     def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:

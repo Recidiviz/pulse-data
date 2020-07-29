@@ -676,10 +676,14 @@ def supervision_period_admission_reason_mapper(label: str) -> Optional[StateSupe
 
     If the status list is empty, we assume that this period ended because the person transferred between POs or offices.
     """
+    if not label:
+        raise ValueError('Unexpected empty/null status list - empty values should not be passed to this mapper')
+
+    if label == 'TRANSFER WITHIN STATE':
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+
     # TODO(2865): Update enum normalization so that we separate by commas instead of spaces
     statuses = sorted_list_from_str(label, ' ')
-    if not statuses:
-        return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
 
     def status_rank(status: str) -> int:
         """In the case that there are multiple statuses on the same day, we pick the status that is most likely to
@@ -714,10 +718,14 @@ def supervision_period_termination_reason_mapper(label: str) -> Optional[StateSu
 
     If the status list is empty, we assume that this period ended because the person transferred between POs or offices.
     """
+    if not label:
+        raise ValueError('Unexpected empty/null status list - empty values should not be passed to this mapper')
 
-    statuses = sorted_list_from_str(label, ' ')
-    if not statuses:
+    if label == 'TRANSFER WITHIN STATE':
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+
+    # TODO(2865): Update enum normalization so that we separate by commas instead of spaces
+    statuses = sorted_list_from_str(label, ' ')
 
     def status_rank(status: str):
         """In the case that there are multiple statuses on the same day, we pick the status that is most likely to

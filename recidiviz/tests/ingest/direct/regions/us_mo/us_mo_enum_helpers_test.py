@@ -36,7 +36,12 @@ class TestUsMoEnumHelpers(unittest.TestCase):
 
     def test_parse_supervision_admission_reason_empty(self):
         input_statuses = ''
+        with self.assertRaises(ValueError):
+            _ = supervision_period_admission_reason_mapper(input_statuses)
 
+    def test_parse_supervision_admission_reason_transfer_within_state(self):
+        input_statuses = normalize(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value,
+                                   remove_punctuation=True)
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE, reason)
 
@@ -117,7 +122,12 @@ class TestUsMoEnumHelpers(unittest.TestCase):
 
     def test_parse_supervision_termination_reason_empty(self):
         input_statuses = ''
+        with self.assertRaises(ValueError):
+            _ = supervision_period_termination_reason_mapper(input_statuses)
 
+    def test_parse_supervision_termination_reason_transfer_within_state(self):
+        input_statuses = normalize(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE.value,
+                                   remove_punctuation=True)
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE, reason)
 
