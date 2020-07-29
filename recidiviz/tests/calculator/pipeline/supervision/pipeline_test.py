@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, \
-    TerminatedSupervisionAssessmentScoreChangeMetric, SupervisionSuccessMetric, \
+    SupervisionTerminationMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -321,7 +321,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.TERMINATION
+        }
 
         # We do not expect any aggregate metrics
         expected_aggregate_metric_types = set()
@@ -347,7 +350,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION, SupervisionMetricType.SUCCESS}
+            SupervisionMetricType.POPULATION,
+            SupervisionMetricType.SUCCESS,
+            SupervisionMetricType.TERMINATION
+        }
 
         # We do not expect any aggregate metrics
         expected_aggregate_metric_types = set()
@@ -365,7 +371,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     @staticmethod
     def run_test_pipeline(dataset: str,
-
                           fake_person_id: int,
                           fake_supervision_period_id: int,
                           fake_svr_id: int,
@@ -866,7 +871,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.REVOCATION,
             SupervisionMetricType.REVOCATION_ANALYSIS,
             SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.ASSESSMENT_CHANGE
+            SupervisionMetricType.TERMINATION
         }
 
         expected_aggregate_metric_types = {
@@ -1119,7 +1124,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUCCESS,
             SupervisionMetricType.REVOCATION,
             SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
+            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.TERMINATION
         }
 
         expected_aggregate_metric_types = {
@@ -1351,7 +1357,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         expected_metric_types = {
             SupervisionMetricType.POPULATION,
             SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.ASSESSMENT_CHANGE
+            SupervisionMetricType.TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -1558,7 +1564,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.POPULATION,
             SupervisionMetricType.SUCCESS,
             SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS
+            SupervisionMetricType.REVOCATION_ANALYSIS,
+            SupervisionMetricType.TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -1623,7 +1630,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
-        supervision_period = schema.StateSupervisionPeriod(
+        supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             state_code='US_ND',
             county_code='124',
@@ -1633,7 +1640,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text='MEDM',
-            person_id=fake_person_id
+            person=fake_person
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1883,7 +1890,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend([
             SupervisionTerminationBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
@@ -1891,10 +1898,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
+                supervising_district_external_id='10',
+                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                response_count=1
             ),
             RevocationReturnSupervisionTimeBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=2015, month=5,
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
@@ -2088,7 +2097,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend([
             SupervisionTerminationBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
@@ -2096,10 +2105,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
+                supervising_district_external_id='10',
+                response_count=1,
+                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR
             ),
             RevocationReturnSupervisionTimeBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=2015, month=5,
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
@@ -2676,7 +2687,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def testProduceSupervisionMetrics(self):
         metric_value_to_metric_type = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: TerminatedSupervisionAssessmentScoreChangeMetric,
+            SupervisionMetricType.TERMINATION: SupervisionTerminationMetric,
             SupervisionMetricType.COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,
@@ -2759,13 +2770,13 @@ class AssertMatchers:
                     raise BeamAssertException(
                         'Failed assert. Output is not of type SupervisionMetric.')
 
-                if isinstance(metric, TerminatedSupervisionAssessmentScoreChangeMetric):
+                if isinstance(metric, SupervisionTerminationMetric):
                     observed_metric_types.add(
-                        SupervisionMetricType.ASSESSMENT_CHANGE)
+                        SupervisionMetricType.TERMINATION)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.ASSESSMENT_CHANGE)
+                            SupervisionMetricType.TERMINATION)
                 elif isinstance(metric, SupervisionSuccessMetric):
                     observed_metric_types.add(SupervisionMetricType.SUCCESS)
 

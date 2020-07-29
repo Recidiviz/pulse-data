@@ -27,7 +27,7 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, Pro
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType, \
     ReincarcerationRecidivismCountMetric, ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType, SupervisionPopulationMetric, \
-    TerminatedSupervisionAssessmentScoreChangeMetric, SupervisionRevocationMetric, \
+    SupervisionTerminationMetric, SupervisionRevocationMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, json_serializable_metric_key, \
@@ -186,7 +186,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_supervision(self):
         supervision_metrics_for_type = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: TerminatedSupervisionAssessmentScoreChangeMetric,
+            SupervisionMetricType.TERMINATION: SupervisionTerminationMetric,
             SupervisionMetricType.COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,

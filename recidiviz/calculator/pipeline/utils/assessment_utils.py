@@ -114,64 +114,6 @@ def assessment_score_bucket(assessment_score: int,
     return None
 
 
-def find_assessment_score_change(start_date: date,
-                                 termination_date: date,
-                                 assessments: List[StateAssessment]) -> \
-        Tuple[Optional[int], Optional[int], Optional[StateAssessmentLevel],
-              Optional[StateAssessmentType]]:
-    """Finds the difference in scores between the first reassessment
-    (the second assessment) and the last assessment that happened
-    between the start_date and termination_date (inclusive). Returns the
-    assessment score change, the ending assessment score, the ending assessment
-    level, and the assessment type. If there aren't enough assessments to
-    compare, or the first reassessment and the last assessment are not of the
-    same type, returns (None, None, None, None)."""
-    if assessments:
-        assessments_in_period = [
-            assessment for assessment in assessments
-            if assessment.assessment_date is not None
-            and start_date <= assessment.assessment_date <= termination_date
-        ]
-
-        # If this person had less than 3 assessments then we cannot compare
-        # the first reassessment to the most recent assessment.
-        # TODO(2782): Investigate whether to update this logic
-        if assessments_in_period and len(assessments_in_period) >= 3:
-            assessments_in_period.sort(
-                key=lambda b: b.assessment_date)
-
-            first_reassessment = assessments_in_period[1]
-            last_assessment = assessments_in_period[-1]
-
-            # Assessments must be of the same type
-            if last_assessment.assessment_type == \
-                    first_reassessment.assessment_type:
-                first_assessment_date = first_reassessment.assessment_date
-                last_assessment_date = last_assessment.assessment_date
-
-                # Ensure these assessments were actually issued on different
-                # days
-                if first_assessment_date and last_assessment_date and\
-                        last_assessment_date > first_assessment_date:
-                    first_reassessment_score = \
-                        first_reassessment.assessment_score
-                    last_assessment_score = last_assessment.assessment_score
-
-                    if first_reassessment_score is not None and \
-                            last_assessment_score is not None:
-
-                        assessment_score_change = \
-                            (last_assessment_score
-                             - first_reassessment_score)
-
-                        return assessment_score_change, \
-                            last_assessment.assessment_score, \
-                            last_assessment.assessment_level, \
-                            last_assessment.assessment_type
-
-    return None, None, None, None
-
-
 def include_assessment_in_metric(pipeline: str, state_code: str, assessment_type: StateAssessmentType) -> bool:
     """Returns whether assessment data from the assessment with the given StateAssessmentType should be included in
     the results for metrics in the given pipeline with the given state_code."""

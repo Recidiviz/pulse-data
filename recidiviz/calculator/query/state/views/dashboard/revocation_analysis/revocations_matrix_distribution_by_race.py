@@ -34,11 +34,62 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH supervision_counts AS (
+    SELECT
+      state_code, 
+      violation_type,
+      reported_violations,
+      COUNT(DISTINCT person_id) AS total_supervision_count,
+      race_or_ethnicity as race,
+      risk_level,
+      supervision_type,
+      charge_category,
+      district,
+      metric_period_months    
+    FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`,
+    {race_ethnicity_dimension}
+    GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
+      district, metric_period_months
+  ), termination_counts AS (
+     SELECT
+      state_code, 
+      violation_type,
+      reported_violations,
+      COUNT(DISTINCT person_id) AS termination_count,
+      race_or_ethnicity as race,
+      risk_level,
+      supervision_type,
+      charge_category,
+      district,
+      metric_period_months    
+    FROM `{project_id}.{reference_dataset}.supervision_termination_matrix_by_person`,
+    {race_ethnicity_dimension}
+    GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
+      district, metric_period_months
+  ), revocation_counts AS (
     SELECT
       state_code,
       violation_type,
       reported_violations,
-      IFNULL(population_count, 0) AS population_count,
+      COUNT(DISTINCT person_id) AS population_count,
+      race_or_ethnicity as race,
+      risk_level,
+      supervision_type,
+      charge_category,
+      district,
+      metric_period_months
+    FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`,
+    {race_ethnicity_dimension}
+    GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
+      district, metric_period_months
+  )
+ 
+    SELECT
+      state_code,
+      violation_type,
+      reported_violations,
+      IFNULL(population_count, 0) AS population_count, -- Revocation count
+      IFNULL(termination_count, 0) AS total_exit_count,
       total_supervision_count,
       race,
       risk_level,
@@ -46,45 +97,18 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       charge_category,
       district,
       metric_period_months
-    FROM (
-      SELECT
-        state_code, 
-        violation_type,
-        reported_violations,
-        COUNT(DISTINCT person_id) AS total_supervision_count,
-        race_or_ethnicity AS race,
-        risk_level,
-        supervision_type,
-        charge_category,
-        district,
-        metric_period_months    
-      FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`,
-      {race_ethnicity_dimension}
-      GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
-        district, metric_period_months
-    ) pop
-    LEFT JOIN (
-      SELECT
-        state_code,
-        violation_type,
-        reported_violations,
-        COUNT(DISTINCT person_id) AS population_count,
-        race_or_ethnicity AS race,
-        risk_level,
-        supervision_type,
-        charge_category,
-        district,
-        metric_period_months
-      FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`,
-      {race_ethnicity_dimension}
-      WHERE current_month
-      GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
-        district, metric_period_months
-    ) rev
+    FROM
+      supervision_counts
+    LEFT JOIN
+      revocation_counts
+    USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
+      district, metric_period_months)
+    LEFT JOIN
+      termination_counts
     USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months)
     WHERE race != 'EXTERNAL_UNKNOWN'
-    ORDER BY state_code, district, supervision_type, race, risk_level, metric_period_months, violation_type,
+    ORDER BY state_code, metric_period_months, district, supervision_type, race, risk_level, violation_type,
       reported_violations, charge_category
     """
 

@@ -24,10 +24,10 @@ from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationAdm
 from recidiviz.calculator.pipeline.program.metrics import ProgramReferralMetric, ProgramParticipationMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismRateMetric
-from recidiviz.calculator.pipeline.supervision.metrics import TerminatedSupervisionAssessmentScoreChangeMetric, \
+from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionPopulationMetric, SupervisionRevocationMetric, SupervisionRevocationAnalysisMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 7
@@ -49,12 +49,12 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     ReincarcerationRecidivismCountMetric: 'recidivism_count_metrics',
     ReincarcerationRecidivismRateMetric: 'recidivism_rate_metrics',
     # SupervisionMetrics
-    TerminatedSupervisionAssessmentScoreChangeMetric: 'terminated_supervision_assessment_score_change_metrics',
+    SupervisionCaseComplianceMetric: 'supervision_case_compliance_metrics',
     SupervisionPopulationMetric: 'supervision_population_metrics',
     SupervisionRevocationMetric: 'supervision_revocation_metrics',
     SupervisionRevocationAnalysisMetric: 'supervision_revocation_analysis_metrics',
     SupervisionRevocationViolationTypeAnalysisMetric: 'supervision_revocation_violation_type_analysis_metrics',
     SupervisionSuccessMetric: 'supervision_success_metrics',
     SuccessfulSupervisionSentenceDaysServedMetric: 'successful_supervision_sentence_days_served_metrics',
-    SupervisionCaseComplianceMetric: 'supervision_case_compliance_metrics'
+    SupervisionTerminationMetric: 'supervision_termination_metrics'
 }

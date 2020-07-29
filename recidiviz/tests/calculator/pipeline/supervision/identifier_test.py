@@ -27,6 +27,7 @@ import attr
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
+import recidiviz.calculator
 from recidiviz.calculator.pipeline.supervision import identifier
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
@@ -4146,7 +4147,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                termination_reason=supervision_period.termination_reason
+                termination_reason=supervision_period.termination_reason,
+                response_count=1,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY
             )
         ]
 
@@ -4341,7 +4344,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                termination_reason=supervision_period.termination_reason
+                termination_reason=supervision_period.termination_reason,
+                response_count=1,
+                most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
+                most_severe_violation_type_subtype='SUBSTANCE_ABUSE'
             )
         ]
 
@@ -6256,6 +6262,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
+        violation_responses = []
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences,
@@ -6263,6 +6270,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             supervision_period_index,
             assessments,
+            violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
         )
@@ -6288,7 +6296,6 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         self.assertEqual(expected_termination_bucket, termination_bucket)
 
     def test_find_supervision_termination_bucket_no_assessments(self):
-
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -6317,6 +6324,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
+        violation_responses = []
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences,
@@ -6324,6 +6332,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             supervision_period_index,
             assessments,
+            violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
         )
@@ -6381,6 +6390,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
+        violation_responses = []
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences,
@@ -6388,6 +6398,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             supervision_period_index,
             assessments,
+            violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
         )
@@ -6410,7 +6421,6 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         self.assertEqual(expected_termination_bucket, termination_bucket)
 
     def test_find_supervision_termination_bucket_no_termination(self):
-
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -6436,6 +6446,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
+        violation_responses = []
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences,
@@ -6443,6 +6454,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period,
             supervision_period_index,
             assessments,
+            violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
         )
@@ -6450,16 +6462,16 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         self.assertEqual(None, termination_bucket)
 
     def test_find_supervision_termination_bucket_multiple_in_month(self):
-        """Tests that when multiple supervision periods end in the same month,
-        the earliest start_date and the latest termination_date are used as
-        the date boundaries for the assessments."""
+        """Tests that when multiple supervision periods end in the same month, the earliest start_date and the latest
+        termination_date are used as the date boundaries for the assessments, but the termination_date on the
+        supervision_period is still on the SupervisionTerminationBucket."""
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ND',
             start_date=date(2018, 3, 5),
-            termination_date=date(2019, 11, 23),
+            termination_date=date(2019, 11, 17),
             supervision_type=StateSupervisionType.PROBATION
         )
 
@@ -6469,7 +6481,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ND',
             start_date=date(2018, 1, 1),
-            termination_date=date(2019, 11, 17),
+            termination_date=date(2019, 11, 23),
             supervision_type=StateSupervisionType.PROBATION
         )
 
@@ -6527,6 +6539,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
+        violation_responses = []
 
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences,
@@ -6534,6 +6547,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             first_supervision_period,
             supervision_period_index,
             assessments,
+            violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             IncarcerationPeriodIndex(incarceration_periods=[])
         )
@@ -6588,6 +6602,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period=supervision_period,
             supervision_period_index=supervision_period_index,
             assessments=[],
+            violation_responses=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             incarceration_period_index=IncarcerationPeriodIndex(
                 incarceration_periods=[incarceration_period])
@@ -6643,6 +6658,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period=supervision_period,
             supervision_period_index=supervision_period_index,
             assessments=[],
+            violation_responses=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             incarceration_period_index=IncarcerationPeriodIndex(
                 incarceration_periods=[])
@@ -8552,3 +8568,284 @@ def expected_non_revocation_return_time_buckets(
             expected_buckets.append(bucket)
 
     return expected_buckets
+
+
+class TestFindAssessmentScoreChange(unittest.TestCase):
+    """Tests the find_assessment_score_change function."""
+    def test_find_assessment_score_change(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessment_3 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=23,
+            assessment_level=StateAssessmentLevel.MEDIUM,
+            assessment_date=date(2016, 1, 13)
+        )
+
+        assessments = [assessment_1,
+                       assessment_2,
+                       assessment_3]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertEqual(-6, assessment_score_change)
+        self.assertEqual(assessment_3.assessment_score, end_assessment_score)
+        self.assertEqual(assessment_3.assessment_level, end_assessment_level)
+        self.assertEqual(assessment_3.assessment_type, end_assessment_type)
+
+    def test_find_assessment_score_change_insufficient_assessments(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessments = [assessment_1,
+                       assessment_2]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertIsNone(assessment_score_change)
+        self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
+        self.assertIsNone(end_assessment_type)
+
+    def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_XX',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_XX',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessments = [assessment_1, assessment_2]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertEqual(-4, assessment_score_change)
+        self.assertEqual(assessment_2.assessment_score, end_assessment_score)
+        self.assertEqual(assessment_2.assessment_level, end_assessment_level)
+        self.assertEqual(assessment_2.assessment_type, end_assessment_type)
+
+    def test_find_assessment_score_change_different_type(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessment_3 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score=23,
+            assessment_date=date(2016, 1, 13)
+        )
+
+        assessments = [assessment_1,
+                       assessment_2,
+                       assessment_3]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertIsNone(assessment_score_change)
+        self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
+        self.assertIsNone(end_assessment_type)
+
+    def test_find_assessment_score_change_same_date(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2015, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessment_3 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=23,
+            assessment_date=date(2016, 11, 2)
+        )
+
+        assessments = [assessment_1,
+                       assessment_2,
+                       assessment_3]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertIsNone(assessment_score_change)
+        self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
+        self.assertIsNone(end_assessment_type)
+
+    def test_find_assessment_score_change_no_assessments(self):
+        assessments = []
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                'US_XX',
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertIsNone(assessment_score_change)
+        self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
+        self.assertIsNone(end_assessment_type)
+
+    def test_find_assessment_score_change_outside_boundary(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2011, 3, 23)
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=29,
+            assessment_date=date(2015, 11, 2)
+        )
+
+        assessment_3 = StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=23,
+            assessment_date=date(2016, 1, 13)
+        )
+
+        assessments = [assessment_1,
+                       assessment_2,
+                       assessment_3]
+
+        start_date = date(2015, 2, 22)
+        termination_date = date(2016, 3, 12)
+
+        assessment_score_change, \
+            end_assessment_score, \
+            end_assessment_level, \
+            end_assessment_type = \
+            identifier.find_assessment_score_change(
+                assessment_1.state_code,
+                start_date,
+                termination_date,
+                assessments
+            )
+
+        self.assertIsNone(assessment_score_change)
+        self.assertIsNone(end_assessment_score)
+        self.assertIsNone(end_assessment_level)
+        self.assertIsNone(end_assessment_type)
