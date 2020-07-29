@@ -64,8 +64,22 @@ class TestStatePersistence(TestCase):
     def setUp(self) -> None:
         fakes.use_in_memory_sqlite_database(StateBase)
 
+        # State persistence ends up having to instantiate the us_nd_controller to
+        # get enum overrides, and the controller goes on to create bigquery,
+        # storage, and tasks clients.
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
+
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
+
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
 
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(

@@ -48,6 +48,15 @@ class TestDirectIngestControl(unittest.TestCase):
         app.config['TESTING'] = True
         self.client = app.test_client()
 
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_schedule(self, mock_region, mock_environment):

@@ -20,6 +20,7 @@ import re
 import unittest
 from typing import List, Callable
 
+from mock import patch
 import yaml
 
 import recidiviz
@@ -37,6 +38,19 @@ _REGION_REGEX = re.compile(r'us_[a-z]{2}(_[a-z]+)?')
 
 class DirectIngestRegionDirStructureTest(unittest.TestCase):
     """Tests that each regions direct ingest directory is set up properly."""
+
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
 
     def _get_existing_region_dir_paths(self):
         return [os.path.join(_REGIONS_DIR, d) for d in self._get_existing_region_dir_names()]

@@ -79,8 +79,9 @@ class ViewExportManagerTest(unittest.TestCase):
         self.view_export_config_patcher.stop()
         self.metadata_patcher.stop()
 
+    @mock.patch('recidiviz.calculator.query.state.view_export_manager.materialize_views')
     @mock.patch('recidiviz.big_query.view_manager.create_dataset_and_update_views_for_view_builders')
-    def test_export_dashboard_data_to_cloud_storage(self, mock_view_manager):
+    def test_export_dashboard_data_to_cloud_storage(self, mock_view_manager, _mock_materialize_views):
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage()
 
