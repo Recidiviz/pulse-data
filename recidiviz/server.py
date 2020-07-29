@@ -24,7 +24,8 @@ from flask import Flask
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
-from opencensus.trace import config_integration, file_exporter
+from opencensus.trace import config_integration, file_exporter, samplers
+from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
@@ -75,13 +76,16 @@ if environment.in_gae():
     monitoring.register_stackdriver_exporter()
     trace_exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)
+    trace_sampler = samplers.ProbabilitySampler(rate=0.05) # Default is 1 in 10k, trace 1 in 20 instead
 else:
     trace_exporter = file_exporter.FileExporter(file_name='traces')
+    trace_sampler = samplers.AlwaysOnSampler()
 
-# Setup tracing
-app.config['OPENCENSUS_TRACE_PARAMS'] = {
-    'BLACKLIST_HOSTNAMES': ['metadata']  # Don't trace metadata requests
-}
-middleware = FlaskMiddleware(app, exporter=trace_exporter)
+middleware = FlaskMiddleware(
+    app,
+    blacklist_paths=['metadata'],  # Don't trace metadata requests
+    sampler=trace_sampler,
+    exporter=trace_exporter,
+    propagator=google_cloud_format.GoogleCloudFormatPropagator())
 config_integration.trace_integrations(
     ['google_cloud_clientlibs', 'requests', 'sqlalchemy'])
