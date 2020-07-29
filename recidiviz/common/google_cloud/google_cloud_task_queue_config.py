@@ -43,6 +43,9 @@ DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     ),
     retry_config=queue_pb2.RetryConfig(
         max_attempts=5,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
     )
 )
 
@@ -54,6 +57,9 @@ BIGQUERY_QUEUE_CONFIG = queue_pb2.Queue(
     ),
     retry_config=queue_pb2.RetryConfig(
         max_attempts=1,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
     )
 )
 
@@ -67,6 +73,9 @@ JOB_MONITOR_QUEUE_CONFIG = queue_pb2.Queue(
         min_backoff=duration_pb2.Duration(seconds=5),
         max_backoff=duration_pb2.Duration(seconds=120),
         max_attempts=5,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
     )
 )
 
@@ -79,6 +88,9 @@ BASE_SCRAPER_QUEUE_CONFIG = queue_pb2.Queue(
         min_backoff=duration_pb2.Duration(seconds=5),
         max_backoff=duration_pb2.Duration(seconds=300),
         max_attempts=5,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
     )
 )
 
@@ -91,6 +103,9 @@ SCRAPER_PHASE_QUEUE_CONFIG = queue_pb2.Queue(
         min_backoff=duration_pb2.Duration(seconds=5),
         max_backoff=duration_pb2.Duration(seconds=300),
         max_attempts=5,
+    ),
+    stackdriver_logging_config=queue_pb2.StackdriverLoggingConfig(
+        sampling_ratio=1.0,
     )
 )
 
