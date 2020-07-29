@@ -18,6 +18,7 @@
 
 import datetime
 import logging
+import re
 from enum import Enum, auto
 from typing import Optional, TypeVar, Tuple
 
@@ -25,6 +26,13 @@ import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import Table
 from more_itertools import one
+
+INGESTED_FILE_REGEX = \
+    re.compile(r'^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)')
+"""Regex for files going through direct ingest"""
+
+DATE_SUBDIR_REGEX = re.compile(r'\d{4}/\d{2}/\d{2}')
+"""Regex for parsing YYYY/MM/DD from file paths"""
 
 
 def is_date_str(potential_date_str: str) -> bool:
