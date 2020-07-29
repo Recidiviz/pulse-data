@@ -41,7 +41,9 @@ inmate_number_time_spans AS (
   )
   WHERE seq_rank_among_inmate_numbers = 1
 )
-SELECT m.control_number, spans.mov_cur_inmt_num AS inmate_number, m.* EXCEPT (control_number)
+SELECT 
+    COALESCE(ids.control_number, m.control_number) AS control_number,  
+    spans.mov_cur_inmt_num AS inmate_number, m.* EXCEPT (control_number)
 FROM 
   {dbo_Miscon} m
 LEFT OUTER JOIN
@@ -50,6 +52,12 @@ ON
   m.control_number = spans.mov_cnt_num 
   AND m.misconduct_date >= spans.inmate_num_lower_bound_date_inclusive 
   AND (spans.inmate_num_upper_bound_date_exclusive IS NULL OR m.misconduct_date < spans.inmate_num_upper_bound_date_exclusive)
+LEFT OUTER JOIN
+  -- In 20-ish cases, the control_number in dbo_Miscon does not correspond to any control number in 
+  -- dbo_tblSearchInmateInfo. We generally want to rely on dbo_tblSearchInmateInfo, since that's the file we use to 
+  -- ingest person id links.
+  (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
+ON spans.mov_cur_inmt_num = ids.inmate_number
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
