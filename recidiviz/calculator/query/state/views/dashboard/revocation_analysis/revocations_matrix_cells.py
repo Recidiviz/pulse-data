@@ -42,8 +42,7 @@ REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = \
         district,
         metric_period_months
     FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
-    WHERE current_month
-        AND reported_violations > 0
+    WHERE reported_violations > 0
     GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
         metric_period_months
     ORDER BY state_code, district, metric_period_months, violation_type, reported_violations, supervision_type,

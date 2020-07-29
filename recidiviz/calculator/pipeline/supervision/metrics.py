@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional, cast
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
@@ -39,7 +40,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 class SupervisionMetricType(Enum):
     """The type of supervision metrics."""
 
-    ASSESSMENT_CHANGE = 'ASSESSMENT_CHANGE'
     COMPLIANCE = 'COMPLIANCE'
     POPULATION = 'POPULATION'
     REVOCATION = 'REVOCATION'
@@ -47,6 +47,7 @@ class SupervisionMetricType(Enum):
     REVOCATION_VIOLATION_TYPE_ANALYSIS = 'REVOCATION_VIOLATION_TYPE_ANALYSIS'
     SUCCESS = 'SUCCESS'
     SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUCCESSFUL_SENTENCE_DAYS_SERVED'
+    TERMINATION = 'TERMINATION'
 
 
 @attr.s
@@ -103,7 +104,20 @@ class SupervisionMetric(RecidivizMetric):
 
 
 @attr.s
-class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
+class ViolationTypeSeverityMetric(BuildableAttr):
+    """Base class for including the most severe violation type and subtype features on a metric."""
+    # The most severe violation type leading up to the date of the event the metric describes
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # The number of responses that were included in determining the most severe type/subtype
+    response_count: Optional[int] = attr.ib(default=None)
+
+
+@attr.s
+class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
     """Subclass of SupervisionMetric that contains supervision population counts."""
     # Required characteristics
 
@@ -120,15 +134,6 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric):
 
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
-
-    # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # The number of violation responses leading up to the revocation
-    response_count: Optional[int] = attr.ib(default=None)
 
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
@@ -199,20 +204,11 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
 
 
 @attr.s
-class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric):
+class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
     """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
-
-    # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
 
     # The most severe decision on a response leading up to the revocation
     most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
-
-    # The number of violation responses leading up to the revocation
-    response_count: Optional[int] = attr.ib(default=None)
 
     # A string representation of the violations recorded in the period leading up to the revocation, which is the
     # number of each of the represented types separated by a semicolon
@@ -236,7 +232,7 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
 
 
 @attr.s
-class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric):
+class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric, ViolationTypeSeverityMetric):
     """Subclass of SupervisionRevocationMetric that contains information for
     analysis of the frequency of violation types reported leading up to revocation."""
 
@@ -260,15 +256,6 @@ class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric):
 
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # The number of violation responses leading up to the revocation
-    response_count: Optional[int] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
@@ -348,28 +335,27 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
 
 
 @attr.s
-class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, PersonLevelMetric):
-    """Subclass of SupervisionMetric that contains counts of supervision
-    that have been terminated, the reason for the termination, and the
-    average change in assessment score between the last assessment and the
-    first reassessment."""
+class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
+    """Subclass of SupervisionMetric that contains counts of supervision that have been terminated, the reason for the
+    termination, and the change in assessment score between the last assessment and the first reassessment."""
     # Required characteristics
 
     # Number of terminated supervisions
     count: int = attr.ib(default=None)
 
-    # Average change in scores between termination and first reassessment
-    average_score_change: float = attr.ib(default=None)
-
     # Optional characteristics
 
-    # Assessment score
+    # Assessment score at end of supervision
     assessment_score_bucket: Optional[str] = attr.ib(default=None)
 
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
-    # The reason the supervisions were terminated
+    # Change in scores between the assessment right before termination and first reliable assessment while on
+    # supervision. The first "reliable" assessment is determined by state-specific logic.
+    assessment_score_change: float = attr.ib(default=None)
+
+    # The reason the supervision was terminated
     termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
 
     # The date the supervision was terminated
@@ -377,8 +363,8 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, Person
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
-            Optional['TerminatedSupervisionAssessmentScoreChangeMetric']:
-        """Builds a TerminatedSupervisionAssessmentScoreChangeMetric object from the given arguments."""
+            Optional['SupervisionTerminationMetric']:
+        """Builds a SupervisionTerminationMetric object from the given arguments."""
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
@@ -387,8 +373,8 @@ class TerminatedSupervisionAssessmentScoreChangeMetric(SupervisionMetric, Person
         metric_key['created_on'] = date.today()
 
         supervision_metric = cast(
-            TerminatedSupervisionAssessmentScoreChangeMetric,
-            TerminatedSupervisionAssessmentScoreChangeMetric.build_from_dictionary(metric_key))
+            SupervisionTerminationMetric,
+            SupervisionTerminationMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 

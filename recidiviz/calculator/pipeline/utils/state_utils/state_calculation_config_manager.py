@@ -138,6 +138,18 @@ def include_decisions_on_follow_up_responses(state_code: str) -> bool:
     return state_code.upper() == 'US_MO'
 
 
+def second_assessment_on_supervision_is_more_reliable(state_code: str) -> bool:
+    """Some states rely on the first-reassessment (the second assessment) instead of the first assessment when comparing
+    terminating assessment scores to a score at the beginning of someone's supervision.
+
+        - US_ID: True
+        - US_MO: True
+        - US_ND: True
+    """
+    # TODO(2782): Investigate whether to update this logic
+    return state_code in ('US_ID', 'US_MO', 'US_ND')
+
+
 def get_month_supervision_type(
         any_date_in_month: date,
         supervision_sentences: List[StateSupervisionSentence],

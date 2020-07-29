@@ -28,7 +28,8 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME = 'revocations_matrix_by_person'
 REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION = """
  Revocations matrix of violation response count and most severe violation per person.
  This lists all individuals admitted to prison for a revocation of supervision, with number of
- violations leading up to the revocation and the most severe violation.
+ violations leading up to the revocation and the most severe violation. If a person has had multiple revocation
+ admissions within a metric period, the most recent revocation admission is used.
  """
 
 REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
@@ -36,48 +37,50 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     /*{description}*/
     WITH revocations AS (
         SELECT
-            state_code, year, month, metric_period_months,
+            state_code,
+            metric_period_months,
             {most_severe_violation_type_subtype_grouping},
             IF(response_count > 8, 8, response_count) as reported_violations,
-            most_severe_response_decision AS officer_recommendation,
-            violation_history_description AS violation_record,
-            person_id, person_external_id,
+            person_id,
+            person_external_id,
             gender,
             IFNULL(assessment_score_bucket, 'OVERALL') AS risk_level,
             age_bucket,
-            race, ethnicity,
+            race,
+            ethnicity,
             supervision_type,
-            charge_category,
+            case_type,
             district,
-            supervising_officer_external_id AS officer
-        FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-        JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-            USING (state_code, job_id, year, month, metric_period_months),
-        {district_dimension},
-        {supervision_dimension},
-        {charge_category_dimension}
-        WHERE methodology = 'PERSON'
-            AND month IS NOT NULL
-            AND revocation_type = 'REINCARCERATION'
-            AND person_id IS NOT NULL
-            AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-            AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
+            officer,
+            ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY revocation_admission_date DESC) as ranking
+        FROM `{project_id}.{reference_dataset}.event_based_revocations_for_matrix`,
+        {metric_period_dimension}
+        WHERE {metric_period_condition}
     )
     SELECT
-        state_code, year, month, metric_period_months,
-        violation_type, reported_violations,
-        officer_recommendation, violation_record,
-        supervision_type, charge_category, district, officer,
-        person_id, person_external_id,
-        gender, age_bucket,
+        state_code,
+        metric_period_months,
+        violation_type,
+        reported_violations,
+        supervision_type,
+        charge_category,
+        district,
+        officer,
+        person_id,
+        person_external_id,
+        gender,
+        age_bucket,
         -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
         CASE WHEN risk_level = 'LOW_MEDIUM' THEN 'LOW' ELSE risk_level END AS risk_level,
-        race, ethnicity,
-        (year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-            AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))) AS current_month
-    FROM revocations
-    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-        AND district IS NOT NULL
+        race,
+        ethnicity,
+    FROM revocations,
+    {district_dimension},
+    {supervision_dimension},
+    {charge_category_dimension}
+    WHERE ranking = 1
+      AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
+      AND district IS NOT NULL
     """
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -88,9 +91,11 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
-    district_dimension=bq_utils.unnest_district(),
+    district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),
+    metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition()
 )
 
 if __name__ == '__main__':
