@@ -76,8 +76,7 @@ class GoogleCloudTasksClientWrapper:
         name already exists, it is updated to have the given config. If it does
         not exist, it will be created by this function.
         """
-        # Creates queue if it does not exist, or updates it to have the
-        #  given config.
+        # Creates queue if it does not exist, or updates it to have the given config.
         retry_grpc(
             self.NUM_GRPC_RETRIES,
             self.client.update_queue,

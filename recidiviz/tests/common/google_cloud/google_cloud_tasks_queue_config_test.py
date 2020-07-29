@@ -69,6 +69,7 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
             self.assertTrue(
                 queue.name.startswith(
                     'projects/my-project-id/locations/us-east1/queues/'))
+            self.assertEqual(queue.stackdriver_logging_config.sampling_ratio, 1.0)
 
         direct_ingest_queue_ids = {
             'direct-ingest-state-process-job-queue-v2',
