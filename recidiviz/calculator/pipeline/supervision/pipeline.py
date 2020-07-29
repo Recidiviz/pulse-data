@@ -32,9 +32,8 @@ from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
-    TerminatedSupervisionAssessmentScoreChangeMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -214,11 +213,10 @@ class ProduceSupervisionMetrics(beam.DoFn):
         # Convert JSON string to dictionary
         metric_type = dict_metric_key.get('metric_type')
 
-        if metric_type == SupervisionMetricType.ASSESSMENT_CHANGE:
+        if metric_type == SupervisionMetricType.TERMINATION:
             dict_metric_key['count'] = 1
-            dict_metric_key['average_score_change'] = value
 
-            supervision_metric = TerminatedSupervisionAssessmentScoreChangeMetric.build_from_metric_key_group(
+            supervision_metric = SupervisionTerminationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
         elif metric_type == SupervisionMetricType.POPULATION:
@@ -309,8 +307,8 @@ class SupervisionMetricWritableDict(beam.DoFn):
             yield beam.pvalue.TaggedOutput('successes', element_dict)
         elif isinstance(element, SuccessfulSupervisionSentenceDaysServedMetric):
             yield beam.pvalue.TaggedOutput('successful_sentence_lengths', element_dict)
-        elif isinstance(element, TerminatedSupervisionAssessmentScoreChangeMetric):
-            yield beam.pvalue.TaggedOutput('assessment_changes', element_dict)
+        elif isinstance(element, SupervisionTerminationMetric):
+            yield beam.pvalue.TaggedOutput('terminations', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -623,13 +621,13 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             beam.ParDo(
                                 SupervisionMetricWritableDict()).with_outputs(
                                     'populations', 'revocations', 'successes',
-                                    'successful_sentence_lengths', 'assessment_changes', 'revocation_analyses',
+                                    'successful_sentence_lengths', 'terminations', 'revocation_analyses',
                                     'revocation_violation_type_analyses', 'compliances'
                                 )
                             )
 
         # Write the metrics to the output tables in BigQuery
-        assessment_changes_table_id = DATAFLOW_METRICS_TO_TABLES.get(TerminatedSupervisionAssessmentScoreChangeMetric)
+        terminations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionTerminationMetric)
         compliance_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionCaseComplianceMetric)
         populations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionPopulationMetric)
         revocations_table_id = DATAFLOW_METRICS_TO_TABLES.get(SupervisionRevocationMetric)
@@ -681,10 +679,10 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.assessment_changes
-             | f"Write assessment change metrics to BQ table: {assessment_changes_table_id}" >>
+        _ = (writable_metrics.terminations
+             | f"Write termination metrics to BQ table: {terminations_table_id}" >>
              beam.io.WriteToBigQuery(
-                 table=assessment_changes_table_id,
+                 table=terminations_table_id,
                  dataset=output,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,

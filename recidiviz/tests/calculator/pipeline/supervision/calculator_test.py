@@ -1274,7 +1274,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == -3 for _combination, value
+        assert all(_combination['assessment_score_change'] == -3 for _combination, _
                    in supervision_combinations)
 
     @freeze_time('2010-01-31')
@@ -1366,13 +1366,11 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations
                    if not combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE)
-                   and not combo_has_enum_value_for_key(
                        _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
-        assert all(value == -3 for _combination, value
+        assert all(_combination['assessment_score_change'] == -3 for _combination, value
                    in supervision_combinations
                    if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.ASSESSMENT_CHANGE))
+                       _combination, 'metric_type', SupervisionMetricType.TERMINATION))
         assert all(value == 234 for _combination, value
                    in supervision_combinations
                    if combo_has_enum_value_for_key(
@@ -1420,8 +1418,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == termination_bucket.assessment_score_change
-                   for _combination, value
+        assert all(_combination['assessment_score_change'] == -9 for _combination, _
                    in supervision_combinations)
 
     def test_map_supervision_combinations_termination_buckets_no_score_change(self):
@@ -1462,11 +1459,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             calculation_month_count=-1
         )
 
-        expected_combinations_count = 0
+        expected_combinations_count = expected_metric_combos_count(
+            [termination_bucket]
+        )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == termination_bucket.assessment_score_change
-                   for _combination, value
+        assert all(_combination.get('assessment_score_change') is None for _combination, _
                    in supervision_combinations)
 
     def test_map_supervision_combinations_termination_buckets(self):
@@ -1525,11 +1523,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == first_termination_bucket.assessment_score_change
-                   for _combination, value
+        assert all(_combination['assessment_score_change'] == -9 for _combination, _
                    in supervision_combinations)
 
-    def test_map_supervision_combinations_only_assessment_change(self):
+    def test_map_supervision_combinations_only_terminations(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -1578,7 +1575,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: True,
+            SupervisionMetricType.TERMINATION: True,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: False,
@@ -1596,17 +1593,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.ASSESSMENT_CHANGE
+            metric_to_include=SupervisionMetricType.TERMINATION
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == termination_bucket.assessment_score_change
-                   for _combination, value
+        assert all(_combination['assessment_score_change'] == termination_bucket.assessment_score_change
+                   for _combination, _
                    in supervision_combinations)
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.ASSESSMENT_CHANGE)
+                SupervisionMetricType.TERMINATION)
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_success(self):
@@ -1655,7 +1652,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: True,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: False,
@@ -1733,7 +1730,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
             SupervisionMetricType.REVOCATION: False,
@@ -1811,7 +1808,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: True,
@@ -1899,7 +1896,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: False,
@@ -1997,7 +1994,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: False,
@@ -2082,7 +2079,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.REVOCATION: False,
@@ -2265,7 +2262,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.ASSESSMENT_CHANGE: False,
+            SupervisionMetricType.TERMINATION: False,
             SupervisionMetricType.SUCCESS: False,
             SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
             SupervisionMetricType.REVOCATION: False,
@@ -2704,7 +2701,7 @@ def expected_metric_combos_count(
                    supervision_compliance_combos)
 
     if metric_to_include:
-        if metric_to_include == SupervisionMetricType.ASSESSMENT_CHANGE:
+        if metric_to_include == SupervisionMetricType.TERMINATION:
             return int(supervision_termination_combos)
         if metric_to_include == SupervisionMetricType.COMPLIANCE:
             return int(supervision_compliance_combos)

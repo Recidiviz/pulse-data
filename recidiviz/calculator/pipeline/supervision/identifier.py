@@ -38,7 +38,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
     identify_most_severe_response_decision, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
 from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    find_most_recent_assessment, find_assessment_score_change, most_recent_assessment_attributes
+    find_most_recent_assessment, most_recent_assessment_attributes
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_distinct_for_state, \
@@ -49,13 +49,15 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
-    get_case_compliance_on_date, include_decisions_on_follow_up_responses
+    get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
+    second_assessment_on_supervision_is_more_reliable
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations, \
     get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel, StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import StateSpecializedPurposeForIncarceration, \
@@ -217,6 +219,7 @@ def find_supervision_time_buckets(
                 supervision_period,
                 supervision_period_index,
                 assessments,
+                violation_responses,
                 supervision_period_to_agent_associations,
                 incarceration_period_index,
                 judicial_district_code
@@ -452,6 +455,7 @@ def find_supervision_termination_bucket(
         supervision_period: StateSupervisionPeriod,
         supervision_period_index: SupervisionPeriodIndex,
         assessments: List[StateAssessment],
+        violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         incarceration_period_index: IncarcerationPeriodIndex,
         judicial_district_code: Optional[str] = None
@@ -465,12 +469,12 @@ def find_supervision_termination_bucket(
 
     If a person has multiple supervision periods that end in a given month, the the earliest start date and the latest
     termination date of the periods is used to estimate the start and end dates of the supervision. These dates
-    are then used to determine what the second and last assessment scores are.
+    are then used to determine what the second and last assessment scores are. However, the termination_date on the
+    SupervisionTerminationBucket will always be the termination_date on the supervision_period.
 
     If this supervision does not have a termination_date, then None is returned.
     """
     if supervision_period.start_date is not None and supervision_period.termination_date is not None:
-
         supervision_period_counts_towards_supervision_population_at_any_point = \
             supervision_period_counts_towards_supervision_population_in_date_range(
                 date_range=TimeRange.for_supervision_period(supervision_period),
@@ -484,8 +488,9 @@ def find_supervision_termination_bucket(
             # emit a termination bucket.
             return None
 
-        start_date = supervision_period.start_date
+        assessment_start_date = supervision_period.start_date
         termination_date = supervision_period.termination_date
+        assessment_termination_date = supervision_period.termination_date
 
         termination_year = termination_date.year
         termination_month = termination_date.month
@@ -498,18 +503,25 @@ def find_supervision_termination_bucket(
 
             if periods_terminated_in_month:
                 for period in periods_terminated_in_month:
-                    if period.start_date and period.start_date < start_date:
-                        start_date = period.start_date
+                    if period.start_date and period.start_date < assessment_start_date:
+                        assessment_start_date = period.start_date
 
                     if period.termination_date and period.termination_date > termination_date:
-                        termination_date = period.termination_date
+                        assessment_termination_date = period.termination_date
 
         assessment_score_change, \
             end_assessment_score, \
             end_assessment_level, \
             end_assessment_type = \
             find_assessment_score_change(
-                start_date, termination_date, assessments)
+                supervision_period.state_code,
+                assessment_start_date,
+                assessment_termination_date,
+                assessments)
+
+        violation_history = get_violation_and_response_history(supervision_period.state_code,
+                                                               termination_date,
+                                                               violation_responses)
 
         supervising_officer_external_id, supervising_district_external_id = \
             _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
@@ -533,7 +545,10 @@ def find_supervision_termination_bucket(
             assessment_score_change=assessment_score_change,
             supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id,
-            judicial_district_code=judicial_district_code
+            judicial_district_code=judicial_district_code,
+            response_count=violation_history.response_count,
+            most_severe_violation_type=violation_history.most_severe_violation_type,
+            most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype
         )
 
     return None
@@ -619,11 +634,11 @@ ViolationHistory = NamedTuple('ViolationHistory', [
 
 def get_violation_and_response_history(
         state_code: str,
-        revocation_date: date,
+        end_date: date,
         violation_responses: List[StateSupervisionViolationResponse]
 ) -> ViolationHistory:
     """Identifies and returns the most severe violation type, the most severe decision on the responses, and the total
-    number of responses that were recorded during a window of time preceding a revocation.
+    number of responses that were recorded during a window of time preceding the |end_date|.
     """
     if not violation_responses:
         return ViolationHistory(
@@ -634,7 +649,7 @@ def get_violation_and_response_history(
             violation_history_description=None,
             violation_type_frequency_counter=None)
 
-    responses_in_window = _get_responses_in_window_before_revocation(revocation_date, violation_responses,
+    responses_in_window = _get_responses_in_window_before_revocation(end_date, violation_responses,
                                                                      include_follow_up_responses=False)
 
     violations_in_window: List[StateSupervisionViolation] = []
@@ -665,7 +680,7 @@ def get_violation_and_response_history(
 
     if include_decisions_on_follow_up_responses(state_code):
         responses_in_window_for_decision_evaluation = _get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=True)
+            end_date, violation_responses, include_follow_up_responses=True)
 
     most_severe_response_decision = None
     if responses_in_window_for_decision_evaluation:
@@ -710,7 +725,7 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
                                                include_follow_up_responses: bool) \
         -> List[StateSupervisionViolationResponse]:
     """Looks at the series of violation responses that preceded a revocation. Finds the last violation response that was
-    written before the revocation_date. Then, returns the violation responses that were written within
+    written before the end_date. Then, returns the violation responses that were written within
     VIOLATION_HISTORY_WINDOW_MONTHS months of the response_date on that last response.
     """
     responses_before_revocation = [
@@ -1206,7 +1221,7 @@ def _expand_dual_supervision_buckets(supervision_time_buckets: List[SupervisionT
 
 # Each SupervisionMetricType with a list of the SupervisionTimeBuckets that contribute to that metric
 BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBucket]]] = {
-    SupervisionMetricType.ASSESSMENT_CHANGE: [SupervisionTerminationBucket],
+    SupervisionMetricType.TERMINATION: [SupervisionTerminationBucket],
     SupervisionMetricType.COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.POPULATION: [
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
@@ -1334,3 +1349,54 @@ def _get_judicial_district_code(
         return ip_info.get('judicial_district_code')
 
     return None
+
+
+def find_assessment_score_change(state_code: str,
+                                 start_date: date,
+                                 termination_date: date,
+                                 assessments: List[StateAssessment]) -> \
+        Tuple[Optional[int], Optional[int], Optional[StateAssessmentLevel], Optional[StateAssessmentType]]:
+    """Finds the difference in scores between the last assessment that happened between the start_date and
+    termination_date (inclusive) and the the first "reliable" assessment that was conducted after the start of
+    supervision. The first "reliable" assessment is either the first or second assessment, depending on state-specific
+    logic. Returns the assessment score change, the ending assessment score, the ending assessment level, and the
+    assessment type. If there aren't enough assessments to compare, or the first reliable assessment and the last
+    assessment are not of the same type, returns (None, None, None, None)."""
+    if assessments:
+        assessments_in_period = [
+            assessment for assessment in assessments
+            if assessment.assessment_date is not None
+            and start_date <= assessment.assessment_date <= termination_date
+        ]
+
+        index_of_first_reliable_assessment = 1 if second_assessment_on_supervision_is_more_reliable(state_code) else 0
+        min_assessments = 2 + index_of_first_reliable_assessment
+
+        # If this person had less than the min number of assessments then we cannot compare the first reliable
+        # assessment to the most recent assessment.
+        if assessments_in_period and len(assessments_in_period) >= min_assessments:
+            assessments_in_period.sort(key=lambda b: b.assessment_date)
+
+            first_reliable_assessment = assessments_in_period[index_of_first_reliable_assessment]
+            last_assessment = assessments_in_period[-1]
+
+            # Assessments must be of the same type
+            if last_assessment.assessment_type == first_reliable_assessment.assessment_type:
+                first_reliable_assessment_date = first_reliable_assessment.assessment_date
+                last_assessment_date = last_assessment.assessment_date
+
+                # Ensure these assessments were actually issued on different days
+                if (first_reliable_assessment_date and last_assessment_date
+                        and last_assessment_date > first_reliable_assessment_date):
+                    first_reliable_assessment_score = first_reliable_assessment.assessment_score
+                    last_assessment_score = last_assessment.assessment_score
+
+                    if first_reliable_assessment_score is not None and last_assessment_score is not None:
+                        assessment_score_change = (last_assessment_score - first_reliable_assessment_score)
+
+                        return (assessment_score_change,
+                                last_assessment.assessment_score,
+                                last_assessment.assessment_level,
+                                last_assessment.assessment_type)
+
+    return None, None, None, None

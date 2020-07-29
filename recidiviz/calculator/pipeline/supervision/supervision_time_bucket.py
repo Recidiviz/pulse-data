@@ -91,7 +91,20 @@ class SupervisionTimeBucket(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
+class ViolationTypeSeverityBucket(BuildableAttr):
+    """Base class for including the most severe violation type and subtype features on a SupervisionTimeBucket."""
+    # The most severe violation type leading up to the date of the event the bucket describes
+    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
+
+    # A string subtype that provides further insight into the most_severe_violation_type above.
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+
+    # The number of responses that were included in determining the most severe type/subtype
+    response_count: Optional[int] = attr.ib(default=0)
+
+
+@attr.s(frozen=True)
+class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
     # The type of revocation of supervision
@@ -100,17 +113,8 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 
-    # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
-
     # The most severe decision on a response leading up to the revocation
     most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
-
-    # The number of violation responses leading up to the revocation
-    response_count: Optional[int] = attr.ib(default=0)
 
     # A string representation of the violations recorded in the period leading up to the revocation
     violation_history_description: Optional[str] = attr.ib(default=None)
@@ -131,17 +135,8 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket):
+class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
-
-    # The most severe violation type leading up to the revocation
-    most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    # A string subtype that provides further insight into the most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # The number of violation responses leading up to the revocation
-    response_count: Optional[int] = attr.ib(default=0)
 
     # TODO(3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
@@ -170,7 +165,7 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionTerminationBucket(SupervisionTimeBucket):
+class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
     """Models a month in which supervision was terminated.
 
     Describes the reason for termination, and the change in assessment score between first reassessment and termination
@@ -179,5 +174,6 @@ class SupervisionTerminationBucket(SupervisionTimeBucket):
     # The reason for supervision termination
     termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(default=None)
 
-    # The difference between the first reassessment score and the score at termination of supervision
+    # Change in scores between the assessment right before termination and first reliable assessment while on
+    # supervision. The first "reliable" assessment is determined by state-specific logic.
     assessment_score_change: Optional[int] = attr.ib(default=None)

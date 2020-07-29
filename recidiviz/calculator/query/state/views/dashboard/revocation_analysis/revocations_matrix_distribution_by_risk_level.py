@@ -19,8 +19,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import \
-    REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,51 +33,74 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION = """
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH supervision_counts AS (
+        SELECT
+          state_code, 
+          violation_type,
+          reported_violations,
+          COUNT(DISTINCT person_id) AS total_supervision_count,
+          risk_level,
+          supervision_type,
+          charge_category,
+          district,
+          metric_period_months    
+        FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+          district, metric_period_months
+      ), termination_counts AS (
+         SELECT
+          state_code, 
+          violation_type,
+          reported_violations,
+          COUNT(DISTINCT person_id) AS termination_count,
+          risk_level,
+          supervision_type,
+          charge_category,
+          district,
+          metric_period_months    
+        FROM `{project_id}.{reference_dataset}.supervision_termination_matrix_by_person` 
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+          district, metric_period_months
+      ), revocation_counts AS (
+        SELECT
+          state_code,
+          violation_type,
+          reported_violations,
+          COUNT(DISTINCT person_id) AS population_count,
+          risk_level,
+          supervision_type,
+          charge_category,
+          district,
+          metric_period_months
+        FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+          district, metric_period_months
+    )
+ 
+ 
     SELECT
       state_code,
       violation_type,
       reported_violations,
-      IFNULL(population_count, 0) AS population_count,
+      IFNULL(population_count, 0) AS population_count, -- Revocation count
+      IFNULL(termination_count, 0) AS total_exit_count,
       total_supervision_count,
       risk_level,
       supervision_type,
       charge_category,
       district,
       metric_period_months
-    FROM (
-      SELECT
-        state_code, 
-        violation_type,
-        reported_violations,
-        COUNT(DISTINCT person_id) AS total_supervision_count,
-        risk_level,
-        supervision_type,
-        charge_category,
-        district,
-        metric_period_months    
-      FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
-      GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category, district,
-        metric_period_months
-    ) pop
-    LEFT JOIN (
-      SELECT
-        state_code,
-        violation_type,
-        reported_violations,
-        COUNT(DISTINCT person_id) AS population_count,
-        risk_level,
-        supervision_type,
-        charge_category,
-        district,
-        metric_period_months
-      FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
-      WHERE current_month
-      GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category, district,
-        metric_period_months
-    ) rev
-    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, 
-      charge_category, district, metric_period_months)
-    ORDER BY state_code, district, supervision_type, risk_level, metric_period_months, violation_type,
+    FROM
+      supervision_counts
+    LEFT JOIN
+      revocation_counts
+    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+      district, metric_period_months)
+    LEFT JOIN
+      termination_counts
+    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+      district, metric_period_months)
+    ORDER BY state_code, metric_period_months, district, supervision_type, risk_level, violation_type,
       reported_violations, charge_category
     """
 
@@ -93,4 +114,4 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = SimpleBigQueryViewB
 
 if __name__ == '__main__':
     with local_project_id_override(GAE_PROJECT_STAGING):
-        REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER.build_and_print()
+        REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER.build_and_print()

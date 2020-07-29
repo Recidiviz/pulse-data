@@ -12,7 +12,7 @@
   reference_input: reference_tables
   output: dataflow_metrics
   state_code: US_ND
-  metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+  metric_types: POPULATION REVOCATION SUCCESS TERMINATION
 - pipeline: recidivism
   job_name: full-us-nd-recidivism-calculations
   data_input: state
@@ -43,7 +43,7 @@
   output: dataflow_metrics
   state_code: US_ND
   calculation_month_count: 36
-  metric_types: POPULATION REVOCATION SUCCESS ASSESSMENT_CHANGE
+  metric_types: POPULATION REVOCATION SUCCESS TERMINATION
 - pipeline: incarceration
   job_name: us-nd-incarceration-calculations-36
   data_input: state
