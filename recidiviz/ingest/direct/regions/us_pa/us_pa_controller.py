@@ -52,6 +52,9 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, State
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
+MAGICAL_DATES = [
+    '20000000'
+]
 
 class UsPaController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
@@ -706,6 +709,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionSentence):
+                if obj.date_imposed in MAGICAL_DATES:
+                    obj.date_imposed = None
+
                 # Probation sentences are the only sentences where we can specify a start date for the
                 # supervision sentence itself, as opposed to a supervision period.
                 if is_probation:
