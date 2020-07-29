@@ -19,9 +19,68 @@
 from typing import Dict, List
 
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodReleaseReason, \
-    StateSpecializedPurposeForIncarceration
+    StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodAdmissionReason
 from recidiviz.ingest.direct.direct_ingest_controller_utils import invert_enum_to_str_mappings
 
+
+INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
+    Dict[StateIncarcerationPeriodAdmissionReason, List[str]] = {
+        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
+            'AOTH',  # Other - Use Sparingly
+        ],
+        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+            'RTN'  # (Not in PA data dictionary, no instances after 1996)
+        ],
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
+            'AA',  # Administrative
+            'AB',  # Bail
+            'AC',  # Court Commitment
+            'ACT',  # County Transfer (transferred from a county jail, newly in DOC custody)
+            'ADET',  # Detentioner
+            'AFED',  # Federal Commitment
+        ],
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
+            'AE',  # Escape
+        ],
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
+            # TODO(3312): Ask what the difference between these two is - APV is much more common
+            'APD',  # Parole Detainee
+
+            # TODO(3312): What to do when the parole status code is TPV (i.e. they're already convicted)? I don't think
+            #  this always corresponds to a revocation! For example CN=300233, who it looks like was transferred to a
+            #  county jail (sentence status TC), then transferred back as an APV months later. However, CN=314993 seems
+            #  to have just entered as a violation. TL;DR - going to need to change this logic to a mapper.
+            # When a person comes in on a parole board hold they can have this status - they have not technically been
+            # revoked yet if their parole status is 'PVP'.
+            'APV',  # Parole Violator
+        ],
+        StateIncarcerationPeriodAdmissionReason.TRANSFER: [
+            # TODO(3312): I think that all statuses that start with 'A' might mean that a person is newly added to DOC
+            #  responsiblity - should these be treated as transfers?
+
+            'AIT',  # In Transit
+            'ASH',  # State Hospital
+            'ATT',  # [Unlisted Transfer]
+            'AW',  # WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
+
+            'PLC',  # Permanent Location Change
+            'RTT',  # Return Temporary Transfer
+            'STT',  # Send Temporary Transfer
+            'TFM',  # From Medical Facility
+            'TRN',  # To Other Institution Or CCC
+            'TTM',  # To Medical Facility
+            'XPT',  # Transfer Point
+            # In this context, SC is being used as a transfer from one type of
+            # incarceration to another, either between facilities or within the same facility
+            'SC',  # Status Change
+        ],
+        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: [
+            # TODO(3312): I think this is a person from another state who PA is holding for some short-ish
+            #  period of time until they are sent back to that state - need to confirm. They are not being tried by the
+            #  PA Parole Board and will have a 'NA' (Not Applicable) parole_stat_cd (parole status code). (ASK PA)
+            'AOPV',  # Out Of State Probation/Parole Violator
+        ],
+    }
 
 INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeriodReleaseReason, List[str]] = {
     StateIncarcerationPeriodReleaseReason.COMMUTED: [
@@ -110,25 +169,24 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'VS',  # Vacated Sentence
     ],
 }
-
-
-PURPOSE_FOR_INCARCERATION_TO_STR_MAPPINGS: Dict[StateSpecializedPurposeForIncarceration, List[str]] = {
-    StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD: [
-        'PVP',  # Parole Violator Pending
-    ],
-    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON: [
-        'E',  # SIP Evaluation
-        'P',  # SIP Program
-    ]
-}
-
+MOVEMENT_CODE_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodAdmissionReason] = \
+    invert_enum_to_str_mappings(INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS)
 
 STR_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodReleaseReason] = \
     invert_enum_to_str_mappings(INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS)
 
 
-STR_TO_PURPOSE_FOR_INCARCERATION_MAPPINGS: Dict[str, StateSpecializedPurposeForIncarceration] = \
-    invert_enum_to_str_mappings(PURPOSE_FOR_INCARCERATION_TO_STR_MAPPINGS)
+def incarceration_period_admission_reason_mapper(concatenated_codes: str) -> StateIncarcerationPeriodAdmissionReason:
+    _start_parole_status_code, start_is_new_revocation, start_movement_code = concatenated_codes.split(' ')
+
+    if start_is_new_revocation == 'TRUE':
+        return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+
+    admission_reason = MOVEMENT_CODE_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS.get(start_movement_code, None)
+    if not admission_reason:
+        raise ValueError(
+            f'No mapping for incarceration period admission reason from movement code {start_movement_code}')
+    return admission_reason
 
 
 def incarceration_period_release_reason_mapper(concatenated_codes: str) -> StateIncarcerationPeriodReleaseReason:
@@ -198,15 +256,20 @@ def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecial
     """
     start_parole_status_code, sentence_type = concatenated_codes.split(' ')
 
+    # TODO(3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
+    #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
+    #  Program? Is this just an error?
     is_parole_violation_pending = start_parole_status_code == 'PVP'
-    is_treatment_program = sentence_type in ('E', 'P')  # SIP Evaluation, SIP Program
 
     if is_parole_violation_pending:
-        # TODO(3447): Do we also need to set admission reason as temporary custody here?
-        return _retrieve_purpose_mapping(start_parole_status_code)
+        return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
 
+    is_treatment_program = sentence_type in (
+        'E',  # SIP Evaluation
+        'P'   # SIP Program
+    )
     if is_treatment_program:
-        return _retrieve_purpose_mapping(sentence_type)
+        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
 
     return StateSpecializedPurposeForIncarceration.GENERAL
 
@@ -218,11 +281,12 @@ def _retrieve_release_reason_mapping(code: str) -> StateIncarcerationPeriodRelea
     return release_reason
 
 
-def _retrieve_purpose_mapping(code: str) -> StateSpecializedPurposeForIncarceration:
-    purpose_for_incarceration = STR_TO_PURPOSE_FOR_INCARCERATION_MAPPINGS.get(code, None)
-    if not purpose_for_incarceration:
-        raise ValueError(f'No mapping for incarceration period release reason {code}')
-    return purpose_for_incarceration
+def concatenate_incarceration_period_start_codes(row: Dict[str, str]) -> str:
+    start_parole_status_code = row['start_parole_status_code'] or 'None'
+    start_is_new_revocation = row['start_is_new_revocation'] or 'None'
+    start_movement_code = row['start_movement_code'] or 'None'
+
+    return f"{start_parole_status_code}-{start_is_new_revocation}-{start_movement_code}"
 
 
 def concatenate_incarceration_period_end_codes(row: Dict[str, str]) -> str:

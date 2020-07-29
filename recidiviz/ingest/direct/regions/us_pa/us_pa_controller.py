@@ -41,7 +41,8 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
     concatenate_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
-    concatenate_incarceration_period_purpose_codes
+    concatenate_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
+    concatenate_incarceration_period_start_codes
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
@@ -95,8 +96,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             'incarceration_period': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
+                self._concatenate_admission_reason_codes,
                 self._concatenate_release_reason_codes,
                 self._concatenate_incarceration_purpose_codes,
+                self._add_incarceration_type,
             ],
             'dbo_Miscon': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
@@ -204,6 +207,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'EC',  # Escape CSC
             'EI',  # Escape Institution
             'F',   # Furloughed
+
+            # TODO(3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no longer
+            # the responsibility of the PA DOC? Should they also stop being counted towards population counts? What does
+            # it mean when this code is used with a county code?
             'IC',  # In Custody Elsewhere
             'MH',  # Mental Health
             'SH',  # State Hospital
@@ -234,48 +241,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'P',  # SIP Program
             'E',  # SIP Evaluation
         ],
-
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
-            'AOTH',  # Other - Use Sparingly
-        ],
-        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
-            'RTN'  # (Not in PA data dictionary, no instances after 1996)
-        ],
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-            'AA',    # Administrative
-            'AB',    # Bail
-            'AC',    # Court Commitment
-            'ADET',  # Detentioner
-            'AFED',  # Federal Commitment
-        ],
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
-            'AOPV',  # Out Of State Probation/Parole Violator
-            'APV',   # Parole Violator
-        ],
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
-            'AE',  # Escape
-        ],
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
-            'APD',  # Parole Detainee
-        ],
-        StateIncarcerationPeriodAdmissionReason.TRANSFER: [
-            'ACT',  # County Transfer
-            'AIT',  # In Transit
-            'ASH',  # State Hospital
-            'ATT',  # [Unlisted Transfer]
-            'AW',   # WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
-            'PLC',  # Permanent Location Change
-            'RTT',  # Return Temporary Transfer
-            'STT',  # Send Temporary Transfer
-            'TFM',  # From Medical Facility
-            'TRN',  # To Other Institution Or CCC
-            'TTM',  # To Medical Facility
-            'XPT',  # Transfer Point
-            # In this context, SC is being used as a transfer from one type of
-            # incarceration to another, either between facilities or within the same facility
-            'SC',  # Status Change
-        ],
-
         StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: [
             'C',  # Cell Confinement
         ],
@@ -289,6 +254,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
+        StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
     }
@@ -584,6 +550,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.state_charge_id = obj.state_charge_id.strip()
 
     @staticmethod
+    def _concatenate_admission_reason_codes(_file_tag: str,
+                                            row: Dict[str, str],
+                                            extracted_objects: List[IngestObject],
+                                            _cache: IngestObjectCache):
+        """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.admission_reason = concatenate_incarceration_period_start_codes(row)
+
+    @staticmethod
     def _concatenate_release_reason_codes(_file_tag: str,
                                           row: Dict[str, str],
                                           extracted_objects: List[IngestObject],
@@ -603,6 +579,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.specialized_purpose_for_incarceration = concatenate_incarceration_period_purpose_codes(row)
+
+    @staticmethod
+    def _add_incarceration_type(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets incarceration type on incarceration periods based on facility."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                # TODO(3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on IC
+                #  sentence status + location codes? Ask PA about this!
+                obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
 
     @staticmethod
     def _specify_incident_location(_file_tag: str,
