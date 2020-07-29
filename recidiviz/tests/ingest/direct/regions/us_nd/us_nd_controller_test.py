@@ -583,7 +583,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                      status='IN-N',
                                      admission_date='2/28/18  12:00:00 AM',
                                      facility='NDSP',
-                                     admission_reason='ADMN')
+                                     admission_reason='OOS')
         ]
 
         incarceration_periods_105640 = [
@@ -2032,8 +2032,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             status_raw_text='OUT-Y',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility='NDSP',
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text='ADMN',
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+            admission_reason_raw_text='OOS',
             admission_date=datetime.date(year=2018, month=2, day=28),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text='RPAR',
