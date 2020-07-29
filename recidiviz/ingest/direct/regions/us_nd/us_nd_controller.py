@@ -739,23 +739,29 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateChargeClassificationType.FELONY: ['IF'],
             StateChargeClassificationType.MISDEMEANOR: ['IM'],
 
-            StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ['OTHER'],
-            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: ['PREA', 'RAB', 'DEF'],
+            StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: ['ADM ERROR'],
+            StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: ['OTHER', 'PREA'],
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: ['ADMN', 'RAB', 'DEF'],
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: ['PARL', 'PV'],
+            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: ['NPRB', 'NPROB', 'PRB', 'RPRB'],
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: ['REC', 'RECA'],
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: ['READMN'],
             StateIncarcerationPeriodAdmissionReason.TRANSFER:
-                ['CONF', 'FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'OOS', 'PROG', 'RB', 'SUPL'],
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
-                ['PARL'],
-            StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
-                ['NPRB', 'NPROB', 'RPRB'],
+                ['CONF', 'CRT', 'DETOX', 'FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'MED', 'PROG', 'RB', 'SUPL'],
+            StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: ['OOS'],
 
+            StateIncarcerationPeriodReleaseReason.ESCAPE: ['ESC', 'ESCP'],
+            StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ['ERR'],
             StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ['OTHER'],
+            StateIncarcerationPeriodReleaseReason.COMMUTED: ['CMM'],
             StateIncarcerationPeriodReleaseReason.COMPASSIONATE: ['COM'],
-            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: ['PRB', 'PV'],
+            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: ['PARL', 'PRB', 'PV', 'RPAR', 'RPRB', 'SUPL'],
             StateIncarcerationPeriodReleaseReason.COURT_ORDER: ['CO'],
+            StateIncarcerationPeriodReleaseReason.DEATH: ['DECE'],
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: ['XSNT'],
             StateIncarcerationPeriodReleaseReason.TRANSFER:
-                ['CONF', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'PROG', 'RB', 'SUPL'],
+                ['CONF', 'CRT', 'DETOX', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'MED', 'PROG', 'RB', 'SUPL'],
+            StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE: ['TRN'],
 
             StateSupervisionType.HALFWAY_HOUSE: ['COMMUNITY PLACEMENT PGRM'],
             StateSupervisionType.PAROLE: ['SSOP'],
