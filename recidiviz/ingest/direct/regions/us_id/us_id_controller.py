@@ -410,6 +410,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ICE DETAINER',
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
+            'DOSAGE',                   # TODO(3692): Figure out what this means
+            'DOSAGE ELIGIBLE',          # TODO(3692): Figure out what this means
             'ADMINISTRATIVE',           # Used for a non-standardized set of situations.
             'GOLD SEAL PENDING',        # Pending supervision termination (after parole board has approved termination)
             # No longer under IDOC authority
@@ -423,42 +425,49 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'SEX OFFENSE',
             'TRANSITION',
         ],
+        # TODO(3692): Validate that we have the correct mappings for new values of LOW, MODERATE, HIGH
         StateSupervisionLevel.MINIMUM: [
-            'LEVEL 1',
+            'LOW',
+            'LEVEL 1',      # Historical value for minimum
             'MINIMUM',      # Historical value for minimum
-            'SO LEVEL 1',  # Sex offense case load, minimum
+            'SO LEVEL 1',   # Sex offense case load, minimum
         ],
         StateSupervisionLevel.MEDIUM: [
-            'LEVEL 2',
+            'MODERATE',
+            'LEVEL 2',                  # Historical value for medium
             'MEDIUM',                   # Historical value for medium
             'MODERATE',                 # Historical value for medium
+            'MODERATE- OLD',            # Historical value for medium
+
             'SO LEVEL 2',               # Sex offense case load, medium
             'SO TO GENERAL LEVEL2',     # Previously sex offender case load, medium
             'DUI OVERRIDE LEVEL 2',     # Previously DUI, medium
             'O R MODERATE',             # Historical value
         ],
         StateSupervisionLevel.HIGH: [
-            'LEVEL 3',
+            'HIGH',
             'SO LEVEL 3',               # Sex offense case load, high
             'SO TO GENERAL LEVEL3',     # Previously sex offender case load, high
+            'LEVEL 3',                  # Historical value for High
             'O R HIGH',                 # Historical value
         ],
         StateSupervisionLevel.MAXIMUM: [
-            'LEVEL 4',
+            'LEVEL 4',                  # Historical value for maximum
             'MAXIMUM',                  # Historical value for maximum
             'SO LEVEL 4',               # Sex offense case load, maximum
             'SO TO GENERAL LEVEL4',     # Previously sex offense caseload, maximum
         ],
+        # TODO(3692): Ask ID if there are new values to show whether someone is in a diversion court?
         StateSupervisionLevel.DIVERSION: [
+            # All are historical values below
             'DRUG COURT',
-            'MENTAL HEALTH COURT',
-            'VETERANS COURT',
-            'FAMILY COURT',
-            # Historical values below, duplicates of above.
             'DRUG COURT DIV',
-            'VETERANS COURT DIV',
+            'FAMILY COURT',
+            'MENTAL HEALTH COURT',
             'MENTAL HLTH CRT DIV',
             'SUBSTANCE ABUSE',
+            'VETERANS COURT DIV',
+            'VETERANS COURT',
         ],
         StateSupervisionLevel.INTERSTATE_COMPACT: [
             'INTERSTATE',
