@@ -49,8 +49,8 @@ SUPERVISION_POPULATION_BY_DISTRICT_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       state_code as region_code,
       supervision_type,
       district,
-      dashboard_supervision_population.total_supervision_count as dashboard_supervision_count,
-      public_dashboard_supervision_population.total_supervision_count as public_dashboard_supervision_count 
+      IFNULL(dashboard_supervision_population.total_supervision_count, 0) as dashboard_supervision_count,
+      IFNULL(public_dashboard_supervision_population.total_supervision_count, 0) as public_dashboard_supervision_count 
     FROM 
       dashboard_supervision_population
     FULL OUTER JOIN

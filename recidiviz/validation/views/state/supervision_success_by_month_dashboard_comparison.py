@@ -44,10 +44,10 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
       state_code as region_code,
       district,
       supervision_type,
-      dashboard_success.successful_termination as dashboard_successful_termination,
-      public_dashboard_success.successful_termination_count as public_dashboard_successful_termination,
-      (dashboard_success.revocation_termination + dashboard_success.successful_termination) as dashboard_projected_completion,
-      public_dashboard_success.projected_completion_count as public_dashboard_projected_completion
+      IFNULL(dashboard_success.successful_termination, 0) as dashboard_successful_termination,
+      IFNULL(public_dashboard_success.successful_termination_count, 0) as public_dashboard_successful_termination,
+      IFNULL((dashboard_success.revocation_termination + dashboard_success.successful_termination), 0) as dashboard_projected_completion,
+      IFNULL(public_dashboard_success.projected_completion_count, 0) as public_dashboard_projected_completion
     FROM 
       dashboard_success
     FULL OUTER JOIN
