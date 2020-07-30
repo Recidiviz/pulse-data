@@ -39,6 +39,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         SELECT
             state_code,
             metric_period_months,
+            revocation_admission_date,
             {most_severe_violation_type_subtype_grouping},
             IF(response_count > 8, 8, response_count) as reported_violations,
             person_id,
@@ -60,6 +61,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     SELECT
         state_code,
         metric_period_months,
+        revocation_admission_date,
         violation_type,
         reported_violations,
         supervision_type,
