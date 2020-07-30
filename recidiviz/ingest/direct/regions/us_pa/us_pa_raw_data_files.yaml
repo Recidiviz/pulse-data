@@ -179,6 +179,9 @@ raw_files:
   - file_tag: dbo_LU_BoardActionClass
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ActionClassCode
+  - file_tag: dbo_LU_RelDo
+    primary_key_cols:
+      - RelDO
   - file_tag: dbo_LU_TreatTrackingProgramNew
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - TreatTrackProgCode
