@@ -64,8 +64,3 @@ class DirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIn
         if self.region.are_ingest_view_exports_enabled_in_env() and controller_tags_no_view_defined:
             raise ValueError(
                 f'Found controller file tags with no corresponding view defined: {controller_tags_no_view_defined}')
-
-        ingest_views_defined_not_in_controller_list = found_ingest_view_tags_set.difference(controller_view_tags_set)
-        if self.region.is_ingest_launched_in_production() and ingest_views_defined_not_in_controller_list:
-            raise ValueError(f'Found ingest views defined for launched region that are not in the controller tags '
-                             f'list: [{ingest_views_defined_not_in_controller_list}]')
