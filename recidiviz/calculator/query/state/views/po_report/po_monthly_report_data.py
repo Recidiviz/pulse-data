@@ -68,7 +68,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       email_address,
       month as review_month,
       report_month.pos_discharges,
-      report_month.pos_discharges - IFNULL(last_month.pos_discharges, 0) as pos_discharges_change,
       report_month.pos_discharges_district_average,
       report_month.pos_discharges_state_average,
       report_month.earned_discharges,
@@ -83,10 +82,10 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       report_month.crime_revocations - IFNULL(last_month.crime_revocations, 0) as crime_revocations_change,
       report_month.assessments,
       report_month.assessment_percent,
-      report_month.assessment_percent - IFNULL(last_month.assessment_percent, 0) as assessment_percent_change,
+      IFNULL(last_month.assessment_percent, 0) as assessment_percent_last_month,
       report_month.facetoface,
       report_month.facetoface_percent,
-      report_month.facetoface_percent - IFNULL(last_month.facetoface_percent, 0) as facetoface_percent_change
+      IFNULL(last_month.facetoface_percent, 0) as facetoface_percent_last_month
     FROM `{project_id}.{po_report_dataset}.po_report_recipients`
     LEFT JOIN report_data report_month
       USING (state_code, officer_external_id, district)
