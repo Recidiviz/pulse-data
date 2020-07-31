@@ -60,6 +60,62 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
+    def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+        )
+
+        supervision_periods = [supervision_period]
+
+        admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
+            incarceration_revocation_period, supervision_periods, None)
+
+        self.assertTrue(admission_is_revocation)
+        self.assertEqual(revoked_period, supervision_period)
+
+    def test_us_id_not_revoked_supervision_period_if_shock_incarceration(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+        )
+
+        supervision_periods = [supervision_period]
+
+        admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
+            incarceration_revocation_period, supervision_periods, None)
+
+        self.assertFalse(admission_is_revocation)
+        self.assertIsNone(revoked_period)
+
     def test_us_id_revoked_supervision_period_if_revocation_occurred_parole_board_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             start_date=date(2017, 1, 1),
@@ -95,11 +151,10 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
             incarceration_revocation_period, supervision_periods, board_hold_period)
-
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_revoked_from_treatment(self):
+    def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment_transfer_not_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -119,7 +174,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         )
 
-        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+        transfer_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id='ip2',
             state_code='US_ID',
@@ -133,10 +188,9 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         supervision_periods = [supervision_period]
 
         admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
-            incarceration_revocation_period, supervision_periods, treatment_period)
-
-        self.assertTrue(admission_is_revocation)
-        self.assertEqual(revoked_period, supervision_period)
+            transfer_incarceration_period, supervision_periods, treatment_period)
+        self.assertFalse(admission_is_revocation)
+        self.assertIsNone(revoked_period)
 
     def test_us_id_revoked_supervision_period_if_revocation_occurred_transfers_not_same_day(self):
         treatment_period = StateIncarcerationPeriod.new_with_defaults(
@@ -181,26 +235,6 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             release_date=date(2019, 5, 29),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
-        )
-
-        admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
-            incarceration_period, [], None)
-
-        self.assertFalse(admission_is_revocation)
-        self.assertIsNone(revoked_period)
-
-    def test_us_id_revoked_supervision_period_if_revocation_occurred_admitted_for_treatment(self):
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=222,
-            external_id='ip2',
-            state_code='US_ID',
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=date(2017, 5, 17),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
-            release_date=date(2019, 5, 29),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         )
 
         admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
