@@ -34,10 +34,10 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH dashboard_success AS (
-      SELECT * FROM `recidiviz-staging.dashboard_views.supervision_termination_by_type_by_period`  
+      SELECT * FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_period`  
       WHERE supervision_type != 'ALL'
     ), public_dashboard_success AS (
-      SELECT * FROM `recidiviz-staging.public_dashboard_views.supervision_success_by_period_by_demographics`
+      SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_success_by_period_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
       AND gender = 'ALL'
       AND age_bucket = 'ALL'
