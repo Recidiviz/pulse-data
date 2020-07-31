@@ -36,6 +36,10 @@ CREATE_TABLE_PERSON_IDS_TO_DELETE_TEMPLATE = f"""CREATE TEMP TABLE {PERSON_IDS_T
     SELECT DISTINCT person_id FROM state_person_external_id WHERE state_code = \'{{state_code}}\'
     UNION
     SELECT DISTINCT person_id FROM state_sentence_group WHERE state_code = \'{{state_code}}\'
+    UNION
+    SELECT DISTINCT person_id 
+    FROM state_person_history
+    WHERE supervising_officer_id IN (SELECT agent_id FROM state_agent WHERE state_code = \'{{state_code}}\')
 );"""
 
 PERSON_DELETION_FILTER_CLAUSE = f'person_id IN (SELECT person_id FROM {PERSON_IDS_TEMP_TABLE_NAME})'
