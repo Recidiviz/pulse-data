@@ -55,8 +55,11 @@ from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_pers
 from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_person import \
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER
 
+# NOTE: These views must be listed in order of dependency. For example, if reference view Y depends on reference view X,
+# then view X should appear in the list before view Y.
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
+    EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
@@ -73,6 +76,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-    EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER
 ]

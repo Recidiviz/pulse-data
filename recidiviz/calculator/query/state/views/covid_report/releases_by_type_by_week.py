@@ -84,7 +84,7 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
       FROM
         releases_by_week
       FULL OUTER JOIN
-        `{project_id}.covid_report_views.admissions_to_cpp_by_week`
+        `{project_id}.{covid_report_dataset}.admissions_to_cpp_by_week`
       USING (state_code, week_num, start_date, end_date)
     )
     ORDER BY state_code, week_num
