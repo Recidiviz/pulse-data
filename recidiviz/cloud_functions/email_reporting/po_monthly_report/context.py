@@ -58,22 +58,14 @@ class PoMonthlyReportContext(ReportContext):
         self.prepared_data["static_image_path"] = utils.get_static_image_path(self.state_code, self.get_report_type())
         self._convert_month_to_name("review_month")
 
-        self._color_change_text("pos_discharges_change", "pos_discharges_change_color",
-                                self.properties["increase"], self.properties["decrease"], True)
         self._color_change_text("earned_discharges_change", "earned_discharges_change_color",
                                 self.properties["increase"], self.properties["decrease"], True)
-
         self._color_change_text("technical_revocations_change", "technical_revocations_change_color",
                                 self.properties["increase"], self.properties["decrease"], False)
         self._color_change_text("absconsions_change", "absconsions_change_color",
                                 self.properties["increase"], self.properties["decrease"], False)
         self._color_change_text("crime_revocations_change", "crime_revocations_change_color",
                                 self.properties["increase"], self.properties["decrease"], False)
-
-        self._color_change_text("assessment_percent_change", "assessment_percent_change_color",
-                                self.properties["percent_increase"], self.properties["percent_decrease"], True)
-        self._color_change_text("facetoface_percent_change", "facetoface_percent_change_color",
-                                self.properties["percent_increase"], self.properties["percent_decrease"], True)
 
         self._choose_comparison_icon("pos_discharges_icon",
                                      "pos_discharges",
@@ -83,10 +75,14 @@ class PoMonthlyReportContext(ReportContext):
                                      "pos_discharges_icon_good",
                                      "pos_discharges_icon_low")
 
+        self._choose_pos_discharges_description()
         self._choose_early_discharges_icon()
         self._earned_discharges_tip()
         self._singular_or_plural_labels()
-        self._round_float_values_to_ints(['assessment_percent', 'facetoface_percent'])
+        self._round_float_values_to_ints(['assessment_percent',
+                                          'assessment_percent_last_month',
+                                          'facetoface_percent',
+                                          'facetoface_percent_last_month'])
         self._round_float_values_to_number_of_digits(['pos_discharges_district_average',
                                                       'pos_discharges_state_average',
                                                       'earned_discharges_district_average',
@@ -98,7 +94,7 @@ class PoMonthlyReportContext(ReportContext):
     def _singular_or_plural_labels(self):
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
         singular_or_plural(self.prepared_data, "pos_discharges", "pos_discharges_label",
-                           "Successful&nbsp;Completion", "Successful&nbsp;Completions")
+                           "Successful&nbsp;Case Completion", "Successful&nbsp;Case Completions")
 
         singular_or_plural(self.prepared_data, "earned_discharges", "earned_discharges_label",
                            "Early Discharge Filed", "Early Discharges Filed")
@@ -130,6 +126,25 @@ class PoMonthlyReportContext(ReportContext):
         for float_key in float_keys:
             self.prepared_data[float_key] = round_float_value_to_number_of_digits(
                 self.recipient_data[float_key], number_of_digits)
+
+    def _choose_pos_discharges_description(self):
+        """Determines which text to use for the Successful Case Completions sentence """
+        you = float(self.recipient_data["pos_discharges"])
+        district = float(self.recipient_data["pos_discharges_district_average"])
+        state = float(self.recipient_data["pos_discharges_state_average"])
+
+        if you > district and you > state:
+            self.prepared_data["pos_discharges_description"] = \
+                self.properties["pos_discharges_description_higher_both"]
+        elif you > district:
+            self.prepared_data["pos_discharges_description"] = \
+                self.properties["pos_discharges_description_higher_district"]
+        elif you > state:
+            self.prepared_data["pos_discharges_description"] = \
+                self.properties["pos_discharges_description_higher_state"]
+        else:
+            self.prepared_data["pos_discharges_description"] = \
+                self.properties["pos_discharges_description_lower_both"]
 
     def _choose_comparison_icon(self,
                                 icon_to_choose: str,
