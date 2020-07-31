@@ -18,8 +18,6 @@
 
 from typing import List, Optional
 
-from opencensus.stats import measure, view, aggregation
-
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entities import EntityPersonType
@@ -34,20 +32,6 @@ from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
     StateEntityMatcher
 from recidiviz.persistence.entity_matching.state.\
     state_matching_delegate_factory import StateMatchingDelegateFactory
-from recidiviz.utils import monitoring
-
-m_matching_errors = measure.MeasureInt(
-    'persistence/entity_matching/error_count',
-    'Number of EntityMatchingErrors thrown for a specific entity type', '1')
-
-matching_errors_by_entity_view = view.View(
-    'recidiviz/persistence/entity_matching/error_count',
-    'Sum of the errors in the entit matching layer, by entity',
-    [monitoring.TagKey.REGION, monitoring.TagKey.ENTITY_TYPE],
-    m_matching_errors,
-    aggregation.SumAggregation())
-
-monitoring.register_views([matching_errors_by_entity_view])
 
 _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
                                       orphaned_entities=[],
