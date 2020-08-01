@@ -96,6 +96,11 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 class IncarcerationReleaseEvent(IncarcerationEvent):
     """Models an IncarcerationEvent where a person was released from incarceration for any reason."""
 
+    # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
+    # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
+    # subsequent admission period, if present.
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+
     # Release reason
     release_reason: StateIncarcerationPeriodReleaseReason = attr.ib(default=None)
 
@@ -107,3 +112,6 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
 
     # Supervision type at the time of release, if any.
     supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
+    # The length, in days, of the continuous stay in prison.
+    total_days_incarcerated: Optional[int] = attr.ib(default=None)
