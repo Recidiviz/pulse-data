@@ -61,7 +61,20 @@ class SQLAlchemyEngineManager:
         if schema_base in cls._engine_for_schema:
             raise ValueError(f'Already initialized schema [{schema_base.__name__}]')
 
-        engine = sqlalchemy.create_engine(db_url, **dialect_specific_kwargs)
+        # Set isolation level to SERIALIZABLE for states. This ensures that data read during a transaction is still
+        # valid when the transaction is committed, avoiding any inconsistency issues such as #2989. See the following
+        # for details on transaction isolation guarantees within Postgres:
+        # https://www.postgresql.org/docs/9.1/transaction-iso.html
+        #
+        # We opt for this over explicit locking to simplify our application logic. If this causes performance issues
+        # we may reconsider. See https://www.postgresql.org/docs/9.1/applevel-consistency.html.
+        #
+        # TODO(3734): Consider doing this for all databases.
+        isolation_level = None
+        if schema_base is StateBase and environment.in_gae_staging():
+            isolation_level = 'SERIALIZABLE'
+
+        engine = sqlalchemy.create_engine(db_url, isolation_level=isolation_level, **dialect_specific_kwargs)
         schema_base.metadata.create_all(engine)
         cls._engine_for_schema[schema_base] = engine
 
