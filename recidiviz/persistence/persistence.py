@@ -17,34 +17,38 @@
 """Contains logic for communicating with the persistence layer."""
 import datetime
 import logging
-from typing import List
+from typing import Callable, List
 
+import psycopg2
+from psycopg2.errorcodes import SERIALIZATION_FAILURE
+import sqlalchemy
 from opencensus.stats import aggregation, measure, view
+from opencensus.stats.measurement_map import MeasurementMap
 
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence_utils
-from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database import database
 from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.database.schema_entity_converter import \
+    schema_entity_converter as converter
 from recidiviz.persistence.database.schema_utils import \
     schema_base_for_system_level
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.ingest_info_validator import ingest_info_validator
-from recidiviz.persistence.database.schema.county import dao as county_dao
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
-from recidiviz.persistence.database import database
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
+from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
 from recidiviz.utils import monitoring
 
@@ -54,6 +58,8 @@ m_aborts = measure.MeasureInt("persistence/num_aborts",
                               "The number of aborted writes", "1")
 m_errors = measure.MeasureInt("persistence/num_errors",
                               "The number of errors", "1")
+m_retries = measure.MeasureInt("persistence/num_transaction_retries",
+                               "The number of transaction retries due to serialization failures", "1")
 people_persisted_view = view.View("recidiviz/persistence/num_people",
                                   "The sum of people persisted",
                                   [monitoring.TagKey.REGION,
@@ -69,8 +75,12 @@ errors_persisted_view = view.View("recidiviz/persistence/num_errors",
                                   [monitoring.TagKey.REGION,
                                    monitoring.TagKey.ERROR],
                                   m_errors, aggregation.SumAggregation())
+retried_transactions_view = view.View("recidiviz/persistence/num_transaction_retries",
+                                      "The total number of transaction retries",
+                                      [monitoring.TagKey.REGION],
+                                      m_retries, aggregation.SumAggregation())
 monitoring.register_views(
-    [people_persisted_view, aborted_writes_view, errors_persisted_view])
+    [people_persisted_view, aborted_writes_view, errors_persisted_view, retried_transactions_view])
 
 ERROR_THRESHOLD = 0.5
 
@@ -197,6 +207,46 @@ def _should_abort(
     return False
 
 
+def retry_transaction(session: Session, measurements: MeasurementMap,
+                      txn_body: Callable[[Session], bool], max_retries=None) -> bool:
+    """Retries the transaction if a serialization failure occurs.
+
+    Handles management of committing, rolling back, and closing the `session`. `txn_body` can return False to force the
+    transaction to be aborted, otherwise return True.
+
+    Returns:
+        True, if the transaction succeeded.
+        False, if the transaction was aborted by `txn_body`.
+    """
+    num_retries = 0
+    try:
+        while True:
+            try:
+                should_continue = txn_body(session)
+
+                if not should_continue:
+                    session.rollback()
+                    return should_continue
+
+                session.commit()
+                return True
+            except sqlalchemy.exc.DBAPIError as e:
+                session.rollback()
+                if max_retries and num_retries >= max_retries:
+                    raise
+                if isinstance(e.orig, psycopg2.OperationalError) \
+                        and e.orig.pgcode == SERIALIZATION_FAILURE:
+                    measurements.measure_int_put(m_retries, 1)
+                    num_retries += 1
+                    continue
+                raise
+            except Exception:
+                session.rollback()
+                raise
+    finally:
+        session.close()
+
+
 def write(ingest_info, metadata):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
@@ -241,17 +291,12 @@ def write(ingest_info, metadata):
         if not should_persist():
             return True
 
-        persisted = False
-
-        session = SessionFactory.for_schema_base(
-            schema_base_for_system_level(metadata.system_level))
-
-        try:
+        def match_and_write_people(session: Session) -> bool:
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
-            people = entity_matching_output.people
+            output_people = entity_matching_output.people
             total_root_entities = total_people \
                 if metadata.system_level == SystemLevel.COUNTY \
                 else entity_matching_output.total_root_entities
@@ -259,7 +304,7 @@ def write(ingest_info, metadata):
                 "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count)
             logging.info("Completed entity matching and have [%s] total people "
-                         "to commit to DB", len(people))
+                         "to commit to DB", len(output_people))
             if _should_abort(
                     total_root_entities=total_root_entities,
                     conversion_result=conversion_result,
@@ -268,16 +313,20 @@ def write(ingest_info, metadata):
                 #  TODO(#1665): remove once dangling PERSIST session
                 #   investigation is complete.
                 logging.info("_should_abort_ was true after entity matching")
-                session.rollback()
                 return False
 
             database.write_people(
-                session, people, metadata,
+                session, output_people, metadata,
                 orphaned_entities=entity_matching_output.orphaned_entities)
             logging.info("Successfully wrote to the database")
-            session.commit()
+            return True
 
-            persisted = True
+        try:
+            if not retry_transaction(
+                    SessionFactory.for_schema_base(schema_base_for_system_level(metadata.system_level)),
+                    measurements, match_and_write_people, max_retries=5):
+                return False
+
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
             logging.exception("An exception was raised in write(): [%s]",
@@ -285,11 +334,8 @@ def write(ingest_info, metadata):
             # Record the error type that happened and increment the counter
             mtags[monitoring.TagKey.ERROR] = type(e).__name__
             measurements.measure_int_put(m_errors, 1)
-            session.rollback()
             raise
-        finally:
-            session.close()
-        return persisted
+        return True
 
 
 def _get_total_people(ingest_info: IngestInfo, metadata: IngestMetadata) -> int:

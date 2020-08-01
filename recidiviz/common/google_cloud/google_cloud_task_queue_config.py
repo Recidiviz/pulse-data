@@ -26,15 +26,16 @@ from google.cloud.tasks_v2.proto import queue_pb2
 from google.oauth2 import credentials
 from google.protobuf import duration_pb2
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, \
-    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, \
-    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2, BIGQUERY_QUEUE_V2, \
-    JOB_MONITOR_QUEUE_V2, SCRAPER_PHASE_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    BIGQUERY_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
+    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, JOB_MONITOR_QUEUE_V2,
+    SCRAPER_PHASE_QUEUE_V2)
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
-from recidiviz.utils import vendors, regions
+from recidiviz.utils import metadata, regions, vendors
+from recidiviz.utils.environment import GAE_PROJECT_STAGING
 
 DIRECT_INGEST_QUEUE_BASE_CONFIG = queue_pb2.Queue(
     rate_limits=queue_pb2.RateLimits(
@@ -130,14 +131,28 @@ def _build_cloud_task_queue_configs(
     queues = []
 
     # Direct ingest queues for handling /process_job requests
-    for queue_name in [DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-                       DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
+    for queue_name in [DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
                        DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
                        DIRECT_INGEST_SCHEDULER_QUEUE_V2]:
         queues.append(
             _queue_config_with_name(client_wrapper,
                                     DIRECT_INGEST_QUEUE_BASE_CONFIG,
                                     queue_name))
+
+    # Allow the state process job queue to run tasks for separate states simultaneously. Set to 50 so that it does not
+    # need to be updated in the future. The direct ingest controller is responsible for only enqueueing a task for a
+    # state if there is not already one present in the queue, to avoid multiple tasks for a single state running
+    # concurrently.
+    queues.append(
+        ProtobufBuilder(queue_pb2.Queue).compose(
+            _queue_config_with_name(client_wrapper,
+                                    DIRECT_INGEST_QUEUE_BASE_CONFIG,
+                                    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2)
+        ).update_args(
+            rate_limits=queue_pb2.RateLimits(
+                max_concurrent_dispatches=50 if metadata.project_id() == GAE_PROJECT_STAGING else 1,
+            )
+        ).build())
 
     queues.append(
         ProtobufBuilder(queue_pb2.Queue).compose(
@@ -190,13 +205,12 @@ def _build_cloud_task_queue_configs(
     return queues
 
 
-def initialize_queues(google_auth_token: str,
-                      project_id: str):
+def initialize_queues(google_auth_token: str):
     cloud_tasks_client = tasks_v2.CloudTasksClient(
         credentials=credentials.Credentials(google_auth_token))
     client_wrapper = GoogleCloudTasksClientWrapper(
         cloud_tasks_client=cloud_tasks_client,
-        project_id=project_id,
+        project_id=metadata.project_id(),
     )
 
     logging.info("Building queue configurations...")
