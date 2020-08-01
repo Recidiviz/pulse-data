@@ -652,7 +652,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period.release_date,
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=incarceration_period.release_reason
+                release_reason=incarceration_period.release_reason,
+                admission_reason=incarceration_period.admission_reason,
+                total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
             )
         ]
 

@@ -158,6 +158,11 @@ def characteristics_dict(person: StatePerson,
             characteristics['purpose_for_incarceration'] = incarceration_event.purpose_for_incarceration
         if incarceration_event.supervision_type_at_release:
             characteristics['supervision_type_at_release'] = incarceration_event.supervision_type_at_release
+        if incarceration_event.admission_reason:
+            characteristics['admission_reason'] = incarceration_event.admission_reason
+        # Have to explicitly check if this is not None because 0 is a valid value and evaluates to False
+        if incarceration_event.total_days_incarcerated is not None:
+            characteristics['total_days_incarcerated'] = incarceration_event.total_days_incarcerated
 
     if isinstance(incarceration_event, IncarcerationStayEvent):
         characteristics['date_of_stay'] = incarceration_event.event_date

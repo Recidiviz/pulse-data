@@ -1082,7 +1082,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             release_reason_raw_text='CR',
-            supervision_type_at_release=StateSupervisionPeriodSupervisionType.DUAL
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.DUAL,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            total_days_incarcerated=190
         )
 
         characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
@@ -1098,7 +1100,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             'release_date': date(2018, 9, 13),
             'supervision_type_at_release': StateSupervisionPeriodSupervisionType.DUAL,
             'release_reason_raw_text': 'CR',
-            'release_reason': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
+            'release_reason': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            'admission_reason': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            'total_days_incarcerated': 190
         }
 
         self.assertEqual(expected_output, characteristic_dict)
