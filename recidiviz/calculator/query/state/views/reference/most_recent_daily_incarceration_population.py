@@ -61,6 +61,7 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_QUERY_TEMPLATE = \
     {race_or_ethnicity_dimension}
     WHERE metric_period_months = 0
     AND methodology = 'EVENT'
+    -- Revisit these exclusions when #3657 and #3723 are complete --
     AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
     """
 
