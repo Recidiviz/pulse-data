@@ -199,6 +199,14 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
     # Supervision type at the time of release, if any.
     supervision_type_at_release: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
+    # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
+    # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
+    # subsequent admission period, if present.
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(default=None)
+
+    # The length, in days, of the continuous stay in prison.
+    total_days_incarcerated: Optional[int] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationReleaseMetric']:

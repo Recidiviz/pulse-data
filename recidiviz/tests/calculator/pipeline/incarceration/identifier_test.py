@@ -117,7 +117,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                  event_date=incarceration_period.release_date,
                  facility=incarceration_period.facility,
                  county_of_residence=_COUNTY_OF_RESIDENCE,
-                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                 admission_reason=incarceration_period.admission_reason,
+                 total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
              )
             ]
         )
@@ -205,7 +207,10 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=incarceration_period_2.release_date,
                     facility=incarceration_period_2.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                    admission_reason=incarceration_period_1.admission_reason,
+                    total_days_incarcerated=(
+                        incarceration_period_2.release_date - incarceration_period_1.admission_date).days
                 )
             ]
         )
@@ -265,7 +270,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                  event_date=incarceration_period.release_date,
                  facility=incarceration_period.facility,
                  county_of_residence=_COUNTY_OF_RESIDENCE,
-                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                 admission_reason=incarceration_period.admission_reason,
+                 total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
              )])
 
         self.assertCountEqual(expected_events, incarceration_events)
@@ -385,7 +392,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=revocation_period.release_reason,
                 release_reason_raw_text=revocation_period.release_reason_raw_text,
-                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
+                supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+                admission_reason=revocation_period.admission_reason,
+                total_days_incarcerated=(revocation_period.release_date - revocation_period.admission_date).days
             )
         ], incarceration_events)
 
@@ -532,7 +541,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=revocation_period.release_date,
                 facility=revocation_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=revocation_period.release_reason
+                release_reason=revocation_period.release_reason,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                total_days_incarcerated=(revocation_period.release_date - temp_custody_period.admission_date).days
             )
         ], incarceration_events)
 
@@ -1451,7 +1462,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             release_reason=incarceration_period.release_reason,
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
-            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
         ), release_event)
 
     def test_release_event_for_period_all_release_reasons(self):
@@ -1495,7 +1508,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             event_date=incarceration_period.release_date,
             facility='CJ19',
             county_of_residence=_COUNTY_OF_RESIDENCE,
-            release_reason=incarceration_period.release_reason
+            release_reason=incarceration_period.release_reason,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
         ), release_event)
 
     def test_release_event_for_period_us_id(self):
@@ -1540,7 +1555,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason=incarceration_period.release_reason,
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
-            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
         ), release_event)
 
     def test_release_event_for_period_us_mo(self):
@@ -1592,7 +1609,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason=incarceration_period.release_reason,
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
-            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PROBATION,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
         ), release_event)
 
     def test_release_event_for_period_us_nd(self):
@@ -1620,7 +1639,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason=incarceration_period.release_reason,
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
-            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE
+            supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
         ), release_event)
 
 

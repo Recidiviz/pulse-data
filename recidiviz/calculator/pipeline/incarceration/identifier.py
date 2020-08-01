@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies instances of admission and release from incarceration."""
+import logging
 from datetime import date
 from typing import List, Optional, Any, Dict, Set, Union, Tuple
 
@@ -420,6 +421,15 @@ def release_event_for_period(
             supervision_sentences,
             incarceration_period)
 
+        total_days_incarcerated = None
+
+        if incarceration_period.admission_date:
+            total_days_incarcerated = (release_date - incarceration_period.admission_date).days
+
+            if total_days_incarcerated < 0:
+                logging.warning("release_date before admission_date on incarceration period: %s", incarceration_period)
+                total_days_incarcerated = 0
+
         return IncarcerationReleaseEvent(
             state_code=incarceration_period.state_code,
             event_date=release_date,
@@ -428,7 +438,9 @@ def release_event_for_period(
             release_reason_raw_text=incarceration_period.release_reason_raw_text,
             purpose_for_incarceration=purpose_for_incarceration,
             county_of_residence=county_of_residence,
-            supervision_type_at_release=supervision_type_at_release
+            supervision_type_at_release=supervision_type_at_release,
+            admission_reason=incarceration_period.admission_reason,
+            total_days_incarcerated=total_days_incarcerated
         )
 
     return None
