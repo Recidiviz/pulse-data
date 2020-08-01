@@ -29,42 +29,6 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most 
 INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH most_recent_dates_by_state_code AS (
-      SELECT
-        state_code,
-        job_id,
-        date_of_stay,
-        ROW_NUMBER() OVER (PARTITION BY state_code ORDER BY date_of_stay DESC) AS recency_rank
-      FROM
-        `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      JOIN
-        `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
-      USING (state_code, job_id, year, month, metric_period_months)
-      WHERE metric_period_months = 0
-      AND methodology = 'PERSON'
-      AND metric_type = 'INCARCERATION_POPULATION'
-      AND EXTRACT(YEAR FROM date_of_stay) = EXTRACT(YEAR FROM CURRENT_DATE())
-    ), most_recent_incarcerations AS (
-      SELECT
-        state_code,
-        person_id,
-        facility,
-        race_or_ethnicity,
-        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-        IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
-        date_of_stay,
-      FROM
-         most_recent_dates_by_state_code
-      LEFT JOIN
-        `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      USING (state_code, job_id, date_of_stay),
-      {race_or_ethnicity_dimension}
-      WHERE recency_rank = 1
-      AND metric_period_months = 0
-      AND methodology = 'PERSON'
-      AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
-    )
-    
     SELECT
       state_code,
       date_of_stay,
@@ -74,7 +38,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       age_bucket,
       COUNT(DISTINCT(person_id)) as total_population
     FROM
-      most_recent_incarcerations
+      `{project_id}.{reference_dataset}.most_recent_daily_incarceration_population` 
     LEFT JOIN
       `{project_id}.{reference_dataset}.state_incarceration_facility_capacity`
     USING (state_code, facility),
@@ -96,10 +60,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQue
     view_id=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     description=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    metric_period_dimension=bq_utils.unnest_metric_period_months(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),

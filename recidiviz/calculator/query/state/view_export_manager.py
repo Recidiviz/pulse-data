@@ -44,7 +44,7 @@ def export_view_data_to_cloud_storage():
 
     # This step has to happen before the export because some views in views_to_export depend on the materialized
     # version of a view
-    view_builders_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
+    view_builders_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_VIEW_EXPORT
     materialize_views(view_builders_to_materialize)
 
     datasets_to_export = view_config.DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT.keys()
