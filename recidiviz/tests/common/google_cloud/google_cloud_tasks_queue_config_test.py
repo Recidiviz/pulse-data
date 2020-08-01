@@ -22,10 +22,10 @@ from typing import Dict
 
 from google.cloud import tasks_v2
 from google.cloud.tasks_v2.proto import queue_pb2
-from mock import patch, create_autospec
+from mock import create_autospec, patch
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
-from recidiviz.utils import regions
+from recidiviz.utils import metadata, regions
 
 
 class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
@@ -50,12 +50,7 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
     def tearDown(self):
         self.mock_client_patcher.stop()
 
-    def test_initialize_queues(self):
-        # Act
-        google_cloud_task_queue_config.initialize_queues(
-            google_auth_token='fake-auth-token', project_id='my-project-id')
-
-        # Assert
+    def get_updated_queues(self) -> Dict[str, queue_pb2.Queue]:
         queues_updated_by_id: Dict[str, queue_pb2.Queue] = {}
         for method_name, args, _kwargs in self.mock_client.mock_calls:
             if method_name == 'update_queue':
@@ -64,7 +59,16 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
                     self.fail(f"Unexpected type [{type(queue)}]")
                 _, queue_id = os.path.split(queue.name)
                 queues_updated_by_id[queue_id] = queue
+        return queues_updated_by_id
 
+    def test_initialize_queues(self):
+        # Act
+        with metadata.local_project_id_override('my-project-id'):
+            google_cloud_task_queue_config.initialize_queues(
+                google_auth_token='fake-auth-token')
+
+        # Assert
+        queues_updated_by_id = self.get_updated_queues()
         for queue in queues_updated_by_id.values():
             self.assertTrue(
                 queue.name.startswith(
@@ -74,6 +78,7 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         direct_ingest_queue_ids = {
             'direct-ingest-state-process-job-queue-v2',
             'direct-ingest-jpp-process-job-queue-v2',
+            'direct-ingest-bq-import-export-v2',
             'direct-ingest-scheduler-v2'
         }
         self.assertFalse(
@@ -89,3 +94,13 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         self.assertTrue('bigquery-v2' in queues_updated_by_id)
         self.assertTrue('job-monitor-v2' in queues_updated_by_id)
         self.assertTrue('scraper-phase-v2' in queues_updated_by_id)
+
+    def test_initialize_queues_staging(self):
+        with metadata.local_project_id_override('recidiviz-staging'):
+            google_cloud_task_queue_config.initialize_queues(
+                google_auth_token='fake-auth-token')
+
+        # Assert
+        queues_updated_by_id = self.get_updated_queues()
+        self.assertEqual(
+            queues_updated_by_id['direct-ingest-state-process-job-queue-v2'].rate_limits.max_concurrent_dispatches, 50)

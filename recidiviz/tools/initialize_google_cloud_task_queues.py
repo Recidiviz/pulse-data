@@ -19,11 +19,12 @@ configurations."""
 
 import argparse
 import logging
+from recidiviz.utils import metadata
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
 
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--project_id', required=True,
@@ -36,11 +37,7 @@ def main():
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
-    google_cloud_task_queue_config.initialize_queues(
-        google_auth_token=args.google_auth_token,
-        project_id=args.project_id
-    )
-
-
-if __name__ == '__main__':
-    main()
+    with metadata.local_project_id_override(args.project_id):
+        google_cloud_task_queue_config.initialize_queues(
+            google_auth_token=args.google_auth_token,
+        )

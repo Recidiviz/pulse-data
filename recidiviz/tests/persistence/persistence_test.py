@@ -20,7 +20,12 @@ from datetime import date, datetime, timedelta
 from unittest import TestCase
 
 import attr
-from mock import patch, Mock
+from mock import call, create_autospec, patch, Mock
+import mock
+import psycopg2
+from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
+import pytest
+import sqlalchemy
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
@@ -127,6 +132,70 @@ class TestPersistence(TestCase):
             # Assert
             assert len(result) == 1
             assert result[0].full_name == _format_full_name(FULL_NAME_1)
+
+    @patch.object(sqlalchemy.orm.Session, 'close')
+    @patch.object(sqlalchemy.orm.Session, 'commit')
+    def test_retryableError_retries(self, mock_commit, mock_close):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1)
+
+        inner_error = create_autospec(psycopg2.OperationalError)
+        # Serialization Failure is retryable
+        inner_error.pgcode = SERIALIZATION_FAILURE
+        error = sqlalchemy.exc.DatabaseError(statement=None, params=None, orig=inner_error)
+        # 5 retries is allowed
+        mock_commit.side_effect = [error] * 5 + [mock.DEFAULT]
+
+        # Act
+        persistence.write(ingest_info, DEFAULT_METADATA)
+
+        # Assert
+        assert mock_commit.call_args_list == [call()] * 6
+        mock_close.assert_called_once()
+
+    @patch.object(sqlalchemy.orm.Session, 'close')
+    @patch.object(sqlalchemy.orm.Session, 'commit')
+    def test_retryableError_exceedsMaxRetries(self, mock_commit, mock_close):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1)
+
+        inner_error = create_autospec(psycopg2.OperationalError)
+        # Serialization Failure is retryable
+        inner_error.pgcode = SERIALIZATION_FAILURE
+        error = sqlalchemy.exc.DatabaseError(statement=None, params=None, orig=inner_error)
+        # 6 retries is too many
+        mock_commit.side_effect = [error] * 6 + [mock.DEFAULT]
+
+        # Act / Assert
+        with pytest.raises(sqlalchemy.exc.DatabaseError):
+            persistence.write(ingest_info, DEFAULT_METADATA)
+
+        # Assert
+        assert mock_commit.call_args_list == [call()] * 6
+        mock_close.assert_called_once()
+
+    @patch.object(sqlalchemy.orm.Session, 'close')
+    @patch.object(sqlalchemy.orm.Session, 'commit')
+    def test_nonRetryableError_failsImmediately(self, mock_commit, mock_close):
+        # Arrange
+        ingest_info = IngestInfo()
+        ingest_info.people.add(full_name=FULL_NAME_1)
+
+        inner_error = create_autospec(psycopg2.OperationalError)
+        # Not Null Violation is not retryable
+        inner_error.pgcode = NOT_NULL_VIOLATION
+        error = sqlalchemy.exc.DatabaseError(statement=None, params=None, orig=inner_error)
+        mock_commit.side_effect = [error, mock.DEFAULT]
+
+        # Act / Assert
+        with pytest.raises(sqlalchemy.exc.DatabaseError):
+            persistence.write(ingest_info, DEFAULT_METADATA)
+
+        # Assert
+        assert mock_commit.call_args_list == [call()]
+        mock_close.assert_called_once()
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
