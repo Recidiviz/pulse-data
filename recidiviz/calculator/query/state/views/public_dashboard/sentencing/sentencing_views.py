@@ -14,16 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""All views that populate the data in the publilc dashboards."""
+"""Public dashboard views related to supervision."""
+# pylint: disable=line-too-long
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration import incarceration_views
-from recidiviz.calculator.query.state.views.public_dashboard.sentencing import sentencing_views
-from recidiviz.calculator.query.state.views.public_dashboard.supervision import supervision_views
+from recidiviz.calculator.query.state.views.public_dashboard.sentencing.sentence_type_by_district_by_demographics import \
+    SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER
 
-PUBLIC_DASHBOARD_VIEW_BUILDERS: List[BigQueryViewBuilder] = (
-    incarceration_views.INCARCERATION_VIEW_BUILDERS +
-    sentencing_views.SENTENCING_VIEW_BUILDERS +
-    supervision_views.SUPERVISION_VIEW_BUILDERS
-)
+SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER
+]

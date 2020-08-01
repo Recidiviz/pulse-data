@@ -72,11 +72,18 @@ def period_to_sentence_group_joins(period_type: str, sentence_type: str) -> str:
 
 def supervision_specific_district_groupings(district_column: str, judicial_district_column: str) -> str:
     return f"""IFNULL(CASE WHEN supervision_type = 'PROBATION' THEN
-          (CASE WHEN state_code = 'US_ND'
-           AND ({judicial_district_column} IS NULL
-                OR {judicial_district_column} IN ('OUT_OF_STATE', 'EXTERNAL_UNKNOWN', 'FEDERAL'))
-          THEN 'OTHER' else {judicial_district_column} END)
+        {state_specific_judicial_district_groupings(judicial_district_column)}
         ELSE {district_column} END, 'EXTERNAL_UNKNOWN')"""
+
+
+# TODO(3675): Formalize state-specific logic in queries
+def state_specific_judicial_district_groupings(judicial_district_column: str) -> str:
+    return f"""(CASE WHEN state_code = 'US_ND'
+               AND ({judicial_district_column} IS NULL
+                    OR {judicial_district_column} IN ('OUT_OF_STATE', 'EXTERNAL_UNKNOWN', 'FEDERAL'))
+                THEN 'OTHER'
+               WHEN {judicial_district_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
+               ELSE {judicial_district_column} END)"""
 
 
 def most_severe_violation_type_subtype_grouping() -> str:
