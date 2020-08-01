@@ -33,11 +33,14 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def materialize_views(view_builders_to_materialize: List[BigQueryViewBuilder]):
-    """Materializes views in VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT into tables."""
+    """Materializes views in VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_VIEW_EXPORT into tables. Creates or updates
+    the view if necessary prior to materialization."""
     bq_client = BigQueryClientImpl()
 
     for view_builder in view_builders_to_materialize:
         view = view_builder.build()
+        dataset_ref = bq_client.dataset_ref_for_id(view.dataset_id)
+        bq_client.create_or_update_view(dataset_ref, view)
         bq_client.materialize_view_to_table(view)
 
 
@@ -60,7 +63,7 @@ if __name__ == '__main__':
 
     # Change this variable to materialize a different set of views. Views must have a set materialized_view_table_id in
     # order to be materialized.
-    views_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_DASHBOARD_EXPORT
+    views_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_VIEW_EXPORT
 
     with local_project_id_override(known_args.project_id):
         materialize_views(views_to_materialize)

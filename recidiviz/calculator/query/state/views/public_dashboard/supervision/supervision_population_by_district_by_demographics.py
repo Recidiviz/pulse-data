@@ -30,44 +30,6 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH most_recent_dates_by_state_code AS (
-      SELECT
-        state_code,
-        job_id,
-        date_of_supervision,
-        ROW_NUMBER() OVER (PARTITION BY state_code ORDER BY date_of_supervision DESC) AS recency_rank
-      FROM
-        `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      JOIN
-        `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
-      USING (state_code, job_id, year, month, metric_period_months)
-      WHERE metric_period_months = 0
-      AND methodology = 'EVENT'
-      AND metric_type = 'SUPERVISION_POPULATION'
-      AND EXTRACT(YEAR FROM date_of_supervision) = EXTRACT(YEAR FROM CURRENT_DATE())
-    ), supervision_populations AS (
-      SELECT
-        state_code,
-        person_id,
-        supervision_type,
-        date_of_supervision,
-        {grouped_districts} as district,
-        race_or_ethnicity,
-        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-        IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
-      FROM
-         most_recent_dates_by_state_code
-      LEFT JOIN
-        `{project_id}.{metrics_dataset}.supervision_population_metrics`
-      USING (state_code, job_id, date_of_supervision),
-      {race_or_ethnicity_dimension}
-      WHERE recency_rank = 1
-      AND metric_period_months = 0
-      AND methodology = 'EVENT'
-      AND supervision_type IN ('PROBATION', 'PAROLE')
-    )
-          
-    
     SELECT
       state_code,
       supervision_type,
@@ -76,16 +38,17 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS total_supervision_count
-    FROM supervision_populations,
+    FROM `{project_id}.{reference_dataset}.most_recent_daily_supervision_population`,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
       {district_dimension}
-    WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
+    WHERE supervision_type IN ('PROBATION', 'PAROLE')
+      AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
       OR (district != 'ALL' AND race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- District breakdown
-      OR (district = 'ALL' AND race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- State-wide count
+      OR (district = 'ALL' AND race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- State-wide count
     GROUP BY state_code, supervision_type, district, race_or_ethnicity, gender, age_bucket
     ORDER BY state_code, supervision_type, district, race_or_ethnicity, gender, age_bucket
     """
@@ -96,14 +59,11 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQuery
     view_query_template=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    grouped_districts=bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    current_month_condition=bq_utils.current_month_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    district_dimension=bq_utils.unnest_district('district'),
+    district_dimension=bq_utils.unnest_district(
+        bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code')),
     state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
