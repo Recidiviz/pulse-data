@@ -56,6 +56,19 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         AND person_id IS NOT NULL
         AND job.metric_type = 'SUPERVISION_SUCCESS'
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
+    ), terminations_with_race_or_ethnicity_priorities AS (
+       SELECT
+        *,
+        ROW_NUMBER () OVER
+            -- People can be counted on multiple types of supervision and in multiple districts simultaneously. --
+            -- Partitioning over gender and age_bucket have no effect. --
+            (PARTITION BY state_code, person_id, metric_period_months, supervision_type, district, gender, age_bucket
+             ORDER BY representation_priority) as inclusion_priority
+       FROM
+          supervision_completions
+       LEFT JOIN
+        `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+      USING (state_code, race_or_ethnicity) 
     ), successful_termination_counts AS (
       SELECT
           state_code,
@@ -68,8 +81,9 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           COUNT(DISTINCT IF(successful_termination = 1, person_id, NULL)) as successful_termination_count,
           COUNT(DISTINCT person_id) as projected_completion_count
       FROM
-          supervision_completions,
+          terminations_with_race_or_ethnicity_priorities,
           {unnested_race_or_ethnicity_dimension}
+      WHERE inclusion_priority = 1
       GROUP BY state_code, metric_period_months, district, supervision_type, race_or_ethnicity, gender, age_bucket
     )
     

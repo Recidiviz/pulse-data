@@ -18,6 +18,7 @@
 the public dashboard."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,8 +31,11 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH state_race_ethnicity_groups AS (
-      SELECT state_code, race_or_ethnicity, population_count as total_state_population
+      SELECT state_code,
+             {state_specific_race_or_ethnicity_groupings},
+             SUM(population_count) as total_state_population
       FROM `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts` 
+      GROUP BY state_code, race_or_ethnicity 
     ), sentenced_populations AS (
       SELECT
         state_code, race_or_ethnicity,
@@ -74,19 +78,9 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
       FROM `{project_id}.{public_dashboard_dataset}.incarceration_releases_by_type_by_period` 
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
     ), ftr_referrals AS (
-      (SELECT state_code, race_or_ethnicity, count as ftr_referral_count
-      FROM `{project_id}.{dashboard_dataset}.ftr_referrals_by_race_and_ethnicity_by_period` 
-      WHERE district = 'ALL'
-      AND metric_period_months = 12
-      AND supervision_type = 'ALL')
-      
-      UNION ALL
-      
-      (SELECT state_code, 'ALL' AS race_or_ethnicity, count as ftr_referral_count
-      FROM `{project_id}.{dashboard_dataset}.ftr_referrals_by_period`  
-      WHERE district = 'ALL'
-      AND metric_period_months = 12
-      AND supervision_type = 'ALL')
+      SELECT state_code, race_or_ethnicity, ftr_referral_count
+      FROM `{project_id}.{public_dashboard_dataset}.ftr_referrals_by_prioritized_race_and_ethnicity_by_period`
+      WHERE metric_period_months = 12
     )
     
     SELECT * FROM
@@ -124,7 +118,7 @@ RACIAL_DISPARITIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=RACIAL_DISPARITIES_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     public_dashboard_dataset=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    dashboard_dataset=dataset_config.DASHBOARD_VIEWS_DATASET
+    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':

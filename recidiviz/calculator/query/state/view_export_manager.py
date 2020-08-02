@@ -25,11 +25,10 @@ import sys
 
 from google.cloud import bigquery
 
-from recidiviz.big_query import view_manager
+from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.calculator.query.state.view_materialization_manager import materialize_views
 from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,15 +36,10 @@ from recidiviz.utils.metadata import local_project_id_override
 def export_view_data_to_cloud_storage():
     """Exports data in BigQuery views to cloud storage buckets."""
     view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
-    view_manager.create_dataset_and_update_views_for_view_builders(view_builders_for_views_to_update)
+    view_update_manager.create_dataset_and_update_views_for_view_builders(view_builders_for_views_to_update)
 
     bq_client = BigQueryClientImpl()
     project_id = bq_client.project_id
-
-    # This step has to happen before the export because some views in views_to_export depend on the materialized
-    # version of a view
-    view_builders_to_materialize = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_VIEW_EXPORT
-    materialize_views(view_builders_to_materialize)
 
     datasets_to_export = view_config.DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT.keys()
 

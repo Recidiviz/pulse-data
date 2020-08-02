@@ -17,9 +17,10 @@
 """Provides utilities for updating views within a live BigQuery instance.
 
 This can be run on-demand whenever a set of views needs to be updated. Run locally with the following command:
-    python -m recidiviz.big_query.view_manager
+    python -m recidiviz.big_query.view_update_manager
         --project_id [PROJECT_ID]
         --views_to_update [state, county, validation]
+        --materialized_views_only [True, False]
 """
 import argparse
 import logging
@@ -41,14 +42,20 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, List[BigQueryViewBuilder]
 }
 
 
-def create_dataset_and_update_views_for_view_builders(view_builders_to_update: Dict[str, List[BigQueryViewBuilder]]):
+def create_dataset_and_update_views_for_view_builders(
+        view_builders_to_update: Dict[str, List[BigQueryViewBuilder]],
+        materialized_views_only: bool = False):
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
     building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
-    datasets."""
+    datasets. If materialized_views_only is True, will only update views that have a set materialized_view_table_id
+    field."""
     # Convert the map of dataset_ids to BigQueryViewBuilders into a map of dataset_ids to BigQueryViews by building
     # each of the views
     views_to_update: Dict[str, List[BigQueryView]] = {
-        dataset: [view_builder.build() for view_builder in view_builders]
+        dataset: [
+            view_builder.build() for view_builder in view_builders
+            if not materialized_views_only or view_builder.build().materialized_view_table_id is not None
+        ]
         for dataset, view_builders in view_builders_to_update.items()
     }
 
@@ -61,6 +68,8 @@ def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryVie
     For each dataset key in the given dictionary, creates the dataset if it does not exist, and creates or updates the
     underlying views mapped to that dataset.
 
+    If a view has a set materialized_view_table_id field, materializes the view into a table.
+
     Args:
         views_to_update: Dict of BigQuery dataset name to list of view objects to be created or updated.
     """
@@ -71,6 +80,9 @@ def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryVie
 
         for view in view_list:
             bq_client.create_or_update_view(views_dataset_ref, view)
+
+            if view.materialized_view_table_id:
+                bq_client.materialize_view_to_table(view)
 
 
 def parse_arguments(argv):
@@ -89,6 +101,11 @@ def parse_arguments(argv):
                         choices=VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.keys(),
                         required=True)
 
+    parser.add_argument('--materialized_views_only',
+                        dest='materialized_views_only',
+                        type=bool,
+                        default=False)
+
     return parser.parse_known_args(argv)
 
 
@@ -101,5 +118,8 @@ if __name__ == '__main__':
     if not view_builders:
         raise ValueError("Unsupported views_to_update parameter. Fix the parser to only allow supported values.")
 
+    if known_args.materialized_views_only:
+        logging.info("Limiting update to materialized views only.")
+
     with local_project_id_override(known_args.project_id):
-        create_dataset_and_update_views_for_view_builders(view_builders)
+        create_dataset_and_update_views_for_view_builders(view_builders, known_args.materialized_views_only)

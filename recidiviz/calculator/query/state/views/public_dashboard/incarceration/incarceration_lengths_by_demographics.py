@@ -64,7 +64,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     ), ranked_releases_by_period AS (
         SELECT
           *,
-          ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY release_date DESC) as ranking
+          ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY release_date DESC) as release_ranking
         FROM
           releases,
           -- We only want a 36-month period for this view --
@@ -72,11 +72,15 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         WHERE {metric_period_condition}
     ), releases_by_period AS (
       SELECT
-        * EXCEPT(race, ethnicity, ranking)
+        * EXCEPT(race, ethnicity, release_ranking),
+        ROW_NUMBER () OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
         ranked_releases_by_period,
         {race_or_ethnicity_dimension}
-      WHERE ranking = 1
+      LEFT JOIN
+         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+      USING (state_code, race_or_ethnicity)
+      WHERE release_ranking = 1
     )
     
     SELECT
@@ -98,7 +102,8 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
-    WHERE ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
+    WHERE inclusion_priority = 1
+      AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- State-wide count
