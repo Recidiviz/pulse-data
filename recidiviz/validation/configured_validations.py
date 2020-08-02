@@ -23,6 +23,8 @@ from recidiviz.validation.checks.sameness_check import SamenessDataValidationChe
 from recidiviz.validation.validation_models import DataValidationCheck
 from recidiviz.validation.views.state.case_termination_by_type_comparison import \
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.ftr_referrals_by_period_dashboard_comparison import \
+    FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER
@@ -47,14 +49,10 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
-from recidiviz.validation.views.state.revocations_by_period_by_race_or_ethnicity_dashboard_comparison import \
-    REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER
-from recidiviz.validation.views.state.revocations_by_violation_type_dashboard_comparison import \
-    REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison import \
+    REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
     SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER
-from recidiviz.validation.views.state.supervision_population_by_district_dashboard_comparison import \
-    SUPERVISION_POPULATION_BY_DISTRICT_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import \
     SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_period_dashboard_comparison import \
@@ -115,29 +113,9 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=['external_district', 'internal_district'],
             max_allowed_error=0.01),
         SamenessDataValidationCheck(
-            view=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
+            view=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_absconsion_count', 'public_dashboard_absconsion_count']
-        ),
-        SamenessDataValidationCheck(
-            view=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_new_crime_count', 'public_dashboard_new_crime_count']
-        ),
-        SamenessDataValidationCheck(
-            view=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_technical_count', 'public_dashboard_technical_count']
-        ),
-        SamenessDataValidationCheck(
-            view=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_unknown_count', 'public_dashboard_unknown_count']
-        ),
-        SamenessDataValidationCheck(
-            view=SUPERVISION_POPULATION_BY_DISTRICT_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_supervision_count', 'public_dashboard_supervision_count']
+            comparison_columns=['dashboard_revocation_count', 'public_dashboard_revocation_count']
         ),
         SamenessDataValidationCheck(
             view=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
@@ -165,10 +143,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=['covid_report_facility_population', 'public_dashboard_facility_population']
         ),
         SamenessDataValidationCheck(
-            view=REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
+            view=FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_revocation_count', 'public_dashboard_revocation_count']
-        ),
+            comparison_columns=['dashboard_ftr_referral_count', 'public_dashboard_ftr_referral_count']
+        )
     ]
 
     return all_data_validations

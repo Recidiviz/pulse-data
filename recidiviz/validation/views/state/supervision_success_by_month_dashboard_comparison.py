@@ -34,7 +34,9 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH dashboard_success AS (
-      SELECT * FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_month` 
+      SELECT * EXCEPT (district),
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district
+      FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_month` 
       WHERE supervision_type != 'ALL'
     ), public_dashboard_success AS (
       SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_success_by_month`
@@ -53,6 +55,8 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     FULL OUTER JOIN
       public_dashboard_success
     USING (state_code, projected_year, projected_month, district, supervision_type)
+    -- We cannot compare district breakdowns for probation because the public dashboard uses judicial districts --
+    WHERE (supervision_type = 'PAROLE' OR district = 'ALL')
     ORDER BY state_code, district, supervision_type
 """
 
