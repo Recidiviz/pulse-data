@@ -19,8 +19,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.active_program_participation_by_region import \
-    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_population_by_district_by_demographics import \
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_revocations_by_period_by_type_by_demographics import \
@@ -31,7 +29,6 @@ from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervi
     SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER
 
 SUPERVISION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER,
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER,
     SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER,

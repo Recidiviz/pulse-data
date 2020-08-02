@@ -39,7 +39,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         -- TODO(3720): Improve the sentence type classification and make it less ND specific --
         IF(admission_reason = 'PROBATION_REVOCATION', 'PROBATION', 'INCARCERATION') as sentence_type,
-        race_or_ethnicity,
+        prioritized_race_or_ethnicity,
         gender,
         age_bucket,
         date_of_stay as population_date,
@@ -52,7 +52,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         -- TODO(3720): Improve the sentence type classification and make it less ND specific --
         IF(supervision_type = 'PROBATION', 'PROBATION', 'INCARCERATION') as sentence_type,
-        race_or_ethnicity,
+        prioritized_race_or_ethnicity,
         gender,
         age_bucket,
         date_of_supervision as population_date,
@@ -95,7 +95,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuild
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings(),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=
