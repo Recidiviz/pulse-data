@@ -24,55 +24,60 @@ from recidiviz.utils.environment import GAE_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_NAME = 'revocations_by_violation_type_dashboard_comparison'
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME = 'revocations_by_period_dashboard_comparison'
 
-REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_DESCRIPTION = """ 
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """ 
 Compares counts of revocations by source violation type between the dashboard and the public dashboard. """
 
-REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH dashboard_revocations_all_districts AS (
-      SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_violation_type_by_month`
+      SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_period`
       WHERE supervision_type != 'ALL'
+      AND district = 'ALL'
     ), public_dashboard_revocations_no_breakdowns AS (
-      SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_month_by_type_by_demographics`
+      SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
       AND gender = 'ALL'
       AND age_bucket = 'ALL'
+    ), dashboard_metric_periods AS (
+      SELECT DISTINCT metric_period_months
+      FROM dashboard_revocations_all_districts
+    ), public_dashboard_metric_periods AS (
+      SELECT DISTINCT metric_period_months
+      FROM public_dashboard_revocations_no_breakdowns
     )
 
     SELECT
       state_code as region_code,
-      year,
-      month,
+      metric_period_months,
       district,
       supervision_type,
-      IFNULL(dashboard_revocations_all_districts.absconsion_count, 0) as dashboard_absconsion_count,
-      IFNULL(dashboard_revocations_all_districts.felony_count, 0) as dashboard_new_crime_count,
-      IFNULL(dashboard_revocations_all_districts.technical_count, 0) as dashboard_technical_count,
-      IFNULL(dashboard_revocations_all_districts.unknown_count, 0) as dashboard_unknown_count,
-      IFNULL(public_dashboard_revocations_no_breakdowns.absconsion_count, 0) as public_dashboard_absconsion_count,
-      IFNULL(public_dashboard_revocations_no_breakdowns.new_crime_count, 0) as public_dashboard_new_crime_count,
-      IFNULL(public_dashboard_revocations_no_breakdowns.technical_count, 0) as public_dashboard_technical_count,
-      IFNULL(public_dashboard_revocations_no_breakdowns.unknown_count, 0) as public_dashboard_unknown_count,
+      IFNULL(dashboard_revocations_all_districts.revocation_count, 0) as dashboard_revocation_count,
+      IFNULL(public_dashboard_revocations_no_breakdowns.revocation_count, 0) as public_dashboard_revocation_count
     FROM 
       dashboard_revocations_all_districts
     FULL OUTER JOIN
       public_dashboard_revocations_no_breakdowns
-    USING (state_code, year, month, district, supervision_type)
-    ORDER BY state_code, year, month, district, supervision_type
+    USING (state_code, metric_period_months, supervision_type)
+    -- Only compare metric periods for which both dashboards are producing output --
+    WHERE metric_period_months IN 
+    (SELECT * FROM dashboard_metric_periods)
+    AND metric_period_months IN
+    (SELECT * FROM public_dashboard_metric_periods)
+    ORDER BY state_code, metric_period_months, supervision_type
 """
 
-REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_NAME,
-    view_query_template=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_QUERY_TEMPLATE,
-    description=REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_DESCRIPTION,
+    view_id=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME,
+    view_query_template=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE,
+    description=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET
 )
 
 if __name__ == '__main__':
     with local_project_id_override(GAE_PROJECT_STAGING):
-        REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER.build_and_print()
+        REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build_and_print()
