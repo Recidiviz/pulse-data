@@ -14,18 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""All views that populate the data in the publilc dashboards."""
+"""Public dashboard views related to racial disparities."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration import incarceration_views
-from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity import racial_disparity_views
-from recidiviz.calculator.query.state.views.public_dashboard.sentencing import sentencing_views
-from recidiviz.calculator.query.state.views.public_dashboard.supervision import supervision_views
+from recidiviz.calculator.query.state.views.public_dashboard.racial_disparity.racial_disparities import \
+    RACIAL_DISPARITIES_VIEW_BUILDER
 
-PUBLIC_DASHBOARD_VIEW_BUILDERS: List[BigQueryViewBuilder] = (
-    incarceration_views.INCARCERATION_VIEW_BUILDERS +
-    racial_disparity_views.RACIAL_DISPARITY_VIEW_BUILDERS +
-    sentencing_views.SENTENCING_VIEW_BUILDERS +
-    supervision_views.SUPERVISION_VIEW_BUILDERS
-)
+RACIAL_DISPARITY_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    RACIAL_DISPARITIES_VIEW_BUILDER
+]
