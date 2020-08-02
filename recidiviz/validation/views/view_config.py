@@ -46,6 +46,8 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
+from recidiviz.validation.views.state.revocations_by_period_by_race_or_ethnicity_dashboard_comparison import \
+    REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.revocations_by_violation_type_dashboard_comparison import \
     REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
@@ -75,6 +77,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER,
+        REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER,
         REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER,
         SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER,
         SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,

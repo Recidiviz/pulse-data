@@ -47,6 +47,8 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
+from recidiviz.validation.views.state.revocations_by_period_by_race_or_ethnicity_dashboard_comparison import \
+    REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.revocations_by_violation_type_dashboard_comparison import \
     REVOCATIONS_BY_VIOLATION_TYPE_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
@@ -161,6 +163,11 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['covid_report_facility_population', 'public_dashboard_facility_population']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATIONS_BY_PERIOD_BY_RACE_OR_ETHNICITY_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['dashboard_revocation_count', 'public_dashboard_revocation_count']
         ),
     ]
 
