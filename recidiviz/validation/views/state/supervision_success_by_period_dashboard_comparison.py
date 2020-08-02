@@ -34,13 +34,21 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH dashboard_success AS (
-      SELECT * FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_period`  
+      SELECT * EXCEPT (district),
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district
+      FROM `{project_id}.{dashboard_dataset}.supervision_termination_by_type_by_period`  
       WHERE supervision_type != 'ALL'
     ), public_dashboard_success AS (
       SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_success_by_period_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
       AND gender = 'ALL'
       AND age_bucket = 'ALL'
+    ), dashboard_metric_periods AS (
+      SELECT DISTINCT metric_period_months
+      FROM dashboard_success
+    ), public_dashboard_metric_periods AS (
+      SELECT DISTINCT metric_period_months
+      FROM public_dashboard_success
     )
     
     SELECT
@@ -57,6 +65,13 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     FULL OUTER JOIN
       public_dashboard_success
     USING (state_code, metric_period_months, district, supervision_type)
+     -- We cannot compare district breakdowns for probation because the public dashboard uses judicial districts --
+    WHERE  (supervision_type = 'PAROLE' OR district = 'ALL')
+    -- Only compare metric periods for which both dashboards are producing output --
+    AND metric_period_months IN 
+    (SELECT * FROM dashboard_metric_periods)
+    AND metric_period_months IN
+    (SELECT * FROM public_dashboard_metric_periods)
     ORDER BY state_code, metric_period_months, district, supervision_type
 """
 
