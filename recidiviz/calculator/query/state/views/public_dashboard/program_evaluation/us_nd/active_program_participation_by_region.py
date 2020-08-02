@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Active program participation counts by the region of the program location."""
+"""Active FTR participation counts by the region of the program location."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
@@ -43,6 +43,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       `{project_id}.{reference_dataset}.program_locations`
     USING (state_code, program_location_id)
       WHERE {current_month_condition}
+        AND state_code = 'US_ND'
         AND methodology = 'PERSON'
         AND metric_period_months = 0
         AND person_id IS NOT NULL

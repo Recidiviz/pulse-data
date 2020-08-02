@@ -97,7 +97,7 @@ def most_severe_violation_type_subtype_grouping() -> str:
 
 
 # TODO(3675): Formalize state-specific logic in queries
-def state_specific_race_or_ethnicity_groupings() -> str:
-    return """CASE WHEN state_code = 'US_ND' AND race_or_ethnicity IN
+def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = 'race_or_ethnicity') -> str:
+    return f"""CASE WHEN state_code = 'US_ND' AND {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
-              ELSE race_or_ethnicity END AS race_or_ethnicity"""
+              ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""

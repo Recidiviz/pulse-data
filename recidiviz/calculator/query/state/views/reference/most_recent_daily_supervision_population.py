@@ -41,26 +41,39 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       FROM
         `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
       WHERE metric_type = 'SUPERVISION_POPULATION'
+    ), population_with_race_or_ethnicity_priorities AS (
+      SELECT
+         *,
+         ROW_NUMBER () OVER
+            -- People can be counted on multiple types of supervision and in multiple districts simultaneously --
+            (PARTITION BY state_code, person_id, supervision_type, judicial_district_code, supervising_district_external_id
+             ORDER BY representation_priority) as inclusion_priority
+      FROM
+       `{project_id}.{metrics_dataset}.supervision_population_metrics`
+      INNER JOIN
+        most_recent_job_id
+      USING (state_code, job_id, date_of_supervision),
+        {race_or_ethnicity_dimension}
+      LEFT JOIN
+         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+      USING (state_code, race_or_ethnicity)
+      WHERE metric_period_months = 0
+      AND methodology = 'EVENT'
     )
-    
+        
     SELECT
       state_code,
       person_id,
       supervision_type,
-      race_or_ethnicity,
+      race_or_ethnicity as prioritized_race_or_ethnicity,
       IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
       IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
       date_of_supervision
     FROM
-       `{project_id}.{metrics_dataset}.supervision_population_metrics`
-    INNER JOIN
-        most_recent_job_id
-    USING (state_code, job_id, date_of_supervision),
-    {race_or_ethnicity_dimension}
-    WHERE metric_period_months = 0
-    AND methodology = 'EVENT'
+      population_with_race_or_ethnicity_priorities
+    WHERE inclusion_priority = 1
     """
 
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

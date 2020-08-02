@@ -26,15 +26,7 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DAS
 from recidiviz.calculator.query.state.views.po_report.po_report_views import PO_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import \
     PUBLIC_DASHBOARD_VIEW_BUILDERS
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_incarceration_population import \
-    MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_job_id_by_metric_and_state_code import \
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_supervision_population import \
-    MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.reference_views import REFERENCE_VIEW_BUILDERS
-from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 
 
@@ -45,14 +37,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
     PO_REPORT_DATASET: PO_REPORT_VIEW_BUILDERS,
     PUBLIC_DASHBOARD_VIEWS_DATASET: PUBLIC_DASHBOARD_VIEW_BUILDERS
 }
-
-VIEW_BUILDERS_FOR_VIEWS_TO_MATERIALIZE_FOR_VIEW_EXPORT: List[BigQueryViewBuilder] = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-    MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER,
-    MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER,
-    PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
-]
 
 # Dictionary mapping the datasets to the state codes and view builders for the views that should be included in the
 # export of that dataset.

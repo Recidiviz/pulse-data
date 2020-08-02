@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for view_manager.py."""
+"""Tests for view_update_manager.py."""
 
 import unittest
 from unittest import mock
@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 from google.cloud import bigquery
 
-from recidiviz.big_query import view_manager
+from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 
 _PROJECT_ID = 'fake-recidiviz-project'
@@ -31,7 +31,7 @@ _DATASET_NAME = 'my_views_dataset'
 
 
 class ViewManagerTest(unittest.TestCase):
-    """Tests for view_manager.py."""
+    """Tests for view_update_manager.py."""
 
     def setUp(self):
         self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
@@ -39,7 +39,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_project_id_fn.return_value = _PROJECT_ID
 
         self.client_patcher = patch(
-            'recidiviz.big_query.view_manager.BigQueryClientImpl')
+            'recidiviz.big_query.view_update_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
     def tearDown(self):
@@ -51,7 +51,7 @@ class ViewManagerTest(unittest.TestCase):
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         sample_views = [
-            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
             {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
         ]
         mock_view_builders = [SimpleBigQueryViewBuilder(
@@ -59,12 +59,37 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
-        view_manager.create_dataset_and_update_views_for_view_builders({_DATASET_NAME: mock_view_builders})
+        view_update_manager.create_dataset_and_update_views_for_view_builders({_DATASET_NAME: mock_view_builders})
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(dataset, view_builder.build()) for view_builder in mock_view_builders])
+
+    def test_create_dataset_and_update_views_for_view_builders_materialized_views_only(self):
+        """Test that create_dataset_and_update_views_for_view_builders only updates views that have a set
+        materialized_view_table_id when the materialized_views_only flag is set to True."""
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+
+        sample_views = [
+            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
+            {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+        ]
+        mock_view_builders = [SimpleBigQueryViewBuilder(
+            dataset_id=_DATASET_NAME, view_query_template='a', **view) for view in sample_views]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        view_update_manager.create_dataset_and_update_views_for_view_builders(
+            {_DATASET_NAME: mock_view_builders},
+            materialized_views_only=True
+        )
+
+        self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_or_update_view.assert_has_calls(
+            [mock.call(dataset, view_builder.build()) for view_builder in mock_view_builders
+             if view_builder.build().materialized_view_table_id is not None])
 
     def test_create_dataset_and_update_views(self):
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
@@ -79,7 +104,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         # pylint: disable=protected-access
-        view_manager._create_dataset_and_update_views({_DATASET_NAME: mock_views})
+        view_update_manager._create_dataset_and_update_views({_DATASET_NAME: mock_views})
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)

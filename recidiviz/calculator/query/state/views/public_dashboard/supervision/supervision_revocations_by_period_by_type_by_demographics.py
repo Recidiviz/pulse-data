@@ -46,18 +46,23 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
         IFNULL(source_violation_type, 'EXTERNAL_UNKNOWN') as source_violation_type,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id ORDER BY revocation_admission_date DESC) as ranking
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id ORDER BY revocation_admission_date DESC) as revocation_ranking
       FROM `{project_id}.{reference_dataset}.event_based_revocations`,
         UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
       AND supervision_type IN ('PAROLE', 'PROBATION')
     ), revocations_by_period_by_person AS (
       SELECT
-        *
+        *,
+        ROW_NUMBER () OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id
+             ORDER BY representation_priority) as inclusion_priority
       FROM
         revocations_by_period,
         {race_or_ethnicity_dimension}
-      WHERE ranking = 1
+      LEFT JOIN
+        `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+      USING (state_code, race_or_ethnicity)
+      WHERE revocation_ranking = 1
     )
     
     SELECT
@@ -76,10 +81,11 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
-    WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
+    WHERE inclusion_priority = 1
+      AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
-      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Overall breakdown
+      OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- Overall breakdown
     GROUP BY state_code, metric_period_months, supervision_type, race_or_ethnicity, gender, age_bucket
     ORDER BY state_code, metric_period_months, supervision_type, race_or_ethnicity, gender, age_bucket
     """
