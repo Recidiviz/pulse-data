@@ -44,7 +44,8 @@ def main(*,
          separator: str,
          chunksize: int,
          ignore_quotes: bool,
-         encoding: str):
+         encoding: str,
+         overwrite_if_exists: bool):
     """Reads and uploads data in the |local_filepath| to BigQuery based on the input args.."""
     # Set maximum display options
     pd.options.display.max_columns = 999
@@ -84,7 +85,7 @@ def main(*,
         destination_table=destination_table,
         project_id=project_id,
         progress_bar=True,
-        if_exists='fail',
+        if_exists=('replace' if overwrite_if_exists else 'fail'),
         chunksize=chunksize)
 
 
@@ -115,6 +116,9 @@ if __name__ == '__main__':
                              'text contains the specified separator). If True, does not treat quotes as a special '
                              'character. Defaults to False.')
 
+    parser.add_argument('--overwrite-if-exists', required=False, default=False, type=str_to_bool,
+                        help='If True, overwrites the existing table with the data from this upload.')
+
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     main(dry_run=args.dry_run,
@@ -124,4 +128,5 @@ if __name__ == '__main__':
          separator=args.separator,
          chunksize=args.chunksize,
          encoding=args.encoding,
-         ignore_quotes=args.ignore_quotes)
+         ignore_quotes=args.ignore_quotes,
+         overwrite_if_exists=args.overwrite_if_exists)
