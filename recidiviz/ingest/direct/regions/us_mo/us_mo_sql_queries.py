@@ -30,6 +30,82 @@ from typing import List, Tuple, Optional
 
 from recidiviz.ingest.direct.query_utils import output_sql_queries
 
+
+US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY = """
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
+PROD AND STAGING USING THE FOLLOWING COMMANDS:
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-staging \
+    --destination-table reference_tables.us_mo_tak025_sentence_status_xref \
+    --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
+    --separator , \
+    --overwrite-if-exists True \
+    --dry-run [True|False]
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-123 \
+    --destination-table reference_tables.us_mo_tak025_sentence_status_xref \
+    --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
+    --separator , \
+    --overwrite-if-exists True \
+    --dry-run [True|False]
+*/
+SELECT * 
+FROM LBAKRDTA.TAK025 status_xref_bv
+ORDER BY BV$DOC, BV$CYC;
+"""
+
+US_MO_TAK026_SENTENCE_STATUS_QUERY = """
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
+PROD AND STAGING USING THE FOLLOWING COMMANDS:
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-staging \
+    --destination-table reference_tables.us_mo_tak026_sentence_status \
+    --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
+    --separator , \
+    --overwrite-if-exists True
+    --dry-run [True|False]
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-123 \
+    --destination-table reference_tables.us_mo_tak026_sentence_status \
+    --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
+    --separator , \
+    --overwrite-if-exists True \
+    --dry-run [True|False]
+*/
+SELECT * 
+FROM LBAKRDTA.TAK026 status_bw
+ORDER BY BW$DOC, BW$CYC;
+"""
+
+US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY = """
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
+PROD AND STAGING USING THE FOLLOWING COMMANDS:
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-staging \
+    --destination-table reference_tables.us_mo_tak146_status_code_descriptions \
+    --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
+    --separator , \
+    --overwrite-if-exists True \
+    --dry-run [True|False]
+
+python -m recidiviz.tools.upload_local_file_to_bq \
+    --project-id recidiviz-123 \
+    --destination-table reference_tables.us_mo_tak146_status_code_descriptions \
+    --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
+    --separator , \
+    --overwrite-if-exists True \
+    --dry-run [True|False]
+*/
+SELECT * 
+FROM LBAKRCOD.TAK146 status_descriptions_fh
+ORDER BY FH$SCD;
+"""
+
 lower_bound_update_date = 0
 
 NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
@@ -950,7 +1026,8 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
     )
     """
 
-# TODO(2802): Implement date-based filtering for this query
+# TODO(3736): Incremental updates from this query will be supported automatically when we transition MO to SQL
+#  pre-processing.
 TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
     f"""
     -- tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods
@@ -1636,6 +1713,15 @@ ORAS_ASSESSMENTS_WEEKLY = \
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
+        # ~~~ START REFERENCE TABLE QUERIES ~~~ #
+        # TODO(3736): When we transition MO to SQL pre-processing, these tables should be imported as normal raw data
+        #  imports and the calculation pipelines should pull the necessary data from
+        #  `us_mo_raw_data_up_to_date_views.<table_name>_latest`.
+        ('us_mo_tak025_sentence_status_xref', US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY),
+        ('us_mo_tak026_sentence_status', US_MO_TAK026_SENTENCE_STATUS_QUERY),
+        ('us_mo_tak146_status_code_descriptions', US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY),
+        # ~~~ END REFERENCE TABLE QUERIES ~~~ #
+
         ('tak001_offender_identification', TAK001_OFFENDER_IDENTIFICATION_QUERY),
         ('oras_assessments_weekly', ORAS_ASSESSMENTS_WEEKLY),
         ('tak040_offender_cycles', TAK040_OFFENDER_CYCLES),
