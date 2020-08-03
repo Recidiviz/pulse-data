@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
+from recidiviz.utils.params import str_to_bool
 from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS
 from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -103,7 +104,7 @@ def parse_arguments(argv):
 
     parser.add_argument('--materialized_views_only',
                         dest='materialized_views_only',
-                        type=bool,
+                        type=str_to_bool,
                         default=False)
 
     return parser.parse_known_args(argv)
