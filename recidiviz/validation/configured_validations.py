@@ -25,10 +25,18 @@ from recidiviz.validation.views.state.case_termination_by_type_comparison import
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.ftr_referrals_by_period_dashboard_comparison import \
     FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.ftr_referrals_by_prioritized_race_and_ethnicity_by_period_internal_consistency \
+    import FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_admission_nulls import INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import \
+    INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import \
+    INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_facility_by_demographics_internal_consistency import \
+    INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
@@ -37,6 +45,8 @@ from recidiviz.validation.views.state.incarceration_release_prior_to_admission i
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_reason_no_release_date import \
     INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import \
+    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
     PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
@@ -51,10 +61,18 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_p
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
 from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison import \
     REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import \
+    SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
     SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import \
+    SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency \
+    import SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import \
     SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.supervision_success_by_period_by_demographics_internal_consistency import \
+    SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_period_dashboard_comparison import \
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
@@ -146,6 +164,60 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['dashboard_ftr_referral_count', 'public_dashboard_ftr_referral_count']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        # TODO(3743): This validation will fail until we fix the view to handle people who age into new buckets
+        SamenessDataValidationCheck(
+            view=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
+                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
         )
     ]
 
