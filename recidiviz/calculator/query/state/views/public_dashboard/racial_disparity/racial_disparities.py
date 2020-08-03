@@ -63,6 +63,12 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND district = 'ALL'
       AND supervision_type = 'PROBATION'
+    ), supervision_population AS (
+      SELECT state_code, race_or_ethnicity, total_supervision_count as total_supervision_population
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_district_by_demographics`
+      WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
+      AND district = 'ALL'
+      AND supervision_type = 'ALL'
     ), parole_revocations AS (
       SELECT state_code, race_or_ethnicity, new_crime_count AS parole_new_crime_count, technical_count AS parole_technical_count, absconsion_count as parole_absconsion_count, unknown_count AS parole_unknown_count
       FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
@@ -73,6 +79,11 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
       FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND supervision_type = 'PROBATION'
+    ), supervision_revocations AS (
+      SELECT state_code, race_or_ethnicity, new_crime_count AS supervision_new_crime_count, technical_count AS supervision_technical_count, absconsion_count as supervision_absconsion_count, unknown_count AS supervision_unknown_count
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
+      WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
+      AND supervision_type = 'ALL'
     ), parole_releases AS (
       SELECT state_code, race_or_ethnicity, parole_count as parole_release_count
       FROM `{project_id}.{public_dashboard_dataset}.incarceration_releases_by_type_by_period` 
@@ -98,10 +109,16 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
       probation_population
     USING (state_code, race_or_ethnicity)
     LEFT JOIN
+      supervision_population
+    USING (state_code, race_or_ethnicity)
+    LEFT JOIN
       parole_revocations
     USING (state_code, race_or_ethnicity)
     LEFT JOIN
       probation_revocations
+    USING (state_code, race_or_ethnicity)
+    LEFT JOIN
+      supervision_revocations
     USING (state_code, race_or_ethnicity)
     LEFT JOIN
       parole_releases
