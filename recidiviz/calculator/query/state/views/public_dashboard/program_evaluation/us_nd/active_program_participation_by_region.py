@@ -30,6 +30,16 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = \
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH most_recent_job_id AS (
+      SELECT
+        state_code,
+        metric_date as date_of_participation,
+        job_id
+      FROM
+        `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
+      WHERE metric_type = 'PROGRAM_PARTICIPATION'
+    )
+    
     SELECT
       state_code,
       supervision_type,
@@ -37,18 +47,17 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       COUNT(DISTINCT(person_id)) as participation_count
     FROM
       `{project_id}.{metrics_dataset}.program_participation_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+    INNER JOIN
+      most_recent_job_id
+    USING (state_code, job_id, date_of_participation)
     LEFT JOIN
       `{project_id}.{reference_dataset}.program_locations`
     USING (state_code, program_location_id)
-      WHERE {current_month_condition}
-        AND state_code = 'US_ND'
-        AND methodology = 'PERSON'
-        AND metric_period_months = 0
-        AND person_id IS NOT NULL
-        AND supervision_type IN ('PAROLE', 'PROBATION')
-        AND job.metric_type = 'PROGRAM_PARTICIPATION'
+    WHERE state_code = 'US_ND'
+      AND methodology = 'EVENT'
+      AND metric_period_months = 0
+      AND person_id IS NOT NULL
+      AND supervision_type IN ('PAROLE', 'PROBATION')
     GROUP BY state_code, supervision_type, region_id
     ORDER BY state_code, supervision_type, region_id
     """
