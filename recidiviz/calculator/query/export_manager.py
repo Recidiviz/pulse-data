@@ -15,7 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Export data from Cloud SQL and load it into BigQuery."""
+"""Export data from Cloud SQL and load it into BigQuery.
+
+Run this export locally with the following command:
+    python -m recidiviz.calculator.query.export_manager
+        --project_id [PROJECT_ID]
+        --schema_type [STATE, JAILS, OPERATIONS]
+
+"""
 import argparse
 from http import HTTPStatus
 import json
@@ -289,6 +296,8 @@ if __name__ == '__main__':
         local_export_schema_type = SchemaType.STATE
     elif known_args.local_export_schema_type == SchemaType.OPERATIONS.value:
         local_export_schema_type = SchemaType.OPERATIONS
+    else:
+        raise ValueError(f"Unsupported schema type {known_args.local_export_schema_type}")
 
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(known_args.project_id):
         export_all_then_load_all(BigQueryClientImpl(), local_export_schema_type)
