@@ -1002,8 +1002,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
         )
 
-        # Supervision period with an unset supervision_period_supervision_type between the terminated period
-        # and the revocation incarceration period
+        # Supervision period with an internal unknown supervision_period_supervision_type between the terminated period
+        # and the revocation incarceration period (this could signify a bench warrant, for example)
         supervision_period_type_unset = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id='sp1',
@@ -1028,6 +1028,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
         )
 
+        supervision_period_agent_associations = {
+            111: {
+                'agent_id': 123,
+                'agent_external_id': 'Officer1',
+                'district_external_id': 'X',
+                'supervision_period_id': 111
+            },
+        }
+
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
                 supervision_sentence_id=111,
@@ -1050,7 +1059,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments, violation_responses,
             supervision_contacts,
             DEFAULT_SSVR_AGENT_ASSOCIATIONS,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            supervision_period_agent_associations,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
 
@@ -1060,6 +1069,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=2017, month=5,
                 bucket_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervising_officer_external_id="Officer1",
+                supervising_district_external_id="X",
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
@@ -1070,12 +1081,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervising_officer_external_id="Officer1",
+                supervising_district_external_id="X",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
         expected_time_buckets.extend(expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period.supervision_period_supervision_type,
+            supervising_officer_external_id='Officer1',
+            supervising_district_external_id='X',
             case_compliances={
                 date(2017, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 3, 31),

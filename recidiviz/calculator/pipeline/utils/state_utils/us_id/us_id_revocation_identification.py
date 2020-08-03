@@ -106,7 +106,8 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
 def us_id_filter_supervision_periods_for_revocation_identification(
         supervision_periods: List[StateSupervisionPeriod]) -> List[StateSupervisionPeriod]:
     """Filters the list of supervision periods to only include ones with a set supervision_period_supervision_type."""
-    # Drop any supervision periods that don't have a set supervision_period_supervision_type
+    # Drop any supervision periods that don't have a set supervision_period_supervision_type (this could signify a
+    # bench warrant, for example).
     return [
         period for period in supervision_periods
         if period.supervision_period_supervision_type is not None
