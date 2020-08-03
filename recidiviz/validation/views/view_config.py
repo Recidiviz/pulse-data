@@ -34,6 +34,8 @@ from recidiviz.validation.views.state.incarceration_lengths_by_demographics_inte
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import \
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_demographic_internal_comparison import \
+    INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_by_demographics_internal_consistency import \
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
@@ -88,6 +90,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
         INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER,
+        INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
         INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
         INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
