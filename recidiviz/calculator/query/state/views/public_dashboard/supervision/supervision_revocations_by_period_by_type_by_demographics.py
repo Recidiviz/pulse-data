@@ -50,7 +50,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       FROM `{project_id}.{reference_dataset}.event_based_revocations`,
         UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
-      AND supervision_type IN ('PAROLE', 'PROBATION')
+      AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
     ), revocations_by_period_by_person AS (
       SELECT
         *,

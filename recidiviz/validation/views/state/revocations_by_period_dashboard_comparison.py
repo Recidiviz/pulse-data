@@ -34,8 +34,7 @@ REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = \
     /*{description}*/
     WITH dashboard_revocations_all_districts AS (
       SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_period`
-      WHERE supervision_type != 'ALL'
-      AND district = 'ALL'
+      WHERE district = 'ALL'
     ), public_dashboard_revocations_no_breakdowns AS (
       SELECT * FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics`
       WHERE race_or_ethnicity = 'ALL'
