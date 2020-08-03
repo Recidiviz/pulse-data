@@ -35,6 +35,8 @@ from recidiviz.validation.views.state.incarceration_lengths_by_demographics_inte
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import \
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_by_demographic_internal_comparison import \
+    INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_by_demographics_internal_consistency import \
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_external_comparison import \
@@ -159,6 +161,12 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['covid_report_facility_population', 'public_dashboard_facility_population']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['population_by_admission_reason_total_population',
+                                'population_by_facility_by_demographics_total_population']
         ),
         SamenessDataValidationCheck(
             view=FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
