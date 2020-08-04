@@ -21,12 +21,10 @@ from typing import List
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.validation_models import DataValidationCheck
+from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import \
+    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.case_termination_by_type_comparison import \
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER
-from recidiviz.validation.views.state.ftr_referrals_by_period_dashboard_comparison import \
-    FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
-from recidiviz.validation.views.state.ftr_referrals_by_prioritized_race_and_ethnicity_by_period_internal_consistency \
-    import FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER
@@ -43,6 +41,9 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
+# pylint: disable=line-too-long
+from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
+    INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_reason_no_release_date import \
@@ -69,6 +70,9 @@ from recidiviz.validation.views.state.supervision_eom_population_person_level_di
     SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import \
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
+# pylint: disable=line-too-long
+from recidiviz.validation.views.state.supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
+    SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency \
     import SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import \
@@ -169,11 +173,6 @@ def get_all_validations() -> List[DataValidationCheck]:
                                 'population_by_facility_by_demographics_total_population']
         ),
         SamenessDataValidationCheck(
-            view=FTR_REFERRALS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['dashboard_ftr_referral_count', 'public_dashboard_ftr_referral_count']
-        ),
-        SamenessDataValidationCheck(
             view=INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
@@ -186,6 +185,18 @@ def get_all_validations() -> List[DataValidationCheck]:
                                 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
         ),
         SamenessDataValidationCheck(
+            # pylint: disable=line-too-long
+            view=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            # pylint: disable=line-too-long
+            view=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
             view=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
@@ -196,11 +207,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
                                 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
-        ),
-        SamenessDataValidationCheck(
-            view=FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
         ),
         SamenessDataValidationCheck(
             view=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
@@ -226,6 +232,11 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
                                 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
         )
     ]
 

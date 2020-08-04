@@ -38,28 +38,49 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       FROM
         `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
       WHERE metric_type = 'PROGRAM_PARTICIPATION'
+    ), participants_with_race_or_ethnicity AS (
+      SELECT
+        state_code,
+        supervision_type,
+        region_id,
+        person_id,
+        race_or_ethnicity,
+        ROW_NUMBER() OVER
+        -- People can be counted on multiple types of supervision and enrolled in multiple regions simultaneously --
+        (PARTITION BY state_code, person_id, supervision_type, region_id ORDER BY representation_priority) as inclusion_priority
+      FROM
+        `{project_id}.{metrics_dataset}.program_participation_metrics`
+      INNER JOIN
+        most_recent_job_id
+      USING (state_code, job_id, date_of_participation)
+      LEFT JOIN
+        `{project_id}.{reference_dataset}.program_locations`
+      USING (state_code, program_location_id),
+        {race_or_ethnicity_dimension}
+      LEFT JOIN
+         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+      USING (state_code, race_or_ethnicity)
+      WHERE state_code = 'US_ND'
+        AND methodology = 'EVENT'
+        AND metric_period_months = 0
+        AND person_id IS NOT NULL
+        AND supervision_type IN ('PAROLE', 'PROBATION')
     )
-    
+
     SELECT
       state_code,
       supervision_type,
       region_id,
+      {state_specific_race_or_ethnicity_groupings},
       COUNT(DISTINCT(person_id)) as participation_count
     FROM
-      `{project_id}.{metrics_dataset}.program_participation_metrics`
-    INNER JOIN
-      most_recent_job_id
-    USING (state_code, job_id, date_of_participation)
-    LEFT JOIN
-      `{project_id}.{reference_dataset}.program_locations`
-    USING (state_code, program_location_id)
-    WHERE state_code = 'US_ND'
-      AND methodology = 'EVENT'
-      AND metric_period_months = 0
-      AND person_id IS NOT NULL
-      AND supervision_type IN ('PAROLE', 'PROBATION')
-    GROUP BY state_code, supervision_type, region_id
-    ORDER BY state_code, supervision_type, region_id
+      participants_with_race_or_ethnicity,
+      {unnested_race_or_ethnicity_dimension},
+      {region_dimension},
+      {supervision_dimension}
+    WHERE inclusion_priority = 1
+    GROUP BY state_code, supervision_type, race_or_ethnicity, region_id
+    ORDER BY state_code, supervision_type, race_or_ethnicity, region_id
     """
 
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -71,6 +92,11 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     current_month_condition=bq_utils.current_month_condition(),
+    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings(),
+    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
+    region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
+    supervision_dimension=bq_utils.unnest_supervision_type()
 )
 
 if __name__ == '__main__':
