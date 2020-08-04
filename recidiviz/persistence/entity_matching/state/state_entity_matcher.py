@@ -54,10 +54,9 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder, \
     is_standalone_class, is_standalone_entity, log_entity_count
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree, IndividualMatchResult, MatchResults, MatchedEntities
-
 from recidiviz.persistence.errors import EntityMatchingError, \
     MatchedMultipleIngestedEntitiesError
-
+from recidiviz.utils import structured_logging
 
 class _ParentInfo:
     """
@@ -245,6 +244,8 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info(
             "[Entity matching] Converting ingested entities to DB entities "
             "at time [%s].", datetime.datetime.now().isoformat())
+        structured_logging.log_memory_usage()
+
         ingested_db_persons = \
             convert_entity_people_to_schema_people(
                 ingested_people, populate_back_edges=False)
@@ -256,6 +257,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info(
             "[Entity matching] Starting reading and converting persons "
             "at time [%s].", datetime.datetime.now().isoformat())
+        structured_logging.log_memory_usage()
 
         check_all_objs_have_type(ingested_db_persons, schema.StatePerson)
         db_persons = \
@@ -270,11 +272,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         logging.info("Read [%d] persons from DB in region [%s]",
                      len(db_persons),
                      self.state_matching_delegate.get_region_code())
+        structured_logging.log_memory_usage()
 
         self.set_root_entity_cache(db_persons)
 
         logging.info("[Entity matching] Completed DB read at time [%s].",
                      datetime.datetime.now().isoformat())
+        structured_logging.log_memory_usage()
         matched_entities_builder = self._run_match(
             ingested_db_persons, db_persons)
 
@@ -287,9 +291,11 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             session.add(match_person)
 
         logging.info("[Entity matching] Session flush")
+        structured_logging.log_memory_usage()
         session.flush()
 
         logging.info("[Entity matching] Database clean up")
+        structured_logging.log_memory_usage()
         # TODO(2578): Database cleanup errors should be surfaced properly in
         # their own error count.
         matched_entities_builder.database_cleanup_error_count = \
@@ -299,6 +305,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # entity matching
         check_not_dirty(session)
 
+        structured_logging.log_memory_usage()
         return matched_entities_builder.build()
 
     def _run_match(self,

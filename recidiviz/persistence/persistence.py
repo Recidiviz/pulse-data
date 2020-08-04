@@ -50,7 +50,7 @@ from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
-from recidiviz.utils import monitoring
+from recidiviz.utils import monitoring, structured_logging
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
@@ -260,6 +260,7 @@ def write(ingest_info, metadata):
     mtags = {monitoring.TagKey.SHOULD_PERSIST: should_persist(),
              monitoring.TagKey.PERSISTED: False}
     total_people = _get_total_people(ingest_info, metadata)
+    structured_logging.log_memory_usage()
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
@@ -291,11 +292,16 @@ def write(ingest_info, metadata):
         if not should_persist():
             return True
 
+        structured_logging.log_memory_usage()
+
         def match_and_write_people(session: Session) -> bool:
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
                 session, metadata.region, people)
+
+            structured_logging.log_memory_usage()
+
             output_people = entity_matching_output.people
             total_root_entities = total_people \
                 if metadata.system_level == SystemLevel.COUNTY \
@@ -326,6 +332,8 @@ def write(ingest_info, metadata):
                     SessionFactory.for_schema_base(schema_base_for_system_level(metadata.system_level)),
                     measurements, match_and_write_people, max_retries=5):
                 return False
+
+            structured_logging.log_memory_usage()
 
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
