@@ -80,6 +80,7 @@ progress="*"
 google-cloud-secret-manager = "*"
 pandas-gbq = "*"
 google-cloud-bigquery-storage = "*"
+guppy3 = "*"
 
 [requires]
 python_version = "3.7"
