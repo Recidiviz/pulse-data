@@ -50,8 +50,9 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, GcsfsDirectIngestFileType, filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.tools.gsutil_shell_helpers import gsutil_mv, gsutil_ls, dfs_get_date_subdirs
-from recidiviz.tools.utils import is_between_date_strs_inclusive, INGESTED_FILE_REGEX, DATE_SUBDIR_REGEX
+from recidiviz.tools.gsutil_shell_helpers import gsutil_mv, gsutil_ls, \
+    gsutil_get_storage_subdirs_containing_file_types
+from recidiviz.tools.utils import INGESTED_FILE_REGEX
 from recidiviz.utils.params import str_to_bool
 
 
@@ -165,25 +166,19 @@ class MoveFilesToDeprecatedController:
 
     def _get_files_to_move(self) -> List[str]:
         """Function that gets the files to move to deprecated based on the file_filter and end/start dates specified"""
-        subdirs = dfs_get_date_subdirs([self.region_storage_dir_path.uri()])
+        subdirs = gsutil_get_storage_subdirs_containing_file_types(
+            storage_bucket_path=self.region_storage_dir_path.abs_path(),
+            file_type=self.file_type,
+            lower_bound_date=self.start_date_bound,
+            upper_bound_date=self.end_date_bound)
         result = []
-        for yr_mth_day_subdir_path in subdirs:
-            dir_path_blob = GcsfsFilePath.from_absolute_path(yr_mth_day_subdir_path).blob_name
-            search_date = DATE_SUBDIR_REGEX.search(dir_path_blob)
-            if search_date is None:
-                raise ValueError("No match found. File paths should have the format YYYY/MM/DD. Instead we found"
-                                 f"{dir_path_blob}.")
-            match_date = search_date.group()
-            date_of_interest = datetime.datetime.strptime(match_date, '%Y/%m/%d').date().isoformat()
-            if is_between_date_strs_inclusive(upper_bound_date=self.end_date_bound,
-                                              lower_bound_date=self.start_date_bound,
-                                              date_of_interest=date_of_interest):
-                from_paths = gsutil_ls(f'{yr_mth_day_subdir_path}*.csv')
-                for from_path in from_paths:
-                    _, file_name = os.path.split(from_path)
-                    if re.match(INGESTED_FILE_REGEX, file_name):
-                        if not self.file_filter or re.search(self.file_filter, file_name):
-                            result.append(from_path)
+        for subdir_path in subdirs:
+            from_paths = gsutil_ls(f'{subdir_path}*.csv')
+            for from_path in from_paths:
+                _, file_name = os.path.split(from_path)
+                if re.match(INGESTED_FILE_REGEX, file_name):
+                    if not self.file_filter or re.search(self.file_filter, file_name):
+                        result.append(from_path)
         return result
 
     def _write_move_to_log_file(self):
