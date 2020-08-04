@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.persistence import persistence
+from recidiviz.utils.environment import get_gae_environment
 
 
 class UsNmBernalilloController(CsvGcsfsDirectIngestController):
@@ -46,6 +47,9 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
                  ingest_directory_path: Optional[str] = 'us-nm-bernalillo',
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
+        gae_environment = get_gae_environment()
+        if ingest_directory_path and gae_environment:
+            ingest_directory_path += f'-{gae_environment}'
         super(UsNmBernalilloController, self).__init__(
             'us_nm_bernalillo',
             SystemLevel.COUNTY,

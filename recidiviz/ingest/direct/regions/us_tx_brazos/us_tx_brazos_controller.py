@@ -38,6 +38,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence import persistence
+from recidiviz.utils.environment import get_gae_environment
 
 
 class UsTxBrazosController(CsvGcsfsDirectIngestController):
@@ -47,6 +48,9 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
                  ingest_directory_path: Optional[str] = 'us-tx-brazos',
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
+        gae_environment = get_gae_environment()
+        if ingest_directory_path and gae_environment:
+            ingest_directory_path += f'-{gae_environment}'
         super(UsTxBrazosController, self).__init__(
             'us_tx_brazos',
             SystemLevel.COUNTY,
