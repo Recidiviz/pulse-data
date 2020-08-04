@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence import persistence
-from recidiviz.utils import regions, structured_logging
+from recidiviz.utils import regions
 
 
 class BaseDirectIngestController(Ingestor,
@@ -268,9 +268,7 @@ class BaseDirectIngestController(Ingestor,
                      "run [%s]", self._job_tag(args))
 
         ingest_metadata = self._get_ingest_metadata(args)
-        structured_logging.log_memory_usage()
         persist_success = persistence.write(ingest_info_proto, ingest_metadata)
-        structured_logging.log_memory_usage()
 
         if not persist_success:
             raise DirectIngestError(
