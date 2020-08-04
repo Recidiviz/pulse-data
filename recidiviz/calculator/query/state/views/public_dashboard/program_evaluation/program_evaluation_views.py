@@ -21,10 +21,7 @@ from typing import List
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation.us_nd.active_program_participation_by_region import \
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation.us_nd.ftr_referrals_by_prioritized_race_and_ethnicity_by_period import \
-    FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER
 
 PROGRAM_EVALUATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER,
-    FTR_REFERRALS_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER
+    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER
 ]
