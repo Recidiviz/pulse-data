@@ -32,6 +32,7 @@ from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
     StateEntityMatcher
 from recidiviz.persistence.entity_matching.state.\
     state_matching_delegate_factory import StateMatchingDelegateFactory
+from recidiviz.utils import structured_logging
 
 _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
                                       orphaned_entities=[],
@@ -42,11 +43,12 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
 def match(session: Session,
           region: str,
           ingested_people: List[EntityPersonType]) -> MatchedEntities:
-    matcher = _get_matcher(ingested_people, region)
-    if not matcher:
-        return _EMPTY_MATCH_OUTPUT
+    with structured_logging.record_heap('entity_matching.match'):
+        matcher = _get_matcher(ingested_people, region)
+        if not matcher:
+            return _EMPTY_MATCH_OUTPUT
 
-    return matcher.run_match(session, region, ingested_people)
+        return matcher.run_match(session, region, ingested_people)
 
 
 def _get_matcher(ingested_people: List[EntityPersonType],
