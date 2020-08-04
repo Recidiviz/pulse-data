@@ -111,11 +111,12 @@ raw_files:
       - CREATE_DATETIME
       - MODIFY_DATETIME
   - file_tag: elite_institutionalactivities
-    # TODO(3640): Find out if there's a better way to identify rows (primary keys) in elite_institutionalactivities
+    # Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
     primary_key_cols:
       - OFFENDER_BOOK_ID
       - PROGRAM_CODE
       - START_DATE
+      - COURSE_ACTIVITIES_DESCRIPTION
     datetime_cols:
       - START_DATE
       - END_DATE
