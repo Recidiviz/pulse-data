@@ -17,44 +17,15 @@
 """Configures logging setup."""
 
 import logging
-import resource
-import sys
-from contextlib import contextmanager
 from functools import partial
+import sys
 
 from google.cloud.logging import Client, handlers
-from guppy import hpy
 from opencensus.common.runtime_context import RuntimeContext
 from opencensus.trace import execution_context
 
 from recidiviz.utils import environment, monitoring
 
-
-def log_memory_usage():
-    self_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    child_memory = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    logging.info('Memory usage [self: %d, children: %d]', self_memory, child_memory)
-
-def log_heap():
-    h = hpy()
-    logging.info('Heap currently:\n%s', h.heap())
-
-@contextmanager
-def record_heap(description: str):
-    h = hpy()
-
-    before = h.heap()
-    logging.info('Heap currently:\n%s', before)
-    log_memory_usage()
-
-    try:
-        yield
-    finally:
-        after = h.heap()
-        logging.info('Heap currently:\n%s', after)
-        log_memory_usage()
-
-        logging.info('Heap difference for [%s]:\n%s', description, after - before)
 
 # TODO(3043): Once census-instrumentation/opencensus-python#442 is fixed we can
 # use OpenCensus threading intregration which will copy this for us. Until then
