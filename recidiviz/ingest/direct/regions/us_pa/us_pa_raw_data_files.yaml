@@ -179,9 +179,15 @@ raw_files:
   - file_tag: dbo_LU_BoardActionClass
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ActionClassCode
+  - file_tag: dbo_LU_PBPP_Organization
+    primary_key_cols:
+      - Org_cd
   - file_tag: dbo_LU_RelDo
     primary_key_cols:
       - RelDO
+  - file_tag: dbo_LU_TreatTrackClosingCodes
+    primary_key_cols:
+      - TreatTrackCloseCasesCode
   - file_tag: dbo_LU_TreatTrackingProgramNew
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - TreatTrackProgCode
@@ -227,6 +233,11 @@ raw_files:
   - file_tag: dbo_Perrec
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - control_number
+  - file_tag: dbo_RelAgentHistory
+    primary_key_cols:
+      - ParoleNumber
+      - ParoleCountID
+      - LastModifiedDateTime
   - file_tag: dbo_RelEmployment
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber
