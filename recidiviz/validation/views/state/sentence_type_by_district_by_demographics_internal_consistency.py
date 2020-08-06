@@ -39,7 +39,8 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION = \
 
 
 PARTITION_COLUMNS = ['state_code', 'district']
-CALCULATED_COLUMNS_TO_VALIDATE = ['probation_count', 'incarceration_count', 'total_population_count']
+CALCULATED_COLUMNS_TO_VALIDATE = ['probation_count', 'incarceration_count',
+                                  'dual_sentence_count', 'total_population_count']
 MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['age_bucket', 'race_or_ethnicity', 'gender']
 
 SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
