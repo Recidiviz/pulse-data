@@ -41,6 +41,7 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
         state_code, race_or_ethnicity,
         incarceration_count as current_incarceration_sentence_count,
         probation_count as current_probation_sentence_count,
+        dual_sentence_count as current_dual_sentence_count,
         total_population_count as current_total_sentenced_count
       FROM `{project_id}.{public_dashboard_dataset}.sentence_type_by_district_by_demographics` 
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
