@@ -42,7 +42,6 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
         USING (state_code, job_id, year, month, metric_period_months)
     WHERE methodology = 'PERSON'
-        AND revocation_type = 'REINCARCERATION'
         AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
         AND metric_period_months = 1
         AND month IS NOT NULL
