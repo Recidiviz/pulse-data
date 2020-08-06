@@ -783,7 +783,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MEDIUM'
         )
 
         revocation_period = StateIncarcerationPeriod.new_with_defaults(
@@ -841,6 +842,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=revocation_period.admission_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
@@ -3056,7 +3058,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
                 supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MINIMUM
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='LOW'
             )
 
         supervision_sentence = \
