@@ -64,6 +64,23 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       (SELECT * FROM incarceration_population)
       UNION ALL
       (SELECT * FROM supervision_population)
+    ), sentence_type_counts AS (
+      SELECT
+        state_code,
+        person_id,
+        district,
+        race_or_ethnicity,
+        gender,
+        age_bucket,
+        COUNTIF(sentence_type = 'PROBATION') as probation_count,
+        COUNTIF(sentence_type = 'INCARCERATION') as incarceration_count,
+      FROM
+        all_incarceration_supervision,
+          {unnested_race_or_ethnicity_dimension},
+          {gender_dimension},
+          {age_dimension},
+          {district_dimension}
+      GROUP BY state_code, person_id, district, race_or_ethnicity, gender, age_bucket
     )
         
     SELECT
@@ -72,14 +89,11 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       {state_specific_race_or_ethnicity_groupings},
       gender,
       age_bucket,
-      COUNT(DISTINCT IF(sentence_type = 'PROBATION', person_id, NULL)) as probation_count,
-      COUNT(DISTINCT IF(sentence_type = 'INCARCERATION', person_id, NULL)) as incarceration_count,
+      COUNT(DISTINCT IF(probation_count > 0 AND incarceration_count = 0, person_id, NULL)) as probation_count,
+      COUNT(DISTINCT IF(probation_count = 0 AND incarceration_count > 0, person_id, NULL)) as incarceration_count,
+      COUNT(DISTINCT IF(probation_count > 0 AND incarceration_count > 0, person_id, NULL)) as dual_sentence_count,
       COUNT(DISTINCT(person_id)) as total_population_count
-    FROM all_incarceration_supervision,
-      {unnested_race_or_ethnicity_dimension},
-      {gender_dimension},
-      {age_dimension},
-      {district_dimension}
+    FROM sentence_type_counts
     WHERE ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
