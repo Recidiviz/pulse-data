@@ -24,7 +24,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
     us_id_case_compliance_on_date, NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS, _assessment_is_up_to_date, \
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS, _face_to_face_contact_frequency_is_sufficient, \
-    _guidelines_applicable_for_case, _assessments_in_compliance_month, _face_to_face_contacts_in_compliance_month
+    _guidelines_applicable_for_case, _assessments_in_compliance_month, _face_to_face_contacts_in_compliance_month, \
+    _is_deprecated_level_system
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
@@ -33,10 +34,13 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
-MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS = 30
-HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS = 30
-MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS = 180
+DEPRECATED_MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS = 30
+DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS = 30
+DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS = 180
 
+MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS = 180
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS = 90
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS = 30
 
 class TestCaseCompliance(unittest.TestCase):
     """Tests the us_id_case_compliance_on_date function."""
@@ -52,7 +56,8 @@ class TestCaseCompliance(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MEDIUM'
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -471,6 +476,44 @@ class TestAssessmentIsUpToDate(unittest.TestCase):
 
         self.assertTrue(assessment_up_to_date)
 
+    def test_assessment_is_up_to_date_old_assessment_minimum_level_deprecated(self):
+        supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                state_code='US_ID',
+                custodial_authority='US_ID_DOC',
+                start_date=date(2018, 3, 5),
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='LEVEL 1'
+            )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2017, 1, 3)
+        )
+
+        # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
+        # a recent assessment, so their assessment is not in compliance
+        start_of_supervision = supervision_period.start_date - \
+            relativedelta(days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS)
+        compliance_evaluation_date = supervision_period.start_date + \
+            relativedelta(days=1)
+
+        assessment_up_to_date = _assessment_is_up_to_date(
+            supervision_period,
+            start_of_supervision,
+            compliance_evaluation_date,
+            most_recent_assessment=assessment
+        )
+
+        self.assertTrue(assessment_up_to_date)
+
     def test_assessment_is_up_to_date_old_assessment_minimum_level(self):
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
@@ -481,7 +524,8 @@ class TestAssessmentIsUpToDate(unittest.TestCase):
                 start_date=date(2018, 3, 5),
                 admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
                 supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MINIMUM
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='LOW'
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -688,7 +732,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LOW'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -709,6 +754,39 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
+    def test_face_to_face_frequency_sufficient_contacts_minimum_level_deprecated(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LEVEL 1'
+        )
+
+        supervision_contacts = [StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=supervision_period.start_date + relativedelta(days=1),
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED
+        )]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+                                     + relativedelta(days=(NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 10))
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
     def test_face_to_face_frequency_sufficient_contacts_maximum_level_up_to_date_one_contact(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -720,7 +798,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='LEVEL 4'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -732,7 +811,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = start_of_supervision\
-            + relativedelta(days=(MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS - 10))
+            + relativedelta(days=(DEPRECATED_MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS - 10))
 
         face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
                                                                                           start_of_supervision,
@@ -752,21 +831,62 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='LEVEL 4'
+        )
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(days=30),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(days=40),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            )
+        ]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision + relativedelta(days=50)
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_high_level(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH'
         )
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code='US_ID',
                 contact_date=supervision_period.start_date +
-                relativedelta(days=30),
+                relativedelta(days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS - 10),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code='US_ID',
                 contact_date=supervision_period.start_date +
-                relativedelta(days=40),
+                relativedelta(days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS - 5),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED
             )
@@ -774,7 +894,50 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = start_of_supervision + \
-            relativedelta(days=50)
+            relativedelta(days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS)
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_high_level_deprecated(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
+        )
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(
+                    days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS - 10),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(
+                    days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS - 5),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            )
+        ]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision + \
+                                     relativedelta(days=DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS)
 
         face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
                                                                                           start_of_supervision,
@@ -794,14 +957,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MAXIMUM
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='LEVEL 4'
         )
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code='US_ID',
                 contact_date=supervision_period.start_date
-                + relativedelta(days=MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS + 1),
+                + relativedelta(days=DEPRECATED_MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS + 1),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED
             )
@@ -809,7 +973,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = start_of_supervision\
-            + relativedelta(days=MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS + 10)
+            + relativedelta(days=DEPRECATED_MAXIMUM_SUPERVISION_TWO_CONTACTS_PER_PERIOD_DAYS + 10)
 
         face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
                                                                                           start_of_supervision,
@@ -829,7 +993,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -850,7 +1015,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_not_up_to_date(self):
+    def test_face_to_face_frequency_sufficient_contacts_high_level_up_to_date_deprecated(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -861,7 +1026,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.HIGH
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -873,7 +1039,83 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = start_of_supervision \
-            + relativedelta(days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS + 10))
+                                     + relativedelta(days=(DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS - 10))
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_high_level_not_up_to_date(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH'
+        )
+
+        # One contact within the time window, one outside.
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(days=15),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(
+                    days=HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS + 1),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            )
+        ]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+            + relativedelta(days=(HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS))
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertFalse(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_high_level_not_up_to_date_deprecated(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
+        )
+
+        supervision_contacts = [StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=supervision_period.start_date,
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED
+        )]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+                                     + relativedelta(days=(DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS + 10))
 
         face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
                                                                                           start_of_supervision,
@@ -893,7 +1135,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MEDIUM'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -914,7 +1157,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_not_up_to_date(self):
+    def test_face_to_face_frequency_sufficient_contacts_medium_level_up_to_date_deprecated(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -925,7 +1168,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='LEVEL 2'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -937,7 +1181,83 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         start_of_supervision = supervision_period.start_date
         compliance_evaluation_date = start_of_supervision \
-            + relativedelta(days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS + 10))
+                                     + relativedelta(days=(DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS - 10))
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_medium_level_not_up_to_date(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MEDIUM'
+        )
+
+        # One contact within the time window, one outside.
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(days=15),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=supervision_period.start_date + relativedelta(
+                    days=MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS + 1),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            )
+        ]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+            + relativedelta(days=(MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS))
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertFalse(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_medium_level_not_up_to_date_deprecated(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='LEVEL 2'
+        )
+
+        supervision_contacts = [StateSupervisionContact.new_with_defaults(
+            state_code='US_ID',
+            contact_date=supervision_period.start_date,
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            status=StateSupervisionContactStatus.COMPLETED
+        )]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+                                     + relativedelta(days=(DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS + 10))
 
         face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
                                                                                           start_of_supervision,
@@ -955,7 +1275,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
             start_date=date(1999, 8, 13),  # This was a Friday
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MEDIUM'
         )
 
         supervision_contacts = []
@@ -970,6 +1291,36 @@ class TestContactFrequencySufficient(unittest.TestCase):
                                                                                           supervision_contacts)
 
         self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_sufficient_contacts_new_case_opened_on_friday_deprecated(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(1999, 8, 13),  # This was a Friday
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='LEVEL 2'
+        )
+
+        supervision_contacts = []
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = start_of_supervision \
+                                     + relativedelta(days=NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS + 1)
+
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+                                                                                          start_of_supervision,
+                                                                                          compliance_evaluation_date,
+                                                                                          supervision_contacts)
+
+        self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_is_deprecated_level_system_case_sensitivity(self):
+        self.assertTrue(_is_deprecated_level_system("LEVEL 1"))
+        self.assertFalse(_is_deprecated_level_system("Level 1"))
 
 
 class TestGuidelinesApplicableForCase(unittest.TestCase):
@@ -986,7 +1337,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='LEVEL 2'
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -1032,7 +1384,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
-            supervision_level=StateSupervisionLevel.HIGH
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -1055,7 +1408,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_level=StateSupervisionLevel.HIGH
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
         )
 
         case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
