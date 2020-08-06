@@ -218,7 +218,7 @@ def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
         return False
 
     if supervision_period.supervision_level == StateSupervisionLevel.MINIMUM:
-        # People on MINIMUM (Level 1) supervision do not need to be re-assessed.
+        # People on MINIMUM supervision do not need to be re-assessed.
         logging.debug("Supervision period %d has a MINIMUM supervision level. Does not need to be re-assessed.",
                       supervision_period.supervision_period_id)
         return True
@@ -260,9 +260,8 @@ def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSuper
         # The face-to-face contact standard is not in compliance.
         return False
 
-    supervision_level = supervision_period.supervision_level
-
-    required_contacts, period_days = _get_required_face_to_face_contacts_and_period_days_for_level(supervision_level)
+    required_contacts, period_days = _get_required_face_to_face_contacts_and_period_days_for_level(
+        supervision_period.supervision_level, supervision_period.supervision_level_raw_text)
 
     days_since_start = (compliance_evaluation_date - start_of_supervision).days
 
@@ -279,30 +278,44 @@ def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSuper
     return len(contacts_within_period) >= required_contacts
 
 
-def _get_required_face_to_face_contacts_and_period_days_for_level(
-        supervision_level: Optional[StateSupervisionLevel]) -> Tuple[int, int]:
+def _get_required_face_to_face_contacts_and_period_days_for_level(supervision_level: Optional[StateSupervisionLevel],
+                                                                  supervision_level_raw_text: Optional[str]) -> \
+        Tuple[int, int]:
     """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision case
     with the given supervision level.
 
-    The required frequencies are as follows for each supervision level:
-
-        MINIMUM:
-            - After the initial face-to-face contact, zero follow-up contacts are required
-        MEDIUM:
-            - 1 face-to-face contact every 180 days
-        HIGH:
-            - 1 face-to-face contact every 30 days
-        MAXIMUM:
-            - 2 face-to-face contacts per 30 day period
+    There are two supervision level systems, each with different face to face contact frequency expectations. The
+    deprecated level system has four levels (which are associated with four numeric levels), and the new system has
+    three levels.
     """
-    if supervision_level == StateSupervisionLevel.MINIMUM:
-        return 0, sys.maxsize
-    if supervision_level == StateSupervisionLevel.MEDIUM:
-        return 1, 180
-    if supervision_level == StateSupervisionLevel.HIGH:
-        return 1, 30
-    if supervision_level == StateSupervisionLevel.MAXIMUM:
-        return 2, 30
+    is_deprecated_level_system = _is_deprecated_level_system(supervision_level_raw_text)
+
+    if is_deprecated_level_system:
+        if supervision_level == StateSupervisionLevel.MINIMUM:
+            return 0, sys.maxsize
+        if supervision_level == StateSupervisionLevel.MEDIUM:
+            return 1, 180
+        if supervision_level == StateSupervisionLevel.HIGH:
+            return 1, 30
+        if supervision_level == StateSupervisionLevel.MAXIMUM:
+            return 2, 30
+    else:
+        if supervision_level == StateSupervisionLevel.MINIMUM:
+            return 1, 180
+        if supervision_level == StateSupervisionLevel.MEDIUM:
+            return 2, 90
+        if supervision_level == StateSupervisionLevel.HIGH:
+            return 2, 30
 
     raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
                      f"of {supervision_level}. Should not be calculating compliance for this supervision case.")
+
+
+def _is_deprecated_level_system(supervision_level_raw_text: Optional[str]) -> bool:
+    """As of July 2020, Idaho has deprecated its previous supervision level system, which used the values: LEVEL 1,
+    LEVEL 2, LEVEL 3, LEVEL 4. Returns whether the level system used is one of deprecated values."""
+
+    if not supervision_level_raw_text:
+        raise ValueError("a StateSupervisionPeriod should always have a value for supervision_level_raw_text.")
+
+    return supervision_level_raw_text in ("LEVEL 1", "LEVEL 2", "LEVEL 3", "LEVEL 4")
