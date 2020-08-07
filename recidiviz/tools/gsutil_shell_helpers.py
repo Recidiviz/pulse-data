@@ -50,13 +50,17 @@ def gsutil_ls(gs_path: str,
     return [p for p in result_paths if p.endswith('/')]
 
 
+# See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
+_GSUTIL_PARALLEL_COMMAND_OPTIONS = '-q -m -o GSUtil:parallel_process_count=1 -o GSUtil:parallel_thread_count=24'
+
+
 def gsutil_cp(from_path: str, to_path: str) -> None:
     """Copies a file/files via 'gsutil cp'.
 
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/cp
     """
-    command = f'gsutil -q -m cp {from_path} {to_path}'
+    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp {from_path} {to_path}'
     res = subprocess.Popen(
         command,
         shell=True,
@@ -76,7 +80,7 @@ def gsutil_mv(from_path: str, to_path: str) -> None:
     """
 
     res = subprocess.Popen(
-        f'gsutil -q -m mv {from_path} {to_path}',
+        f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv {from_path} {to_path}',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
