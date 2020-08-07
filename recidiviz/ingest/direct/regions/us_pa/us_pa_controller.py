@@ -18,6 +18,7 @@
 """Direct ingest controller implementation for US_PA."""
 
 import json
+import re
 from datetime import timedelta
 from typing import List, Dict, Optional, Callable
 
@@ -34,6 +35,8 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodTerminationReason, \
+    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, safe_parse_date_from_date_pieces, \
     safe_parse_days_from_duration_pieces
@@ -48,13 +51,15 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StatePersonRace
+    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StatePersonRace
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
 MAGICAL_DATES = [
     '20000000'
 ]
+
+AGENT_NAME_AND_ID_REGEX = re.compile(r'(.*?)( (\d+))$')
 
 class UsPaController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
@@ -126,6 +131,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._set_default_supervision_sentence_type,
                 self._append_additional_charges_to_supervision_sentence,
             ],
+            'supervision_period': [
+                self._unpack_supervision_period_conditions,
+                self._set_supervising_officer,
+            ],
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
@@ -146,11 +155,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_sentence': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            'supervision_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
             'incarceration_period': _generate_incarceration_period_primary_key,
             'supervision_sentence': _generate_supervision_sentence_primary_key,
+            'supervision_period': _generate_supervision_period_primary_key,
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
@@ -254,6 +267,97 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSupervisionType.PROBATION: [
             'Y',  # Yes means Probation; anything else means Parole
         ],
+
+        StateSupervisionPeriodSupervisionType.DUAL: [
+            '4C',  # COOP case - Offender on both PBPP and County Supervision
+        ],
+        StateSupervisionPeriodSupervisionType.PAROLE: [
+            '02',  # Paroled from SCI to PBPP Supervision
+            'B2',  # Released according to Boot Camp Law
+            'R2',  # RSAT Parole
+            'C2',  # CCC Parole
+            '03',  # Reparoled from SCI to PBPP Supervision
+            'R3',  # RSAT Reparole
+            'C3',  # CCC Reparole
+            '05',  # Special Parole sentenced by County and Supervised by PBPP
+            '06',  # Paroled/Reparoled by other state and transferred to PA
+        ],
+        StateSupervisionPeriodSupervisionType.PROBATION: [
+            '04',  # Sentenced to Probation by County Judge and Supervised by PBPP
+            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
+            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            '07',  # Sentenced to Probation by other state and transferred to PA
+        ],
+        StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: [
+            '08',  # ?? Not in data dictionary
+            '09',  # ?? Not in data dictionary
+        ],
+        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
+            '02',  # Paroled from SCI to PBPP Supervision
+            'B2',  # Released according to Boot Camp Law
+            'R2',  # RSAT Parole
+            'C2',  # CCC Parole
+            '03',  # Reparoled from SCI to PBPP Supervision
+            'R3',  # RSAT Reparole
+            'C3',  # CCC Reparole
+        ],
+        StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
+            '04',  # Sentenced to Probation by County Judge and Supervised by PBPP
+            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
+            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            '4C',  # COOP case - Offender on both PBPP and County Supervision
+            '05',  # Special Parole sentenced by County and Supervised by PBPP
+        ],
+        StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+            '08',  # ?? Not in data dictionary
+            '09',  # ?? Not in data dictionary
+        ],
+        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
+            '06',  # Paroled/Reparoled by other state and transferred to PA
+            '07',  # Sentenced to Probation by other state and transferred to PA
+        ],
+
+        StateSupervisionPeriodTerminationReason.ABSCONSION: [
+            '45',  # Case closed for client with criminal charges pending that has reached maximum expiration
+                   # of sentence on paroled offense - usually applies to absconders or unconvicted violators
+        ],
+        StateSupervisionPeriodTerminationReason.DEATH: [
+            '47',  # Death while under supervision of causes unrelated to crime
+            '48',  # Death while under supervision caused by criminal activity
+        ],
+        StateSupervisionPeriodTerminationReason.DISCHARGE: [
+            '46',  # The Board of Pardons grants a pardon or commutation which terminates supervision,
+                   # or early discharge is granted by a judge.
+        ],
+        StateSupervisionPeriodTerminationReason.EXPIRATION: [
+            '43',  # Successful completion of sentence at maximum expiration date
+            '49',  # Not an actually closed case - Case reached the Maximum Expiration Date for a State Sentence but
+                   # has a county sentence of probation to finish. Closes the case and reopens it as a county
+                   # probation case,
+        ],
+        StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN: [
+            '50',  # Case Opened in Error
+            '51',  # ?? Not in data dictionary
+        ],
+        StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION: [
+            '44',  # Conviction and return to prison to serve detainer sentence
+        ],
+        StateSupervisionPeriodTerminationReason.REVOCATION: [
+            '40',  # Recommitment to prison for new criminal convictions while under supervision
+            '41',  # Recommitment to prison for adjudication of technical parole violations while under supervision
+            '42',  # Recommitment to prison for convictions of new crimes and technical parole
+                   # violations while under supervision
+        ],
+        StateSupervisionLevel.MINIMUM: [
+            'ADM',  # Administrative Parole
+            'MON',  # Monitoring
+        ],
+        StateSupervisionLevel.HIGH: [
+            'ENH',  # Enhanced
+        ],
+        StateSupervisionLevel.INTERNAL_UNKNOWN: [
+            'SPC',  # Special Circumstance
+        ],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -285,6 +389,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Offender',
             'dbo_LSIR',
             'supervision_sentence',
+            'supervision_period',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
@@ -351,7 +456,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in ['dbo_Senrec', 'incarceration_period', 'dbo_Miscon']:
             return US_PA_CONTROL
-        if file_tag in ['supervision_sentence']:
+        if file_tag in ['supervision_sentence', 'supervision_period']:
             return US_PA_PBPP
         return None
 
@@ -772,6 +877,40 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 if third_charge_statute or third_charge_description:
                     obj.create_state_charge(statute=third_charge_statute, description=third_charge_description)
 
+    @staticmethod
+    def _unpack_supervision_period_conditions(_file_tag: str,
+                                              row: Dict[str, str],
+                                              extracted_objects: List[IngestObject],
+                                              _cache: IngestObjectCache):
+        """Unpacks the comma-separated string of condition codes into an array of strings."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                conditions = row['condition_codes'].split(',') if row['condition_codes'] else []
+                if conditions:
+                    obj.conditions = conditions
+
+    @staticmethod
+    def _set_supervising_officer(_file_tag: str,
+                                 row: Dict[str, str],
+                                 extracted_objects: List[IngestObject],
+                                 _cache: IngestObjectCache):
+        """Sets the supervision officer (as an Agent entity) on the supervision period."""
+        officer_full_name_and_id = row.get('supervising_officer_name', None)
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                if officer_full_name_and_id:
+                    match = re.match(AGENT_NAME_AND_ID_REGEX, officer_full_name_and_id)
+                    if match:
+                        full_name = match.group(1)
+                        external_id: Optional[str] = match.group(3)
+                    else:
+                        full_name = officer_full_name_and_id
+                        external_id = None
+                    obj.create_state_agent(state_agent_id=external_id,
+                                           full_name=full_name,
+                                           agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+
 
 def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['control_number']
@@ -810,6 +949,17 @@ def _generate_supervision_sentence_primary_key(_file_tag: str, row: Dict[str, st
     return IngestFieldCoordinates('state_supervision_sentence',
                                   'state_supervision_sentence_id',
                                   supervision_sentence_id)
+
+
+def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+    person_id = row['parole_number']
+    parole_count = row['parole_count_id']
+    period_sequence_number = row['period_sequence_number']
+    supervision_period_id = f"{person_id}-{parole_count}-{period_sequence_number}"
+
+    return IngestFieldCoordinates('state_supervision_period',
+                                  'state_supervision_period_id',
+                                  supervision_period_id)
 
 
 def _state_supervision_sentence_ancestor_chain_overrides(_file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
