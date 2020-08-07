@@ -94,13 +94,3 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
         self.assertTrue('bigquery-v2' in queues_updated_by_id)
         self.assertTrue('job-monitor-v2' in queues_updated_by_id)
         self.assertTrue('scraper-phase-v2' in queues_updated_by_id)
-
-    def test_initialize_queues_staging(self):
-        with metadata.local_project_id_override('recidiviz-staging'):
-            google_cloud_task_queue_config.initialize_queues(
-                google_auth_token='fake-auth-token')
-
-        # Assert
-        queues_updated_by_id = self.get_updated_queues()
-        self.assertEqual(
-            queues_updated_by_id['direct-ingest-state-process-job-queue-v2'].rate_limits.max_concurrent_dispatches, 50)
