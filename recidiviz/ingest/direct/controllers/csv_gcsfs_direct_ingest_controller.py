@@ -105,7 +105,8 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
     def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
         parts = filename_parts_from_path(path)
 
-        if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+        if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
+                parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
             raise ValueError(f'Splitting raw files unsupported. Attempting to split [{path.abs_path()}]')
 
         delegate = DirectIngestFileSplittingGcsfsCsvReaderDelegate(path, self.fs, self.temp_output_directory_path)

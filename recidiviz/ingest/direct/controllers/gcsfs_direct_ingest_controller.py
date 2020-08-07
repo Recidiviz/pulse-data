@@ -447,7 +447,8 @@ class GcsfsDirectIngestController(
     def _must_split_contents(self,
                              file_type: GcsfsDirectIngestFileType,
                              path: GcsfsFilePath):
-        if file_type == GcsfsDirectIngestFileType.RAW_DATA:
+        if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
+                file_type == GcsfsDirectIngestFileType.RAW_DATA:
             return False
 
         return not self._file_meets_file_line_limit(self.ingest_file_split_line_limit, path)
