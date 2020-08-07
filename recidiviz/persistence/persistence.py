@@ -236,7 +236,7 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
                     raise
                 if isinstance(e.orig, psycopg2.OperationalError) \
                         and e.orig.pgcode == SERIALIZATION_FAILURE:
-                    measurements.measure_int_put(m_retries, 1)
+                    logging.info('Retrying transaction due to serialization failure: %s', e)
                     num_retries += 1
                     continue
                 raise
@@ -244,6 +244,7 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
                 session.rollback()
                 raise
     finally:
+        measurements.measure_int_put(m_retries, num_retries)
         session.close()
 
 
