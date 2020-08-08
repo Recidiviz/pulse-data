@@ -18,3 +18,4 @@ beta_settings:
   cloud_sql_instances: recidiviz-staging:us-east4:dev-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data
 env_variables:
   RECIDIVIZ_ENV: staging
+  MEMORY_DEBUG: true
