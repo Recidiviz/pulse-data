@@ -578,6 +578,8 @@ ALL_PERIODS_FRAGMENT = f"""
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_typ,
           LAG(fac_cd)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_fac_cd,
+          LAG(loc_ldesc)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS prev_loc_ldesc,
           fac_cd,
           fac_typ,
           fac_ldesc,
@@ -595,6 +597,8 @@ ALL_PERIODS_FRAGMENT = f"""
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_typ,
           LEAD(fac_cd)
             OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_fac_cd,
+          LEAD(loc_ldesc)
+            OVER (PARTITION BY docno, incrno ORDER BY start_date, end_date) AS next_loc_ldesc,
         FROM 
           periods_with_all_info
     )
