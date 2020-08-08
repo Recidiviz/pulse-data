@@ -17,10 +17,12 @@
 
 """Entrypoint for the application."""
 import datetime
+import gc
 import logging
 
+import zope.event.classhandler
 from flask import Flask
-
+from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
@@ -29,8 +31,8 @@ from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
-from recidiviz.calculator.query.export_manager import export_manager_blueprint
 from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
+from recidiviz.calculator.query.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.cloud_functions.covid.covid_ingest_endpoint import covid_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import scrape_aggregate_reports_blueprint
@@ -89,3 +91,8 @@ middleware = FlaskMiddleware(
     propagator=google_cloud_format.GoogleCloudFormatPropagator())
 config_integration.trace_integrations(
     ['google_cloud_clientlibs', 'requests', 'sqlalchemy'])
+
+@zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)
+def memory_condition_handler(event: events.MemoryUsageThresholdExceeded):
+    logging.warning("Memory usage %d is more than limit of %d, forcing gc", event.mem_usage, event.max_allowed)
+    gc.collect()

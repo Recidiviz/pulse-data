@@ -81,6 +81,8 @@ google-cloud-secret-manager = "*"
 pandas-gbq = "*"
 google-cloud-bigquery-storage = "*"
 guppy3 = "*"
+zope.event = "*"
+psutil = "*"
 
 [requires]
 python_version = "3.7"
