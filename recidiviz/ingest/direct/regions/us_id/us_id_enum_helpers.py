@@ -22,7 +22,8 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.str_field_utils import sorted_list_from_str
-from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES
+from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES, DEPORTED_LOCATION_NAME, \
+    INTERSTATE_FACILITY_CODE
 
 
 def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
@@ -34,6 +35,8 @@ def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervision
         return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
     if label == 'F':    # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+    if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE
     return None
 
 
@@ -46,6 +49,9 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
         return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
     if label == 'F':    # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
+    if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
+        return StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE
+
     return None
 
 

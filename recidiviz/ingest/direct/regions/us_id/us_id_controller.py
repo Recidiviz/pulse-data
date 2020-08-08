@@ -48,7 +48,9 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
     PAROLE_COMMISSION_CODE, LIMITED_SUPERVISION_LIVING_UNIT, BENCH_WARRANT_LIVING_UNIT, COURT_PROBATION_LIVING_UNIT, \
     LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, IDOC_CUSTODIAL_AUTHORITY, CURRENT_FACILITY_NAME, \
     CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE, \
-    CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC
+    CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC, FEDERAL_CUSTODY_LOCATION_NAME, \
+    DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, FEDERAL_CUSTODIAL_AUTHORITY, \
+    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
@@ -125,9 +127,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._clear_max_dates,
                 self._supervision_period_admission_and_termination_overrides,
                 self._add_default_admission_reason,
-                self._override_supervision_fields_from_location_info,
+                self._set_supervision_site,
                 self._set_case_type_from_supervision_level,
                 self._add_supervising_officer,
+                self._set_custodial_authority,
+                self._override_supervision_type,
             ],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -640,14 +644,54 @@ class UsIdController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.facility = location_name
 
-    # TODO(2912): Add custodial authority to incarceration periods
     @staticmethod
-    def _override_supervision_fields_from_location_info(
+    def _set_custodial_authority(
+            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+        """Sets custodial authority on the StateSupervisionPeriod entities."""
+        custodial_authority = IDOC_CUSTODIAL_AUTHORITY
+
+        # Determine if there should be overrides for custodial authority that are not IDOC.
+        facility_cd = row.get(CURRENT_FACILITY_CODE, '')
+        location_name = row.get(CURRENT_LOCATION_NAME, '')
+        if facility_cd in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
+            custodial_authority = location_name
+        elif location_name == DEPORTED_LOCATION_NAME:
+            custodial_authority = OTHER_COUNTRY_CUSTODIAL_AUTHORITY
+        elif location_name == FEDERAL_CUSTODY_LOCATION_NAME:
+            custodial_authority = FEDERAL_CUSTODIAL_AUTHORITY
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                obj.custodial_authority = custodial_authority
+
+    @staticmethod
+    def _override_supervision_type(
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache):
-        """Overrides various fields on SupervisionPeriods based on granular location info."""
+        """If necessary, overrides supervision level for supervision periods based on supervision level data that
+        appears in the non-standard wrkld_cat location.
+        """
+
+        living_unit_cd = row.get(CURRENT_LIVING_UNIT_CODE, '')
+        supervision_type_override = None
+        if living_unit_cd in (BENCH_WARRANT_LIVING_UNIT, COURT_PROBATION_LIVING_UNIT):
+            supervision_type_override = living_unit_cd
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                if supervision_type_override:
+                    obj.supervision_period_supervision_type = supervision_type_override
+
+    # TODO(2912): Add custodial authority to incarceration periods
+    @staticmethod
+    def _set_supervision_site(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """Sets supervision_site based on granular location info."""
         facility_cd = row.get(CURRENT_FACILITY_CODE, '')
         facility_name = row.get(CURRENT_FACILITY_NAME, '')
         location_name = row.get(CURRENT_LOCATION_NAME, '')
@@ -655,14 +699,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
         living_unit_name = row.get(CURRENT_LIVING_UNIT_NAME, '')
 
         # default values
-        custodial_authority = IDOC_CUSTODIAL_AUTHORITY
         supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=living_unit_name)
-        supervision_type_override = None
 
         # Interstate and parole commission facilities mean some non-IDOC entity is supervising the person.
         if facility_cd in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
             supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=location_name)
-            custodial_authority = location_name
         # Absconders have no granular facility info.
         elif facility_cd == FUGITIVE_FACILITY_CODE:
             supervision_site = None
@@ -674,19 +715,14 @@ class UsIdController(CsvGcsfsDirectIngestController):
         # TODO(3309): Consider adding warrant spans to schema.
         # Folks with an existing bench warrant are not actively supervised and have no office info.
         elif living_unit_cd == BENCH_WARRANT_LIVING_UNIT:
-            supervision_type_override = BENCH_WARRANT_LIVING_UNIT
             supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
         # Folks with court probation do not have office info.
         elif living_unit_cd == COURT_PROBATION_LIVING_UNIT:
-            supervision_type_override = COURT_PROBATION_LIVING_UNIT
             supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 obj.supervision_site = supervision_site
-                obj.custodial_authority = custodial_authority
-                if supervision_type_override:
-                    obj.supervision_period_supervision_type = supervision_type_override
 
     @staticmethod
     def _set_generated_ids(
@@ -816,23 +852,38 @@ class UsIdController(CsvGcsfsDirectIngestController):
         next_fac_cd = row.get(NEXT_FACILITY_CODE, '')
         cur_fac_cd = row.get(CURRENT_FACILITY_CODE, '')
 
+        prev_loc_name = row.get(PREVIOUS_LOCATION_NAME, '')
+        next_loc_name = row.get(NEXT_LOCATION_NAME, '')
+        cur_loc_name = row.get(CURRENT_LOCATION_NAME, '')
+
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 # Determine in and out edges from previous/next facilities
                 # Handle transfers to and from interstate
                 if prev_fac_cd == INTERSTATE_FACILITY_CODE:
-                    obj.admission_reason = StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE.value
+                    obj.admission_reason = INTERSTATE_FACILITY_CODE
+                if prev_loc_name == DEPORTED_LOCATION_NAME:
+                    obj.admission_reason = DEPORTED_LOCATION_NAME
+
                 if next_fac_cd == INTERSTATE_FACILITY_CODE:
-                    obj.termination_reason = StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE.value
+                    obj.termination_reason = INTERSTATE_FACILITY_CODE
+                if next_loc_name == DEPORTED_LOCATION_NAME:
+                    obj.termination_reason = DEPORTED_LOCATION_NAME
 
                 # Override in an out edges based on current facilities
 
-                # If we're currently in an interstate period, set admission/release reason accordingly and clear
-                # supervision site, as we don't have info on where exactly supervision is taking place.
+                # If we're currently in an interstate or deported period, set admission/release reason accordingly.
                 if cur_fac_cd == INTERSTATE_FACILITY_CODE:
-                    obj.admission_reason = StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE.value
+                    obj.admission_reason = INTERSTATE_FACILITY_CODE
                     if obj.termination_date:
-                        obj.termination_reason = StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE.value
+                        obj.termination_reason = INTERSTATE_FACILITY_CODE
+
+                # If the person has been deported set admission/release reason accordingly.
+                # TODO(3800): Consider adding specific enum for Deported
+                if cur_loc_name == DEPORTED_LOCATION_NAME:
+                    obj.admission_reason = DEPORTED_LOCATION_NAME
+                    if obj.termination_date:
+                        obj.termination_reason = DEPORTED_LOCATION_NAME
 
                 # Handle absconsion periods.
                 if cur_fac_cd == FUGITIVE_FACILITY_CODE:
