@@ -687,6 +687,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             admission_reason='I',
                                             supervision_period_supervision_type='PR',
                                             start_date='2020-01-01',
+                                            termination_date='2020-06-01',
+                                            termination_reason='DEPORTED',
                                             supervision_level='LEVEL 4',
                                             custodial_authority='US_ID_DOC',
                                             supervising_officer=StateAgent(
@@ -694,6 +696,15 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                 full_name='NAME2',
                                                 agent_type='SUPERVISION_OFFICER',
                                             )),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='1111-5',
+                                            supervision_site='DISTRICT 1|OFFICE 2',
+                                            admission_reason='DEPORTED',
+                                            supervision_period_supervision_type='PR',
+                                            start_date='2020-06-01',
+                                            supervision_level='LEVEL 4',
+                                            custodial_authority='OTHER_COUNTRY',
+                                        ),
                                     ]
                                 )
                             ],
@@ -779,7 +790,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             supervision_site='DISTRICT 4|UNKNOWN',
                                             admission_reason='COURT_SENTENCE',
                                             start_date='2015-01-01',
-                                            termination_reason='TRANSFER_OUT_OF_STATE',
+                                            termination_reason='IS',
                                             termination_date='2018-01-01',
                                             supervision_period_supervision_type='BW',
                                             supervision_level='DRUG COURT',
@@ -792,7 +803,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='3333-2',
-                                            admission_reason='TRANSFER_OUT_OF_STATE',
+                                            admission_reason='IS',
                                             supervision_site='INTERSTATE PROBATION|WASHINGTON',
                                             supervision_level='INTERSTATE',
                                             supervision_period_supervision_type='PB',
@@ -1837,10 +1848,13 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='1111-4',
             supervision_site='DISTRICT 1|OFFICE 2',
             custodial_authority='US_ID_DOC',
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='I',
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            termination_reason_raw_text='DEPORTED',
             start_date=datetime.date(year=2020, month=1, day=1),
+            termination_date=datetime.date(year=2020, month=6, day=1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='PR',
             supervision_level=StateSupervisionLevel.MAXIMUM,
@@ -1849,10 +1863,26 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             person=is_1111_3.person,
             supervising_officer=po_2,
         )
+        sp_1111_5 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='1111-5',
+            supervision_site='DISTRICT 1|OFFICE 2',
+            custodial_authority='OTHER_COUNTRY',
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+            admission_reason_raw_text='DEPORTED',
+            start_date=datetime.date(year=2020, month=6, day=1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_period_supervision_type_raw_text='PR',
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='LEVEL 4',
+            incarceration_sentences=[is_1111_3],
+            person=is_1111_3.person,
+        )
         sg_1111_2.supervision_sentences.append(ss_1111_2_placeholder)
         ss_1111_2.supervision_periods.append(sp_1111_3)
         ss_1111_2_placeholder.supervision_periods.append(sp_1111_2)
-        is_1111_3.supervision_periods.append(sp_1111_4)
+        is_1111_3.supervision_periods.extend([sp_1111_4, sp_1111_5])
 
         ss_2222_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1950,7 +1980,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='COURT_SENTENCE',
             start_date=datetime.date(year=2015, month=1, day=1),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
-            termination_reason_raw_text='TRANSFER_OUT_OF_STATE',
+            termination_reason_raw_text='IS',
             termination_date=datetime.date(year=2018, month=1, day=1),
             supervision_level=StateSupervisionLevel.DIVERSION,
             supervision_level_raw_text='DRUG COURT',
@@ -1973,7 +2003,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_site='INTERSTATE PROBATION|WASHINGTON',
             custodial_authority='WASHINGTON',
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
-            admission_reason_raw_text='TRANSFER_OUT_OF_STATE',
+            admission_reason_raw_text='IS',
             start_date=datetime.date(year=2018, month=1, day=1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='PB',

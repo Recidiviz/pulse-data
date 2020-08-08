@@ -31,6 +31,8 @@ keys_to_ignore:
   - lu_cd                   # Living unit code - handled manually in controller.
   - empl_ldesc              # Supervising agent name - handled manually in controller
   - empl_sdesc              # Supervising agent external id - handled manually in controller.
+  - prev_loc_ldesc          # Previous location name - handled manually in controller
+  - next_loc_ldesc          # Next location name - handled manually in controller
 
   - empl_cd                 # Unused - Employee code
   - empl_title              # Unused - Supervising officer role
