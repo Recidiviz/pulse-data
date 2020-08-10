@@ -134,54 +134,57 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             return False
         return True
 
-    def _convert_and_pop(self) -> entities.StatePerson:
-        return self._convert_state_person(self.ingest_info.state_people.pop())
+    def _pop_person(self) -> StatePerson:
+        return self.ingest_info.state_people.pop()
 
-    def _convert_state_person(self, ingest_state_person: StatePerson) \
+    def _compliant_log_person(self, ingest_person):
+        """Don't log any information about state people."""
+
+    def _convert_person(self, ingest_person: StatePerson) \
             -> entities.StatePerson:
         """Converts an ingest_info proto StatePerson to a persistence entity."""
         state_person_builder = entities.StatePerson.builder()
 
         state_person.copy_fields_to_builder(
-            state_person_builder, ingest_state_person, self.metadata)
+            state_person_builder, ingest_person, self.metadata)
 
         converted_aliases = [state_alias.convert(self.aliases[alias_id],
                                                  self.metadata)
                              for alias_id
-                             in ingest_state_person.state_alias_ids]
+                             in ingest_person.state_alias_ids]
         state_person_builder.aliases = converted_aliases
 
         converted_races = [
             state_person_race.convert(self.person_races[race_id],
                                       self.metadata)
-            for race_id in ingest_state_person.state_person_race_ids
+            for race_id in ingest_person.state_person_race_ids
         ]
         state_person_builder.races = converted_races
 
         converted_ethnicities = [
             state_person_ethnicity.convert(
                 self.person_ethnicities[ethnicity_id], self.metadata)
-            for ethnicity_id in ingest_state_person.state_person_ethnicity_ids
+            for ethnicity_id in ingest_person.state_person_ethnicity_ids
         ]
         state_person_builder.ethnicities = converted_ethnicities
 
         converted_assessments = [
             self._convert_assessment(self.assessments[assessment_id])
-            for assessment_id in ingest_state_person.state_assessment_ids
+            for assessment_id in ingest_person.state_assessment_ids
         ]
         state_person_builder.assessments = converted_assessments
         converted_program_assignments = [
             self._convert_program_assignment(
                 self.program_assignments[assignment_id])
             for assignment_id in
-            ingest_state_person.state_program_assignment_ids
+            ingest_person.state_program_assignment_ids
         ]
         state_person_builder.program_assignments = converted_program_assignments
 
         converted_external_ids = [
             state_person_external_id.convert(
                 self.person_external_ids[external_id], self.metadata)
-            for external_id in ingest_state_person.state_person_external_ids_ids
+            for external_id in ingest_person.state_person_external_ids_ids
         ]
         state_person_builder.external_ids = converted_external_ids
 
@@ -189,13 +192,13 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             self._convert_sentence_group(
                 self.sentence_groups[sentence_group_id])
             for sentence_group_id
-            in ingest_state_person.state_sentence_group_ids
+            in ingest_person.state_sentence_group_ids
         ]
         state_person_builder.sentence_groups = converted_sentence_groups
 
-        if ingest_state_person.supervising_officer_id:
+        if ingest_person.supervising_officer_id:
             converted_supervising_officer = state_agent.convert(
-                self.agents[ingest_state_person.supervising_officer_id],
+                self.agents[ingest_person.supervising_officer_id],
                 self.metadata)
             state_person_builder.supervising_officer = \
                 converted_supervising_officer
