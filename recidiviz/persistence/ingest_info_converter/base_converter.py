@@ -52,10 +52,13 @@ class BaseConverter(Generic[EntityPersonType]):
         enum_parsing_errors = 0
         general_parsing_errors = 0
         while not self._is_complete():
+            person = self._pop_person()
             try:
-                people.append(self._convert_and_pop())
+                converted_person = self._convert_person(person)
+                people.append(converted_person)
             except EnumParsingError as e:
                 logging.error(str(e))
+                self._compliant_log_person(person)
                 if _is_protected_error(e):
                     protected_class_errors += 1
                 else:
@@ -72,14 +75,22 @@ class BaseConverter(Generic[EntityPersonType]):
             protected_class_errors=protected_class_errors)
 
     @abstractmethod
+    def _pop_person(self):
+        """Pops a person from the list of persons to be converted."""
+
+    @abstractmethod
+    def _convert_person(self, ingest_person) -> EntityPersonType:
+        """Converts the ingested person and all of its children to Entities."""
+
+    @abstractmethod
     def _is_complete(self) -> bool:
         """Returns whether or not we've converted all entities in the
         IngestInfo."""
 
     @abstractmethod
-    def _convert_and_pop(self) -> EntityPersonType:
-        """Pops a person from the list of persons to be converted, and
-        converts the entity plus all of its children."""
+    def _compliant_log_person(self, ingest_person):
+        """Logs the ingested person in a security-compliant manner, i.e. only
+        for the county converter."""
 
 
 def _is_protected_error(error):
