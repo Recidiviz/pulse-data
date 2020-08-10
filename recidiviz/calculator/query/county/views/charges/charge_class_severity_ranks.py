@@ -32,7 +32,7 @@ from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 # Charge classes by severity.
 # Must be ranked from highest to lowest severity.
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_CLASSES_BY_SEVERITY = [
@@ -76,5 +76,5 @@ CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER.build_and_print()

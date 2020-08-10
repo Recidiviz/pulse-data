@@ -25,7 +25,7 @@ from recidiviz.calculator.query.county.views.stitch.scraper_aggregated_stitch_su
     import SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
@@ -140,5 +140,5 @@ COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.build_and_print()

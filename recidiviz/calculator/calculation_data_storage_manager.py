@@ -35,7 +35,7 @@ from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRIC
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE, DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
 calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_storage_manager', __name__)
@@ -133,7 +133,7 @@ def parse_arguments(argv):
     parser.add_argument('--project_id',
                         dest='project_id',
                         type=str,
-                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
                         required=True)
     parser.add_argument('--function_to_execute',
                         dest='function_to_execute',

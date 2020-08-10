@@ -23,7 +23,7 @@ from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_month import \
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME = \
@@ -111,5 +111,5 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER.build_and_print()

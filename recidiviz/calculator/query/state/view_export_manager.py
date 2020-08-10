@@ -29,7 +29,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -77,7 +77,7 @@ def parse_arguments(argv):
     parser.add_argument('--project_id',
                         dest='project_id',
                         type=str,
-                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
                         required=True)
 
     return parser.parse_known_args(argv)
