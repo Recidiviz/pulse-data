@@ -91,83 +91,83 @@ def map_supervision_combinations(person: StatePerson,
 
     for supervision_time_bucket in supervision_time_buckets:
         if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-            if metric_inclusions.get(SupervisionMetricType.SUCCESS):
+            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_SUCCESS):
                 characteristic_combo_success = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionMetricType.SUCCESS)
+                    person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_SUCCESS)
 
                 supervision_success_metrics = map_metric_combinations(
                     characteristic_combo_success, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.SUCCESS, include_metric_period_output)
+                    SupervisionMetricType.SUPERVISION_SUCCESS, include_metric_period_output)
 
                 metrics.extend(supervision_success_metrics)
 
-            if metric_inclusions.get(SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED) \
+            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED) \
                     and supervision_time_bucket.successful_completion \
                     and not supervision_time_bucket.incarcerated_during_sentence:
                 # Only include successful sentences where the person was not incarcerated during the sentence in this
                 # metric
                 characteristic_combo_successful_sentence_length = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+                    person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
                 )
 
                 successful_sentence_length_metrics = map_metric_combinations(
                     characteristic_combo_successful_sentence_length, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED, include_metric_period_output)
+                    SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED, include_metric_period_output)
 
                 metrics.extend(successful_sentence_length_metrics)
 
         elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
-            if metric_inclusions.get(SupervisionMetricType.TERMINATION):
+            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_TERMINATION):
                 characteristic_combo_termination = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionMetricType.TERMINATION)
+                    person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_TERMINATION)
 
                 termination_metrics = map_metric_combinations(
                     characteristic_combo_termination, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.TERMINATION, include_metric_period_output)
+                    SupervisionMetricType.SUPERVISION_TERMINATION, include_metric_period_output)
 
                 metrics.extend(termination_metrics)
         elif isinstance(supervision_time_bucket,
                         (NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket)):
-            if metric_inclusions.get(SupervisionMetricType.POPULATION):
+            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_POPULATION):
                 characteristic_combo_population = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionMetricType.POPULATION)
+                    person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_POPULATION)
 
                 population_metrics = map_metric_combinations(
                     characteristic_combo_population, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.POPULATION,
+                    SupervisionMetricType.SUPERVISION_POPULATION,
                     # The SupervisionPopulationMetric metric is explicitly a daily metric
                     include_metric_period_output=False)
 
                 metrics.extend(population_metrics)
 
-            if (metric_inclusions.get(SupervisionMetricType.COMPLIANCE)
+            if (metric_inclusions.get(SupervisionMetricType.SUPERVISION_COMPLIANCE)
                     and isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
                     and supervision_time_bucket.case_compliance is not None):
                 characteristic_combo_compliance = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionMetricType.COMPLIANCE)
+                    person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_COMPLIANCE)
 
                 compliance_metrics = map_metric_combinations(
                     characteristic_combo_compliance, supervision_time_bucket,
                     calculation_month_upper_bound, calculation_month_lower_bound,
                     supervision_time_buckets, periods_and_buckets,
-                    SupervisionMetricType.COMPLIANCE,
+                    SupervisionMetricType.SUPERVISION_COMPLIANCE,
                     # The SupervisionCaseComplianceMetric metric is explicitly a daily metric
                     include_metric_period_output=False)
 
                 metrics.extend(compliance_metrics)
 
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
-                if metric_inclusions.get(SupervisionMetricType.REVOCATION):
+                if metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION):
                     characteristic_combo_revocation = characteristics_dict(
-                        person, supervision_time_bucket, SupervisionMetricType.REVOCATION)
+                        person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_REVOCATION)
 
                     revocation_metrics = map_metric_combinations(
                         characteristic_combo_revocation,
@@ -176,14 +176,14 @@ def map_supervision_combinations(person: StatePerson,
                         calculation_month_lower_bound,
                         supervision_time_buckets,
                         periods_and_buckets,
-                        SupervisionMetricType.REVOCATION,
+                        SupervisionMetricType.SUPERVISION_REVOCATION,
                         include_metric_period_output)
 
                     metrics.extend(revocation_metrics)
 
-                if metric_inclusions.get(SupervisionMetricType.REVOCATION_ANALYSIS):
+                if metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS):
                     characteristic_combo_revocation_analysis = characteristics_dict(
-                        person, supervision_time_bucket, SupervisionMetricType.REVOCATION_ANALYSIS)
+                        person, supervision_time_bucket, SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
 
                     revocation_analysis_metrics = map_metric_combinations(
                         characteristic_combo_revocation_analysis,
@@ -192,16 +192,18 @@ def map_supervision_combinations(person: StatePerson,
                         calculation_month_lower_bound,
                         supervision_time_buckets,
                         periods_and_buckets,
-                        SupervisionMetricType.REVOCATION_ANALYSIS,
+                        SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
                         include_metric_period_output
                     )
 
                     metrics.extend(revocation_analysis_metrics)
 
-                if (metric_inclusions.get(SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                if (metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
                         and supervision_time_bucket.violation_type_frequency_counter):
                     characteristic_combo_revocation_violation_type_analysis = characteristics_dict(
-                        person, supervision_time_bucket, SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                        person,
+                        supervision_time_bucket,
+                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
 
                     revocation_violation_type_analysis_metrics = get_revocation_violation_type_analysis_metrics(
                         supervision_time_bucket, characteristic_combo_revocation_violation_type_analysis,
@@ -238,7 +240,7 @@ def characteristics_dict(person: StatePerson,
     include_demographic_dimensions = _include_demographic_dimensions_for_metric(metric_type)
     include_person_level_dimensions = _include_person_level_dimensions_for_metric(metric_type)
 
-    if (metric_type == SupervisionMetricType.POPULATION and
+    if (metric_type == SupervisionMetricType.SUPERVISION_POPULATION and
             isinstance(supervision_time_bucket, (RevocationReturnSupervisionTimeBucket,
                                                  NonRevocationReturnSupervisionTimeBucket))):
         if supervision_time_bucket.most_severe_violation_type:
@@ -256,8 +258,8 @@ def characteristics_dict(person: StatePerson,
         if supervision_time_bucket.source_violation_type:
             characteristics['source_violation_type'] = supervision_time_bucket.source_violation_type
 
-        if metric_type in [SupervisionMetricType.REVOCATION_ANALYSIS,
-                           SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS]:
+        if metric_type in [SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+                           SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS]:
             if supervision_time_bucket.most_severe_violation_type:
                 characteristics['most_severe_violation_type'] = supervision_time_bucket.most_severe_violation_type
 
@@ -265,7 +267,7 @@ def characteristics_dict(person: StatePerson,
                 characteristics['most_severe_violation_type_subtype'] = \
                     supervision_time_bucket.most_severe_violation_type_subtype
 
-            if metric_type in [SupervisionMetricType.REVOCATION_ANALYSIS]:
+            if metric_type in [SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS]:
                 if supervision_time_bucket.most_severe_response_decision:
                     characteristics['most_severe_response_decision'] = \
                         supervision_time_bucket.most_severe_response_decision
@@ -280,7 +282,7 @@ def characteristics_dict(person: StatePerson,
             characteristics['assessment_score_change'] = supervision_time_bucket.assessment_score_change
 
     if (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
-            and metric_type == SupervisionMetricType.COMPLIANCE):
+            and metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE):
         if supervision_time_bucket.case_compliance:
             characteristics['assessment_count'] = supervision_time_bucket.case_compliance.assessment_count
             characteristics['assessment_up_to_date'] = supervision_time_bucket.case_compliance.assessment_up_to_date
@@ -322,7 +324,7 @@ def characteristics_dict(person: StatePerson,
 
     if (isinstance(supervision_time_bucket, (NonRevocationReturnSupervisionTimeBucket,
                                              RevocationReturnSupervisionTimeBucket))
-            and metric_type == SupervisionMetricType.POPULATION):
+            and metric_type == SupervisionMetricType.SUPERVISION_POPULATION):
         characteristics['date_of_supervision'] = event_date
 
     if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
@@ -331,7 +333,7 @@ def characteristics_dict(person: StatePerson,
     elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
         characteristics['termination_date'] = event_date
     elif (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
-          and metric_type == SupervisionMetricType.COMPLIANCE
+          and metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE
           and supervision_time_bucket.case_compliance):
         event_date = supervision_time_bucket.case_compliance.date_of_evaluation
         characteristics['date_of_evaluation'] = event_date
@@ -347,13 +349,13 @@ def characteristics_dict(person: StatePerson,
             characteristics['supervision_level_raw_text'] = \
                 supervision_time_bucket.supervision_level_raw_text
 
-        if metric_type == SupervisionMetricType.POPULATION:
+        if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
             if isinstance(supervision_time_bucket,
                           (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)):
                 characteristics['is_on_supervision_last_day_of_month'] = \
                     supervision_time_bucket.is_on_supervision_last_day_of_month
 
-        if metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
+        if metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket) \
                     and supervision_time_bucket.violation_history_description:
                 characteristics['violation_history_description'] = \
@@ -400,7 +402,8 @@ def map_metric_combinations(
             calculation_month_upper_bound, calculation_month_lower_bound):
         # SupervisionPopulationMetrics and SupervisionCaseComplianceMetrics are point-in-time metrics, all
         # other SupervisionMetrics are metrics based on the month of the event
-        is_daily_metric = metric_type in (SupervisionMetricType.POPULATION, SupervisionMetricType.COMPLIANCE)
+        is_daily_metric = metric_type in (SupervisionMetricType.SUPERVISION_POPULATION,
+                                          SupervisionMetricType.SUPERVISION_COMPLIANCE)
 
         metrics.extend(combination_supervision_monthly_metrics(
             characteristic_combo, supervision_time_bucket,
@@ -426,8 +429,8 @@ def get_revocation_violation_type_analysis_metrics(
         all_buckets_sorted: List[SupervisionTimeBucket],
         periods_and_buckets: Dict[int, List[SupervisionTimeBucket]],
         include_metric_period_output: bool) -> List[Tuple[Dict[str, Any], Any]]:
-    """Produces metrics of the type REVOCATION_VIOLATION_TYPE_ANALYSIS. For each violation type list in the bucket's
-    violation_type_frequency_counter, produces metrics for each violation type in the list, and one with a
+    """Produces metrics of the type SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS. For each violation type list in the
+    bucket's violation_type_frequency_counter, produces metrics for each violation type in the list, and one with a
     violation_count_type of 'VIOLATION' to keep track of the overall number of violations."""
     metrics = []
     if supervision_time_bucket.violation_type_frequency_counter:
@@ -444,7 +447,7 @@ def get_revocation_violation_type_analysis_metrics(
                 calculation_month_lower_bound,
                 all_buckets_sorted,
                 periods_and_buckets,
-                SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+                SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
                 include_metric_period_output
             )
 
@@ -464,7 +467,7 @@ def get_revocation_violation_type_analysis_metrics(
                     calculation_month_lower_bound,
                     all_buckets_sorted,
                     periods_and_buckets,
-                    SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+                    SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
                     include_metric_period_output
                 )
 
@@ -514,10 +517,10 @@ def combination_supervision_monthly_metrics(
     event_combo_value = None
 
     if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-        if metric_type == SupervisionMetricType.SUCCESS:
+        if metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
             # Set 1 for successful completion, 0 for unsuccessful completion
             event_combo_value = 1 if supervision_time_bucket.successful_completion else 0
-        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+        elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
             if supervision_time_bucket.sentence_days_served is not None:
                 # Only include this combo if there is a recorded number of days served. Set the value as the number of
                 # days served.
@@ -548,14 +551,14 @@ def combination_supervision_monthly_metrics(
 
     buckets_in_period: List[SupervisionTimeBucket] = []
 
-    if metric_type == SupervisionMetricType.POPULATION:
+    if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
         # Get all other supervision time buckets for the same day as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
             if (isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)))
             and bucket.bucket_date == supervision_time_bucket.bucket_date
         ]
-    elif metric_type == SupervisionMetricType.REVOCATION:
+    elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION:
         # Get all other revocation supervision buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -563,7 +566,8 @@ def combination_supervision_monthly_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
-    elif metric_type in (SupervisionMetricType.SUCCESS, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED):
+    elif metric_type in (SupervisionMetricType.SUPERVISION_SUCCESS,
+                         SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED):
         # Get all other projected completion buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -571,7 +575,7 @@ def combination_supervision_monthly_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
-    elif metric_type == SupervisionMetricType.TERMINATION:
+    elif metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
         # Get all other termination buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -579,8 +583,8 @@ def combination_supervision_monthly_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
-    elif metric_type in (SupervisionMetricType.REVOCATION_ANALYSIS,
-                         SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
+    elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+                         SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
         # Get all other revocation supervision buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -588,10 +592,10 @@ def combination_supervision_monthly_metrics(
             and bucket.year == bucket_year and
             bucket.month == bucket_month
         ]
-    elif metric_type == SupervisionMetricType.COMPLIANCE:
+    elif metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
         if supervision_time_bucket.case_compliance is None:
-            raise ValueError("Attempting to calculate COMPLIANCE metrics on a SupervisionTimeBucket that has no"
-                             "case_compliance set.")
+            raise ValueError("Attempting to calculate SUPERVISION_COMPLIANCE metrics on a SupervisionTimeBucket that "
+                             "has no case_compliance set.")
 
         # Get all other NonRevocationReturnSupervisionTimeBucket buckets with a set case_compliance field
         buckets_in_period = [
@@ -656,22 +660,23 @@ def combination_supervision_metric_period_metrics(
 
             relevant_buckets_in_period: List[SupervisionTimeBucket] = []
 
-            if metric_type == SupervisionMetricType.TERMINATION:
+            if metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
                 # Get all other supervision time buckets for this period that should contribute to an termination
                 # metric
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
                     if (isinstance(bucket, SupervisionTerminationBucket))
                 ]
-            elif metric_type in (SupervisionMetricType.REVOCATION,
-                                 SupervisionMetricType.REVOCATION_ANALYSIS,
-                                 SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
+            elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
+                                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+                                 SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
                 # Get all other revocation return time buckets for this period
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
                     if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
                 ]
-            elif metric_type in (SupervisionMetricType.SUCCESS, SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED):
+            elif metric_type in (SupervisionMetricType.SUPERVISION_SUCCESS,
+                                 SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED):
                 # Get all other projected completion buckets in this period
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
@@ -708,14 +713,14 @@ def include_supervision_in_count(combo: Dict[str, Any],
     metric, or the combo is for the person-level output, then the person-based count should take into account all
     buckets in the period.
 
-    If the metric is of type POPULATION, and there are buckets that represent revocation in that period, then this
-    bucket is included only if it is the last instance of revocation for the period. However, if none of the
+    If the metric is of type SUPERVISION_POPULATION, and there are buckets that represent revocation in that period,
+    then this bucket is included only if it is the last instance of revocation for the period. However, if none of the
     buckets represent revocation, then this bucket is included if it is the last bucket in the period. If the metric is
-    of type REVOCATION, SUCCESS, or TERMINATION, then this bucket is included only if it is the last
-    bucket in the period.
+    of type SUPERVISION_REVOCATION, SUPERVISION_SUCCESS, or SUPERVISION_TERMINATION, then this bucket is included only
+    if it is the last bucket in the period.
 
-    If the metric is of type SUCCESSFUL_SENTENCE_DAYS_SERVED, then a bucket for this month is only included if all
-    supervision sentences that were projected to complete in this period finished successfully and were not
+    If the metric is of type SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED, then a bucket for this month is only included
+    if all supervision sentences that were projected to complete in this period finished successfully and were not
     overlapped by any incarceration. If this is the case, then this bucket is included only if it is the longest
     sentence that ended in this time period.
 
@@ -745,7 +750,7 @@ def include_supervision_in_count(combo: Dict[str, Any],
     # Sort by the revocation admission date
     revocation_buckets.sort(key=lambda b: b.bucket_date)
 
-    if metric_type == SupervisionMetricType.POPULATION:
+    if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
         if revocation_buckets:
             # If there are SupervisionTimeBuckets that are of type RevocationReturnSupervisionTimeBucket, then we want
             # to include that bucket in the counts over any NonRevocationReturnSupervisionTimeBucket. This ensures that
@@ -763,17 +768,17 @@ def include_supervision_in_count(combo: Dict[str, Any],
 
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
-    if metric_type in (SupervisionMetricType.REVOCATION,
-                       SupervisionMetricType.REVOCATION_ANALYSIS,
-                       SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
+    if metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
+                       SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+                       SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
         return id(supervision_time_bucket) == id(revocation_buckets[-1])
 
-    if metric_type in (SupervisionMetricType.SUCCESS,
-                       SupervisionMetricType.TERMINATION,
-                       SupervisionMetricType.COMPLIANCE):
+    if metric_type in (SupervisionMetricType.SUPERVISION_SUCCESS,
+                       SupervisionMetricType.SUPERVISION_TERMINATION,
+                       SupervisionMetricType.SUPERVISION_COMPLIANCE):
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
-    if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+    if metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
         # If any supervision sentence that was projected to complete in this period didn't finish successfully
         # or was overlapped by incarceration, then do not count this month as a successful completion for the
         # successful sentence days served metric
@@ -802,24 +807,26 @@ def _person_combo_value(combo: Dict[str, Any],
     """Determines what the value should be for a person-based metric given the combo, the supervision_time_bucket,
     the buckets in the period, and the type of metric this combo will be contributing to.
 
-    All values will be 1 for the POPULATION, REVOCATION, and TERMINATION metrics, because the presence of a
-    SupervisionTimeBucket for a given time bucket implies that the person should be counted in the metric.
+    All values will be 1 for the SUPERVISION_POPULATION, SUPERVISION_REVOCATION, and SUPERVISION_TERMINATION metrics,
+    because the presence of a SupervisionTimeBucket for a given time bucket implies that the person should be counted
+    in the metric.
 
-    The value for SUCCESSFUL_SENTENCE_DAYS_SERVED metrics will be the sentence_days_served value on the given
-    supervision_time_bucket.
+    The value for SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED metrics will be the sentence_days_served value on the
+    given supervision_time_bucket.
 
-    The value for the SUCCESS metrics is 1 for a successful completion, and 0 for an unsuccessful completion. For any
-    combos that do not specify supervision type, the success value on this combo should only be 1 if all
-    supervisions ending that month were successful. For any combos that do specify supervision type, the success value
-    on this combo should only be 1 if all other supervisions of the same type ending in that month were successful.
+    The value for the SUPERVISION_SUCCESS metrics is 1 for a successful completion, and 0 for an unsuccessful
+    completion. For any combos that do not specify supervision type, the success value on this combo should only be 1
+    if all supervisions ending that month were successful. For any combos that do specify supervision type, the success
+    value on this combo should only be 1 if all other supervisions of the same type ending in that month were
+    successful.
     """
     person_combo_value = 1
 
     if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
-        if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+        if metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
             return supervision_time_bucket.sentence_days_served
 
-        if metric_type == SupervisionMetricType.SUCCESS:
+        if metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
             supervision_type_specific_metric = combo.get(
                 'supervision_type') is not None
 
@@ -864,18 +871,18 @@ def _classify_buckets_by_relevant_metric_periods(
 def _include_revocation_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
     """Returns whether revocation dimensions should be included in metrics of the given metric_type."""
     if metric_type in (
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
     ):
         return True
 
     if metric_type in (
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.TERMINATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED,
-            SupervisionMetricType.COMPLIANCE
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE
     ):
         return False
 
@@ -885,18 +892,18 @@ def _include_revocation_dimensions_for_metric(metric_type: SupervisionMetricType
 def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
     """Returns whether assessment dimensions should be included in metrics of the given metric_type."""
     if metric_type in (
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.TERMINATION,
-            SupervisionMetricType.COMPLIANCE
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE
     ):
         return True
 
     if metric_type in (
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
     ):
         return False
 
@@ -906,18 +913,18 @@ def _include_assessment_dimensions_for_metric(metric_type: SupervisionMetricType
 def _include_demographic_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
     """Returns whether demographic dimensions should be included in metrics of the given metric_type."""
     if metric_type in (
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.TERMINATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED,
-            SupervisionMetricType.COMPLIANCE
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE
     ):
         return True
 
     if metric_type in (
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
     ):
         return False
 
@@ -927,17 +934,17 @@ def _include_demographic_dimensions_for_metric(metric_type: SupervisionMetricTyp
 def _include_person_level_dimensions_for_metric(metric_type: SupervisionMetricType) -> bool:
     """Returns whether person-level dimensions should be included in metrics of the given metric_type."""
     if metric_type in (
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.TERMINATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED,
-            SupervisionMetricType.COMPLIANCE
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE
     ):
         return True
 
-    if metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+    if metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
         return False
 
     raise ValueError(f"SupervisionMetricType {metric_type} not handled.")

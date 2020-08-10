@@ -78,7 +78,7 @@ def map_recidivism_combinations(person: StatePerson,
     of the metric do not fully match the attributes of the person and their type
     of return to incarceration. For example, for a RecidivismReleaseEvent where
     the return_type is 'REVOCATION', there will be metrics produced where the
-    return_type is 'NEW ADMISSION' and the value is 0.
+    return_type is 'NEW INCARCERATION_ADMISSION' and the value is 0.
 
     Args:
         person: the StatePerson
@@ -97,9 +97,9 @@ def map_recidivism_combinations(person: StatePerson,
 
     for release_cohort, events in release_events.items():
         for event in events:
-            if metric_inclusions.get(ReincarcerationRecidivismMetricType.RATE):
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_RATE):
                 characteristic_combo_rate = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.RATE)
+                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.REINCARCERATION_RATE)
 
                 rate_metrics = map_recidivism_rate_combinations(
                     characteristic_combo_rate, release_cohort, event,
@@ -107,9 +107,9 @@ def map_recidivism_combinations(person: StatePerson,
 
                 metrics.extend(rate_metrics)
 
-            if metric_inclusions.get(ReincarcerationRecidivismMetricType.COUNT):
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
                 characteristic_combo_count = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.COUNT)
+                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT)
 
                 count_metrics = map_recidivism_count_combinations(characteristic_combo_count,
                                                                   event,
@@ -158,7 +158,7 @@ def map_recidivism_rate_combinations(
 
     combo = characteristic_combo.copy()
 
-    combo['metric_type'] = ReincarcerationRecidivismMetricType.RATE
+    combo['metric_type'] = ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
     combo['release_cohort'] = release_cohort
 
     metrics.extend(combination_rate_metrics(
@@ -199,7 +199,7 @@ def map_recidivism_count_combinations(
                                                    metric_period_end_date.year,
                                                    metric_period_end_date.month)
 
-        characteristic_combo['metric_type'] = ReincarcerationRecidivismMetricType.COUNT
+        characteristic_combo['metric_type'] = ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT
 
         combo = characteristic_combo.copy()
 
@@ -486,7 +486,8 @@ def characteristics_dict(person: StatePerson,
 
     characteristics = add_demographic_characteristics(characteristics, person, event.original_admission_date)
 
-    if isinstance(event, RecidivismReleaseEvent) and metric_type == ReincarcerationRecidivismMetricType.COUNT:
+    if (isinstance(event, RecidivismReleaseEvent)
+            and metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
         time_at_liberty = days_at_liberty(event)
 
         characteristics['days_at_liberty'] = time_at_liberty
@@ -583,7 +584,9 @@ def combination_rate_metrics(combo: Dict[str, Any],
                                                                         all_reincarcerations)
 
             for reincarceration in all_reincarcerations_in_window:
-                metrics.append((event_based_augmented_combo, recidivism_value_for_metric(
+                event_combo_copy = event_based_augmented_combo.copy()
+
+                metrics.append((event_combo_copy, recidivism_value_for_metric(
                     event_based_augmented_combo,
                     reincarceration.get('return_type'),
                     reincarceration.get('from_supervision_type'),

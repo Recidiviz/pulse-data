@@ -17,22 +17,21 @@
 """Program metrics we calculate."""
 
 from datetime import date
-from enum import Enum
 from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
-class ProgramMetricType(Enum):
+class ProgramMetricType(RecidivizMetricType):
     """The type of program metrics."""
 
-    PARTICIPATION = 'PARTICIPATION'
-    REFERRAL = 'REFERRAL'
+    PROGRAM_PARTICIPATION = 'PROGRAM_PARTICIPATION'
+    PROGRAM_REFERRAL = 'PROGRAM_REFERRAL'
 
 
 @attr.s
@@ -44,6 +43,9 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
     characteristics for slicing the data.
     """
     # Required characteristics
+
+    # The type of ProgramMetric
+    metric_type: ProgramMetricType = attr.ib(default=None)
 
     # Year
     year: int = attr.ib(default=None)
@@ -85,6 +87,9 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 class ProgramReferralMetric(ProgramMetric):
     """Subclass of ProgramMetric that contains program referral counts."""
     # Required characteristics
+
+    # The type of ProgramMetric
+    metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_REFERRAL)
 
     # Referral count
     count: int = attr.ib(default=None)
@@ -137,6 +142,9 @@ class ProgramReferralMetric(ProgramMetric):
 class ProgramParticipationMetric(ProgramMetric):
     """Subclass of ProgramMetric that contains program participation counts."""
     # Required characteristics
+
+    # The type of ProgramMetric
+    metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_PARTICIPATION)
 
     # Participation count
     count: int = attr.ib(default=None)

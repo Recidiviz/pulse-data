@@ -37,10 +37,10 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       SELECT
         state_code,
         metric_date as date_of_supervision,
-        job_id
+        job_id,
+        metric_type
       FROM
         `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
-      WHERE metric_type = 'SUPERVISION_POPULATION'
     ), population_with_race_or_ethnicity_priorities AS (
       SELECT
          *,
@@ -52,7 +52,7 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
        `{project_id}.{metrics_dataset}.supervision_population_metrics`
       INNER JOIN
         most_recent_job_id
-      USING (state_code, job_id, date_of_supervision),
+      USING (state_code, job_id, date_of_supervision, metric_type),
         {race_or_ethnicity_dimension}
       LEFT JOIN
          `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`

@@ -47,8 +47,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
@@ -235,9 +234,13 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
             # impossible.
             raise ValueError("No value associated with this metric key.")
 
-        metric_type = dict_metric_key.get('metric_type')
+        if not dict_metric_key:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("Empty dict_metric_key.")
 
-        if metric_type == ReincarcerationRecidivismMetricType.COUNT:
+        metric_type = dict_metric_key.pop('metric_type')
+
+        if metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT:
             if dict_metric_key.get('person_id') is not None:
                 # The count value for all person-level metrics should be 1
                 value = 1
@@ -247,7 +250,7 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
 
             recidivism_metric = ReincarcerationRecidivismCountMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == ReincarcerationRecidivismMetricType.RATE:
+        elif metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_RATE:
             dict_metric_key['total_releases'] = 1
             dict_metric_key['recidivated_releases'] = value
             dict_metric_key['recidivism_rate'] = value
@@ -255,44 +258,11 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
             recidivism_metric = ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", metric_type)
             return
 
         if recidivism_metric:
             yield recidivism_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(ReincarcerationRecidivismMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class RecidivismMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to
-    BigQuery."""
-
-    def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in
-        dictionary form, where the values are in formats as required by BigQuery
-        I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A ReincarcerationRecidivismMetric
-
-        Yields:
-            A dictionary representation of the ReincarcerationRecidivismMetric
-                in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, ReincarcerationRecidivismRateMetric):
-            yield beam.pvalue.TaggedOutput('rates', element_dict)
-        elif isinstance(element, ReincarcerationRecidivismCountMetric):
-            yield beam.pvalue.TaggedOutput('counts', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -311,8 +281,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
                         nargs='+',
                         choices=[
                             'ALL',
-                            ReincarcerationRecidivismMetricType.COUNT.value,
-                            ReincarcerationRecidivismMetricType.RATE.value
+                            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
+                            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value
                         ],
                         help='A list of the types of metric to calculate.',
                         default={'ALL'})
@@ -484,14 +454,16 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (recidivism_metrics
                             | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(
-                                RecidivismMetricWritableDict()).with_outputs('rates', 'counts'))
+                            beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
+                                ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
+                                ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value
+                            ))
 
         # Write the recidivism metrics to the output tables in BigQuery
         rates_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismRateMetric)
         counts_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismCountMetric)
 
-        _ = (writable_metrics.rates
+        _ = (writable_metrics.REINCARCERATION_RATE
              | f"Write rate metrics to BQ table: {rates_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=rates_table_id,
@@ -501,7 +473,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.counts
+        _ = (writable_metrics.REINCARCERATION_COUNT
              | f"Write count metrics to BQ table: {counts_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=counts_table_id,

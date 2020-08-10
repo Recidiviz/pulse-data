@@ -42,7 +42,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
       gender, age_bucket, race, ethnicity, assessment_score_bucket, judicial_district_code
     FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension},
     {supervision_dimension}
     WHERE methodology = 'EVENT'
@@ -51,7 +51,6 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
       AND district IS NOT NULL
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      AND job.metric_type = 'SUPERVISION_POPULATION'
     """
 
 EVENT_BASED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

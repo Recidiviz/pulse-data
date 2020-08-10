@@ -17,24 +17,23 @@
 """Incarceration metrics we calculate."""
 
 from datetime import date
-from enum import Enum
 from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 
 
-class IncarcerationMetricType(Enum):
+class IncarcerationMetricType(RecidivizMetricType):
     """The type of incarceration metrics."""
 
-    ADMISSION = 'ADMISSION'
-    POPULATION = 'POPULATION'
-    RELEASE = 'RELEASE'
+    INCARCERATION_ADMISSION = 'INCARCERATION_ADMISSION'
+    INCARCERATION_POPULATION = 'INCARCERATION_POPULATION'
+    INCARCERATION_RELEASE = 'INCARCERATION_RELEASE'
 
 
 @attr.s
@@ -45,6 +44,9 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
     as well as optional characteristics for slicing the data.
     """
     # Required characteristics
+
+    # The type of IncarcerationMetric
+    metric_type: IncarcerationMetricType = attr.ib(default=None)
 
     # Year
     year: int = attr.ib(default=None)
@@ -85,6 +87,9 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
 class IncarcerationPopulationMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains incarceration population counts on a given date."""
     # Required characteristics
+
+    # The type of IncarcerationMetric
+    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_POPULATION)
 
     # Population count
     count: int = attr.ib(default=None)
@@ -137,6 +142,9 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains admission counts."""
     # Required characteristics
 
+    # The type of IncarcerationMetric
+    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_ADMISSION)
+
     # Admission count
     count: int = attr.ib(default=None)
 
@@ -180,6 +188,9 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 class IncarcerationReleaseMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains release counts."""
     # Required characteristics
+
+    # The type of IncarcerationMetric
+    metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_RELEASE)
 
     # Release count
     count: int = attr.ib(default=None)

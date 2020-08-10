@@ -61,14 +61,13 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) as release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
         AND person_id IS NOT NULL
         AND m.metric_period_months = 1
         AND {metric_period_condition}
-        AND job.metric_type = 'INCARCERATION_RELEASE'
       GROUP BY state_code, metric_period_months, district
     ) releases
     USING (state_code, district, metric_period_months)
@@ -80,7 +79,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
@@ -89,7 +88,6 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
         AND {prior_month_metric_period_dimension}
         -- Get population count for the last day of the month
         AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
-        AND job.metric_type = 'INCARCERATION_POPULATION'
       GROUP BY state_code, district, metric_period_months
     ) inc_pop
     USING (state_code, district, metric_period_months)

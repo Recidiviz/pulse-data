@@ -495,8 +495,8 @@ def test_recidivism_value_for_metric_not_source_violation_type():
 
 
 ALL_METRIC_INCLUSIONS_DICT = {
-    MetricType.COUNT: True,
-    MetricType.RATE: True
+    MetricType.REINCARCERATION_COUNT: True,
+    MetricType.REINCARCERATION_RATE: True
 }
 
 
@@ -569,16 +569,19 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
             else:
                 assert value == 1
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_multiple_in_period(self):
@@ -636,7 +639,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         assert len(recidivism_combinations) == expected_count
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') < 2 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
@@ -644,7 +647,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 self.assertEqual(1, value)
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     if combination.get('year') == 1910:
                         self.assertEqual(days_at_liberty_1, combination.get('days_at_liberty'))
                     else:
@@ -687,17 +691,19 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
             if combination.get('return_type') == ReincarcerationReturnType.REVOCATION:
                 self.assertEqual(0, value)
-            elif combination.get('metric_type') == MetricType.COUNT:
+            elif combination.get('metric_type') == MetricType.REINCARCERATION_COUNT:
                 self.assertEqual(1, value)
 
                 if combination.get('person_id') is not None:
                     self.assertEqual(days_at_liberty_1, combination.get('days_at_liberty'))
 
-            elif combination.get('metric_type') != MetricType.RATE \
+            elif combination.get('metric_type') != MetricType.REINCARCERATION_RATE \
                     or combination.get('methodology') == MetricMethodologyType.PERSON:
                 if value == 0:
                     print(combination)
@@ -732,6 +738,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
         self.assertTrue(all(value == 0 for _combination, value
                             in recidivism_combinations))
 
@@ -768,18 +776,20 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations if
-                   _combination['metric_type'] == MetricType.RATE)
+                   _combination['metric_type'] == MetricType.REINCARCERATION_RATE)
         assert all(value == 1 for _combination, value
                    in recidivism_combinations if
-                   _combination['metric_type'] == MetricType.COUNT and
+                   _combination['metric_type'] == MetricType.REINCARCERATION_COUNT and
                    _combination.get('return_type') !=
                    ReincarcerationReturnType.REVOCATION)
         assert all(_combination.get('days_at_liberty') == days_at_liberty
                    for _combination, _ in recidivism_combinations
-                   if _combination['metric_type'] == MetricType.COUNT
+                   if _combination['metric_type'] == MetricType.REINCARCERATION_COUNT
                    and _combination.get('person_id') is not None)
 
     def test_map_recidivism_combinations_multiple_races(self):
@@ -819,14 +829,17 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
                 assert value == 0
-            elif combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+            elif (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                  and combination.get('person_id') is not None):
                 assert value == 1
                 assert combination.get('days_at_liberty') == days_at_liberty
             else:
@@ -869,9 +882,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
@@ -879,7 +894,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 assert value == 1
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_multiple_races_ethnicities(self):
@@ -924,9 +940,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
@@ -934,7 +952,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 assert value == 1
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_revocation_parole(self):
@@ -972,9 +991,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
@@ -985,7 +1006,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 assert value == 1
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_revocation_probation(self):
@@ -1024,9 +1046,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') in {StateSupervisionPeriodSupervisionType.DUAL,
@@ -1036,7 +1060,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 assert value == 1
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_technical_revocation_parole(self):
@@ -1077,9 +1102,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('metric_type') == MetricType.RATE and \
+            if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5:
                 assert value == 0
             elif combination.get('return_type') == \
@@ -1098,7 +1125,8 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             else:
                 assert value == 1
 
-                if combination.get('metric_type') == MetricType.COUNT and combination.get('person_id') is not None:
+                if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
+                        and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_count_metric_buckets(self):
@@ -1131,9 +1159,11 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == MetricType.COUNT:
+            if combo['metric_type'] == MetricType.REINCARCERATION_COUNT:
                 assert combo['year'] == 2014
                 assert combo['month'] == 5
 
@@ -1170,7 +1200,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
         assert all(_combination['metric_type'] ==
-                   MetricType.RATE for _combination, value
+                   MetricType.REINCARCERATION_RATE for _combination, value
                    in recidivism_combinations)
 
     @freeze_time('1914-09-30')
@@ -1225,12 +1255,14 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #   Relevant metric_period_months person-level count metrics:
         #   (6 event-based + 4 person-based) = 10
 
-        expected_count = (10 + 6 + 2 + 2 + 2 + 10)
+        expected_combos_count = (10 + 6 + 2 + 2 + 2 + 10)
 
-        assert len(recidivism_combinations) == expected_count
+        self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == MetricType.COUNT:
+            if combo['metric_type'] == MetricType.REINCARCERATION_COUNT:
 
                 assert combo['year'] == 1914
                 assert combo['month'] in (3, 9)
@@ -1241,7 +1273,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combo['year'] == 1914
                     assert combo['month'] == 9
 
-                if combo.get('metric_type') == MetricType.COUNT and combo.get('person_id') is not None:
+                if combo.get('metric_type') == MetricType.REINCARCERATION_COUNT and combo.get('person_id') is not None:
                     if combo['month'] == 3:
                         assert combo.get('days_at_liberty') == days_at_liberty_1
                     else:
@@ -1298,18 +1330,20 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #
         # Person-level metrics: 1 event-based count window = 1
 
-        expected_count = (10 + 15 + 2 + 20 + 1)
+        expected_combos_count = (10 + 15 + 2 + 20 + 1)
 
-        assert len(recidivism_combinations) == expected_count
+        self.assertEqual(expected_combos_count, len(recidivism_combinations))
+        self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
+                         len(recidivism_combinations))
 
         for combo, value in recidivism_combinations:
-            if combo['metric_type'] == MetricType.COUNT:
+            if combo['metric_type'] == MetricType.REINCARCERATION_COUNT:
                 assert combo['year'] == 1914
                 assert combo['month'] == 3
 
                 assert value == 1
 
-            if combo.get('metric_type') == MetricType.COUNT and combo.get('person_id') is not None:
+            if combo.get('metric_type') == MetricType.REINCARCERATION_COUNT and combo.get('person_id') is not None:
                 if combo['release_facility'] == 'Hudson':
                     assert combo.get('days_at_liberty') == days_at_liberty_1
                 else:
@@ -1340,7 +1374,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
             date(2014, 5, 12), 'Upstate',
             ReincarcerationReturnType.NEW_ADMISSION)
 
-        characteristic_dict = calculator.characteristics_dict(person, release_event, MetricType.RATE)
+        characteristic_dict = calculator.characteristics_dict(person, release_event, MetricType.REINCARCERATION_RATE)
 
         expected_output = {'county_of_residence': 'county',
                            'release_facility': 'Hudson',

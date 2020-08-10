@@ -51,7 +51,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         district
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {supervision_dimension},
       {metric_period_dimension}
@@ -59,7 +59,6 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         AND person_id IS NOT NULL
         AND DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                              INTERVAL metric_period_months - 1 MONTH)
-        AND job.metric_type = 'SUPERVISION_SUCCESS'
       GROUP BY state_code, metric_period_months, supervision_type, district, person_id
     )
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')

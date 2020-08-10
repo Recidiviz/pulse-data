@@ -49,12 +49,11 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         USING (state_code)
         JOIN
           `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months, metric_type)
         WHERE releases.release_date BETWEEN report.start_date AND report.end_date
           AND release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
           AND methodology = 'EVENT'
           AND metric_period_months = 1
-          AND metric_type = 'INCARCERATION_RELEASE'
     )
     , releases_by_week AS (
       SELECT

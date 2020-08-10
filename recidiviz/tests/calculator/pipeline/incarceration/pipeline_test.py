@@ -65,15 +65,15 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQue
 _COUNTY_OF_RESIDENCE = 'county_of_residence'
 
 ALL_METRICS_INCLUSIONS_DICT = {
-    IncarcerationMetricType.ADMISSION: True,
-    IncarcerationMetricType.POPULATION: True,
-    IncarcerationMetricType.RELEASE: True
+    IncarcerationMetricType.INCARCERATION_ADMISSION: True,
+    IncarcerationMetricType.INCARCERATION_POPULATION: True,
+    IncarcerationMetricType.INCARCERATION_RELEASE: True
 }
 
 ALL_METRIC_TYPES_SET = {
-    IncarcerationMetricType.ADMISSION,
-    IncarcerationMetricType.POPULATION,
-    IncarcerationMetricType.RELEASE
+    IncarcerationMetricType.INCARCERATION_ADMISSION,
+    IncarcerationMetricType.INCARCERATION_POPULATION,
+    IncarcerationMetricType.INCARCERATION_RELEASE
 }
 
 
@@ -286,8 +286,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id)
         dataset = 'recidiviz-123.state'
 
-        expected_metric_types = {IncarcerationMetricType.ADMISSION}
-        metric_types_filter = {IncarcerationMetricType.ADMISSION.value}
+        expected_metric_types = {IncarcerationMetricType.INCARCERATION_ADMISSION}
+        metric_types_filter = {IncarcerationMetricType.INCARCERATION_ADMISSION.value}
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
@@ -840,9 +840,9 @@ class AssertMatchers:
 
                 metric_type = combination_dict.get('metric_type')
 
-                if metric_type == IncarcerationMetricType.ADMISSION:
+                if metric_type == IncarcerationMetricType.INCARCERATION_ADMISSION:
                     actual_combination_counts['admissions'] = actual_combination_counts['admissions'] + 1
-                elif metric_type == IncarcerationMetricType.RELEASE:
+                elif metric_type == IncarcerationMetricType.INCARCERATION_RELEASE:
                     actual_combination_counts['releases'] = actual_combination_counts['releases'] + 1
 
             for key in expected_combination_counts:
@@ -864,11 +864,11 @@ class AssertMatchers:
                     raise BeamAssertException('Failed assert. Output is not of type SupervisionMetric.')
 
                 if isinstance(metric, IncarcerationAdmissionMetric):
-                    observed_metric_types.add(IncarcerationMetricType.ADMISSION)
+                    observed_metric_types.add(IncarcerationMetricType.INCARCERATION_ADMISSION)
                 elif isinstance(metric, IncarcerationPopulationMetric):
-                    observed_metric_types.add(IncarcerationMetricType.POPULATION)
+                    observed_metric_types.add(IncarcerationMetricType.INCARCERATION_POPULATION)
                 elif isinstance(metric, IncarcerationReleaseMetric):
-                    observed_metric_types.add(IncarcerationMetricType.RELEASE)
+                    observed_metric_types.add(IncarcerationMetricType.INCARCERATION_RELEASE)
 
             if observed_metric_types != expected_metric_types:
                 raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
