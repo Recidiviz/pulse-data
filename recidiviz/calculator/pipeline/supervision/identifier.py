@@ -1221,16 +1221,16 @@ def _expand_dual_supervision_buckets(supervision_time_buckets: List[SupervisionT
 
 # Each SupervisionMetricType with a list of the SupervisionTimeBuckets that contribute to that metric
 BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBucket]]] = {
-    SupervisionMetricType.TERMINATION: [SupervisionTerminationBucket],
-    SupervisionMetricType.COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
-    SupervisionMetricType.POPULATION: [
+    SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationBucket],
+    SupervisionMetricType.SUPERVISION_COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
+    SupervisionMetricType.SUPERVISION_POPULATION: [
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
     ],
-    SupervisionMetricType.REVOCATION: [RevocationReturnSupervisionTimeBucket],
-    SupervisionMetricType.REVOCATION_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
-    SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
-    SupervisionMetricType.SUCCESS: [ProjectedSupervisionCompletionBucket],
-    SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: [ProjectedSupervisionCompletionBucket],
+    SupervisionMetricType.SUPERVISION_REVOCATION: [RevocationReturnSupervisionTimeBucket],
+    SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
+    SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
+    SupervisionMetricType.SUPERVISION_SUCCESS: [ProjectedSupervisionCompletionBucket],
+    SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: [ProjectedSupervisionCompletionBucket],
 }
 
 

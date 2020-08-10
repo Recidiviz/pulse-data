@@ -82,10 +82,9 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
               `{project_id}.{metrics_dataset}.incarceration_population_metrics`
             JOIN
               `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
-            USING (state_code, job_id, year, month, metric_period_months)
+            USING (state_code, job_id, year, month, metric_period_months, metric_type)
             WHERE metric_period_months = 0
             AND methodology = 'PERSON'
-            AND metric_type = 'INCARCERATION_POPULATION'
             -- Revisit these exclusions when #3657 and #3723 are complete --
             AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
             AND EXTRACT(YEAR FROM date_of_stay) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR))),

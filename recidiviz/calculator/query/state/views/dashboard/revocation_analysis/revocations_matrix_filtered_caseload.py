@@ -54,14 +54,13 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       metric_period_months
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id, year, month, metric_period_months)
+      USING (state_code, job_id, year, month, metric_period_months, metric_type)
     WHERE methodology = 'PERSON'
       AND revocation_type = 'REINCARCERATION'
       AND person_external_id IS NOT NULL
       AND month IS NOT NULL
       AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
       AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-      AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
     ORDER BY metric_period_months, violation_record
     """
 

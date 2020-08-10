@@ -113,6 +113,8 @@ def update_dataflow_metric_tables_schemas() -> None:
     dataflow_metrics_dataset_id = DATAFLOW_METRICS_DATASET
     dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(dataflow_metrics_dataset_id)
 
+    bq_client.create_dataset_if_necessary(dataflow_metrics_dataset_ref)
+
     for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items():
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
 

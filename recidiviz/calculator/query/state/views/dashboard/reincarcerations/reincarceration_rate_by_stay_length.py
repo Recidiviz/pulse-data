@@ -47,14 +47,13 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
       district
     FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id),
+      USING (state_code, job_id, metric_type),
     {district_dimension}
     WHERE methodology = 'PERSON'
       AND person_id IS NOT NULL
       AND follow_up_period = 1
       AND district IS NOT NULL
       AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))
-      AND job.metric_type = 'RECIDIVISM_RATE'
     GROUP BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     """

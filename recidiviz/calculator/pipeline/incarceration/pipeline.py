@@ -54,7 +54,7 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
-from recidiviz.calculator.pipeline.utils.metric_utils import json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 
 # Cached job_id value
 _job_id = None
@@ -235,7 +235,11 @@ class ProduceIncarcerationMetric(beam.DoFn):
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
-        metric_type = dict_metric_key.get('metric_type')
+        if not dict_metric_key:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("Empty dict_metric_key.")
+
+        metric_type = dict_metric_key.pop('metric_type')
 
         if dict_metric_key.get('person_id') is not None:
             # The count value for all person-level metrics should be 1
@@ -243,53 +247,21 @@ class ProduceIncarcerationMetric(beam.DoFn):
 
         dict_metric_key['count'] = value
 
-        if metric_type == IncarcerationMetricType.ADMISSION:
+        if metric_type == IncarcerationMetricType.INCARCERATION_ADMISSION:
             incarceration_metric = IncarcerationAdmissionMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == IncarcerationMetricType.POPULATION:
+        elif metric_type == IncarcerationMetricType.INCARCERATION_POPULATION:
             incarceration_metric = IncarcerationPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == IncarcerationMetricType.RELEASE:
+        elif metric_type == IncarcerationMetricType.INCARCERATION_RELEASE:
             incarceration_metric = IncarcerationReleaseMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", metric_type)
             return
 
         if incarceration_metric:
             yield incarceration_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(IncarcerationMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class IncarcerationMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to BigQuery."""
-
-    def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
-        formats as required by BigQuery I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A ProgramMetric
-
-        Yields:
-            A dictionary representation of the ProgramMetric in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, IncarcerationAdmissionMetric):
-            yield beam.pvalue.TaggedOutput('admissions', element_dict)
-        if isinstance(element, IncarcerationPopulationMetric):
-            yield beam.pvalue.TaggedOutput('populations', element_dict)
-        if isinstance(element, IncarcerationReleaseMetric):
-            yield beam.pvalue.TaggedOutput('releases', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -507,15 +479,18 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (incarceration_metrics | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(IncarcerationMetricWritableDict()).with_outputs(
-                                'admissions', 'populations', 'releases'))
+                            beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
+                                IncarcerationMetricType.INCARCERATION_ADMISSION.value,
+                                IncarcerationMetricType.INCARCERATION_POPULATION.value,
+                                IncarcerationMetricType.INCARCERATION_RELEASE.value
+                            ))
 
         # Write the metrics to the output tables in BigQuery
         admissions_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationAdmissionMetric)
         population_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationPopulationMetric)
         releases_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationReleaseMetric)
 
-        _ = (writable_metrics.admissions
+        _ = (writable_metrics.INCARCERATION_ADMISSION
              | f"Write admission metrics to BQ table: {admissions_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=admissions_table_id,
@@ -525,7 +500,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.populations
+        _ = (writable_metrics.INCARCERATION_POPULATION
              | f"Write population metrics to BQ table: {population_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=population_table_id,
@@ -535,7 +510,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.releases
+        _ = (writable_metrics.INCARCERATION_RELEASE
              | f"Write release metrics to BQ table: {releases_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=releases_table_id,

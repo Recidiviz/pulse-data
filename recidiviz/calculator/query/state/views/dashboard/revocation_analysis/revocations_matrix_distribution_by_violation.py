@@ -62,7 +62,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         SUM(IF(violation_count_type = 'VIOLATION', count, 0)) AS violation_count
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension},
     {supervision_dimension},
     {charge_category_dimension}
@@ -70,7 +70,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         AND methodology = 'PERSON'
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
         AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-        AND job.metric_type = 'SUPERVISION_REVOCATION_VIOLATION'
         AND district IS NOT NULL
     GROUP BY state_code, year, month, metric_period_months, supervision_type, charge_category, district, response_count,
         violation_type

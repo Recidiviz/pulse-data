@@ -55,12 +55,11 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
         JOIN
           `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months, metric_type)
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
           AND admission_reason IN ('NEW_ADMISSION', 'PROBATION_REVOCATION')
           AND methodology = 'EVENT'
           AND metric_period_months = 1
-          AND metric_type = 'INCARCERATION_RELEASE'
     ), ranked_releases_by_period AS (
         SELECT
           *,

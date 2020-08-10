@@ -69,7 +69,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='ADMISSION',
+                admission_reason_raw_text='INCARCERATION_ADMISSION',
                 release_date=date(2009, 1, 4),
                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
 
@@ -110,7 +110,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                admission_reason_raw_text='ADMISSION',
+                admission_reason_raw_text='INCARCERATION_ADMISSION',
             ),
              IncarcerationReleaseEvent(
                  state_code=incarceration_period.state_code,
@@ -324,7 +324,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             facility='PRISON',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text='ADMISSION',
+            admission_reason_raw_text='INCARCERATION_ADMISSION',
             release_date=date(2008, 12, 20),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
         revocation_period = StateIncarcerationPeriod.new_with_defaults(

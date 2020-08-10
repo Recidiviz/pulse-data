@@ -23,6 +23,7 @@ import unittest
 from typing import Optional, Set
 
 import apache_beam as beam
+import pytest
 from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -37,16 +38,15 @@ from mock import patch
 
 from recidiviz.calculator.pipeline.recidivism import calculator, pipeline
 from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationRecidivismMetric,\
-    ReincarcerationRecidivismRateMetric
+    ReincarcerationRecidivismMetric, \
+    ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, AverageFnResult
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
+    MetricMethodologyType, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.recidivism.pipeline import \
-    json_serializable_metric_key, ClassifyReleaseEvents
+from recidiviz.calculator.pipeline.recidivism.pipeline import ClassifyReleaseEvents
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
@@ -66,8 +66,8 @@ from recidiviz.tests.persistence.database import database_test_utils
 _COUNTY_OF_RESIDENCE = 'county'
 
 ALL_METRIC_INCLUSIONS_DICT = {
-    MetricType.COUNT: True,
-    MetricType.RATE: True
+    MetricType.REINCARCERATION_COUNT: True,
+    MetricType.REINCARCERATION_RATE: True
 }
 
 
@@ -1053,7 +1053,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': MetricType.COUNT, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'CA'}
 
         value = 10
 
@@ -1083,7 +1083,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'release_cohort': 2014,
                            'methodology': MetricMethodologyType.PERSON,
                            'follow_up_period': 1,
-                           'metric_type': MetricType.RATE, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_RATE, 'state_code': 'CA'}
 
         value = 1
 
@@ -1114,7 +1114,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': MetricType.COUNT, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'CA'}
 
         value = 0
 
@@ -1157,16 +1157,16 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
             '%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
-        output = (test_pipeline
-                  | beam.Create([(metric_key_dict, value)])
-                  | 'Produce Recidivism Metric' >>
-                  beam.ParDo(
-                      pipeline.ProduceReincarcerationRecidivismMetric(),
-                      **all_pipeline_options))
+        # This should never happen, and we want the pipeline to fail loudly if it does.
+        with pytest.raises(ValueError):
+            _ = (test_pipeline
+                 | beam.Create([(metric_key_dict, value)])
+                 | 'Produce Recidivism Metric' >>
+                 beam.ParDo(
+                     pipeline.ProduceReincarcerationRecidivismMetric(),
+                     **all_pipeline_options))
 
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
+            test_pipeline.run()
 
 
 class TestRecidivismMetricWritableDict(unittest.TestCase):
@@ -1182,10 +1182,9 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([metric])
                   | 'Convert to writable dict' >>
-                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+                  beam.ParDo(RecidivizMetricWritableDict()))
 
-        assert_that(output, AssertMatchers.
-                    validate_metric_writable_dict())
+        assert_that(output, AssertMatchers.validate_metric_writable_dict())
 
         test_pipeline.run()
 
@@ -1201,7 +1200,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([metric])
                   | 'Convert to writable dict' >>
-                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+                  beam.ParDo(RecidivizMetricWritableDict()))
 
         assert_that(output, AssertMatchers.
                     validate_metric_writable_dict())
@@ -1220,7 +1219,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         output = (test_pipeline
                   | beam.Create([metric])
                   | 'Convert to writable dict' >>
-                  beam.ParDo(pipeline.RecidivismMetricWritableDict()))
+                  beam.ParDo(RecidivizMetricWritableDict()))
 
         assert_that(output, AssertMatchers.
                     validate_metric_writable_dict())
@@ -1320,10 +1319,10 @@ class AssertMatchers:
             for result in output:
                 combination_dict, _ = result
 
-                if combination_dict.get('metric_type') == MetricType.RATE:
+                if combination_dict.get('metric_type') == MetricType.REINCARCERATION_RATE:
                     release_cohort_year = combination_dict['release_cohort']
                     actual_combination_counts[release_cohort_year] = actual_combination_counts[release_cohort_year] + 1
-                elif combination_dict.get('metric_type') == MetricType.COUNT:
+                elif combination_dict.get('metric_type') == MetricType.REINCARCERATION_COUNT:
                     actual_combination_counts['counts'] = actual_combination_counts['counts'] + 1
 
             for key in expected_combination_counts:

@@ -21,6 +21,7 @@ import unittest
 from typing import Set, Optional, Dict, List, Any
 
 import apache_beam as beam
+import pytest
 from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -321,9 +322,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -350,9 +351,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -867,15 +868,15 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         expected_aggregate_metric_types = {
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS}
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
@@ -1120,16 +1121,16 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         expected_aggregate_metric_types = {
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS}
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS}
 
         expected_violation_types = {
             ViolationType.FELONY, ViolationType.TECHNICAL}
@@ -1355,9 +1356,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -1561,11 +1562,11 @@ class TestSupervisionPipeline(unittest.TestCase):
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
-            SupervisionMetricType.POPULATION,
-            SupervisionMetricType.SUCCESS,
-            SupervisionMetricType.REVOCATION,
-            SupervisionMetricType.REVOCATION_ANALYSIS,
-            SupervisionMetricType.TERMINATION
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_REVOCATION,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
         # We do not expect any aggregate metrics
@@ -2568,8 +2569,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         expected_compliance_metric_count = len(supervision_time_buckets) * 2
 
         expected_combination_counts = \
-            {SupervisionMetricType.POPULATION.value: expected_population_metric_count,
-             SupervisionMetricType.COMPLIANCE.value: expected_compliance_metric_count}
+            {SupervisionMetricType.SUPERVISION_POPULATION.value: expected_population_metric_count,
+             SupervisionMetricType.SUPERVISION_COMPLIANCE.value: expected_compliance_metric_count}
 
         test_pipeline = TestPipeline()
 
@@ -2617,9 +2618,9 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         expected_metric_count = len(supervision_months) * 2
 
         expected_combination_counts = {
-            SupervisionMetricType.REVOCATION.value: expected_metric_count,
-            SupervisionMetricType.REVOCATION_ANALYSIS.value: expected_metric_count,
-            SupervisionMetricType.POPULATION.value: expected_metric_count
+            SupervisionMetricType.SUPERVISION_REVOCATION.value: expected_metric_count,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value: expected_metric_count,
+            SupervisionMetricType.SUPERVISION_POPULATION.value: expected_metric_count
         }
 
         test_pipeline = TestPipeline()
@@ -2687,14 +2688,16 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def testProduceSupervisionMetrics(self):
         metric_value_to_metric_type = {
-            SupervisionMetricType.TERMINATION: SupervisionTerminationMetric,
-            SupervisionMetricType.COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,
-            SupervisionMetricType.REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: SupervisionRevocationViolationTypeAnalysisMetric,
-            SupervisionMetricType.SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric
+            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
+            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
+                SupervisionRevocationViolationTypeAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
+                SuccessfulSupervisionSentenceDaysServedMetric
         }
 
         for metric_type in SupervisionMetricType:
@@ -2740,16 +2743,16 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
-        output = (test_pipeline
-                  | beam.Create([(metric_key_dict, value)])
-                  | 'Produce Supervision Metric' >>
-                  beam.ParDo(pipeline.ProduceSupervisionMetrics(),
-                             **all_pipeline_options)
-                  )
+        # This should never happen, and we want the pipeline to fail loudly if it does.
+        with pytest.raises(ValueError):
+            _ = (test_pipeline
+                 | beam.Create([(metric_key_dict, value)])
+                 | 'Produce Supervision Metric' >>
+                 beam.ParDo(pipeline.ProduceSupervisionMetrics(),
+                            **all_pipeline_options)
+                 )
 
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
+            test_pipeline.run()
 
 
 class AssertMatchers:
@@ -2772,41 +2775,41 @@ class AssertMatchers:
 
                 if isinstance(metric, SupervisionTerminationMetric):
                     observed_metric_types.add(
-                        SupervisionMetricType.TERMINATION)
+                        SupervisionMetricType.SUPERVISION_TERMINATION)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.TERMINATION)
+                            SupervisionMetricType.SUPERVISION_TERMINATION)
                 elif isinstance(metric, SupervisionSuccessMetric):
-                    observed_metric_types.add(SupervisionMetricType.SUCCESS)
+                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_SUCCESS)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUCCESS)
+                            SupervisionMetricType.SUPERVISION_SUCCESS)
                 elif isinstance(metric, SupervisionPopulationMetric):
-                    observed_metric_types.add(SupervisionMetricType.POPULATION)
+                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_POPULATION)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.POPULATION)
+                            SupervisionMetricType.SUPERVISION_POPULATION)
                 elif isinstance(metric, SupervisionRevocationAnalysisMetric):
                     observed_metric_types.add(
-                        SupervisionMetricType.REVOCATION_ANALYSIS)
+                        SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.REVOCATION_ANALYSIS)
+                            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationViolationTypeAnalysisMetric):
                     observed_metric_types.add(
-                        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
                     observed_aggregate_metric_types.add(
-                        SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
                 elif isinstance(metric, SupervisionRevocationMetric):
-                    observed_metric_types.add(SupervisionMetricType.REVOCATION)
+                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_REVOCATION)
 
                     if metric.person_id is None:
                         observed_aggregate_metric_types.add(
-                            SupervisionMetricType.REVOCATION)
+                            SupervisionMetricType.SUPERVISION_REVOCATION)
 
             if observed_metric_types != expected_metric_types:
                 raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
