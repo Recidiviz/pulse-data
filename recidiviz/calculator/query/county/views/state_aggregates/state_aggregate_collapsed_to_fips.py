@@ -21,7 +21,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.state_aggregates.combined_state_aggregate import \
     COMBINED_STATE_AGGREGATE_VIEW_BUILDER
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
@@ -103,5 +103,5 @@ STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER: SimpleBigQueryViewBuilder = SimpleBi
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER.build_and_print()

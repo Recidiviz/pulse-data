@@ -65,7 +65,7 @@ class BigQueryViewTest(unittest.TestCase):
         self.assertEqual('SELECT * FROM `other-project.some_dataset.table`', view.view_query)
         self.assertEqual('SELECT * FROM `other-project.view_dataset.my_view`', view.select_query)
 
-    @patch('recidiviz.big_query.big_query_view.GAE_PROJECTS', [PROJECT_ID])
+    @patch('recidiviz.big_query.big_query_view.GCP_PROJECTS', [PROJECT_ID])
     def test_simple_view_invalid_raw_project_id(self):
         with pytest.raises(ValueError):
             _ = BigQueryView(

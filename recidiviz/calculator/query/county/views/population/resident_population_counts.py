@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera import vera_view_constants
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 RESIDENT_POPULATION_COUNTS_VIEW_NAME = 'resident_population_counts'
@@ -115,5 +115,5 @@ RESIDENT_POPULATION_COUNTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.build_and_print()

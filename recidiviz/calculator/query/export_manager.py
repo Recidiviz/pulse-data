@@ -44,7 +44,7 @@ from recidiviz.calculator.query.operations import dataset_config as operations_d
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
-from recidiviz.utils.environment import GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -274,7 +274,7 @@ def parse_arguments(argv):
     parser.add_argument('--project_id',
                         dest='project_id',
                         type=str,
-                        choices=[GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION],
+                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
                         required=True)
 
     parser.add_argument('--schema_type',

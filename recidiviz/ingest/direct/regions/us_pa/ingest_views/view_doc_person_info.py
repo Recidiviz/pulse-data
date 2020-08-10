@@ -20,7 +20,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
     MASTER_STATE_IDS_FRAGMENT
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
@@ -130,5 +130,5 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

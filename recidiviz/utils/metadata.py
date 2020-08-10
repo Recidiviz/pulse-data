@@ -66,7 +66,7 @@ class local_project_id_override:
     Usage:
     if __name__ == '__main__':
         print(metadata.project_id())
-        with local_project_id_override(GAE_PROJECT_STAGING):
+        with local_project_id_override(GCP_PROJECT_STAGING):
             print(metadata.project_id())
          print(metadata.project_id())
 
