@@ -58,3 +58,10 @@ class ViewExportConfigTest(unittest.TestCase):
                 if view.dataset_id != dataset_id:
                     self.fail(f'{view.view_id} has dataset id {view.dataset_id} that does not match '
                               f'VIEWS_TO_UPDATE id {dataset_id}')
+
+    @staticmethod
+    def test_building_all_views():
+        """Tests that all view_builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE successfully pass validations and build."""
+        for _, view_builders in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
+            for view_builder in view_builders:
+                _ = view_builder.build()
