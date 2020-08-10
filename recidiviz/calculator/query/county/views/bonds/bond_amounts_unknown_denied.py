@@ -28,7 +28,7 @@ from recidiviz.common.constants.enum_canonical_strings import bond_type_secured
 from recidiviz.common.constants.enum_canonical_strings import present_without_info
 
 from recidiviz.persistence.database.schema.county.schema import Bond
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_NAME = 'bond_amounts_unknown_denied'
@@ -114,5 +114,5 @@ BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER.build_and_print()

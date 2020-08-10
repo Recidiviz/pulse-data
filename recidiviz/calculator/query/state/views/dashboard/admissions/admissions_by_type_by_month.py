@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = 'admissions_by_type_by_month'
@@ -92,5 +92,5 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER.build_and_print()

@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsI
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata, DirectIngestRawFileMetadata
 from recidiviz.utils import regions
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
 
@@ -403,7 +403,7 @@ if __name__ == '__main__':
     upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 29)
     upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 7, 29)
 
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
         view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
         views_by_tag_ = {

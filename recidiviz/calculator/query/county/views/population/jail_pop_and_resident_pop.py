@@ -24,7 +24,7 @@ from recidiviz.calculator.query.county.views.population.population_admissions_re
 from recidiviz.calculator.query.county.views.population.resident_population_counts import \
     RESIDENT_POPULATION_COUNTS_VIEW_BUILDER
 # Exclude all data <= CUTOFF_YEAR.
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CUTOFF_YEAR = 1999
@@ -82,5 +82,5 @@ JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER.build_and_print()

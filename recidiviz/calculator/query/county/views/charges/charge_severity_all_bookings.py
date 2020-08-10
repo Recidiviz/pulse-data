@@ -22,7 +22,7 @@ from recidiviz.calculator.query.county.views.charges.charges_and_severity import
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Booking
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_NAME = 'charge_severity_all_bookings'
@@ -74,5 +74,5 @@ CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.build_and_print()

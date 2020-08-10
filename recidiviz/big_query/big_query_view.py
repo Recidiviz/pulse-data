@@ -21,7 +21,7 @@ from typing import Optional, Dict, TypeVar, Generic
 from google.cloud import bigquery
 
 from recidiviz.utils import metadata, environment
-from recidiviz.utils.environment import GAE_PROJECTS
+from recidiviz.utils.environment import GCP_PROJECTS
 
 PROJECT_ID_KEY = 'project_id'
 
@@ -99,7 +99,7 @@ class BigQueryView(bigquery.TableReference):
 def _validate_view_query_template(dataset_id: str, view_id: str, view_query_template: str):
     """Validates that the view_query_template does not contain any raw GCP project_id values. Note that this prevents
     views from referencing project IDs directly in any comments or view descriptions."""
-    for project_id in GAE_PROJECTS:
+    for project_id in GCP_PROJECTS:
         if project_id in view_query_template:
             raise ValueError(f"view_query_template for view {dataset_id}.{view_id} cannot contain raw"
                              f" value: {project_id}.")

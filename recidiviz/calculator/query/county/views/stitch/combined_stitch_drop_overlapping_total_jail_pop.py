@@ -30,7 +30,7 @@ from recidiviz.calculator.query.county.views.stitch.single_count_stitch_subset \
     import SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER
 from recidiviz.calculator.query.county.views.stitch.state_aggregate_stitch_subset \
     import STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """ Combine {itp}, {state}, {scraper}, and {single_count} into
@@ -61,5 +61,5 @@ COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER = SimpleBigQueryVie
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER.build_and_print()

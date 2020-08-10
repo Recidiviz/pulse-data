@@ -21,7 +21,7 @@ from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_DATASET, \
     REFERENCE_TABLES_DATASET
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_NAME = 'facility_population_by_age_with_capacity_by_day'
@@ -111,5 +111,5 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER = SimpleBigQueryVie
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER.build_and_print()

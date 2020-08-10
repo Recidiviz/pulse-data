@@ -18,7 +18,7 @@
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_test_questions import \
     question_numbers_with_descriptive_answers_view_fragment
@@ -57,5 +57,5 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

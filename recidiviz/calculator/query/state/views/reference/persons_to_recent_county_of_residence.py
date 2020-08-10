@@ -19,7 +19,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME = \
@@ -62,5 +62,5 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build_and_print()
