@@ -21,6 +21,7 @@ from typing import Optional, Dict, TypeVar, Generic
 from google.cloud import bigquery
 
 from recidiviz.utils import metadata, environment
+from recidiviz.utils.environment import GAE_PROJECTS
 
 PROJECT_ID_KEY = 'project_id'
 
@@ -51,6 +52,8 @@ class BigQueryView(bigquery.TableReference):
                 # throw.
                 project_id = test_only_project_id()
 
+        _validate_view_query_template(dataset_id, view_id, view_query_template)
+
         dataset_ref = bigquery.DatasetReference.from_string(dataset_id,
                                                             default_project=project_id)
         super().__init__(dataset_ref, view_id)
@@ -77,6 +80,12 @@ class BigQueryView(bigquery.TableReference):
         return f'SELECT * FROM `{self.project}.{self.dataset_id}.{self.view_id}`'
 
     @property
+    def select_query_uninjected_project_id(self) -> str:
+        """This should be used when building another view template that will ultimately be passed to another
+        BigQueryView."""
+        return f'SELECT * FROM `{{project_id}}.{self.dataset_id}.{self.view_id}`'
+
+    @property
     def materialized_view_table_id(self) -> Optional[str]:
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
         return self._materialized_view_table_id
@@ -85,6 +94,15 @@ class BigQueryView(bigquery.TableReference):
         return f'{self.__class__.__name__}(' \
             f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
             f'view_query=\'{self.view_query}\')'
+
+
+def _validate_view_query_template(dataset_id: str, view_id: str, view_query_template: str):
+    """Validates that the view_query_template does not contain any raw GCP project_id values. Note that this prevents
+    views from referencing project IDs directly in any comments or view descriptions."""
+    for project_id in GAE_PROJECTS:
+        if project_id in view_query_template:
+            raise ValueError(f"view_query_template for view {dataset_id}.{view_id} cannot contain raw"
+                             f" value: {project_id}.")
 
 
 BigQueryViewType = TypeVar('BigQueryViewType', bound=BigQueryView)

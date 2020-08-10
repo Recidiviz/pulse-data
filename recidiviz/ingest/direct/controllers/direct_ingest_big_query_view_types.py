@@ -266,7 +266,10 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                            parametrize_query: bool) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency."""
         table_subquery_strs = []
-        format_args = {}
+        # We don't want to inject the project_id outside of the BigQueryView initializer
+        format_args = {
+            'project_id': '{project_id}'
+        }
         for raw_table_config in raw_table_dependency_configs:
             table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
             format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config)
@@ -331,7 +334,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             return DirectIngestRawDataTableUpToDateView(region_code=region_code,
                                                         raw_file_config=raw_table_config).view_query
         return DirectIngestRawDataTableLatestView(region_code=region_code,
-                                                  raw_file_config=raw_table_config).select_query
+                                                  raw_file_config=raw_table_config).select_query_uninjected_project_id
 
     @staticmethod
     def _validate_order_by(ingest_view_name: str, view_query_template: str):
