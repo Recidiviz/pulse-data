@@ -1116,6 +1116,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             birthdate_inferred_from_age=False,
             current_address="11 HOME ST, CITY, ID, 99999",
             residency_status=ResidencyStatus.PERMANENT,
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='1111', id_type=US_ID_DOC),
@@ -1140,6 +1141,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             birthdate_inferred_from_age=False,
             current_address="22 HOME ST, CITY, ID, 99999",
             residency_status=ResidencyStatus.PERMANENT,
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='2222', id_type=US_ID_DOC),
@@ -1163,6 +1165,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             birthdate=datetime.date(year=1995, month=1, day=1),
             birthdate_inferred_from_age=False,
             current_address="33 HOME ST, CITY, ID, 99999",
+            state_code=_STATE_CODE_UPPER,
             residency_status=ResidencyStatus.PERMANENT,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(

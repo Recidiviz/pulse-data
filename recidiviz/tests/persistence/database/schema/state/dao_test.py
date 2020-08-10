@@ -48,9 +48,12 @@ class TestDao(TestCase):
 
     def test_readPeople_byFullName(self):
         # Arrange
-        person = schema.StatePerson(person_id=8, full_name=_FULL_NAME)
+        person = schema.StatePerson(person_id=8,
+                                    full_name=_FULL_NAME,
+                                    state_code=_STATE_CODE)
         person_different_name = schema.StatePerson(person_id=9,
-                                                   full_name='diff_name')
+                                                   full_name='diff_name',
+                                                   state_code=_STATE_CODE)
 
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person)
@@ -66,8 +69,11 @@ class TestDao(TestCase):
 
     def test_readPeople_byBirthdate(self):
         # Arrange
-        person = schema.StatePerson(person_id=8, birthdate=_BIRTHDATE)
+        person = schema.StatePerson(person_id=8,
+                                    birthdate=_BIRTHDATE,
+                                    state_code=_STATE_CODE)
         person_different_birthdate = schema.StatePerson(
+            state_code=_STATE_CODE,
             person_id=9,
             birthdate=datetime.date(year=2002,
                                     month=1,
@@ -89,10 +95,13 @@ class TestDao(TestCase):
         # Arrange
         person = schema.StatePerson(person_id=8,
                                     full_name=_FULL_NAME,
-                                    birthdate=_BIRTHDATE)
+                                    birthdate=_BIRTHDATE,
+                                    state_code=_STATE_CODE)
         person_different_name = schema.StatePerson(person_id=9,
-                                                   full_name='diff_name')
+                                                   full_name='diff_name',
+                                                   state_code=_STATE_CODE)
         person_different_birthdate = schema.StatePerson(
+            state_code=_STATE_CODE,
             person_id=10,
             birthdate=datetime.date(year=2002,
                                     month=1,
@@ -116,8 +125,8 @@ class TestDao(TestCase):
         self.assertCountEqual(people, expected_people)
 
     def test_readPlaceholderPeople(self):
-        placeholder_person = schema.StatePerson(person_id=1)
-        person = schema.StatePerson(person_id=2)
+        placeholder_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
+        person = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -142,8 +151,8 @@ class TestDao(TestCase):
 
     def test_readPeopleByRootExternalIds(self):
         # Arrange
-        person_no_match = schema.StatePerson(person_id=1)
-        person_match_external_id = schema.StatePerson(person_id=2)
+        person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
+        person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -169,7 +178,7 @@ class TestDao(TestCase):
 
     def test_readPeopleByRootExternalIds_entireTreeReturnedWithOneMatch(self):
         # Arrange
-        person = schema.StatePerson(person_id=1)
+        person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         external_id_match = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -201,7 +210,7 @@ class TestDao(TestCase):
 
     def test_readPeopleByRootExternalIds_SentenceGroupExternalId(self):
         # Arrange
-        person = schema.StatePerson(person_id=1)
+        person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         sentence_group = schema.StateSentenceGroup(
             sentence_group_id=1,
             external_id=_EXTERNAL_ID,
@@ -231,8 +240,8 @@ class TestDao(TestCase):
 
     def test_readPeopleByExternalId(self):
         # Arrange
-        person_no_match = schema.StatePerson(person_id=1)
-        person_match_external_id = schema.StatePerson(person_id=2)
+        person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
+        person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -247,7 +256,7 @@ class TestDao(TestCase):
         session.add(person_match_external_id)
         session.commit()
 
-        ingested_person = entities.StatePerson.new_with_defaults()
+        ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         ingested_person.external_ids = \
             [entities.StatePersonExternalId.new_with_defaults(
                 external_id=_EXTERNAL_ID,
@@ -267,7 +276,7 @@ class TestDao(TestCase):
 
     def test_readPersonMultipleIdsMatch(self):
         # Arrange
-        person = schema.StatePerson(person_id=1)
+        person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -314,7 +323,7 @@ class TestDao(TestCase):
 
     def test_readPersonIdsMatchMultiplePeople(self):
         # Arrange
-        person1 = schema.StatePerson(person_id=1)
+        person1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person1_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -324,7 +333,7 @@ class TestDao(TestCase):
         )
         person1.external_ids = [person1_external_id]
 
-        person2 = schema.StatePerson(person_id=2)
+        person2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person2_external_id = schema.StatePersonExternalId(
             person_external_id_id=2,
             external_id=_EXTERNAL_ID,
@@ -364,7 +373,7 @@ class TestDao(TestCase):
 
     def test_readMultipleIngestedPeople(self):
         # Arrange
-        person1 = schema.StatePerson(person_id=1)
+        person1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person1_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -374,7 +383,7 @@ class TestDao(TestCase):
         )
         person1.external_ids = [person1_external_id]
 
-        person2 = schema.StatePerson(person_id=2)
+        person2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person2_external_id = schema.StatePersonExternalId(
             person_external_id_id=2,
             external_id=_EXTERNAL_ID,
@@ -390,6 +399,7 @@ class TestDao(TestCase):
         session.commit()
 
         ingested_person1 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
@@ -398,6 +408,7 @@ class TestDao(TestCase):
                 )])
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
@@ -406,6 +417,7 @@ class TestDao(TestCase):
                 )])
 
         ingested_person3 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id='NONEXISTENT_ID',
@@ -426,7 +438,7 @@ class TestDao(TestCase):
 
     def test_readMultipleIngestedPeopleMatchSamePerson(self):
         # Arrange
-        person = schema.StatePerson(person_id=1)
+        person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
             person_external_id_id=1,
             external_id=_EXTERNAL_ID,
@@ -450,6 +462,7 @@ class TestDao(TestCase):
         session.commit()
 
         ingested_person1 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID,
@@ -458,6 +471,7 @@ class TestDao(TestCase):
                 )])
 
         ingested_person2 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     external_id=_EXTERNAL_ID2,
@@ -476,7 +490,7 @@ class TestDao(TestCase):
         self.assertCountEqual(people, expected_people)
 
     def test_readObjsWithExternalIdMatch(self):
-        person_1 = schema.StatePerson(person_id=1)
+        person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         sentence_group_1 = schema.StateSentenceGroup(
             sentence_group_id=1,
             external_id=_EXTERNAL_ID,
@@ -485,7 +499,7 @@ class TestDao(TestCase):
             person=person_1)
         person_1.sentence_groups = [sentence_group_1]
 
-        person_2 = schema.StatePerson(person_id=2)
+        person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         sentence_group_1_dup = schema.StateSentenceGroup(
             sentence_group_id=2,
             external_id=_EXTERNAL_ID,

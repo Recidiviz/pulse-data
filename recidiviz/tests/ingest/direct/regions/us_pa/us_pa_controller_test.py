@@ -1156,6 +1156,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ######################################
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='123456', id_type=US_PA_CONTROL),
@@ -1167,6 +1168,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_2 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='654321', id_type=US_PA_CONTROL),
@@ -1180,6 +1182,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_3 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='445566', id_type=US_PA_CONTROL),
@@ -1187,6 +1190,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_4 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='778899', id_type=US_PA_CONTROL),
@@ -1202,6 +1206,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_5 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='789C', id_type=US_PA_PBPP),
@@ -1209,6 +1214,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_6 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='888888888', id_type=US_PA_SID),
@@ -1218,6 +1224,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_7 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='9999999', id_type=US_PA_SID),
@@ -1227,6 +1234,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
 
         person_8 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id='66666666', id_type=US_PA_SID),
@@ -1264,6 +1272,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         person_1.birthdate_inferred_from_age = False
         person_1.current_address = '123 EASY STREET, PITTSBURGH, PA 16161'
         person_1.residency_status = ResidencyStatus.PERMANENT
+        person_1.state_code = _STATE_CODE_UPPER
         person_1.aliases = [
             entities.StatePersonAlias.new_with_defaults(
                 full_name='{"given_names": "BERTRAND", "surname": "RUSSELL"}',
@@ -1295,6 +1304,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         person_2.birthdate_inferred_from_age = False
         person_2.current_address = '555 FLATBUSH DR, NEW YORK, NY 10031'
         person_2.residency_status = ResidencyStatus.PERMANENT
+        person_2.state_code = _STATE_CODE_UPPER
         person_2.aliases = [
             entities.StatePersonAlias.new_with_defaults(
                 full_name='{"given_names": "JEAN-PAUL", "surname": "SARTRE"}',
@@ -1320,6 +1330,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         person_3.birthdate_inferred_from_age = False
         person_3.current_address = '5000 SUNNY LANE, APT. 55D, PHILADELPHIA, PA 19129'
         person_3.residency_status = ResidencyStatus.PERMANENT
+        person_3.state_code = _STATE_CODE_UPPER
         person_3.aliases = [
             entities.StatePersonAlias.new_with_defaults(
                 full_name='{"given_names": "SOREN", "name_suffix": "JR", "surname": "KIERKEGAARD"}',
@@ -1345,6 +1356,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         person_4.birthdate_inferred_from_age = False
         person_4.current_address = '214 HAPPY PLACE, PHILADELPHIA, PA 19129'
         person_4.residency_status = ResidencyStatus.PERMANENT
+        person_4.state_code = _STATE_CODE_UPPER
         person_4.aliases = [
             entities.StatePersonAlias.new_with_defaults(
                 full_name='{"given_names": "JOHN", "surname": "RAWLS"}',

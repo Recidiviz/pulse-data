@@ -1403,6 +1403,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         ######################################
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults()
+        person_1.state_code = _STATE_CODE
         person_1_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='39768', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_1)
         person_1_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1411,6 +1412,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.external_ids.append(person_1_external_id_2)
 
         person_2 = entities.StatePerson.new_with_defaults()
+        person_2.state_code = _STATE_CODE
         person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_2)
         person_2_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1422,6 +1424,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.external_ids.append(person_2_external_id_3)
 
         person_3 = entities.StatePerson.new_with_defaults()
+        person_3.state_code = _STATE_CODE
         person_3_external_id_1 = entities.StatePersonExternalId.new_with_defaults(
             external_id='12345', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_3)
         person_3_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1445,6 +1448,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.birthdate_inferred_from_age = False
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = 'M'
+        person_1.state_code = _STATE_CODE
         person_1_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN', person=person_1)
         person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -1461,6 +1465,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.birthdate_inferred_from_age = False
         person_2.gender = Gender.FEMALE
         person_2.gender_raw_text = 'F'
+        person_2.state_code = _STATE_CODE
         person_2_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK', person=person_2)
         person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -1567,6 +1572,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         sentence_group_114909.max_length_days = 316
 
         person_4 = entities.StatePerson.new_with_defaults()
+        person_4.state_code = _STATE_CODE
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id='115077',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2112,6 +2118,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             person=incarceration_sentence_114909_ips.person)
 
         person_555555 = entities.StatePerson.new_with_defaults()
+        person_555555.state_code = _STATE_CODE
         sentence_group_555555 = entities.StateSentenceGroup.new_with_defaults(
             external_id='555555',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2328,6 +2335,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.sentence_groups.append(sentence_group_110651)
 
         person_5 = entities.StatePerson.new_with_defaults()
+        person_5.state_code = _STATE_CODE
         person_5_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='21109', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_5)
         sentence_group_5129 = entities.StateSentenceGroup.new_with_defaults(
@@ -2511,7 +2519,9 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             current_address='111 3RD ST S #6, FARGO, ND, 58103',
             residency_status=ResidencyStatus.PERMANENT,
             gender=Gender.MALE,
-            gender_raw_text='1')
+            gender_raw_text='1',
+            state_code=_STATE_CODE,
+        )
         person_6_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='92307',
             id_type=US_ND_SID,
@@ -3180,6 +3190,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.birthdate_inferred_from_age = False
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = 'M'
+        person_1.state_code = _STATE_CODE
         person_1_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN', person=person_1)
         person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -3203,6 +3214,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.birthdate_inferred_from_age = False
         person_2.gender = Gender.FEMALE
         person_2.gender_raw_text = 'F'
+        person_2.state_code = _STATE_CODE
         person_2_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK', person=person_2)
         person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -3228,6 +3240,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         # Arrange
         person_1_dup = entities.StatePerson.new_with_defaults()
+        person_1_dup.state_code = _STATE_CODE
         person_1_dup_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='92237', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_1_dup)
         person_1_dup.external_ids.append(person_1_dup_external_id)
@@ -3299,6 +3312,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         expected_people.append(person_1_dup)
 
         person_2_dup = entities.StatePerson.new_with_defaults()
+        person_2_dup.state_code = _STATE_CODE
         person_2_dup_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
             external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_2_dup)
         person_2_dup.external_ids.append(person_2_dup_external_id_2)
@@ -3348,6 +3362,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2_dup.assessments = []
 
         person_3 = entities.StatePerson.new_with_defaults()
+        person_3.state_code = _STATE_CODE
         person_3_external_id_1 = entities.StatePersonExternalId.new_with_defaults(
             external_id='12345', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_3)
         person_3_external_id_2 = entities.StatePersonExternalId.new_with_defaults(

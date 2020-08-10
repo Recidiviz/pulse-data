@@ -63,7 +63,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_MO specific entity matching logic."""
 
     def test_supervisionViolationsWithDifferentParents_mergesViolations(self):
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME)
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_MO)
         db_supervision_violation = generate_supervision_violation(
             person=db_person,
             state_code=_US_MO,
@@ -187,7 +187,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID)
         person = StatePerson.new_with_defaults(
             sentence_groups=[sentence_group],
-            external_ids=[external_id])
+            external_ids=[external_id],
+            state_code=_US_MO)
 
         updated_external_id = _EXTERNAL_ID
         expected_supervision_violation_response = attr.evolve(
@@ -227,7 +228,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_US_MO)
 
         db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer)
+                                    supervising_officer=db_supervising_officer,
+                                    state_code=_US_MO)
         db_external_id = generate_external_id(
             person_external_id_id=_ID, external_id=_EXTERNAL_ID,
             state_code=_US_MO,
@@ -279,7 +281,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             agent_type=StateAgentType.SUPERVISION_OFFICER)
         person = StatePerson.new_with_defaults(
             external_ids=[external_id],
-            supervising_officer=new_supervising_officer)
+            supervising_officer=new_supervising_officer,
+            state_code=_US_MO)
 
         expected_person = attr.evolve(self.to_entity(db_person))
 
@@ -303,7 +306,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             agent_type=StateAgentType.SUPERVISION_OFFICER.value)
         db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer)
+                                    supervising_officer=db_supervising_officer,
+                                    state_code=_US_MO)
         db_external_id = generate_external_id(
             person_external_id_id=_ID, external_id=_EXTERNAL_ID,
             state_code=_US_MO,
@@ -373,7 +377,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
                                   person_external_id_id=None)
         person = StatePerson.new_with_defaults(
             external_ids=[external_id],
-            sentence_groups=[sentence_group])
+            sentence_groups=[sentence_group],
+            state_code=_US_MO)
 
         expected_person = attr.evolve(self.to_entity(db_person))
         expected_person.supervising_officer = new_supervising_officer
@@ -415,7 +420,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             agent_type=StateAgentType.SUPERVISION_OFFICER.value)
         db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer)
+                                    supervising_officer=db_supervising_officer,
+                                    state_code=_US_MO)
         db_external_id = generate_external_id(
             person_external_id_id=_ID, external_id=_EXTERNAL_ID,
             state_code=_US_MO,
@@ -478,7 +484,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         )
         person = StatePerson.new_with_defaults(
             external_ids=[external_id],
-            sentence_groups=[sentence_group]
+            sentence_groups=[sentence_group],
+            state_code=_US_MO
         )
 
         expected_person = attr.evolve(self.to_entity(db_person))
@@ -508,7 +515,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_ssvrFlatFieldMatchingWithSomeNullValues(self):
-        db_person = generate_person()
+        db_person = generate_person(state_code=_US_MO)
         db_supervision_violation_response = \
             generate_supervision_violation_response(
                 person=db_person,
@@ -578,7 +585,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID)
         person = StatePerson.new_with_defaults(
             sentence_groups=[sentence_group],
-            external_ids=[external_id])
+            external_ids=[external_id],
+            state_code=_US_MO)
 
         expected_person = self.to_entity(db_person)
 
@@ -593,7 +601,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_ssvrFlatFieldMatchingRevocationTypeChanges(self):
-        db_person = generate_person()
+        db_person = generate_person(state_code=_US_MO)
         db_supervision_violation_response = \
             generate_supervision_violation_response(
                 person=db_person,
@@ -670,7 +678,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID)
         person = StatePerson.new_with_defaults(
             sentence_groups=[sentence_group],
-            external_ids=[external_id])
+            external_ids=[external_id],
+            state_code=_US_MO)
 
         expected_person = self.to_entity(db_person)
         expected_ip = expected_person.sentence_groups[0].incarceration_sentences[0].incarceration_periods[0]

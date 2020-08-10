@@ -194,6 +194,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # Attributes
 
     #   - Where
+    state_code: str = attr.ib()  # non-nullable
     current_address: Optional[str] = attr.ib(default=None)
 
     #   - What
