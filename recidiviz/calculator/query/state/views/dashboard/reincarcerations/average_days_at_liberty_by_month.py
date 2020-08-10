@@ -35,13 +35,12 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
       AVG(days_at_liberty) AS avg_liberty
     FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, year, month, metric_period_months, job_id)
+      USING (state_code, year, month, metric_period_months, job_id, metric_type)
     WHERE methodology = 'PERSON'
       AND person_id IS NOT NULL
       AND metric_period_months = 1
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      AND job.metric_type = 'RECIDIVISM_COUNT'
       -- TODO (#3123): enforce positive days at liberty earlier in the pipeline
       AND days_at_liberty >= 0
     GROUP BY state_code, year, month

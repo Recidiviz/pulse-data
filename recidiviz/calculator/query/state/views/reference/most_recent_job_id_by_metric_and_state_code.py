@@ -42,49 +42,49 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     FROM (
         SELECT *, row_number() OVER (PARTITION BY state_code, year, month, metric_period_months, metric_type ORDER BY job_id DESC) AS recency_rank
         FROM (
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'RECIDIVISM_COUNT' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, 'RECIDIVISM_RATE' as metric_type
+            (SELECT DISTINCT job_id, NULL AS year, NULL AS month, NULL AS metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_ADMISSION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_POPULATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'INCARCERATION_RELEASE' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_TERMINATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_COMPLIANCE' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_POPULATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION_ANALYSIS' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_REVOCATION_VIOLATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUPERVISION_SUCCESS' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'SUCCESSFUL_SENTENCE_DAYS_SERVED' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.successful_supervision_sentence_days_served_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_REFERRAL' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.program_referral_metrics`)
             UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, 'PROGRAM_PARTICIPATION' as metric_type
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.program_participation_metrics`)
         )
     )

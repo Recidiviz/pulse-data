@@ -12,7 +12,7 @@
   reference_input: reference_tables
   output: dataflow_metrics
   state_code: US_ND
-  metric_types: POPULATION REVOCATION SUCCESS TERMINATION
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
 - pipeline: recidivism
   job_name: full-us-nd-recidivism-calculations
   data_input: state
@@ -43,7 +43,7 @@
   output: dataflow_metrics
   state_code: US_ND
   calculation_month_count: 36
-  metric_types: POPULATION REVOCATION SUCCESS TERMINATION
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
 - pipeline: incarceration
   job_name: us-nd-incarceration-calculations-36
   data_input: state
@@ -67,7 +67,7 @@
   output: dataflow_metrics
   state_code: US_MO
   calculation_month_count: 36
-  metric_types: POPULATION REVOCATION_ANALYSIS REVOCATION_VIOLATION_TYPE_ANALYSIS
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
 
 # Daily US_MO calculations for automated data validation not covered by daily calculation runs
 - pipeline: incarceration
@@ -78,4 +78,4 @@
   state_code: US_MO
   calculation_end_month: 2019-12
   calculation_month_count: 1
-  metric_types: POPULATION
+  metric_types: INCARCERATION_POPULATION

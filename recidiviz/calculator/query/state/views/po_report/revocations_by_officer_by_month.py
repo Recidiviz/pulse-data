@@ -40,9 +40,8 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         most_severe_violation_type
       FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months, metric_type)
     WHERE methodology = 'PERSON'
-        AND job.metric_type = 'SUPERVISION_REVOCATION_ANALYSIS'
         AND metric_period_months = 1
         AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))

@@ -44,8 +44,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
     SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -210,105 +209,64 @@ class ProduceSupervisionMetrics(beam.DoFn):
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
-        # Convert JSON string to dictionary
-        metric_type = dict_metric_key.get('metric_type')
+        if not dict_metric_key:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("Empty dict_metric_key.")
 
-        if metric_type == SupervisionMetricType.TERMINATION:
+        metric_type = dict_metric_key.pop('metric_type')
+
+        if metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionTerminationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.POPULATION:
+        elif metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION:
+        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.REVOCATION_ANALYSIS:
+        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
             dict_metric_key['count'] = value
 
             supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.SUCCESS:
+        elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
             dict_metric_key['successful_completion_count'] = value
             dict_metric_key['projected_completion_count'] = 1
 
             supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+        elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
             dict_metric_key['successful_completion_count'] = 1
             dict_metric_key['average_days_served'] = value
 
             supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.COMPLIANCE:
+        elif metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionCaseComplianceMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s",
-                          dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", metric_type)
             return
 
         if supervision_metric:
             yield supervision_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(SupervisionMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class SupervisionMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to BigQuery."""
-
-    def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
-        formats as required by BigQuery I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A SupervisionMetric
-
-        Yields:
-            A dictionary representation of the SupervisionMetric in the format Dict[str, Any] so that it can be written
-                to BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, SupervisionCaseComplianceMetric):
-            yield beam.pvalue.TaggedOutput('compliances', element_dict)
-        elif isinstance(element, SupervisionPopulationMetric):
-            yield beam.pvalue.TaggedOutput('populations', element_dict)
-        elif isinstance(element, SupervisionRevocationAnalysisMetric):
-            yield beam.pvalue.TaggedOutput('revocation_analyses', element_dict)
-        elif isinstance(element, SupervisionRevocationViolationTypeAnalysisMetric):
-            yield beam.pvalue.TaggedOutput('revocation_violation_type_analyses', element_dict)
-        elif isinstance(element, SupervisionRevocationMetric) \
-                and not isinstance(element, SupervisionRevocationAnalysisMetric):
-            yield beam.pvalue.TaggedOutput('revocations', element_dict)
-        elif isinstance(element, SupervisionSuccessMetric):
-            yield beam.pvalue.TaggedOutput('successes', element_dict)
-        elif isinstance(element, SuccessfulSupervisionSentenceDaysServedMetric):
-            yield beam.pvalue.TaggedOutput('successful_sentence_lengths', element_dict)
-        elif isinstance(element, SupervisionTerminationMetric):
-            yield beam.pvalue.TaggedOutput('terminations', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -619,10 +577,15 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (supervision_metrics | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(
-                                SupervisionMetricWritableDict()).with_outputs(
-                                    'populations', 'revocations', 'successes',
-                                    'successful_sentence_lengths', 'terminations', 'revocation_analyses',
-                                    'revocation_violation_type_analyses', 'compliances'
+                                RecidivizMetricWritableDict()).with_outputs(
+                                    SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
+                                    SupervisionMetricType.SUPERVISION_POPULATION.value,
+                                    SupervisionMetricType.SUPERVISION_REVOCATION.value,
+                                    SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
+                                    SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
+                                    SupervisionMetricType.SUPERVISION_SUCCESS.value,
+                                    SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
+                                    SupervisionMetricType.SUPERVISION_TERMINATION.value
                                 )
                             )
 
@@ -638,7 +601,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES.get(
             SuccessfulSupervisionSentenceDaysServedMetric)
 
-        _ = (writable_metrics.populations
+        _ = (writable_metrics.SUPERVISION_POPULATION
              | f"Write population metrics to BQ table: {populations_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=populations_table_id,
@@ -648,7 +611,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.revocations
+        _ = (writable_metrics.SUPERVISION_REVOCATION
              | f"Write revocation metrics to BQ table: {revocations_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=revocations_table_id,
@@ -658,7 +621,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.successes
+        _ = (writable_metrics.SUPERVISION_SUCCESS
              | f"Write success metrics to BQ table: {successes_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=successes_table_id,
@@ -668,7 +631,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.successful_sentence_lengths
+        _ = (writable_metrics.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
              | f"Write supervision successful sentence length metrics to BQ"
                f" table: {successful_sentence_lengths_table_id}" >>
              beam.io.WriteToBigQuery(
@@ -679,7 +642,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.terminations
+        _ = (writable_metrics.SUPERVISION_TERMINATION
              | f"Write termination metrics to BQ table: {terminations_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=terminations_table_id,
@@ -689,7 +652,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.revocation_analyses
+        _ = (writable_metrics.SUPERVISION_REVOCATION_ANALYSIS
              | f"Write revocation analyses metrics to BQ table: {revocation_analysis_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=revocation_analysis_table_id,
@@ -699,7 +662,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.revocation_violation_type_analyses
+        _ = (writable_metrics.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
              | f"Write revocation violation type analyses metrics to BQ table: "
                f"{revocation_violation_type_analysis_table_id}" >>
              beam.io.WriteToBigQuery(
@@ -710,7 +673,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.compliances
+        _ = (writable_metrics.SUPERVISION_COMPLIANCE
              | f"Write compliance metrics to BQ table: {compliance_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=compliance_table_id,

@@ -37,8 +37,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    json_serializable_metric_key
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -223,56 +222,30 @@ class ProduceProgramMetrics(beam.DoFn):
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("No value associated with this metric key.")
 
-        metric_type = dict_metric_key.get('metric_type')
+        if not dict_metric_key:
+            # Due to how the pipeline arrives at this function, this should be impossible.
+            raise ValueError("Empty dict_metric_key.")
+
+        metric_type = dict_metric_key.pop('metric_type')
 
         if dict_metric_key.get('person_id') is not None:
             # The count value for all person-level metrics should be 1
             value = 1
 
-        if metric_type == ProgramMetricType.REFERRAL:
+        if metric_type == ProgramMetricType.PROGRAM_REFERRAL:
             dict_metric_key['count'] = value
 
             program_metric = ProgramReferralMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
-        elif metric_type == ProgramMetricType.PARTICIPATION:
+        elif metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
             dict_metric_key['count'] = value
 
             program_metric = ProgramParticipationMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
         else:
-            logging.error("Unexpected metric of type: %s", dict_metric_key.get('metric_type'))
+            logging.error("Unexpected metric of type: %s", metric_type)
             return
 
         if program_metric:
             yield program_metric
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(ProgramMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class ProgramMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to BigQuery."""
-
-    def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
-        formats as required by BigQuery I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A ProgramMetric
-
-        Yields:
-            A dictionary representation of the ProgramMetric in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, ProgramReferralMetric):
-            yield beam.pvalue.TaggedOutput('referrals', element_dict)
-        if isinstance(element, ProgramParticipationMetric):
-            yield beam.pvalue.TaggedOutput('participation', element_dict)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -420,13 +393,16 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (program_metrics
                             | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(ProgramMetricWritableDict()).with_outputs('participation', 'referrals'))
+                            beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
+                                ProgramMetricType.PROGRAM_PARTICIPATION.value,
+                                ProgramMetricType.PROGRAM_REFERRAL.value
+                            ))
 
         # Write the metrics to the output tables in BigQuery
         referrals_table_id = DATAFLOW_METRICS_TO_TABLES.get(ProgramReferralMetric)
         participation_table_id = DATAFLOW_METRICS_TO_TABLES.get(ProgramParticipationMetric)
 
-        _ = (writable_metrics.referrals | f"Write referral metrics to BQ table: {referrals_table_id}" >>
+        _ = (writable_metrics.PROGRAM_REFERRAL | f"Write referral metrics to BQ table: {referrals_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=referrals_table_id,
                  dataset=output,
@@ -435,7 +411,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                  method=beam.io.WriteToBigQuery.Method.FILE_LOADS
              ))
 
-        _ = (writable_metrics.participation | f"Write participation metrics to BQ table: {participation_table_id}" >>
+        _ = (writable_metrics.PROGRAM_PARTICIPATION
+             | f"Write participation metrics to BQ table: {participation_table_id}" >>
              beam.io.WriteToBigQuery(
                  table=participation_table_id,
                  dataset=output,

@@ -20,6 +20,7 @@ import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationAdmissionMetric, IncarcerationMetricType, \
     IncarcerationPopulationMetric, IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramReferralMetric, \
@@ -131,6 +132,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
         schema_fields = RecidivizMetric.bq_schema_for_metric_table()
 
         expected_output = [
+            SchemaField('metric_type', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('job_id', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('state_code', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('methodology', bigquery.enums.SqlTypeNames.STRING.value),
@@ -146,9 +148,9 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_incarceration(self):
         incarceration_metrics_for_type = {
-            IncarcerationMetricType.ADMISSION: IncarcerationAdmissionMetric,
-            IncarcerationMetricType.POPULATION: IncarcerationPopulationMetric,
-            IncarcerationMetricType.RELEASE: IncarcerationReleaseMetric
+            IncarcerationMetricType.INCARCERATION_ADMISSION: IncarcerationAdmissionMetric,
+            IncarcerationMetricType.INCARCERATION_POPULATION: IncarcerationPopulationMetric,
+            IncarcerationMetricType.INCARCERATION_RELEASE: IncarcerationReleaseMetric
         }
 
         for metric_type in IncarcerationMetricType:
@@ -160,8 +162,8 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_program(self):
         program_metrics_for_type = {
-            ProgramMetricType.REFERRAL: ProgramReferralMetric,
-            ProgramMetricType.PARTICIPATION: ProgramParticipationMetric
+            ProgramMetricType.PROGRAM_REFERRAL: ProgramReferralMetric,
+            ProgramMetricType.PROGRAM_PARTICIPATION: ProgramParticipationMetric
         }
 
         for metric_type in ProgramMetricType:
@@ -173,8 +175,8 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_recidivism(self):
         recidivism_metrics_for_type = {
-            ReincarcerationRecidivismMetricType.COUNT: ReincarcerationRecidivismCountMetric,
-            ReincarcerationRecidivismMetricType.RATE: ReincarcerationRecidivismRateMetric,
+            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT: ReincarcerationRecidivismCountMetric,
+            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE: ReincarcerationRecidivismRateMetric,
         }
 
         for metric_type in ReincarcerationRecidivismMetricType:
@@ -186,14 +188,16 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_supervision(self):
         supervision_metrics_for_type = {
-            SupervisionMetricType.TERMINATION: SupervisionTerminationMetric,
-            SupervisionMetricType.COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.REVOCATION: SupervisionRevocationMetric,
-            SupervisionMetricType.REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: SupervisionRevocationViolationTypeAnalysisMetric,
-            SupervisionMetricType.SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric,
+            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
+            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
+            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
+                SupervisionRevocationViolationTypeAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
+                SuccessfulSupervisionSentenceDaysServedMetric,
         }
 
         for metric_type in SupervisionMetricType:
@@ -202,3 +206,17 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
             # If there's no error, then all attribute types are handled
             _ = supervision_metrics_for_type.get(metric_type).bq_schema_for_metric_table()
+
+
+class TestRecidivizMetricType(unittest.TestCase):
+    """Tests required characteristics of various RecidivizMetricTypes."""
+    def test_unique_metric_type_values(self):
+        all_metric_type_values = [
+            metric_class.build_from_dictionary({
+                'job_id': 'xxx',
+                'state_code': 'US_XX'
+            }).metric_type.value for metric_class in DATAFLOW_METRICS_TO_TABLES
+        ]
+
+        # Assert that all metric type values are unique
+        self.assertEqual(len(set(all_metric_type_values)), len(all_metric_type_values))

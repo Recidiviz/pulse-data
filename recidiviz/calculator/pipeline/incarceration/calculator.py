@@ -40,9 +40,9 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
-    IncarcerationAdmissionEvent: IncarcerationMetricType.ADMISSION,
-    IncarcerationStayEvent: IncarcerationMetricType.POPULATION,
-    IncarcerationReleaseEvent: IncarcerationMetricType.RELEASE
+    IncarcerationAdmissionEvent: IncarcerationMetricType.INCARCERATION_ADMISSION,
+    IncarcerationStayEvent: IncarcerationMetricType.INCARCERATION_POPULATION,
+    IncarcerationReleaseEvent: IncarcerationMetricType.INCARCERATION_RELEASE
 }
 
 
@@ -259,13 +259,13 @@ def map_metric_combinations(
                                      calculation_month_upper_bound, calculation_month_lower_bound):
         # IncarcerationPopulationMetrics are point-in-time counts for the date of the event, all other
         # IncarcerationMetrics are counts based on the month of the event
-        is_daily_metric = metric_type == IncarcerationMetricType.POPULATION
+        is_daily_metric = metric_type == IncarcerationMetricType.INCARCERATION_POPULATION
 
         # All other IncarcerationMetrics are counts based on the month of the event
         metrics.extend(combination_incarceration_metrics(
             characteristic_combo, incarceration_event, all_incarceration_events, is_daily_metric))
 
-    if include_metric_period_output and metric_type != IncarcerationMetricType.POPULATION:
+    if include_metric_period_output and metric_type != IncarcerationMetricType.INCARCERATION_POPULATION:
         metrics.extend(combination_incarceration_metric_period_metrics(
             characteristic_combo, incarceration_event, calculation_month_upper_bound,
             periods_and_events

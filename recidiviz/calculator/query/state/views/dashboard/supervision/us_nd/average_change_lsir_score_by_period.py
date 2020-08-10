@@ -54,7 +54,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
                            ORDER BY termination_date DESC) AS supervision_rank
       FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {supervision_dimension},
       {metric_period_dimension}
@@ -64,7 +64,6 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
         AND assessment_score_change IS NOT NULL
         AND person_id IS NOT NULL
         AND {metric_period_condition}
-        AND job.metric_type = 'SUPERVISION_TERMINATION'
     )
     WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
       AND supervision_rank = 1

@@ -17,12 +17,11 @@
 """Supervision metrics we calculate."""
 
 from datetime import date
-from enum import Enum
 from typing import Any, Dict, Optional, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
@@ -37,17 +36,17 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecision
 
 
-class SupervisionMetricType(Enum):
+class SupervisionMetricType(RecidivizMetricType):
     """The type of supervision metrics."""
 
-    COMPLIANCE = 'COMPLIANCE'
-    POPULATION = 'POPULATION'
-    REVOCATION = 'REVOCATION'
-    REVOCATION_ANALYSIS = 'REVOCATION_ANALYSIS'
-    REVOCATION_VIOLATION_TYPE_ANALYSIS = 'REVOCATION_VIOLATION_TYPE_ANALYSIS'
-    SUCCESS = 'SUCCESS'
-    SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUCCESSFUL_SENTENCE_DAYS_SERVED'
-    TERMINATION = 'TERMINATION'
+    SUPERVISION_COMPLIANCE = 'SUPERVISION_COMPLIANCE'
+    SUPERVISION_POPULATION = 'SUPERVISION_POPULATION'
+    SUPERVISION_REVOCATION = 'SUPERVISION_REVOCATION'
+    SUPERVISION_REVOCATION_ANALYSIS = 'SUPERVISION_REVOCATION_ANALYSIS'
+    SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS = 'SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS'
+    SUPERVISION_SUCCESS = 'SUPERVISION_SUCCESS'
+    SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED'
+    SUPERVISION_TERMINATION = 'SUPERVISION_TERMINATION'
 
 
 @attr.s
@@ -58,6 +57,9 @@ class SupervisionMetric(RecidivizMetric):
     normalization as well as optional characteristics for slicing the data.
     """
     # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(default=None)
 
     # Year
     year: int = attr.ib(default=None)
@@ -121,6 +123,9 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
     """Subclass of SupervisionMetric that contains supervision population counts."""
     # Required characteristics
 
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_POPULATION)
+
     # Population count
     count: int = attr.ib(default=None)
 
@@ -166,6 +171,9 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision revocation counts."""
     # Required characteristics
 
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION)
+
     # Revocation count
     count: int = attr.ib(default=None)
 
@@ -206,6 +214,13 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
 @attr.s
 class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
     """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
+    # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False,
+                                                 default=SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
+
+    # Optional characteristics
 
     # The most severe decision on a response leading up to the revocation
     most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
@@ -235,6 +250,12 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
 class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric, ViolationTypeSeverityMetric):
     """Subclass of SupervisionRevocationMetric that contains information for
     analysis of the frequency of violation types reported leading up to revocation."""
+
+    # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = \
+        attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
 
     # The number of violations with this type recorded
     count: int = attr.ib(default=None)
@@ -283,6 +304,9 @@ class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision success and failure counts."""
     # Required characteristics
 
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_SUCCESS)
+
     # Number of successful completions
     successful_completion_count: int = attr.ib(default=None)
 
@@ -310,6 +334,10 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
     sentences with projected completion dates in the month of the metric, where the person did not spend any time
     incarcerated in the duration of the sentence."""
     # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = \
+        attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
 
     # Number of successful completions with projected completion dates in the metric month
     successful_completion_count: int = attr.ib(default=None)
@@ -339,6 +367,9 @@ class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, Violati
     """Subclass of SupervisionMetric that contains counts of supervision that have been terminated, the reason for the
     termination, and the change in assessment score between the last assessment and the first reassessment."""
     # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_TERMINATION)
 
     # Number of terminated supervisions
     count: int = attr.ib(default=None)
@@ -384,6 +415,10 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     """Subclass of SupervisionPopulationMetric for people who are on supervision on a given day that records
     information regarding whether a supervision case is meeting compliance standards, as well as counts of
     compliance-related tasks that occurred in the month of the evaluation."""
+    # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_COMPLIANCE)
 
     # The date the on which the case's compliance was evaluated
     date_of_evaluation: date = attr.ib(default=None)
@@ -392,13 +427,15 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     # date_of_evaluation
     assessment_count: int = attr.ib(default=None)
 
-    # Whether or not a risk assessment has been completed for this person with enough recency to satisfy compliance
-    # measures. Should be unset if we do not know the compliance standards for this person.
-    assessment_up_to_date: Optional[bool] = attr.ib(default=None)
-
     # The number of face-to-face contacts with this person in the month of the date_of_evaluation, preceding the
     # date_of_evaluation
     face_to_face_count: int = attr.ib(default=None)
+
+    # Optional characteristics
+
+    # Whether or not a risk assessment has been completed for this person with enough recency to satisfy compliance
+    # measures. Should be unset if we do not know the compliance standards for this person.
+    assessment_up_to_date: Optional[bool] = attr.ib(default=None)
 
     # Whether or not the supervision officer has had face-to-face contact with the person on supervision recently
     # enough to satisfy compliance measures. Should be unset if we do not know the compliance standards for this person.

@@ -18,24 +18,23 @@
 """Recidivism metrics we calculate."""
 
 from datetime import date
-from enum import Enum
 from math import isnan
 from typing import Any, Dict, Optional, cast
 
 import attr
 
 from recidiviz.calculator.pipeline.recidivism.release_event import ReincarcerationReturnType
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 
 
-class ReincarcerationRecidivismMetricType(Enum):
+class ReincarcerationRecidivismMetricType(RecidivizMetricType):
     """The type of reincarceration recidivism metrics."""
 
-    COUNT = 'COUNT'
-    RATE = 'RATE'
+    REINCARCERATION_COUNT = 'REINCARCERATION_COUNT'
+    REINCARCERATION_RATE = 'REINCARCERATION_RATE'
 
 
 # TODO: Implement rearrest and reconviction recidivism metrics (Issues #1841 and #1842)
@@ -46,6 +45,10 @@ class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
     as well as optional characteristics for slicing the data.
     """
+    # Required characteristics
+
+    # The type of ReincarcerationRecidivismMetric
+    metric_type: ReincarcerationRecidivismMetricType = attr.ib(default=None)
 
     # Optional characteristics
 
@@ -95,6 +98,9 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     """
     # Required characteristics
 
+    metric_type: ReincarcerationRecidivismMetricType = \
+        attr.ib(init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT)
+
     # Year
     year: int = attr.ib(default=None)
 
@@ -138,6 +144,10 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
     denominator of total instances of release from incarceration.
     """
     # Required characteristics
+
+    # The type of ReincarcerationRecidivismMetric
+    metric_type: ReincarcerationRecidivismMetricType = \
+        attr.ib(init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE)
 
     # The integer year during which the persons were released
     release_cohort: int = attr.ib(default=None)  # non-nullable

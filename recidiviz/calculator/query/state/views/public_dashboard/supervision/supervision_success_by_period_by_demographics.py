@@ -43,7 +43,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics` success_metrics
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
@@ -54,7 +54,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         AND {metric_period_condition}
         AND methodology = 'EVENT'
         AND person_id IS NOT NULL
-        AND job.metric_type = 'SUPERVISION_SUCCESS'
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), terminations_with_race_or_ethnicity_priorities AS (
        SELECT

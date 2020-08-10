@@ -51,14 +51,13 @@ REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics` m
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND m.metric_period_months = 1
         AND {metric_period_condition}
-        AND job.metric_type = 'RECIDIVISM_COUNT'
       GROUP BY state_code, metric_period_months, district
     ) ret
     USING (state_code, metric_period_months, district)
