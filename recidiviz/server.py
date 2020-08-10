@@ -96,3 +96,8 @@ config_integration.trace_integrations(
 def memory_condition_handler(event: events.MemoryUsageThresholdExceeded):
     logging.warning("Memory usage %d is more than limit of %d, forcing gc", event.mem_usage, event.max_allowed)
     gc.collect()
+
+@zope.event.classhandler.handler(events.EventLoopBlocked)
+def blocked_condition_handler(event: events.EventLoopBlocked):
+    logging.warning("Worker blocked for more than %d seconds [greenlet: %s]:\n%s",
+                    event.blocking_time, str(event.greenlet), '\n'.join(event.report))
