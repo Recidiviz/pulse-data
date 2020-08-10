@@ -45,6 +45,7 @@ GAE_PROJECT_PRODUCTION = 'recidiviz-123'
 
 
 GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
+GAE_PROJECTS = [GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION]
 
 
 def in_gae() -> bool:
