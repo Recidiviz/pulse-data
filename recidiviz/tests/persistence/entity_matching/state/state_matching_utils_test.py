@@ -441,8 +441,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
     def test_readPersons_default(self):
-        schema_person = schema.StatePerson(person_id=1)
-        schema_person_2 = schema.StatePerson(person_id=2)
+        schema_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
+        schema_person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         session = SessionFactory.for_schema_base(StateBase)
         session.add(schema_person)
         session.add(schema_person_2)
@@ -482,7 +482,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertFalse(is_placeholder(entity))
 
     def test_readPersonsByRootEntityCls(self):
-        schema_person_with_root_entity = schema.StatePerson(person_id=1)
+        schema_person_with_root_entity = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         schema_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=_ID,
             external_id=_EXTERNAL_ID,
@@ -495,8 +495,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             state_code='US_ND')
         schema_person_with_root_entity.sentence_groups = [
             schema_sentence_group, schema_sentence_group_2]
-        placeholder_schema_person = schema.StatePerson(person_id=_ID_2)
-        schema_person_other_state = schema.StatePerson(person_id=_ID_3)
+        placeholder_schema_person = schema.StatePerson(person_id=_ID_2, state_code=_STATE_CODE)
+        schema_person_other_state = schema.StatePerson(person_id=_ID_3, state_code=_STATE_CODE)
         schema_external_id_other_state = schema.StatePersonExternalId(
             person_external_id_id=_ID_2,
             external_id=_ID,
@@ -540,7 +540,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 allowed_root_entity_classes=[schema.StateSentenceGroup])
 
     def test_readDbEntitiesOfClsToMerge(self):
-        person_1 = schema.StatePerson(person_id=1)
+        person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         sentence_group_1 = schema.StateSentenceGroup(
             sentence_group_id=1,
             external_id=_EXTERNAL_ID,
@@ -549,7 +549,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             person=person_1)
         person_1.sentence_groups = [sentence_group_1]
 
-        person_2 = schema.StatePerson(person_id=2)
+        person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         sentence_group_1_dup = schema.StateSentenceGroup(
             sentence_group_id=2,
             external_id=_EXTERNAL_ID,

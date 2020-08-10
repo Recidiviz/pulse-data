@@ -508,6 +508,7 @@ class StatePerson(google___protobuf___message___Message):
     age = ... # type: typing___Text
     current_address = ... # type: typing___Text
     residency_status = ... # type: typing___Text
+    state_code = ... # type: typing___Text
     state_person_race_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_person_ethnicity_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
     state_alias_ids = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
@@ -530,6 +531,7 @@ class StatePerson(google___protobuf___message___Message):
         age : typing___Optional[typing___Text] = None,
         current_address : typing___Optional[typing___Text] = None,
         residency_status : typing___Optional[typing___Text] = None,
+        state_code : typing___Optional[typing___Text] = None,
         state_person_race_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_person_ethnicity_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
         state_alias_ids : typing___Optional[typing___Iterable[typing___Text]] = None,
@@ -547,8 +549,8 @@ class StatePerson(google___protobuf___message___Message):
         def FromString(cls, s: typing___Union[builtin___bytes, builtin___buffer, builtin___unicode]) -> StatePerson: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
-    def HasField(self, field_name: typing_extensions___Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_person_id",b"state_person_id",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> builtin___bool: ...
-    def ClearField(self, field_name: typing_extensions___Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_alias_ids",b"state_alias_ids",u"state_assessment_ids",b"state_assessment_ids",u"state_person_ethnicity_ids",b"state_person_ethnicity_ids",u"state_person_external_ids_ids",b"state_person_external_ids_ids",u"state_person_id",b"state_person_id",u"state_person_race_ids",b"state_person_race_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_sentence_group_ids",b"state_sentence_group_ids",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> None: ...
+    def HasField(self, field_name: typing_extensions___Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_code",b"state_code",u"state_person_id",b"state_person_id",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> builtin___bool: ...
+    def ClearField(self, field_name: typing_extensions___Literal[u"age",b"age",u"birthdate",b"birthdate",u"current_address",b"current_address",u"full_name",b"full_name",u"gender",b"gender",u"given_names",b"given_names",u"middle_names",b"middle_names",u"name_suffix",b"name_suffix",u"residency_status",b"residency_status",u"state_alias_ids",b"state_alias_ids",u"state_assessment_ids",b"state_assessment_ids",u"state_code",b"state_code",u"state_person_ethnicity_ids",b"state_person_ethnicity_ids",u"state_person_external_ids_ids",b"state_person_external_ids_ids",u"state_person_id",b"state_person_id",u"state_person_race_ids",b"state_person_race_ids",u"state_program_assignment_ids",b"state_program_assignment_ids",u"state_sentence_group_ids",b"state_sentence_group_ids",u"supervising_officer_id",b"supervising_officer_id",u"surname",b"surname"]) -> None: ...
 global___StatePerson = StatePerson
 
 class StatePersonRace(google___protobuf___message___Message):

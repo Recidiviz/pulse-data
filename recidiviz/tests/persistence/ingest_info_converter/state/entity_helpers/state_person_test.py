@@ -64,6 +64,7 @@ class StatePersonConverterTest(unittest.TestCase):
             birthdate_inferred_from_age=False,
             current_address='NNN STREET ZIP',
             residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_ND'
         )
 
         self.assertEqual(result, expected_result)
@@ -141,14 +142,15 @@ class StatePersonConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             current_address='12345 MAIN 58503',
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_ND'
         )
 
         self.assertEqual(result, expected_result)
 
     def testParseStatePerson_NoiseInPlaceOfResidence_ParsesResidency(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults(region='us_ky_allen')
+        metadata = IngestMetadata.new_with_defaults(region='us_xx')
         ingest_person = ingest_info_pb2.StatePerson(
             current_address='transient moves around')
 
@@ -160,7 +162,8 @@ class StatePersonConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             current_address='TRANSIENT MOVES AROUND',
-            residency_status=ResidencyStatus.TRANSIENT
+            residency_status=ResidencyStatus.TRANSIENT,
+            state_code='US_XX'
         )
 
         self.assertEqual(result, expected_result)
