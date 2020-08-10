@@ -603,6 +603,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
 
         expected_result = [StatePerson.new_with_defaults(
+            state_code='US_ND',
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
                     external_id='EXTERNAL_ID1',

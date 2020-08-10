@@ -454,7 +454,7 @@ class StatePerson(IngestObject):
             name_suffix=None, birthdate=None, gender=None, age=None, current_address=None, residency_status=None,
             state_person_races=None, state_person_ethnicities=None, state_aliases=None, state_person_external_ids=None,
             state_assessments=None, state_sentence_groups=None, state_program_assignments=None,
-            supervising_officer=None):
+            supervising_officer=None, state_code=None):
         self.state_person_id: Optional[str] = state_person_id
         self.full_name: Optional[str] = full_name
         self.surname: Optional[str] = surname
@@ -466,6 +466,7 @@ class StatePerson(IngestObject):
         self.age: Optional[str] = age
         self.current_address: Optional[str] = current_address
         self.residency_status: Optional[str] = residency_status
+        self.state_code: Optional[str] = state_code
 
         self.state_person_races: List[StatePersonRace] = state_person_races or []
         self.state_person_ethnicities: List[StatePersonEthnicity] = state_person_ethnicities or []

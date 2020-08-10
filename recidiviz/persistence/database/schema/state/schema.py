@@ -875,6 +875,8 @@ class _StatePersonSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
 
+    state_code = Column(String(255), nullable=False, index=True)
+
     current_address = Column(Text)
 
     full_name = Column(String(255), index=True)

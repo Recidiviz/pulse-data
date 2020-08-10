@@ -313,11 +313,12 @@ def generate_test_assessment_agent() -> state_schema.StateAgent:
     return instance
 
 
-def generate_test_person(person_id, sentence_groups, incarceration_period,
+def generate_test_person(person_id, state_code, sentence_groups, incarceration_period,
                          agent, supervision_period) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
         person_id=person_id,
+        state_code=state_code,
         full_name='name',
         birthdate=datetime.date(1980, 1, 5),
         birthdate_inferred_from_age=False,
@@ -451,7 +452,10 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
 
     test_agent = generate_test_assessment_agent()
 
+    test_state_code = 'us_xx'
+
     test_person = generate_test_person(test_person_id,
+                                       test_state_code,
                                        [test_sentence_group],
                                        test_incarceration_period,
                                        test_agent,

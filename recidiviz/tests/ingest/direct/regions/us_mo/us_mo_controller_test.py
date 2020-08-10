@@ -1728,6 +1728,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             gender_raw_text='M',
             birthdate=datetime.date(year=1971, month=11, day=20),
             birthdate_inferred_from_age=False,
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -1784,6 +1785,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             gender_raw_text='F',
             birthdate=datetime.date(year=1969, month=6, day=17),
             birthdate_inferred_from_age=False,
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -1833,6 +1835,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             full_name='{"given_names": "JULES", "surname": "WINNIFIELD"}',
             birthdate=datetime.date(year=1964, month=8, day=31),
             birthdate_inferred_from_age=False,
+            state_code=_STATE_CODE_UPPER,
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -1886,6 +1889,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             gender_raw_text='U',
             birthdate=datetime.date(year=1958, month=2, day=13),
             birthdate_inferred_from_age=False,
+            state_code='US_MO',
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -2783,7 +2787,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sis_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
 
         # New person and entity tree introduced at this point
-        person_523523 = entities.StatePerson.new_with_defaults()
+        person_523523 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+        )
         spei_523523 = entities.StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='523523',
@@ -2828,7 +2834,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         expected_people.append(person_523523)
 
         # New person and entity tree introduced at this point
-        person_867530 = entities.StatePerson.new_with_defaults()
+        person_867530 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+        )
         spei_867530 = entities.StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='867530',
@@ -3153,7 +3161,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sis_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
         sss_910324_19890825_1.supervision_periods = [sp_910324_19890825_2_0]
 
-        person_624624 = entities.StatePerson.new_with_defaults()
+        person_624624 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE_UPPER)
         spei_624624 = entities.StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id='624624',
