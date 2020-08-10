@@ -34,10 +34,10 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       SELECT
         state_code,
         metric_date as date_of_participation,
-        job_id
+        job_id,
+        metric_type
       FROM
         `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
-      WHERE metric_type = 'PROGRAM_PARTICIPATION'
     ), participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
@@ -52,7 +52,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         `{project_id}.{metrics_dataset}.program_participation_metrics`
       INNER JOIN
         most_recent_job_id
-      USING (state_code, job_id, date_of_participation)
+      USING (state_code, job_id, date_of_participation, metric_type)
       LEFT JOIN
         `{project_id}.{reference_dataset}.program_locations`
       USING (state_code, program_location_id),

@@ -40,14 +40,13 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
       admission_reason, admission_date
     FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
     JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-      USING (state_code, job_id, year, month, metric_period_months),
+      USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension}
     WHERE methodology = 'EVENT'
       AND person_id IS NOT NULL
       AND metric_period_months = 1
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      AND job.metric_type = 'INCARCERATION_ADMISSION'
     """
 
 EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

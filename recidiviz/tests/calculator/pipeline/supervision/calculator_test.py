@@ -329,7 +329,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in supervision_combinations)
         assert all(combo.get('supervision_level_raw_text') is not None for combo, value in supervision_combinations
                    if combo.get('person_id') is not None
-                   and combo_has_enum_value_for_key(combo, 'metric_type', SupervisionMetricType.POPULATION))
+                   and combo_has_enum_value_for_key(combo, 'metric_type', SupervisionMetricType.SUPERVISION_POPULATION))
 
     def test_map_supervision_combinations_supervision_success(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket."""
@@ -390,10 +390,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations
                    if not combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
         assert all(value == 998 for _combination, value in supervision_combinations
                    if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     def test_map_supervision_combinations_supervision_unsuccessful(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket
@@ -454,12 +454,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value
                    in supervision_combinations if not
-                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS))
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESS))
         assert all(value == 0 for _combination, value
                    in supervision_combinations if
-                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS))
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESS))
         assert all(not combo_has_enum_value_for_key(
-            _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+            _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, _ in supervision_combinations)
 
     def test_map_supervision_combinations_supervision_mixed_success(self):
@@ -525,18 +525,20 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations
                    if not combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
-                   and (not combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS)
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                   and (not combo_has_enum_value_for_key(
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESS)
                         or combo_has_enum_value_for_key(_combination, 'supervision_type',
                                                         StateSupervisionPeriodSupervisionType.PROBATION)))
         assert all(value == 0 for _combination, value
                    in supervision_combinations if
-                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUCCESS) and not
+                   combo_has_enum_value_for_key(_combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESS)
+                   and not
                    combo_has_enum_value_for_key(_combination, 'supervision_type',
                                                 StateSupervisionPeriodSupervisionType.PROBATION) and not
                    _combination.get('supervision_type') is None)
         assert all(not combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                    SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                                                    SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations
                    if _combination.get('supervision_type' is None
                                        or _combination.get('supervision_type') ==
@@ -939,7 +941,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    or _combination.get('supervising_officer_external_id') is None
                    for _combination, _ in supervision_combinations
                    if _combination.get('methodology') == MetricMethodologyType.PERSON
-                   and _combination.get('metric_type') != SupervisionMetricType.POPULATION)
+                   and _combination.get('metric_type') != SupervisionMetricType.SUPERVISION_POPULATION)
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods(self):
@@ -1168,7 +1170,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    and value == 190
                    for _combination, value in supervision_combinations
                    if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_supervision_types(self):
@@ -1366,15 +1368,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value
                    in supervision_combinations
                    if not combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
         assert all(_combination['assessment_score_change'] == -3 for _combination, value
                    in supervision_combinations
                    if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.TERMINATION))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_TERMINATION))
         assert all(value == 234 for _combination, value
                    in supervision_combinations
                    if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED))
+                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     def test_map_supervision_combinations_termination_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the
@@ -1575,13 +1577,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: True,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: True,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1593,7 +1595,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.TERMINATION
+            metric_to_include=SupervisionMetricType.SUPERVISION_TERMINATION
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1603,7 +1605,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.TERMINATION)
+                SupervisionMetricType.SUPERVISION_TERMINATION)
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_success(self):
@@ -1652,13 +1654,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: True,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: True,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1670,7 +1672,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUCCESS
+            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESS
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1680,7 +1682,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.SUCCESS)
+                SupervisionMetricType.SUPERVISION_SUCCESS)
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_successful_sentence_length(self):
@@ -1730,13 +1732,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1748,13 +1750,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 500 for _combination, value in supervision_combinations)
         assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                                                SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation(self):
@@ -1808,13 +1810,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: True,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: True,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1826,7 +1828,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION
+            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1836,7 +1838,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.REVOCATION)
+                SupervisionMetricType.SUPERVISION_REVOCATION)
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation_analysis(self):
@@ -1896,13 +1898,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: True,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: True,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1914,7 +1916,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.REVOCATION_ANALYSIS
+            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1924,7 +1926,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.REVOCATION_ANALYSIS)
+                SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation_violation_type_analysis(self):
@@ -1994,13 +1996,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2013,13 +2015,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             supervision_time_buckets,
             include_all_metrics=False,
             include_revocation_violation_type_analysis_dimensions=True,
-            metric_to_include=SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS
+            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
         assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS)
+                                                SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
                    for _combination, value in supervision_combinations)
         assert all(_combination.get('violation_count_type') is not None
                    for _combination, value in supervision_combinations)
@@ -2079,13 +2081,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: True
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: True
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2097,7 +2099,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.POPULATION
+            metric_to_include=SupervisionMetricType.SUPERVISION_POPULATION
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -2107,7 +2109,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(
             combo_has_enum_value_for_key(
                 _combination, 'metric_type',
-                SupervisionMetricType.POPULATION)
+                SupervisionMetricType.SUPERVISION_POPULATION)
             for _combination, value in supervision_combinations)
 
     @freeze_time('2010-01-31')
@@ -2262,13 +2264,13 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.TERMINATION: False,
-            SupervisionMetricType.SUCCESS: False,
-            SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
-            SupervisionMetricType.REVOCATION: False,
-            SupervisionMetricType.REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
-            SupervisionMetricType.POPULATION: False
+            SupervisionMetricType.SUPERVISION_TERMINATION: False,
+            SupervisionMetricType.SUPERVISION_SUCCESS: False,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
+            SupervisionMetricType.SUPERVISION_REVOCATION: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
+            SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2280,14 +2282,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
             include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED
+            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 501 for _combination, value in supervision_combinations
                    if _combination.get('methodology') == MetricMethodologyType.PERSON)
         assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED)
+                                                SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_compliance_metrics(self):
@@ -2376,7 +2378,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
         )
 
         characteristics_dict = calculator.characteristics_dict(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.POPULATION)
+            person, supervision_time_bucket, metric_type=SupervisionMetricType.SUPERVISION_POPULATION)
 
         expected_output = {
             'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2398,7 +2400,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
     def test_include_supervision_in_count(self):
         """Tests that the revocation bucket is included and the non-revocation bucket is not."""
         combo = {
-            'metric_type': SupervisionMetricType.POPULATION
+            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
         }
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
@@ -2415,20 +2417,20 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         include_revocation_bucket = calculator.include_supervision_in_count(
             combo, revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertTrue(include_revocation_bucket)
 
         include_non_revocation_bucket = calculator.include_supervision_in_count(
             combo, non_revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertFalse(include_non_revocation_bucket)
 
     def test_include_supervision_in_count_revocation(self):
         """Tests that the revocation probation bucket is included and the non-revocation parole bucket is not."""
         combo = {
-            'metric_type': SupervisionMetricType.POPULATION
+            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
         }
 
         revocation_bucket = RevocationReturnSupervisionTimeBucket(
@@ -2446,20 +2448,20 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         include_revocation_bucket = calculator.include_supervision_in_count(
             combo, revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertTrue(include_revocation_bucket)
 
         include_non_revocation_bucket = calculator.include_supervision_in_count(
             combo, non_revocation_bucket,
-            supervision_time_buckets, SupervisionMetricType.POPULATION)
+            supervision_time_buckets, SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertFalse(include_non_revocation_bucket)
 
     def test_include_supervision_in_count_last_probation(self):
         """Tests that the last probation bucket is included."""
         combo = {
-            'metric_type': SupervisionMetricType.POPULATION
+            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
         }
 
         first_bucket = NonRevocationReturnSupervisionTimeBucket(
@@ -2473,20 +2475,20 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         include_first_bucket = calculator.include_supervision_in_count(
             combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertFalse(include_first_bucket)
 
         include_second_bucket = calculator.include_supervision_in_count(
             combo, second_bucket,
-            supervision_time_buckets, SupervisionMetricType.POPULATION)
+            supervision_time_buckets, SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertTrue(include_second_bucket)
 
     def test_include_supervision_in_count_supervision_type_set_parole(self):
         """Tests that the bucket is included when the supervision type is set in the combo."""
         combo = {
-            'metric_type': SupervisionMetricType.POPULATION,
+            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION,
             'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE
         }
 
@@ -2501,14 +2503,14 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         include_first_bucket = calculator.include_supervision_in_count(
             combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertTrue(include_first_bucket)
 
     def test_include_supervision_in_count_supervision_type_set_probation(self):
         """Tests that the bucket is included when the supervision type is set in the combo."""
         combo = {
-            'metric_type': SupervisionMetricType.POPULATION,
+            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION,
             'supervision_type': StateSupervisionPeriodSupervisionType.PROBATION
         }
 
@@ -2523,7 +2525,7 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
 
         include_second_bucket = calculator.include_supervision_in_count(
             combo, second_bucket, supervision_time_buckets,
-            SupervisionMetricType.POPULATION)
+            SupervisionMetricType.SUPERVISION_POPULATION)
 
         self.assertTrue(include_second_bucket)
 
@@ -2534,16 +2536,16 @@ class TestIncludeSupervisionInCount(unittest.TestCase):
                 'metric_type': metric_type
             }
 
-            if metric_type == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+            if metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
                 bucket = ProjectedSupervisionCompletionBucket(
                     'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
                     successful_completion=True, incarcerated_during_sentence=False, sentence_days_served=100)
 
                 # Assert that this does not raise an error
                 _ = calculator.include_supervision_in_count(combo, bucket, [bucket], metric_type)
-            elif metric_type in (SupervisionMetricType.REVOCATION,
-                                 SupervisionMetricType.REVOCATION_ANALYSIS,
-                                 SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS):
+            elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
+                                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
+                                 SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
                 revocation_bucket = RevocationReturnSupervisionTimeBucket(
                     state_code='XX',
                     year=2018,
@@ -2701,21 +2703,21 @@ def expected_metric_combos_count(
                    supervision_compliance_combos)
 
     if metric_to_include:
-        if metric_to_include == SupervisionMetricType.TERMINATION:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_TERMINATION:
             return int(supervision_termination_combos)
-        if metric_to_include == SupervisionMetricType.COMPLIANCE:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return int(supervision_compliance_combos)
-        if metric_to_include == SupervisionMetricType.SUCCESS:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESS:
             return int(supervision_success_combos)
-        if metric_to_include == SupervisionMetricType.SUCCESSFUL_SENTENCE_DAYS_SERVED:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
             return int(supervision_successful_sentence_length_combos)
-        if metric_to_include == SupervisionMetricType.REVOCATION:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION:
             return int(supervision_revocation_combos)
-        if metric_to_include == SupervisionMetricType.REVOCATION_ANALYSIS:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
             return int(supervision_revocation_analysis_combos)
-        if metric_to_include == SupervisionMetricType.REVOCATION_VIOLATION_TYPE_ANALYSIS:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
             return int(revocation_violation_type_analysis_combos)
-        if metric_to_include == SupervisionMetricType.POPULATION:
+        if metric_to_include == SupervisionMetricType.SUPERVISION_POPULATION:
             return int(supervision_population_combos)
 
     return 0

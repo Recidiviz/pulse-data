@@ -41,9 +41,9 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
-    IncarcerationMetricType.ADMISSION: True,
-    IncarcerationMetricType.POPULATION: True,
-    IncarcerationMetricType.RELEASE: True
+    IncarcerationMetricType.INCARCERATION_ADMISSION: True,
+    IncarcerationMetricType.INCARCERATION_POPULATION: True,
+    IncarcerationMetricType.INCARCERATION_RELEASE: True
 }
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)

@@ -51,13 +51,12 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
             AS facetoface_compliance_caseload_count
       FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months)
+        USING (state_code, job_id, year, month, metric_period_months, metric_type)
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND metric_period_months = 0
         AND date_of_evaluation = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
-        AND job.metric_type = 'SUPERVISION_COMPLIANCE'
       GROUP BY state_code, year, month, district, officer_external_id)
     ORDER BY state_code, year, month, district, officer_external_id
     """

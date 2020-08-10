@@ -21,6 +21,7 @@ import unittest
 from typing import Optional, Set
 
 import apache_beam as beam
+import pytest
 from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -841,7 +842,7 @@ class TestProduceProgramMetric(unittest.TestCase):
                       'year': 1999,
                       'month': 3,
                       'metric_type':
-                          ProgramMetricType.REFERRAL,
+                          ProgramMetricType.PROGRAM_REFERRAL,
                       'state_code': 'CA'}
 
         value = 10
@@ -878,17 +879,17 @@ class TestProduceProgramMetric(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
-        output = (test_pipeline
-                  | beam.Create([(metric_key, value)])
-                  | 'Produce Program Metric' >>
-                  beam.ParDo(pipeline.
-                             ProduceProgramMetrics(),
-                             **all_pipeline_options)
-                  )
+        # This should never happen, and we want the pipeline to fail loudly if it does.
+        with pytest.raises(ValueError):
+            _ = (test_pipeline
+                 | beam.Create([(metric_key, value)])
+                 | 'Produce Program Metric' >>
+                 beam.ParDo(pipeline.
+                            ProduceProgramMetrics(),
+                            **all_pipeline_options)
+                 )
 
-        assert_that(output, equal_to([]))
-
-        test_pipeline.run()
+            test_pipeline.run()
 
 
 class AssertMatchers:
@@ -923,9 +924,9 @@ class AssertMatchers:
 
                 metric_type = combination.get('metric_type')
 
-                if metric_type == ProgramMetricType.REFERRAL:
+                if metric_type == ProgramMetricType.PROGRAM_REFERRAL:
                     actual_combination_counts['referrals'] = actual_combination_counts['referrals'] + 1
-                elif metric_type == ProgramMetricType.PARTICIPATION:
+                elif metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
                     actual_combination_counts['participation'] = actual_combination_counts['participation'] + 1
 
             for key in expected_combination_counts:

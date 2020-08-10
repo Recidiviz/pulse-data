@@ -97,19 +97,20 @@ def map_program_combinations(person: StatePerson,
         calculation_month_upper_bound, calculation_month_count)
 
     for program_event in program_events:
-        if isinstance(program_event, ProgramReferralEvent) and metric_inclusions.get(ProgramMetricType.REFERRAL):
+        if (isinstance(program_event, ProgramReferralEvent)
+                and metric_inclusions.get(ProgramMetricType.PROGRAM_REFERRAL)):
             characteristic_combo = characteristics_dict(person, program_event)
 
             program_referral_metrics_event_based = map_metric_combinations(
                 characteristic_combo, program_event,
                 calculation_month_upper_bound, calculation_month_lower_bound,
                 program_events, periods_and_events,
-                ProgramMetricType.REFERRAL, include_metric_period_output
+                ProgramMetricType.PROGRAM_REFERRAL, include_metric_period_output
             )
 
             metrics.extend(program_referral_metrics_event_based)
         elif (isinstance(program_event, ProgramParticipationEvent)
-              and metric_inclusions.get(ProgramMetricType.PARTICIPATION)):
+              and metric_inclusions.get(ProgramMetricType.PROGRAM_PARTICIPATION)):
             characteristic_combo = characteristics_dict(person, program_event)
 
             program_participation_metrics_event_based = map_metric_combinations(
@@ -119,7 +120,7 @@ def map_program_combinations(person: StatePerson,
                 calculation_month_lower_bound,
                 program_events,
                 periods_and_events,
-                ProgramMetricType.PARTICIPATION,
+                ProgramMetricType.PROGRAM_PARTICIPATION,
                 # The ProgramParticipationMetric is explicitly a daily metric
                 include_metric_period_output=False
             )
@@ -222,7 +223,7 @@ def map_metric_combinations(
                                      calculation_month_upper_bound, calculation_month_lower_bound):
         # ProgramParticipationMetrics are point-in-time metrics for the date of the participation, all
         # other ProgramMetrics are metrics based on the month of the event
-        is_daily_metric = metric_type == ProgramMetricType.PARTICIPATION
+        is_daily_metric = metric_type == ProgramMetricType.PROGRAM_PARTICIPATION
 
         metrics.extend(combination_program_monthly_metrics(
             characteristic_combo, program_event, metric_type, all_program_events, is_daily_metric))
@@ -288,14 +289,14 @@ def combination_program_monthly_metrics(
 
     events_in_period: List[ProgramEvent] = []
 
-    if metric_type == ProgramMetricType.PARTICIPATION:
+    if metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
         # Get all other participation events that happened on the same day as this one
         events_in_period = [
             event for event in all_program_events
             if (isinstance(event, ProgramParticipationEvent))
             and event.event_date == program_event.event_date
         ]
-    elif metric_type == ProgramMetricType.REFERRAL:
+    elif metric_type == ProgramMetricType.PROGRAM_REFERRAL:
         # Get all other referral events that happened in the same month as this one
         events_in_period = [
             event for event in all_program_events

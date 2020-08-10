@@ -39,13 +39,13 @@ MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH all_job_ids AS (
-      (SELECT DISTINCT job_id, state_code, date_of_stay as metric_date, 'INCARCERATION_POPULATION' as metric_type
+      (SELECT DISTINCT job_id, state_code, date_of_stay as metric_date, metric_type
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`)
       UNION ALL
-      (SELECT DISTINCT job_id, state_code, date_of_supervision as metric_date, 'SUPERVISION_POPULATION' as metric_type
+      (SELECT DISTINCT job_id, state_code, date_of_supervision as metric_date, metric_type
       FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`)
       UNION ALL
-      (SELECT DISTINCT job_id, state_code, date_of_participation as metric_date, 'PROGRAM_PARTICIPATION' as metric_type
+      (SELECT DISTINCT job_id, state_code, date_of_participation as metric_date, metric_type
       FROM `{project_id}.{metrics_dataset}.program_participation_metrics`)
     ), ranked_job_ids AS (
       SELECT *, row_number() OVER (PARTITION BY state_code, metric_type ORDER BY metric_date DESC, job_id DESC) AS recency_rank

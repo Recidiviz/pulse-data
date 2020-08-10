@@ -42,14 +42,13 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         person_id,
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
       UNNEST ([{grouped_districts}, 'ALL']) AS district
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND person_id IS NOT NULL
         AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-        AND job.metric_type = 'SUPERVISION_SUCCESS'
       GROUP BY state_code, projected_year, projected_month, district, supervision_type, person_id
     ), success_counts AS (
       SELECT

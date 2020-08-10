@@ -39,7 +39,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         race_or_ethnicity
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
       JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
-        USING (state_code, job_id, year, month, metric_period_months),
+        USING (state_code, job_id, year, month, metric_period_months, metric_type),
             -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months,
       {race_or_ethnicity_dimension}
@@ -48,7 +48,6 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         AND person_id IS NOT NULL
         -- Revisit these exclusions when #3657 and #3723 are complete --
         AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
-        AND job.metric_type = 'INCARCERATION_POPULATION'
     ), population_with_race_or_ethnicity_priorities AS (
       SELECT
         *,

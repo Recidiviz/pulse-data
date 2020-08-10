@@ -686,7 +686,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         """Tests the include_event_in_count function when the referral should be included."""
 
         combo = {
-            'metric_type': 'PARTICIPATION'
+            'metric_type': 'PROGRAM_PARTICIPATION'
         }
 
         program_event = ProgramParticipationEvent(
@@ -706,7 +706,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         program_location_id alphabetically before the other program_location_ids."""
 
         combo = {
-            'metric_type': 'PARTICIPATION'
+            'metric_type': 'PROGRAM_PARTICIPATION'
         }
 
         program_event_1 = ProgramParticipationEvent(
@@ -743,7 +743,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         program_location_id is not alphabetically before the other program_location_ids."""
 
         combo = {
-            'metric_type': 'PARTICIPATION'
+            'metric_type': 'PROGRAM_PARTICIPATION'
         }
 
         program_event_1 = ProgramParticipationEvent(
@@ -780,7 +780,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         before the end of the time period."""
 
         combo = {
-            'metric_type': 'REFERRAL'
+            'metric_type': 'PROGRAM_REFERRAL'
         }
 
         program_event_1 = ProgramReferralEvent(
@@ -815,7 +815,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         the end of the time period."""
 
         combo = {
-            'metric_type': 'REFERRAL'
+            'metric_type': 'PROGRAM_REFERRAL'
         }
 
         program_event_1 = ProgramReferralEvent(
@@ -850,7 +850,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         supervision types, and the combo does not specify the supervision type."""
 
         combo = {
-            'metric_type': 'REFERRAL'
+            'metric_type': 'PROGRAM_REFERRAL'
         }
 
         program_event_1 = ProgramReferralEvent(
@@ -886,7 +886,7 @@ class TestIncludeEventInCount(unittest.TestCase):
         supervision types, and the combo does specify the supervision type."""
 
         combo = {
-            'metric_type': 'REFERRAL',
+            'metric_type': 'PROGRAM_REFERRAL',
             'supervision_type': StateSupervisionType.PROBATION
         }
 
