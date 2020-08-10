@@ -26,7 +26,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_int
 from recidiviz.ingest.models import ingest_info_pb2
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Person
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.base_converter import \
@@ -55,8 +55,11 @@ class CountyConverter(BaseConverter[entities.Person]):
             return False
         return True
 
-    def _convert_and_pop(self) -> entities.Person:
-        return self._convert_person(self.ingest_info.people.pop())
+    def _pop_person(self) -> Person:
+        return self.ingest_info.people.pop()
+
+    def _compliant_log_person(self, ingest_person: Person):
+        logging.info(str(ingest_person))
 
     def _convert_person(self, ingest_person) -> entities.Person:
         """Converts an ingest_info proto Person to a persistence entity."""
