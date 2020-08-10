@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     us_id_case_compliance_on_date, NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS, _assessment_is_up_to_date, \
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS, _face_to_face_contact_frequency_is_sufficient, \
     _guidelines_applicable_for_case, _assessments_in_compliance_month, _face_to_face_contacts_in_compliance_month, \
-    _is_deprecated_level_system
+    _is_new_level_system
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
@@ -57,7 +57,7 @@ class TestCaseCompliance(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MEDIUM'
+            supervision_level_raw_text='MODERATE'
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -1136,7 +1136,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MEDIUM'
+            supervision_level_raw_text='MODERATE'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1202,7 +1202,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MEDIUM'
+            supervision_level_raw_text='MODERATE'
         )
 
         # One contact within the time window, one outside.
@@ -1276,7 +1276,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MEDIUM'
+            supervision_level_raw_text='MODERATE'
         )
 
         supervision_contacts = []
@@ -1318,9 +1318,9 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_is_deprecated_level_system_case_sensitivity(self):
-        self.assertTrue(_is_deprecated_level_system("LEVEL 1"))
-        self.assertFalse(_is_deprecated_level_system("Level 1"))
+    def test_is_new_level_system_case_sensitivity(self):
+        self.assertTrue(_is_new_level_system("LOW"))
+        self.assertFalse(_is_new_level_system("Low"))
 
 
 class TestGuidelinesApplicableForCase(unittest.TestCase):
