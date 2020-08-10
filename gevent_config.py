@@ -26,7 +26,7 @@ import signal
 
 from gevent import config
 config.monitor_thread = True
-config.max_blocking_time = 1  # 1 second
+config.max_blocking_time = 30  # 30 seconds
 config.max_memory_usage = 4 * 1024 * 1024 * 1024  # 4 GiB
 config.memory_monitor_period = 60  # 1 minute
 
@@ -37,14 +37,14 @@ MEMORY_DEBUG = os.environ.get('MEMORY_DEBUG', False)
 
 # pylint: disable=wrong-import-position
 from gunicorn.workers.ggevent import GeventWorker
-from grpc.experimental import gevent
+from grpc.experimental import gevent as grpc_gevent
 
 
 class GeventGrpcWorker(GeventWorker):
     """Custom gevent worker with extra patching and debugging utilities"""
     def patch(self):
         super(GeventGrpcWorker, self).patch()
-        gevent.init_gevent()
+        grpc_gevent.init_gevent()
         self.log.info('patched grpc')
 
     def init_process(self):
@@ -60,19 +60,39 @@ class GeventGrpcWorker(GeventWorker):
         # Leave all signals defined by the superclass in place.
         super(GeventGrpcWorker, self).init_signals()
 
-        # Use SIGUSR2 to dump memory usage information.
-        signal.signal(signal.SIGUSR2, self.dump_memory_usage)
+        # Use SIGUSR2 to dump threads and memory usage information.
+        signal.signal(signal.SIGUSR2, self.dump_profiles)
 
         # Don't let it interrupt system calls.
         signal.siginterrupt(signal.SIGUSR2, False)
 
-    def dump_memory_usage(self, _sig, _frame):
+    def dump_profiles(self, _sig, _frame):
+        """Dumps profiles to files in /tmp/
+
+        Trigger with `kill -USR2 <pid>` from within the docker container.
+        """
+        self._dump_threads()
+        self._dump_memory_usage()
+
+    def _dump_threads(self):
+        """Dumps run info, including stacks of greenlets and threads, to a file."""
+        # pylint: disable=import-outside-toplevel
+        self.log.error('received signal, dumping threads')
+        from datetime import datetime
+        import gevent
+        filename = "/tmp/threads.%d.%s" % (os.getpid(), datetime.now().strftime("%d-%m-%Y_%I-%M-%S_%p"))
+        try:
+            with open(filename, 'w') as f:
+                gevent.util.print_run_info(file=f)
+            self.log.error("threads dump to %s", filename)
+        except Exception as e:
+            self.log.error("thread dump failed: %s", str(e))
+
+    def _dump_memory_usage(self):
         """Dumps memory to files in /tmp/
         Inspiration: https://github.com/mozilla-services/mozservices/blob/master/mozsvc/gunicorn_worker.py
 
         Only will run if MEMORY_DEBUG is enabled.
-
-        Trigger with `kill -USR2 <pid>` from within the docker container.
         """
         # pylint: disable=import-outside-toplevel
         self.log.error('received signal, dumping memory')
