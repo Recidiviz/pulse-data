@@ -65,7 +65,8 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=12345, current_address='123 Street',
             full_name='Jack Smith', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_XX'
         )
 
         fake_person_data = [normalized_database_base_dict(fake_person)]
@@ -101,13 +102,14 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=fake_person_id, current_address='123 Street',
             full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_XX'
         )
 
         fake_person_data = [normalized_database_base_dict(fake_person)]
 
         ethnicity_1 = schema.StatePersonEthnicity(
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC,
             person_id=fake_person_id,
             person_ethnicity_id=234
@@ -116,7 +118,7 @@ class TestBuildRootEntity(unittest.TestCase):
         ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
 
         alias_1 = schema.StatePersonAlias(
-            state_code='NY',
+            state_code='US_XX',
             full_name='Bernie Madoff',
             person_alias_id=18615,
             person_id=fake_person_id
@@ -127,7 +129,7 @@ class TestBuildRootEntity(unittest.TestCase):
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
             external_id=888,
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -135,7 +137,7 @@ class TestBuildRootEntity(unittest.TestCase):
         sentence_group_1 = schema.StateSentenceGroup(
             status=StateSentenceStatus.SERVING,
             date_imposed=date(2011, 3, 7),
-            state_code='CA',
+            state_code='US_XX',
             min_length_days=199,
             max_length_days=500,
             sentence_group_id=213,
@@ -144,10 +146,10 @@ class TestBuildRootEntity(unittest.TestCase):
 
         sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
 
-        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='US_XX',
                                         person_id=fake_person_id)
 
-        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='US_XX',
                                         person_id=fake_person_id)
 
         races_data = [normalized_database_base_dict(race_1),
@@ -157,7 +159,7 @@ class TestBuildRootEntity(unittest.TestCase):
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
-            state_code='CA',
+            state_code='US_XX',
             assessment_score=29,
             assessment_id=184672,
             person_id=fake_person_id
@@ -226,13 +228,14 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=fake_person_id, current_address='123 Street',
             full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_XX'
         )
 
         fake_person_data = [normalized_database_base_dict(fake_person)]
 
         ethnicity_1 = schema.StatePersonEthnicity(
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC,
             person_id=fake_person_id,
             person_ethnicity_id=234
@@ -241,7 +244,7 @@ class TestBuildRootEntity(unittest.TestCase):
         ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
 
         alias_1 = schema.StatePersonAlias(
-            state_code='NY',
+            state_code='US_XX',
             full_name='Bernie Madoff',
             person_alias_id=18615,
             person_id=fake_person_id
@@ -252,7 +255,7 @@ class TestBuildRootEntity(unittest.TestCase):
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
             external_id=888,
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -260,7 +263,7 @@ class TestBuildRootEntity(unittest.TestCase):
         sentence_group_1 = schema.StateSentenceGroup(
             status=StateSentenceStatus.SERVING,
             date_imposed=date(2011, 3, 7),
-            state_code='CA',
+            state_code='US_XX',
             min_length_days=199,
             max_length_days=500,
             sentence_group_id=213,
@@ -269,10 +272,10 @@ class TestBuildRootEntity(unittest.TestCase):
 
         sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
 
-        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='US_XX',
                                         person_id=fake_person_id)
 
-        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='US_XX',
                                         person_id=fake_person_id)
 
         races_data = [normalized_database_base_dict(race_1),
@@ -282,7 +285,7 @@ class TestBuildRootEntity(unittest.TestCase):
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
-            state_code='CA',
+            state_code='US_XX',
             assessment_score=29,
             assessment_id=184672,
             person_id=fake_person_id
@@ -515,7 +518,8 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=fake_person_id, current_address='123 Street',
             full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='FL'
         )
 
         fake_person_data = [normalized_database_base_dict(fake_person)]
@@ -616,7 +620,8 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=fake_person_id, current_address='123 Street',
             full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='FL'
         )
 
         empty_person_entity = StateSchemaToEntityConverter().convert(empty_person)
@@ -650,13 +655,14 @@ class TestBuildRootEntity(unittest.TestCase):
             person_id=fake_person_id, current_address='123 Street',
             full_name='Bernard Madoff', birthdate=date(1970, 1, 1),
             gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code='US_XX'
         )
 
         fake_person_data = [normalized_database_base_dict(fake_person)]
 
         ethnicity_1 = schema.StatePersonEthnicity(
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC,
             person_id=fake_person_id,
             person_ethnicity_id=234
@@ -665,7 +671,7 @@ class TestBuildRootEntity(unittest.TestCase):
         ethnicities_data = [normalized_database_base_dict(ethnicity_1)]
 
         alias_1 = schema.StatePersonAlias(
-            state_code='CA',
+            state_code='US_XX',
             full_name='Bernie Madoff',
             person_alias_id=18615,
             person_id=fake_person_id
@@ -676,7 +682,7 @@ class TestBuildRootEntity(unittest.TestCase):
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
             external_id=888,
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -684,7 +690,7 @@ class TestBuildRootEntity(unittest.TestCase):
         sentence_group_1 = schema.StateSentenceGroup(
             status=StateSentenceStatus.SERVING,
             date_imposed=date(2011, 3, 7),
-            state_code='CA',
+            state_code='US_XX',
             min_length_days=199,
             max_length_days=500,
             sentence_group_id=213,
@@ -693,10 +699,10 @@ class TestBuildRootEntity(unittest.TestCase):
 
         sentence_group_data = [normalized_database_base_dict(sentence_group_1)]
 
-        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='CA',
+        race_1 = schema.StatePersonRace(race=Race.WHITE, state_code='US_XX',
                                         person_id=fake_person_id)
 
-        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='CA',
+        race_2 = schema.StatePersonRace(race=Race.BLACK, state_code='US_XX',
                                         person_id=fake_person_id)
 
         races_data = [normalized_database_base_dict(race_1),
@@ -706,7 +712,7 @@ class TestBuildRootEntity(unittest.TestCase):
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
-            state_code='CA',
+            state_code='US_XX',
             assessment_score=29,
             assessment_id=184672,
             person_id=fake_person_id
@@ -760,7 +766,7 @@ class TestBuildRootEntity(unittest.TestCase):
                           root_entity_class=entities.StatePerson,
                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                           build_related_entities=True,
-                          state_code='CA'))
+                          state_code='US_XX'))
 
             assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -774,7 +780,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, [], None, None, None))
+            database_test_utils.generate_test_person(123, 'US_XX', [], None, None, None))
 
         person_data = [normalized_database_base_dict(person)]
 
@@ -806,7 +812,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, [], None, None, None))
+            database_test_utils.generate_test_person(123, 'US_XX', [], None, None, None))
 
         person_data = [normalized_database_base_dict(person)]
 
@@ -1112,7 +1118,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         incarceration_period_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=7777,
             status=entities.StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
-            state_code='us_ca',
+            state_code='US_XX',
             person_id=incarceration_period_1.person_id
         )
 
@@ -1184,7 +1190,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         source_supervision_violation_response_2 = \
             schema.StateSupervisionViolationResponse(
                 supervision_violation_response_id=789,
-                state_code='us_ca',
+                state_code='US_XX',
                 person_id=incarceration_period_1.person_id,
             )
 
@@ -1308,7 +1314,7 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
             agent_id=1010,
             external_id='ASSAGENT1234',
             agent_type=entities.StateAgentType.PAROLE_BOARD_MEMBER,
-            state_code='us_ca',
+            state_code='US_XX',
             full_name='JOHN SMITH',
         )
 
@@ -1407,7 +1413,7 @@ class TestHydrateEntity(unittest.TestCase):
         charge = schema.StateCharge(
             charge_id=6666,
             person_id=111,
-            state_code='us_ca',
+            state_code='US_XX',
             court_case_id=222,
         )
 
@@ -1447,7 +1453,7 @@ class TestHydrateEntity(unittest.TestCase):
         charge = schema.StateCharge(
             charge_id=6666,
             person_id=111,
-            state_code='us_ca',
+            state_code='US_XX',
             court_case_id=222,
         )
 
@@ -1488,7 +1494,7 @@ class TestHydrateEntity(unittest.TestCase):
         charge = schema.StateCharge(
             charge_id=6666,
             person_id=111,
-            state_code='us_ca',
+            state_code='US_XX',
             court_case_id=222,
         )
 

@@ -22,7 +22,7 @@ from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_residency_status, parse_birthdate
+    fn, parse_residency_status, parse_birthdate, parse_region_code_with_override
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
     EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
@@ -54,3 +54,5 @@ def copy_fields_to_builder(state_person_builder: entities.StatePerson.Builder,
     new.current_address = fn(normalize, 'current_address', proto)
     new.residency_status = fn(
         parse_residency_status, 'current_address', proto)
+    new.state_code = parse_region_code_with_override(
+        proto, 'state_code', metadata)

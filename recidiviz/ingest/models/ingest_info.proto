@@ -194,6 +194,7 @@ message StatePerson {
     repeated string state_sentence_group_ids = 17;
     repeated string state_program_assignment_ids = 18;
     optional string supervising_officer_id = 19;
+    optional string state_code = 20;
 }
 
 message StatePersonRace {

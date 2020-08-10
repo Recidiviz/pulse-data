@@ -100,7 +100,9 @@ class TestStatePersistence(TestCase):
             county_code=COUNTY_CODE)
 
         db_person = schema.StatePerson(
-            person_id=ID, full_name=FULL_NAME_1)
+            person_id=ID,
+            full_name=FULL_NAME_1,
+            state_code=REGION_CODE)
         db_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -118,7 +120,10 @@ class TestStatePersistence(TestCase):
             db_sentence_group, db_sentence_group_2]
         db_person.external_ids = [db_external_id]
 
-        db_person_2 = schema.StatePerson(person_id=ID_2, full_name=FULL_NAME_1)
+        db_person_2 = schema.StatePerson(
+            person_id=ID_2,
+            full_name=FULL_NAME_1,
+            state_code=REGION_CODE)
         db_sentence_group_2_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -166,7 +171,9 @@ class TestStatePersistence(TestCase):
             county_code=COUNTY_CODE)
 
         db_person = schema.StatePerson(
-            person_id=ID, full_name=FULL_NAME_1)
+            person_id=ID,
+            full_name=FULL_NAME_1,
+            state_code=REGION_CODE)
         db_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -189,7 +196,10 @@ class TestStatePersistence(TestCase):
             db_sentence_group, db_sentence_group_2, db_sentence_group_3]
         db_person.external_ids = [db_external_id]
 
-        db_person_2 = schema.StatePerson(person_id=ID_2, full_name=FULL_NAME_1)
+        db_person_2 = schema.StatePerson(
+            person_id=ID_2,
+            full_name=FULL_NAME_1,
+            state_code=REGION_CODE)
         db_sentence_group_3_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_4,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -203,7 +213,7 @@ class TestStatePersistence(TestCase):
 
         expected_person = StatePerson.new_with_defaults(
             person_id=ID, full_name=FULL_NAME_1, external_ids=[],
-            sentence_groups=[])
+            sentence_groups=[], state_code=REGION_CODE)
         expected_external_id = StatePersonExternalId.new_with_defaults(
             person_external_id_id=ID, state_code=REGION_CODE,
             external_id=EXTERNAL_ID,
@@ -229,7 +239,7 @@ class TestStatePersistence(TestCase):
                                            expected_sentence_group_3]
 
         expected_person_2 = StatePerson.new_with_defaults(
-            person_id=ID_2, full_name=FULL_NAME_1)
+            person_id=ID_2, full_name=FULL_NAME_1, state_code=REGION_CODE)
         expected_external_id_2 = StatePersonExternalId.new_with_defaults(
             person_external_id_id=ID_2, state_code=REGION_CODE,
             external_id=EXTERNAL_ID_2,

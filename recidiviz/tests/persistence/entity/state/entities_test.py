@@ -64,11 +64,7 @@ class TestStateEntities(TestCase):
                              f"key [{key_name}] of class [{cls}].")
 
     def test_all_classes_have_a_non_optional_state_code(self):
-        classes_without_a_state_code = [entities.StatePerson]
-
         for cls in get_all_entity_classes_in_module(entities):
-            if cls in classes_without_a_state_code:
-                continue
             self.assertTrue(
                 'state_code' in attr.fields_dict(cls),
                 f"Expected field |state_code| not defined for class [{cls}].")
