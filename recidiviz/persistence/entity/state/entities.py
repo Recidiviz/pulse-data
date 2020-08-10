@@ -701,8 +701,6 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     custodial_authority: Optional[str] = attr.ib()
 
-    # TODO(2668): This is currently unused - delete this since we won't likely
-    #  ever get this info independently from violations.
     conditions: Optional[str] = attr.ib(default=None)
 
     #   - Who

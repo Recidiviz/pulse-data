@@ -1586,7 +1586,10 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     termination_reason_raw_text = Column(String(255))
     supervision_level = Column(state_supervision_level)
     supervision_level_raw_text = Column(String(255))
-    conditions = Column(String(255))
+
+    # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the length like
+    # we do for most other String fields.
+    conditions = Column(Text)
     custodial_authority = Column(String(255))
 
     @declared_attr
