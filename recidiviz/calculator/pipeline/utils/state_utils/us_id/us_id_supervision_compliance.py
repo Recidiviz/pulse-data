@@ -288,9 +288,16 @@ def _get_required_face_to_face_contacts_and_period_days_for_level(supervision_le
     deprecated level system has four levels (which are associated with four numeric levels), and the new system has
     three levels.
     """
-    is_deprecated_level_system = _is_deprecated_level_system(supervision_level_raw_text)
+    is_new_level_system = _is_new_level_system(supervision_level_raw_text)
 
-    if is_deprecated_level_system:
+    if is_new_level_system:
+        if supervision_level == StateSupervisionLevel.MINIMUM:
+            return 1, 180
+        if supervision_level == StateSupervisionLevel.MEDIUM:
+            return 2, 90
+        if supervision_level == StateSupervisionLevel.HIGH:
+            return 2, 30
+    else:
         if supervision_level == StateSupervisionLevel.MINIMUM:
             return 0, sys.maxsize
         if supervision_level == StateSupervisionLevel.MEDIUM:
@@ -299,23 +306,16 @@ def _get_required_face_to_face_contacts_and_period_days_for_level(supervision_le
             return 1, 30
         if supervision_level == StateSupervisionLevel.MAXIMUM:
             return 2, 30
-    else:
-        if supervision_level == StateSupervisionLevel.MINIMUM:
-            return 1, 180
-        if supervision_level == StateSupervisionLevel.MEDIUM:
-            return 2, 90
-        if supervision_level == StateSupervisionLevel.HIGH:
-            return 2, 30
 
     raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
                      f"of {supervision_level}. Should not be calculating compliance for this supervision case.")
 
 
-def _is_deprecated_level_system(supervision_level_raw_text: Optional[str]) -> bool:
-    """As of July 2020, Idaho has deprecated its previous supervision level system, which used the values: LEVEL 1,
-    LEVEL 2, LEVEL 3, LEVEL 4. Returns whether the level system used is one of deprecated values."""
+def _is_new_level_system(supervision_level_raw_text: Optional[str]) -> bool:
+    """As of July 2020, Idaho has deprecated its previous supervision level system and now uses `LOW`, `MODERATE`,
+    and `HIGH`. Returns whether the level system used is one of new values."""
 
     if not supervision_level_raw_text:
         raise ValueError("a StateSupervisionPeriod should always have a value for supervision_level_raw_text.")
 
-    return supervision_level_raw_text in ("LEVEL 1", "LEVEL 2", "LEVEL 3", "LEVEL 4")
+    return supervision_level_raw_text in ("LOW", "MODERATE", "HIGH")
