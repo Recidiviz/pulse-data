@@ -20,7 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, COVID_REPORT_DATASET, \
     REFERENCE_TABLES_DATASET
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME = 'supervision_terminations_by_type_by_week'
@@ -107,5 +107,5 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilde
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER.build_and_print()

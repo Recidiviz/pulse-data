@@ -21,7 +21,7 @@ from recidiviz.calculator.query.county import dataset_config
 
 from recidiviz.calculator.query.county.views.population.population_admissions_releases_race_gender import \
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 POPULATION_ADMISSIONS_RELEASES_VIEW_NAME = 'population_admissions_releases'
@@ -59,5 +59,5 @@ POPULATION_ADMISSIONS_RELEASES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         POPULATION_ADMISSIONS_RELEASES_VIEW_BUILDER.build_and_print()

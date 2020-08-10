@@ -40,12 +40,12 @@ class GaeEnvironment(Enum):
     PRODUCTION = 'production'
 
 
-GAE_PROJECT_STAGING = 'recidiviz-staging'
-GAE_PROJECT_PRODUCTION = 'recidiviz-123'
+GCP_PROJECT_STAGING = 'recidiviz-staging'
+GCP_PROJECT_PRODUCTION = 'recidiviz-123'
 
 
 GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
-GAE_PROJECTS = [GAE_PROJECT_STAGING, GAE_PROJECT_PRODUCTION]
+GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 
 def in_gae() -> bool:

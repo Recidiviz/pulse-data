@@ -23,7 +23,7 @@ from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks
 from recidiviz.common.constants.enum_canonical_strings import external_unknown
 
 from recidiviz.persistence.database.schema.county.schema import Charge
-from recidiviz.utils.environment import GAE_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CHARGES_AND_SEVERITY_VIEW_NAME = 'charges_and_severity'
@@ -67,5 +67,5 @@ CHARGES_AND_SEVERITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 )
 
 if __name__ == '__main__':
-    with local_project_id_override(GAE_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_STAGING):
         CHARGES_AND_SEVERITY_VIEW_BUILDER.build_and_print()
