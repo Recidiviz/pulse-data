@@ -152,7 +152,7 @@ def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     if declarative_base not in DECLARATIVE_BASES:
         raise ValueError(f"Unexpected declarative base: {declarative_base}.")
 
-    SQLAlchemyEngineManager.init_engine_for_db_instance(
+    SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         db_url=f'postgresql://{TEST_POSTGRES_USER_NAME}:@localhost:5432/{TEST_POSTGRES_DB_NAME}',
         schema_base=declarative_base)
 
