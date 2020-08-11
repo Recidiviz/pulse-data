@@ -52,11 +52,28 @@ class SQLAlchemyEngineManager:
     }
 
     @classmethod
+    def init_engine_for_postgres_instance(
+            cls,
+            db_url: str,
+            schema_base: DeclarativeMeta)  -> None:
+        """Initializes a sqlalchemy Engine object for the given Postgres database / schema and caches it for future use.
+        """
+        cls.init_engine_for_db_instance(
+            db_url,
+            schema_base,
+            # Only reuse connections for up to 10 minutes to avoid failures due to stale connections. Cloud SQL will
+            # close connections that have been stale for 10 minutes.
+            # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
+            pool_recycle=600
+        )
+
+    @classmethod
     def init_engine_for_db_instance(
             cls,
             db_url: str,
             schema_base: DeclarativeMeta,
             **dialect_specific_kwargs) -> None:
+        """Initializes a sqlalchemy Engine object for the given database / schema and caches it for future use."""
 
         if schema_base in cls._engine_for_schema:
             raise ValueError(f'Already initialized schema [{schema_base.__name__}]')
@@ -74,7 +91,10 @@ class SQLAlchemyEngineManager:
         if schema_base is StateBase and environment.in_gae_staging():
             isolation_level = 'SERIALIZABLE'
 
-        engine = sqlalchemy.create_engine(db_url, isolation_level=isolation_level, **dialect_specific_kwargs)
+        engine = sqlalchemy.create_engine(
+            db_url,
+            isolation_level=isolation_level,
+            **dialect_specific_kwargs)
         schema_base.metadata.create_all(engine)
         cls._engine_for_schema[schema_base] = engine
 
@@ -96,17 +116,17 @@ class SQLAlchemyEngineManager:
             return
 
         # Initialize Jails database instance
-        cls.init_engine_for_db_instance(
+        cls.init_engine_for_postgres_instance(
             db_url=cls._get_jails_server_postgres_instance_url(),
             schema_base=JailsBase)
 
         # Initialize State database instance
-        cls.init_engine_for_db_instance(
+        cls.init_engine_for_postgres_instance(
             db_url=cls._get_state_server_postgres_instance_url(),
             schema_base=StateBase)
 
         # Initialize Operations database instance
-        cls.init_engine_for_db_instance(
+        cls.init_engine_for_postgres_instance(
             db_url=cls._get_operations_server_postgres_instance_url(),
             schema_base=OperationsBase)
 
