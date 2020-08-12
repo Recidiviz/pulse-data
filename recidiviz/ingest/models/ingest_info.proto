@@ -23,7 +23,10 @@ package recidiviz.ingest.models;
 // ```bash
 // pipenv install --dev
 // ```
-// and then re-generate the python files including type information:
+// See the README for instructions on installing protoc if you do not yet have
+// it installed.
+//
+// Re-generate the python files including type information:
 // ```bash
 // protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .
 // ```
