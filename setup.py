@@ -24,7 +24,9 @@ pipeline code touches.
 """
 import setuptools
 
-# Packages required by the pipeline
+# Packages required by the pipeline. Dataflow workers have a list of packages already installed. To see this list, and
+# which version of each package is installed, visit
+# https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies
 REQUIRED_PACKAGES = [
     'aenum',
     'apache-beam',
@@ -41,6 +43,8 @@ REQUIRED_PACKAGES = [
     'opencensus',
     'opencensus-correlation',
     'opencensus-ext-stackdriver',
+    # Must stay up-to-date with latest version
+    'protobuf==3.12.4',
     'SQLAlchemy'
 ]
 
