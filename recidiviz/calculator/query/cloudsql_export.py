@@ -26,7 +26,7 @@ import googleapiclient.errors
 # Importing only for typing.
 import sqlalchemy
 
-from recidiviz.calculator.query import export_config
+from recidiviz.persistence.database.export import export_config
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager, SchemaType

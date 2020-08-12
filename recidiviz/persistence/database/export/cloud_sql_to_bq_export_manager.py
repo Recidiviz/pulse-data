@@ -35,7 +35,8 @@ from flask import request
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
-from recidiviz.calculator.query import export_config, cloudsql_export, bq_load
+from recidiviz.calculator.query import cloudsql_export, bq_load
+from recidiviz.persistence.database.export import export_config
 from recidiviz.calculator.query.bq_export_cloud_task_manager import \
     BQExportCloudTaskManager
 from recidiviz.calculator.query.county import dataset_config as county_dataset_config

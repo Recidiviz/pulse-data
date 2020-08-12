@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for export_manager.py."""
+"""Tests for cloud_sql_to_bq_export_manager.py."""
 
 import collections
 from http import HTTPStatus
@@ -26,7 +26,7 @@ import flask
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
-from recidiviz.calculator.query import export_manager
+from recidiviz.persistence.database.export import cloud_sql_to_bq_export_manager
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
 
 
 class ExportManagerTestCounty(unittest.TestCase):
-    """Tests for export_manager.py."""
+    """Tests for cloud_sql_to_bq_export_manager.py."""
 
     def setUp(self):
         self.schema_type = SchemaType.JAILS
@@ -47,14 +47,15 @@ class ExportManagerTestCounty(unittest.TestCase):
         self.mock_table_query = 'SELECT NULL LIMIT 0'
 
         self.bq_load_patcher = mock.patch(
-            'recidiviz.calculator.query.export_manager.bq_load')
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.bq_load')
         self.mock_bq_load = self.bq_load_patcher.start()
 
-        self.client_patcher = mock.patch('recidiviz.calculator.query.export_manager.BigQueryClientImpl')
+        self.client_patcher = mock.patch(
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
         self.cloudsql_export_patcher = mock.patch(
-            'recidiviz.calculator.query.export_manager.cloudsql_export')
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.cloudsql_export')
         self.mock_cloudsql_export = self.cloudsql_export_patcher.start()
 
         Table = collections.namedtuple('Table', ['name'])
@@ -67,14 +68,14 @@ class ExportManagerTestCounty(unittest.TestCase):
             }
         }
         self.export_config_patcher = mock.patch(
-            'recidiviz.calculator.query.export_manager.export_config',
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_config',
             **export_config_values)
         self.mock_export_config = self.export_config_patcher.start()
 
         self.mock_app = flask.Flask(__name__)
         self.mock_app.config['TESTING'] = True
         self.mock_app.register_blueprint(
-            export_manager.export_manager_blueprint)
+            cloud_sql_to_bq_export_manager.export_manager_blueprint)
         self.mock_flask_client = self.mock_app.test_client()
 
 
@@ -90,7 +91,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         table = 'first_table'
         dataset = self.mock_client.dataset('random_dataset')
 
-        export_manager.export_table_then_load_table(self.mock_client, table, dataset, self.schema_type)
+        cloud_sql_to_bq_export_manager.export_table_then_load_table(self.mock_client, table, dataset, self.schema_type)
 
         self.mock_bq_load.start_table_load_and_wait.assert_called_with(
             self.mock_client, dataset, table, self.schema_type)
@@ -101,7 +102,7 @@ class ExportManagerTestCounty(unittest.TestCase):
         self.mock_cloudsql_export.export_table.return_value = False
 
         with self.assertLogs(level='ERROR'):
-            export_manager.export_table_then_load_table(
+            cloud_sql_to_bq_export_manager.export_table_then_load_table(
                 self.mock_client, 'random-table', self.mock_dataset, self.schema_type)
 
         self.mock_bq_load.assert_not_called()
@@ -133,17 +134,16 @@ class ExportManagerTestCounty(unittest.TestCase):
                 self.schema_type)
         ]
 
-        export_manager.export_all_then_load_all(self.mock_client, self.schema_type)
+        cloud_sql_to_bq_export_manager.export_all_then_load_all(self.mock_client, self.schema_type)
 
         mock_parent.assert_has_calls(export_all_then_load_all_calls)
 
-
     def test_export_all_then_load_all_fails_invalid_module(self):
         with self.assertLogs(level='ERROR'):
-            export_manager.export_all_then_load_all(self.mock_client, 'nonsense')
+            cloud_sql_to_bq_export_manager.export_all_then_load_all(self.mock_client, 'nonsense')
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_county(self, mock_export, mock_project_id):
         """Tests that the export is called for a given table and module when
         the /export_manager/export endpoint is hit for a table in the COUNTY
@@ -171,7 +171,7 @@ class ExportManagerTestCounty(unittest.TestCase):
                                        SchemaType.JAILS)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_state(self, mock_export, mock_project_id):
         """Tests that the export is called for a given table and module when
         the /export_manager/export endpoint is hit for a table in the STATE
@@ -200,7 +200,7 @@ class ExportManagerTestCounty(unittest.TestCase):
                                        SchemaType.STATE)
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.query.export_manager.export_table_then_load_table')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_table_then_load_table')
     def test_handle_bq_export_task_invalid_module(self, mock_export,
                                                   mock_project_id):
         """Tests that there is an error when the /export_manager/export
@@ -223,9 +223,8 @@ class ExportManagerTestCounty(unittest.TestCase):
         mock_export.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.query.export_manager.pubsub_helper')
-    @mock.patch(
-        'recidiviz.calculator.query.export_manager.BQExportCloudTaskManager')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.pubsub_helper')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.BQExportCloudTaskManager')
     def test_handle_bq_monitor_task_requeue(self,
                                             mock_task_manager,
                                             mock_pubsub_helper,
@@ -259,9 +258,8 @@ class ExportManagerTestCounty(unittest.TestCase):
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id')
-    @mock.patch('recidiviz.calculator.query.export_manager.pubsub_helper')
-    @mock.patch(
-        'recidiviz.calculator.query.export_manager.BQExportCloudTaskManager')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.pubsub_helper')
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.BQExportCloudTaskManager')
     def test_handle_bq_monitor_task_publish(self, mock_task_manager,
                                             mock_pubsub_helper,
                                             mock_project_id):

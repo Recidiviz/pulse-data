@@ -51,10 +51,16 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def create_dataset_if_necessary(self, dataset_ref: bigquery.DatasetReference) -> None:
         raise ValueError('Must be implemented for use in tests.')
 
+    def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        raise ValueError('Must be implemented for use in tests.')
+
     def table_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bool:
         raise ValueError('Must be implemented for use in tests.')
 
     def get_table(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bigquery.Table:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def get_table_if_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> Optional[bigquery.Table]:
         raise ValueError('Must be implemented for use in tests.')
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
