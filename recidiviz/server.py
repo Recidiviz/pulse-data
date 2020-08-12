@@ -32,7 +32,6 @@ from opencensus.trace.propagation import google_cloud_format
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
 from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
-from recidiviz.calculator.query.export_manager import export_manager_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
 from recidiviz.cloud_functions.covid.covid_ingest_endpoint import covid_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import scrape_aggregate_reports_blueprint
@@ -44,6 +43,7 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
+from recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager import export_manager_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.utils import (environment, metadata, monitoring, structured_logging)
 from recidiviz.validation.validation_manager import validation_manager_blueprint

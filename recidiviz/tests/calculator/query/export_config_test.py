@@ -23,7 +23,7 @@ from unittest import mock
 
 import sqlalchemy
 
-from recidiviz.calculator.query import export_config
+from recidiviz.persistence.database.export import export_config
 from recidiviz.calculator.query.county import dataset_config
 
 
@@ -37,7 +37,7 @@ class ExportConfigTest(unittest.TestCase):
             'project_id.return_value': self.mock_project_id,
         }
         self.metadata_patcher = mock.patch(
-            'recidiviz.calculator.query.export_config.metadata',
+            'recidiviz.persistence.database.export.export_config.metadata',
             **metadata_values)
         self.metadata_patcher.start()
 
