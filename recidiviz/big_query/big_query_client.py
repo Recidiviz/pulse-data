@@ -96,6 +96,16 @@ class BigQueryClient:
         """Create a BigQuery dataset if it does not exist."""
 
     @abc.abstractmethod
+    def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        """Check whether or not a BigQuery Dataset exists.
+        Args:
+            dataset_ref: The BigQuery dataset to look for
+
+        Returns:
+            True if the dataset exists, False otherwise.
+        """
+
+    @abc.abstractmethod
     def table_exists(
             self,
             dataset_ref: bigquery.DatasetReference,
@@ -438,6 +448,14 @@ class BigQueryClientImpl(BigQueryClient):
             return self.client.create_dataset(dataset)
 
         return dataset
+
+    def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        try:
+            self.client.get_dataset(dataset_ref)
+            return True
+        except exceptions.NotFound:
+            logging.warning("Dataset [%s] does not exist", str(dataset_ref))
+            return False
 
     def table_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bool:
         table_ref = dataset_ref.table(table_id)

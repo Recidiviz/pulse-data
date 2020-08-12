@@ -17,7 +17,7 @@
 """Export configuration.
 
 By default, lists all tables in the various schema.py files to be exported by
-export_manager.py for both COUNTY and STATE modules.
+cloud_sql_to_bq_export_manager.py for both COUNTY and STATE modules.
 
 To exclude tables from export, add them to *_TABLES_TO_EXCLUDE_FROM_EXPORT.
 
