@@ -29,7 +29,7 @@ from google.cloud import exceptions
 import sqlalchemy
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.calculator.query import export_config
+from recidiviz.persistence.database.export import export_config
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
