@@ -21,9 +21,7 @@ from datetime import date
 from typing import Any, Dict, Optional, cast, List
 from enum import Enum
 
-import apache_beam as beam
 import attr
-from apache_beam.typehints import with_input_types, with_output_types
 from google.cloud import bigquery
 
 from recidiviz.common.attr_mixins import BuildableAttr
@@ -176,34 +174,3 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v
 
     return serializable_dict
-
-
-@with_input_types(RecidivizMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class RecidivizMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to BigQuery."""
-
-    def process(self, element, *args, **kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
-        formats as required by BigQuery I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A RecidivizMetric
-
-        Yields:
-            A dictionary representation of the RecidivizMetric in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, RecidivizMetric):
-            yield beam.pvalue.TaggedOutput(element.metric_type.value, element_dict)
-        else:
-            raise ValueError("Attempting to convert an object that is not a RecidivizMetric into a writable dict"
-                             "for BigQuery.")
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.

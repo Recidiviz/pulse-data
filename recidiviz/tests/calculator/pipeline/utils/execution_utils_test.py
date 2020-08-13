@@ -106,7 +106,7 @@ class TestGetJobID(unittest.TestCase):
     def test_get_job_id_no_job_name_provided(self):
         """Tests getting the job_id when there is no job_name provided."""
 
-        args = ['--runner', 'DataflowRunner', '--project', 'xxx']
+        args = ['--runner', 'DataflowRunner', '--project', 'xxx', '--region', 'uswest1']
 
         pipeline_options = PipelineOptions(args).get_all_options()
 

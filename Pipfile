@@ -12,7 +12,7 @@ pylint = "*"
 pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
-apache-beam = {extras = ["gcp", "test"],version = "==2.13.0"}
+apache-beam = {extras = ["gcp", "test"],version = "*"}
 freezegun = "*"
 ipdb = "*"
 nose = "*"
