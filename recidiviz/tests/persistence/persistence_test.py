@@ -16,12 +16,18 @@
 # =============================================================================
 """Tests for persistence.py."""
 
+from copy import deepcopy
 from datetime import date, datetime, timedelta
+import logging
+import threading
+from typing import Callable, Optional
 from unittest import TestCase
+
 
 import attr
 from mock import call, create_autospec, patch, Mock
 import mock
+from opencensus.stats.measurement_map import MeasurementMap
 import psycopg2
 from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 import pytest
@@ -32,19 +38,23 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, Charge, \
+from recidiviz.common.constants.state.external_id_types import US_MO_DOC, US_ND_ELITE
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo as IngestInfoProto, Charge, \
     Sentence
+from recidiviz.ingest.models.ingest_info import (IngestInfo, StateAlias, StatePerson,
+                                                 StatePersonExternalId, StatePersonRace, StateSentenceGroup)
+from recidiviz.ingest.scrape.ingest_utils import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
-from recidiviz.persistence.database.schema.county import schema, \
-    dao as county_dao
+from recidiviz.persistence.database.base_schema import JailsBase, StateBase
+from recidiviz.persistence.database.schema.county import schema as county_schema, dao as county_dao
+from recidiviz.persistence.database.schema.state import schema as state_schema, dao as state_dao
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.tests.utils import fakes
 
@@ -106,7 +116,7 @@ class TestPersistence(TestCase):
     def test_localRun(self):
         with patch('os.getenv', Mock(return_value='Local')):
             # Arrange
-            ingest_info = IngestInfo()
+            ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
@@ -121,7 +131,7 @@ class TestPersistence(TestCase):
         # Arrange
         with patch('os.getenv', Mock(return_value='local')) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
-            ingest_info = IngestInfo()
+            ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
@@ -137,7 +147,7 @@ class TestPersistence(TestCase):
     @patch.object(sqlalchemy.orm.Session, 'commit')
     def test_retryableError_retries(self, mock_commit, mock_close):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1)
 
         inner_error = create_autospec(psycopg2.OperationalError)
@@ -158,7 +168,7 @@ class TestPersistence(TestCase):
     @patch.object(sqlalchemy.orm.Session, 'commit')
     def test_retryableError_exceedsMaxRetries(self, mock_commit, mock_close):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1)
 
         inner_error = create_autospec(psycopg2.OperationalError)
@@ -180,7 +190,7 @@ class TestPersistence(TestCase):
     @patch.object(sqlalchemy.orm.Session, 'commit')
     def test_nonRetryableError_failsImmediately(self, mock_commit, mock_close):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1)
 
         inner_error = create_autospec(psycopg2.OperationalError)
@@ -199,7 +209,7 @@ class TestPersistence(TestCase):
 
     def test_twoDifferentPeople_persistsBoth(self):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(person_id='1_GENERATE', full_name=FULL_NAME_1)
         ingest_info.people.add(person_id='2_GENERATE', full_name=FULL_NAME_2)
 
@@ -216,7 +226,7 @@ class TestPersistence(TestCase):
 
     def test_twoDifferentPeople_persistsNone(self):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(person_id='1', full_name=FULL_NAME_1)
         ingest_info.people.add(person_id='2', full_name=FULL_NAME_2, gender='X')
 
@@ -230,7 +240,7 @@ class TestPersistence(TestCase):
 
     def test_twoDifferentPeopleWithBooking_persistsNone(self):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_2)
         ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
@@ -250,7 +260,7 @@ class TestPersistence(TestCase):
 
     def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(person_id='1_GENERATE', full_name=FULL_NAME_2)
         ingest_info.people.add(person_id='2_GENERATE', full_name=FULL_NAME_3)
         ingest_info.people.add(person_id=EXTERNAL_PERSON_ID,
@@ -275,7 +285,7 @@ class TestPersistence(TestCase):
 
     def test_readSinglePersonByName(self):
         # Arrange
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(
             person_id='1_GENERATE', full_name=FULL_NAME_1,
             birthdate=BIRTHDATE_1)
@@ -302,7 +312,7 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=SCRAPER_START_DATETIME)
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(
             full_name=FULL_NAME_1,
             booking_ids=['BOOKING_ID']
@@ -394,14 +404,14 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time)
 
-        schema_booking = schema.Booking(
+        schema_booking = county_schema.Booking(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
             custody_status=CustodyStatus.IN_CUSTODY.value,
             last_seen_time=SCRAPER_START_DATETIME,
             first_seen_time=SCRAPER_START_DATETIME)
-        schema_person = schema.Person(
+        schema_person = county_schema.Person(
             person_id=PERSON_ID,
             jurisdiction_id=JURISDICTION_ID,
             external_id=EXTERNAL_PERSON_ID,
@@ -412,7 +422,7 @@ class TestPersistence(TestCase):
         session.add(schema_person)
         session.commit()
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
                                booking_ids=[EXTERNAL_BOOKING_ID])
@@ -451,13 +461,13 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time)
 
-        schema_charge = schema.Charge(
+        schema_charge = county_schema.Charge(
             charge_id=ID, external_id=EXTERNAL_ID + '_COUNT_1',
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
-        schema_charge_another = schema.Charge(
+        schema_charge_another = county_schema.Charge(
             charge_id=ID_2, external_id=EXTERNAL_ID + '_COUNT_2',
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
-        schema_booking = schema.Booking(
+        schema_booking = county_schema.Booking(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
@@ -465,7 +475,7 @@ class TestPersistence(TestCase):
             last_seen_time=SCRAPER_START_DATETIME,
             first_seen_time=SCRAPER_START_DATETIME,
             charges=[schema_charge, schema_charge_another])
-        schema_person = schema.Person(
+        schema_person = county_schema.Person(
             person_id=PERSON_ID,
             jurisdiction_id=JURISDICTION_ID,
             external_id=EXTERNAL_PERSON_ID,
@@ -476,7 +486,7 @@ class TestPersistence(TestCase):
         session.add(schema_person)
         session.commit()
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
                                booking_ids=[EXTERNAL_BOOKING_ID])
@@ -529,7 +539,7 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time)
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
 
         # Act
         persistence.write(ingest_info, metadata)
@@ -627,9 +637,9 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time)
 
-        schema_arrest = schema.Arrest(external_id=ARREST_ID,
-                                      officer_name=OFFICER_NAME)
-        schema_booking = schema.Booking(
+        schema_arrest = county_schema.Arrest(external_id=ARREST_ID,
+                                             officer_name=OFFICER_NAME)
+        schema_booking = county_schema.Booking(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
@@ -637,7 +647,7 @@ class TestPersistence(TestCase):
             arrest=schema_arrest,
             last_seen_time=SCRAPER_START_DATETIME,
             first_seen_time=SCRAPER_START_DATETIME)
-        schema_person = schema.Person(
+        schema_person = county_schema.Person(
             person_id=PERSON_ID,
             jurisdiction_id=JURISDICTION_ID,
             external_id=EXTERNAL_PERSON_ID,
@@ -648,7 +658,7 @@ class TestPersistence(TestCase):
         session.add(schema_person)
         session.commit()
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
                                booking_ids=[EXTERNAL_BOOKING_ID])
@@ -699,9 +709,9 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             ingest_time=most_recent_scrape_time)
 
-        schema_arrest = schema.Arrest(external_id=ARREST_ID,
-                                      officer_name=OFFICER_NAME)
-        schema_booking = schema.Booking(
+        schema_arrest = county_schema.Arrest(external_id=ARREST_ID,
+                                             officer_name=OFFICER_NAME)
+        schema_booking = county_schema.Booking(
             booking_id=BOOKING_ID,
             external_id=EXTERNAL_BOOKING_ID,
             admission_date_inferred=True,
@@ -709,7 +719,7 @@ class TestPersistence(TestCase):
             arrest=schema_arrest,
             last_seen_time=SCRAPER_START_DATETIME,
             first_seen_time=SCRAPER_START_DATETIME)
-        schema_person = schema.Person(
+        schema_person = county_schema.Person(
             person_id=PERSON_ID,
             jurisdiction_id=JURISDICTION_ID,
             external_id=EXTERNAL_PERSON_ID,
@@ -720,7 +730,7 @@ class TestPersistence(TestCase):
         session.add(schema_person)
         session.commit()
 
-        ingest_info = IngestInfo()
+        ingest_info = IngestInfoProto()
         ingest_info.people.add(full_name=FULL_NAME_1,
                                person_id=EXTERNAL_PERSON_ID,
                                booking_ids=[EXTERNAL_BOOKING_ID])
@@ -760,3 +770,347 @@ class TestPersistence(TestCase):
 
 def _format_full_name(full_name: str) -> str:
     return '{{"full_name": "{}"}}'.format(full_name)
+
+PERSON_STATE_1_BASE_INGEST_INFO = StatePerson(
+    state_person_id='39768', surname='HOPKINS', given_names='JON', birthdate='8/15/1979', gender='M',
+    state_person_external_ids=[StatePersonExternalId(state_person_external_id_id='39768', id_type=US_ND_ELITE)],
+    state_person_races=[StatePersonRace(race='CAUCASIAN')],
+    state_aliases=[StateAlias(surname='HOPKINS', given_names='JON', alias_type='GIVEN_NAME')],
+    state_sentence_groups=[StateSentenceGroup(state_sentence_group_id='123', status='SERVING')],
+)
+PERSON_STATE_2_BASE_INGEST_INFO = StatePerson(
+    state_person_id='52163', surname='KNOWLES', given_names='SOLANGE', birthdate='6/24/1986', gender='F',
+    state_person_external_ids=[StatePersonExternalId(state_person_external_id_id='52163', id_type=US_MO_DOC)],
+    state_person_races=[StatePersonRace(race='BLACK')],
+    state_aliases=[StateAlias(surname='KNOWLES', given_names='SOLANGE', alias_type='GIVEN_NAME')],
+    state_sentence_groups=[StateSentenceGroup(state_sentence_group_id='123', status='SERVING')],
+)
+INGEST_METADATA_STATE_1_INSERT = IngestMetadata.new_with_defaults(
+    region='US_ND', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE, system_level=SystemLevel.STATE)
+INGEST_METADATA_STATE_1_UPDATE = IngestMetadata.new_with_defaults(
+    region='US_ND', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE_2, system_level=SystemLevel.STATE)
+INGEST_METADATA_STATE_2_INSERT = IngestMetadata.new_with_defaults(
+    region='US_MO', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE, system_level=SystemLevel.STATE)
+INGEST_METADATA_STATE_2_UPDATE = IngestMetadata.new_with_defaults(
+    region='US_MO', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE_2, system_level=SystemLevel.STATE)
+
+@patch('os.getenv', Mock(return_value='production'))
+class TestPersistenceMultipleThreadsReadCommitted(TestCase):
+    """Test that the persistence layer writes to Postgres from multiple threads."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
+
+        self.isolation_level_patcher = patch(
+            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
+            # TODO(3622): Set to 'SERIALIZABLE'
+            return_value='READ_COMMITTED')
+        self.isolation_level_patcher.start()
+        fakes.use_on_disk_postgresql_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_on_disk_postgresql_database(StateBase)
+        self.isolation_level_patcher.stop()
+
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
+
+    def test_insertRootEntities_succeeds(self):
+        # Arrange
+        # Write initial placeholder person to database
+        placeholder_person = state_schema.StatePerson(person_id=0, state_code='US_ND')
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(placeholder_person)
+        session.commit()
+
+        # Act
+        _run_writes_in_parallel(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)]),
+                                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)]))
+
+        # Assert
+        result = state_dao.read_people(
+            SessionFactory.for_schema_base(StateBase))
+
+        assert len(result) == 3
+        assert result[0].full_name is None
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+
+    def test_insertOverlappingTypes_succeeds(self):
+        # Arrange
+        # Write initial placeholder person to database
+        session = SessionFactory.for_schema_base(StateBase)
+        placeholder_person = state_schema.StatePerson(person_id=0, state_code='US_ND')
+        session.add(placeholder_person)
+        session.commit()
+
+        # Write persons to be updated
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_1_INSERT)
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_2_INSERT)
+
+        # Act
+        # Add risk assessment to both persons
+        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
+        person_state_1.create_state_assessment(assessment_class='RISK')
+
+        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
+        person_state_2.create_state_assessment(assessment_class='RISK')
+
+        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+
+        # Assert
+        result = state_dao.read_people(
+            SessionFactory.for_schema_base(StateBase))
+
+        assert len(result) == 3
+        assert result[0].full_name is None
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        assert len(result[1].assessments) == 1
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[2].assessments) == 1
+
+@patch('os.getenv', Mock(return_value='production'))
+class TestPersistenceMultipleThreadsSerializable(TestCase):
+    """Test that the persistence layer writes to Postgres from multiple threads."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
+
+        self.isolation_level_patcher = patch(
+            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
+            return_value='SERIALIZABLE')
+        self.isolation_level_patcher.start()
+        fakes.use_on_disk_postgresql_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_on_disk_postgresql_database(StateBase)
+        self.isolation_level_patcher.stop()
+
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
+
+    def test_insertNonOverlappingTypes_succeeds(self):
+        # Arrange
+        # Write initial placeholder person to database
+        session = SessionFactory.for_schema_base(StateBase)
+        placeholder_person = state_schema.StatePerson(person_id=0, state_code='US_ND')
+        session.add(placeholder_person)
+        session.commit()
+
+        # Write persons to be updated
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_1_INSERT)
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_2_INSERT)
+
+        # Act
+        # Add risk assessment to person 1 and program assignment to person 2
+        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
+        person_state_1.create_state_assessment(assessment_class='RISK')
+
+        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
+        person_state_2.create_state_program_assignment(program_id='1234')
+
+        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+
+        # Assert
+        result = state_dao.read_people(
+            SessionFactory.for_schema_base(StateBase))
+
+        assert len(result) == 3
+        assert result[0].full_name is None
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        assert len(result[1].assessments) == 1
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[2].program_assignments) == 1
+
+    def test_updateOverlappingTypes_succeeds(self):
+        # Arrange
+        # Write initial placeholder person to database
+        session = SessionFactory.for_schema_base(StateBase)
+        placeholder_person = state_schema.StatePerson(person_id=0, state_code='US_ND')
+        session.add(placeholder_person)
+        session.commit()
+
+        # Write persons to be updated
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_1_INSERT)
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_2_INSERT)
+
+        # Act
+        # Update existing sentence on both persons
+        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
+        person_state_1.state_sentence_groups[0].status = 'COMPLETED'
+
+        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
+        person_state_2.state_sentence_groups[0].status = 'COMPLETED'
+
+        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+
+        # Assert
+        result = state_dao.read_people(
+            SessionFactory.for_schema_base(StateBase))
+
+        assert len(result) == 3
+        assert result[0].full_name is None
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        assert len(result[1].sentence_groups) == 1
+        assert result[1].sentence_groups[0].status == 'COMPLETED'
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[2].sentence_groups) == 1
+        assert result[2].sentence_groups[0].status == 'COMPLETED'
+
+    def test_updateNonOverlappingTypes_succeeds(self):
+        # Arrange
+        # Write initial placeholder person to database
+        session = SessionFactory.for_schema_base(StateBase)
+        placeholder_person = state_schema.StatePerson(person_id=0, state_code='US_ND')
+        session.add(placeholder_person)
+        session.commit()
+
+        # Write persons to be updated
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_1_INSERT)
+        persistence.write(
+            convert_ingest_info_to_proto(IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])),
+            INGEST_METADATA_STATE_2_INSERT)
+
+        # Act
+        # Update race on person 1 and sentence on person 2
+        person_state_1 = deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)
+        person_state_1.state_person_races[0].race = 'WHITE'
+
+        person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
+        person_state_2.state_sentence_groups[0].status = 'COMPLETED'
+
+        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+
+        # Assert
+        result = state_dao.read_people(
+            SessionFactory.for_schema_base(StateBase))
+
+        assert len(result) == 3
+        assert result[0].full_name is None
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        assert len(result[1].races) == 1
+        assert result[1].races[0].race == 'WHITE'
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[2].sentence_groups) == 1
+        assert result[2].sentence_groups[0].status == 'COMPLETED'
+
+
+def _get_run_transaction_block_commit_fn(precommit_event: threading.Event, other_committed_event: threading.Event):
+    def run_transaction_block_commit(session: Session, _m: MeasurementMap, txn_body: Callable[[Session], bool],
+                                     _r: Optional[int]) -> bool:
+        try:
+            logging.info('Starting Transaction 1')
+            # Run our transaction but don't commit.
+            _should_continue = txn_body(session)
+        finally:
+            # Notify the other transaction to run
+            logging.info('Notifying Transaction 2')
+            precommit_event.set()
+
+        try:
+            # Wait for it to finish completely, then commit.
+            other_committed_event.wait()
+            logging.info('Committing Transaction 1')
+            session.commit()
+            logging.info('Successfully Committed Transaction 1')
+        finally:
+            session.close()
+
+        return True
+
+    return run_transaction_block_commit
+
+def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, committed_event: threading.Event):
+    def run_transaction_after_other(session: Session, _m: MeasurementMap, txn_body: Callable[[Session], bool],
+                                    _r: Optional[int]) -> bool:
+        try:
+            # Wait for the other transaction to have run but not committed before we start.
+            other_precommit_event.wait()
+
+            # Run all the way through.
+            logging.info('Starting Transaction 2')
+            _should_continue = txn_body(session)
+            logging.info('Committing Transaction 2')
+            session.commit()
+            logging.info('Successfully Committed Transaction 2')
+        finally:
+            # Notify the other transaction to continue.
+            logging.info('Notifying Transaction 1')
+            committed_event.set()
+
+            session.close()
+
+        return True
+
+    return run_transaction_after_other
+
+def _run_writes_in_parallel(state_1_ingest_info, state_2_ingest_info):
+    # This coordinates two transactions [T1, T2] such that they overlap:
+    # - Starts T1 and ensures it has read from the database
+    # - Starts T2
+    # - Commits T2
+    # - Commits T1
+
+    def transaction1(precommit_event: threading.Event, other_committed_event: threading.Event):
+        persistence.write(
+            convert_ingest_info_to_proto(state_1_ingest_info), INGEST_METADATA_STATE_1_UPDATE,
+            run_txn_fn=_get_run_transaction_block_commit_fn(precommit_event, other_committed_event))
+
+    def transaction2(other_precommit_event, committed_event):
+        persistence.write(
+            convert_ingest_info_to_proto(state_2_ingest_info), INGEST_METADATA_STATE_2_UPDATE,
+            run_txn_fn=_get_run_transaction_after_other_fn(other_precommit_event, committed_event))
+
+    transaction1_precommit = threading.Event()
+    transaction2_committed = threading.Event()
+
+    thread1 = threading.Thread(target=transaction1, args=(transaction1_precommit, transaction2_committed))
+    thread2 = threading.Thread(target=transaction2, args=(transaction1_precommit, transaction2_committed))
+
+    thread1.start()
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
