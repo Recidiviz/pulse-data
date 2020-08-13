@@ -91,7 +91,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
           {facility_dimension}
           LEFT JOIN
             `{project_id}.{base_dataset}.state_person` 
-            USING (person_id))
+            USING (state_code, person_id))
         GROUP BY state_code, facility, date_of_stay) 
     LEFT JOIN
       `{project_id}.{reference_dataset}.state_incarceration_facility_capacity`
