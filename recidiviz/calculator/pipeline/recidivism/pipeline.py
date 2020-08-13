@@ -41,13 +41,12 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
@@ -72,8 +71,7 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[ReleaseEvent]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[ReleaseEvent]]])
 @with_output_types(ReincarcerationRecidivismMetric)
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
@@ -192,13 +190,7 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str}
-                  )
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
 @with_output_types(ReincarcerationRecidivismMetric)
 class ProduceReincarcerationRecidivismMetric(beam.DoFn):
     """Produces ReincarcerationRecidivismMetrics."""

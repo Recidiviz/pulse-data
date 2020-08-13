@@ -20,7 +20,7 @@ run.
 import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional
+from typing import Dict, Any, List, Tuple, Set, Optional, Sequence
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -33,11 +33,10 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramReferralMetric, ProgramParticipationMetric
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -141,7 +140,7 @@ class ClassifyProgramAssignments(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[ProgramEvent]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, Sequence[ProgramEvent]],
                   beam.typehints.Optional[str],
                   beam.typehints.Optional[int],
                   beam.typehints.Dict[ProgramMetricType, bool])
@@ -183,13 +182,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str}
-                  )
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
 @with_output_types(ProgramMetric)
 class ProduceProgramMetrics(beam.DoFn):
     """Produces ProgramMetrics."""
