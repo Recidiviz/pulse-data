@@ -35,7 +35,7 @@ from mock import patch
 from recidiviz.calculator.pipeline.incarceration import pipeline, calculator
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationAdmissionEvent, IncarcerationReleaseEvent, \
-    IncarcerationStayEvent
+    IncarcerationStayEvent, IncarcerationEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationMetricType, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
     IncarcerationReleaseMetric
