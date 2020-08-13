@@ -49,8 +49,7 @@ from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus, StateSupervisionLevel
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseType, \
     StateSupervisionViolationResponseDecision, \

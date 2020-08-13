@@ -1,0 +1,6 @@
+parole_number,parole_count_id,set_id,violation_date,violation_types
+456B,1,1,2014-01-01,"[{""sequence_id"":""10"",""violation_code"":""H10""},{""sequence_id"":""4"",""violation_code"":""L03""},{""sequence_id"":""5"",""violation_code"":""L05""},{""sequence_id"":""6"",""violation_code"":""M01""},{""sequence_id"":""7"",""violation_code"":""M02""},{""sequence_id"":""8"",""violation_code"":""H03""},{""sequence_id"":""9"",""violation_code"":""H07""}]"
+456B,2,1,2015-04-13,"[{""sequence_id"":""14"",""violation_code"":""H08""}]"
+789C,3,1,2006-08-11,"[{""sequence_id"":""3"",""violation_code"":""H12""},{""sequence_id"":""7"",""violation_code"":""H04""}]"
+345E,1,1,2018-03-17,"[{""sequence_id"":""3"",""violation_code"":""L08""}]"
+345E,1,2,2018-05-12,"[{""sequence_id"":""7"",""violation_code"":""M13""},{""sequence_id"":""8"",""violation_code"":""M14""}]"
