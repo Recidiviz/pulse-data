@@ -38,13 +38,12 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
     SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -189,12 +188,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str})
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
 @with_output_types(SupervisionMetric)
 class ProduceSupervisionMetrics(beam.DoFn):
     """Produces SupervisionMetrics ready for persistence."""

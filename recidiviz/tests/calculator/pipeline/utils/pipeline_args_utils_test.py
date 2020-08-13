@@ -115,6 +115,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             'temp_location': 'gs://recidiviz-123-my-bucket/temp/',
             'template_location': 'gs://recidiviz-123-my-bucket/templates/incarceration-args-test',
 
+            'region': 'us-central1',
             'machine_type': 'n1-standard-4',
             'network': 'default',
             'subnetwork':
@@ -124,7 +125,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             'setup_file': './setup2.py'
         }
 
-        self.assertEqual(pipeline_options.get_all_options(drop_default=True), expected_apache_beam_options_dict)
+        self.assertEqual(expected_apache_beam_options_dict, pipeline_options.get_all_options(drop_default=True))
 
     def test_incarceration_pipeline_specify_person_id_filters(self):
         # Arrange

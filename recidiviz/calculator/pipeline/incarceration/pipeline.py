@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from typing import Any, Dict, List, Tuple, Set, Optional
+from typing import Any, Dict, List, Tuple, Set, Optional, Sequence
 import datetime
 
 from apache_beam.pvalue import AsDict
@@ -39,7 +39,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationAdmissionMetric, \
     IncarcerationReleaseMetric, IncarcerationPopulationMetric, IncarcerationMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
@@ -54,7 +54,6 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricWritableDict
 
 # Cached job_id value
 _job_id = None
@@ -154,7 +153,7 @@ class ClassifyIncarcerationEvents(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[IncarcerationEvent]]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, Sequence[IncarcerationEvent]],
                   beam.typehints.Optional[str],
                   beam.typehints.Optional[int],
                   beam.typehints.Dict[IncarcerationMetricType, bool])
@@ -195,13 +194,7 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any],
-                  **{'runner': str,
-                     'project': str,
-                     'job_name': str,
-                     'region': str,
-                     'job_timestamp': str}
-                  )
+@with_input_types(beam.typehints.Tuple[Dict[str, Any], Any])
 @with_output_types(IncarcerationMetric)
 class ProduceIncarcerationMetric(beam.DoFn):
     """Produces IncarcerationMetrics."""

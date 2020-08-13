@@ -42,9 +42,9 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, RecidivizMetricWritableDict
+    MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.recidivism.pipeline import ClassifyReleaseEvents
 from recidiviz.calculator.pipeline.recidivism.release_event import \
