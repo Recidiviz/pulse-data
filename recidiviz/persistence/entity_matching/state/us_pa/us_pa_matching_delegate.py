@@ -25,6 +25,8 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import BaseStateMatchingDelegate
+from recidiviz.persistence.entity_matching.state.state_date_based_matching_utils import \
+    move_violations_onto_supervision_periods_for_person
 from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
     move_incidents_onto_periods
 from recidiviz.persistence.entity_matching.state.state_matching_utils import read_persons_by_root_entity_cls, \
@@ -70,3 +72,6 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
         """
         logging.info("[Entity matching] Move incidents into periods")
         move_incidents_onto_periods(matched_persons)
+
+        logging.info('[Entity matching] Move supervision violations onto supervision periods by date.')
+        move_violations_onto_supervision_periods_for_person(matched_persons, self.get_region_code())

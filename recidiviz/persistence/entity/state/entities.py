@@ -84,8 +84,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionLevel, StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import \
     StateSupervisionViolationResponseDecision, \
