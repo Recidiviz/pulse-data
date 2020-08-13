@@ -17,8 +17,7 @@
 """Converts an ingest_info proto StateSupervisionViolationTypeEntry to a
 persistence entity."""
 
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import \

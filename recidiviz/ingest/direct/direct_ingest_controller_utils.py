@@ -30,6 +30,8 @@ EnumType = TypeVar('EnumType', bound=EntityEnum)
 
 
 def invert_enum_to_str_mappings(overrides: Dict[EnumType, List[str]]) -> Dict[str, EnumType]:
+    """Inverts a given dictionary, that maps a target enum from a list of parseable strings, into another dictionary,
+    that maps each parseable string to its target enum."""
     inverted_overrides: Dict[str, EnumType] = {}
     for mapped_enum, text_tokens in overrides.items():
         for text_token in text_tokens:
@@ -37,6 +39,19 @@ def invert_enum_to_str_mappings(overrides: Dict[EnumType, List[str]]) -> Dict[st
                 raise ValueError(f'Unexpected, text_token [{text_token}] is used for both '
                                  f'[{mapped_enum}] and [{inverted_overrides[text_token]}]')
             inverted_overrides[text_token] = mapped_enum
+
+    return inverted_overrides
+
+
+def invert_str_to_str_mappings(overrides: Dict[str, List[str]]) -> Dict[str, str]:
+    """The same as invert_enum_to_str_mappings, but for raw target strings instead of typed enums."""
+    inverted_overrides: Dict[str, str] = {}
+    for mapped_str, text_tokens in overrides.items():
+        for text_token in text_tokens:
+            if text_token in inverted_overrides:
+                raise ValueError(f'Unexpected, text_token [{text_token}] is used for both '
+                                 f'[{mapped_str}] and [{inverted_overrides[text_token]}]')
+            inverted_overrides[text_token] = mapped_str
 
     return inverted_overrides
 

@@ -39,12 +39,14 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
     StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionLevel
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
     StateCourtCase, StateAgent, StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod
+    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StateSupervisionViolation, \
+    StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -1149,6 +1151,190 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'supervision_period')
 
+    def test_populate_data_supervision_violation(self):
+        violation_456B_1_1 = StateSupervisionViolation(
+            state_supervision_violation_id='456B-1-1', violation_date='2014-01-01',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-10',
+                    violation_type='H10',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-4',
+                    violation_type='L03',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-5',
+                    violation_type='L05',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-6',
+                    violation_type='M01',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-7',
+                    violation_type='M02',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-8',
+                    violation_type='H03',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-1-1-9',
+                    violation_type='H07',
+                ),
+            ],
+            state_supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry(
+                    condition='5',
+                ),
+                StateSupervisionViolatedConditionEntry(
+                    condition='7',
+                ),
+                StateSupervisionViolatedConditionEntry(
+                    condition='3',
+                ),
+            ]
+        )
+
+        violation_456B_2_1 = StateSupervisionViolation(
+            state_supervision_violation_id='456B-2-1', violation_date='2015-04-13',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='456B-2-1-14',
+                    violation_type='H08',
+                ),
+            ],
+            state_supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry(
+                    condition='5',
+                ),
+            ]
+        )
+
+        violation_789C_3_1 = StateSupervisionViolation(
+            state_supervision_violation_id='789C-3-1', violation_date='2006-08-11',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='789C-3-1-3',
+                    violation_type='H12',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='789C-3-1-7',
+                    violation_type='H04',
+                ),
+            ],
+            state_supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry(
+                    condition='5',
+                ),
+                StateSupervisionViolatedConditionEntry(
+                    condition='7',
+                ),
+            ]
+        )
+
+        violation_345E_1_1 = StateSupervisionViolation(
+            state_supervision_violation_id='345E-1-1', violation_date='2018-03-17',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='345E-1-1-3',
+                    violation_type='L08',
+                ),
+            ],
+            state_supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry(
+                    condition='5',
+                ),
+            ]
+        )
+
+        violation_345E_1_2 = StateSupervisionViolation(
+            state_supervision_violation_id='345E-1-2', violation_date='2018-05-12',
+            state_supervision_violation_types=[
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='345E-1-2-7',
+                    violation_type='M13',
+                ),
+                StateSupervisionViolationTypeEntry(
+                    state_supervision_violation_type_entry_id='345E-1-2-8',
+                    violation_type='M14',
+                ),
+            ],
+            state_supervision_violated_conditions=[
+                StateSupervisionViolatedConditionEntry(
+                    condition='4',
+                ),
+                StateSupervisionViolatedConditionEntry(
+                    condition='7',
+                ),
+            ]
+        )
+
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='456B',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_456B_1_1,
+                                                        violation_456B_2_1,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+                StatePerson(state_person_id='789C',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='789C', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_789C_3_1,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+                StatePerson(state_person_id='345E',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_345E_1_1, violation_345E_1_2,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+            ])
+
+        self.run_parse_file_test(expected, 'supervision_violation')
+
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
         ######################################
@@ -1251,7 +1437,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ]
         )
 
-        expected_people = [person_1, person_2, person_3, person_4, person_5, person_6, person_7, person_8]
+        expected_people = [person_1, person_2, person_3, person_4, person_5, person_8, person_7, person_6]
 
         populate_person_backedges(expected_people)
 
@@ -2590,6 +2776,220 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('supervision_period.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # supervision_sentence
+        ######################################
+
+        # Arrange
+        p2_sv_1 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id='456B-1-1', state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(year=2014, month=1, day=1),
+            person=person_2, supervision_periods=[p2_sp_1_2],
+        )
+        p2_sv_1_te_10 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='H10',
+        )
+        p2_sv_1_te_4 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='L03',
+        )
+        p2_sv_1_te_5 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='L05',
+        )
+        p2_sv_1_te_6 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='M01',
+        )
+        p2_sv_1_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='M02',
+        )
+        p2_sv_1_te_8 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='H03',
+        )
+        p2_sv_1_te_9 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='H07',
+        )
+        p2_sv_1.supervision_violation_types.extend(
+            [p2_sv_1_te_10, p2_sv_1_te_4, p2_sv_1_te_5, p2_sv_1_te_6, p2_sv_1_te_7, p2_sv_1_te_8, p2_sv_1_te_9]
+        )
+
+        p2_sv_1_c_10 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1, condition='5',
+        )
+        p2_sv_1_c_5 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1, condition='7',
+        )
+        p2_sv_1_c_6 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_1, condition='3',
+        )
+        p2_sv_1.supervision_violated_conditions.extend(
+            [p2_sv_1_c_10, p2_sv_1_c_5, p2_sv_1_c_6]
+        )
+
+        p2_sv_2 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id='456B-2-1', state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(year=2015, month=4, day=13),
+            person=person_2, supervision_periods=[p2_sp_2_1],
+        )
+        p2_sv_2_te_14 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_2,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='H08',
+        )
+        p2_sv_2.supervision_violation_types.append(p2_sv_2_te_14)
+
+        p2_sv_2_c_14 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation=p2_sv_2, condition='5',
+        )
+        p2_sv_2.supervision_violated_conditions.append(p2_sv_2_c_14)
+
+        p2_sp_1_2.supervision_violation_entries.append(p2_sv_1)
+        p2_sp_2_1.supervision_violation_entries.append(p2_sv_2)
+
+        p2_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_2
+        )
+        person_2.sentence_groups.append(p2_sg_placeholder)
+
+        p2_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=p2_sg_placeholder,
+            person=person_2,
+        )
+        p2_sg_placeholder.supervision_sentences.append(p2_ss_placeholder)
+        p2_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[p2_ss_placeholder],
+            person=person_2
+        )
+        p2_ss_placeholder.supervision_periods.append(p2_sp_placeholder)
+
+        p5_sv_3 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id='789C-3-1', state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(year=2006, month=8, day=11),
+            person=person_5, supervision_periods=[p5_sp_3_1],
+        )
+        p5_sv_3_te_3 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation=p5_sv_3,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='H12',
+        )
+        p5_sv_3_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation=p5_sv_3,
+            violation_type=StateSupervisionViolationType.FELONY, violation_type_raw_text='H04',
+        )
+        p5_sv_3.supervision_violation_types.extend([p5_sv_3_te_3, p5_sv_3_te_7])
+
+        p5_sv_3_c_3 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation=p5_sv_3, condition='5',
+        )
+        p5_sv_3_c_7 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation=p5_sv_3, condition='7',
+        )
+        p5_sv_3.supervision_violated_conditions.extend([p5_sv_3_c_3, p5_sv_3_c_7])
+
+        p5_sp_3_1.supervision_violation_entries.append(p5_sv_3)
+
+        p5_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_5
+        )
+        person_5.sentence_groups.append(p5_sg_placeholder)
+
+        p5_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=p5_sg_placeholder,
+            person=person_5,
+        )
+        p5_sg_placeholder.supervision_sentences.append(p5_ss_placeholder)
+        p5_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[p5_ss_placeholder],
+            person=person_5
+        )
+        p5_ss_placeholder.supervision_periods.append(p5_sp_placeholder)
+
+        p4_sv_1 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id='345E-1-1', state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(year=2018, month=3, day=17),
+            person=person_4, supervision_periods=[p4_sp_1_1],
+        )
+        p4_sv_1_te_3 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_1,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='L08',
+        )
+        p4_sv_1.supervision_violation_types.append(p4_sv_1_te_3)
+
+        p4_sv_1_c_3 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_1, condition='5',
+        )
+        p4_sv_1.supervision_violated_conditions.append(p4_sv_1_c_3)
+
+        p4_sv_2 = entities.StateSupervisionViolation.new_with_defaults(
+            external_id='345E-1-2', state_code=_STATE_CODE_UPPER,
+            violation_date=datetime.date(year=2018, month=5, day=12),
+            person=person_4, supervision_periods=[p4_sp_1_1],
+        )
+        p4_sv_2_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2,
+            violation_type=StateSupervisionViolationType.MUNICIPAL, violation_type_raw_text='M13',
+        )
+        p4_sv_2_te_8 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2,
+            violation_type=StateSupervisionViolationType.TECHNICAL, violation_type_raw_text='M14',
+        )
+        p4_sv_2.supervision_violation_types.extend([p4_sv_2_te_7, p4_sv_2_te_8])
+
+        p4_sv_2_c_7 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2, condition='4',
+        )
+        p4_sv_2_c_8 = entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2, condition='7',
+        )
+        p4_sv_2.supervision_violated_conditions.extend([p4_sv_2_c_7, p4_sv_2_c_8])
+
+        p4_sp_1_1.supervision_violation_entries.extend([p4_sv_1, p4_sv_2])
+
+        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4
+        )
+        person_4.sentence_groups.append(p4_sg_placeholder)
+
+        p4_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=p4_sg_placeholder,
+            person=person_4,
+        )
+        p4_sg_placeholder.supervision_sentences.append(p4_ss_placeholder)
+        p4_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[p4_ss_placeholder],
+            person=person_4
+        )
+        p4_ss_placeholder.supervision_periods.append(p4_sp_placeholder)
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename('supervision_violation.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
