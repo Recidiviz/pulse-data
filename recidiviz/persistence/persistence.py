@@ -17,7 +17,7 @@
 """Contains logic for communicating with the persistence layer."""
 import datetime
 import logging
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 import psycopg2
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
@@ -208,7 +208,7 @@ def _should_abort(
 
 
 def retry_transaction(session: Session, measurements: MeasurementMap,
-                      txn_body: Callable[[Session], bool], max_retries: Optional[int]) -> bool:
+                      txn_body: Callable[[Session], bool], max_retries=None) -> bool:
     """Retries the transaction if a serialization failure occurs.
 
     Handles management of committing, rolling back, and closing the `session`. `txn_body` can return False to force the
@@ -248,19 +248,13 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
         session.close()
 
 
-def write(ingest_info: IngestInfo, metadata: IngestMetadata,
-          run_txn_fn: Callable[[Session, MeasurementMap, Callable[[Session], bool],
-                                Optional[int]], bool] = retry_transaction):
+def write(ingest_info, metadata):
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
     the ingest_info. If a person with the given surname/birthday already exists,
     then update that person.
 
     Otherwise, simply log the given ingest_infos for debugging
-
-    `run_txn_fn` is exposed primarily for testing and should typically be left as `retry_transaction`. `run_txn_fn`
-    must handle the coordination of the transaction including, when to run the body of the transaction and when to
-    commit, rollback, or close the session.
     """
     ingest_info_validator.validate(ingest_info)
 
@@ -329,9 +323,9 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
             return True
 
         try:
-            if not run_txn_fn(
+            if not retry_transaction(
                     SessionFactory.for_schema_base(schema_base_for_system_level(metadata.system_level)),
-                    measurements, match_and_write_people, 5):
+                    measurements, match_and_write_people, max_retries=5):
                 return False
 
             mtags[monitoring.TagKey.PERSISTED] = True
