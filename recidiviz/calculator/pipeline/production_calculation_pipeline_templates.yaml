@@ -67,7 +67,7 @@
   output: dataflow_metrics
   state_code: US_MO
   calculation_month_count: 36
-  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS SUPERVISION_TERMINATION
 
 # Daily US_MO calculations for automated data validation not covered by daily calculation runs
 - pipeline: incarceration
