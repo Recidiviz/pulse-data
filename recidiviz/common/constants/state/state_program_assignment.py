@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateProgramAssignment."""
+from enum import unique
 
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
@@ -23,6 +24,7 @@ from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateProgramAssignmentParticipationStatus(
         EntityEnum, metaclass=EntityEnumMeta):
     DENIED = state_enum_strings.\
@@ -53,6 +55,7 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
 }
 
 
+@unique
 class StateProgramAssignmentDischargeReason(
         EntityEnum, metaclass=EntityEnumMeta):
     ABSCONDED = state_enum_strings.\

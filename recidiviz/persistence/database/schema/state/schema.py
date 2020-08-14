@@ -355,9 +355,13 @@ state_supervision_violation_response_type = Enum(
     name='state_supervision_violation_response_type')
 
 state_supervision_violation_response_decision = Enum(
+    state_enum_strings.state_supervision_violation_response_decision_community_service,
     state_enum_strings.state_supervision_violation_response_decision_continuance,
     state_enum_strings.state_supervision_violation_response_decision_delayed_action,
     state_enum_strings.state_supervision_violation_response_decision_extension,
+    enum_strings.internal_unknown,
+    state_enum_strings.state_supervision_violation_response_decision_new_conditions,
+    state_enum_strings.state_supervision_violation_response_decision_other,
     state_enum_strings.state_supervision_violation_response_decision_revocation,
     state_enum_strings.state_supervision_violation_response_decision_privileges_revoked,
     state_enum_strings.state_supervision_violation_response_decision_service_termination,
@@ -365,6 +369,8 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_specialized_court,
     state_enum_strings.state_supervision_violation_response_decision_suspension,
     state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison,
+    state_enum_strings.state_supervision_violation_response_decision_treatment_in_field,
+    state_enum_strings.state_supervision_violation_response_decision_warning,
     state_enum_strings.state_supervision_violation_response_decision_warrant_issued,
     name='state_supervision_violation_response_decision')
 

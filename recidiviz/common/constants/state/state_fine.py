@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Consatnts related to fine sentences."""
+from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -24,6 +25,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateFineStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PAID = state_enum_strings.state_fine_status_paid
