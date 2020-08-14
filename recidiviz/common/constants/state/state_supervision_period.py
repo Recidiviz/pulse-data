@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateSupervisionPeriod."""
+from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -24,6 +25,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 # TODO(2891): Update supervision period objects in schema to use this type
+@unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     """Enum that denotes what type of supervision someone is serving at a moment in time."""
     # If the person is serving both probation and parole at the same time, this may be modeled with just one supervision
@@ -44,6 +46,7 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
 
+@unique
 class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     """Admission reasons for StateSupervisionPeriod"""
     ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
@@ -66,6 +69,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
 
+@unique
 class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
@@ -77,6 +81,7 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_STATUS_MAP
 
 
+@unique
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -97,6 +102,7 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_LEVEL_MAP
 
 
+@unique
 class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
     """Termination reasons for StateSupervisionPeriod"""
     EXTERNAL_UNKNOWN = enum_strings.external_unknown

@@ -16,11 +16,14 @@
 # =============================================================================
 
 """Constants related to a StateSupervisionCaseTypeEntry entity."""
+from enum import unique
+
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
     DOMESTIC_VIOLENCE = state_enum_strings.state_supervision_case_type_domestic_violence
     DRUG_COURT = state_enum_strings.state_supervision_case_type_drug_court

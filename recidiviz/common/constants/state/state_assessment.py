@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to an assessment entity."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
     """An enumeration of assessment classifications tracked in our schema."""
     MENTAL_HEALTH = state_enum_strings.state_assessment_class_mental_health
@@ -38,6 +40,7 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_CLASS_MAP
 
 
+@unique
 class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     """An enumeration of assessment types tracked in our schema."""
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -75,6 +78,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_TYPE_MAP
 
 
+@unique
 class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     LOW = state_enum_strings.state_assessment_level_low
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium

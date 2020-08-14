@@ -16,11 +16,13 @@
 # =============================================================================
 
 """Constants related to a StateEarlyDischarge."""
+from enum import unique
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
     REQUEST_DENIED = state_enum_strings.state_early_discharge_decision_request_denied
     SENTENCE_TERMINATION_GRANTED = state_enum_strings.state_early_discharge_decision_sentence_termination_granted

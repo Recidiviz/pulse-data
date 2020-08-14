@@ -16,12 +16,14 @@
 # =============================================================================
 
 """Constants related to a StateSupervisionContact."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -35,6 +37,7 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_TYPE_MAP
 
 
+@unique
 class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -48,6 +51,7 @@ class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_REASON_MAP
 
 
+@unique
 class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -60,6 +64,7 @@ class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_STATUS_MAP
 
 
+@unique
 class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown

@@ -16,11 +16,13 @@
 # =============================================================================
 
 """Constants shared across a few different entities."""
+from enum import unique
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state import enum_canonical_strings as state_enum_strings
 
 
+@unique
 class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     """Any person or persons who is taking an action."""
     COURT = state_enum_strings.state_acting_body_type_court

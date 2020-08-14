@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing supervision violation information."""
+"""Query containing supervision violation response information."""
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
@@ -22,12 +22,13 @@ from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_violations imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
-    ingest_view_name='supervision_violation',
+    ingest_view_name='supervision_violation_response',
     view_query_template=generate_violation_view_query(
-        'violation_date', 'ViolationDate', 'parsed_violation_timestamp',
-        'violation_types', 'violation_code', 'V'
+        'sanction_date', 'SanctionDate', 'parsed_sanction_timestamp',
+        'sanction_types', 'sanction_code', 'S'
     ),
     order_by_cols='parole_number ASC, parole_count_id ASC, set_id ASC'
 )

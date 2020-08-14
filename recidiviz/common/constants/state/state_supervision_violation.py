@@ -16,12 +16,14 @@
 # =============================================================================
 
 """Constants related to a StateSupervisionViolation."""
+from enum import unique
 
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
     ABSCONDED = state_enum_strings.state_supervision_violation_type_absconded
     ESCAPED = state_enum_strings.state_supervision_violation_type_escaped

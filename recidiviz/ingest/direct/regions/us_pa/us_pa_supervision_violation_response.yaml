@@ -1,0 +1,15 @@
+key_mappings:
+  sanction_date: state_supervision_violation_response.response_date
+
+ancestor_keys:
+  parole_number: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+# Primary key override for Supervision Violation Response in controller in format of [parole_number]-[parole_count_id]-[set_id]
+
+keys_to_ignore:
+  - parole_count_id       # Parole count id - handled manually in the controller
+  - set_id                # Set id - handled manually in the controller
+  - sanction_types        # Json-serialized array of objects containing the various sanction codes and their sequence ids - handled manually in the controller
