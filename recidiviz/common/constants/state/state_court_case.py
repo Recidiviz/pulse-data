@@ -16,12 +16,14 @@
 # =============================================================================
 
 """Constants used by StateCourtCase."""
+from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
@@ -32,6 +34,7 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_COURT_TYPE_MAP
 
 
+@unique
 class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info

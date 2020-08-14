@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateParoleDecision."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateParoleDecisionOutcome(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PAROLE_DENIED = state_enum_strings.state_parole_decision_parole_denied

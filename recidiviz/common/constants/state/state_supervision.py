@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Shared constants related to supervision."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL_COMMITMENT = \
         state_enum_strings.state_supervision_type_civil_commitment

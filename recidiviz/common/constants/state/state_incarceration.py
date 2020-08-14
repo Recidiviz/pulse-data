@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Shared constants related to custody."""
+from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -24,6 +25,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
     COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
     EXTERNAL_UNKNOWN = enum_strings.external_unknown

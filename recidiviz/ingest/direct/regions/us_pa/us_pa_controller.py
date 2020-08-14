@@ -38,6 +38,9 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodTerminationReason, \
     StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseRevocationType, \
+    StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, safe_parse_date_from_date_pieces, \
     safe_parse_days_from_duration_pieces
@@ -46,7 +49,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overri
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
     concatenate_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
     concatenate_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
-    concatenate_incarceration_period_start_codes
+    concatenate_incarceration_period_start_codes, revocation_type_mapper
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects
@@ -54,7 +57,7 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StatePersonRace, \
-    StateSupervisionViolation
+    StateSupervisionViolation, StateSupervisionViolation, StateSupervisionViolationResponse
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -141,6 +144,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation': [
                 self._append_supervision_violation_entries,
             ],
+            'supervision_violation_response': [
+                self._append_supervision_violation_response_entries,
+                self._set_violation_response_type,
+            ],
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
@@ -167,6 +174,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            'supervision_violation_response': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
@@ -174,12 +184,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_sentence': _generate_supervision_sentence_primary_key,
             'supervision_period': _generate_supervision_period_primary_key,
             'supervision_violation': _generate_supervision_violation_primary_key,
+            'supervision_violation_response': _generate_supervision_violation_response_primary_key,
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
             'incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'supervision_sentence': _state_supervision_sentence_ancestor_chain_overrides,
-            # 'supervision_violation': _state_supervision_violation_ancestor_chain_overrides,
+            'supervision_violation_response': _state_supervision_violation_response_ancestor_chain_overrides,
         }
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
@@ -421,12 +432,70 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'H05',  # Failure to abide by Board Imposed Special Conditions
             'H07',  # Removal from Treatment/CCC Failure
         ],
+        StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE: [
+            'COMS',  # Imposition of Community Service
+        ],
+        StateSupervisionViolationResponseDecision.DELAYED_ACTION: [
+            'ACCG',  # Refer to ASCRA groups
+        ],
+        StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN: [
+            'IAOD',
+            'GCON',
+            'GARR',
+            'SAVE',  # Placement in SAVE
+            'ARRT',  # Arrest
+            'H03',
+            'CON1',  # Administrative Conference 1
+            'PV01', 'PV02', 'PV03', 'PV04', 'PV05', 'PV06',
+        ],
+        StateSupervisionViolationResponseDecision.NEW_CONDITIONS: [
+            'IRPT',  # Increased Reporting Requirements
+            'CURF',  # Imposition of Curfew
+            'ICRF',  # Imposition of Increased Curfew
+            'URIN',  # Imposition of Increased Urinalysis Testing
+            'EMOS',  # Imposition of Electronic Monitoring
+            'AGPS',  # Imposition of Global Positioning
+            'WTVR',  # Written Travel Restriction
+            'DJBS',  # Documented Job Search
+            'DRPT',  # Day Reporting Center
+            'DFSE',  # Deadline for Securing Employment
+            'RECT',  # Refer to Re-Entry Program
+            'SCCC',  # Secure CCC
+            'IMAT',  # Imposition of Mandatory Antabuse Use
+            'PGPS',  # Imposition of Passive Global Positioning
+        ],
+        StateSupervisionViolationResponseDecision.OTHER: [
+            'LOTR',  # Low Sanction Range - Other
+            'MOTR',  # Medium Sanction Range - Other
+            'HOTR',  # High Sanction Range - Other
+        ],
+        StateSupervisionViolationResponseDecision.REVOCATION: [
+            'ARR2',  # Incarceration
+            'CPCB',  # Placement in CCC Half Way Back
+            'VCCF',  # Placement in PV Center
+            'IDOX',  # Placement in D&A Detox Facility
+            'IPMH',  # Placement in Mental Health Facility
+            'VCCP',  # Placement in Violation Center County Prison
+            'CPCO',  # Community Parole Corrections Half Way Out
+        ],
+        StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD: [
+            'OPAT',  # Placement in Out-Patient D&A Treatment
+            'TXEV',  # Obtain treatment evaluation
+            'GVPB',  # Refer to Violence Prevention Booster
+        ],
+        StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
+            'IPAT',  # Placement in In-Patient D&A Treatment
+        ],
+        StateSupervisionViolationResponseDecision.WARNING: [
+            'WTWR',  # Written Warning
+        ],
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
+        StateSupervisionViolationResponseRevocationType: revocation_type_mapper,
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -454,6 +523,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_sentence',
             'supervision_period',
             'supervision_violation',
+            'supervision_violation_response',
         ]
 
         # TODO(3024): Move these tags to the list above as each one is ready to run in stage
@@ -520,7 +590,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in ['dbo_Senrec', 'incarceration_period', 'dbo_Miscon']:
             return US_PA_CONTROL
-        if file_tag in ['supervision_sentence', 'supervision_period', 'supervision_violation']:
+
+        if file_tag in ['supervision_sentence',
+                        'supervision_period',
+                        'supervision_violation',
+                        'supervision_violation_response']:
             return US_PA_PBPP
         return None
 
@@ -1012,6 +1086,45 @@ class UsPaController(CsvGcsfsDirectIngestController):
                         condition=condition_violated,
                     )
 
+    @staticmethod
+    def _append_supervision_violation_response_entries(_file_tag: str,
+                                                       row: Dict[str, str],
+                                                       extracted_objects: List[IngestObject],
+                                                       _cache: IngestObjectCache):
+        """Appends violation response decision entries to the parent supervision violation response."""
+        parole_number = row['parole_number']
+        parole_count_id = row['parole_count_id']
+        set_id = row['set_id']
+
+        raw_sanction_types = row.get('sanction_types', '[]')
+        sanction_types = json.loads(raw_sanction_types)
+
+        for sanction_type in sanction_types:
+            sequence_id = sanction_type['sequence_id']
+            sanction_code = sanction_type['sanction_code']
+
+            entry_id = f"{parole_number}-{parole_count_id}-{set_id}-{sequence_id}"
+
+            for obj in extracted_objects:
+                if isinstance(obj, StateSupervisionViolationResponse):
+                    obj.create_state_supervision_violation_response_decision_entry(
+                        state_supervision_violation_response_decision_entry_id=entry_id,
+                        decision=sanction_code, revocation_type=sanction_code,
+                    )
+
+    @staticmethod
+    def _set_violation_response_type(_file_tag: str,
+                                     _row: Dict[str, str],
+                                     extracted_objects: List[IngestObject],
+                                     _cache: IngestObjectCache):
+        """Sets relevant fields on the parent supervision violation response.
+
+        We set all violation response types as VIOLATION REPORT because we have no additional metadata to make
+        a meaningful distinction, and this ensures that they will all be included in relevant analysis
+        """
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionViolationResponse):
+                obj.response_type = StateSupervisionViolationResponseType.VIOLATION_REPORT.value
 
 def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['control_number']
@@ -1072,11 +1185,41 @@ def _state_supervision_sentence_ancestor_chain_overrides(_file_tag: str, row: Di
     return {'state_sentence_group': sentence_group_id}
 
 
-def _generate_supervision_violation_primary_key(_file_tag: str, row: Dict[str, str]) \
-        -> IngestFieldCoordinates:
+def _generate_supervision_violation_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['parole_number']
     parole_count = row['parole_count_id']
     set_id = row['set_id']
     violation_id = f"{person_id}-{parole_count}-{set_id}"
 
     return IngestFieldCoordinates('state_supervision_violation', 'state_supervision_violation_id', violation_id)
+
+
+def _state_supervision_violation_ancestor_chain_overrides(_file_tag: str,
+                                                          row: Dict[str, str]) -> Dict[str, str]:
+    person_id = row['parole_number']
+    parole_count = row['parole_count_id']
+    period_id = f"{person_id}-{parole_count}"
+
+    return {'state_supervision_period': period_id}
+
+
+def _generate_supervision_violation_response_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+    person_id = row['parole_number']
+    parole_count = row['parole_count_id']
+    set_id = row['set_id']
+    response_id = f"{person_id}-{parole_count}-{set_id}"
+
+    return IngestFieldCoordinates('state_supervision_violation_response',
+                                  'state_supervision_violation_response_id',
+                                  response_id)
+
+
+def _state_supervision_violation_response_ancestor_chain_overrides(
+        _file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
+    person_id = row['parole_number']
+    parole_count = row['parole_count_id']
+    set_id = row['set_id']
+
+    violation_id = f"{person_id}-{parole_count}-{set_id}"
+
+    return {'state_supervision_violation': violation_id}

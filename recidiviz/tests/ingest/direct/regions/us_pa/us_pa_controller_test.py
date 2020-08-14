@@ -40,13 +40,17 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
     StateCourtCase, StateAgent, StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StateSupervisionViolation, \
-    StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry
+    StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry, StateSupervisionViolationResponse, \
+    StateSupervisionViolationResponseDecisionEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -1334,6 +1338,167 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ])
 
         self.run_parse_file_test(expected, 'supervision_violation')
+
+    def test_populate_data_supervision_violation_response(self):
+        violation_456B_1_1 = StateSupervisionViolation(
+            state_supervision_violation_id='456B-1-1',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    state_supervision_violation_response_id='456B-1-1',
+                    response_type='VIOLATION_REPORT', response_date='2013-01-02',
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='456B-1-1-2',
+                            decision='WTWR', revocation_type='WTWR',
+                        ),
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='456B-1-1-3',
+                            decision='DJBS', revocation_type='DJBS',
+                        )
+                    ]
+                )
+            ]
+        )
+
+        violation_456B_2_1 = StateSupervisionViolation(
+            state_supervision_violation_id='456B-2-1',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    state_supervision_violation_response_id='456B-2-1',
+                    response_type='VIOLATION_REPORT', response_date='2015-04-13',
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='456B-2-1-12',
+                            decision='VCCF', revocation_type='VCCF',
+                        ),
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='456B-2-1-13',
+                            decision='ARR2', revocation_type='ARR2',
+                        )
+                    ]
+                )
+            ]
+        )
+
+        violation_789C_3_1 = StateSupervisionViolation(
+            state_supervision_violation_id='789C-3-1',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    state_supervision_violation_response_id='789C-3-1',
+                    response_type='VIOLATION_REPORT', response_date='2006-08-16',
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='789C-3-1-4',
+                            decision='VCCF', revocation_type='VCCF',
+                        ),
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='789C-3-1-5',
+                            decision='ARR2', revocation_type='ARR2',
+                        )
+                    ]
+                )
+            ]
+        )
+
+        violation_345E_1_1 = StateSupervisionViolation(
+            state_supervision_violation_id='345E-1-1',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    state_supervision_violation_response_id='345E-1-1',
+                    response_type='VIOLATION_REPORT', response_date='2018-03-23',
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='345E-1-1-2',
+                            decision='WTWR', revocation_type='WTWR',
+                        ),
+                    ]
+                )
+            ]
+        )
+
+        violation_345E_1_2 = StateSupervisionViolation(
+            state_supervision_violation_id='345E-1-2',
+            state_supervision_violation_responses=[
+                StateSupervisionViolationResponse(
+                    state_supervision_violation_response_id='345E-1-2',
+                    response_type='VIOLATION_REPORT', response_date='2018-05-13',
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='345E-1-2-5',
+                            decision='ARR2', revocation_type='ARR2',
+                        ),
+                        StateSupervisionViolationResponseDecisionEntry(
+                            state_supervision_violation_response_decision_entry_id='345E-1-2-6',
+                            decision='PV01', revocation_type='PV01',
+                        )
+                    ]
+                )
+            ]
+        )
+
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(state_person_id='456B',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_456B_1_1,
+                                                        violation_456B_2_1,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+                StatePerson(state_person_id='789C',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='789C', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_789C_3_1,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+                StatePerson(state_person_id='345E',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
+                            ],
+                            state_sentence_groups=[
+                                StateSentenceGroup(
+                                    state_supervision_sentences=[
+                                        StateSupervisionSentence(
+                                            state_supervision_periods=[
+                                                StateSupervisionPeriod(
+                                                    state_supervision_violation_entries=[
+                                                        violation_345E_1_1, violation_345E_1_2,
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                            ]),
+            ])
+
+        self.run_parse_file_test(expected, 'supervision_violation_response')
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -2781,7 +2946,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # supervision_sentence
+        # supervision_violation
         ######################################
 
         # Arrange
@@ -2990,6 +3155,123 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('supervision_violation.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # supervision_violation_response
+        ######################################
+
+        # Arrange
+        p2_svr_1 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id='456B-1-1', state_code=_STATE_CODE_UPPER,
+            response_date=datetime.date(year=2013, month=1, day=2),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            person=person_2, supervision_violation=p2_sv_1,
+        )
+        p2_svr_1_d_2 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation_response=p2_svr_1,
+            decision=StateSupervisionViolationResponseDecision.WARNING, decision_raw_text='WTWR',
+            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+            revocation_type_raw_text='WTWR',
+        )
+        p2_svr_1_d_3 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation_response=p2_svr_1,
+            decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS, decision_raw_text='DJBS',
+            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+            revocation_type_raw_text='DJBS',
+        )
+        p2_svr_1.supervision_violation_response_decisions.extend([p2_svr_1_d_2, p2_svr_1_d_3])
+        p2_sv_1.supervision_violation_responses.append(p2_svr_1)
+
+        p2_svr_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id='456B-2-1', state_code=_STATE_CODE_UPPER,
+            response_date=datetime.date(year=2015, month=4, day=13),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            person=person_2, supervision_violation=p2_sv_2,
+        )
+        p2_svr_2_d_12 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation_response=p2_svr_2,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION, decision_raw_text='VCCF',
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='VCCF',
+        )
+        p2_svr_2_d_13 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_2, supervision_violation_response=p2_svr_2,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION, decision_raw_text='ARR2',
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='ARR2',
+        )
+        p2_svr_2.supervision_violation_response_decisions.extend([p2_svr_2_d_12, p2_svr_2_d_13])
+        p2_sv_2.supervision_violation_responses.append(p2_svr_2)
+
+        p5_svr_3 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id='789C-3-1', state_code=_STATE_CODE_UPPER,
+            response_date=datetime.date(year=2006, month=8, day=16),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            person=person_5, supervision_violation=p5_sv_3,
+        )
+        p5_svr_3_d_4 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation_response=p5_svr_3,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION, decision_raw_text='VCCF',
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='VCCF',
+        )
+        p5_svr_3_d_5 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation_response=p5_svr_3,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION, decision_raw_text='ARR2',
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='ARR2',
+        )
+        p5_svr_3.supervision_violation_response_decisions.extend([p5_svr_3_d_4, p5_svr_3_d_5])
+        p5_sv_3.supervision_violation_responses.append(p5_svr_3)
+
+        p4_svr_1 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id='345E-1-1', state_code=_STATE_CODE_UPPER,
+            response_date=datetime.date(year=2018, month=3, day=23),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            person=person_4, supervision_violation=p4_sv_1,
+        )
+        p4_svr_1_d_2 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation_response=p4_svr_1,
+            decision=StateSupervisionViolationResponseDecision.WARNING, decision_raw_text='WTWR',
+            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+            revocation_type_raw_text='WTWR',
+        )
+        p4_svr_1.supervision_violation_response_decisions.append(p4_svr_1_d_2)
+        p4_sv_1.supervision_violation_responses.append(p4_svr_1)
+
+        p4_svr_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
+            external_id='345E-1-2', state_code=_STATE_CODE_UPPER,
+            response_date=datetime.date(year=2018, month=5, day=13),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text='VIOLATION_REPORT',
+            person=person_4, supervision_violation=p4_sv_2,
+        )
+        p4_svr_1_d_5 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation_response=p4_svr_2,
+            decision=StateSupervisionViolationResponseDecision.REVOCATION, decision_raw_text='ARR2',
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            revocation_type_raw_text='ARR2',
+        )
+        p4_svr_1_d_6 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation_response=p4_svr_2,
+            decision=StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN, decision_raw_text='PV01',
+            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
+            revocation_type_raw_text='PV01',
+        )
+        p4_svr_2.supervision_violation_response_decisions.extend([p4_svr_1_d_5, p4_svr_1_d_6])
+        p4_sv_2.supervision_violation_responses.append(p4_svr_2)
+
+        populate_person_backedges(expected_people)
+
+        # Act
+        self._run_ingest_job_for_filename('supervision_violation_response.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

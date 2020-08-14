@@ -54,12 +54,18 @@ DECISION_SEVERITY_ORDER = [
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
         StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
         StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+        StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
         StateSupervisionViolationResponseDecision.EXTENSION,
         StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
         StateSupervisionViolationResponseDecision.SUSPENSION,
         StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+        StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
+        StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
         StateSupervisionViolationResponseDecision.DELAYED_ACTION,
-        StateSupervisionViolationResponseDecision.CONTINUANCE
+        StateSupervisionViolationResponseDecision.OTHER,
+        StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+        StateSupervisionViolationResponseDecision.WARNING,
+        StateSupervisionViolationResponseDecision.CONTINUANCE,
     ]
 
 VIOLATION_TYPE_SEVERITY_ORDER = [

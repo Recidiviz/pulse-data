@@ -16,10 +16,12 @@
 # =============================================================================
 
 """US_PA specific enum helper methods."""
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodReleaseReason, \
     StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.ingest.direct.direct_ingest_controller_utils import invert_enum_to_str_mappings
 
 
@@ -172,6 +174,23 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
 MOVEMENT_CODE_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodAdmissionReason] = \
     invert_enum_to_str_mappings(INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS)
 
+REVOCATION_TYPE_TO_STR_MAPPINGS: Dict[StateSupervisionViolationResponseRevocationType, List[str]] = {
+    StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
+        'ARR2',  # Incarceration
+        'VCCF',  # Placement in PV Center
+        'VCCP',  # Placement in Violation Center County Prison
+    ],
+    StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION: [
+        'CPCB',  # Placement in CCC Half Way Back
+        'CPCO',  # Community Parole Corrections Half Way Out
+    ],
+    StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON: [
+        'IDOX',  # Placement in D&A Detox Facility
+        'IPMH',  # Placement in Mental Health Facility
+    ],
+}
+
+
 STR_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodReleaseReason] = \
     invert_enum_to_str_mappings(INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS)
 
@@ -187,6 +206,10 @@ def incarceration_period_admission_reason_mapper(concatenated_codes: str) -> Sta
         raise ValueError(
             f'No mapping for incarceration period admission reason from movement code {start_movement_code}')
     return admission_reason
+
+
+STR_TO_REVOCATION_TYPE_MAPPINGS: Dict[str, StateSupervisionViolationResponseRevocationType] = \
+    invert_enum_to_str_mappings(REVOCATION_TYPE_TO_STR_MAPPINGS)
 
 
 def incarceration_period_release_reason_mapper(concatenated_codes: str) -> StateIncarcerationPeriodReleaseReason:
@@ -272,6 +295,18 @@ def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecial
         return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
 
     return StateSpecializedPurposeForIncarceration.GENERAL
+
+
+def revocation_type_mapper(sanction_code: Optional[str]) -> Optional[StateSupervisionViolationResponseRevocationType]:
+    """Maps an incoming sanction code to the kind of revocation it represents, if applicable.
+
+    Falls back to RETURN_TO_SUPERVISION if the sanction code does not represent any kind of revocation.
+    """
+    if not sanction_code:
+        return None
+
+    return STR_TO_REVOCATION_TYPE_MAPPINGS.get(sanction_code,
+                                               StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION)
 
 
 def _retrieve_release_reason_mapping(code: str) -> StateIncarcerationPeriodReleaseReason:

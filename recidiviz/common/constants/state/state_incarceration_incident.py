@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to the StateIncarcerationIncident entity."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident types."""
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
@@ -43,6 +45,7 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
 
+@unique
 class StateIncarcerationIncidentOutcomeType(EntityEnum,
                                             metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident outcome types."""

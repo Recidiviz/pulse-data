@@ -1,0 +1,6 @@
+parole_number,parole_count_id,set_id,sanction_date,sanction_types
+456B,1,1,2013-01-02,"[{""sequence_id"":""2"",""sanction_code"":""WTWR""},{""sequence_id"":""3"",""sanction_code"":""DJBS""}]"
+456B,2,1,2015-04-13,"[{""sequence_id"":""12"",""sanction_code"":""VCCF""},{""sequence_id"":""13"",""sanction_code"":""ARR2""}]"
+789C,3,1,2006-08-16,"[{""sequence_id"":""4"",""sanction_code"":""VCCF""},{""sequence_id"":""5"",""sanction_code"":""ARR2""}]"
+345E,1,1,2018-03-23,"[{""sequence_id"":""2"",""sanction_code"":""WTWR""}]"
+345E,1,2,2018-05-13,"[{""sequence_id"":""5"",""sanction_code"":""ARR2""},{""sequence_id"":""6"",""sanction_code"":""PV01""}]"

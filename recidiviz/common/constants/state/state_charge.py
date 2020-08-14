@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateCharge entity in the state schema."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
