@@ -58,7 +58,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='supervision_violation',
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='parole_number ASC, parole_count_id ASC, set_id ASC, sequence_id ASC'
+    order_by_cols='parole_number ASC, parole_count_id ASC, set_id ASC'
 )
 
 if __name__ == '__main__':
