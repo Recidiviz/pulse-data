@@ -19,8 +19,6 @@
 import re
 from typing import Optional
 
-from uszipcode import SearchEngine
-
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
@@ -30,8 +28,8 @@ from recidiviz.common.constants.person_characteristics import (
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn, parse_external_id, parse_residency_status,
     parse_birthdate)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.zipcodes import zipcode_search_engine
 
 # Suffixes used in county names in uszipcode library
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
@@ -45,9 +43,6 @@ USZIPCODE_COUNTY_SUFFIXES = [
     'MUNICIPIO',
     'PARISH'
 ]
-
-
-ZIP_CODE_SEARCH = SearchEngine(simple_zipcode=True)
 
 
 def copy_fields_to_builder(person_builder, proto, metadata):
@@ -115,7 +110,8 @@ def _parse_is_county_resident(
     # Replace underscores with spaces because uszipcode uses spaces
     normalized_region_county = region_county.upper().replace('_', ' ')
 
-    residence_county = ZIP_CODE_SEARCH.by_zipcode(residence_zip_code).county
+    with zipcode_search_engine() as zipcodes:
+        residence_county = zipcodes.by_zipcode(residence_zip_code).county
     if not residence_county:
         return None
 
@@ -141,8 +137,8 @@ def _parse_is_county_resident(
 def _parse_is_state_resident(
         residence_zip_code: str, region: str) -> Optional[bool]:
     region_state_code = region[-2:].upper()
-    residence_state_code = \
-        ZIP_CODE_SEARCH.by_zipcode(residence_zip_code).state.upper()
+    with zipcode_search_engine() as zipcodes:
+        residence_state_code = zipcodes.by_zipcode(residence_zip_code).state.upper()
     if not residence_state_code:
         return None
     return region_state_code == residence_state_code
