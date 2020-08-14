@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a StateIncarcerationPeriod."""
+from enum import unique
 from typing import Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
@@ -24,6 +25,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     IN_CUSTODY = state_enum_strings.state_incarceration_period_status_in_custody
@@ -35,6 +37,7 @@ class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_INCARCERATION_PERIOD_STATUS_MAP
 
 
+@unique
 class StateIncarcerationFacilitySecurityLevel(EntityEnum,
                                               metaclass=EntityEnumMeta):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
@@ -46,6 +49,7 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum,
         return _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP
 
 
+@unique
 class StateIncarcerationPeriodAdmissionReason(EntityEnum,
                                               metaclass=EntityEnumMeta):
     """Reasons for admission to a period of incarceration."""
@@ -70,6 +74,7 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum,
         return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
 
+@unique
 class StateIncarcerationPeriodReleaseReason(EntityEnum,
                                             metaclass=EntityEnumMeta):
     """Reasons for release from a period of incarceration."""
@@ -101,6 +106,7 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
 
 
 # TODO(3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
+@unique
 class StateSpecializedPurposeForIncarceration(EntityEnum,
                                               metaclass=EntityEnumMeta):
     """Specialized purposes for a period of incarceration"""

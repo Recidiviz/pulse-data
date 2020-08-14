@@ -16,12 +16,14 @@
 # =============================================================================
 
 """Constants related to a StatePersonAlias entity."""
+from enum import unique
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
 
 
+@unique
 class StatePersonAliasType(EntityEnum, metaclass=EntityEnumMeta):
     AFFILIATION_NAME = \
         state_enum_strings.state_person_alias_alias_type_affiliation_name

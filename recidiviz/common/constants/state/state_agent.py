@@ -16,12 +16,13 @@
 # =============================================================================
 
 """Constants related to a StateAgent entity."""
+from enum import unique
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
-
+@unique
 class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
     CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer

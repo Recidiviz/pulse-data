@@ -126,6 +126,15 @@ _HIERARCHY_MAP: Dict[
                                       'state_supervision_sentence'}),
                 'state_supervision_period',
                 'state_supervision_violation'),
+            'state_supervision_violation_response_decision_entry': (
+                'state_person', 'state_sentence_group',
+                AncestorTypeChoices(
+                    key='state_sentence',
+                    ancestor_choices={'state_incarceration_sentence',
+                                      'state_supervision_sentence'}),
+                'state_supervision_period',
+                'state_supervision_violation',
+                'state_supervision_violation_response'),
             # TODO(1883): The entry here for |state_agent| is a hack. StateAgent
             #  can have multiple ancestor paths depending on what type of agent
             #  it is. We need to update the extractor code to just generate

@@ -16,11 +16,14 @@
 # =============================================================================
 
 """Constants related to a StateSupervisionViolationResponse."""
+from enum import unique
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta):
     CITATION = state_enum_strings.state_supervision_violation_response_type_citation
     VIOLATION_REPORT = state_enum_strings.state_supervision_violation_response_type_violation_report
@@ -31,10 +34,15 @@ class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
 
+@unique
 class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnumMeta):
+    COMMUNITY_SERVICE = state_enum_strings.state_supervision_violation_response_decision_community_service
     CONTINUANCE = state_enum_strings.state_supervision_violation_response_decision_continuance
     DELAYED_ACTION = state_enum_strings.state_supervision_violation_response_decision_delayed_action
     EXTENSION = state_enum_strings.state_supervision_violation_response_decision_extension
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    NEW_CONDITIONS = state_enum_strings.state_supervision_violation_response_decision_new_conditions
+    OTHER = state_enum_strings.state_supervision_violation_response_decision_other
     REVOCATION = state_enum_strings.state_supervision_violation_response_decision_revocation
     PRIVILEGES_REVOKED = state_enum_strings.state_supervision_violation_response_decision_privileges_revoked
     SERVICE_TERMINATION = state_enum_strings.state_supervision_violation_response_decision_service_termination
@@ -42,6 +50,8 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     SHOCK_INCARCERATION = state_enum_strings.state_supervision_violation_response_decision_shock_incarceration
     SUSPENSION = state_enum_strings.state_supervision_violation_response_decision_suspension
     TREATMENT_IN_PRISON = state_enum_strings.state_supervision_violation_response_decision_treatment_in_prison
+    TREATMENT_IN_FIELD = state_enum_strings.state_supervision_violation_response_decision_treatment_in_field
+    WARNING = state_enum_strings.state_supervision_violation_response_decision_warning
     WARRANT_ISSUED = state_enum_strings.state_supervision_violation_response_decision_warrant_issued
 
     @staticmethod
@@ -49,6 +59,7 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
+@unique
 class StateSupervisionViolationResponseRevocationType(EntityEnum, metaclass=EntityEnumMeta):
     REINCARCERATION = state_enum_strings.state_supervision_violation_response_revocation_type_reincarceration
     RETURN_TO_SUPERVISION = \
@@ -62,6 +73,7 @@ class StateSupervisionViolationResponseRevocationType(EntityEnum, metaclass=Enti
 
 
 # TODO(3108): Transition this enum to use StateActingBodyType
+@unique
 class StateSupervisionViolationResponseDecidingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     COURT = state_enum_strings.state_supervision_violation_response_deciding_body_type_court
     PAROLE_BOARD = state_enum_strings.state_supervision_violation_response_deciding_body_parole_board
@@ -80,9 +92,13 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
+    'COMMUNITY SERVICE': StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
     'CONTINUANCE': StateSupervisionViolationResponseDecision.CONTINUANCE,
-    'EXTENSION': StateSupervisionViolationResponseDecision.EXTENSION,
     'DELAYED ACTION': StateSupervisionViolationResponseDecision.DELAYED_ACTION,
+    'EXTENSION': StateSupervisionViolationResponseDecision.EXTENSION,
+    'INTERNAL UNKNOWN': StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+    'NEW CONDITIONS': StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+    'OTHER': StateSupervisionViolationResponseDecision.OTHER,
     'PRIVILEGES REVOKED': StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
     'REVOCATION': StateSupervisionViolationResponseDecision.REVOCATION,
     'SERVICE TERMINATION': StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
@@ -90,6 +106,8 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     'SHOCK INCARCERATION': StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
     'SUSPENSION': StateSupervisionViolationResponseDecision.SUSPENSION,
     'TREATMENT IN PRISON': StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+    'TREATMENT IN FIELD': StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
+    'WARNING': StateSupervisionViolationResponseDecision.WARNING,
     'WARRANT ISSUED': StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
 }
 

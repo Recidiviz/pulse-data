@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Constants related to a state Sentence."""
+from enum import unique
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as \
@@ -23,6 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as \
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+@unique
 class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     # Commuted means that the sentence has been shortened/lessened, all the way to today, but the judgment remains
     COMMUTED = state_enum_strings.state_sentence_status_commuted
