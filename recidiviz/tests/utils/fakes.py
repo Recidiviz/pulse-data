@@ -21,6 +21,7 @@ import threading
 from typing import Set
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm.session import close_all_sessions
 
 from recidiviz.persistence.database.base_schema import OperationsBase, StateBase, JailsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -126,6 +127,9 @@ def stop_and_clear_on_disk_postgresql_database() -> None:
     tearDownClass function so this only runs once per test class."""
     if environment.in_gae():
         raise ValueError('Running test-only code in Google App Engine.')
+
+    # Ensure all sessions are closed, otherwise `drop_all` below may hang.
+    close_all_sessions()
 
     for declarative_base in DECLARATIVE_BASES:
         use_on_disk_postgresql_database(declarative_base)
