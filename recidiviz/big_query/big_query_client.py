@@ -19,12 +19,12 @@ tables and views.
 """
 import abc
 import logging
-from typing import List, Optional, Iterator, Dict
+from typing import List, Optional, Iterator, Dict, Callable
 
-import attr
 from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import metadata
 
 _clients_by_project_id = {}
@@ -35,45 +35,6 @@ def client(project_id: str) -> bigquery.Client:
     if project_id not in _clients_by_project_id:
         _clients_by_project_id[project_id] = bigquery.Client(project=project_id)
     return _clients_by_project_id[project_id]
-
-
-@attr.s(frozen=True)
-class ExportQueryConfig:
-    # The query to export
-    query: str = attr.ib()
-
-    # Query parameters for the above query
-    query_parameters: List[bigquery.ScalarQueryParameter] = attr.ib()
-
-    # The name of the dataset to write the intermediate table to.
-    intermediate_dataset_id: str = attr.ib()
-
-    # The name of the intermediate table to create/overwrite.
-    intermediate_table_name: str = attr.ib()
-
-    # The desired path of the output file (starts with 'gs://').
-    output_uri: str = attr.ib()
-
-    # The desired format of the output file
-    output_format: bigquery.DestinationFormat = attr.ib()
-
-    @classmethod
-    def from_view_query(cls,
-                        view: BigQueryView,
-                        view_filter_clause: str,
-                        intermediate_table_name: str,
-                        output_uri: str,
-                        output_format: bigquery.DestinationFormat) -> 'ExportQueryConfig':
-        query = "{select_query} {filter_clause}".format(select_query=view.select_query,
-                                                        filter_clause=view_filter_clause)
-        return ExportQueryConfig(
-            query=query,
-            query_parameters=[],
-            intermediate_dataset_id=view.dataset_id,
-            intermediate_table_name=intermediate_table_name,
-            output_uri=output_uri,
-            output_format=output_format,
-        )
 
 
 class BigQueryClient:
@@ -240,7 +201,8 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def run_query_async(self, query_str: str) -> bigquery.QueryJob:
+    def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
+            -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
 
         It is the caller's responsibility to wait for the resulting job to complete.
@@ -253,9 +215,24 @@ class BigQueryClient:
 
         Args:
             query_str: The query to execute
+            query_parameters: Parameters for the query
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def paged_read_and_process(self,
+                               query_job: bigquery.QueryJob,
+                               page_size: int,
+                               process_fn: Callable[[bigquery.table.Row], None]) -> None:
+        """Reads the given result set from the given query job in pages to limit how many rows are read into memory at
+        any given time, processing the results of each row with the given callable.
+
+        Args:
+            query_job: the query job from which to process results.
+            page_size: the maximum number of rows to read in at a time.
+            process_fn: a callable function which takes in one row from the result set and performs some operation.
         """
 
     @abc.abstractmethod
@@ -605,8 +582,40 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info('Deleting temporary table [%s] from dataset [%s].', table_id, dataset_id)
         self.client.delete_table(table_ref)
 
-    def run_query_async(self, query_str: str) -> bigquery.QueryJob:
-        return self.client.query(query_str)
+    def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
+            -> bigquery.QueryJob:
+        job_config = bigquery.QueryJobConfig()
+        job_config.query_parameters = query_parameters or []
+
+        return self.client.query(
+            query=query_str,
+            location=self.LOCATION,
+            job_config=job_config,
+        )
+
+    def paged_read_and_process(self,
+                               query_job: bigquery.QueryJob,
+                               page_size: int,
+                               process_fn: Callable[[bigquery.table.Row], None]) -> None:
+        logging.info("Querying for first page of results to perform %s...", process_fn.__name__)
+
+        start_index = 0
+
+        while True:
+            page_rows: bigquery.table.RowIterator = query_job.result(max_results=page_size, start_index=start_index)
+            logging.debug("Retrieved result set from query page of size [%d] starting at index [%d]",
+                          page_size, start_index)
+
+            rows_processed = 0
+            for row in page_rows:
+                process_fn(row)
+                rows_processed += 1
+
+            logging.debug("Processed [%d] rows from query page starting at index [%d]", rows_processed, start_index)
+            if rows_processed == 0:
+                break
+
+            start_index += rows_processed
 
     def copy_view(self,
                   view: BigQueryView,

@@ -18,7 +18,7 @@
 # pylint: disable=line-too-long
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_lengths_by_demographics import \
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_admission_reason import \
@@ -30,7 +30,7 @@ from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incar
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_releases_by_type_by_period import \
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER
 
-INCARCERATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+INCARCERATION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER,

@@ -16,9 +16,10 @@
 # =============================================================================
 """Organizes the views into which BigQuery dataset they belong to, and which ones should be included in the exports to
 cloud storage."""
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DASHBOARD_VIEWS_DATASET, \
     COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
@@ -30,7 +31,7 @@ from recidiviz.calculator.query.state.views.reference.reference_views import REF
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
     REFERENCE_TABLES_DATASET: REFERENCE_VIEW_BUILDERS,
     COVID_REPORT_DATASET: COVID_REPORT_VIEW_BUILDERS,
     DASHBOARD_VIEWS_DATASET: DASHBOARD_VIEW_BUILDERS,
@@ -40,7 +41,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
 
 # Dictionary mapping the datasets to the state codes and view builders for the views that should be included in the
 # export of that dataset.
-DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT = {
+DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT: Dict[str, Dict[str, List[MetricBigQueryViewBuilder]]] = {
     DASHBOARD_VIEWS_DATASET: {
         'US_MO': DASHBOARD_VIEW_BUILDERS,
         'US_ND': DASHBOARD_VIEW_BUILDERS
@@ -54,8 +55,8 @@ DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT = {
 }
 
 # The format for the destination of the files in the export
-OUTPUT_URI_TEMPLATE_FOR_DATASET_EXPORT: Dict[str, str] = {
-    DASHBOARD_VIEWS_DATASET: "gs://{project_id}-dashboard-data/{state_code}/{view_id}.json",
-    PO_REPORT_DATASET: "gs://{project_id}-report-data/po_monthly_report/{state_code}/{view_id}.json",
-    PUBLIC_DASHBOARD_VIEWS_DATASET: "gs://{project_id}-public-dashboard-data/{state_code}/{view_id}.json"
+OUTPUT_DIRECTORY_TEMPLATE_FOR_DATASET_EXPORT: Dict[str, str] = {
+    DASHBOARD_VIEWS_DATASET: "gs://{project_id}-dashboard-data/{state_code}",
+    PO_REPORT_DATASET: "gs://{project_id}-report-data/po_monthly_report/{state_code}",
+    PUBLIC_DASHBOARD_VIEWS_DATASET: "gs://{project_id}-public-dashboard-data/{state_code}"
 }

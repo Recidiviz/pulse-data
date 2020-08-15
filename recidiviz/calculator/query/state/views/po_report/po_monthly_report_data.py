@@ -17,7 +17,7 @@
 """Data to populate the monthly PO report email."""
 # pylint: disable=trailing-whitespace,line-too-long
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -103,11 +103,12 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     ORDER BY review_month, email_address
     """
 
-PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=PO_MONTHLY_REPORT_DATA_VIEW_NAME,
     materialized_view_table_id=MATERIALIZED_VIEW_TABLE_NAME,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
+    dimensions=['state_code', 'year', 'month', 'officer_external_id', 'district'],
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET
 )

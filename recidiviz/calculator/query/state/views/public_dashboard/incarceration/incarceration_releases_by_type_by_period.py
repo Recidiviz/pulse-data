@@ -16,7 +16,8 @@
 # =============================================================================
 """Incarceration releases by period broken down by release type and demographics."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -97,13 +98,14 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL')) -- State-wide count
     GROUP BY state_code, metric_period_months, race_or_ethnicity, gender, age_bucket
-    ORDER BY state_Code, metric_period_months, race_or_ethnicity, gender, age_bucket
+    ORDER BY state_code, metric_period_months, race_or_ethnicity, gender, age_bucket
     """
 
-INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'metric_period_months', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

@@ -22,7 +22,8 @@ release cohort of 2017 is the most recent calendar year where the next year
 (2018) has completed. The follow-up period is 1 year.
 """
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -58,10 +59,11 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
     ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     """
 
-REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_NAME,
     view_query_template=REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE,
+    dimensions=['state_code', 'release_cohort', 'follow_up_period', 'stay_length_bucket', 'district'],
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
