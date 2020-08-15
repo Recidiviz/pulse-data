@@ -17,7 +17,7 @@
 """Revocations Matrix Filtered Caseload."""
 # pylint: disable=trailing-whitespace, line-too-long
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -64,10 +64,12 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
     ORDER BY metric_period_months, violation_record
     """
 
-REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
+    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'charge_category',
+                'risk_level', 'violation_type', 'reported_violations'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

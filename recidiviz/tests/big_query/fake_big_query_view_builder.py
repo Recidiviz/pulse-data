@@ -26,3 +26,6 @@ class FakeBigQueryViewBuilder(BigQueryViewBuilder):
 
     def build(self) -> BigQueryViewType:
         return self.view
+
+    def build_and_print(self) -> None:
+        print(self.view.view_query)

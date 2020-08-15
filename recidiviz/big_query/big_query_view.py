@@ -90,6 +90,11 @@ class BigQueryView(bigquery.TableReference):
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
         return self._materialized_view_table_id
 
+    @property
+    def export_view_name(self):
+        """The table or view id that should be used in exported file representations of this view."""
+        return self.view_id if self.materialized_view_table_id is None else self.materialized_view_table_id
+
     def __repr__(self):
         return f'{self.__class__.__name__}(' \
             f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
@@ -115,13 +120,22 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     def build(self) -> BigQueryViewType:
         pass
 
+    @abc.abstractmethod
+    def build_and_print(self) -> None:
+        pass
+
 
 class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
     """Class that builds a BigQueryView. Can be instantiated as a top-level variable, unlike a BigQueryView, whose
     constructor requires that a project_id has been properly set in the metadata package - something that often happens
     after a file is imported."""
 
-    def __init__(self, *, dataset_id: str, view_id: str, view_query_template: str, **kwargs):
+    def __init__(self,
+                 *,
+                 dataset_id: str,
+                 view_id: str,
+                 view_query_template: str,
+                 **kwargs):
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.view_query_template = view_query_template

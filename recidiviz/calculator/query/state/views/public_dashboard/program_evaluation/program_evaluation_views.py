@@ -18,10 +18,10 @@
 # pylint: disable=line-too-long
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation.us_nd.active_program_participation_by_region import \
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER
 
-PROGRAM_EVALUATION_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+PROGRAM_EVALUATION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER
 ]

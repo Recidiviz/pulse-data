@@ -16,7 +16,7 @@
 # =============================================================================
 """Validation view configuration."""
 
-from typing import Dict, List
+from typing import Dict, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
@@ -81,7 +81,7 @@ from recidiviz.validation.views.state.supervision_success_by_period_dashboard_co
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, List[BigQueryViewBuilder]] = {
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
     VIEWS_DATASET: [
         ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,

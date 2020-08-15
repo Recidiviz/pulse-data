@@ -22,9 +22,11 @@ from unittest import mock
 import pytest
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import SchemaField
+from mock import call
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
 class BigQueryClientImplTest(unittest.TestCase):
@@ -340,3 +342,94 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Tests that our delete table function calls the correct client method."""
         self.bq_client.delete_table(self.mock_dataset_id, self.mock_table_id)
         self.mock_client.delete_table.assert_called()
+
+    @mock.patch('google.cloud.bigquery.QueryJob')
+    def test_paged_read_single_page_single_row(self, mock_query_job):
+        first_row = bigquery.table.Row(
+            ['parole', 15, '10N'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+
+        # First call returns a single row, second call returns nothing
+        mock_query_job.result.side_effect = [[first_row], []]
+
+        processed_results = []
+
+        def _process_fn(row: bigquery.table.Row) -> None:
+            processed_results.append(dict(row))
+
+        self.bq_client.paged_read_and_process(mock_query_job, 1, _process_fn)
+
+        self.assertEqual([dict(first_row)], processed_results)
+        mock_query_job.result.assert_has_calls([
+            call(max_results=1, start_index=0),
+            call(max_results=1, start_index=1),
+        ])
+
+    @mock.patch('google.cloud.bigquery.QueryJob')
+    def test_paged_read_single_page_multiple_rows(self, mock_query_job):
+        first_row = bigquery.table.Row(
+            ['parole', 15, '10N'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+        second_row = bigquery.table.Row(
+            ['probation', 7, '10N'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+
+        # First call returns a single row, second call returns nothing
+        mock_query_job.result.side_effect = [[first_row, second_row], []]
+
+        processed_results = []
+
+        def _process_fn(row: bigquery.table.Row) -> None:
+            processed_results.append(dict(row))
+
+        self.bq_client.paged_read_and_process(mock_query_job, 10, _process_fn)
+
+        self.assertEqual([dict(first_row), dict(second_row)], processed_results)
+        mock_query_job.result.assert_has_calls([
+            call(max_results=10, start_index=0),
+            call(max_results=10, start_index=2),
+        ])
+
+    @mock.patch('google.cloud.bigquery.QueryJob')
+    def test_paged_read_multiple_pages(self, mock_query_job):
+        p1_r1 = bigquery.table.Row(
+            ['parole', 15, '10N'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+        p1_r2 = bigquery.table.Row(
+            ['probation', 7, '10N'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+
+        p2_r1 = bigquery.table.Row(
+            ['parole', 8, '10F'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+        p2_r2 = bigquery.table.Row(
+            ['probation', 3, '10F'],
+            {'supervision_type': 0, 'revocations': 1, 'district': 2},
+        )
+
+        # First two calls returns results, third call returns nothing
+        mock_query_job.result.side_effect = [
+            [p1_r1, p1_r2],
+            [p2_r1, p2_r2],
+            []
+        ]
+
+        processed_results = []
+
+        def _process_fn(row: bigquery.table.Row) -> None:
+            processed_results.append(dict(row))
+
+        self.bq_client.paged_read_and_process(mock_query_job, 2, _process_fn)
+
+        self.assertEqual([dict(p1_r1), dict(p1_r2), dict(p2_r1), dict(p2_r2)], processed_results)
+        mock_query_job.result.assert_has_calls([
+            call(max_results=2, start_index=0),
+            call(max_results=2, start_index=2),
+            call(max_results=2, start_index=4),
+        ])
