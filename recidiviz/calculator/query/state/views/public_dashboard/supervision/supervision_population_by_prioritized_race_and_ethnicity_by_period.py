@@ -17,7 +17,8 @@
 """Supervision population by metric period, broken down by race/ethnicity, where a person is counted towards only
 the race/ethnicity category that is least represented in the population of the state."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -68,10 +69,11 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TE
     ORDER BY state_code, metric_period_months, supervision_type, race_or_ethnicity
     """
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'supervision_type', 'metric_period_months', 'race_or_ethnicity'],
     description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),

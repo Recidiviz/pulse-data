@@ -20,7 +20,7 @@ termination to the second LSIR score of the person's supervision.
 """
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -71,10 +71,11 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, district, supervision_type, metric_period_months
     """
 
-AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME,
     view_query_template=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE,
+    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
     description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

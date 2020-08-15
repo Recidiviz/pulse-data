@@ -16,7 +16,8 @@
 # =============================================================================
 """Active FTR participation counts by the region of the program location."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -83,10 +84,11 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
     ORDER BY state_code, supervision_type, race_or_ethnicity, region_id
     """
 
-ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME,
     view_query_template=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'supervision_type', 'race_or_ethnicity', 'region_id'],
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

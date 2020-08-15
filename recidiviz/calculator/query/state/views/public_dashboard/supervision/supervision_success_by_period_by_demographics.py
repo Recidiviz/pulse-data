@@ -16,7 +16,8 @@
 # =============================================================================
 """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -99,10 +100,12 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     ORDER BY state_code, supervision_type, metric_period_months, district, race_or_ethnicity, gender, age_bucket
     """
 
-SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'supervision_type', 'metric_period_months', 'district',
+                'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

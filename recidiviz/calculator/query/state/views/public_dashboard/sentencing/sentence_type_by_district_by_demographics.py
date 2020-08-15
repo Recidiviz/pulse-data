@@ -17,7 +17,8 @@
 """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
 judicial district, and demographics."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -102,10 +103,11 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     ORDER BY state_code, district, race_or_ethnicity, gender, age_bucket
     """
 
-SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings(),

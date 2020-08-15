@@ -18,7 +18,7 @@
 to Free Through Recovery."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -67,10 +67,11 @@ FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, year, month, district, supervision_type
     """
 
-FTR_REFERRALS_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+FTR_REFERRALS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_MONTH_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE,
+    dimensions=['state_code', 'year', 'month', 'district', 'supervision_type'],
     description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
 )

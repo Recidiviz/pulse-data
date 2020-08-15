@@ -63,7 +63,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         comparison_columns = validation_job.validation.comparison_columns
         max_allowed_error = validation_job.validation.max_allowed_error
 
-        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str())
+        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
 
         if validation_job.validation.sameness_check_type == SamenessDataValidationCheckType.NUMBERS:
             return SamenessValidationChecker.run_check_for_numbers(

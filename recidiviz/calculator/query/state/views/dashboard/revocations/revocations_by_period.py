@@ -17,7 +17,7 @@
 """Revocations by metric month period."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -65,10 +65,11 @@ REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, district, supervision_type, metric_period_months
     """
 
-REVOCATIONS_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+REVOCATIONS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_BY_PERIOD_VIEW_NAME,
     view_query_template=REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE,
+    dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
     description=REVOCATIONS_BY_PERIOD_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),

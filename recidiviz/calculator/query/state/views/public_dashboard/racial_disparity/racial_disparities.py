@@ -17,7 +17,8 @@
 """Brings together various metric counts broken down by race/ethnicity for use on the 'Racial Disparities' page of
 the public dashboard."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -144,10 +145,11 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = \
     USING (state_code, race_or_ethnicity)
     """
 
-RACIAL_DISPARITIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+RACIAL_DISPARITIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=RACIAL_DISPARITIES_VIEW_NAME,
     view_query_template=RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'race_or_ethnicity'],
     description=RACIAL_DISPARITIES_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     public_dashboard_dataset=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,

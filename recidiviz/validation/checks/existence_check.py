@@ -41,7 +41,7 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
     def run_check(cls, validation_job: DataValidationJob[ExistenceDataValidationCheck]) -> DataValidationJobResult:
         was_successful = True
         invalid_rows = 0
-        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str())
+        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
 
         # We need to iterate over the collection to initialize the query result set
         for _ in query_job:

@@ -18,7 +18,8 @@
 period months.
 """
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_month import \
@@ -95,10 +96,11 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
     ORDER BY state_code, metric_period_months, district
 """
 
-ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_NAME,
     view_query_template=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE,
+    dimensions=['state_code', 'metric_period_months', 'district'],
     description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,

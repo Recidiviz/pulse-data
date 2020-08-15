@@ -17,7 +17,7 @@
 """Successful and unsuccessful terminations of supervision by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -68,10 +68,11 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     ORDER BY state_code, projected_year, projected_month, district, supervision_type
     """
 
-SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
+    dimensions=['state_code', 'projected_year', 'projected_month', 'supervision_type', 'district'],
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,

@@ -23,8 +23,9 @@ from typing import List, Optional, Dict, Tuple
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClient, ExportQueryConfig
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
@@ -249,7 +250,7 @@ class DirectIngestIngestViewExportManager:
                 intermediate_dataset_id=ingest_view.dataset_id,
                 intermediate_table_name=f'{ingest_view_export_args.ingest_view_name}_latest_export',
                 output_uri=output_path.uri(),
-                output_format=bigquery.DestinationFormat.CSV
+                output_format=bigquery.DestinationFormat.CSV,
             )
         ]
 

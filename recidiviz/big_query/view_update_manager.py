@@ -25,7 +25,7 @@ This can be run on-demand whenever a set of views needs to be updated. Run local
 import argparse
 import logging
 import sys
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
@@ -36,7 +36,7 @@ from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UP
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, List[BigQueryViewBuilder]]] = {
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, Sequence[BigQueryViewBuilder]]] = {
     'county': COUNTY_VIEW_BUILDERS,
     'state': STATE_VIEW_BUILDERS,
     'validation': VALIDATION_VIEW_BUILDERS
@@ -44,7 +44,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, List[BigQueryViewBuilder]
 
 
 def create_dataset_and_update_views_for_view_builders(
-        view_builders_to_update: Dict[str, List[BigQueryViewBuilder]],
+        view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
         materialized_views_only: bool = False):
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
     building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
