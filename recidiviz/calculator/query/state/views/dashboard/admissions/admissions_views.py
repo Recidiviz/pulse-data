@@ -17,7 +17,7 @@
 """Dashboard views related to admissions."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_period import \
     ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_by_type_by_month import \
@@ -27,7 +27,7 @@ from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_vers
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_period import \
     ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER
 
-ADMISSIONS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+ADMISSIONS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     ADMISSIONS_BY_TYPE_BY_PERIOD_VIEW_BUILDER,
     ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER,
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER,

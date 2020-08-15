@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for view_export_manager.py."""
+"""Tests for metric_view_export_manager.py."""
 
 import unittest
 from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import view_export_manager
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.metrics.export import metric_view_export_manager
 
 
-class ViewExportManagerTest(unittest.TestCase):
-    """Tests for view_export_manager.py."""
+class MetricViewExportManagerTest(unittest.TestCase):
+    """Tests for metric_view_export_manager.py."""
 
     def setUp(self):
         project_id = 'fake-recidiviz-project'
@@ -40,14 +40,15 @@ class ViewExportManagerTest(unittest.TestCase):
         self.mock_project_id_fn.return_value = project_id
 
         self.client_patcher = mock.patch(
-            'recidiviz.calculator.query.state.view_export_manager.BigQueryClientImpl')
+            'recidiviz.metrics.export.metric_view_export_manager.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
 
-        self.mock_view_builder = SimpleBigQueryViewBuilder(dataset_id=self.mock_dataset.dataset_id,
+        self.mock_view_builder = MetricBigQueryViewBuilder(dataset_id=self.mock_dataset.dataset_id,
                                                            view_id='test_view',
-                                                           view_query_template='SELECT NULL LIMIT 0')
+                                                           view_query_template='SELECT NULL LIMIT 0',
+                                                           dimensions=[])
 
         self.views_for_dataset = [self.mock_view_builder]
 
@@ -58,7 +59,7 @@ class ViewExportManagerTest(unittest.TestCase):
         }
 
         self.output_uri_template_for_dataset = {
-            "dataset_id": "gs://{project_id}-dataset-location/subdirectory/{state_code}/{view_id}.json",
+            "dataset_id": "gs://{project_id}-dataset-location/subdirectory/{state_code}",
         }
 
         self.views_to_update = {self.mock_dataset_name: self.views_for_dataset}
@@ -66,11 +67,11 @@ class ViewExportManagerTest(unittest.TestCase):
         view_config_values = {
             'STATES_TO_EXPORT': ['US_CA'],
             'DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT': self.views_to_export,
-            'OUTPUT_URI_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
+            'OUTPUT_DIRECTORY_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
             'VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE': self.views_to_update
         }
         self.view_export_config_patcher = mock.patch(
-            'recidiviz.calculator.query.state.view_export_manager.view_config',
+            'recidiviz.metrics.export.metric_view_export_manager.view_config',
             **view_config_values)
         self.mock_export_config = self.view_export_config_patcher.start()
 
@@ -80,9 +81,10 @@ class ViewExportManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
-    def test_export_dashboard_data_to_cloud_storage(self, mock_view_update_manager):
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage(self, mock_view_exporter, mock_view_update_manager):
         """Tests the table is created from the view and then extracted."""
-        view_export_manager.export_view_data_to_cloud_storage()
+        metric_view_export_manager.export_view_data_to_cloud_storage(mock_view_exporter)
 
         mock_view_update_manager.assert_called()
-        self.mock_client.export_query_results_to_cloud_storage.assert_called()
+        mock_view_exporter.export.assert_called()

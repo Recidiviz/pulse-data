@@ -18,7 +18,8 @@
 and supervision_type. If a person has more than one revocation of the same supervision type in a given metric period,
 the most recent one is chosen."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -90,10 +91,11 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
     ORDER BY state_code, metric_period_months, supervision_type, race_or_ethnicity, gender, age_bucket
     """
 
-SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_NAME,
     view_query_template=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLATE,
+    dimensions=['state_code', 'supervision_type', 'metric_period_months', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),

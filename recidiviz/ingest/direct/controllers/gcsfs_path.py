@@ -83,7 +83,8 @@ def strip_forward_slash(string: str):
 
 
 def normalize_relative_path(relative_path: str) -> str:
-    return f'{relative_path}/' if relative_path else ''
+    no_slash_relative_path = relative_path.rstrip('/')
+    return f'{no_slash_relative_path}/' if relative_path else ''
 
 
 @attr.s(frozen=True)

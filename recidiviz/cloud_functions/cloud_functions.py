@@ -24,7 +24,7 @@ from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 import gcsfs
 
-from recidiviz.calculator.query.state import view_export_manager
+from recidiviz.metrics.export import metric_view_export_manager
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
@@ -123,7 +123,7 @@ def view_data_export():
 
     logging.info("Attempting to export view data to cloud storage")
 
-    view_export_manager.export_view_data_to_cloud_storage()
+    metric_view_export_manager.export_view_data_to_cloud_storage()
 
     return '', HTTPStatus.OK
 

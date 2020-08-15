@@ -17,7 +17,7 @@
 """Dashboard views related to revocations of supervision."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_month import \
     REVOCATIONS_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_officer_by_period import \
@@ -33,7 +33,7 @@ from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by
 from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_violation_type_by_month import \
     REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_BUILDER
 
-REVOCATIONS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+REVOCATIONS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     REVOCATIONS_BY_MONTH_VIEW_BUILDER,
     REVOCATIONS_BY_PERIOD_VIEW_BUILDER,
     REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER,
