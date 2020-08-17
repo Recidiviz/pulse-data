@@ -29,7 +29,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION = """
  Identifies the district in which a given parole officer has the largest number of cases.
  """
 
-REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
+OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH all_officers_to_person_count_in_district AS (
@@ -56,10 +56,10 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     WHERE filtered_officers_to_person_count.district_inclusion_priority = 1
     """
 
-REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_NAME,
-    view_query_template=REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
+    view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,
     description=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
@@ -67,4 +67,4 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER.build_and_print()
+        OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER.build_and_print()
