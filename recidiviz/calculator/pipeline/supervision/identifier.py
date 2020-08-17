@@ -50,7 +50,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
-    second_assessment_on_supervision_is_more_reliable
+    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations, \
     get_relevant_supervision_periods_before_admission_date
@@ -1147,10 +1147,8 @@ def _get_supervising_officer_and_district(
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
         -> Tuple[Optional[str], Optional[str]]:
-    # TODO(3433): Implement state-specific logic for finding a person's most recent PO instead of their current
-    #  officer (to use for US_ID if they are currently on a bench warrant)
     supervising_officer_external_id = None
-    supervising_district_external_id = supervision_period.supervision_site
+    supervising_district_external_id = get_supervision_district_from_supervision_period(supervision_period)
 
     if supervision_period.supervision_period_id:
         agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
