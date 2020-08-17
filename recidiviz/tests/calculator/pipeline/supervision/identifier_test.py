@@ -3041,35 +3041,34 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_find_supervision_time_buckets_us_id(self):
         """Tests the find_supervision_time_buckets function where the supervision type should be taken from the
         supervision_period_supervision_type off of the supervision_period."""
-        supervision_period = \
-            StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id='sp1',
-                status=StateSupervisionPeriodStatus.TERMINATED,
-                case_type_entries=[
-                    StateSupervisionCaseTypeEntry.new_with_defaults(
-                        state_code='US_ID',
-                        case_type=StateSupervisionCaseType.GENERAL
-                    )
-                ],
-                state_code='US_ID',
-                custodial_authority='US_ID_DOC',
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MINIMUM,
-                supervision_level_raw_text='LOW'
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code='US_ID',
+                    case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            state_code='US_ID',
+            supervision_site='DISTRICT_1|OFFICE_2',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LOW'
+        )
 
-        supervision_sentence = \
-            StateSupervisionSentence.new_with_defaults(
-                supervision_sentence_id=111,
-                start_date=date(2017, 1, 1),
-                external_id='ss1',
-                status=StateSentenceStatus.COMPLETED,
-                supervision_periods=[supervision_period]
-            )
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id='ss1',
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period]
+        )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             incarceration_sentence_id=123,
@@ -3114,6 +3113,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervising_district_external_id='DISTRICT_1',
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason
             )
@@ -3125,6 +3125,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
+            supervising_district_external_id='DISTRICT_1',
             case_compliances={
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
