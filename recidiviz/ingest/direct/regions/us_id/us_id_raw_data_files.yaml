@@ -335,6 +335,9 @@ raw_files:
   - file_tag: ofndr_behavior_evaluation_response_comments
     primary_key_cols:
       - ofndr_behavior_evaluation_response_comment_id
+  - file_tag: ofndr_behavior_evaluation_response_dates
+    primary_key_cols:
+      - ofndr_behavior_evaluation_response_date_id
   - file_tag: ofndr_classifications
     primary_key_cols:
       - classification_id
@@ -396,6 +399,9 @@ raw_files:
   - file_tag: prvdr
     primary_key_cols:
       - prvdr_id
+  - file_tag: prvdr_typ_cd
+    primary_key_cols:
+      - prvdr_typ_cd
   - file_tag: region
     primary_key_cols:
       - region_id
@@ -406,6 +412,9 @@ raw_files:
     primary_key_cols:
       - tst_id
       - sbstnc_cd
+  - file_tag: sbstnc_tst
+    primary_key_cols:
+      - tst_id
   - file_tag: sentdisp
     primary_key_cols:
       - sent_disp
