@@ -18,7 +18,7 @@
 """Export data from Cloud SQL and load it into BigQuery.
 
 Run this export locally with the following command:
-    python -m recidiviz.calculator.query.export_manager
+    python -m recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager
         --project_id [PROJECT_ID]
         --schema_type [STATE, JAILS, OPERATIONS]
 
