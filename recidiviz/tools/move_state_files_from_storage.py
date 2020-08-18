@@ -30,7 +30,7 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.move_state_files_from_storage \
     --project-id recidiviz-staging --region us_nd \
-    --file-type-to-move unspecified --destination-file-type raw
+    --file-type-to-move unspecified --destination-file-type raw \
     --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
     [--file_filter "docstars_offendercases|elite_offender"]
 """
