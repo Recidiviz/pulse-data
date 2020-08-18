@@ -100,4 +100,4 @@ def memory_condition_handler(event: events.MemoryUsageThresholdExceeded):
 @zope.event.classhandler.handler(events.EventLoopBlocked)
 def blocked_condition_handler(event: events.EventLoopBlocked):
     logging.warning("Worker blocked for more than %d seconds [greenlet: %s]:\n%s",
-                    event.blocking_time, str(event.greenlet), '\n'.join(event.report))
+                    event.blocking_time, str(event.greenlet), '\n'.join(event.info))

@@ -23,8 +23,8 @@ import gevent_config
 workers = multiprocessing.cpu_count() + 1
 worker_connections = 10000
 # Use an asynchronous worker as most of the work is waiting for websites to load
-worker_class = '.'.join([gevent_config.GeventGrpcWorker.__module__,
-                         gevent_config.GeventGrpcWorker.__name__])
+worker_class = '.'.join([gevent_config.CustomGeventWorker.__module__,
+                         gevent_config.CustomGeventWorker.__name__])
 timeout = 3600  # 60 min timeout
 loglevel = 'debug'
 accesslog = 'gunicorn-access.log'
