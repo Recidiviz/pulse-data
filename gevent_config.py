@@ -37,15 +37,33 @@ MEMORY_DEBUG = os.environ.get('MEMORY_DEBUG', False)
 
 # pylint: disable=wrong-import-position
 from gunicorn.workers.ggevent import GeventWorker
-from grpc.experimental import gevent as grpc_gevent
 
 
-class GeventGrpcWorker(GeventWorker):
+class CustomGeventWorker(GeventWorker):
     """Custom gevent worker with extra patching and debugging utilities"""
     def patch(self):
-        super(GeventGrpcWorker, self).patch()
+        """Override `patch` so that we can patch some extra libraries.
+
+        Gevent patches base libraries that perform I/O for us already (e.g. `os` and `sockets). We need to patch any
+        additional libraries that perform I/O outside of the base libraries in order to make them cooperative.
+
+        See https://docs.gunicorn.org/en/stable/design.html#async-workers and
+        https://docs.gunicorn.org/en/stable/design.html#async-workers.
+
+        For a longer discussion of why this is important, see description in #3850.
+        """
+        # pylint: disable=import-outside-toplevel
+        super(CustomGeventWorker, self).patch()
+
+        # patch grpc
+        from grpc.experimental import gevent as grpc_gevent
         grpc_gevent.init_gevent()
         self.log.info('patched grpc')
+
+        # patch psycopg2
+        from psycogreen.gevent import patch_psycopg
+        patch_psycopg()
+        self.log.info('patched psycopg2')
 
     def init_process(self):
         # pylint: disable=import-outside-toplevel
@@ -54,11 +72,11 @@ class GeventGrpcWorker(GeventWorker):
             tracemalloc.start(25)
 
         # Starts run loop.
-        super(GeventGrpcWorker, self).init_process()
+        super(CustomGeventWorker, self).init_process()
 
     def init_signals(self):
         # Leave all signals defined by the superclass in place.
-        super(GeventGrpcWorker, self).init_signals()
+        super(CustomGeventWorker, self).init_signals()
 
         # Use SIGUSR2 to dump threads and memory usage information.
         signal.signal(signal.SIGUSR2, self.dump_profiles)
