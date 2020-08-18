@@ -24,6 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT * 
 FROM {elite_offenderbookingstable}
+WHERE OFFENDER_BOOK_ID IS NOT NULL AND ROOT_OFFENDER_ID IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
