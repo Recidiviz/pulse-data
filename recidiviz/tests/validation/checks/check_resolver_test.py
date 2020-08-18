@@ -16,6 +16,9 @@
 # =============================================================================
 
 """Tests for validation/checks/check_resolver.py."""
+import unittest
+
+from mock import patch
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks import check_resolver
@@ -23,14 +26,25 @@ from recidiviz.validation.checks.existence_check import ExistenceValidationCheck
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationCheck, ValidationCheckType
 
 
-def test_check_happy_path_existence():
-    job = DataValidationJob(region_code='US_VA',
-                            validation=DataValidationCheck(
-                                validation_type=ValidationCheckType.EXISTENCE,
-                                view=BigQueryView(dataset_id='my_dataset',
-                                                  view_id='test_view',
-                                                  view_query_template='select * from literally_anything')
-                            ))
-    check_class = check_resolver.checker_for_validation(job)
+class ValidationCheckResolverTest(unittest.TestCase):
+    """Tests for the DirectIngestIngestViewExportManager class"""
 
-    assert isinstance(check_class, ExistenceValidationChecker)
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'recidiviz-456'
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_check_happy_path_existence(self):
+        job = DataValidationJob(region_code='US_VA',
+                                validation=DataValidationCheck(
+                                    validation_type=ValidationCheckType.EXISTENCE,
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything')
+                                ))
+        check_class = check_resolver.checker_for_validation(job)
+
+        assert isinstance(check_class, ExistenceValidationChecker)

@@ -86,6 +86,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     """Tests for the DirectIngestIngestViewExportManager class"""
 
     def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'recidiviz-456'
+
         fakes.use_in_memory_sqlite_database(OperationsBase)
         self.client_patcher = patch('recidiviz.big_query.big_query_client.BigQueryClient')
         self.mock_client = self.client_patcher.start().return_value
@@ -94,6 +98,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
+        self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
     def to_entity(self, schema_obj):
