@@ -83,6 +83,7 @@ google-cloud-bigquery-storage = "*"
 guppy3 = "*"
 zope.event = "*"
 psutil = "*"
+psycogreen = "*"
 
 [requires]
 python_version = "3.7"
