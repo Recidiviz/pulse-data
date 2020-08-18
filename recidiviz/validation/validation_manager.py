@@ -33,9 +33,20 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import get_bool_param_value
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
-from recidiviz.validation.configured_validations import get_all_validations, STATES_TO_VALIDATE
+from recidiviz.validation.configured_validations import get_all_validations, get_state_codes_to_validate
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
 from recidiviz.validation.views import view_config
+
+m_failed_to_run_validations = measure.MeasureInt(
+    "validation/num_fail_to_run", "The number of validations that failed to run entirely", "1")
+
+failed_to_run_validations_view = view.View("recidiviz/validation/num_fail_to_run",
+                                           "The sum of validations that failed to run",
+                                           [monitoring.TagKey.REGION,
+                                            monitoring.TagKey.VALIDATION_CHECK_TYPE,
+                                            monitoring.TagKey.VALIDATION_VIEW_ID],
+                                           m_failed_to_run_validations,
+                                           aggregation.SumAggregation())
 
 m_failed_validations = measure.MeasureInt("validation/num_failures", "The number of failed validations", "1")
 
@@ -47,7 +58,7 @@ failed_validations_view = view.View("recidiviz/validation/num_failures",
                                     m_failed_validations,
                                     aggregation.SumAggregation())
 
-monitoring.register_views([failed_validations_view])
+monitoring.register_views([failed_validations_view, failed_to_run_validations_view])
 
 
 validation_manager_blueprint = Blueprint('validation_manager', __name__)
@@ -75,6 +86,7 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
     logging.info('Performing a total of %s validation jobs...', len(validation_jobs))
 
     # Perform all validations and track failures
+    failed_to_run_validations: List[DataValidationJob] = []
     failed_validations: List[DataValidationJobResult] = []
     with futures.ThreadPoolExecutor() as executor:
         future_to_jobs = {executor.submit(_run_job, job): job for job in validation_jobs}
@@ -85,16 +97,18 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
                 result = future.result()
                 if not result.was_successful:
                     failed_validations.append(result)
+                logging.info('Finished job [%s] for region [%s]', job.validation.view.view_id, job.region_code)
             except Exception as e:
                 logging.error('Failed to execute asynchronous query for validation job [%s] due to error: %s', job, e)
+                failed_to_run_validations.append(job)
 
-    if failed_validations:
-        logging.error('Found a total of %s failures. Emitting results...', len(failed_validations))
+    if failed_validations or failed_to_run_validations:
+        logging.error('Found a total of [%s] failures, with [%s] failing to run entirely. Emitting results...',
+                      len(failed_validations) + len(failed_to_run_validations), len(failed_to_run_validations))
+        # Emit metrics for all failures
+        _emit_failures(failed_to_run_validations, failed_validations)
     else:
         logging.info('Found no failed validations...')
-
-    # Emit metrics for all failures
-    _emit_failures(failed_validations)
 
     logging.info('Validation run complete. Analyzed a total of %s jobs.', len(validation_jobs))
     return failed_validations
@@ -110,21 +124,32 @@ def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
 
     validation_jobs: List[DataValidationJob] = []
     for check in validation_checks:
-        for state_code in STATES_TO_VALIDATE:
+        for state_code in get_state_codes_to_validate():
             validation_jobs.append(DataValidationJob(validation=check, region_code=state_code))
 
     return validation_jobs
 
 
-def _emit_failures(failed_validations: List[DataValidationJobResult]):
+def _emit_failures(failed_to_run_validations: List[DataValidationJob],
+                   failed_validations: List[DataValidationJobResult]):
+    def tags_for_job(job: DataValidationJob) -> Dict[str, Any]:
+        return {
+            monitoring.TagKey.REGION: job.region_code,
+            monitoring.TagKey.VALIDATION_CHECK_TYPE: job.validation.validation_type,
+            monitoring.TagKey.VALIDATION_VIEW_ID: job.validation.view.view_id
+        }
+
+    for validation_job in failed_to_run_validations:
+        logging.error("Failed to run data validation job: %s", validation_job)
+
+        monitoring_tags = tags_for_job(validation_job)
+        with monitoring.measurements(monitoring_tags) as measurements:
+            measurements.measure_int_put(m_failed_to_run_validations, 1)
+
     for result in failed_validations:
         logging.error("Failed data validation: %s", result)
 
-        monitoring_tags: Dict[str, Any] = {
-            monitoring.TagKey.REGION: result.validation_job.region_code,
-            monitoring.TagKey.VALIDATION_CHECK_TYPE: result.validation_job.validation.validation_type,
-            monitoring.TagKey.VALIDATION_VIEW_ID: result.validation_job.validation.view.view_id
-        }
+        monitoring_tags = tags_for_job(result.validation_job)
         with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_validations, 1)
 
@@ -135,5 +160,9 @@ def _readable_response(failed_validations: List[DataValidationJobResult]) -> str
 
 
 if __name__ == '__main__':
-    with local_project_id_override(GCP_PROJECT_STAGING):
+    # This will run validations for all regions against data in the given project, regardless of whether the state is
+    # officially launched in that environment.
+    project_id = GCP_PROJECT_STAGING
+    logging.getLogger().setLevel(logging.INFO)
+    with local_project_id_override(project_id):
         execute_validation(should_update_views=True)
