@@ -30,23 +30,22 @@ PO_REPORT_MISSING_FIELDS_DESCRIPTION = """
   All PO report rows with missing data for required columns
   """
 
-PO_REPORT_REQUIRED_FIELDS = ['pos_discharges', 'pos_discharges_change', 'pos_discharges_district_average',
+PO_REPORT_REQUIRED_FIELDS = ['pos_discharges', 'pos_discharges_district_average',
                              'pos_discharges_state_average', 'earned_discharges', 'earned_discharges_change',
                              'earned_discharges_district_average', 'earned_discharges_state_average',
                              'technical_revocations', 'technical_revocations_change', 'absconsions',
                              'absconsions_change', 'crime_revocations', 'crime_revocations_change']
 PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ['total_rows']
 
-PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = \
-    """
-    /*{description}*/
-    SELECT
-      state_code as region_code, review_month,
-      COUNT(*) AS total_rows,
-      {non_null_column_count}
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-    GROUP BY state_code, review_month
-    """
+PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = """
+/*{description}*/
+SELECT
+  state_code as region_code, review_month,
+  COUNT(*) AS total_rows,
+  {non_null_column_count}
+FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
+GROUP BY state_code, review_month
+"""
 
 PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
@@ -54,7 +53,7 @@ PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE,
     description=PO_REPORT_MISSING_FIELDS_DESCRIPTION,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
-    non_null_column_count=',\n'.join(
+    non_null_column_count=',\n  '.join(
         [f'SUM(IF({col} IS NOT NULL, 1, 0)) AS {col}' for col in PO_REPORT_REQUIRED_FIELDS]
     )
 )

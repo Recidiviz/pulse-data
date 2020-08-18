@@ -18,6 +18,7 @@
 """Contains configured data validations to perform."""
 from typing import List
 
+from recidiviz.utils import regions
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.validation_models import DataValidationCheck
@@ -86,7 +87,16 @@ from recidiviz.validation.views.state.supervision_success_by_period_dashboard_co
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER
 
-STATES_TO_VALIDATE = ['US_ID', 'US_MO', 'US_ND', 'US_PA']
+_STATES_TO_VALIDATE_IF_LAUNCHED_IN_ENV = ['US_ID', 'US_MO', 'US_ND', 'US_PA']
+
+
+def get_state_codes_to_validate() -> List[str]:
+    state_codes_to_validate = []
+    for state_code in _STATES_TO_VALIDATE_IF_LAUNCHED_IN_ENV:
+        region = regions.get_region(state_code.lower(), is_direct_ingest=True)
+        if region.is_ingest_launched_in_env():
+            state_codes_to_validate.append(state_code)
+    return state_codes_to_validate
 
 
 def get_all_validations() -> List[DataValidationCheck]:

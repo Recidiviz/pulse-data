@@ -20,15 +20,10 @@ from typing import Optional, Dict, TypeVar, Generic
 
 from google.cloud import bigquery
 
-from recidiviz.utils import metadata, environment
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS
 
 PROJECT_ID_KEY = 'project_id'
-
-
-@environment.test_only
-def test_only_project_id() -> str:
-    return 'test-only-project'
 
 
 class BigQueryView(bigquery.TableReference):
@@ -46,11 +41,7 @@ class BigQueryView(bigquery.TableReference):
             project_id = metadata.project_id()
 
             if not project_id:
-                # BigQueryViews are sometimes declared as top-level objects that are instantiated with file load. This
-                # means this constructor might execute inside of an import and before a test has a chance to mock the
-                # project id. This keeps us from constructing a DatasetReference with a None project_id, which will
-                # throw.
-                project_id = test_only_project_id()
+                raise ValueError(f'Found no project_id set instantiating view [{view_id}]')
 
         _validate_view_query_template(dataset_id, view_id, view_query_template)
 
