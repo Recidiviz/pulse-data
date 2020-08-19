@@ -52,7 +52,7 @@ COVID_REPORT_WEEKS_QUERY_TEMPLATE = \
 """
 
 COVID_REPORT_WEEKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=COVID_REPORT_WEEKS_VIEW_NAME,
     view_query_template=COVID_REPORT_WEEKS_QUERY_TEMPLATE,
     description=COVID_REPORT_WEEKS_DESCRIPTION

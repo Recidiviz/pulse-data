@@ -23,9 +23,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME = \
-    'most_recent_daily_supervision_population_view'
-
-MATERIALIZED_VIEW_TABLE_NAME = 'most_recent_daily_supervision_population'
+    'most_recent_daily_supervision_population'
 
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION = \
     """Event based supervision population for the most recent date of supervision."""
@@ -40,7 +38,7 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
         job_id,
         metric_type
       FROM
-        `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
+        `{project_id}.{reference_views_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
     ), population_with_race_or_ethnicity_priorities AS (
       SELECT
          *,
@@ -55,7 +53,7 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       USING (state_code, job_id, date_of_supervision, metric_type),
         {race_or_ethnicity_dimension}
       LEFT JOIN
-         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
       WHERE metric_period_months = 0
       AND methodology = 'EVENT'
@@ -77,13 +75,14 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
     """
 
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME,
-    materialized_view_table_id=MATERIALIZED_VIEW_TABLE_NAME,
+    should_materialize=True,
     view_query_template=MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE,
     description=MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity()
 )
 

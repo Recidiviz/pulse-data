@@ -55,7 +55,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         FROM
           `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
         JOIN
-          `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
+          `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
         USING (state_code, job_id, year, month, metric_period_months, metric_type)
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
           AND admission_reason IN ('NEW_ADMISSION', 'PROBATION_REVOCATION')
@@ -78,7 +78,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         ranked_releases_by_period,
         {race_or_ethnicity_dimension}
       LEFT JOIN
-         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
       WHERE release_ranking = 1
     )
@@ -118,7 +118,8 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'metric_period_months', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),

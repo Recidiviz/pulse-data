@@ -46,7 +46,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       charge_category,
       district,
       metric_period_months    
-    FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`,
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`,
     {race_ethnicity_dimension}
     GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months
@@ -62,7 +62,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       charge_category,
       district,
       metric_period_months    
-    FROM `{project_id}.{reference_dataset}.supervision_termination_matrix_by_person`,
+    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person`,
     {race_ethnicity_dimension}
     GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months
@@ -78,7 +78,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       charge_category,
       district,
       metric_period_months
-    FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`,
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`,
     {race_ethnicity_dimension}
     GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, charge_category,
       district, metric_period_months
@@ -119,7 +119,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
                 'violation_type', 'reported_violations', 'charge_category', 'race', 'risk_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
 )
 

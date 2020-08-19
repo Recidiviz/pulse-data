@@ -42,7 +42,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         agent.agent_external_id AS officer_external_id,
         COUNT(DISTINCT person_id) AS absconsion_count
       FROM `{project_id}.{state_dataset}.state_supervision_period` supervision_period
-      LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
+      LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       WHERE termination_date IS NOT NULL
         AND supervision_period.termination_reason = 'ABSCONSION'
@@ -57,7 +57,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         SPLIT(district, '|')[OFFSET(0)] AS district,
         officer_external_id
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
         -- Only the following supervision types should be included in the PO report
         AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
@@ -77,7 +77,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBig
     view_id=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
 )
 

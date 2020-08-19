@@ -39,7 +39,7 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
       district,
       admission_reason, admission_date
     FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
       USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension}
     WHERE methodology = 'EVENT'
@@ -50,12 +50,12 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
     """
 
 EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=EVENT_BASED_ADMISSIONS_VIEW_NAME,
     view_query_template=EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence')
 )

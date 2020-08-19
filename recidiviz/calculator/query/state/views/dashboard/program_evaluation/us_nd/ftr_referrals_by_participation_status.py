@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import view_config
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -38,7 +38,7 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = \
       COUNT(DISTINCT IF(participation_status = 'DISCHARGED', person_id, NULL)) AS discharged,
       COUNT(DISTINCT IF(participation_status = 'DENIED', person_id, NULL)) AS denied,
       COUNT(DISTINCT IF(participation_status = 'PENDING', person_id, NULL)) AS pending
-    FROM `{project_id}.{reference_dataset}.event_based_program_referrals`
+    FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND state_code = 'US_ND'
     GROUP BY state_code, year, month, district, supervision_type
@@ -46,12 +46,12 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = \
     """
 
 FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER = MetricBigQueryViewBuilder(
-    dataset_id=view_config.DASHBOARD_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_NAME,
     view_query_template=FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE,
     dimensions=['state_code', 'year', 'month', 'district', 'supervision_type'],
     description=FTR_REFERRALS_BY_PARTICIPATION_STATUS_DESCRIPTION,
-    reference_dataset=view_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

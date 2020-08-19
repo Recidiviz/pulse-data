@@ -23,7 +23,10 @@ DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
 DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
 
 # Where static reference tables live
-REFERENCE_TABLES_DATASET: str = 'reference_tables'
+STATIC_REFERENCE_TABLES_DATASET: str = 'static_reference_tables'
+
+# Where reference views (views used by other views) live
+REFERENCE_VIEWS_DATASET: str = 'reference_views'
 
 # Where the base tables for the state schema live
 STATE_BASE_DATASET: str = 'state'

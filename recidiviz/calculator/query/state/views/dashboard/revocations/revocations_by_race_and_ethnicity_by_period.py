@@ -48,7 +48,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
         district,
         metric_period_months,
         race_or_ethnicity
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension},
       {race_ethnicity_dimension}
       WHERE {metric_period_condition}
@@ -62,7 +62,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
         district,
         metric_period_months,
         race_or_ethnicity
-      FROM `{project_id}.{reference_dataset}.event_based_revocations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_revocations`,
       {metric_period_dimension},
       {race_ethnicity_dimension}
       WHERE {metric_period_condition}
@@ -80,7 +80,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBui
     view_query_template=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district', 'race_or_ethnicity'],
     description=REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_condition=bq_utils.metric_period_condition(),

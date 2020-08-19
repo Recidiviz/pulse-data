@@ -47,7 +47,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{state_dataset}.state_early_discharge` discharge
       JOIN `{project_id}.{state_dataset}.state_supervision_period` period
         USING (state_code, person_id)
-      LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
+      LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       -- Attribute an early discharge to a supervision period when it was requested before the period was terminated
       WHERE period.start_date <= discharge.request_date
@@ -62,7 +62,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         officer_external_id,
         SPLIT(district, '|')[OFFSET(0)] AS district
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
         -- Only the following supervision types should be included in the PO report
         AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
@@ -106,7 +106,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBi
     view_id=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='district'),
 )

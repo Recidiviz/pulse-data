@@ -43,7 +43,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
                  agent.district_external_id) AS district,
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
       FROM `{project_id}.{state_dataset}.state_supervision_period`
-      LEFT JOIN `{project_id}.{reference_dataset}.supervision_period_to_agent_association` agent
+      LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       -- Only the following supervision types should be included in the PO report
       WHERE supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
@@ -78,7 +78,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         SPLIT(district, '|')[OFFSET(0)] AS district,
         officer_external_id
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
       WHERE district != 'ALL'
         -- Only the following supervision types should be included in the PO report
         AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
@@ -132,7 +132,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_id=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='district'),
 )

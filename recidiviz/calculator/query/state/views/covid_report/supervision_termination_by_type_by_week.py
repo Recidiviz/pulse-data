@@ -18,8 +18,6 @@
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, COVID_REPORT_DATASET, \
-    REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -78,7 +76,7 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         COUNT(DISTINCT IF(termination_reason IN ('REVOCATION', 'ABSCONSION', 'RETURN_TO_INCARCERATION'),
                           person_id, NULL)) as negative_termination_count,
       FROM
-        `{project_id}.{reference_dataset}.covid_report_weeks` report
+        `{project_id}.{reference_views_dataset}.covid_report_weeks` report
       LEFT JOIN
         (SELECT
           state_code,
@@ -101,9 +99,9 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_id=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
-    covid_report_dataset=COVID_REPORT_DATASET,
-    reference_dataset=REFERENCE_TABLES_DATASET
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

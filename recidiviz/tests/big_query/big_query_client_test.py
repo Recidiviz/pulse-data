@@ -51,7 +51,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             dataset_id='dataset',
             view_id='test_view',
             view_query_template='SELECT NULL LIMIT 0',
-            materialized_view_table_id='test_view_table'
+            should_materialize=True
         )
 
         self.bq_client = BigQueryClientImpl()
@@ -246,7 +246,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             dataset_id='dataset',
             view_id='test_view',
             view_query_template='SELECT NULL LIMIT 0',
-            materialized_view_table_id=None
+            should_materialize=False
         )
 
         with pytest.raises(ValueError):
