@@ -233,6 +233,7 @@ class TestFetchValidations(TestCase):
         # list to confirm you've updated all relevant external data validation tables in production to include
         # validation data for the newly promoted region.
         self.assertEqual(state_codes_to_validate, [
+            'US_ID',
             'US_MO',
             'US_ND'
         ])
