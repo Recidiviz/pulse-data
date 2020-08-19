@@ -19,3 +19,4 @@ beta_settings:
 env_variables:
   RECIDIVIZ_ENV: staging
   MEMORY_DEBUG: true
+  MONITOR_THREAD: true
