@@ -48,7 +48,7 @@ FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
       GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
@@ -57,7 +57,7 @@ FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_dataset}.event_based_program_referrals`
+      FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`
       GROUP BY state_code, year, month, supervision_type, district
     ) ref
     USING (state_code, year, month, supervision_type, district)
@@ -73,7 +73,7 @@ FTR_REFERRALS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE,
     dimensions=['state_code', 'year', 'month', 'district', 'supervision_type'],
     description=FTR_REFERRALS_BY_MONTH_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

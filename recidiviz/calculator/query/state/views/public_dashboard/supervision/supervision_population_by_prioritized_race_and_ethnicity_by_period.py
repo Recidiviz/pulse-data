@@ -44,12 +44,12 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TE
         ROW_NUMBER() OVER
         -- People can be counted on multiple types of supervision simultaneously --
         (PARTITION BY state_code, metric_period_months, person_id, supervision_type ORDER BY representation_priority) as inclusion_priority
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months,
       {race_or_ethnicity_dimension}
       LEFT JOIN
-         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
       WHERE {metric_period_condition}
       AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
@@ -75,7 +75,8 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
     view_query_template=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'supervision_type', 'metric_period_months', 'race_or_ethnicity'],
     description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),

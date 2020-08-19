@@ -36,7 +36,7 @@ PO_REPORT_DISTINCT_BY_OFFICER_MONTH_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code as region_code, review_month, email_address, count(*) AS total_rows
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
     GROUP BY state_code, review_month, email_address
     HAVING count(*) > 1
     """

@@ -43,7 +43,7 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       metric_period_months
-    FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
     GROUP BY state_code, district, supervision_type, charge_category, violation_type, reported_violations,
       metric_period_months
     ORDER BY state_code, metric_period_months, district, supervision_type, reported_violations, charge_category,
@@ -57,7 +57,7 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_VIEW_BUILDER = MetricBig
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
                 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

@@ -46,7 +46,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
       GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
@@ -66,7 +66,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
           -- Only use most recent revocation per person/supervision_type/metric_period_months
           ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id, supervision_type, district
                              ORDER BY revocation_admission_date DESC) AS revocation_rank
-        FROM `{project_id}.{reference_dataset}.event_based_revocations`
+        FROM `{project_id}.{reference_views_dataset}.event_based_revocations`
       )
       WHERE revocation_rank = 1
       GROUP BY state_code, year, month, supervision_type, district
@@ -82,7 +82,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE,
     dimensions=['state_code', 'year', 'month', 'district', 'supervision_type'],
     description=REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

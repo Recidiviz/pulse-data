@@ -51,7 +51,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         supervising_district_external_id AS district,
         supervising_officer_external_id AS officer
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics` 
-    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
     USING (state_code, job_id, year, month, metric_period_months, metric_type)
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -61,12 +61,12 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
     """
 
 EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_NAME,
     view_query_template=EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

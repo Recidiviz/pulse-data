@@ -38,14 +38,14 @@ PO_REPORT_REQUIRED_FIELDS = ['pos_discharges', 'pos_discharges_district_average'
 PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ['total_rows']
 
 PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = """
-/*{description}*/
-SELECT
-  state_code as region_code, review_month,
-  COUNT(*) AS total_rows,
-  {non_null_column_count}
-FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-GROUP BY state_code, review_month
-"""
+    /*{description}*/
+    SELECT
+      state_code as region_code, review_month,
+      COUNT(*) AS total_rows,
+      {non_null_column_count}
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    GROUP BY state_code, review_month
+    """
 
 PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,

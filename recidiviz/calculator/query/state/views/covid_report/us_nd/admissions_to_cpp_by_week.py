@@ -18,8 +18,6 @@
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, COVID_REPORT_DATASET, \
-    REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -78,7 +76,7 @@ ADMISSIONS_TO_CPP_BY_WEEK_QUERY_TEMPLATE = \
             admission_date,
             row_number() OVER (PARTITION BY person_id ORDER BY admission_date ASC) as admission_num
           FROM
-            `{project_id}.{reference_dataset}.covid_report_weeks` report
+            `{project_id}.{reference_views_dataset}.covid_report_weeks` report
           LEFT JOIN
           (SELECT
             state_code,
@@ -99,9 +97,9 @@ ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ADMISSIONS_TO_CPP_BY_WEEK_VIEW_NAME,
     view_query_template=ADMISSIONS_TO_CPP_BY_WEEK_QUERY_TEMPLATE,
     description=ADMISSIONS_TO_CPP_BY_WEEK_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
-    covid_report_dataset=COVID_REPORT_DATASET,
-    reference_dataset=REFERENCE_TABLES_DATASET
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

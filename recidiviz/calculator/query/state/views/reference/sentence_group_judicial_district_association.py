@@ -101,17 +101,17 @@ SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
       sentence_groups
     -- Join on the county_code from the charge to get the judicial district of the sentence
     LEFT JOIN
-        `{project_id}.{reference_dataset}.state_county_codes` county_judicial_district
+        `{project_id}.{static_reference_dataset}.state_county_codes` county_judicial_district
     USING (state_code, county_code)
     """
 
 SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
     view_query_template=SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

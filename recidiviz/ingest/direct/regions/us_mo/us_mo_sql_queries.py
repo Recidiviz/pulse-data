@@ -28,16 +28,17 @@ offline.
 
 from typing import List, Tuple, Optional
 
+from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.ingest.direct.query_utils import output_sql_queries
 
 
-US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY = """
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
-PROD AND STAGING USING THE FOLLOWING COMMANDS:
+US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY = f"""
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `{STATIC_REFERENCE_TABLES_DATASET}`
+DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-staging \
-    --destination-table reference_tables.us_mo_tak025_sentence_status_xref \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak025_sentence_status_xref \
     --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
     --separator , \
     --overwrite-if-exists True \
@@ -45,7 +46,7 @@ python -m recidiviz.tools.upload_local_file_to_bq \
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-123 \
-    --destination-table reference_tables.us_mo_tak025_sentence_status_xref \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak025_sentence_status_xref \
     --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
     --separator , \
     --overwrite-if-exists True \
@@ -56,13 +57,13 @@ FROM LBAKRDTA.TAK025 status_xref_bv
 ORDER BY BV$DOC, BV$CYC;
 """
 
-US_MO_TAK026_SENTENCE_STATUS_QUERY = """
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
-PROD AND STAGING USING THE FOLLOWING COMMANDS:
+US_MO_TAK026_SENTENCE_STATUS_QUERY = f"""
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `{STATIC_REFERENCE_TABLES_DATASET}`
+DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-staging \
-    --destination-table reference_tables.us_mo_tak026_sentence_status \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak026_sentence_status \
     --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
     --separator , \
     --overwrite-if-exists True
@@ -70,7 +71,7 @@ python -m recidiviz.tools.upload_local_file_to_bq \
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-123 \
-    --destination-table reference_tables.us_mo_tak026_sentence_status \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak026_sentence_status \
     --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
     --separator , \
     --overwrite-if-exists True \
@@ -81,13 +82,13 @@ FROM LBAKRDTA.TAK026 status_bw
 ORDER BY BW$DOC, BW$CYC;
 """
 
-US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY = """
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `reference_tables` DATASETS IN
-PROD AND STAGING USING THE FOLLOWING COMMANDS:
+US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY = f"""
+/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE `{STATIC_REFERENCE_TABLES_DATASET}`
+DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-staging \
-    --destination-table reference_tables.us_mo_tak146_status_code_descriptions \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak146_status_code_descriptions \
     --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
     --separator , \
     --overwrite-if-exists True \
@@ -95,7 +96,7 @@ python -m recidiviz.tools.upload_local_file_to_bq \
 
 python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-123 \
-    --destination-table reference_tables.us_mo_tak146_status_code_descriptions \
+    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak146_status_code_descriptions \
     --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
     --separator , \
     --overwrite-if-exists True \

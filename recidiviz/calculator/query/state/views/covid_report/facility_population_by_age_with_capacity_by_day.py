@@ -20,7 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, Simple
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_DATASET, \
-    REFERENCE_TABLES_DATASET
+    STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -81,7 +81,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
             FROM
               `{project_id}.{metrics_dataset}.incarceration_population_metrics`
             JOIN
-              `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
+              `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
             USING (state_code, job_id, year, month, metric_period_months, metric_type)
             WHERE metric_period_months = 0
             AND methodology = 'PERSON'
@@ -94,7 +94,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
             USING (state_code, person_id))
         GROUP BY state_code, facility, date_of_stay) 
     LEFT JOIN
-      `{project_id}.{reference_dataset}.state_incarceration_facility_capacity`
+      `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
     USING (state_code, facility)
     ORDER BY state_code, facility, date_of_stay
 """
@@ -106,7 +106,8 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER = SimpleBigQueryVie
     description=FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
     metrics_dataset=DATAFLOW_METRICS_DATASET,
-    reference_dataset=REFERENCE_TABLES_DATASET,
+    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     facility_dimension=bq_utils.unnest_column('facility', 'facility')
 )
 
