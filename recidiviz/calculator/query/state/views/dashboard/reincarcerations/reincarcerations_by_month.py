@@ -39,7 +39,7 @@ REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         district,
         COUNT(person_id) as total_admissions
-      FROM `{project_id}.{reference_dataset}.event_based_admissions`
+      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
       GROUP BY state_code, year, month, district
     ) adm
     LEFT JOIN (
@@ -48,7 +48,7 @@ REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
         district,
         COUNT(person_id) AS returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension}
       WHERE methodology = 'PERSON'
@@ -70,7 +70,7 @@ REINCARCERATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'year', 'month', 'district'],
     description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
 )

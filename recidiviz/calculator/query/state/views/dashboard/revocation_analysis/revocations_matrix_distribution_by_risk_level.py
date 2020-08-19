@@ -44,7 +44,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           charge_category,
           district,
           metric_period_months    
-        FROM `{project_id}.{reference_dataset}.supervision_matrix_by_person`
+        FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
           district, metric_period_months
       ), termination_counts AS (
@@ -58,7 +58,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           charge_category,
           district,
           metric_period_months    
-        FROM `{project_id}.{reference_dataset}.supervision_termination_matrix_by_person` 
+        FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person` 
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
           district, metric_period_months
       ), revocation_counts AS (
@@ -72,7 +72,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           charge_category,
           district,
           metric_period_months
-        FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
+        FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
           district, metric_period_months
     )
@@ -111,7 +111,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = MetricBigQueryViewB
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
                 'violation_type', 'reported_violations', 'charge_category', 'risk_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

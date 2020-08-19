@@ -48,7 +48,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
         -- Use the assessment bucket from the most recent supervision
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY year DESC, month DESC) AS supervision_rank
-      FROM `{project_id}.{reference_dataset}.event_based_supervision_populations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
     ),
@@ -63,7 +63,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
         -- Use the assessment bucket from the most recent referral
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY year DESC, month DESC) AS referral_rank
-      FROM `{project_id}.{reference_dataset}.event_based_program_referrals`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
     )
@@ -114,7 +114,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'assessment_score_bucket'],
     description=FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )

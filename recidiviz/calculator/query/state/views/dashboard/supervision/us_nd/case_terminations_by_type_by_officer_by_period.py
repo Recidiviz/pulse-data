@@ -35,7 +35,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
     f"""
     /*{{description}}*/
-    {_get_query_prep_statement(reference_dataset=dataset_config.REFERENCE_TABLES_DATASET)}
+    {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
     SELECT
       state_code,
       COUNT(DISTINCT absconsion) AS absconsion,

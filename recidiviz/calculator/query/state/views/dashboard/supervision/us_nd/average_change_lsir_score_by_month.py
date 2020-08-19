@@ -53,7 +53,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervision_type, district, person_id
                            ORDER BY termination_date DESC) AS supervision_rank
       FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {supervision_dimension}
@@ -78,7 +78,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'termination_year', 'termination_month', 'supervision_type', 'district'],
     description=AVERAGE_CHANGE_LSIR_SCORE_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
 )

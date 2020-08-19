@@ -23,9 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-PO_MONTHLY_REPORT_DATA_VIEW_NAME = 'po_monthly_report_data_view'
-
-MATERIALIZED_VIEW_TABLE_NAME = 'po_monthly_report_data'
+PO_MONTHLY_REPORT_DATA_VIEW_NAME = 'po_monthly_report_data'
 
 PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
  Monthly data regarding an officer's success in discharging people from supervision, recommending early discharge
@@ -106,7 +104,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
 PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=PO_MONTHLY_REPORT_DATA_VIEW_NAME,
-    materialized_view_table_id=MATERIALIZED_VIEW_TABLE_NAME,
+    should_materialize=True,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
     dimensions=['state_code', 'year', 'month', 'officer_external_id', 'district'],
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,

@@ -18,8 +18,6 @@
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, \
-    REFERENCE_TABLES_DATASET, COVID_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -43,12 +41,12 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
           release_reason,
           supervision_type_at_release 
         FROM
-          `{project_id}.{reference_dataset}.covid_report_weeks` report
+          `{project_id}.{reference_views_dataset}.covid_report_weeks` report
         JOIN
           `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
         USING (state_code)
         JOIN
-          `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code`
+          `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
         USING (state_code, job_id, year, month, metric_period_months, metric_type)
         WHERE releases.release_date BETWEEN report.start_date AND report.end_date
           AND release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
@@ -94,9 +92,9 @@ RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=RELEASES_BY_TYPE_BY_WEEK_VIEW_NAME,
     view_query_template=RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE,
     description=RELEASES_BY_TYPE_BY_WEEK_DESCRIPTION,
-    covid_report_dataset=COVID_REPORT_DATASET,
-    metrics_dataset=DATAFLOW_METRICS_DATASET,
-    reference_dataset=REFERENCE_TABLES_DATASET
+    covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

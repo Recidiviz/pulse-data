@@ -35,7 +35,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
       COUNT(DISTINCT person_id) AS returns,
       AVG(days_at_liberty) AS avg_liberty
     FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
       USING (state_code, year, month, metric_period_months, job_id, metric_type)
     WHERE methodology = 'PERSON'
       AND person_id IS NOT NULL
@@ -54,7 +54,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'year', 'month'],
     description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 

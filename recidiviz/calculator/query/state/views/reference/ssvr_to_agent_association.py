@@ -51,7 +51,7 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
         FROM
         `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
         LEFT JOIN
-        `{project_id}.{reference_tables_dataset}.augmented_agent_info` agents
+        `{project_id}.{reference_views_dataset}.augmented_agent_info` agents
         ON agents.agent_id = response.agent_id
       )
     )
@@ -59,12 +59,12 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
 """
 
 SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
     view_query_template=SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
     description=SSVR_TO_AGENT_ASSOCIATION_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

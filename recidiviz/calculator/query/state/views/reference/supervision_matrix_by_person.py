@@ -53,7 +53,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             date_of_supervision,
             FALSE AS is_revocation
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-        JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+        JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type)
         WHERE methodology = 'EVENT'
             AND metric_period_months = 0
@@ -65,7 +65,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             * EXCEPT(revocation_admission_date),
             revocation_admission_date AS date_of_supervision,
             TRUE as is_revocation
-        FROM `{project_id}.{reference_dataset}.event_based_revocations_for_matrix`
+        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`
     ), revocations_and_supervisions AS (
       SELECT * FROM supervision_matrix
         UNION ALL
@@ -99,12 +99,12 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),

@@ -30,7 +30,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
 """
 
 
-def _get_query_prep_statement(reference_dataset):
+def _get_query_prep_statement(reference_views_dataset):
     """Return the Common Table Expression used to gather the termination case data"""
     return """
         -- Gather supervision period case termination data
@@ -45,14 +45,14 @@ def _get_query_prep_statement(reference_dataset):
             district,
             agent.agent_external_id AS officer_external_id
           FROM `{{project_id}}.state.state_supervision_period` supervision_period
-          LEFT JOIN `{{project_id}}.{reference_dataset}.supervision_period_to_agent_association` agent
+          LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),
           {district_dimension},
           {supervision_dimension}
           WHERE termination_date IS NOT NULL
         )
     """.format(
-        reference_dataset=reference_dataset,
+        reference_views_dataset=reference_views_dataset,
         district_dimension=bq_utils.unnest_district(
             district_column='agent.district_external_id'),
         supervision_dimension=bq_utils.unnest_supervision_type(
@@ -63,7 +63,7 @@ def _get_query_prep_statement(reference_dataset):
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     f"""
     /*{{description}}*/
-    {_get_query_prep_statement(reference_dataset=dataset_config.REFERENCE_TABLES_DATASET)}
+    {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
     SELECT
       state_code, year, month,
       COUNT(DISTINCT absconsion) AS absconsion,

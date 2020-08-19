@@ -50,7 +50,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         supervision_type,
         district
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {supervision_dimension},
@@ -72,7 +72,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuild
     view_query_template=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),

@@ -44,7 +44,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = \
       COUNT(DISTINCT IF(admission_reason NOT IN ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION'), person_id, NULL)) as other_count,
       COUNT(DISTINCT(person_id)) as total_population
     FROM
-      `{project_id}.{reference_dataset}.most_recent_daily_incarceration_population`,
+      `{project_id}.{reference_views_dataset}.most_recent_daily_incarceration_population_materialized`,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
@@ -62,7 +62,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
     view_query_template=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'date_of_stay', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),

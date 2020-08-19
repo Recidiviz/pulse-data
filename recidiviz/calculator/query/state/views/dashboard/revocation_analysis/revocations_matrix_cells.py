@@ -41,7 +41,7 @@ REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = \
         charge_category,
         district,
         metric_period_months
-    FROM `{project_id}.{reference_dataset}.revocations_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
     WHERE reported_violations > 0
     GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district,
         metric_period_months
@@ -56,7 +56,7 @@ REVOCATIONS_MATRIX_CELLS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
                 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

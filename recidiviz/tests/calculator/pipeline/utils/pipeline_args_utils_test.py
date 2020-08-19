@@ -28,7 +28,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
     DEFAULT_INCARCERATION_PIPELINE_ARGS =   \
         Namespace(calculation_month_count=1, calculation_end_month=None,
                   data_input='state', output='dataflow_metrics', metric_types={'ALL'},
-                  person_filter_ids=None, reference_input='reference_tables', state_code=None)
+                  person_filter_ids=None, reference_input='reference_views', state_code=None)
 
     DEFAULT_APACHE_BEAM_OPTIONS_DICT = {
         'runner': 'DataflowRunner',
@@ -86,7 +86,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             '--bucket', 'recidiviz-123-my-bucket',
             '--region=us-central1',
             '--data_input', 'county',
-            '--reference_input', 'reference_tables_2',
+            '--reference_input', 'reference_views_2',
             '--output', 'dataflow_metrics_2',
             '--calculation_month_count=6',
             '--calculation_end_month=2009-07',
@@ -101,7 +101,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         expected_incarceration_pipeline_args = \
             Namespace(calculation_month_count=6, calculation_end_month='2009-07',
                       data_input='county', output='dataflow_metrics_2', metric_types={'ALL'},
-                      person_filter_ids=None, reference_input='reference_tables_2', state_code=None)
+                      person_filter_ids=None, reference_input='reference_views_2', state_code=None)
 
         self.assertEqual(incarceration_pipeline_args, expected_incarceration_pipeline_args)
 

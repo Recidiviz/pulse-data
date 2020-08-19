@@ -54,7 +54,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             district,
             officer,
             ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY revocation_admission_date DESC) as ranking
-        FROM `{project_id}.{reference_dataset}.event_based_revocations_for_matrix`,
+        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
     )
@@ -86,12 +86,12 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     """
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),

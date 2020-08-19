@@ -20,8 +20,8 @@ from typing import Dict, List, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_TABLES_DATASET, DASHBOARD_VIEWS_DATASET, \
-    COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET, \
+    COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET, REFERENCE_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.po_report.po_report_views import PO_REPORT_VIEW_BUILDERS
@@ -32,7 +32,7 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
-    REFERENCE_TABLES_DATASET: REFERENCE_VIEW_BUILDERS,
+    REFERENCE_VIEWS_DATASET: REFERENCE_VIEW_BUILDERS,
     COVID_REPORT_DATASET: COVID_REPORT_VIEW_BUILDERS,
     DASHBOARD_VIEWS_DATASET: DASHBOARD_VIEW_BUILDERS,
     PO_REPORT_DATASET: PO_REPORT_VIEW_BUILDERS,

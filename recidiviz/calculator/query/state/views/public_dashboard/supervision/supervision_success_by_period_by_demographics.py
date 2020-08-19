@@ -43,7 +43,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics` success_metrics
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {race_or_ethnicity_dimension},
       {gender_dimension},
@@ -67,7 +67,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
        FROM
           supervision_completions
        LEFT JOIN
-        `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+        `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity) 
     ), successful_termination_counts AS (
       SELECT
@@ -108,7 +108,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
                 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     grouped_districts=
     bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
