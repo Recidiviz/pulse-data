@@ -25,8 +25,9 @@ import os
 import signal
 
 from gevent import config
-config.monitor_thread = True
-config.max_blocking_time = 30  # 30 seconds
+# Turn this off by default as it may block the cpu itself: gevent/gevent#1665
+config.monitor_thread = os.environ.get('MONITOR_THREAD', False)
+config.max_blocking_time = 5  # 5 seconds
 config.max_memory_usage = 4 * 1024 * 1024 * 1024  # 4 GiB
 config.memory_monitor_period = 60  # 1 minute
 
