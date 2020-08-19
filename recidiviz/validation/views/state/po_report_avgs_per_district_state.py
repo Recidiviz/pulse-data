@@ -35,8 +35,8 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'pos_discharges_district_average-mismatch'
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data` t2
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, state_code, district)
     WHERE t1.pos_discharges_district_average != t2.pos_discharges_district_average
 
@@ -44,8 +44,8 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
 
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'earned_discharges_district_average-mismatch'
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data` t2
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, state_code, district)
     WHERE t1.earned_discharges_district_average != t2.earned_discharges_district_average
 
@@ -53,8 +53,8 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
 
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'pos_discharges_state_average-mismatch'
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data` t2
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, state_code)
     WHERE t1.pos_discharges_state_average != t2.pos_discharges_state_average
 
@@ -62,8 +62,8 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
 
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'earned_discharges_state_average-mismatch'
-    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data` t1
-    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data` t2
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, state_code)
     WHERE t1.earned_discharges_state_average != t2.earned_discharges_state_average
     """

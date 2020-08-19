@@ -38,7 +38,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         job_id,
         metric_type
       FROM
-        `{project_id}.{reference_dataset}.most_recent_daily_job_id_by_metric_and_state_code`
+        `{project_id}.{reference_views_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
     ), participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
@@ -55,11 +55,11 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         most_recent_job_id
       USING (state_code, job_id, date_of_participation, metric_type)
       LEFT JOIN
-        `{project_id}.{reference_dataset}.program_locations`
+        `{project_id}.{static_reference_dataset}.program_locations`
       USING (state_code, program_location_id),
         {race_or_ethnicity_dimension}
       LEFT JOIN
-         `{project_id}.{reference_dataset}.state_race_ethnicity_population_counts`
+         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
       WHERE state_code = 'US_ND'
         AND methodology = 'EVENT'
@@ -91,7 +91,8 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'supervision_type', 'race_or_ethnicity', 'region_id'],
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     current_month_condition=bq_utils.current_month_condition(),
     state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings(),

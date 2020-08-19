@@ -40,9 +40,9 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
         SUBSTR(last_known_address, -9, 2) AS state_code,
         SUBSTR(county, 0, LENGTH(county) -7) AS county
       FROM
-        `{project_id}.{reference_tables_dataset}.persons_with_last_known_address` as persons_with_address
+        `{project_id}.{reference_views_dataset}.persons_with_last_known_address` as persons_with_address
       JOIN
-        `{project_id}.{reference_tables_dataset}.zipcode_county_map` zipcode_county_map
+        `{project_id}.{static_reference_dataset}.zipcode_county_map` zipcode_county_map
       ON
         substr(persons_with_address.last_known_address, -5) = zipcode_county_map.zip_code
       WHERE
@@ -54,11 +54,12 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
 """
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
-    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

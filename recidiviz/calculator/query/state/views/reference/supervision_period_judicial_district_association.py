@@ -60,7 +60,7 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
       FROM
         sps_to_sentence_groups
       LEFT JOIN
-        `{{project_id}}.{{reference_dataset}}.sentence_group_judicial_district_association`
+        `{{project_id}}.{{reference_views_dataset}}.sentence_group_judicial_district_association`
       USING (state_code, person_id, sentence_group_id)
     )
     
@@ -83,12 +83,12 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = \
         bq_utils.period_to_sentence_group_joins('supervision', 'supervision'))
 
 SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
     view_query_template=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

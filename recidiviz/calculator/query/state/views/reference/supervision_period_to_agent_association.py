@@ -40,18 +40,18 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
     FROM 
       `{project_id}.{base_dataset}.state_supervision_period` sup
     LEFT JOIN 
-      `{project_id}.{reference_tables_dataset}.augmented_agent_info` agents
+      `{project_id}.{reference_views_dataset}.augmented_agent_info` agents
     ON agents.state_code = sup.state_code AND agents.agent_id = sup.supervising_officer_id
     WHERE agents.external_id IS NOT NULL;
 """
 
 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
     view_query_template=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

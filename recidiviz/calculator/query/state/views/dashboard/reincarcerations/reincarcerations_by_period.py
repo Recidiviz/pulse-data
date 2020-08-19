@@ -40,7 +40,7 @@ REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
         state_code, metric_period_months,
         district,
         COUNT(DISTINCT person_id) as total_admissions
-      FROM `{project_id}.{reference_dataset}.event_based_admissions`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, district
@@ -51,7 +51,7 @@ REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
         district,
         COUNT(DISTINCT person_id) AS returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics` m
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
       {district_dimension},
       {metric_period_dimension}
@@ -73,7 +73,7 @@ REINCARCERATIONS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'metric_period_months', 'district'],
     description=REINCARCERATIONS_BY_PERIOD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),

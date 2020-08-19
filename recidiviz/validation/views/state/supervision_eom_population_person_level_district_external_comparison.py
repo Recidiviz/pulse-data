@@ -53,7 +53,7 @@ SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_QUERY_TEMPL
         (SELECT
             state_code, year, month, person_external_id, supervising_district_external_id as internal_district
          FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-         JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+         JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
             USING (state_code, job_id, year, month, metric_period_months)
          WHERE metric_period_months = 1
          AND methodology = 'PERSON'
@@ -71,7 +71,7 @@ SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDE
     description=SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     metrics_dataset=state_dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=state_dataset_config.REFERENCE_TABLES_DATASET
+    reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':

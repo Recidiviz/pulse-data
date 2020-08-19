@@ -42,12 +42,12 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
           SY AS status_date,
           SDE AS status_description
         FROM
-          `{project_id}.{reference_tables_dataset}.us_mo_tak026_sentence_status`
+          `{project_id}.{static_reference_dataset}.us_mo_tak026_sentence_status`
         LEFT OUTER JOIN
-          `{project_id}.{reference_tables_dataset}.us_mo_tak025_sentence_status_xref`
+          `{project_id}.{static_reference_dataset}.us_mo_tak025_sentence_status_xref`
         USING (DOC, CYC, SSO)
         LEFT OUTER JOIN
-          `{project_id}.{reference_tables_dataset}.us_mo_tak146_status_code_descriptions`
+          `{project_id}.{static_reference_dataset}.us_mo_tak146_status_code_descriptions`
         USING (SCD)
         WHERE
           DOC IS NOT NULL AND
@@ -67,12 +67,12 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
 """
 
 US_MO_SENTENCE_STATUSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
     view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
     description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':

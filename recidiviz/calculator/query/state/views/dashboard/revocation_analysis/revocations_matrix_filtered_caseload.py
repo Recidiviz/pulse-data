@@ -53,7 +53,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       IF(response_count > 8, 8, response_count) AS reported_violations,
       metric_period_months
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-    JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code` job
+    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
       USING (state_code, job_id, year, month, metric_period_months, metric_type)
     WHERE methodology = 'PERSON'
       AND revocation_type = 'REINCARCERATION'
@@ -72,7 +72,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
                 'risk_level', 'violation_type', 'reported_violations'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

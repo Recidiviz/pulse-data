@@ -68,7 +68,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
             ELSE NULL
           END AS latest_district_external_id
         FROM agents_base
-        LEFT JOIN `{project_id}.{reference_tables_dataset}.nd_officers_temp` off
+        LEFT JOIN `{project_id}.{static_reference_dataset}.nd_officers_temp` off
         ON agents_base.state_code = 'US_ND' AND agents_base.external_id = CAST(off.OFFICER as STRING)
     )
     SELECT 
@@ -80,12 +80,12 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
 """
 
 AUGMENTED_AGENT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_TABLES_DATASET,
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=AUGMENTED_AGENT_INFO_VIEW_NAME,
     view_query_template=AUGMENTED_AGENT_INFO_QUERY_TEMPLATE,
     description=AUGMENTED_AGENT_INFO_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_tables_dataset=dataset_config.REFERENCE_TABLES_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == '__main__':
