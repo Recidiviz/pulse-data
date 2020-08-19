@@ -277,6 +277,7 @@ raw_files:
   - file_tag: observed_behavior_enhance_values
     primary_key_cols:
       - observed_behavior_enhance_typ
+      - observed_behavior_cd
   - file_tag: observed_behavior_response_cd
     primary_key_cols:
       - observed_behavior_response_cd
@@ -328,7 +329,7 @@ raw_files:
       - ofndr_behavior_evaluation_id
   - file_tag: ofndr_behavior_evaluation_item
     primary_key_cols:
-      - id
+      - ofndr_behavior_evaluation_id
   - file_tag: ofndr_behavior_evaluation_response
     primary_key_cols:
       - ofndr_behavior_evaluation_response_id
