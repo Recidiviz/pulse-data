@@ -51,7 +51,7 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder
     view_query_template=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
-    reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':
