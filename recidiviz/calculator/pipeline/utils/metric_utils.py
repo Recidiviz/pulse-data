@@ -27,6 +27,7 @@ from google.cloud import bigquery
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import is_enum, is_list, is_date, is_str, is_int, is_float, is_bool
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 
 class RecidivizMetricType(Enum):
@@ -146,6 +147,17 @@ class PersonLevelMetric(BuildableAttr):
 
     # The external_id of StatePerson for person-specific metrics
     person_external_id: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class AssessmentMetric(BuildableAttr):
+    """Base class for including assessment features on a metric."""
+
+    # Assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+
+    # Assessment type
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
 
 def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:

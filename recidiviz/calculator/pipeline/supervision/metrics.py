@@ -21,10 +21,9 @@ from typing import Any, Dict, Optional, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType, \
+    AssessmentMetric
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -119,7 +118,7 @@ class ViolationTypeSeverityMetric(BuildableAttr):
 
 
 @attr.s
-class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
+class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
     """Subclass of SupervisionMetric that contains supervision population counts."""
     # Required characteristics
 
@@ -133,12 +132,6 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
     date_of_supervision: date = attr.ib(default=None)
 
     # Optional characteristics
-
-    # Assessment score
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
@@ -167,7 +160,7 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
 
 
 @attr.s
-class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
+class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric, AssessmentMetric):
     """Subclass of SupervisionMetric that contains supervision revocation counts."""
     # Required characteristics
 
@@ -178,12 +171,6 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric):
     count: int = attr.ib(default=None)
 
     # Optional characteristics
-
-    # Assessment score
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
     # metric describes
@@ -247,7 +234,9 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
 
 
 @attr.s
-class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric, ViolationTypeSeverityMetric):
+class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric,
+                                                       ViolationTypeSeverityMetric,
+                                                       AssessmentMetric):
     """Subclass of SupervisionRevocationMetric that contains information for
     analysis of the frequency of violation types reported leading up to revocation."""
 
@@ -264,12 +253,6 @@ class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric, Violat
     violation_count_type: str = attr.ib(default=None)
 
     # Optional characteristics
-
-    # Assessment score
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
     # metric describes
@@ -363,7 +346,7 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
 
 
 @attr.s
-class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
+class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
     """Subclass of SupervisionMetric that contains counts of supervision that have been terminated, the reason for the
     termination, and the change in assessment score between the last assessment and the first reassessment."""
     # Required characteristics
@@ -375,12 +358,6 @@ class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, Violati
     count: int = attr.ib(default=None)
 
     # Optional characteristics
-
-    # Assessment score at end of supervision
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # Change in scores between the assessment right before termination and first reliable assessment while on
     # supervision. The first "reliable" assessment is determined by state-specific logic.

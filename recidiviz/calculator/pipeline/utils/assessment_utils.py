@@ -77,43 +77,6 @@ def most_recent_assessment_attributes(cutoff_date: date, assessments: List[State
     return None, None, None
 
 
-def assessment_score_bucket(assessment_score: int,
-                            assessment_level: Optional[StateAssessmentLevel],
-                            assessment_type: StateAssessmentType) -> \
-        Optional[str]:
-    """Calculates the assessment score bucket that applies to measurement.
-
-    Args:
-        assessment_score: the person's assessment score
-        assessment_level: the person's assessment level
-        assessment_type: the type of assessment
-
-    NOTE: Only LSIR and ORAS buckets are currently supported
-    TODO(2742): Add calculation support for all supported StateAssessmentTypes
-
-    Returns:
-        A string representation of the assessment score for the person.
-        None if the assessment type is not supported.
-    """
-    if assessment_type == StateAssessmentType.LSIR:
-        if assessment_score < 24:
-            return '0-23'
-        if assessment_score <= 29:
-            return '24-29'
-        if assessment_score <= 38:
-            return '30-38'
-        return '39+'
-
-    if assessment_type and assessment_type.value.startswith('ORAS'):
-        if assessment_level:
-            return assessment_level.value
-        return None
-
-    logging.warning("Assessment type %s is unsupported.", assessment_type)
-
-    return None
-
-
 def include_assessment_in_metric(pipeline: str, state_code: str, assessment_type: StateAssessmentType) -> bool:
     """Returns whether assessment data from the assessment with the given StateAssessmentType should be included in
     the results for metrics in the given pipeline with the given state_code."""

@@ -17,14 +17,20 @@
 """Utils for the various calculation pipelines."""
 import datetime
 from datetime import date
-from typing import Optional, List, Any, Dict, Tuple
+from typing import Optional, List, Any, Dict, Tuple, Type, Union
 
 import dateutil
+import attr
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.incarceration.incarceration_event import IncarcerationEvent
+from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
+from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import SupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
-from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
+    PersonLevelMetric
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -78,12 +84,15 @@ VIOLATION_TYPE_SEVERITY_ORDER = [
 ]
 
 
-def add_demographic_characteristics(characteristics: Dict[str, Any],
-                                    person: StatePerson,
-                                    event_date: date) -> Dict[str, Any]:
+def person_characteristics(person: StatePerson,
+                           event_date: date,
+                           pipeline: str) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics| dictionary. For the 'age_bucket'
-    field, calculates the person's age on the |event_date|.
+    field, calculates the person's age on the |event_date|. Adds the person's person_id and, if applicable, a
+    person_external_id.
     """
+    characteristics: Dict[str, Any] = {}
+
     event_age = age_at_date(person, event_date)
     event_age_bucket = age_bucket(event_age)
     if event_age_bucket is not None:
@@ -99,6 +108,13 @@ def add_demographic_characteristics(characteristics: Dict[str, Any],
                        if ethnicity_object.ethnicity is not None]
         if ethnicities:
             characteristics['ethnicity'] = ethnicities
+
+    characteristics['person_id'] = person.person_id
+
+    person_external_id = person_external_id_to_include(pipeline, person.state_code, person)
+
+    if person_external_id is not None:
+        characteristics['person_external_id'] = person_external_id
 
     return characteristics
 
@@ -395,21 +411,67 @@ def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, 
     return calculation_month_lower_bound
 
 
-def characteristics_with_person_id_fields(
-        characteristics: Dict[str, Any], state_code: str, person: StatePerson, pipeline: str) -> Dict[str, Any]:
-    """Returns an updated characteristics dictionary with the person's person_id and, if applicable, a
-    person_external_id."""
-    updated_characteristics = characteristics.copy()
+def characteristics_dict_builder(
+        pipeline: str,
+        event: Union[IncarcerationEvent, ProgramEvent, ReleaseEvent, SupervisionTimeBucket],
+        metric_class: Type[RecidivizMetric],
+        person: StatePerson, event_date: date, include_person_attributes: bool) -> Dict[str, Any]:
+    """Builds a dictionary from the provided event and person that will eventually populate the values on the given
+    metric_class. Only adds attributes to the dictionary that are relevant to the metric_class.
 
-    # person_id and person_external_id is added to a characteristics combination dictionary that has all fields set. We
-    # only want person-level output that has all possible fields set.
-    person_id = person.person_id
+    Args:
+        - state_code: The state_code corresponding to the event
+        - pipeline: The name of the pipeline this dictionary is being populated for
+        - event: The event that was a product of the pipeline's identifier step
+        - metric_class: The type of RecidivizMetric that this event will contribute to
+        - person: The StatePerson related to this event
 
-    updated_characteristics['person_id'] = person_id
+    """
+    characteristics: Dict[str, Any] = {}
+    metric_attributes = attr.fields_dict(metric_class).keys()
 
-    person_external_id = person_external_id_to_include(pipeline, state_code, person)
+    if include_person_attributes:
+        person_attributes = person_characteristics(person, event_date, pipeline)
 
-    if person_external_id is not None:
-        updated_characteristics['person_external_id'] = person_external_id
+        # Add relevant demographic and person-level dimensions
+        for attribute, value in person_attributes.items():
+            if attribute in metric_attributes:
+                characteristics[attribute] = value
 
-    return updated_characteristics
+    fields_not_in_events = list(attr.fields_dict(RecidivizMetric).keys())
+    fields_not_in_events.extend(attr.fields_dict(PersonLevelMetric).keys())
+    fields_not_in_events.extend([
+        # These are determined by the period of time the metric describes
+        'year',
+        'month',
+        'follow_up_period',
+        'metric_period_months',
+
+        # This is set by the contents of the `violation_type_frequency_counter` on
+        # RevocationReturnSupervisionTimeBuckets
+        'violation_count_type',
+
+        # TODO(3873): Remove deprecated aggregate fields from metrics
+        # These are deprecated aggregated values from before when all metric outputs were aggregates. These are
+        # currently being set in the `Produce...Metrics` step of each pipeline.
+        'count',
+        'total_releases',
+        'recidivated_releases',
+        'returns',
+        'recidivism_rate',
+        'successful_completion_count',
+        'projected_completion_count',
+        'average_days_served',
+    ])
+
+    # Add attributes from the event that are relevant to the metric_class
+    for metric_attribute in metric_attributes:
+        if hasattr(event, metric_attribute) and metric_attribute not in fields_not_in_events:
+            attribute_value = getattr(event, metric_attribute)
+            if attribute_value is not None:
+                characteristics[metric_attribute] = attribute_value
+        elif metric_attribute not in fields_not_in_events:
+            raise ValueError(
+                f'Did not find expected field [{metric_attribute}] in {event.__class__}. Metric class: {metric_class}')
+
+    return characteristics

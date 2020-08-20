@@ -1,0 +1,69 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2020 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests the functions in the event_utils file."""
+import unittest
+from datetime import date
+
+from recidiviz.calculator.pipeline.program.program_event import ProgramReferralEvent
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
+
+
+class TestAssessmentEventMixin(unittest.TestCase):
+    """Tests the functionality of the AssessmentEventMixin class."""
+    def setUp(self) -> None:
+        self.lsir_scores_to_buckets = {
+            19: '0-23',
+            27: '24-29',
+            30: '30-38',
+            39: '39+'
+        }
+
+    def test_assessment_scores_to_buckets_LSIR(self):
+        for score, bucket in self.lsir_scores_to_buckets.items():
+            event = ProgramReferralEvent(
+                state_code='US_XX',
+                event_date=date.today(),
+                program_id='xxx',
+                assessment_score=score,
+                assessment_type=StateAssessmentType.LSIR
+            )
+
+            self.assertEqual(bucket, event.assessment_score_bucket)
+
+    def test_assessment_score_bucket_ORAS(self):
+        event = ProgramReferralEvent(
+            state_code='US_XX',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=10,
+            assessment_level=StateAssessmentLevel.MEDIUM,
+            assessment_type=StateAssessmentType.ORAS
+        )
+
+        self.assertEqual(StateAssessmentLevel.MEDIUM.value, event.assessment_score_bucket)
+
+    def test_assessment_score_bucket_unsupported(self):
+        event = ProgramReferralEvent(
+            state_code='US_XX',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=10,
+            assessment_level=StateAssessmentLevel.MEDIUM,
+            assessment_type=StateAssessmentType.PSA
+        )
+
+        self.assertIsNone(event.assessment_score_bucket)

@@ -29,10 +29,11 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent,\
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration.metrics import \
-    IncarcerationMetricType
+    IncarcerationMetricType, IncarcerationMetric, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
+    IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
     augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_historical_metrics, \
-    characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
+    get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
@@ -43,6 +44,12 @@ METRIC_TYPES: Dict[Type[IncarcerationEvent], IncarcerationMetricType] = {
     IncarcerationAdmissionEvent: IncarcerationMetricType.INCARCERATION_ADMISSION,
     IncarcerationStayEvent: IncarcerationMetricType.INCARCERATION_POPULATION,
     IncarcerationReleaseEvent: IncarcerationMetricType.INCARCERATION_RELEASE
+}
+
+METRIC_CLASSES: Dict[Type[IncarcerationEvent], Type[IncarcerationMetric]] = {
+    IncarcerationAdmissionEvent: IncarcerationAdmissionMetric,
+    IncarcerationStayEvent: IncarcerationPopulationMetric,
+    IncarcerationReleaseEvent: IncarcerationReleaseMetric
 }
 
 
@@ -105,12 +112,17 @@ def map_incarceration_combinations(person: StatePerson,
 
     for incarceration_event in incarceration_events:
         metric_type = METRIC_TYPES.get(type(incarceration_event))
+        metric_class = METRIC_CLASSES.get((type(incarceration_event)))
         if not metric_type:
             raise ValueError(
                 'No metric type mapped to incarceration event of type {}'.format(type(incarceration_event)))
 
+        if not metric_class:
+            raise ValueError(
+                'No metric class mapped to incarceration event of type {}'.format(type(incarceration_event)))
+
         if metric_inclusions.get(metric_type):
-            characteristic_combo = characteristics_dict(person, incarceration_event)
+            characteristic_combo = characteristics_dict(person, incarceration_event, metric_class)
 
             metrics.extend(map_metric_combinations(
                 characteristic_combo, incarceration_event,
@@ -122,100 +134,27 @@ def map_incarceration_combinations(person: StatePerson,
 
 
 def characteristics_dict(person: StatePerson,
-                         incarceration_event: IncarcerationEvent) -> Dict[str, Any]:
+                         incarceration_event: IncarcerationEvent,
+                         metric_class: Type[IncarcerationMetric]) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
         person: the StatePerson we are picking characteristics from
         incarceration_event: the IncarcerationEvent we are picking characteristics from
-
+        metric_class: The IncarcerationMetric provided determines which fields should be added to the characteristics
+            dictionary
     Returns:
         A dictionary populated with all relevant characteristics.
     """
-    characteristics: Dict[str, Any] = {}
-
-    # Add characteristics that will be used to generate dictionaries with unique combinations.
-    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
-        characteristics['admission_date'] = incarceration_event.event_date
-
-        if incarceration_event.admission_reason:
-            characteristics['admission_reason'] = incarceration_event.admission_reason
-        if incarceration_event.supervision_type_at_admission:
-            characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
-        # TODO(3275): Rename to purpose_for_incarceration
-        if incarceration_event.specialized_purpose_for_incarceration:
-            characteristics['specialized_purpose_for_incarceration'] = \
-                incarceration_event.specialized_purpose_for_incarceration
-
-    if isinstance(incarceration_event, IncarcerationReleaseEvent):
-        characteristics['release_date'] = incarceration_event.event_date
-
-        if incarceration_event.release_reason:
-            characteristics['release_reason'] = incarceration_event.release_reason
-        if incarceration_event.release_reason_raw_text:
-            characteristics['release_reason_raw_text'] = incarceration_event.release_reason_raw_text
-        if incarceration_event.purpose_for_incarceration:
-            characteristics['purpose_for_incarceration'] = incarceration_event.purpose_for_incarceration
-        if incarceration_event.supervision_type_at_release:
-            characteristics['supervision_type_at_release'] = incarceration_event.supervision_type_at_release
-        if incarceration_event.admission_reason:
-            characteristics['admission_reason'] = incarceration_event.admission_reason
-        # Have to explicitly check if this is not None because 0 is a valid value and evaluates to False
-        if incarceration_event.total_days_incarcerated is not None:
-            characteristics['total_days_incarcerated'] = incarceration_event.total_days_incarcerated
-
-    if isinstance(incarceration_event, IncarcerationStayEvent):
-        characteristics['date_of_stay'] = incarceration_event.event_date
-
-        if incarceration_event.admission_reason:
-            characteristics['admission_reason'] = incarceration_event.admission_reason
-        if incarceration_event.supervision_type_at_admission:
-            characteristics['supervision_type_at_admission'] = incarceration_event.supervision_type_at_admission
-        if incarceration_event.judicial_district_code:
-            characteristics['judicial_district_code'] = incarceration_event.judicial_district_code
-
-    # Always include facility as a dimension
-    if incarceration_event.facility:
-        characteristics['facility'] = incarceration_event.facility
-
-    # Always include county_of_residence as a dimension
-    if incarceration_event.county_of_residence:
-        characteristics['county_of_residence'] = incarceration_event.county_of_residence
-
     event_date = incarceration_event.event_date
 
-    characteristics = add_demographic_characteristics(characteristics, person, event_date)
-
-    characteristics_with_person_details = add_person_level_characteristics(
-        person, incarceration_event, characteristics)
-
-    return characteristics_with_person_details
-
-
-def add_person_level_characteristics(person, incarceration_event, characteristics):
-    """Given |characteristics|, adds new characteristics that do not matter for aggregation and are only important for
-    person-level metrics. These characteristics therefore are NOT used to generate the dictionaries with unique
-    combinations, but are simply add-ons to those dictionaries.
-    """
-
-    characteristics_with_person_details = characteristics_with_person_id_fields(
-        characteristics, incarceration_event.state_code, person, 'incarceration')
-
-    if isinstance(incarceration_event, IncarcerationStayEvent):
-        if incarceration_event.most_serious_offense_statute:
-            characteristics_with_person_details['most_serious_offense_ncic_code'] = \
-                incarceration_event.most_serious_offense_ncic_code
-        if incarceration_event.most_serious_offense_statute:
-            characteristics_with_person_details['most_serious_offense_statute'] = \
-                incarceration_event.most_serious_offense_statute
-        if incarceration_event.admission_reason_raw_text:
-            characteristics_with_person_details['admission_reason_raw_text'] = \
-                incarceration_event.admission_reason_raw_text
-    if isinstance(incarceration_event, IncarcerationAdmissionEvent):
-        if incarceration_event.admission_reason_raw_text:
-            characteristics_with_person_details['admission_reason_raw_text'] = \
-                incarceration_event.admission_reason_raw_text
-    return characteristics_with_person_details
+    characteristics = characteristics_dict_builder(pipeline='incarceration',
+                                                   event=incarceration_event,
+                                                   metric_class=metric_class,
+                                                   person=person,
+                                                   event_date=event_date,
+                                                   include_person_attributes=True)
+    return characteristics
 
 
 def map_metric_combinations(
