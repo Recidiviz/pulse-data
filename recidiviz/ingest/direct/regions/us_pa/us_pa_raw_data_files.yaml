@@ -238,6 +238,8 @@ raw_files:
       - ParoleNumber
       - ParoleCountID
       - LastModifiedDateTime
+    datetime_cols:
+      - LastModifiedDateTime
   - file_tag: dbo_RelEmployment
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ParoleNumber

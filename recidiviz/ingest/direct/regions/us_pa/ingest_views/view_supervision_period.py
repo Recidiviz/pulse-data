@@ -37,7 +37,6 @@ parole_count_id_level_info_base AS (
     NULL as parole_count_id_termination_reason,
     NULL as parole_count_id_termination_date,
     ri.RelCountyResidence as county_of_residence,
-    ri.RelDO as district_office,
     ri.RelFinalRiskGrade as supervision_level,
   FROM {dbo_Release} r
   JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
@@ -57,7 +56,6 @@ parole_count_id_level_info_base AS (
     hr.HReDelCode as parole_count_id_termination_reason,
     hr.HReDelDate as parole_count_id_termination_date,
     hr.HReCntyRes as county_of_residence,
-    hr.HReDO as district_office,
     hr.HReGradeSup as supervision_level,
   FROM {dbo_Hist_Release} hr
 ),
@@ -78,17 +76,29 @@ parole_count_id_level_info AS (
   USING (parole_number, parole_count_id)
 ),
 agent_update_dates AS (
-  -- Contains one row per recorded supervising officer update
   SELECT 
-    ParoleNumber AS parole_number, ParoleCountID AS parole_count_id, supervising_officer_name,
-    EXTRACT(DATE FROM po_modified_time) AS po_modified_date,
-  ROW_NUMBER() OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY po_modified_time) AS update_rank
+    ParoleNumber AS parole_number, 
+    ParoleCountID AS parole_count_id, 
+    supervising_officer_name, 
+    EXTRACT(DATE FROM po_modified_time) AS po_modified_date, 
+    SupervisorName,
+    RTRIM(supervisor_info[SAFE_OFFSET(0)], ',') AS supervisor_last_name,
+    SAFE_CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS district_sub_office_id,
+    ROW_NUMBER() OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY po_modified_time) AS update_rank
   FROM (
-    SELECT
-        ParoleNumber, ParoleCountID, AgentName AS supervising_officer_name,
-        SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', LastModifiedDateTime) AS po_modified_time
+    SELECT 
+      ParoleNumber, ParoleCountID, AgentName AS supervising_officer_name,
+      CAST(LastModifiedDateTime AS DATETIME) AS po_modified_time,
+      SupervisorName, SPLIT(SupervisorName, ' ') AS supervisor_info
     FROM {dbo_RelAgentHistory}
   )
+),
+agent_update_dates_with_district AS (
+    SELECT agent_update_dates.*, DistrictOfficeCode AS district_office
+    FROM agent_update_dates
+    LEFT OUTER JOIN
+    {dbo_LU_PBPP_Organization}
+    ON SAFE_CAST(Org_cd AS INT64) = district_sub_office_id
 ),
 all_update_dates AS (
   -- Collects one row per critical date for building supervision periods for this person. This includes the start and
@@ -101,8 +111,10 @@ all_update_dates AS (
     po_modified_date,
     update_rank,
     supervising_officer_name,
+    district_office,
+    district_sub_office_id,
     0 AS is_termination_edge
-  FROM agent_update_dates
+  FROM agent_update_dates_with_district
  
   UNION ALL
 
@@ -112,6 +124,8 @@ all_update_dates AS (
     parole_count_id_start_date AS po_modified_date,
     0 AS update_rank,
     NULL AS supervising_officer_name,
+    NULL AS district_office,
+    NULL AS district_sub_office_id,
     0 AS is_termination_edge
   FROM parole_count_id_level_info
 
@@ -123,6 +137,8 @@ all_update_dates AS (
     COALESCE(parole_count_id_termination_date, DATE(9999, 09, 09)) AS po_modified_date,
     99999 AS update_rank,
     NULL AS supervising_officer_name,
+    NULL AS district_office,
+    NULL AS district_sub_office_id,
     1 AS is_termination_edge
   FROM parole_count_id_level_info
 ),
@@ -150,6 +166,8 @@ supervision_periods_base AS (
     start_edge.parole_count_id, 
     start_edge.edge_sequence_number AS start_edge_sequence_number,
     start_edge.supervising_officer_name,
+    start_edge.district_office,
+    start_edge.district_sub_office_id,
     start_edge.po_modified_date AS start_date, 
     end_edge.po_modified_date AS termination_date
   FROM 
@@ -193,9 +211,8 @@ supervision_periods AS (
        parole_count_id_termination_reason, 'TRANSFER_WITHIN_STATE') AS termination_reason,
     termination_date,
     county_of_residence,
-    -- TODO(3462): This is the current district office / office at time of release - figure out how to find office at
-    --   time of this period.
-    district_office,  
+    district_office,
+    district_sub_office_id,
     supervision_level,
     supervising_officer_name,
     'US_PA_PBPP' AS custodial_authority,

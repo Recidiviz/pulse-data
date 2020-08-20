@@ -55,7 +55,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarcerati
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity
+    gen_rationalize_race_and_ethnicity, create_supervision_site
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
@@ -699,26 +699,30 @@ class UsIdController(CsvGcsfsDirectIngestController):
         living_unit_name = row.get(CURRENT_LIVING_UNIT_NAME, '')
 
         # default values
-        supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=living_unit_name)
+        supervision_site: Optional[str] = create_supervision_site(supervising_district_id=facility_name,
+                                                                  supervision_specific_location=living_unit_name)
 
         # Interstate and parole commission facilities mean some non-IDOC entity is supervising the person.
         if facility_cd in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
-            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=location_name)
+            supervision_site = create_supervision_site(supervising_district_id=facility_name,
+                                                       supervision_specific_location=location_name)
         # Absconders have no granular facility info.
         elif facility_cd == FUGITIVE_FACILITY_CODE:
             supervision_site = None
         # People on limited supervision are marked as a part of 'DISTRICT 4' in the data because it started out as a
         # District 4 only program. Now, however, they count anyone on limited supervision as a part of DISTRICT 0
         elif living_unit_cd == LIMITED_SUPERVISION_LIVING_UNIT:
-            supervision_site = _create_supervision_site(
-                facility_name=DISTRICT_0, specific_location=LIMITED_SUPERVISION_UNIT_NAME)
+            supervision_site = create_supervision_site(
+                supervising_district_id=DISTRICT_0, supervision_specific_location=LIMITED_SUPERVISION_UNIT_NAME)
         # TODO(3309): Consider adding warrant spans to schema.
         # Folks with an existing bench warrant are not actively supervised and have no office info.
         elif living_unit_cd == BENCH_WARRANT_LIVING_UNIT:
-            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
+            supervision_site = create_supervision_site(supervising_district_id=facility_name,
+                                                       supervision_specific_location=UNKNOWN)
         # Folks with court probation do not have office info.
         elif living_unit_cd == COURT_PROBATION_LIVING_UNIT:
-            supervision_site = _create_supervision_site(facility_name=facility_name, specific_location=UNKNOWN)
+            supervision_site = create_supervision_site(supervising_district_id=facility_name,
+                                                       supervision_specific_location=UNKNOWN)
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -999,7 +1003,3 @@ def _get_bool_from_row(arg: str, row: Dict[str, str]):
     if not val:
         return False
     return str_to_bool(val)
-
-
-def _create_supervision_site(facility_name: str, specific_location: str):
-    return facility_name + '|' + specific_location

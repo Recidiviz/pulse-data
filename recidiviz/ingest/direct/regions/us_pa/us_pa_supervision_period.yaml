@@ -5,7 +5,6 @@ key_mappings:
   termination_reason: state_supervision_period.termination_reason
   termination_date: state_supervision_period.termination_date
   county_of_residence: state_supervision_period.county_code
-  district_office: state_supervision_period.supervision_site
   supervision_level: state_supervision_period.supervision_level
   custodial_authority: state_supervision_period.custodial_authority
 
@@ -25,3 +24,5 @@ keys_to_ignore:
   # Note: The status_code contains info about whether the person is currently a parole violator or absconding, as well
   #   as whether they transferred out of state / were deported  - might be useful in the future.
   - status_code                     # Current / last supervision "status" associated with the parole_count_id "status" but not status in our own sense - Unused
+  - district_office                 # Code for district this person is being supervised in - handled manually in the controller
+  - district_sub_office_id          # Specific unit office this person is being supervised by - handled manually in the controller

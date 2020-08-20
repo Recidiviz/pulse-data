@@ -388,8 +388,9 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
 def get_supervision_district_from_supervision_period(supervision_period: StateSupervisionPeriod) -> Optional[str]:
     """Given |supervision_period| returns the relevant supervision site abiding by state-specific logic."""
 
-    # In US_ID we have squashed the notion of district and site into one field, so all filled in supervision sites are
-    # in the format "{supervision district}|{location/office within district}". This separates out the district info.
-    if supervision_period.state_code == 'US_ID' and supervision_period.supervision_site:
+    # In some states we have squashed the notion of district and site into one field, so all filled in supervision sites
+    # are in the format "{supervision district}|{location/office within district}". This separates out the district
+    # info.
+    if supervision_period.state_code in ('US_ID', 'US_PA') and supervision_period.supervision_site:
         return supervision_period.supervision_site.split('|')[0]
     return supervision_period.supervision_site
