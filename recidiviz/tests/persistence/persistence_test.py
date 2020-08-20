@@ -812,8 +812,7 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
 
         self.isolation_level_patcher = patch(
             'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
-            # TODO(3622): Set to 'SERIALIZABLE'
-            return_value='READ_COMMITTED')
+            return_value='SERIALIZABLE')
         self.isolation_level_patcher.start()
         fakes.use_on_disk_postgresql_database(StateBase)
 
@@ -886,40 +885,6 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         assert len(result[1].assessments) == 1
         assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         assert len(result[2].assessments) == 1
-
-@patch('os.getenv', Mock(return_value='production'))
-class TestPersistenceMultipleThreadsSerializable(TestCase):
-    """Test that the persistence layer writes to Postgres from multiple threads."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
-
-    def setUp(self) -> None:
-        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
-        self.storage_client_patcher = patch('google.cloud.storage.Client')
-        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
-        self.bq_client_patcher.start()
-        self.storage_client_patcher.start()
-        self.task_client_patcher.start()
-
-        self.isolation_level_patcher = patch(
-            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
-            return_value='SERIALIZABLE')
-        self.isolation_level_patcher.start()
-        fakes.use_on_disk_postgresql_database(StateBase)
-
-    def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(StateBase)
-        self.isolation_level_patcher.stop()
-
-        self.bq_client_patcher.stop()
-        self.storage_client_patcher.stop()
-        self.task_client_patcher.stop()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
 
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
