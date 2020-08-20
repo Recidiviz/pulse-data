@@ -531,7 +531,7 @@ def read_persons_by_root_entity_cls(
                  len(root_external_ids), root_entity_cls.__name__)
     persons_by_root_entity = dao.read_people_by_cls_external_ids(
         session, region, root_entity_cls, root_external_ids)
-    placeholder_persons = dao.read_placeholder_persons(session)
+    placeholder_persons = dao.read_placeholder_persons(session, region)
 
     # When the |root_entity_cls| is not StatePerson, it is possible for both
     # persons_by_root_entity and placeholder_persons to contain the same

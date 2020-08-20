@@ -487,12 +487,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             sentence_group_id=_ID,
             external_id=_EXTERNAL_ID,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code='US_ND')
+            state_code=_STATE_CODE)
         schema_sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code='US_ND')
+            state_code=_STATE_CODE)
         schema_person_with_root_entity.sentence_groups = [
             schema_sentence_group, schema_sentence_group_2]
         placeholder_schema_person = schema.StatePerson(person_id=_ID_2, state_code=_STATE_CODE)
@@ -512,7 +512,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         session.commit()
 
         ingested_sentence_group = schema.StateSentenceGroup(
-            state_code='us_nd', external_id=_EXTERNAL_ID)
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
         ingested_person = schema.StatePerson(
             sentence_groups=[ingested_sentence_group])
 
@@ -520,7 +520,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                            placeholder_schema_person]
 
         people = read_persons_by_root_entity_cls(
-            session, 'us_nd', [ingested_person],
+            session, _STATE_CODE, [ingested_person],
             allowed_root_entity_classes=[schema.StateSentenceGroup])
         self.assert_schema_object_lists_equal(expected_people, people)
 
