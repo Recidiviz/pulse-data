@@ -21,6 +21,7 @@ from typing import Optional, List
 import attr
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -36,7 +37,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 
 
 @attr.s(frozen=True)
-class SupervisionTimeBucket(BuildableAttr):
+class SupervisionTimeBucket(BuildableAttr, AssessmentEventMixin):
     """Models details related to a bucket of time on supervision.
 
     Describes a month in which a person spent any amount of time on supervision. This includes the information
@@ -89,6 +90,26 @@ class SupervisionTimeBucket(BuildableAttr):
     # Area of jurisdictional coverage of the court that sentenced the person to this supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
+    @property
+    def date_of_evaluation(self):
+        return self.bucket_date
+
+    @property
+    def assessment_count(self):
+        return self.case_compliance.assessment_count
+
+    @property
+    def assessment_up_to_date(self):
+        return self.case_compliance.assessment_up_to_date
+
+    @property
+    def face_to_face_count(self):
+        return self.case_compliance.face_to_face_count
+
+    @property
+    def face_to_face_frequency_sufficient(self):
+        return self.case_compliance.face_to_face_frequency_sufficient
+
 
 @attr.s(frozen=True)
 class ViolationTypeSeverityBucket(BuildableAttr):
@@ -133,6 +154,14 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     def _default_is_on_supervision_last_day_of_month(self):
         raise ValueError('Must set is_on_supervision_last_day_of_month!')
 
+    @property
+    def revocation_admission_date(self):
+        return self.bucket_date
+
+    @property
+    def date_of_supervision(self):
+        return self.bucket_date
+
 
 @attr.s(frozen=True)
 class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
@@ -145,6 +174,10 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
     @is_on_supervision_last_day_of_month.default
     def _default_is_on_supervision_last_day_of_month(self):
         raise ValueError('Must set is_on_supervision_last_day_of_month!')
+
+    @property
+    def date_of_supervision(self):
+        return self.bucket_date
 
 
 @attr.s(frozen=True)
@@ -177,3 +210,7 @@ class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationTypeSeverityB
     # Change in scores between the assessment right before termination and first reliable assessment while on
     # supervision. The first "reliable" assessment is determined by state-specific logic.
     assessment_score_change: Optional[int] = attr.ib(default=None)
+
+    @property
+    def termination_date(self):
+        return self.bucket_date
