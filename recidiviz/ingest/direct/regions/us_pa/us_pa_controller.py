@@ -52,7 +52,8 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarcerati
     concatenate_incarceration_period_start_codes, revocation_type_mapper
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects
+    gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects, \
+    create_supervision_site
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
@@ -140,6 +141,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_period': [
                 self._unpack_supervision_period_conditions,
                 self._set_supervising_officer,
+                self._set_supervision_site,
             ],
             'supervision_violation': [
                 self._append_supervision_violation_entries,
@@ -1035,6 +1037,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets the supervision officer (as an Agent entity) on the supervision period."""
         officer_full_name_and_id = row.get('supervising_officer_name', None)
 
+        if officer_full_name_and_id and \
+                ('Vacant, Position' in officer_full_name_and_id or 'Position, Vacant' in officer_full_name_and_id):
+            # This is a placeholder name for when a person does not actually have a PO
+            return
+
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 if officer_full_name_and_id:
@@ -1048,6 +1055,22 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.create_state_agent(state_agent_id=external_id,
                                            full_name=full_name,
                                            agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+
+    @staticmethod
+    def _set_supervision_site(_file_tag: str,
+                              row: Dict[str, str],
+                              extracted_objects: List[IngestObject],
+                              _cache: IngestObjectCache):
+        """Sets the supervision_site on the supervision period."""
+        district_office = row['district_office']
+        district_sub_office_id = row['district_sub_office_id']
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                if district_office and district_sub_office_id:
+                    obj.supervision_site = create_supervision_site(supervising_district_id=district_office,
+                                                                   supervision_specific_location=district_sub_office_id)
+                elif district_office:
+                    obj.supervision_site = district_office
 
     @staticmethod
     def _append_supervision_violation_entries(_file_tag: str,
