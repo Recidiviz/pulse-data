@@ -79,6 +79,9 @@ class SupervisionMetric(RecidivizMetric):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # TODO(3885): Add a custodial_authority field to this metric, then update BQ views to pass through to dashboard
+    # for new custodial authority dropdown feature.
+
     # External ID of the officer who was supervising the people described by this metric.
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 

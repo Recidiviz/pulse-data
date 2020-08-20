@@ -69,6 +69,9 @@ class SupervisionTimeBucket(BuildableAttr, AssessmentEventMixin):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # TODO(3885): Add a custodial_authority field to this class, then update metrics / BQ views to pass through to
+    #  dashboard
+
     # Most recent assessment score
     assessment_score: Optional[int] = attr.ib(default=None)
 
