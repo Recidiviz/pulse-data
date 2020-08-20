@@ -12,7 +12,7 @@ GIT_VERSION_TAG=$(echo $1 | tr '-' '.')
 LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | yq .id | tr -d \" | tr '-' '.')
 
 echo "Commits since last deploy:"
-git log --oneline $LAST_DEPLOYED_GIT_VERSION_TAG..$GIT_VERSION_TAG
+git log --oneline tags/$LAST_DEPLOYED_GIT_VERSION_TAG..tags/$GIT_VERSION_TAG
 
 read -p "Have you completed all Pre-Deploy tasks listed at http://go/deploy-checklist? (y/n):" -n 1 -r
 echo
@@ -24,8 +24,12 @@ fi
 echo "Fetching all tags"
 git fetch --all --tags --prune
 
-echo "Checking out tag $1"
-git checkout tags/$1 -b $1
+echo "Checking out tag $GIT_VERSION_TAG"
+if ! git checkout tags/$GIT_VERSION_TAG -b $GIT_VERSION_TAG
+then
+    echo "Attempting to reuse existing branch $GIT_VERSION_TAG"
+    git checkout $GIT_VERSION_TAG
+fi
 
 echo "Starting deploy of cron.yaml"
 gcloud -q app deploy cron.yaml --project=recidiviz-123
@@ -39,13 +43,13 @@ pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --pro
 echo "Deploying prod-ready calculation pipelines to templates in recidiviz-123."
 pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id recidiviz-123 --templates_to_deploy production
 
-GAE_VERSION=$(echo $1 | tr '.' '-')
-STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.GAE_VERSION:latest
-PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default.GAE_VERSION:latest
+GAE_VERSION=$(echo $GIT_VERSION_TAG | tr '.' '-')
+STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.$GAE_VERSION:latest
+PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default.$GAE_VERSION:latest
 
 echo "Starting deploy of main app"
 gcloud -q container images add-tag $STAGING_IMAGE_URL $PROD_IMAGE_URL
-gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=GAE_VERSION --image-url=$PROD_IMAGE_URL
+gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=$GAE_VERSION --image-url=$PROD_IMAGE_URL
 
 read -p "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist? (y/n):" -n 1 -r
 echo
