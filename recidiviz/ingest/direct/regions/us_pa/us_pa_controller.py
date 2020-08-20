@@ -28,6 +28,7 @@ from recidiviz.common.constants.person_characteristics import Race, Gender, Ethn
 from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentOutcomeType, \
     StateIncarcerationIncidentType
@@ -43,7 +44,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, safe_parse_date_from_date_pieces, \
-    safe_parse_days_from_duration_pieces
+    safe_parse_days_from_duration_pieces, sorted_list_from_str
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
@@ -58,7 +59,7 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StatePersonRace, \
-    StateSupervisionViolation, StateSupervisionViolation, StateSupervisionViolationResponse
+    StateSupervisionViolation, StateSupervisionViolationResponse, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -142,6 +143,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._unpack_supervision_period_conditions,
                 self._set_supervising_officer,
                 self._set_supervision_site,
+                self._parse_case_types,
+                self._set_custodial_authority,
             ],
             'supervision_violation': [
                 self._append_supervision_violation_entries,
@@ -308,13 +311,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ],
         StateSupervisionPeriodSupervisionType.PROBATION: [
             '04',  # Sentenced to Probation by County Judge and Supervised by PBPP
-            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
-            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            '4A',  # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
+            '4B',  # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
             '07',  # Sentenced to Probation by other state and transferred to PA
         ],
         StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: [
-            '08',  # ?? Not in data dictionary
-            '09',  # ?? Not in data dictionary
+            '08',  # Other States’ Deferred Sentence
+            '09',  # Emergency Release - used for COVID releases
         ],
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
             '02',  # Paroled from SCI to PBPP Supervision
@@ -333,8 +336,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             '05',  # Special Parole sentenced by County and Supervised by PBPP
         ],
         StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
-            '08',  # ?? Not in data dictionary
-            '09',  # ?? Not in data dictionary
+            '08',  # Other States' Deferred Sentence
+            '09',  # Emergency Release - used for COVID releases
         ],
         StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
             '06',  # Paroled/Reparoled by other state and transferred to PA
@@ -372,9 +375,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             '42',  # Recommitment to prison for convictions of new crimes and technical parole
                    # violations while under supervision
         ],
-        StateSupervisionLevel.MINIMUM: [
-            'ADM',  # Administrative Parole
+        StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: [
             'MON',  # Monitoring
+        ],
+        StateSupervisionLevel.LIMITED: [
+            'ADM',  # Administrative Parole
+            'SPC',  # Special Circumstance
         ],
         StateSupervisionLevel.HIGH: [
             'ENH',  # Enhanced
@@ -490,6 +496,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ],
         StateSupervisionViolationResponseDecision.WARNING: [
             'WTWR',  # Written Warning
+        ],
+        StateSupervisionCaseType.ALCOHOL_DRUG: [
+            'PA_Alcoholic',
+            'PA_Drugs',
+        ],
+        StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: [
+            'PA_Psychiatric',
+        ],
+        StateSupervisionCaseType.SEX_OFFENDER: [
+            'PA_Sexual',
+        ],
+        StateSupervisionCaseType.DOMESTIC_VIOLENCE: [
+            'PA_DomesticViolence',
         ],
     }
 
@@ -1071,6 +1090,66 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                                                    supervision_specific_location=district_sub_office_id)
                 elif district_office:
                     obj.supervision_site = district_office
+
+    @staticmethod
+    def _set_custodial_authority(_file_tag: str,
+                                 row: Dict[str, str],
+                                 extracted_objects: List[IngestObject],
+                                 _cache: IngestObjectCache):
+        """Sets the custodial_authority on the supervision period."""
+
+        supervision_type = row['supervision_type']
+
+        if supervision_type in (
+                '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
+                '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
+                '4C',  # COOP case - Offender on both PBPP and County Supervision (deprecated)
+                '04',  # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
+                '05',  # Special Parole - Sentenced by County and Supervised by PBPP
+        ):
+            custodial_authority = 'US_PA_COURTS'
+        elif not supervision_type or supervision_type in (
+                'R2',  # RSAT Parole (deprecated)
+                'C2',  # CCC Parole
+                'C3',  # CCC Reparole
+                '02',  # State Parole - Paroled from SCI to PBPP Supervision
+                '03',  # State Rearole - Reparoled from SCI to PBPP Supervision
+                'B2',  # Boot Camp - Released according to Boot Camp Law
+                'R3',  # RSAT Reparole (deprecated)
+        ):
+            custodial_authority = 'US_PA_PBPP'
+        elif supervision_type in (
+                '06',  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
+                '07',  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
+                '08',  # Other States' Deferred Sentence (deprecated)
+        ):
+            custodial_authority = 'OUT_OF_STATE'
+        elif supervision_type in (
+                '09',  # Emergency Release - used for COVID releases
+        ):
+            custodial_authority = 'US_PA_DOC'
+        else:
+            raise ValueError(f'Unexpected supervision type code [{supervision_type}]')
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                obj.custodial_authority = custodial_authority
+
+    @classmethod
+    def _parse_case_types(
+            cls,
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+
+        case_types = sorted_list_from_str(row['case_types_list'])
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                for case_type in case_types:
+                    case_type_to_create = StateSupervisionCaseTypeEntry(case_type=case_type)
+                    create_if_not_exists(case_type_to_create, obj, 'state_supervision_case_type_entries')
 
     @staticmethod
     def _append_supervision_violation_entries(_file_tag: str,

@@ -210,6 +210,7 @@ state_supervision_period_supervision_level_incarcerated = 'INCARCERATED'
 state_supervision_period_supervision_level_in_custody = 'IN_CUSTODY'
 state_supervision_period_supervision_level_diversion = 'DIVERSION'
 state_supervision_period_supervision_level_interstate_compact = 'INTERSTATE_COMPACT'
+state_supervision_period_supervision_level_electronic_monitoring_only = 'ELECTRONIC_MONITORING_ONLY'
 state_supervision_period_supervision_level_limited = 'LIMITED'
 state_supervision_period_supervision_level_unsupervised = 'UNSUPERVISED'
 
@@ -226,6 +227,7 @@ state_supervision_period_termination_reason_revocation = 'REVOCATION'
 state_supervision_period_termination_reason_suspension = 'SUSPENSION'
 
 # state_supervision_case_type_entry.py
+state_supervision_case_type_alcohol_drug = 'ALCOHOL_DRUG'
 state_supervision_case_type_domestic_violence = 'DOMESTIC_VIOLENCE'
 state_supervision_case_type_drug_court = 'DRUG_COURT'
 state_supervision_case_type_family_court = 'FAMILY_COURT'

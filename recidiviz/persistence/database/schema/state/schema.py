@@ -137,6 +137,7 @@ state_supervision_type = Enum(
     name='state_supervision_type')
 
 state_supervision_case_type = Enum(
+    state_enum_strings.state_supervision_case_type_alcohol_drug,
     state_enum_strings.state_supervision_case_type_domestic_violence,
     state_enum_strings.state_supervision_case_type_drug_court,
     state_enum_strings.state_supervision_case_type_family_court,
@@ -283,6 +284,7 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_diversion,
     state_enum_strings.state_supervision_period_supervision_level_interstate_compact,
     state_enum_strings.state_supervision_period_supervision_level_limited,
+    state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only,
     state_enum_strings.state_supervision_period_supervision_level_unsupervised,
     name='state_supervision_level')
 
