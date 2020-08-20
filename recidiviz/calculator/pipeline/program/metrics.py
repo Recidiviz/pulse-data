@@ -21,8 +21,8 @@ from typing import Optional, Dict, Any, cast
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType, \
+    AssessmentMetric
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
@@ -84,7 +84,7 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 
 
 @attr.s
-class ProgramReferralMetric(ProgramMetric):
+class ProgramReferralMetric(ProgramMetric, AssessmentMetric):
     """Subclass of ProgramMetric that contains program referral counts."""
     # Required characteristics
 
@@ -102,12 +102,6 @@ class ProgramReferralMetric(ProgramMetric):
 
     # Program participation status
     participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
-
-    # Assessment score of the people this metric describes
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
-
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
     # External ID of the officer who was supervising the people described by
     # this metric

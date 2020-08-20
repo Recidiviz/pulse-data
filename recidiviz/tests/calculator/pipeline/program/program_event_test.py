@@ -48,13 +48,14 @@ class TestProgramEvent(unittest.TestCase):
         supervision_type = StateSupervisionType.PROBATION
         assessment_score = 5
         assessment_type = StateAssessmentType.ORAS
+        assessment_level = None
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
         supervising_officer_external_id = 'OFFICER211'
         supervising_district_external_id = 'DISTRICT 100'
 
         program_event = ProgramReferralEvent(
             state_code, event_date, program_id, supervision_type,
-            participation_status, assessment_score, assessment_type,
+            participation_status, assessment_score, assessment_type, assessment_level,
             supervising_officer_external_id, supervising_district_external_id)
 
         assert program_event.state_code == state_code
@@ -85,13 +86,14 @@ class TestProgramEvent(unittest.TestCase):
         supervision_type = StateSupervisionType.PROBATION
         assessment_score = 9
         assessment_type = StateAssessmentType.ORAS
+        assessment_level = None
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
         supervising_officer_external_id = 'OFFICER211'
         supervising_district_external_id = 'DISTRICT 100'
 
         program_event = ProgramReferralEvent(
             state_code, event_date, program_id, supervision_type,
-            participation_status, assessment_score, assessment_type,
+            participation_status, assessment_score, assessment_type, assessment_level,
             supervising_officer_external_id, supervising_district_external_id)
 
         different = "Everything you do is a banana"

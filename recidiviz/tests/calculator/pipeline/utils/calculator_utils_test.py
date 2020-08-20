@@ -22,7 +22,7 @@ from datetime import datetime
 import pytest
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.calculator_utils import add_demographic_characteristics
+from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
@@ -360,12 +360,11 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             self.assertIsNone(most_severe_violation_type_subtype)
 
 
-class TestAddDemographicCharacteristics(unittest.TestCase):
-    """Tests the add_demographic_characteristics function used by all pipelines."""
-    def test_add_demographic_characteristics(self):
-        characteristics = {}
-
+class TestAddPersonCharacteristics(unittest.TestCase):
+    """Tests the add_person_characteristics function used by all pipelines."""
+    def test_add_person_characteristics(self):
         person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -377,15 +376,18 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
 
-        expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN], 'gender': Gender.FEMALE}
+        expected_output = {
+            'person_id': person.person_id,
+            'age_bucket': '25-29',
+            'race': [Race.ASIAN],
+            'gender': Gender.FEMALE
+        }
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_demographic_characteristics_MultipleRaces(self):
-        characteristics = {}
-
+    def test_add_person_characteristics_MultipleRaces(self):
         person = StatePerson.new_with_defaults(
             person_id=12345,
             birthdate=date(1984, 8, 31),
@@ -401,16 +403,20 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
 
-        expected_output = {'age_bucket': '25-29', 'race': [Race.ASIAN, Race.BLACK], 'gender': Gender.FEMALE}
+        expected_output = {
+            'age_bucket': '25-29',
+            'race': [Race.ASIAN, Race.BLACK],
+            'gender': Gender.FEMALE,
+            'person_id': person.person_id
+        }
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_demographic_characteristics_RaceEthnicity(self):
-        characteristics = {}
-
+    def test_add_person_characteristics_RaceEthnicity(self):
         person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -427,20 +433,19 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
 
         expected_output = {
             'age_bucket': '25-29',
             'race': [Race.ASIAN],
             'gender': Gender.FEMALE,
-            'ethnicity': [Ethnicity.HISPANIC]
+            'ethnicity': [Ethnicity.HISPANIC],
+            'person_id': person.person_id
         }
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_demographic_characteristics_EmptyRaceEthnicity(self):
-        characteristics = {}
-
+    def test_add_person_characteristics_EmptyRaceEthnicity(self):
         person = StatePerson.new_with_defaults(
             person_id=12345,
             birthdate=date(1984, 8, 31),
@@ -456,25 +461,60 @@ class TestAddDemographicCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
 
         expected_output = {
             'age_bucket': '25-29',
-            'gender': Gender.FEMALE
+            'gender': Gender.FEMALE,
+            'person_id': person.person_id
         }
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_demographic_characteristics_NoAttributes(self):
-        characteristics = {}
-
+    def test_add_person_characteristics_NoAttributes(self):
         person = StatePerson.new_with_defaults(person_id=12345)
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = add_demographic_characteristics(characteristics, person, event_date)
+        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
 
-        expected_output = {}
+        expected_output = {'person_id': person.person_id}
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    def test_add_person_characteristics_IncludeExternalId(self):
+        person = StatePerson.new_with_defaults(
+            state_code='US_MO',
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    external_id='SID1341',
+                    id_type='US_MO_DOC',
+                    state_code='US_MO'
+                )
+            ]
+        )
+
+        event_date = date(2010, 9, 1)
+
+        updated_characteristics = person_characteristics(person, event_date, 'supervision')
+
+        expected_output = {
+            'age_bucket': '25-29',
+            'gender': Gender.FEMALE,
+            'person_id': person.person_id,
+            'person_external_id': 'SID1341'
+        }
 
         self.assertEqual(updated_characteristics, expected_output)
 

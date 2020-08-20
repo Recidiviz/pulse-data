@@ -23,7 +23,8 @@ from typing import List, Set, Tuple
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import calculator
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramReferralMetric, \
+    ProgramParticipationMetric
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import calculator_utils
@@ -599,27 +600,6 @@ class TestCharacteristicsDict(unittest.TestCase):
 
         cls.person.ethnicities = [ethnicity]
 
-    def test_characteristics_dict_program_event(self):
-
-        program_event = ProgramEvent(
-            state_code='US_ND',
-            program_id='XXX',
-            event_date=date(2009, 10, 1)
-        )
-
-        characteristic_dict = calculator.characteristics_dict(self.person, program_event)
-
-        expected_output = {
-            'program_id': 'XXX',
-            'age_bucket': '25-29',
-            'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'person_id': 12345
-        }
-
-        self.assertEqual(expected_output, characteristic_dict)
-
     def test_characteristics_dict_program_referral_event(self):
 
         program_referral_event = ProgramReferralEvent(
@@ -634,7 +614,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             supervising_district_external_id='DISTRICT',
         )
 
-        characteristic_dict = calculator.characteristics_dict(self.person, program_referral_event)
+        characteristic_dict = calculator.characteristics_dict(self.person,
+                                                              program_referral_event,
+                                                              ProgramReferralMetric)
 
         expected_output = {
             'program_id': 'XXX',
@@ -648,14 +630,14 @@ class TestCharacteristicsDict(unittest.TestCase):
             'assessment_score_bucket': '0-23',
             'assessment_type': StateAssessmentType.LSIR,
             'supervising_officer_external_id': 'OFFICER',
-            'supervising_district_external_id': 'DISTRICT'
+            'supervising_district_external_id': 'DISTRICT',
         }
 
         self.assertEqual(expected_output, characteristic_dict)
 
     def test_characteristics_dict_program_participation_event(self):
 
-        program_referral_event = ProgramParticipationEvent(
+        program_participation_event = ProgramParticipationEvent(
             state_code='US_ND',
             program_id='XXX',
             program_location_id='YYY',
@@ -663,10 +645,12 @@ class TestCharacteristicsDict(unittest.TestCase):
             supervision_type=StateSupervisionType.PAROLE,
         )
 
-        characteristic_dict = calculator.characteristics_dict(self.person, program_referral_event)
+        characteristic_dict = calculator.characteristics_dict(self.person,
+                                                              program_participation_event,
+                                                              ProgramParticipationMetric)
 
         expected_output = {
-            'date_of_participation': program_referral_event.event_date,
+            'date_of_participation': program_participation_event.event_date,
             'program_id': 'XXX',
             'age_bucket': '25-29',
             'gender': Gender.FEMALE,
@@ -674,7 +658,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'supervision_type': StateSupervisionType.PAROLE,
-            'program_location_id': 'YYY'
+            'program_location_id': 'YYY',
         }
 
         self.assertEqual(expected_output, characteristic_dict)

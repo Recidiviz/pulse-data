@@ -20,8 +20,9 @@ from typing import Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
@@ -45,7 +46,7 @@ class ProgramEvent(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class ProgramReferralEvent(ProgramEvent):
+class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     """Models a ProgramEvent where a the person was referred to a program."""
 
     # The type of supervision the person was on
@@ -60,6 +61,9 @@ class ProgramReferralEvent(ProgramEvent):
 
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+
+    # Most recent assessment level
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
 
     # External ID of the officer who was supervising the person
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
@@ -79,3 +83,7 @@ class ProgramParticipationEvent(ProgramEvent):
     # The type of supervision the person was on
     # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
+
+    @property
+    def date_of_participation(self):
+        return self.event_date
