@@ -18,25 +18,7 @@
 import unittest
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType, StateAssessmentLevel
-
-
-def test_assessment_score_bucket():
-    assert assessment_utils.assessment_score_bucket(
-        19, None, StateAssessmentType.LSIR) == '0-23'
-    assert assessment_utils.assessment_score_bucket(
-        27, None, StateAssessmentType.LSIR) == '24-29'
-    assert assessment_utils.assessment_score_bucket(
-        30, None, StateAssessmentType.LSIR) == '30-38'
-    assert assessment_utils.assessment_score_bucket(
-        39, None, StateAssessmentType.LSIR) == '39+'
-    assert assessment_utils.assessment_score_bucket(
-        23, StateAssessmentLevel.MEDIUM, StateAssessmentType.ORAS) == \
-        StateAssessmentLevel.MEDIUM.value
-    assert not assessment_utils.assessment_score_bucket(
-        13, None, StateAssessmentType.PSA
-    )
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 
 class TestIncludeAssessmentInMetric(unittest.TestCase):

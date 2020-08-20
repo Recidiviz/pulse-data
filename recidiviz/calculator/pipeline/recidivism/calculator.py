@@ -28,21 +28,22 @@ Attributes:
         recidivism over, from 1 to 10.
 """
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import datetime
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationRecidivismMetricType
+    ReincarcerationRecidivismMetricType, ReincarcerationRecidivismMetric, ReincarcerationRecidivismCountMetric, \
+    ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent, \
     ReincarcerationReturnType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, last_day_of_month,\
-    relevant_metric_periods, characteristics_with_person_id_fields, add_demographic_characteristics
+from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, last_day_of_month, \
+    relevant_metric_periods, characteristics_dict_builder
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -95,21 +96,21 @@ def map_recidivism_combinations(person: StatePerson,
 
     metric_period_end_date = last_day_of_month(date.today())
 
-    for release_cohort, events in release_events.items():
+    for _, events in release_events.items():
         for event in events:
             if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_RATE):
                 characteristic_combo_rate = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.REINCARCERATION_RATE)
+                    characteristics_dict(person, event, ReincarcerationRecidivismRateMetric)
 
                 rate_metrics = map_recidivism_rate_combinations(
-                    characteristic_combo_rate, release_cohort, event,
+                    characteristic_combo_rate, event,
                     release_events, all_reincarcerations)
 
                 metrics.extend(rate_metrics)
 
             if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
                 characteristic_combo_count = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT)
+                    characteristics_dict(person, event, ReincarcerationRecidivismCountMetric)
 
                 count_metrics = map_recidivism_count_combinations(characteristic_combo_count,
                                                                   event,
@@ -122,7 +123,6 @@ def map_recidivism_combinations(person: StatePerson,
 
 def map_recidivism_rate_combinations(
         characteristic_combo: Dict[str, Any],
-        release_cohort,
         event: ReleaseEvent,
         all_release_events: Dict[int, List[ReleaseEvent]],
         all_reincarcerations: Dict[date, Dict[str, Any]]) -> \
@@ -132,8 +132,6 @@ def map_recidivism_rate_combinations(
 
     Args:
         characteristic_combo: A dictionary describing the person and event
-        release_cohort: The year the person was released from the previous
-            period of incarceration.
         event: the recidivism event from which the combination was derived
         all_release_events: A dictionary mapping release cohorts to a list of
             ReleaseEvents for the given StatePerson.
@@ -159,7 +157,6 @@ def map_recidivism_rate_combinations(
     combo = characteristic_combo.copy()
 
     combo['metric_type'] = ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
-    combo['release_cohort'] = release_cohort
 
     metrics.extend(combination_rate_metrics(
         combo, event, all_release_events, all_reincarcerations,
@@ -395,70 +392,9 @@ def relevant_follow_up_periods(release_date: date, current_date: date,
             if release_date + relativedelta(years=period - 1) <= current_date]
 
 
-def stay_length_from_event(event: ReleaseEvent) -> Optional[int]:
-    """Calculates the length of facility stay of a given event in months.
-
-    This is rounded down to the nearest month, so a stay from 2015-01-15 to
-    2017-01-14 results in a stay length of 23 months. Note that bucketing in
-    stay_length_bucketing is upper bound exclusive, so in this example the
-    bucket would be 12-24, and if the stay ended on 2017-01-15, the stay length
-    would be 24 months and the bucket would be 24-36.
-
-    Args:
-        event: the ReleaseEvent
-
-    Returns:
-        The length of the facility stay in months. None if the original
-        admission date or release date is not known.
-    """
-    if event.original_admission_date is None or event.release_date is None:
-        return None
-
-    delta = relativedelta(event.release_date, event.original_admission_date)
-    return delta.years * 12 + delta.months
-
-
-def stay_length_bucket(stay_length: Optional[int]) -> Optional[str]:
-    """Calculates the stay length bucket that applies to measurement.
-
-    Stay length buckets (upper bound exclusive) for measurement:
-        <12, 12-24, 24-36, 36-48, 48-60, 60-72,
-        72-84, 84-96, 96-108, 108-120, 120+.
-
-    Args:
-        stay_length: the length in months of the person's facility stay.
-
-    Returns:
-        A string representation of the age bucket for the person.
-    """
-    if stay_length is None:
-        return None
-    if stay_length < 12:
-        return '<12'
-    if stay_length < 24:
-        return '12-24'
-    if stay_length < 36:
-        return '24-36'
-    if stay_length < 48:
-        return '36-48'
-    if stay_length < 60:
-        return '48-60'
-    if stay_length < 72:
-        return '60-72'
-    if stay_length < 84:
-        return '72-84'
-    if stay_length < 96:
-        return '84-96'
-    if stay_length < 108:
-        return '96-108'
-    if stay_length < 120:
-        return '108-120'
-    return '120<'
-
-
 def characteristics_dict(person: StatePerson,
                          event: ReleaseEvent,
-                         metric_type: ReincarcerationRecidivismMetricType) -> Dict[str, Any]:
+                         metric_class: Type[ReincarcerationRecidivismMetric]) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and the release event.
 
     Release cohort, follow-up period, and methodology are not included in the output here. They are added into
@@ -467,32 +403,19 @@ def characteristics_dict(person: StatePerson,
     Args:
         person: the StatePerson we are picking characteristics from
         event: the ReleaseEvent we are picking characteristics from
-        metric_type: The ReincarcerationRecidivismMetricType provided determines which fields should be added to the
+        metric_class: The ReincarcerationRecidivismMetric provided determines which fields should be added to the
             characteristics dictionary
     Returns:
         A dictionary populated with all relevant characteristics.
     """
-    characteristics: Dict[str, Any] = {}
+    event_date = event.original_admission_date
 
-    if event.county_of_residence:
-        characteristics['county_of_residence'] = event.county_of_residence
-
-    if event.release_facility is not None:
-        characteristics['release_facility'] = event.release_facility
-
-    event_stay_length = stay_length_from_event(event)
-    event_stay_length_bucket = stay_length_bucket(event_stay_length)
-    characteristics['stay_length_bucket'] = event_stay_length_bucket
-
-    characteristics = add_demographic_characteristics(characteristics, person, event.original_admission_date)
-
-    if (isinstance(event, RecidivismReleaseEvent)
-            and metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
-        time_at_liberty = days_at_liberty(event)
-
-        characteristics['days_at_liberty'] = time_at_liberty
-
-    characteristics = characteristics_with_person_id_fields(characteristics, event.state_code, person, 'recidivism')
+    characteristics = characteristics_dict_builder(pipeline='recidivism',
+                                                   event=event,
+                                                   metric_class=metric_class,
+                                                   person=person,
+                                                   event_date=event_date,
+                                                   include_person_attributes=True)
 
     return characteristics
 
@@ -673,11 +596,6 @@ def person_level_augmented_combo(combo: Dict[str, Any], event: ReleaseEvent,
 
     if period:
         parameters['follow_up_period'] = period
-
-    if isinstance(event, RecidivismReleaseEvent):
-        parameters['return_type'] = event.return_type
-        parameters['source_violation_type'] = event.source_violation_type
-        parameters['from_supervision_type'] = event.from_supervision_type
 
     return augment_combination(combo, parameters)
 

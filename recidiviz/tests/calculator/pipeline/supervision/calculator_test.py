@@ -24,13 +24,14 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetricType
+    SupervisionMetricType, SupervisionRevocationMetric, SupervisionCaseComplianceMetric, SupervisionPopulationMetric, \
+    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionTerminationMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
@@ -2354,7 +2355,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
 
-    def test_characteristic_combinations(self):
+    def test_characteristic_combinations_compliance(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -2374,13 +2375,117 @@ class TestCharacteristicCombinations(unittest.TestCase):
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=None
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            case_compliance=SupervisionCaseCompliance(
+                date_of_evaluation=date(2018, 3, 1),
+                assessment_count=1,
+                assessment_up_to_date=True,
+                face_to_face_count=1,
+                face_to_face_frequency_sufficient=True
+            )
         )
 
         characteristics_dict = calculator.characteristics_dict(
-            person, supervision_time_bucket, metric_type=SupervisionMetricType.SUPERVISION_POPULATION)
+            person, supervision_time_bucket, metric_class=SupervisionCaseComplianceMetric)
 
         expected_output = {
+            'age_bucket': '30-34',
+            'assessment_score_bucket': 'NOT_ASSESSED',
+            'assessment_count': 1,
+            'assessment_up_to_date': True,
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'face_to_face_count': 1,
+            'face_to_face_frequency_sufficient': True,
+            'gender': Gender.FEMALE,
+            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
+            'person_id': 12345,
+            'race': [Race.WHITE],
+            'response_count': 5,
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'date_of_evaluation': date(2018, 3, 1),
+            'date_of_supervision': date(2018, 3, 1),
+            'is_on_supervision_last_day_of_month': False,
+        }
+
+        self.assertEqual(expected_output, characteristics_dict)
+
+    def test_characteristic_combinations_population(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
+            is_on_supervision_last_day_of_month=False,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH
+        )
+
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionPopulationMetric)
+
+        expected_output = {
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'assessment_score_bucket': 'HIGH',
+            'assessment_type': StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'is_on_supervision_last_day_of_month': False,
+            'date_of_supervision': date(2018, 3, 1),
+            'response_count': 5,
+            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
+        }
+
+        self.assertEqual(expected_output, characteristics_dict)
+
+    def test_characteristic_combinations_revocation(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
+            is_on_supervision_last_day_of_month=False,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED
+        )
+
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionRevocationMetric)
+
+        expected_output = {
+            'revocation_admission_date': date(2018, 3, 1),
             'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
             'assessment_score_bucket': 'NOT_ASSESSED',
             'age_bucket': '30-34',
@@ -2388,183 +2493,207 @@ class TestCharacteristicCombinations(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'is_on_supervision_last_day_of_month': False,
-            'date_of_supervision': date(2018, 3, 1)
         }
 
         self.assertEqual(expected_output, characteristics_dict)
 
+    def test_characteristic_combinations_revocation_analysis(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
-class TestIncludeSupervisionInCount(unittest.TestCase):
-    """Tests the include_non_revocation_bucket function."""
-    def test_include_supervision_in_count(self):
-        """Tests that the revocation bucket is included and the non-revocation bucket is not."""
-        combo = {
-            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
-        }
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
-        revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=4,
-            bucket_date=date(2010, 4, 1),
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
-        non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False)
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION
+        )
 
-        supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionRevocationAnalysisMetric)
 
-        include_revocation_bucket = calculator.include_supervision_in_count(
-            combo, revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
-
-        self.assertTrue(include_revocation_bucket)
-
-        include_non_revocation_bucket = calculator.include_supervision_in_count(
-            combo, non_revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
-
-        self.assertFalse(include_non_revocation_bucket)
-
-    def test_include_supervision_in_count_revocation(self):
-        """Tests that the revocation probation bucket is included and the non-revocation parole bucket is not."""
-        combo = {
-            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
+        expected_output = {
+            'revocation_admission_date': date(2018, 3, 1),
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'assessment_score_bucket': 'NOT_ASSESSED',
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'response_count': 5,
+            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
+            'most_severe_response_decision': StateSupervisionViolationResponseDecision.REVOCATION,
         }
 
-        revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=4,
-            bucket_date=date(2010, 4, 1),
+        self.assertEqual(expected_output, characteristics_dict)
+
+    def test_characteristic_combinations_revocation_violation_type_analysis(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            revocation_type=RevocationType.SHOCK_INCARCERATION, most_severe_violation_type=ViolationType.FELONY)
-        non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=4, bucket_date=date(2018, 4, 1),
-            is_on_supervision_last_day_of_month=False,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            violation_history_description='1fel;2misd',
+            violation_type_frequency_counter=[
+                ['FELONY', 'LAW'],
+                ['MISD', 'WEA', 'EMP'],
+                ['MISD', 'DRG', 'ASC']
+            ]
+        )
 
-        supervision_time_buckets = [revocation_bucket, non_revocation_bucket]
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionRevocationViolationTypeAnalysisMetric)
 
-        include_revocation_bucket = calculator.include_supervision_in_count(
-            combo, revocation_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
-
-        self.assertTrue(include_revocation_bucket)
-
-        include_non_revocation_bucket = calculator.include_supervision_in_count(
-            combo, non_revocation_bucket,
-            supervision_time_buckets, SupervisionMetricType.SUPERVISION_POPULATION)
-
-        self.assertFalse(include_non_revocation_bucket)
-
-    def test_include_supervision_in_count_last_probation(self):
-        """Tests that the last probation bucket is included."""
-        combo = {
-            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION
+        expected_output = {
+            'assessment_score_bucket': 'NOT_ASSESSED',
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'response_count': 5,
+            'most_severe_violation_type': StateSupervisionViolationType.FELONY,
         }
 
-        first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, date(2018, 4, 1),
-            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
-        second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, date(2018, 4, 1),
-            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
+        self.assertEqual(expected_output, characteristics_dict)
 
-        supervision_time_buckets = [first_bucket, second_bucket]
+    def test_characteristic_combinations_supervision_success(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
-        include_first_bucket = calculator.include_supervision_in_count(
-            combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
-        self.assertFalse(include_first_bucket)
+        person.races = [race]
 
-        include_second_bucket = calculator.include_supervision_in_count(
-            combo, second_bucket,
-            supervision_time_buckets, SupervisionMetricType.SUPERVISION_POPULATION)
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
 
-        self.assertTrue(include_second_bucket)
+        person.ethnicities = [ethnicity]
 
-    def test_include_supervision_in_count_supervision_type_set_parole(self):
-        """Tests that the bucket is included when the supervision type is set in the combo."""
-        combo = {
-            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION,
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE
+        supervision_time_bucket = ProjectedSupervisionCompletionBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionSuccessMetric)
+
+        expected_output = {
+            'age_bucket': '30-34',
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'gender': Gender.FEMALE,
+            'person_id': 12345,
+            'race': [Race.WHITE],
         }
 
-        first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_XX', 2018, 4, date(2018, 4, 1),
-            StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=False)
-        second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_XX', 2018, 4, date(2018, 4, 1),
-            StateSupervisionPeriodSupervisionType.PROBATION, is_on_supervision_last_day_of_month=False)
+        self.assertEqual(expected_output, characteristics_dict)
 
-        supervision_time_buckets = [first_bucket, second_bucket]
+    def test_characteristic_combinations_supervision_successful_sentence_days_served(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
-        include_first_bucket = calculator.include_supervision_in_count(
-            combo, first_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
-        self.assertTrue(include_first_bucket)
+        person.races = [race]
 
-    def test_include_supervision_in_count_supervision_type_set_probation(self):
-        """Tests that the bucket is included when the supervision type is set in the combo."""
-        combo = {
-            'metric_type': SupervisionMetricType.SUPERVISION_POPULATION,
-            'supervision_type': StateSupervisionPeriodSupervisionType.PROBATION
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_bucket = ProjectedSupervisionCompletionBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+        )
+
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SuccessfulSupervisionSentenceDaysServedMetric)
+
+        expected_output = {
+            'age_bucket': '30-34',
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'gender': Gender.FEMALE,
+            'person_id': 12345,
+            'race': [Race.WHITE],
         }
 
-        first_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False)
-        second_bucket = NonRevocationReturnSupervisionTimeBucket(
-            'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PROBATION,
-            is_on_supervision_last_day_of_month=False)
+        self.assertEqual(expected_output, characteristics_dict)
 
-        supervision_time_buckets = [first_bucket, second_bucket]
+    def test_characteristic_combinations_termination(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
-        include_second_bucket = calculator.include_supervision_in_count(
-            combo, second_bucket, supervision_time_buckets,
-            SupervisionMetricType.SUPERVISION_POPULATION)
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
 
-        self.assertTrue(include_second_bucket)
+        person.races = [race]
 
-    def test_include_supervision_in_count_test_all_metrics(self):
-        """Tests that the revocation bucket is included and the non-revocation bucket is not."""
-        for metric_type in SupervisionMetricType:
-            combo = {
-                'metric_type': metric_type
-            }
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
 
-            if metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
-                bucket = ProjectedSupervisionCompletionBucket(
-                    'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                    successful_completion=True, incarcerated_during_sentence=False, sentence_days_served=100)
+        person.ethnicities = [ethnicity]
 
-                # Assert that this does not raise an error
-                _ = calculator.include_supervision_in_count(combo, bucket, [bucket], metric_type)
-            elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
-                                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-                                 SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
-                revocation_bucket = RevocationReturnSupervisionTimeBucket(
-                    state_code='XX',
-                    year=2018,
-                    month=4,
-                    bucket_date=date(2018, 4, 1),
-                    is_on_supervision_last_day_of_month=False
-                )
+        supervision_time_bucket = SupervisionTerminationBucket(
+            state_code='US_MO', year=2018, month=3,
+            bucket_date=date(2018, 3, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            response_count=5,
+            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+        )
 
-                # Assert that this does not raise an error
-                _ = calculator.include_supervision_in_count(
-                    combo, revocation_bucket, [revocation_bucket], metric_type)
-            else:
-                non_revocation_bucket = NonRevocationReturnSupervisionTimeBucket(
-                    'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                    is_on_supervision_last_day_of_month=False)
+        characteristics_dict = calculator.characteristics_dict(
+            person, supervision_time_bucket, metric_class=SupervisionTerminationMetric)
 
-                # Assert that this does not raise an error
-                _ = calculator.include_supervision_in_count(
-                    combo, non_revocation_bucket, [non_revocation_bucket], metric_type)
+        expected_output = {
+            'assessment_score_bucket': 'NOT_ASSESSED',
+            'age_bucket': '30-34',
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'gender': Gender.FEMALE,
+            'person_id': 12345,
+            'race': [Race.WHITE],
+            'termination_date': date(2018, 3, 1),
+            'response_count': 5,
+            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED
+        }
+
+        self.assertEqual(expected_output, characteristics_dict)
 
 
 def expected_metric_combos_count(
@@ -2749,27 +2878,3 @@ def _duplicated_days(supervision_time_buckets: Sequence[SupervisionTimeBucket]) 
             days.add(bucket.bucket_date)
 
     return duplicated_days
-
-
-class TestIncludeDimensionsFunctions(unittest.TestCase):
-    """Tests the various functions that determine which dimensions should be included for the given metric."""
-
-    def test_include_assessment_dimensions_for_metric(self):
-        for metric in SupervisionMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_assessment_dimensions_for_metric(metric)
-
-    def test_limit_to_person_level_dimensions_for_metric(self):
-        for metric in SupervisionMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_person_level_dimensions_for_metric(metric)
-
-    def test_include_demographic_dimensions_for_metric(self):
-        for metric in SupervisionMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_demographic_dimensions_for_metric(metric)
-
-    def test_include_revocation_dimensions_for_metric(self):
-        for metric in SupervisionMetricType:
-            # Assert this does not fail for all possible metric types
-            _ = calculator._include_revocation_dimensions_for_metric(metric)

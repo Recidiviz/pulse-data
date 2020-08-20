@@ -40,458 +40,433 @@ from recidiviz.common.constants.state.state_supervision_violation import \
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
     StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationRecidivismMetricType as MetricType
-
+    ReincarcerationRecidivismMetricType as MetricType, ReincarcerationRecidivismCountMetric, \
+    ReincarcerationRecidivismRateMetric
 
 _COUNTY_OF_RESIDENCE = 'county'
 
 
-def test_reincarcerations():
-    release_date = date.today()
-    original_admission_date = release_date - relativedelta(years=4)
-    reincarceration_date = release_date + relativedelta(years=3)
-    second_release_date = reincarceration_date + relativedelta(years=1)
-
-    first_event = RecidivismReleaseEvent(
-        'CA', original_admission_date, release_date, 'Sing Sing',
-        _COUNTY_OF_RESIDENCE, reincarceration_date, 'Sing Sing',
-        ReincarcerationReturnType.NEW_ADMISSION)
-    second_event = NonRecidivismReleaseEvent(
-        'CA', reincarceration_date, second_release_date, 'Sing Sing',
-        _COUNTY_OF_RESIDENCE)
-    release_events = {2018: [first_event], 2022: [second_event]}
-
-    expected_reincarcerations = {reincarceration_date:
-                                 {'release_date': first_event.release_date,
-                                  'return_type': first_event.return_type,
-                                  'from_supervision_type':
-                                  first_event.from_supervision_type,
-                                  'source_violation_type': None}}
-
-    reincarcerations = calculator.reincarcerations(release_events)
-    assert reincarcerations == expected_reincarcerations
-
-
-def test_reincarcerations_empty():
-    reincarcerations = calculator.reincarcerations({})
-    assert reincarcerations == {}
-
-
-def test_releases_in_window():
-    # Too early
-    release_2012 = date(2012, 4, 30)
-    # Just right
-    release_2016 = date(2016, 5, 13)
-    release_2020 = date(2020, 11, 20)
-    release_2021 = date(2021, 5, 13)
-    # Too late
-    release_2022 = date(2022, 5, 13)
-
-    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-                       'from_supervision_type': None}
-
-    all_reincarcerations = {release_2012: reincarceration,
-                            release_2016: reincarceration,
-                            release_2020: reincarceration,
-                            release_2021: reincarceration,
-                            release_2022: reincarceration}
-
-    start_date = date(2016, 5, 13)
-
-    reincarcerations = calculator.reincarcerations_in_window(
-        start_date, start_date +
-        relativedelta(years=6), all_reincarcerations)
-    assert len(reincarcerations) == 3
-
-
-def test_releases_in_window_all_early():
-    # Too early
-    release_2012 = date(2012, 4, 30)
-    release_2016 = date(2016, 5, 13)
-    release_2020 = date(2020, 11, 20)
-    release_2021 = date(2021, 5, 13)
-    release_2022 = date(2022, 5, 13)
-
-    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-                       'from_supervision_type': None}
-
-    all_reincarcerations = {release_2012: reincarceration,
-                            release_2016: reincarceration,
-                            release_2020: reincarceration,
-                            release_2021: reincarceration,
-                            release_2022: reincarceration}
-
-    start_date = date(2026, 5, 13)
-
-    reincarcerations = calculator.reincarcerations_in_window(
-        start_date, start_date +
-        relativedelta(years=6), all_reincarcerations)
-
-    assert reincarcerations == []
-
-
-def test_releases_in_window_all_late():
-    # Too late
-    release_2012 = date(2012, 4, 30)
-    release_2016 = date(2016, 5, 13)
-    release_2020 = date(2020, 11, 20)
-    release_2021 = date(2021, 5, 13)
-    release_2022 = date(2022, 5, 13)
-
-    reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-                       'from_supervision_type': None}
-
-    all_reincarcerations = {release_2012: reincarceration,
-                            release_2016: reincarceration,
-                            release_2020: reincarceration,
-                            release_2021: reincarceration,
-                            release_2022: reincarceration}
-
-    start_date = date(2006, 5, 13)
+class TestReincarcerations(unittest.TestCase):
+    """Tests the reincarcerations() function in the calculator."""
+    def test_reincarcerations(self):
+        release_date = date.today()
+        original_admission_date = release_date - relativedelta(years=4)
+        reincarceration_date = release_date + relativedelta(years=3)
+        second_release_date = reincarceration_date + relativedelta(years=1)
+
+        first_event = RecidivismReleaseEvent(
+            'CA', original_admission_date, release_date, 'Sing Sing',
+            _COUNTY_OF_RESIDENCE, reincarceration_date, 'Sing Sing',
+            ReincarcerationReturnType.NEW_ADMISSION)
+        second_event = NonRecidivismReleaseEvent(
+            'CA', reincarceration_date, second_release_date, 'Sing Sing',
+            _COUNTY_OF_RESIDENCE)
+        release_events = {2018: [first_event], 2022: [second_event]}
+
+        expected_reincarcerations = {reincarceration_date:
+                                     {'release_date': first_event.release_date,
+                                      'return_type': first_event.return_type,
+                                      'from_supervision_type':
+                                      first_event.from_supervision_type,
+                                      'source_violation_type': None}}
+
+        reincarcerations = calculator.reincarcerations(release_events)
+        self.assertEqual(expected_reincarcerations, reincarcerations)
+
+    def test_reincarcerations_empty(self):
+        reincarcerations = calculator.reincarcerations({})
+        self.assertEqual({}, reincarcerations)
+
+
+class TestReincarcerationsInWindow(unittest.TestCase):
+    """Tests the reincarcerations_in_window() function in the calculator."""
+
+    def test_reincarcerations_in_window(self):
+        # Too early
+        release_2012 = date(2012, 4, 30)
+        # Just right
+        release_2016 = date(2016, 5, 13)
+        release_2020 = date(2020, 11, 20)
+        release_2021 = date(2021, 5, 13)
+        # Too late
+        release_2022 = date(2022, 5, 13)
+
+        reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'from_supervision_type': None}
+
+        all_reincarcerations = {release_2012: reincarceration,
+                                release_2016: reincarceration,
+                                release_2020: reincarceration,
+                                release_2021: reincarceration,
+                                release_2022: reincarceration}
+
+        start_date = date(2016, 5, 13)
+
+        reincarcerations = calculator.reincarcerations_in_window(
+            start_date, start_date +
+            relativedelta(years=6), all_reincarcerations)
+        self.assertEqual(3, len(reincarcerations))
+
+    def test_reincarcerations_in_window_all_early(self):
+        # Too early
+        release_2012 = date(2012, 4, 30)
+        release_2016 = date(2016, 5, 13)
+        release_2020 = date(2020, 11, 20)
+        release_2021 = date(2021, 5, 13)
+        release_2022 = date(2022, 5, 13)
+
+        reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'from_supervision_type': None}
+
+        all_reincarcerations = {release_2012: reincarceration,
+                                release_2016: reincarceration,
+                                release_2020: reincarceration,
+                                release_2021: reincarceration,
+                                release_2022: reincarceration}
+
+        start_date = date(2026, 5, 13)
+
+        reincarcerations = calculator.reincarcerations_in_window(
+            start_date, start_date +
+            relativedelta(years=6), all_reincarcerations)
+
+        self.assertEqual([], reincarcerations)
+
+    def test_reincarcerations_in_window_all_late(self):
+        # Too late
+        release_2012 = date(2012, 4, 30)
+        release_2016 = date(2016, 5, 13)
+        release_2020 = date(2020, 11, 20)
+        release_2021 = date(2021, 5, 13)
+        release_2022 = date(2022, 5, 13)
+
+        reincarceration = {'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'from_supervision_type': None}
+
+        all_reincarcerations = {release_2012: reincarceration,
+                                release_2016: reincarceration,
+                                release_2020: reincarceration,
+                                release_2021: reincarceration,
+                                release_2022: reincarceration}
+
+        start_date = date(2006, 5, 13)
+
+        reincarcerations = calculator.reincarcerations_in_window(
+            start_date, start_date +
+            relativedelta(years=5), all_reincarcerations)
+
+        self.assertEqual([], reincarcerations)
+
+    def test_reincarcerations_in_window_with_revocation_returns(self):
+        # Too early
+        release_2012 = date(2012, 4, 30)
+        # Just right
+        release_2016 = date(2016, 5, 13)
+        release_2020 = date(2020, 11, 20)
+        release_2021 = date(2021, 5, 13)
+        # Too late
+        release_2022 = date(2022, 5, 13)
+
+        revocation_reincarceration = {
+            'return_type':
+                ReincarcerationReturnType.REVOCATION,
+            'from_supervision_type':
+                StateSupervisionPeriodSupervisionType.PAROLE}
+
+        new_admission_reincarceration = {
+            'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+            'from_supervision_type': None}
+
+        all_reincarcerations = {release_2012: new_admission_reincarceration,
+                                release_2016: revocation_reincarceration,
+                                release_2020: revocation_reincarceration,
+                                release_2021: new_admission_reincarceration,
+                                release_2022: new_admission_reincarceration}
+
+        start_date = date(2016, 5, 13)
+
+        reincarcerations = calculator.reincarcerations_in_window(
+            start_date, start_date +
+            relativedelta(years=6), all_reincarcerations)
+
+        self.assertEqual(3, len(reincarcerations))
+        self.assertEqual(ReincarcerationReturnType.REVOCATION, reincarcerations[0].get('return_type'))
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, reincarcerations[0].get('from_supervision_type'))
+        self.assertEqual(ReincarcerationReturnType.REVOCATION, reincarcerations[1].get('return_type'))
+        self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE, reincarcerations[1].get('from_supervision_type'))
+        self.assertEqual(ReincarcerationReturnType.NEW_ADMISSION, reincarcerations[2].get('return_type'))
+        self.assertIsNone(reincarcerations[2].get('from_supervision_type'))
+
+
+class TestEarliestRecidivatedFollowUpPeriod(unittest.TestCase):
+    """Tests the earliest_recidivated_follow_up_period() function in the calculator."""
+
+    def test_earliest_recidivated_follow_up_period_later_month_in_year(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2016, 5, 13)
 
-    reincarcerations = calculator.reincarcerations_in_window(
-        start_date, start_date +
-        relativedelta(years=5), all_reincarcerations)
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(5, earliest_period)
 
-    assert reincarcerations == []
+    def test_earliest_recidivated_follow_up_period_same_month_in_year_later_day(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2016, 4, 21)
 
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(5, earliest_period)
 
-def test_releases_in_window_with_revocation_returns():
-    # Too early
-    release_2012 = date(2012, 4, 30)
-    # Just right
-    release_2016 = date(2016, 5, 13)
-    release_2020 = date(2020, 11, 20)
-    release_2021 = date(2021, 5, 13)
-    # Too late
-    release_2022 = date(2022, 5, 13)
+    def test_earliest_recidivated_follow_up_period_same_month_in_year_earlier_day(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2016, 4, 19)
 
-    revocation_reincarceration = {
-        'return_type':
-            ReincarcerationReturnType.REVOCATION,
-        'from_supervision_type':
-            StateSupervisionPeriodSupervisionType.PAROLE}
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(4, earliest_period)
 
-    new_admission_reincarceration = {
-        'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-        'from_supervision_type': None}
+    def test_earliest_recidivated_follow_up_period_same_month_in_year_same_day(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2016, 4, 20)
+
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(4, earliest_period)
+
+    def test_earliest_recidivated_follow_up_period_earlier_month_in_year(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2016, 3, 31)
+
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(4, earliest_period)
+
+    def test_earliest_recidivated_follow_up_period_same_year(self):
+        release_date = date(2012, 4, 20)
+        reincarceration_date = date(2012, 5, 13)
+
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, reincarceration_date)
+        self.assertEqual(1, earliest_period)
+
+    def test_earliest_recidivated_follow_up_period_no_reincarceration(self):
+        release_date = date(2012, 4, 30)
+
+        earliest_period = calculator.earliest_recidivated_follow_up_period(
+            release_date, None)
+        self.assertIsNone(earliest_period)
+
+
+class TestStayLengthFromEvent(unittest.TestCase):
+    """Tests the built-in stay_length function on the ReleaseEvent class."""
+    def test_stay_length_from_event_earlier_month_and_date(self):
+        original_admission_date = date(2013, 6, 17)
+        release_date = date(2014, 4, 15)
+        event = ReleaseEvent('CA', original_admission_date, release_date,
+                             'Sing Sing')
+
+        self.assertEqual(9, event.stay_length)
+
+    def test_stay_length_from_event_same_month_earlier_date(self):
+        original_admission_date = date(2013, 6, 17)
+        release_date = date(2014, 6, 16)
+        event = ReleaseEvent('NH', original_admission_date, release_date,
+                             'Sing Sing')
+
+        self.assertEqual(11, event.stay_length)
+
+    def test_stay_length_from_event_same_month_same_date(self):
+        original_admission_date = date(2013, 6, 17)
+        release_date = date(2014, 6, 17)
+        event = ReleaseEvent('TX', original_admission_date, release_date,
+                             'Sing Sing')
+
+        self.assertEqual(12, event.stay_length)
+
+    def test_stay_length_from_event_same_month_later_date(self):
+        original_admission_date = date(2013, 6, 17)
+        release_date = date(2014, 6, 18)
+        event = ReleaseEvent('UT', original_admission_date, release_date,
+                             'Sing Sing')
+
+        self.assertEqual(12, event.stay_length)
 
-    all_reincarcerations = {release_2012: new_admission_reincarceration,
-                            release_2016: revocation_reincarceration,
-                            release_2020: revocation_reincarceration,
-                            release_2021: new_admission_reincarceration,
-                            release_2022: new_admission_reincarceration}
-
-    start_date = date(2016, 5, 13)
-
-    reincarcerations = calculator.reincarcerations_in_window(
-        start_date, start_date +
-        relativedelta(years=6), all_reincarcerations)
-    assert len(reincarcerations) == 3
-
-    assert reincarcerations[0].get('return_type') == \
-        ReincarcerationReturnType.REVOCATION
-    assert reincarcerations[0].get('from_supervision_type') == \
-        StateSupervisionPeriodSupervisionType.PAROLE
-    assert reincarcerations[1].get('return_type') == \
-        ReincarcerationReturnType.REVOCATION
-    assert reincarcerations[1].get('from_supervision_type') == \
-        StateSupervisionPeriodSupervisionType.PAROLE
-    assert reincarcerations[2].get('return_type') == \
-        ReincarcerationReturnType.NEW_ADMISSION
-    assert reincarcerations[2].get('from_supervision_type') is None
-
-
-def test_earliest_recidivated_follow_up_period_later_month_in_year():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2016, 5, 13)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 5
-
-
-def test_earliest_recidivated_follow_up_period_same_month_in_year_later_day():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2016, 4, 21)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 5
-
-
-def test_earliest_recidivated_follow_up_period_same_month_in_year_earlier_day():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2016, 4, 19)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 4
-
-
-def test_earliest_recidivated_follow_up_period_same_month_in_year_same_day():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2016, 4, 20)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 4
-
-
-def test_earliest_recidivated_follow_up_period_earlier_month_in_year():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2016, 3, 31)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 4
-
-
-def test_earliest_recidivated_follow_up_period_same_year():
-    release_date = date(2012, 4, 20)
-    reincarceration_date = date(2012, 5, 13)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, reincarceration_date)
-    assert earliest_period == 1
-
-
-def test_earliest_recidivated_follow_up_period_no_reincarceration():
-    release_date = date(2012, 4, 30)
-
-    earliest_period = calculator.earliest_recidivated_follow_up_period(
-        release_date, None)
-    assert earliest_period is None
-
-
-def test_relevant_follow_up_periods():
-    today = date(2018, 1, 26)
-
-    assert calculator.relevant_follow_up_periods(
-        date(2015, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3, 4]
-    assert calculator.relevant_follow_up_periods(
-        date(2015, 1, 26), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3, 4]
-    assert calculator.relevant_follow_up_periods(
-        date(2015, 1, 27), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3]
-    assert calculator.relevant_follow_up_periods(
-        date(2016, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3]
-    assert calculator.relevant_follow_up_periods(
-        date(2017, 4, 10), today, calculator.FOLLOW_UP_PERIODS) == [1]
-    assert calculator.relevant_follow_up_periods(
-        date(2018, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1]
-    assert calculator.relevant_follow_up_periods(
-        date(2018, 2, 5), today, calculator.FOLLOW_UP_PERIODS) == []
-
-
-def test_stay_length_from_event_earlier_month_and_date():
-    original_admission_date = date(2013, 6, 17)
-    release_date = date(2014, 4, 15)
-    event = ReleaseEvent('CA', original_admission_date, release_date,
-                         'Sing Sing')
-
-    assert calculator.stay_length_from_event(event) == 9
-
-
-def test_stay_length_from_event_same_month_earlier_date():
-    original_admission_date = date(2013, 6, 17)
-    release_date = date(2014, 6, 16)
-    event = ReleaseEvent('NH', original_admission_date, release_date,
-                         'Sing Sing')
-
-    assert calculator.stay_length_from_event(event) == 11
-
-
-def test_stay_length_from_event_same_month_same_date():
-    original_admission_date = date(2013, 6, 17)
-    release_date = date(2014, 6, 17)
-    event = ReleaseEvent('TX', original_admission_date, release_date,
-                         'Sing Sing')
-
-    assert calculator.stay_length_from_event(event) == 12
-
-
-def test_stay_length_from_event_same_month_later_date():
-    original_admission_date = date(2013, 6, 17)
-    release_date = date(2014, 6, 18)
-    event = ReleaseEvent('UT', original_admission_date, release_date,
-                         'Sing Sing')
-
-    assert calculator.stay_length_from_event(event) == 12
-
-
-def test_stay_length_from_event_later_month():
-    original_admission_date = date(2013, 6, 17)
-    release_date = date(2014, 8, 11)
-    event = ReleaseEvent('HI', original_admission_date, release_date,
-                         'Sing Sing')
-
-    assert calculator.stay_length_from_event(event) == 13
-
-
-def test_stay_length_from_event_original_admission_date_unknown():
-    release_date = date(2014, 7, 11)
-    event = ReleaseEvent('MT', None, release_date, 'Sing Sing')
-    assert calculator.stay_length_from_event(event) is None
-
-
-def test_stay_length_from_event_release_date_unknown():
-    original_admission_date = date(2014, 7, 11)
-    event = ReleaseEvent('UT', original_admission_date, None, 'Sing Sing')
-    assert calculator.stay_length_from_event(event) is None
-
-
-def test_stay_length_from_event_both_dates_unknown():
-    event = ReleaseEvent('NH', None, None, 'Sing Sing')
-    assert calculator.stay_length_from_event(event) is None
-
-
-def test_stay_length_bucket():
-    assert calculator.stay_length_bucket(None) is None
-    assert calculator.stay_length_bucket(11) == '<12'
-    assert calculator.stay_length_bucket(12) == '12-24'
-    assert calculator.stay_length_bucket(20) == '12-24'
-    assert calculator.stay_length_bucket(24) == '24-36'
-    assert calculator.stay_length_bucket(30) == '24-36'
-    assert calculator.stay_length_bucket(36) == '36-48'
-    assert calculator.stay_length_bucket(40) == '36-48'
-    assert calculator.stay_length_bucket(48) == '48-60'
-    assert calculator.stay_length_bucket(50) == '48-60'
-    assert calculator.stay_length_bucket(60) == '60-72'
-    assert calculator.stay_length_bucket(70) == '60-72'
-    assert calculator.stay_length_bucket(72) == '72-84'
-    assert calculator.stay_length_bucket(80) == '72-84'
-    assert calculator.stay_length_bucket(84) == '84-96'
-    assert calculator.stay_length_bucket(96) == '96-108'
-    assert calculator.stay_length_bucket(100) == '96-108'
-    assert calculator.stay_length_bucket(108) == '108-120'
-    assert calculator.stay_length_bucket(110) == '108-120'
-    assert calculator.stay_length_bucket(120) == '120<'
-    assert calculator.stay_length_bucket(130) == '120<'
-
-
-def test_recidivism_value_for_metric():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
-
-    value = calculator.recidivism_value_for_metric(combo, None, None, None)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_new_admission():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.NEW_ADMISSION}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.NEW_ADMISSION, None, None)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_not_new_admission():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.NEW_ADMISSION}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION, None, None)
-
-    assert value == 0
-
-
-def test_recidivism_value_for_metric_parole_revocation():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PAROLE}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PAROLE, None)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_probation_revocation():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PROBATION}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PROBATION, None)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_parole_revocation_source_violation():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PAROLE,
-             'source_violation_type': StateSupervisionViolationType.TECHNICAL}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PAROLE,
-        StateSupervisionViolationType.TECHNICAL)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_probation_revocation_source_violation():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PROBATION,
-             'source_violation_type': StateSupervisionViolationType.FELONY}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PROBATION,
-        StateSupervisionViolationType.FELONY)
-
-    assert value == 1
-
-
-def test_recidivism_value_for_metric_not_revocation():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PROBATION}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.NEW_ADMISSION,
-        StateSupervisionPeriodSupervisionType.PROBATION, None)
-
-    assert value == 0
-
-
-def test_recidivism_value_for_metric_not_supervision_type():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PROBATION}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PAROLE, None)
-
-    assert value == 0
-
-
-def test_recidivism_value_for_metric_not_source_violation_type():
-    combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-             'return_type': ReincarcerationReturnType.REVOCATION,
-             'from_supervision_type':
-                 StateSupervisionPeriodSupervisionType.PROBATION,
-             'source_violation_type': StateSupervisionViolationType.FELONY}
-
-    value = calculator.recidivism_value_for_metric(
-        combo, ReincarcerationReturnType.REVOCATION,
-        StateSupervisionPeriodSupervisionType.PAROLE,
-        StateSupervisionViolationType.TECHNICAL)
-
-    assert value == 0
+    def test_stay_length_from_event_later_month(self):
+        original_admission_date = date(2013, 6, 17)
+        release_date = date(2014, 8, 11)
+        event = ReleaseEvent('HI', original_admission_date, release_date, 'Sing Sing')
+
+        self.assertEqual(13, event.stay_length)
+
+    def test_stay_length_from_event_original_admission_date_unknown(self):
+        release_date = date(2014, 7, 11)
+        event = ReleaseEvent('MT', None, release_date, 'Sing Sing')
+
+        self.assertIsNone(event.stay_length)
+
+    def test_stay_length_from_event_release_date_unknown(self):
+        original_admission_date = date(2014, 7, 11)
+        event = ReleaseEvent('UT', original_admission_date, None, 'Sing Sing')
+
+        self.assertIsNone(event.stay_length)
+
+    def test_stay_length_from_event_both_dates_unknown(self):
+        event = ReleaseEvent('NH', None, None, 'Sing Sing')
+
+        self.assertIsNone(event.stay_length)
+
+
+class TestStayLengthBucket(unittest.TestCase):
+    """Tests the built-in stay_length_bucket attribute on the ReleaseEvent class."""
+    def setUp(self) -> None:
+        self.months_to_bucket_map = {
+            11: '<12',
+            12: '12-24',
+            20: '12-24',
+            24: '24-36',
+            30: '24-36',
+            36: '36-48',
+            40: '36-48',
+            48: '48-60',
+            50: '48-60',
+            60: '60-72',
+            70: '60-72',
+            72: '72-84',
+            80: '72-84',
+            84: '84-96',
+            96: '96-108',
+            100: '96-108',
+            108: '108-120',
+            110: '108-120',
+            120: '120<',
+            130: '120<',
+        }
+
+    def test_stay_length_bucket(self):
+        original_admission_date = date(1903, 6, 17)
+
+        for months, bucket in self.months_to_bucket_map.items():
+            release_date = original_admission_date + relativedelta(months=months)
+            event = ReleaseEvent('CA', original_admission_date, release_date, 'Sing Sing')
+            self.assertEqual(bucket, event.stay_length_bucket)
+
+
+class TestRecidivismValueForMetric(unittest.TestCase):
+    """Tests the recidivism_value_for_metric() function in the calculator."""
+    def test_recidivism_value_for_metric(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
+
+        value = calculator.recidivism_value_for_metric(combo, None, None, None)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_new_admission(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.NEW_ADMISSION}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.NEW_ADMISSION, None, None)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_not_new_admission(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.NEW_ADMISSION}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION, None, None)
+
+        self.assertEqual(0, value)
+
+    def test_recidivism_value_for_metric_parole_revocation(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PAROLE}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PAROLE, None)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_probation_revocation(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PROBATION}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PROBATION, None)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_parole_revocation_source_violation(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PAROLE,
+                 'source_violation_type': StateSupervisionViolationType.TECHNICAL}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            StateSupervisionViolationType.TECHNICAL)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_probation_revocation_source_violation(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PROBATION,
+                 'source_violation_type': StateSupervisionViolationType.FELONY}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            StateSupervisionViolationType.FELONY)
+
+        self.assertEqual(1, value)
+
+    def test_recidivism_value_for_metric_not_revocation(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PROBATION}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.NEW_ADMISSION,
+            StateSupervisionPeriodSupervisionType.PROBATION, None)
+
+        self.assertEqual(0, value)
+
+    def test_recidivism_value_for_metric_not_supervision_type(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PROBATION}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PAROLE, None)
+
+        self.assertEqual(0, value)
+
+    def test_recidivism_value_for_metric_not_source_violation_type(self):
+        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
+                 'return_type': ReincarcerationReturnType.REVOCATION,
+                 'from_supervision_type':
+                     StateSupervisionPeriodSupervisionType.PROBATION,
+                 'source_violation_type': StateSupervisionViolationType.FELONY}
+
+        value = calculator.recidivism_value_for_metric(
+            combo, ReincarcerationReturnType.REVOCATION,
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            StateSupervisionViolationType.TECHNICAL)
+
+        self.assertEqual(0, value)
 
 
 ALL_METRIC_INCLUSIONS_DICT = {
@@ -577,9 +552,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
-                assert value == 0
+                self.assertEqual(0, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
                     assert combination.get('days_at_liberty') == days_at_liberty
@@ -837,13 +812,13 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
-                assert value == 0
+                self.assertEqual(0, value)
             elif (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                   and combination.get('person_id') is not None):
-                assert value == 1
+                self.assertEqual(1, value)
                 assert combination.get('days_at_liberty') == days_at_liberty
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
     def test_map_recidivism_combinations_multiple_ethnicities(self):
         """Tests the map_recidivism_combinations function where there is
@@ -890,9 +865,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
-                assert value == 0
+                self.assertEqual(0, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
@@ -948,9 +923,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('follow_up_period') <= 5 or \
                     combination.get('return_type') == \
                     ReincarcerationReturnType.REVOCATION:
-                assert value == 0
+                self.assertEqual(0, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
@@ -1002,9 +977,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('from_supervision_type') == \
                     StateSupervisionPeriodSupervisionType.PROBATION or \
                     combination.get('source_violation_type') is not None:
-                assert value == 0
+                self.assertEqual(0, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
@@ -1056,9 +1031,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     combination.get('from_supervision_type') in {StateSupervisionPeriodSupervisionType.DUAL,
                                                                  StateSupervisionPeriodSupervisionType.PAROLE} or \
                     combination.get('source_violation_type') is not None:
-                assert value == 0
+                self.assertEqual(0, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
@@ -1108,22 +1083,22 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5:
-                assert value == 0
+                self.assertEqual(0, value)
             elif combination.get('return_type') == \
                     ReincarcerationReturnType.NEW_ADMISSION or \
                     combination.get('from_supervision_type') == \
                     StateSupervisionPeriodSupervisionType.PROBATION:
-                assert value == 0
+                self.assertEqual(0, value)
             elif combination.get('from_supervision_type') is None or \
                     combination.get('from_supervision_type') == \
                     StateSupervisionPeriodSupervisionType.PAROLE:
                 if combination.get('source_violation_type') not in \
                         [None, StateSupervisionViolationType.TECHNICAL]:
-                    assert value == 0
+                    self.assertEqual(0, value)
                 else:
-                    assert value == 1
+                    self.assertEqual(1, value)
             else:
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                         and combination.get('person_id') is not None):
@@ -1169,9 +1144,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
                 if combo.get('return_type') != \
                         ReincarcerationReturnType.REVOCATION:
-                    assert value == 1
+                    self.assertEqual(1, value)
                 else:
-                    assert value == 0
+                    self.assertEqual(0, value)
 
     def test_map_recidivism_combinations_count_metric_no_recidivism(self):
         person = StatePerson.new_with_defaults(person_id=12345,
@@ -1267,7 +1242,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 assert combo['year'] == 1914
                 assert combo['month'] in (3, 9)
 
-                assert value == 1
+                self.assertEqual(1, value)
 
                 if combo.get('metric_period_months') > 1:
                     assert combo['year'] == 1914
@@ -1341,7 +1316,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 assert combo['year'] == 1914
                 assert combo['month'] == 3
 
-                assert value == 1
+                self.assertEqual(1, value)
 
             if combo.get('metric_type') == MetricType.REINCARCERATION_COUNT and combo.get('person_id') is not None:
                 if combo['release_facility'] == 'Hudson':
@@ -1352,7 +1327,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
-    def test_characteristic_combinations(self):
+    def test_characteristic_combinations_rate(self):
         person = StatePerson.new_with_defaults(person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
@@ -1374,7 +1349,49 @@ class TestCharacteristicCombinations(unittest.TestCase):
             date(2014, 5, 12), 'Upstate',
             ReincarcerationReturnType.NEW_ADMISSION)
 
-        characteristic_dict = calculator.characteristics_dict(person, release_event, MetricType.REINCARCERATION_RATE)
+        characteristic_dict = calculator.characteristics_dict(person,
+                                                              release_event,
+                                                              ReincarcerationRecidivismRateMetric)
+
+        expected_output = {'county_of_residence': 'county',
+                           'release_cohort': 2008,
+                           'release_facility': 'Hudson',
+                           'stay_length_bucket': '36-48',
+                           'age_bucket': '<25',
+                           'gender': Gender.FEMALE,
+                           'race': [Race.WHITE],
+                           'ethnicity': [Ethnicity.NOT_HISPANIC],
+                           'person_id': 12345,
+                           'return_type': ReincarcerationReturnType.NEW_ADMISSION
+                           }
+
+        self.assertEqual(expected_output, characteristic_dict)
+
+    def test_characteristic_combinations_count(self):
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='CA',
+                                                 race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='CA',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_event = RecidivismReleaseEvent(
+            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
+            _COUNTY_OF_RESIDENCE,
+            date(2014, 5, 12), 'Upstate',
+            ReincarcerationReturnType.NEW_ADMISSION)
+
+        characteristic_dict = calculator.characteristics_dict(person,
+                                                              release_event,
+                                                              ReincarcerationRecidivismCountMetric)
 
         expected_output = {'county_of_residence': 'county',
                            'release_facility': 'Hudson',
@@ -1383,6 +1400,28 @@ class TestCharacteristicCombinations(unittest.TestCase):
                            'gender': Gender.FEMALE,
                            'race': [Race.WHITE],
                            'ethnicity': [Ethnicity.NOT_HISPANIC],
-                           'person_id': 12345}
+                           'person_id': 12345,
+                           'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days
+                           }
 
         self.assertEqual(expected_output, characteristic_dict)
+
+
+def test_relevant_follow_up_periods():
+    today = date(2018, 1, 26)
+
+    assert calculator.relevant_follow_up_periods(
+        date(2015, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3, 4]
+    assert calculator.relevant_follow_up_periods(
+        date(2015, 1, 26), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3, 4]
+    assert calculator.relevant_follow_up_periods(
+        date(2015, 1, 27), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3]
+    assert calculator.relevant_follow_up_periods(
+        date(2016, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1, 2, 3]
+    assert calculator.relevant_follow_up_periods(
+        date(2017, 4, 10), today, calculator.FOLLOW_UP_PERIODS) == [1]
+    assert calculator.relevant_follow_up_periods(
+        date(2018, 1, 5), today, calculator.FOLLOW_UP_PERIODS) == [1]
+    assert calculator.relevant_follow_up_periods(
+        date(2018, 2, 5), today, calculator.FOLLOW_UP_PERIODS) == []

@@ -71,6 +71,10 @@ class IncarcerationStayEvent(IncarcerationEvent):
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
+    @property
+    def date_of_stay(self):
+        return self.event_date
+
 
 @attr.s(frozen=True)
 class IncarcerationAdmissionEvent(IncarcerationEvent):
@@ -90,6 +94,10 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 
     # Supervision type at the time of admission, if any.
     supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
+
+    @property
+    def admission_date(self):
+        return self.event_date
 
 
 @attr.s(frozen=True)
@@ -115,3 +123,7 @@ class IncarcerationReleaseEvent(IncarcerationEvent):
 
     # The length, in days, of the continuous stay in prison.
     total_days_incarcerated: Optional[int] = attr.ib(default=None)
+
+    @property
+    def release_date(self):
+        return self.event_date

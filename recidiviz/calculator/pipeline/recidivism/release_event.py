@@ -16,12 +16,13 @@
 # =============================================================================
 
 """Releases that either lead to recidivism or non-recidivism for calculation."""
-
+import logging
 from datetime import date
 from enum import Enum
 from typing import Optional
 
 import attr
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
@@ -64,6 +65,67 @@ class ReleaseEvent(BuildableAttr):
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
 
+    @property
+    def release_cohort(self):
+        return self.release_date.year
+
+    @property
+    def stay_length(self) -> Optional[int]:
+        """Calculates the length of facility stay of a given event in months.
+
+        This is rounded down to the nearest month, so a stay from 2015-01-15 to
+        2017-01-14 results in a stay length of 23 months. Note that bucketing in
+        stay_length_bucketing is upper bound exclusive, so in this example the
+        bucket would be 12-24, and if the stay ended on 2017-01-15, the stay length
+        would be 24 months and the bucket would be 24-36.
+
+        Returns:
+            The length of the facility stay in months. None if the original
+            admission date or release date is not known.
+        """
+        if self.original_admission_date is None or self.release_date is None:
+            return None
+
+        delta = relativedelta(self.release_date, self.original_admission_date)
+        return delta.years * 12 + delta.months
+
+    @property
+    def stay_length_bucket(self):
+        """Calculates the stay length bucket that applies to measurement.
+
+        Stay length buckets (upper bound exclusive) for measurement:
+            <12, 12-24, 24-36, 36-48, 48-60, 60-72,
+            72-84, 84-96, 96-108, 108-120, 120+.
+
+        Returns:
+            A string representation of the age bucket for the person.
+        """
+
+        stay_length = self.stay_length
+        if stay_length is None:
+            return None
+        if stay_length < 12:
+            return '<12'
+        if stay_length < 24:
+            return '12-24'
+        if stay_length < 36:
+            return '24-36'
+        if stay_length < 48:
+            return '36-48'
+        if stay_length < 60:
+            return '48-60'
+        if stay_length < 72:
+            return '60-72'
+        if stay_length < 84:
+            return '72-84'
+        if stay_length < 96:
+            return '84-96'
+        if stay_length < 108:
+            return '96-108'
+        if stay_length < 120:
+            return '108-120'
+        return '120<'
+
 
 @attr.s
 class RecidivismReleaseEvent(ReleaseEvent):
@@ -89,7 +151,38 @@ class RecidivismReleaseEvent(ReleaseEvent):
     source_violation_type: Optional[StateSupervisionViolationType] = \
         attr.ib(default=None)
 
+    @property
+    def days_at_liberty(self):
+        """Returns the number of days between a release and a reincarceration."""
+        release_date = self.release_date
+
+        return_date = self.reincarceration_date
+
+        delta = return_date - release_date
+
+        if delta.days < 0:
+            logging.warning("Release date on RecidivismReleaseEvent is before admission date: %s."
+                            "The identifier step is not properly classifying releases.", self)
+
+        return delta.days
+
 
 @attr.s
 class NonRecidivismReleaseEvent(ReleaseEvent):
     """Models a ReleaseEvent where the person was not later reincarcerated."""
+
+    @property
+    def return_type(self):
+        return None
+
+    @property
+    def from_supervision_type(self):
+        return None
+
+    @property
+    def source_violation_type(self):
+        return None
+
+    @property
+    def days_at_liberty(self):
+        return None

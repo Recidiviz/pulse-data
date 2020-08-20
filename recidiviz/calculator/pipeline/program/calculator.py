@@ -22,17 +22,15 @@ the value represents an indicator of whether the person should contribute to tha
 """
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Tuple, Any, Sequence, Optional
+from typing import List, Dict, Tuple, Any, Sequence, Optional, Type
 
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramMetric,\
+    ProgramParticipationMetric, ProgramReferralMetric
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent, \
     ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
     augmented_combo_for_calculations, include_in_historical_metrics, \
-    get_calculation_month_lower_bound_date, \
-    characteristics_with_person_id_fields, add_demographic_characteristics, get_calculation_month_upper_bound_date
-from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    assessment_score_bucket, include_assessment_in_metric
+    get_calculation_month_lower_bound_date, get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
@@ -99,7 +97,7 @@ def map_program_combinations(person: StatePerson,
     for program_event in program_events:
         if (isinstance(program_event, ProgramReferralEvent)
                 and metric_inclusions.get(ProgramMetricType.PROGRAM_REFERRAL)):
-            characteristic_combo = characteristics_dict(person, program_event)
+            characteristic_combo = characteristics_dict(person, program_event, ProgramReferralMetric)
 
             program_referral_metrics_event_based = map_metric_combinations(
                 characteristic_combo, program_event,
@@ -111,7 +109,7 @@ def map_program_combinations(person: StatePerson,
             metrics.extend(program_referral_metrics_event_based)
         elif (isinstance(program_event, ProgramParticipationEvent)
               and metric_inclusions.get(ProgramMetricType.PROGRAM_PARTICIPATION)):
-            characteristic_combo = characteristics_dict(person, program_event)
+            characteristic_combo = characteristics_dict(person, program_event, ProgramParticipationMetric)
 
             program_participation_metrics_event_based = map_metric_combinations(
                 characteristic_combo,
@@ -131,57 +129,28 @@ def map_program_combinations(person: StatePerson,
 
 
 def characteristics_dict(person: StatePerson,
-                         program_event: ProgramEvent) -> Dict[str, Any]:
+                         program_event: ProgramEvent,
+                         metric_class: Type[ProgramMetric]) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
         person: the StatePerson we are picking characteristics from
         program_event: the ProgramEvent we are picking characteristics from
-
+        metric_class: The ProgramMetric provided determines which fields should be added to the characteristics
+            dictionary
     Returns:
         A dictionary populated with all relevant characteristics.
     """
-    characteristics: Dict[str, Any] = {}
-
     event_date = program_event.event_date
 
-    if isinstance(program_event, ProgramReferralEvent):
-        if program_event.supervision_type:
-            characteristics['supervision_type'] = program_event.supervision_type
-        if program_event.assessment_score and program_event.assessment_type:
-            assessment_bucket = assessment_score_bucket(
-                assessment_score=program_event.assessment_score,
-                assessment_level=None,
-                assessment_type=program_event.assessment_type)
+    characteristics = characteristics_dict_builder(pipeline='program',
+                                                   event=program_event,
+                                                   metric_class=metric_class,
+                                                   person=person,
+                                                   event_date=event_date,
+                                                   include_person_attributes=True)
 
-            if assessment_bucket and include_assessment_in_metric(
-                    'program', program_event.state_code, program_event.assessment_type):
-                characteristics['assessment_score_bucket'] = assessment_bucket
-                characteristics['assessment_type'] = program_event.assessment_type
-
-        if program_event.participation_status:
-            characteristics['participation_status'] = program_event.participation_status
-        if program_event.supervising_officer_external_id:
-            characteristics['supervising_officer_external_id'] = program_event.supervising_officer_external_id
-        if program_event.supervising_district_external_id:
-            characteristics['supervising_district_external_id'] = program_event.supervising_district_external_id
-    elif isinstance(program_event, ProgramParticipationEvent):
-        characteristics['date_of_participation'] = event_date
-
-        if program_event.supervision_type:
-            characteristics['supervision_type'] = program_event.supervision_type
-        if program_event.program_location_id:
-            characteristics['program_location_id'] = program_event.program_location_id
-
-    if program_event.program_id:
-        characteristics['program_id'] = program_event.program_id
-
-    characteristics = add_demographic_characteristics(characteristics, person, event_date)
-
-    characteristics_with_person_details = characteristics_with_person_id_fields(
-        characteristics, program_event.state_code, person, 'program')
-
-    return characteristics_with_person_details
+    return characteristics
 
 
 def map_metric_combinations(

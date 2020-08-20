@@ -26,7 +26,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent,\
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration import calculator
-from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType
+from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType, IncarcerationAdmissionMetric, \
+    IncarcerationPopulationMetric, IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
@@ -1004,7 +1005,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
-        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
+        characteristic_dict = calculator.characteristics_dict(person, incarceration_event, IncarcerationAdmissionMetric)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
@@ -1014,7 +1015,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'race': [Race.WHITE],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'admission_date': date(2018, 9, 13)
+            'admission_date': date(2018, 9, 13),
         }
 
         self.assertEqual(expected_output, characteristic_dict)
@@ -1043,7 +1044,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             judicial_district_code='NORTHEAST'
         )
 
-        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
+        characteristic_dict = calculator.characteristics_dict(person,
+                                                              incarceration_event,
+                                                              IncarcerationPopulationMetric)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
@@ -1054,7 +1057,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'date_of_stay': date(2018, 9, 13),
-            'judicial_district_code': 'NORTHEAST'
+            'judicial_district_code': 'NORTHEAST',
         }
 
         self.assertEqual(expected_output, characteristic_dict)
@@ -1087,7 +1090,9 @@ class TestCharacteristicsDict(unittest.TestCase):
             total_days_incarcerated=190
         )
 
-        characteristic_dict = calculator.characteristics_dict(person, incarceration_event)
+        characteristic_dict = calculator.characteristics_dict(person,
+                                                              incarceration_event,
+                                                              IncarcerationReleaseMetric)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
@@ -1102,7 +1107,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'release_reason_raw_text': 'CR',
             'release_reason': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             'admission_reason': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            'total_days_incarcerated': 190
+            'total_days_incarcerated': 190,
         }
 
         self.assertEqual(expected_output, characteristic_dict)
