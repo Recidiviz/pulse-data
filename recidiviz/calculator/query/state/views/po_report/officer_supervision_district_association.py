@@ -48,8 +48,8 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = \
     filtered_officers_to_person_count AS (
         SELECT  
           *,
-          ROW_NUMBER() OVER (PARTITION BY state_code, year, month, officer_external_id ORDER BY district_name,
-          person_count DESC) as district_inclusion_priority
+          ROW_NUMBER() OVER (PARTITION BY state_code, year, month, officer_external_id ORDER BY
+          person_count DESC, district_name) as district_inclusion_priority
     FROM all_officers_to_person_count_in_district)
     SELECT state_code, year, month, officer_external_id, district_name AS primary_district
     FROM filtered_officers_to_person_count
