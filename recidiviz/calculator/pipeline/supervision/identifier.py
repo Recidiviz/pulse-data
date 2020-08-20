@@ -98,6 +98,8 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.MENTAL_HEALTH_COURT,
     StateSupervisionCaseType.FAMILY_COURT,
     StateSupervisionCaseType.VETERANS_COURT,
+    # End Diversionary courts
+    StateSupervisionCaseType.ALCOHOL_DRUG,
     StateSupervisionCaseType.GENERAL
 ]
 

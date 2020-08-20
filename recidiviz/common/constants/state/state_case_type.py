@@ -25,6 +25,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 @unique
 class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
+    # People for whom drug/alcohol addiction has been identified as a "risk area"
+    ALCOHOL_DRUG = state_enum_strings.state_supervision_case_type_alcohol_drug
     DOMESTIC_VIOLENCE = state_enum_strings.state_supervision_case_type_domestic_violence
     DRUG_COURT = state_enum_strings.state_supervision_case_type_drug_court
     FAMILY_COURT = state_enum_strings.state_supervision_case_type_family_court
@@ -40,6 +42,7 @@ class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_CASE_TYPE_MAP = {
+    'ALCOHOL DRUG': StateSupervisionCaseType.ALCOHOL_DRUG,
     'DOMESTIC VIOLENCE': StateSupervisionCaseType.DOMESTIC_VIOLENCE,
     'DRUG COURT': StateSupervisionCaseType.DRUG_COURT,
     'FAMILY COURT': StateSupervisionCaseType.FAMILY_COURT,

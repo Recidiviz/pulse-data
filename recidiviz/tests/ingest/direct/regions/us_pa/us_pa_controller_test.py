@@ -20,12 +20,15 @@ import datetime
 import json
 from typing import Type
 
+import attr
+
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_SID, US_PA_PBPP
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentType, \
@@ -50,7 +53,7 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
     StateCourtCase, StateAgent, StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry, StateSupervisionViolationResponse, \
-    StateSupervisionViolationResponseDecisionEntry
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -1039,7 +1042,15 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                         state_agent_id='555678',
                                                         full_name='Kramer, Cosmo',
                                                         agent_type='SUPERVISION_OFFICER',
-                                                    )
+                                                    ),
+                                                    state_supervision_case_type_entries=[
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Drugs'
+                                                        ),
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Psychiatric'
+                                                        ),
+                                                    ]
                                                 ),
                                                 StateSupervisionPeriod(
                                                     state_supervision_period_id='456B-1-2',
@@ -1049,6 +1060,14 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     county_code='ALLEGH', supervision_site='02|7113',
                                                     supervision_level='MAX', custodial_authority='US_PA_PBPP',
                                                     conditions=['MEST', 'ACT35', 'GPAR', 'MVICT', 'REMC', 'END'],
+                                                    state_supervision_case_type_entries=[
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Drugs'
+                                                        ),
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Psychiatric'
+                                                        ),
+                                                    ]
                                                 ),
                                                 StateSupervisionPeriod(
                                                     state_supervision_period_id='456B-2-1',
@@ -1062,7 +1081,15 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                         state_agent_id='444123',
                                                         full_name='Benes, Elaine',
                                                         agent_type='SUPERVISION_OFFICER',
-                                                    )
+                                                    ),
+                                                    state_supervision_case_type_entries=[
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Drugs'
+                                                        ),
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Psychiatric'
+                                                        ),
+                                                    ]
                                                 ),
                                             ]
                                         ),
@@ -1084,7 +1111,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='05', start_date='2003-10-10',
                                                     termination_reason='42', termination_date='2004-08-10',
                                                     county_code='MERCER', supervision_site='08|7307',
-                                                    supervision_level='MIN', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MIN', custodial_authority='US_PA_COURTS',
                                                     conditions=['START', 'EST', 'END', 'AANA', 'REL', 'DAM', 'PARAB',
                                                                 'ACT35', 'BL', 'MISC', 'DDU', 'URI', 'GPAR', 'EMP',
                                                                 'ALC', 'PM', 'PF', 'PA'],
@@ -1100,7 +1127,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='05', start_date='2004-08-10',
                                                     termination_reason='44', termination_date='2005-12-31',
                                                     county_code='MERCER', supervision_site='08|7307',
-                                                    supervision_level='MIN', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MIN', custodial_authority='US_PA_COURTS',
                                                     supervising_officer=StateAgent(
                                                         state_agent_id='555',
                                                         full_name='Seinfeld, Jerry',
@@ -1113,7 +1140,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='04', start_date='2005-12-31',
                                                     termination_reason='43', termination_date='2006-10-10',
                                                     county_code='MERCER',
-                                                    supervision_level='ADM', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='ADM', custodial_authority='US_PA_COURTS',
                                                     supervising_officer=StateAgent(
                                                         full_name='Newman', agent_type='SUPERVISION_OFFICER',
                                                     )
@@ -1144,7 +1171,12 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                         state_agent_id='101010',
                                                         full_name='Talker, Close',
                                                         agent_type='SUPERVISION_OFFICER',
-                                                    )
+                                                    ),
+                                                    state_supervision_case_type_entries=[
+                                                        StateSupervisionCaseTypeEntry(
+                                                            case_type='PA_Sexual'
+                                                        ),
+                                                    ]
                                                 ),
                                             ]
                                         ),
@@ -2791,6 +2823,22 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ),
             supervision_sentences=[p2_ss_ph],
         )
+        p2_sp_1_1_case_type_1 = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+            case_type_raw_text='PA_DRUGS',
+            supervision_period=p2_sp_1_1,
+            person=p2_sp_1_1.person,
+        )
+        p2_sp_1_1_case_type_2 = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+            case_type_raw_text='PA_PSYCHIATRIC',
+            supervision_period=p2_sp_1_1,
+            person=p2_sp_1_1.person,
+        )
+        p2_sp_1_1.case_type_entries.extend([p2_sp_1_1_case_type_1, p2_sp_1_1_case_type_2])
+
         p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id='456B-1-2', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -2807,6 +2855,10 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             conditions='MEST, ACT35, GPAR, MVICT, REMC, END',
             supervision_sentences=[p2_ss_ph],
         )
+
+        p2_sp_1_2_case_type_1 = attr.evolve(p2_sp_1_1_case_type_1, supervision_period=p2_sp_1_2)
+        p2_sp_1_2_case_type_2 = attr.evolve(p2_sp_1_1_case_type_2, supervision_period=p2_sp_1_2)
+        p2_sp_1_2.case_type_entries.extend([p2_sp_1_2_case_type_1, p2_sp_1_2_case_type_2])
 
         p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id='456B-2-1', state_code=_STATE_CODE_UPPER,
@@ -2829,6 +2881,10 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ),
             supervision_sentences=[p2_ss_ph],
         )
+        p2_sp_2_1_case_type_1 = attr.evolve(p2_sp_1_1_case_type_1, supervision_period=p2_sp_2_1)
+        p2_sp_2_1_case_type_2 = attr.evolve(p2_sp_1_1_case_type_2, supervision_period=p2_sp_2_1)
+        p2_sp_2_1.case_type_entries.extend([p2_sp_2_1_case_type_1, p2_sp_2_1_case_type_2])
+
         p2_ss_ph.supervision_periods.extend([p2_sp_1_1, p2_sp_1_2, p2_sp_2_1])
 
         p5_sg_ph = entities.StateSentenceGroup.new_with_defaults(
@@ -2854,7 +2910,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_reason_raw_text='42',
             termination_date=datetime.date(year=2004, month=8, day=10),
-            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_PBPP',
+            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_COURTS',
             supervision_level=StateSupervisionLevel.MINIMUM, supervision_level_raw_text='MIN',
             conditions='START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA',
             supervising_officer=entities.StateAgent.new_with_defaults(
@@ -2875,7 +2931,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
             termination_reason_raw_text='44',
             termination_date=datetime.date(year=2005, month=12, day=31),
-            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_PBPP',
+            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_COURTS',
             supervision_level=StateSupervisionLevel.MINIMUM, supervision_level_raw_text='MIN',
             supervising_officer=entities.StateAgent.new_with_defaults(
                 external_id='555',
@@ -2895,8 +2951,8 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='43',
             termination_date=datetime.date(year=2006, month=10, day=10),
-            county_code='MERCER', custodial_authority='US_PA_PBPP',
-            supervision_level=StateSupervisionLevel.MINIMUM, supervision_level_raw_text='ADM',
+            county_code='MERCER', custodial_authority='US_PA_COURTS',
+            supervision_level=StateSupervisionLevel.LIMITED, supervision_level_raw_text='ADM',
             supervising_officer=entities.StateAgent.new_with_defaults(
                 state_code=_STATE_CODE_UPPER, full_name='{"full_name": "NEWMAN"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER, agent_type_raw_text='SUPERVISION_OFFICER',
@@ -2935,6 +2991,15 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             ),
             supervision_sentences=[p4_ss_ph],
         )
+        p4_sp_1_1_case_type_1 = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type_raw_text='PA_SEXUAL',
+            supervision_period=p4_sp_1_1,
+            person=p4_sp_1_1.person,
+        )
+        p4_sp_1_1.case_type_entries.append(p4_sp_1_1_case_type_1)
+
         p4_ss_ph.supervision_periods.append(p4_sp_1_1)
 
         populate_person_backedges(expected_people)

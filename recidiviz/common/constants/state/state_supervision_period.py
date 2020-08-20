@@ -90,6 +90,9 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     INCARCERATED = state_enum_strings.state_supervision_period_supervision_level_incarcerated
     IN_CUSTODY = state_enum_strings.state_supervision_period_supervision_level_in_custody
     INTERSTATE_COMPACT = state_enum_strings.state_supervision_period_supervision_level_interstate_compact
+    ELECTRONIC_MONITORING_ONLY = \
+        state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only
+    # Parole with minimal (e.g. once a year) PO contact - may also be called administrative supervision
     LIMITED = state_enum_strings.state_supervision_period_supervision_level_limited
     MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
     MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
@@ -181,6 +184,7 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     'INTERSTATE': StateSupervisionLevel.INTERSTATE_COMPACT,
     'UNSUPERVISED': StateSupervisionLevel.UNSUPERVISED,
     'LIMITED': StateSupervisionLevel.LIMITED,
+    'ELECTRONIC MONITORING ONLY': StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
 }
 
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
