@@ -45,7 +45,7 @@ from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import Fak
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
-    clear_db_ids, assert_no_unexpected_entities_in_db
+    clear_db_ids, assert_no_unexpected_entities_in_db, assert_all_association_table_rows_have_state_code
 from recidiviz.tests.utils.test_utils import print_visible_header_label, \
     is_running_in_ci
 from recidiviz.utils.regions import Region
@@ -187,6 +187,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         self.assertCountEqual(found_people, expected_db_people)
 
         assert_no_unexpected_entities_in_db(found_people_from_db, session)
+        assert_all_association_table_rows_have_state_code(session)
 
     def _fake_region(self):
         fake_region = create_autospec(Region)

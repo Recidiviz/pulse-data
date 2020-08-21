@@ -28,6 +28,7 @@ from typing import List
 import sqlalchemy
 
 from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.database import ASSOCIATION_TABLE_NAME_SUFFIX
 from recidiviz.persistence.database.schema.state import schema
 
 PERSON_IDS_TEMP_TABLE_NAME = 'person_ids_to_delete'
@@ -43,8 +44,6 @@ CREATE_TABLE_PERSON_IDS_TO_DELETE_TEMPLATE = f"""CREATE TEMP TABLE {PERSON_IDS_T
 );"""
 
 PERSON_DELETION_FILTER_CLAUSE = f'person_id IN (SELECT person_id FROM {PERSON_IDS_TEMP_TABLE_NAME})'
-
-ASSOCIATION_TABLE_NAME_SUFFIX = '_association'
 
 ASSOCIATION_TABLE_DELETION_FILTER_CLAUSE_TEMPLATE = \
     '{foreign_key_col} IN (SELECT {foreign_key_col} FROM {foreign_key_table} WHERE state_code = \'{state_code}\')'
@@ -84,10 +83,12 @@ def _commands_for_table(state_code: str, table: sqlalchemy.Table) -> List[str]:
 
 
 def generate_region_deletion_commands(state_code: str) -> List[str]:
-    commands = [CREATE_TABLE_PERSON_IDS_TO_DELETE_TEMPLATE.format(state_code=state_code)]
+    commands = []
 
     for table in reversed(StateBase.metadata.sorted_tables):
-        commands.extend(_commands_for_table(state_code, table))
+        if not hasattr(table.c, 'state_code'):
+            raise ValueError(f"{table.name} does not have state_code column.")
+        commands.append(_format_deletion_command(state_code, table.delete().where(table.c.state_code == state_code)))
 
     return commands
 
