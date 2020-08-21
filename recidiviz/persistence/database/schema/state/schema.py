@@ -68,6 +68,8 @@ from recidiviz.persistence.database.schema.shared_enums import (
 # between the master and historical tables for each entity.
 from recidiviz.persistence.database.base_schema import StateBase
 
+STATE_CODE_LENGTH = 5
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
@@ -493,6 +495,9 @@ state_supervision_sentence_incarceration_period_association_table = \
                  Integer,
                  ForeignKey(
                      'state_incarceration_period.incarceration_period_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_supervision_sentence_supervision_period_association_table = \
@@ -507,6 +512,9 @@ state_supervision_sentence_supervision_period_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_period.supervision_period_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_incarceration_sentence_incarceration_period_association_table = \
@@ -521,6 +529,9 @@ state_incarceration_sentence_incarceration_period_association_table = \
                  Integer,
                  ForeignKey(
                      'state_incarceration_period.incarceration_period_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_incarceration_sentence_supervision_period_association_table = \
@@ -535,6 +546,9 @@ state_incarceration_sentence_supervision_period_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_period.supervision_period_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_supervision_period_supervision_violation_association_table = \
@@ -549,6 +563,9 @@ state_supervision_period_supervision_violation_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_violation.supervision_violation_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_supervision_period_program_assignment_association_table = \
@@ -563,6 +580,9 @@ state_supervision_period_program_assignment_association_table = \
                  Integer,
                  ForeignKey(
                      'state_program_assignment.program_assignment_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_supervision_period_supervision_contact_association_table = \
@@ -575,6 +595,9 @@ state_supervision_period_supervision_contact_association_table = \
           Column('supervision_contact_id',
                  Integer,
                  ForeignKey('state_supervision_contact.supervision_contact_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_incarceration_period_program_assignment_association_table = \
@@ -589,6 +612,9 @@ state_incarceration_period_program_assignment_association_table = \
                  Integer,
                  ForeignKey(
                      'state_program_assignment.program_assignment_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_charge_incarceration_sentence_association_table = \
@@ -602,6 +628,9 @@ state_charge_incarceration_sentence_association_table = \
                  Integer,
                  ForeignKey(
                      'state_incarceration_sentence.incarceration_sentence_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_charge_supervision_sentence_association_table = \
@@ -615,6 +644,9 @@ state_charge_supervision_sentence_association_table = \
                  Integer,
                  ForeignKey(
                      'state_supervision_sentence.supervision_sentence_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_charge_fine_association_table = \
@@ -628,6 +660,9 @@ state_charge_fine_association_table = \
                  Integer,
                  ForeignKey(
                      'state_fine.fine_id'),
+                 index=True),
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
                  index=True))
 
 state_parole_decision_decision_agent_association_table = \
@@ -642,7 +677,9 @@ state_parole_decision_decision_agent_association_table = \
                  Integer,
                  ForeignKey('state_agent.agent_id'),
                  index=True),
-          )
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
+                 index=True))
 
 state_supervision_violation_response_decision_agent_association_table = \
     Table('state_supervision_violation_response_decision_agent_association',
@@ -657,7 +694,9 @@ state_supervision_violation_response_decision_agent_association_table = \
                  Integer,
                  ForeignKey('state_agent.agent_id'),
                  index=True),
-          )
+          Column('state_code',
+                 String(STATE_CODE_LENGTH),
+                 index=True))
 
 SchemaPeriodType = TypeVar('SchemaPeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
 SchemaSentenceType = TypeVar('SchemaSentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
@@ -1260,9 +1299,8 @@ class StateSentenceGroupHistory(StateBase,
 
 # StateSupervisionSentence
 
-class _StateSupervisionSentenceSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns,
+                                             _ReferencesStateSentenceGroupSharedColumns):
     """A mixin which defines all columns common to StateSupervisionSentence and
     StateSupervisionSentenceHistory"""
 
@@ -1332,9 +1370,8 @@ class StateSupervisionSentenceHistory(StateBase,
 
 # StateIncarcerationSentence
 
-class _StateIncarcerationSentenceSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+class _StateIncarcerationSentenceSharedColumns(_ReferencesStatePersonSharedColumns,
+                                               _ReferencesStateSentenceGroupSharedColumns):
     """A mixin which defines all columns common to StateIncarcerationSentence
     and StateIncarcerationSentenceHistory
     """
@@ -1396,10 +1433,9 @@ class StateIncarcerationSentence(StateBase,
     early_discharges = relationship('StateEarlyDischarge', backref='incarceration_sentence', lazy='selectin')
 
 
-class StateIncarcerationSentenceHistory(
-        StateBase,
-        _StateIncarcerationSentenceSharedColumns,
-        HistoryTableSharedColumns):
+class StateIncarcerationSentenceHistory(StateBase,
+                                        _StateIncarcerationSentenceSharedColumns,
+                                        HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationSentence"""
     __tablename__ = 'state_incarceration_sentence_history'
 
@@ -1415,9 +1451,8 @@ class StateIncarcerationSentenceHistory(
 
 # StateFine
 
-class _StateFineSharedColumns(
-        _ReferencesStatePersonSharedColumns,
-        _ReferencesStateSentenceGroupSharedColumns):
+class _StateFineSharedColumns(_ReferencesStatePersonSharedColumns,
+                              _ReferencesStateSentenceGroupSharedColumns):
     """A mixin which defines all columns common to StateFine and
     StateFineHistory
     """
@@ -1470,8 +1505,7 @@ class StateFineHistory(StateBase,
 
 # StateIncarcerationPeriod
 
-class _StateIncarcerationPeriodSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateIncarcerationPeriod and
     StateIncarcerationPeriodHistory
     """
@@ -1661,8 +1695,7 @@ class StateSupervisionPeriodHistory(StateBase,
 
 # StateSupervisionCaseTypeEntry
 
-class _StateSupervisionCaseTypeEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionCaseTypeEntry and StateSupervisionCaseTypeEntryHistory
     """
@@ -1686,8 +1719,8 @@ class _StateSupervisionCaseTypeEntrySharedColumns(
             nullable=True)
 
 
-class StateSupervisionCaseTypeEntry(
-        StateBase, _StateSupervisionCaseTypeEntrySharedColumns):
+class StateSupervisionCaseTypeEntry(StateBase,
+                                    _StateSupervisionCaseTypeEntrySharedColumns):
     """Represents a StateSupervisionCaseTypeEntry in the SQL schema"""
     __tablename__ = 'state_supervision_case_type_entry'
 
@@ -1699,9 +1732,9 @@ class StateSupervisionCaseTypeEntry(
 
 
 # TODO: Update historical column names here -- or downgrade and upgrade?
-class StateSupervisionCaseTypeEntryHistory(
-        StateBase, _StateSupervisionCaseTypeEntrySharedColumns,
-        HistoryTableSharedColumns):
+class StateSupervisionCaseTypeEntryHistory(StateBase,
+                                           _StateSupervisionCaseTypeEntrySharedColumns,
+                                           HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionCaseTypeEntry"""
     __tablename__ = 'state_supervision_case_type_entry_history'
 
@@ -1719,8 +1752,7 @@ class StateSupervisionCaseTypeEntryHistory(
 
 # StateIncarcerationIncident
 
-class _StateIncarcerationIncidentSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateIncarcerationIncident
     and StateIncarcerationIncidentHistory
     """
@@ -1774,10 +1806,9 @@ class StateIncarcerationIncident(StateBase,
         lazy='selectin')
 
 
-class StateIncarcerationIncidentHistory(
-        StateBase,
-        _StateIncarcerationIncidentSharedColumns,
-        HistoryTableSharedColumns):
+class StateIncarcerationIncidentHistory(StateBase,
+                                        _StateIncarcerationIncidentSharedColumns,
+                                        HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationIncident"""
     __tablename__ = 'state_incarceration_incident_history'
 
@@ -1793,8 +1824,7 @@ class StateIncarcerationIncidentHistory(
 
 # StateIncarcerationIncidentOutcome
 
-class _StateIncarcerationIncidentOutcomeSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateIncarcerationIncidentOutcomeSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateIncarcerationIncidentOutcome and
     StateIncarcerationIncidentOutcomeHistory
@@ -1826,9 +1856,8 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
             nullable=True)
 
 
-class StateIncarcerationIncidentOutcome(
-        StateBase,
-        _StateIncarcerationIncidentOutcomeSharedColumns):
+class StateIncarcerationIncidentOutcome(StateBase,
+                                        _StateIncarcerationIncidentOutcomeSharedColumns):
     """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
     __tablename__ = 'state_incarceration_incident_outcome'
 
@@ -1837,10 +1866,9 @@ class StateIncarcerationIncidentOutcome(
     person = relationship('StatePerson', uselist=False)
 
 
-class StateIncarcerationIncidentOutcomeHistory(
-        StateBase,
-        _StateIncarcerationIncidentOutcomeSharedColumns,
-        HistoryTableSharedColumns):
+class StateIncarcerationIncidentOutcomeHistory(StateBase,
+                                               _StateIncarcerationIncidentOutcomeSharedColumns,
+                                               HistoryTableSharedColumns):
     """Represents the historical state of a StateIncarcerationIncidentOutcome"""
     __tablename__ = 'state_incarceration_incident_outcome_history'
 
@@ -1858,8 +1886,7 @@ class StateIncarcerationIncidentOutcomeHistory(
 
 # StateParoleDecision
 
-class _StateParoleDecisionSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateParoleDecisionSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateParoleDecision and
     StateParoleDecisionHistory
     """
@@ -1922,8 +1949,7 @@ class StateParoleDecisionHistory(StateBase,
 
 # StateSupervisionViolationTypeEntry
 
-class _StateSupervisionViolationTypeEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionViolationTypeEntrySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionViolationTypeEntry and
     StateSupervisionViolationTypeEntryHistory
@@ -1949,9 +1975,8 @@ class _StateSupervisionViolationTypeEntrySharedColumns(
             nullable=True)
 
 
-class StateSupervisionViolationTypeEntry(
-        StateBase,
-        _StateSupervisionViolationTypeEntrySharedColumns):
+class StateSupervisionViolationTypeEntry(StateBase,
+                                         _StateSupervisionViolationTypeEntrySharedColumns):
     """Represents a StateSupervisionViolationTypeEntry in the SQL schema.
     """
     __tablename__ = 'state_supervision_violation_type_entry'
@@ -1962,10 +1987,9 @@ class StateSupervisionViolationTypeEntry(
     person = relationship('StatePerson', uselist=False)
 
 
-class StateSupervisionViolationTypeEntryHistory(
-        StateBase,
-        _StateSupervisionViolationTypeEntrySharedColumns,
-        HistoryTableSharedColumns):
+class StateSupervisionViolationTypeEntryHistory(StateBase,
+                                                _StateSupervisionViolationTypeEntrySharedColumns,
+                                                HistoryTableSharedColumns):
     """Represents the historical state of a
     StateSupervisionViolationTypeEntry.
     """
@@ -1985,8 +2009,7 @@ class StateSupervisionViolationTypeEntryHistory(
 
 # StateSupervisionViolatedConditionEntry
 
-class _StateSupervisionViolatedConditionEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionViolatedConditionEntrySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionViolatedConditionEntry and
     StateSupervisionViolatedConditionEntryHistory
@@ -2011,9 +2034,8 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             nullable=True)
 
 
-class StateSupervisionViolatedConditionEntry(
-        StateBase,
-        _StateSupervisionViolatedConditionEntrySharedColumns):
+class StateSupervisionViolatedConditionEntry(StateBase,
+                                             _StateSupervisionViolatedConditionEntrySharedColumns):
     """Represents a StateSupervisionViolatedConditionEntry in the SQL schema.
     """
     __tablename__ = 'state_supervision_violated_condition_entry'
@@ -2024,10 +2046,9 @@ class StateSupervisionViolatedConditionEntry(
     person = relationship('StatePerson', uselist=False)
 
 
-class StateSupervisionViolatedConditionEntryHistory(
-        StateBase,
-        _StateSupervisionViolatedConditionEntrySharedColumns,
-        HistoryTableSharedColumns):
+class StateSupervisionViolatedConditionEntryHistory(StateBase,
+                                                    _StateSupervisionViolatedConditionEntrySharedColumns,
+                                                    HistoryTableSharedColumns):
     """Represents the historical state of a
     StateSupervisionViolatedConditionEntry
     """
@@ -2047,8 +2068,7 @@ class StateSupervisionViolatedConditionEntryHistory(
 
 # StateSupervisionViolation
 
-class _StateSupervisionViolationSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to StateSupervisionViolation and
     StateSupervisionViolationHistory
     """
@@ -2119,8 +2139,7 @@ class StateSupervisionViolationHistory(StateBase,
 
 # StateSupervisionViolationResponseDecisionEntry
 
-class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionViolationResponseDecisionEntrySharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionViolationResponseDecisionEntry and
     StateSupervisionViolationResponseDecisionEntryHistory
@@ -2149,9 +2168,8 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             nullable=True)
 
 
-class StateSupervisionViolationResponseDecisionEntry(
-        StateBase,
-        _StateSupervisionViolationResponseDecisionEntrySharedColumns):
+class StateSupervisionViolationResponseDecisionEntry(StateBase,
+                                                     _StateSupervisionViolationResponseDecisionEntrySharedColumns):
     """Represents a StateSupervisionViolationResponseDecisionEntry in the
     SQL schema.
     """
@@ -2187,8 +2205,7 @@ class StateSupervisionViolationResponseDecisionEntryHistory(
 
 # StateSupervisionViolationResponse
 
-class _StateSupervisionViolationResponseSharedColumns(
-        _ReferencesStatePersonSharedColumns):
+class _StateSupervisionViolationResponseSharedColumns(_ReferencesStatePersonSharedColumns):
     """A mixin which defines all columns common to
     StateSupervisionViolationResponse and
     StateSupervisionViolationResponseHistory
@@ -2226,9 +2243,8 @@ class _StateSupervisionViolationResponseSharedColumns(
             nullable=True)
 
 
-class StateSupervisionViolationResponse(
-        StateBase,
-        _StateSupervisionViolationResponseSharedColumns):
+class StateSupervisionViolationResponse(StateBase,
+                                        _StateSupervisionViolationResponseSharedColumns):
     """Represents a StateSupervisionViolationResponse in the SQL schema"""
     __tablename__ = 'state_supervision_violation_response'
 
@@ -2246,10 +2262,9 @@ class StateSupervisionViolationResponse(
         lazy='selectin')
 
 
-class StateSupervisionViolationResponseHistory(
-        StateBase,
-        _StateSupervisionViolationResponseSharedColumns,
-        HistoryTableSharedColumns):
+class StateSupervisionViolationResponseHistory(StateBase,
+                                               _StateSupervisionViolationResponseSharedColumns,
+                                               HistoryTableSharedColumns):
     """Represents the historical state of a StateSupervisionViolationResponse"""
     __tablename__ = 'state_supervision_violation_response_history'
 

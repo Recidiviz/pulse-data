@@ -59,12 +59,12 @@ from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
-from recidiviz.common.constants.state.\
-    state_supervision_violation_response import (
-        StateSupervisionViolationResponseType,
-        StateSupervisionViolationResponseDecision,
-        StateSupervisionViolationResponseDecidingBodyType,
-    )
+from recidiviz.common.constants.state. \
+    state_supervision_violation_response import (StateSupervisionViolationResponseType,
+                                                 StateSupervisionViolationResponseDecision,
+                                                 StateSupervisionViolationResponseDecidingBodyType)
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.database import ASSOCIATION_TABLE_NAME_SUFFIX
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.core_entity import CoreEntity
@@ -125,6 +125,19 @@ def assert_no_unexpected_entities_in_db(
                 f'{str(expected_ids - db_ids)}\n'
                 f'Db ids not present in expected entities: '
                 f'{str(db_ids - expected_ids)}\n')
+
+
+def assert_all_association_table_rows_have_state_code(session: Session):
+    """Checks that all association table rows have a state_code."""
+
+    association_tables = [table for table in reversed(StateBase.metadata.sorted_tables) if
+                          table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX)]
+    for table in association_tables:
+        associations = session.query(table).all()
+        for association in associations:
+            if association.state_code is None:
+                raise ValueError(f"For the current association table row {association} in {table.name},"
+                                 f"state_code is NULL.")
 
 
 def generate_full_graph_state_person(
@@ -614,8 +627,7 @@ def generate_full_graph_state_person(
             revocation_type=None,
             revocation_type_raw_text=None,
             deciding_body_type=
-            StateSupervisionViolationResponseDecidingBodyType.
-            SUPERVISION_OFFICER,
+            StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
             decision_agents=[supervision_officer_agent]
         )
 
