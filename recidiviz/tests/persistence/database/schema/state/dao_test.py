@@ -142,7 +142,7 @@ class TestDao(TestCase):
         session.commit()
 
         # Act
-        people = dao.read_placeholder_persons(session, _STATE_CODE)
+        people = dao.read_placeholder_persons(session)
 
         # Assert
         expected_people = [placeholder_person]
