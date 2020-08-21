@@ -27,9 +27,37 @@ contextmanager.
 """
 
 from contextlib import contextmanager
+import logging
 from typing import Tuple
+
+import requests
 from sqlalchemy.orm.session import sessionmaker
 from uszipcode import SearchEngine
+import uszipcode.db
+import uszipcode.search
+
+# uszipcode can accidentally skip chunks when downloading files, reimplement it.
+def download_simple_db_file(db_file_dir):
+    logging.info('Download simple zipcode file safely')
+    simple_db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
+
+    if not uszipcode.db.is_simple_db_file_exists(db_file_dir):
+        logging.info("Start downloading data for simple zipcode database, total size 9MB ...")
+        with requests.get(simple_db_file_download_url, stream=True) as r:
+            r.raise_for_status()
+
+            chunk_size = 1 * 1024 ** 2  # 1 MB
+            downloaded = 0
+            with uszipcode.db.atomic_write(uszipcode.db.get_simple_db_file_path(db_file_dir).abspath,
+                                           mode="wb", overwrite=True) as f:
+                for chunk in r.iter_content(chunk_size):
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    logging.info("%.1f MB finished ...", downloaded / chunk_size)
+        logging.info("Complete!")
+
+# Override the prior implementation
+uszipcode.search.download_simple_db_file = download_simple_db_file
 
 _ZIP_CODE_SEARCH_ENGINE: SearchEngine = None
 _SESSION_MAKER: sessionmaker = None
