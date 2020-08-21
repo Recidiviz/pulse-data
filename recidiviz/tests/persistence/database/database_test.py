@@ -23,22 +23,27 @@ from more_itertools import one
 from sqlalchemy.sql import text
 
 from recidiviz.common.constants.bond import BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Race
-from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_parole_decision import StateParoleDecisionOutcome
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseRevocationType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.base_schema import \
-    JailsBase
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
+from recidiviz.persistence.database.base_schema import \
+    JailsBase, StateBase
+from recidiviz.persistence.database.database import ASSOCIATION_TABLE_NAME_SUFFIX, \
+    _hydrate_state_codes_in_association_tables
 from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.county.schema import Bond, Booking, \
     Person, Sentence
 from recidiviz.persistence.database.schema.county.schema import (
@@ -47,6 +52,19 @@ from recidiviz.persistence.database.schema.county.schema import (
     Charge, ChargeHistory,
     PersonHistory,
     SentenceHistory)
+from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_entity_converter import (
+    schema_entity_converter as converter,
+)
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.tests.persistence.database.schema.state.schema_test_utils import generate_person, \
+    generate_incarceration_period, generate_incarceration_sentence, generate_supervision_sentence, \
+    generate_sentence_group, generate_external_id, generate_bond, generate_court_case, generate_charge, generate_fine, \
+    generate_assessment, generate_agent, generate_incarceration_incident, generate_parole_decision, \
+    generate_supervision_violation_response_decision_entry, generate_supervision_violation_response, \
+    generate_supervision_violation_type_entry, generate_supervision_violated_condition_entry, \
+    generate_supervision_violation, generate_supervision_case_type_entry, generate_supervision_period
 from recidiviz.tests.utils import fakes
 
 _REGION = 'region'
@@ -62,6 +80,27 @@ _DEFAULT_METADATA = IngestMetadata(
     ingest_time=_INGEST_TIME, enum_overrides=EnumOverrides.empty())
 
 DATE_SCRAPED = datetime.date(year=2019, month=1, day=1)
+
+_EXTERNAL_ID_1 = 'EXTERNAL_ID-1'
+_EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
+_EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
+_EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
+_EXTERNAL_ID_5 = 'EXTERNAL_ID-5'
+_EXTERNAL_ID_6 = 'EXTERNAL_ID-6'
+_ID = 1
+_ID_2 = 2
+_ID_3 = 3
+_ID_4 = 4
+_ID_5 = 5
+_ID_6 = 6
+_ID_TYPE = 'ID_TYPE'
+_ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
+_FULL_NAME = 'FULL_NAME'
+_FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
+_COUNTY_CODE = 'Iredell'
+_STATE_CODE = 'NC'
+_DATE_1 = datetime.date(year=2019, month=1, day=1)
+_DATE_2 = datetime.date(year=2019, month=2, day=1)
 
 
 class TestDatabase(TestCase):
@@ -679,20 +718,17 @@ class TestDatabase(TestCase):
         self.assertEqual(charge_snapshot.valid_from, admission_date)
 
         booking_snapshots = assert_session.query(BookingHistory) \
-            .filter(
-                BookingHistory.booking_id == booking_id) \
+            .filter(BookingHistory.booking_id == booking_id) \
             .order_by(BookingHistory.valid_from.asc()) \
             .all()
 
         self.assertEqual(len(booking_snapshots), 2)
         self.assertEqual(booking_snapshots[0].valid_from, admission_date)
         self.assertEqual(booking_snapshots[0].valid_to, release_date)
-        self.assertEqual(
-            booking_snapshots[0].custody_status, CustodyStatus.IN_CUSTODY.value)
+        self.assertEqual(booking_snapshots[0].custody_status, CustodyStatus.IN_CUSTODY.value)
         self.assertEqual(booking_snapshots[1].valid_from, release_date)
         self.assertEqual(booking_snapshots[1].valid_to, None)
-        self.assertEqual(
-            booking_snapshots[1].custody_status, CustodyStatus.RELEASED.value)
+        self.assertEqual(booking_snapshots[1].custody_status, CustodyStatus.RELEASED.value)
 
         assert_session.commit()
         assert_session.close()
@@ -744,8 +780,7 @@ class TestDatabase(TestCase):
         self.assertEqual(charge_snapshot.valid_from, scrape_time)
 
         sentence_snapshots = assert_session.query(SentenceHistory) \
-            .filter(
-                SentenceHistory.sentence_id == sentence_id) \
+            .filter(SentenceHistory.sentence_id == sentence_id) \
             .order_by(SentenceHistory.valid_from.asc()) \
             .all()
 
@@ -1214,8 +1249,7 @@ class TestDatabase(TestCase):
         assert_session = SessionFactory.for_schema_base(JailsBase)
 
         sentence_snapshot = assert_session.query(SentenceHistory) \
-            .filter(
-                SentenceHistory.sentence_id == fetched_sentence_id) \
+            .filter(SentenceHistory.sentence_id == fetched_sentence_id) \
             .order_by(SentenceHistory.valid_from.desc()) \
             .first()
 
@@ -1278,3 +1312,215 @@ class TestDatabase(TestCase):
 
         assert_session.commit()
         assert_session.close()
+
+
+class TestDatabaseAddStateCode(TestCase):
+    """Test that state_code has successfully been updated in association tables in state schema"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        fakes.use_on_disk_postgresql_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_on_disk_postgresql_database(StateBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
+
+    def testAddStateCodeAllAssociationTables(self):
+        # Arrange 1 - Match
+        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
+        db_bond = generate_bond(
+            person=db_person,
+            bond_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_1,
+            status=BondStatus.PRESENT_WITHOUT_INFO.value, bond_agent='agent')
+        db_court_case = generate_court_case(
+            person=db_person,
+            court_case_id=_ID, external_id=_EXTERNAL_ID_1, state_code=_STATE_CODE,
+            county_code='county_code')
+        db_charge_1 = generate_charge(
+            person=db_person,
+            charge_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_1,
+            description='charge_1',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            bond=db_bond, court_case=db_court_case)
+        db_charge_2 = generate_charge(
+            person=db_person,
+            charge_id=_ID_2, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2,
+            description='charge_2',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            bond=db_bond, court_case=db_court_case)
+        db_charge_3 = generate_charge(
+            person=db_person,
+            charge_id=_ID_3, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_3,
+            description='charge_3',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO.value)
+        db_fine = generate_fine(
+            person=db_person,
+            fine_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_1,
+            county_code='county_code', charges=[db_charge_1, db_charge_2])
+        db_assessment = generate_assessment(
+            person=db_person,
+            assessment_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_1,
+            assessment_metadata='metadata')
+        db_assessment_2 = generate_assessment(
+            person=db_person,
+            assessment_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2, assessment_metadata='metadata_2')
+        db_agent = generate_agent(
+            agent_id=_ID, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_1,
+            full_name='full_name')
+        db_agent_2 = generate_agent(
+            agent_id=_ID_2, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2,
+            full_name='full_name_2')
+        db_agent_po = generate_agent(
+            agent_id=_ID_5, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_5,
+            full_name='full_name_po')
+        db_agent_term = generate_agent(
+            agent_id=_ID_6, state_code=_STATE_CODE, external_id=_EXTERNAL_ID_6,
+            full_name='full_name_term')
+        db_program_assignment = state_schema.StateProgramAssignment(program_assignment_id=1,
+                                                                    referring_agent=db_agent,
+                                                                    state_code=_STATE_CODE,
+                                                                    external_id=_EXTERNAL_ID_1)
+        db_incarceration_incident = \
+            generate_incarceration_incident(
+                person=db_person,
+                incarceration_incident_id=_ID, state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID_1, incident_details='details',
+                responding_officer=db_agent)
+        db_parole_decision = generate_parole_decision(
+            person=db_person,
+            parole_decision_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_1,
+            decision_outcome=StateParoleDecisionOutcome.EXTERNAL_UNKNOWN.value,
+            decision_agents=[db_agent_2])
+        db_parole_decision_2 = generate_parole_decision(
+            person=db_person,
+            parole_decision_id=_ID_2, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2,
+            decision_outcome=StateParoleDecisionOutcome.EXTERNAL_UNKNOWN.value,
+            decision_agents=[db_agent_2])
+        db_incarceration_period = generate_incarceration_period(
+            person=db_person,
+            incarceration_period_id=_ID, external_id=_EXTERNAL_ID_1,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY.value,
+            state_code=_STATE_CODE, facility='facility',
+            incarceration_incidents=[db_incarceration_incident],
+            parole_decisions=[db_parole_decision, db_parole_decision_2],
+            assessments=[db_assessment],
+            program_assignments=[db_program_assignment])
+        db_supervision_violation_response_decision = \
+            generate_supervision_violation_response_decision_entry(
+                person=db_person,
+                supervision_violation_response_decision_entry_id=_ID,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
+                revocation_type=
+                StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value
+            )
+        db_supervision_violation_response = \
+            generate_supervision_violation_response(
+                person=db_person,
+                supervision_violation_response_id=_ID, state_code=_STATE_CODE,
+                external_id=_EXTERNAL_ID_1,
+                decision=
+                StateSupervisionViolationResponseDecision.CONTINUANCE.value,
+                supervision_violation_response_decisions=[
+                    db_supervision_violation_response_decision],
+                decision_agents=[db_agent_term])
+        db_supervision_violation_type = \
+            generate_supervision_violation_type_entry(
+                person=db_person,
+                supervision_violation_type_entry_id=_ID,
+                violation_type=StateSupervisionViolationType.ABSCONDED.value,
+            )
+        db_supervision_violated_condition = \
+            generate_supervision_violated_condition_entry(
+                person=db_person,
+                supervision_violated_condition_entry_id=_ID,
+                condition='COND'
+            )
+        db_supervision_violation = generate_supervision_violation(
+            person=db_person,
+            supervision_violation_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_1, is_violent=True,
+            supervision_violation_types=[db_supervision_violation_type],
+            supervision_violated_conditions=[
+                db_supervision_violated_condition],
+            supervision_violation_responses=[db_supervision_violation_response])
+        db_case_type_dv = generate_supervision_case_type_entry(
+            person=db_person,
+            supervision_case_type_entry_id=_ID,
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE.value,
+            case_type_raw_text='DV')
+        db_supervision_contact = state_schema.StateSupervisionContact(supervision_contact_id=1,
+                                                                      person=db_person, contacted_agent=db_agent,
+                                                                      state_code=_STATE_CODE)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            supervision_period_id=_ID, external_id=_EXTERNAL_ID_1,
+            status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
+            state_code=_STATE_CODE, county_code='county_code',
+            assessments=[db_assessment_2],
+            supervision_violation_entries=[db_supervision_violation],
+            case_type_entries=[db_case_type_dv],
+            supervising_officer=db_agent_po,
+            program_assignments=[db_program_assignment],
+            supervision_contacts=[db_supervision_contact])
+        db_supervision_sentence = generate_supervision_sentence(
+            person=db_person,
+            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID_1,
+            state_code=_STATE_CODE,
+            min_length_days=0,
+            supervision_periods=[db_supervision_period],
+            incarceration_periods=[db_incarceration_period],
+            charges=[db_charge_2, db_charge_3])
+        db_incarceration_sentence = \
+            generate_incarceration_sentence(
+                person=db_person,
+                incarceration_sentence_id=_ID,
+                status=StateSentenceStatus.SERVING.value,
+                external_id=_EXTERNAL_ID_1, state_code=_STATE_CODE,
+                county_code='county_code', charges=[db_charge_2, db_charge_3],
+                incarceration_periods=[db_incarceration_period],
+                supervision_periods=[db_supervision_period])
+        db_sentence_group = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+            external_id=_EXTERNAL_ID_1, state_code=_STATE_CODE,
+            county_code='county_code',
+            supervision_sentences=[db_supervision_sentence],
+            incarceration_sentences=[db_incarceration_sentence],
+            fines=[db_fine])
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_1)
+        db_person.program_assignments = [db_program_assignment]
+        db_person.external_ids = [db_external_id]
+        db_person.sentence_groups = [db_sentence_group]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(db_person)
+        session.commit()
+
+        association_tables = [table for table in reversed(StateBase.metadata.sorted_tables) if
+                              table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX)]
+        for table in association_tables:
+            associations = session.query(table).all()
+            for association in associations:
+                self.assertIsNone(association.state_code)
+
+        _hydrate_state_codes_in_association_tables(session)
+
+        for table in association_tables:
+            associations = session.query(table).all()
+            for association in associations:
+                self.assertEqual(association.state_code, _STATE_CODE)
+
+        session.close()
