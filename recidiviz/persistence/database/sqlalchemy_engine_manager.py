@@ -96,7 +96,7 @@ class SQLAlchemyEngineManager:
         # we may reconsider. See https://www.postgresql.org/docs/9.1/applevel-consistency.html.
         #
         # TODO(3734): Consider doing this for all databases.
-        if schema_base is StateBase and environment.in_gae_staging():
+        if schema_base is StateBase:
             return 'SERIALIZABLE'
         return None
 
