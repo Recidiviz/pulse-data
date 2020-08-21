@@ -43,7 +43,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Assert
         assert mock_create_engine.call_args_list == [
             call('path', isolation_level=None, pool_recycle=600),
-            call('path', isolation_level=None, pool_recycle=600),
+            call('path', isolation_level='SERIALIZABLE', pool_recycle=600),
             call('path', isolation_level=None, pool_recycle=600),
         ]
 
