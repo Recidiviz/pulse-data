@@ -68,14 +68,13 @@ def read_people_by_cls_external_ids(
     return _normalize_record_trees(schema_persons)
 
 
-def read_placeholder_persons(session: Session, state_code: str) -> List[schema.StatePerson]:
+def read_placeholder_persons(session: Session) -> List[schema.StatePerson]:
     """Reads all placeholder people from the DB."""
     check_not_dirty(session)
 
     logging.info("[DAO] Starting read of placeholder person ids")
     person_ids_result = session.query(schema.StatePerson.person_id) \
         .outerjoin(schema.StatePersonExternalId) \
-        .filter(schema.StatePerson.state_code == state_code.upper()) \
         .filter(schema.StatePersonExternalId.external_id.is_(None)).all()
     person_ids = [res[0] for res in person_ids_result]
     logging.info("[DAO] Finished read of placeholder person ids. "
