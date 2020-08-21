@@ -179,12 +179,19 @@ raw_files:
   - file_tag: dbo_LU_BoardActionClass
     primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
       - ActionClassCode
+  - file_tag: dbo_LU_BoardActionKeyword_New
+    primary_key_cols:
+      - KeywordCode
+      - KeywordBoardactCounter
   - file_tag: dbo_LU_PBPP_Organization
     primary_key_cols:
       - Org_cd
   - file_tag: dbo_LU_RelDo
     primary_key_cols:
       - RelDO
+  - file_tag: dbo_LU_ReleaseEntryCodesAddCase
+    primary_key_cols:
+      - ReleaseEntryCode
   - file_tag: dbo_LU_TreatTrackClosingCodes
     primary_key_cols:
       - TreatTrackCloseCasesCode
@@ -329,3 +336,25 @@ raw_files:
       - inmate_number
       - control_number
       - state_id_num
+  - file_tag: dbo_vwCCISAllInmate
+    primary_key_cols:
+      - Control_Number
+      - Inmate_Number
+    datetime_cols:
+      - Bed_Dt
+      - Cur_Status_Dt
+      - LstMod_Dt
+    encoding: ISO-8859-1
+  - file_tag: dbo_vwCCISAllMvmt
+    primary_key_cols:
+      - CCISMvmt_Id
+    datetime_cols:
+      - Status_Dt
+    encoding: ISO-8859-1
+  - file_tag: dbo_vwCCISAllProgDtls
+    primary_key_cols:
+      - CCISMvmt_Id
+      - Program_Id
+    datetime_cols:
+      - LstMod_Dt
+    encoding: ISO-8859-1
