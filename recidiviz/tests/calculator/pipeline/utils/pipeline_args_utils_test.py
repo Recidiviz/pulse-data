@@ -145,3 +145,53 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         self.assertEqual(incarceration_pipeline_args, expected_incarceration_pipeline_args)
         self.assertEqual(pipeline_options.get_all_options(drop_default=True), self.DEFAULT_APACHE_BEAM_OPTIONS_DICT)
+
+
+    def test_incarceration_pipeline_args_additional_bad_arg(self):
+        # Arrange
+        argv = [
+            '--job_name', 'incarceration-args-test',
+            '--runner', 'DirectRunner',
+            '--project', 'recidiviz-staging',
+            '--setup_file', './setup2.py',
+            '--bucket', 'recidiviz-123-my-bucket',
+            '--region=us-central1',
+            '--data_input', 'county',
+            '--reference_input', 'reference_views_2',
+            '--output', 'dataflow_metrics_2',
+            '--calculation_month_count=6',
+            '--calculation_month_count_bad=6',
+            '--calculation_end_month=2009-07',
+            '--save_as_template'
+        ]
+
+        # Act
+        _incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+
+        with self.assertRaises(SystemExit) as e:
+            _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+        self.assertEqual(2, e.exception.code)
+
+    def test_incarceration_pipeline_args_missing_arg(self):
+        # Arrange
+        argv = [
+            '--job_name', 'incarceration-args-test',
+            '--runner', 'DirectRunner',
+            # project arg omitted here
+            '--setup_file', './setup2.py',
+            '--bucket', 'recidiviz-123-my-bucket',
+            '--region=us-central1',
+            '--data_input', 'county',
+            '--reference_input', 'reference_views_2',
+            '--output', 'dataflow_metrics_2',
+            '--calculation_month_count=6',
+            '--calculation_end_month=2009-07',
+            '--save_as_template'
+        ]
+
+        # Act
+        _incarceration_pipeline_args, apache_beam_args = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+
+        with self.assertRaises(SystemExit) as e:
+            _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
+        self.assertEqual(2, e.exception.code)

@@ -121,7 +121,7 @@ def _get_parsed_base_apache_beam_args(argv: List[str]) -> argparse.Namespace:
                              'is specified.',
                         required=False)
 
-    base_args, _remaining_args = parser.parse_known_args(argv)
+    base_args = parser.parse_args(argv)
 
     return base_args
 
