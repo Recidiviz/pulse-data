@@ -30,6 +30,7 @@ from recidiviz.persistence.database.session import Session
 
 
 class SessionFactory:
+    """Creates SQLAlchemy sessions for the given database schema"""
     @classmethod
     def for_schema_base(cls, schema_base: DeclarativeMeta) -> Session:
         engine = SQLAlchemyEngineManager.get_engine_for_schema_base(schema_base)
@@ -37,6 +38,7 @@ class SessionFactory:
             raise ValueError(f"No engine set for base [{schema_base.__name__}]")
 
         session = Session(bind=engine)
+        cls._alter_session_variables(session)
         cls._apply_session_listener_for_schema_base(schema_base, session)
         return session
 
@@ -44,3 +46,20 @@ class SessionFactory:
     def _apply_session_listener_for_schema_base(cls, schema_base: DeclarativeMeta, session):
         if schema_base == OperationsBase:
             operations_session_listener(session)
+
+    @classmethod
+    def _alter_session_variables(cls, session: Session):
+        # Postgres uses a query cost analysis heuristic to decide what type of read to use for a particular query. It
+        # sometimes chooses to use a sequential read because for hard disk drives (HDDs, as opposed to solid state
+        # drives, SSDs) that may be faster than jumping around to random pages of an index. This is especially likely
+        # when running over small sets of data. Setting this option changes the heuristic to almost always prefer index
+        # reads.
+        #
+        # Our postgres instances run on SSDs, so this should increase performance for us. This is also important
+        # because sequential reads lock an entire table, whereas index reads only lock the particular predicate from a
+        # query. See https://www.postgresql.org/docs/12/transaction-iso.html and
+        # https://stackoverflow.com/questions/42288808/why-does-postgresql-serializable-transaction-think-this-as-conflict.
+        #
+        # TODO(3928): Once defined in code, set this on the SQL instance itself instead of per session.
+        if session.bind.dialect.name == 'postgresql':
+            session.execute('SET random_page_cost=1;')
