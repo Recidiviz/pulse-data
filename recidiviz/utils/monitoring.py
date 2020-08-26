@@ -111,3 +111,4 @@ class TagKey:
     STATUS = 'status'
     VALIDATION_CHECK_TYPE = 'validation_check_type'
     VALIDATION_VIEW_ID = 'validation_view_id'
+    CREATE_UPDATE_VIEWS_NAMESPACE = 'create_update_views_namespace'

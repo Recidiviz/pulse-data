@@ -25,6 +25,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 
 _PROJECT_ID = 'fake-recidiviz-project'
 _DATASET_NAME = 'my_views_dataset'
@@ -59,7 +60,8 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
-        view_update_manager.create_dataset_and_update_views_for_view_builders({_DATASET_NAME: mock_view_builders})
+        view_update_manager.create_dataset_and_update_views_for_view_builders(
+            BigQueryViewNamespace.VALIDATION, {_DATASET_NAME: mock_view_builders})
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
@@ -81,6 +83,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         view_update_manager.create_dataset_and_update_views_for_view_builders(
+            BigQueryViewNamespace.VALIDATION,
             {_DATASET_NAME: mock_view_builders},
             materialized_views_only=True
         )
