@@ -26,7 +26,6 @@ from opencensus.stats import aggregation, measure, view
 from flask import Blueprint, request
 
 from recidiviz.big_query import view_update_manager
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -36,7 +35,6 @@ from recidiviz.validation.checks.check_resolver import checker_for_validation
 
 from recidiviz.validation.configured_validations import get_all_validations, get_state_codes_to_validate
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
-from recidiviz.validation.views import view_config
 
 m_failed_to_run_validations = measure.MeasureInt(
     "validation/num_fail_to_run", "The number of validations that failed to run entirely", "1")
@@ -79,8 +77,7 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
     """Executes all validation checks."""
     if should_update_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
-        view_update_manager.create_dataset_and_update_views_for_view_builders(
-            BigQueryViewNamespace.VALIDATION, view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
+        view_update_manager.create_dataset_and_update_all_views()
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform()
