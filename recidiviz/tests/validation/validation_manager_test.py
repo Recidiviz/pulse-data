@@ -24,6 +24,7 @@ from flask import Flask
 from mock import patch
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GaeEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
@@ -201,7 +202,8 @@ class TestHandleRequest(TestCase):
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
-        mock_update_views.assert_called_with(view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
+        mock_update_views.assert_called_with(BigQueryViewNamespace.VALIDATION,
+                                             view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
 
 
 class TestFetchValidations(TestCase):
