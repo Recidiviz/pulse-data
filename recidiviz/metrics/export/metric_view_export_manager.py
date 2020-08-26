@@ -17,7 +17,7 @@
 """Export data from BigQuery metric views to configurable locations.
 
 Run this export locally with the following command:
-    python -m recidiviz.big_query.export.metrics.metric_view_export_manager --project_id [PROJECT_ID]
+    python -m recidiviz.metrics.export.metric_view_export_manager --project_id [PROJECT_ID]
 """
 import argparse
 import logging
