@@ -88,6 +88,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
 
         # Identifies the full set of keys for the given view, as well as those for for dimensions and values
         export_view = export_config.view
+
+        logging.info("Converting query results to the optimized metric file format for view: %s", export_view.view_id)
+
         table = self.bq_client.get_table(self.bq_client.dataset_ref_for_id(export_view.dataset_id), export_view.view_id)
         all_keys = [field.name for field in table.schema]
 
@@ -130,15 +133,18 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         """Writes the optimized metric representation to Cloud Storage, based on the export configuration. Returns the
         output path the file was written to.
         """
-        logging.info("Writing optimized metric file to Google Cloud Storage...")
-
         output_path = export_config.output_path(extension='txt')
+
+        logging.info("Writing optimized metric file %s to GCS bucket %s...",
+                     output_path.blob_name, output_path.bucket_name)
+
         blob = storage.Blob.from_string(output_path.uri(), client=storage_client)
         self._set_format_metadata(formatted, blob)
         blob.upload_from_string(self._produce_transmission_format(formatted, should_compress=True),
                                 content_type='text/plain')
 
-        logging.info("Optimized metric file written to Google Cloud Storage.")
+        logging.info("Optimized metric file %s written to GCS bucket %s.",
+                     output_path.blob_name, output_path.bucket_name)
 
         return output_path
 
