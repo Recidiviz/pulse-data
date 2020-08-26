@@ -9,11 +9,10 @@
 - pipeline: supervision
   job_name: full-us-nd-supervision-calculations
   state_code: US_ND
-  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
+  calculation_month_count: -1 # No limit
 - pipeline: recidivism
   job_name: full-us-nd-recidivism-calculations
   state_code: US_ND
-  calculation_month_count: -1 # No limit
 - pipeline: incarceration
   job_name: full-us-nd-incarceration-calculations
   state_code: US_ND
