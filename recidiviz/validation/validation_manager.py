@@ -26,6 +26,7 @@ from opencensus.stats import aggregation, measure, view
 from flask import Blueprint, request
 
 from recidiviz.big_query import view_update_manager
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -79,7 +80,7 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
     if should_update_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
         view_update_manager.create_dataset_and_update_views_for_view_builders(
-            view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
+            BigQueryViewNamespace.VALIDATION, view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform()

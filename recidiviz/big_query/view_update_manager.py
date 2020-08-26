@@ -25,42 +25,73 @@ This can be run on-demand whenever a set of views needs to be updated. Run local
 import argparse
 import logging
 import sys
+from enum import Enum
 from typing import Dict, List, Sequence
+
+from opencensus.stats import measure, view as opencensus_view, aggregation
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
+from recidiviz.utils import monitoring
 from recidiviz.utils.params import str_to_bool
 from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Dict[str, Sequence[BigQueryViewBuilder]]] = {
-    'county': COUNTY_VIEW_BUILDERS,
-    'state': STATE_VIEW_BUILDERS,
-    'validation': VALIDATION_VIEW_BUILDERS
+m_failed_view_update = measure.MeasureInt("bigquery/view_update_manager/view_update_all_failure",
+                                          "Counted every time updating all views fails", "1")
+
+failed_view_updates_view = opencensus_view.View(
+    "bigquery/view_update_manager/num_view_update_failure",
+    "The sum of times all views fail to update",
+    [monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE],
+    m_failed_view_update,
+    aggregation.SumAggregation())
+
+monitoring.register_views([failed_view_updates_view])
+
+
+class BigQueryViewNamespace(Enum):
+    COUNTY = 'county'
+    STATE = 'state'
+    VALIDATION = 'validation'
+
+
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[BigQueryViewNamespace, Dict[str, Sequence[BigQueryViewBuilder]]] = {
+    BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
+    BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
+    BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS
 }
 
 
 def create_dataset_and_update_views_for_view_builders(
+        view_namespace: BigQueryViewNamespace,
         view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
         materialized_views_only: bool = False):
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
     building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
     datasets. If materialized_views_only is True, will only update views that have a set materialized_view_table_id
     field."""
-    # Convert the map of dataset_ids to BigQueryViewBuilders into a map of dataset_ids to BigQueryViews by building
-    # each of the views
-    views_to_update: Dict[str, List[BigQueryView]] = {
-        dataset: [
-            view_builder.build() for view_builder in view_builders
-            if not materialized_views_only or view_builder.build().materialized_view_table_id is not None
-        ]
-        for dataset, view_builders in view_builders_to_update.items()
-    }
+    try:
+        # Convert the map of dataset_ids to BigQueryViewBuilders into a map of dataset_ids to BigQueryViews by building
+        # each of the views.
+        views_to_update: Dict[str, List[BigQueryView]] = {
+            dataset: [
+                view_builder.build() for view_builder in view_builders
+                if not materialized_views_only or view_builder.build().materialized_view_table_id is not None
+            ]
+            for dataset, view_builders in view_builders_to_update.items()
+        }
 
-    _create_dataset_and_update_views(views_to_update)
+        _create_dataset_and_update_views(views_to_update)
+    except Exception as e:
+        with monitoring.measurements({
+                monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE: view_namespace.value
+        }) as measurements:
+            measurements.measure_int_put(m_failed_view_update, 1)
+        raise e
 
 
 def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]):
@@ -99,7 +130,7 @@ def parse_arguments(argv):
     parser.add_argument('--views_to_update',
                         dest='views_to_update',
                         type=str,
-                        choices=VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.keys(),
+                        choices=[namespace.value for namespace in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE],
                         required=True)
 
     parser.add_argument('--materialized_views_only',
@@ -114,7 +145,8 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
-    view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.get(known_args.views_to_update)
+    view_namespace_ = BigQueryViewNamespace(known_args.views_to_update)
+    view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.get(BigQueryViewNamespace(known_args.views_to_update))
 
     if not view_builders:
         raise ValueError("Unsupported views_to_update parameter. Fix the parser to only allow supported values.")
@@ -123,4 +155,6 @@ if __name__ == '__main__':
         logging.info("Limiting update to materialized views only.")
 
     with local_project_id_override(known_args.project_id):
-        create_dataset_and_update_views_for_view_builders(view_builders, known_args.materialized_views_only)
+        create_dataset_and_update_views_for_view_builders(view_namespace=view_namespace_,
+                                                          view_builders_to_update=view_builders,
+                                                          materialized_views_only=known_args.materialized_views_only)

@@ -30,6 +30,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter, JsonLinesBigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystemImpl
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder, MetricBigQueryView
 
@@ -56,7 +57,8 @@ def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None
     """
 
     view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
-    view_update_manager.create_dataset_and_update_views_for_view_builders(view_builders_for_views_to_update)
+    view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
+                                                                          view_builders_for_views_to_update)
 
     if not view_exporter:
         bq_client = BigQueryClientImpl()
