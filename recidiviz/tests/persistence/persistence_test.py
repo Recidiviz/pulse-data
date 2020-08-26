@@ -16,10 +16,12 @@
 # =============================================================================
 """Tests for persistence.py."""
 
+import abc
 from copy import deepcopy
 from datetime import date, datetime, timedelta
 import logging
 import threading
+import time
 from typing import Callable, Optional
 from unittest import TestCase
 
@@ -794,39 +796,14 @@ INGEST_METADATA_STATE_2_INSERT = IngestMetadata.new_with_defaults(
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata.new_with_defaults(
     region='US_MO', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE_2, system_level=SystemLevel.STATE)
 
-@patch('os.getenv', Mock(return_value='production'))
-class TestPersistenceMultipleThreadsReadCommitted(TestCase):
-    """Test that the persistence layer writes to Postgres from multiple threads."""
+class MultipleStateTestMixin():
+    """Defines the test cases for running multiple state transactions simultaneously.
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
-
-    def setUp(self) -> None:
-        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
-        self.storage_client_patcher = patch('google.cloud.storage.Client')
-        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
-        self.bq_client_patcher.start()
-        self.storage_client_patcher.start()
-        self.task_client_patcher.start()
-
-        self.isolation_level_patcher = patch(
-            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
-            return_value='SERIALIZABLE')
-        self.isolation_level_patcher.start()
-        fakes.use_on_disk_postgresql_database(StateBase)
-
-    def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(StateBase)
-        self.isolation_level_patcher.stop()
-
-        self.bq_client_patcher.stop()
-        self.storage_client_patcher.stop()
-        self.task_client_patcher.stop()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+    To be used by a concrete test class that defines *how* to run them simultaneously.
+    """
+    @abc.abstractmethod
+    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
+        """Writes the given ingest infos in separate transactions"""
 
     def test_insertRootEntities_succeeds(self):
         # Arrange
@@ -837,17 +814,18 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         session.commit()
 
         # Act
-        _run_writes_in_parallel(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)]),
-                                IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)]))
+        self.run_transactions(IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)]),
+                              IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)]))
 
         # Assert
         result = state_dao.read_people(
             SessionFactory.for_schema_base(StateBase))
 
         assert len(result) == 3
-        assert result[0].full_name is None
-        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        names = {person.full_name for person in result}
+        assert names == {None,
+                         '{"given_names": "JON", "surname": "HOPKINS"}',
+                         '{"given_names": "SOLANGE", "surname": "KNOWLES"}'}
 
     def test_insertOverlappingTypes_succeeds(self):
         # Arrange
@@ -873,7 +851,7 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
         person_state_2.create_state_assessment(assessment_class='RISK')
 
-        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+        self.run_transactions(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
 
         # Assert
         result = state_dao.read_people(
@@ -910,7 +888,7 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
         person_state_2.create_state_program_assignment(program_id='1234')
 
-        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+        self.run_transactions(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
 
         # Assert
         result = state_dao.read_people(
@@ -947,7 +925,7 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
         person_state_2.state_sentence_groups[0].status = 'COMPLETED'
 
-        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+        self.run_transactions(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
 
         # Assert
         result = state_dao.read_people(
@@ -986,7 +964,7 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         person_state_2 = deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)
         person_state_2.state_sentence_groups[0].status = 'COMPLETED'
 
-        _run_writes_in_parallel(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
+        self.run_transactions(IngestInfo(state_people=[person_state_1]), IngestInfo(state_people=[person_state_2]))
 
         # Assert
         result = state_dao.read_people(
@@ -1000,6 +978,79 @@ class TestPersistenceMultipleThreadsReadCommitted(TestCase):
         assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         assert len(result[2].sentence_groups) == 1
         assert result[2].sentence_groups[0].status == 'COMPLETED'
+
+
+@patch('os.getenv', Mock(return_value='production'))
+class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin):
+    """Test that the persistence layer writes to Postgres from multiple threads in an overlapping fashion
+
+    This forces the transactions to commit in the opposite order that they were started to guarantee that they overlap.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
+
+        self.isolation_level_patcher = patch(
+            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
+            return_value='SERIALIZABLE')
+        self.isolation_level_patcher.start()
+        fakes.use_on_disk_postgresql_database(StateBase)
+
+    def tearDown(self) -> None:
+        fakes.teardown_on_disk_postgresql_database(StateBase)
+        self.isolation_level_patcher.stop()
+
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
+
+    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
+        return _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info)
+
+
+def _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info):
+    """This coordinates two transactions such that they overlap
+
+    - Runs T1
+    - Runs T2
+    - Commits T2
+    - Commits T1
+    """
+
+    def transaction1(precommit_event: threading.Event, other_committed_event: threading.Event):
+        persistence.write(
+            convert_ingest_info_to_proto(state_1_ingest_info), INGEST_METADATA_STATE_1_UPDATE,
+            run_txn_fn=_get_run_transaction_block_commit_fn(precommit_event, other_committed_event))
+
+    def transaction2(other_precommit_event, committed_event):
+        persistence.write(
+            convert_ingest_info_to_proto(state_2_ingest_info), INGEST_METADATA_STATE_2_UPDATE,
+            run_txn_fn=_get_run_transaction_after_other_fn(other_precommit_event, committed_event))
+
+    transaction1_precommit = threading.Event()
+    transaction2_committed = threading.Event()
+
+    thread1 = threading.Thread(target=transaction1, args=(transaction1_precommit, transaction2_committed))
+    thread2 = threading.Thread(target=transaction2, args=(transaction1_precommit, transaction2_committed))
+
+    thread1.start()
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
 
 
 def _get_run_transaction_block_commit_fn(precommit_event: threading.Event, other_committed_event: threading.Event):
@@ -1027,6 +1078,7 @@ def _get_run_transaction_block_commit_fn(precommit_event: threading.Event, other
 
     return run_transaction_block_commit
 
+
 def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, committed_event: threading.Event):
     def run_transaction_after_other(session: Session, _m: MeasurementMap, txn_body: Callable[[Session], bool],
                                     _r: Optional[int]) -> bool:
@@ -1051,31 +1103,104 @@ def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, 
 
     return run_transaction_after_other
 
-def _run_writes_in_parallel(state_1_ingest_info, state_2_ingest_info):
-    # This coordinates two transactions [T1, T2] such that they overlap:
-    # - Starts T1 and ensures it has read from the database
-    # - Starts T2
-    # - Commits T2
-    # - Commits T1
 
-    def transaction1(precommit_event: threading.Event, other_committed_event: threading.Event):
-        persistence.write(
-            convert_ingest_info_to_proto(state_1_ingest_info), INGEST_METADATA_STATE_1_UPDATE,
-            run_txn_fn=_get_run_transaction_block_commit_fn(precommit_event, other_committed_event))
+@patch('os.getenv', Mock(return_value='production'))
+class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin):
+    """Test that the persistence layer writes to Postgres from multiple threads in an interleaved fashion
 
-    def transaction2(other_precommit_event, committed_event):
-        persistence.write(
-            convert_ingest_info_to_proto(state_2_ingest_info), INGEST_METADATA_STATE_2_UPDATE,
-            run_txn_fn=_get_run_transaction_after_other_fn(other_precommit_event, committed_event))
+    This offsets the transactions and inserts delay between each operation such that they are fully interleaved.
+    """
 
-    transaction1_precommit = threading.Event()
-    transaction2_committed = threading.Event()
+    @classmethod
+    def setUpClass(cls) -> None:
+        fakes.start_on_disk_postgresql_database()
 
-    thread1 = threading.Thread(target=transaction1, args=(transaction1_precommit, transaction2_committed))
-    thread2 = threading.Thread(target=transaction2, args=(transaction1_precommit, transaction2_committed))
+    def setUp(self) -> None:
+        self.bq_client_patcher = patch('google.cloud.bigquery.Client')
+        self.storage_client_patcher = patch('google.cloud.storage.Client')
+        self.task_client_patcher = patch('google.cloud.tasks_v2.CloudTasksClient')
+        self.bq_client_patcher.start()
+        self.storage_client_patcher.start()
+        self.task_client_patcher.start()
 
-    thread1.start()
-    thread2.start()
+        self.isolation_level_patcher = patch(
+            'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
+            # TODO(3622): Set to 'SERIALIZABLE'
+            return_value='REPEATABLE READ')
+        self.isolation_level_patcher.start()
+        fakes.use_on_disk_postgresql_database(StateBase)
 
-    thread1.join()
-    thread2.join()
+    def tearDown(self) -> None:
+        fakes.teardown_on_disk_postgresql_database(StateBase)
+        self.isolation_level_patcher.stop()
+
+        self.bq_client_patcher.stop()
+        self.storage_client_patcher.stop()
+        self.task_client_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        fakes.stop_and_clear_on_disk_postgresql_database()
+
+    def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
+        return _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info)
+
+DELAY = 0.1
+
+def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
+    """Offset transactions and delay writes slightly so that transactions are interleaved
+
+    Example execution timeline:
+
+    T1            | T2
+    ------------- | --------------
+    read person   | ...delay
+    ...delay      | read person
+    write person  | ...delay
+    commit        | write person
+                  | commit
+    """
+    orig_flush = sqlalchemy.orm.session.Session.flush
+    def delayed_flush(self):
+        time.sleep(DELAY)
+        logging.info('Flushing')
+        orig_flush(self)
+
+    with patch.object(sqlalchemy.orm.session.Session, 'flush', delayed_flush):
+        def transaction1():
+            persistence.write(
+                convert_ingest_info_to_proto(state_1_ingest_info), INGEST_METADATA_STATE_1_UPDATE,
+                run_txn_fn=_get_run_transaction_fn(1))
+
+        def transaction2():
+            # Delay start of T2
+            time.sleep(DELAY)
+            persistence.write(
+                convert_ingest_info_to_proto(state_2_ingest_info), INGEST_METADATA_STATE_2_UPDATE,
+                run_txn_fn=_get_run_transaction_fn(2))
+
+        thread1 = threading.Thread(target=transaction1)
+        thread2 = threading.Thread(target=transaction2)
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+
+def _get_run_transaction_fn(transaction_id: int):
+    def run_transaction(session: Session, _m: MeasurementMap, txn_body: Callable[[Session], bool],
+                        _r: Optional[int]) -> bool:
+        try:
+            logging.info('Starting Transaction %d', transaction_id)
+            _should_continue = txn_body(session)
+            logging.info('Committing Transaction %d', transaction_id)
+            session.commit()
+            logging.info('Successfully Committed Transaction %d', transaction_id)
+        finally:
+            session.close()
+
+        return True
+
+    return run_transaction
