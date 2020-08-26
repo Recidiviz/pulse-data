@@ -157,6 +157,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
             self._write_snapshots(session, snapshot_context,
                                   ingest_metadata.ingest_time, schema)
 
+        logging.info("Flushing snapshots")
+        session.flush()
         logging.info("All historical snapshots written")
 
     def _fetch_most_recent_snapshots_for_all_entities(
