@@ -21,7 +21,7 @@ from typing import List
 from unittest import TestCase
 
 from flask import Flask
-from mock import patch
+from mock import patch, call
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
@@ -31,7 +31,9 @@ from recidiviz.validation.checks.existence_check import ExistenceDataValidationC
 from recidiviz.validation.configured_validations import get_all_validations, get_state_codes_to_validate
 from recidiviz.validation.validation_manager import validation_manager_blueprint, _fetch_validation_jobs_to_perform
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
-from recidiviz.validation.views import view_config
+from recidiviz.calculator.query.county import view_config as county_view_config
+from recidiviz.calculator.query.state import view_config as state_view_config
+from recidiviz.validation.views import view_config as validation_view_config
 
 
 def get_test_validations() -> List[DataValidationJob]:
@@ -202,8 +204,14 @@ class TestHandleRequest(TestCase):
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
-        mock_update_views.assert_called_with(BigQueryViewNamespace.VALIDATION,
-                                             view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE)
+
+        self.maxDiff = None
+        expected_update_calls = [
+            call(BigQueryViewNamespace.COUNTY, county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False),
+            call(BigQueryViewNamespace.STATE, state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False),
+            call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False)
+        ]
+        self.assertCountEqual(mock_update_views.call_args_list, expected_update_calls)
 
 
 class TestFetchValidations(TestCase):

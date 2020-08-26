@@ -66,6 +66,12 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[BigQueryViewNamespace, Dict[str, Sequenc
 }
 
 
+def create_dataset_and_update_all_views(materialized_views_only: bool = False) -> None:
+    """Creates or updates all registered BigQuery views."""
+    for namespace, builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
+        create_dataset_and_update_views_for_view_builders(namespace, builders, materialized_views_only)
+
+
 def create_dataset_and_update_views_for_view_builders(
         view_namespace: BigQueryViewNamespace,
         view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
