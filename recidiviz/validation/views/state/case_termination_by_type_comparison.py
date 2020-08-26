@@ -43,13 +43,13 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
       GROUP BY region_code, year, month
     ),
     absconsions_by_officer as (
-      SELECT state_code as region_code, year, month, SUM(absconsion_count) as absconsion_count
-      FROM `{project_id}.{view_dataset}.supervision_absconsion_terminations_by_officer_by_month`
+      SELECT state_code as region_code, year, month, SUM(absconsions) as absconsion_count
+      FROM `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month`
       GROUP BY region_code, year, month
     ),
     discharges_by_officer as (
-      SELECT state_code as region_code, year, month, SUM(discharge_count) as discharge_count
-      FROM `{project_id}.{view_dataset}.supervision_discharges_by_officer_by_month`
+      SELECT state_code as region_code, year, month, SUM(pos_discharges) as discharge_count
+      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month`
       WHERE district != 'ALL' AND officer_external_id != 'ALL'
       GROUP BY region_code, year, month
     )
@@ -73,6 +73,7 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE,
     description=CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
+    po_report_dataset=state_dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':
