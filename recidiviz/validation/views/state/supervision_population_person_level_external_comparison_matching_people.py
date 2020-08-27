@@ -16,7 +16,7 @@
 # =============================================================================
 
 """A view comparing various values from internal person-level supervision population metrics to the person-level values
-from external metrics provided by the state.
+from external metrics provided by the state where we both agree that the person was on supervision.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -27,25 +27,25 @@ from recidiviz.validation.views import dataset_config
 from recidiviz.validation.views.state.supervision_population_person_level_template import \
     supervision_population_person_level_query
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = \
-    'supervision_population_person_level_external_comparison'
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME = \
+    'supervision_population_person_level_external_comparison_matching_people'
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION = """
 Comparison of district values between internal and external lists of end of month person-level supervision
-populations.
+populations among rows where we both agree the person is on supervision.
 """
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = \
     f"""
 /*{{description}}*/
-{supervision_population_person_level_query(include_unmatched_people=True)}
+{supervision_population_person_level_query(include_unmatched_people=False)}
 """
 
-SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME,
-    view_query_template=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
-    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
+    view_id=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME,
+    view_query_template=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE,
+    description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     metrics_dataset=state_dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET
@@ -53,4 +53,4 @@ SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBig
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build_and_print()
