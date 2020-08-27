@@ -40,12 +40,16 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_DESCRIPTION =
 
 PARTITION_COLUMNS = ['state_code', 'metric_period_months', 'supervision_type', 'district']
 CALCULATED_COLUMNS_TO_VALIDATE = ['successful_termination_count', 'projected_completion_count']
-MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['age_bucket', 'race_or_ethnicity', 'gender']
+MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['race_or_ethnicity', 'gender']
+# NOTE: age_bucket is a non-mutually exclusive breakdown column, because people can fall into multiple age_buckets over
+# time
+NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ['age_bucket']
 
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
 /*{{description}}*/
 {internal_consistency_query(partition_columns=PARTITION_COLUMNS,
                             mutually_exclusive_breakdown_columns=MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS,
+                            non_mutually_exclusive_breakdown_columns=NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS,
                             calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}
 """
 

@@ -242,8 +242,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
-                                'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
+            comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
         ),
         SamenessDataValidationCheck(
             view=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
