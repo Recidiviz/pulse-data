@@ -104,7 +104,8 @@ def get_pipeline_module(pipeline: str):
 
 def run_calculation_pipelines():
     """Runs the pipeline designated by the given --pipeline argument."""
-    known_args, remaining_args = parse_arguments(sys.argv)
+    # We drop argv[0] because it's the script name
+    known_args, remaining_args = parse_arguments(sys.argv[1:])
 
     pipeline_module = get_pipeline_module(known_args.pipeline)
 
