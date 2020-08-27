@@ -76,6 +76,8 @@ from recidiviz.validation.views.state.supervision_population_by_prioritized_race
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison import \
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.supervision_population_person_level_external_comparison_matching_people import \
+    SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency \
     import SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import \
@@ -249,17 +251,31 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
         ),
-        # TODO(3430): Add US_ID person-level supervision population validation.
+        # TODO(3936): Add state-level thresholds here since PA has pretty inaccurate external data and the best we can
+        #  do is about 2.5% inaccuracy.
         SamenessDataValidationCheck(
             view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_person_external_id', 'internal_person_external_id'],
+            max_allowed_error=0.03),
+        SamenessDataValidationCheck(
+            view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_district', 'internal_district'],
+            max_allowed_error=0.001),
+        # TODO(3691): Will need to figure out how to opt PA out of these validations because their external data does
+        #  not provide supervision level or officer (could also be solved by issue #3936 with allowed error threshold ==
+        #  100%).
+        SamenessDataValidationCheck(
+            view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=['external_supervision_level', 'internal_supervision_level'],
-            max_allowed_error=0.04),
+            max_allowed_error=0.025),
         SamenessDataValidationCheck(
-            view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=['external_supervising_officer', 'internal_supervising_officer'],
-            max_allowed_error=0.04),
+            max_allowed_error=0.025),
     ]
 
     return all_data_validations
