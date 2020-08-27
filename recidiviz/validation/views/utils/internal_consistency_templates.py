@@ -17,7 +17,7 @@
 """Helpers for building internal consistency queries that sum values across breakdown rows and make sure they match the
 metric total rows.
 """
-from typing import List
+from typing import List, Optional
 
 
 # TODO(3839): Simplify this via metric_big_query_view.dimensions
@@ -106,7 +106,8 @@ ORDER BY {order_by_cols}
 
 def internal_consistency_query(partition_columns: List[str],
                                mutually_exclusive_breakdown_columns: List[str],
-                               calculated_columns_to_validate: List[str]):
+                               calculated_columns_to_validate: List[str],
+                               non_mutually_exclusive_breakdown_columns: Optional[List[str]] = None):
     """
     Builds and returns a query that can be used to ensure that the various metric breakdowns sum to the values
     represented in the aggregate ('ALL') columns in each query.
@@ -117,15 +118,23 @@ def internal_consistency_query(partition_columns: List[str],
             value).
         mutually_exclusive_breakdown_columns: A list of dimensional breakdown columns where only one is not 'ALL' at a
             time. Often the demographic breakdown columns in the query.
+        non_mutually_exclusive_breakdown_columns: A list of dimensional breakdown columns where only one is not 'ALL'
+            at a time, but where people may be counted towards more than one category. We do not expect the sums
+            across non-ALL categories to be equal to the overall metric totals.
         calculated_columns_to_validate: A list of numerical columns whose sum across the breakdown dimensions should
             equal the value in the row where all breakdown dimensions are 'ALL'
     """
 
     partition_columns_str = ', '.join(partition_columns)
 
+    breakdown_columns = mutually_exclusive_breakdown_columns
+
+    if non_mutually_exclusive_breakdown_columns:
+        breakdown_columns += non_mutually_exclusive_breakdown_columns
+
     metric_totals_table_query_str = _metric_totals_table_query(
         partition_columns=partition_columns,
-        mutually_exclusive_breakdown_columns=mutually_exclusive_breakdown_columns,
+        mutually_exclusive_breakdown_columns=breakdown_columns,
         calculated_columns_to_validate=calculated_columns_to_validate)
 
     breakdown_sums_table_queries = []
