@@ -139,7 +139,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
                      output_path.blob_name, output_path.bucket_name)
 
         blob = storage.Blob.from_string(output_path.uri(), client=storage_client)
-        self._set_format_metadata(formatted, blob)
+        self._set_format_metadata(formatted, blob, should_compress=True)
         blob.upload_from_string(self._produce_transmission_format(formatted, should_compress=True),
                                 content_type='text/plain')
 
@@ -149,12 +149,15 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         return output_path
 
     @staticmethod
-    def _set_format_metadata(formatted: OptimizedMetricRepresentation, blob: storage.Blob) -> None:
+    def _set_format_metadata(formatted: OptimizedMetricRepresentation,
+                             blob: storage.Blob,
+                             should_compress: bool = False) -> None:
         """Sets metadata on the Cloud Storage blob that can be used to retrieve data points from the optimized
         representation.
 
         This includes the ordered dimension manifest, the ordered list of value keys, and the total
-        number of data points to effectively "unflatten" the flattened matrix.
+        number of data points to effectively "unflatten" the flattened matrix. Also sets the 'Content-Encoding: gzip'
+        header if the content is going to be compressed.
         """
         total_data_points = len(formatted.value_matrix[0]) if formatted.value_matrix else 0
         metadata = {
@@ -163,6 +166,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
             'total_data_points': total_data_points,
         }
         blob.metadata = metadata
+
+        if should_compress:
+            blob.content_encoding = 'gzip'
 
     def _produce_transmission_format(self,
                                      formatted: OptimizedMetricRepresentation,
