@@ -1,0 +1,18 @@
+# Configuration for which validations to run for region US_XX.
+
+region_code: US_XX
+exclusions:
+  - validation_name: my_view
+    exclusion_type: BROKEN
+    exclusion_reason: This needs fixing
+  - validation_name: my_other_view
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: We do not have this data
+max_allowed_error_overrides:
+  - validation_name: sameness_view
+    max_allowed_error_override: 0.3
+    override_reason: This is hard to get right
+num_allowed_rows_overrides:
+  - validation_name: existence_view
+    num_allowed_rows_override: 10
+    override_reason: These should not exist. TODO(0001) - fix it.

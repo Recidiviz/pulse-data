@@ -73,3 +73,19 @@ class TestExistenceValidationChecker(TestCase):
                          DataValidationJobResult(validation_job=job,
                                                  was_successful=False,
                                                  failure_description='Found 2 invalid rows, though 0 were expected'))
+
+    def test_existence_check_failures_below_threshold(self):
+        self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
+
+        job = DataValidationJob(region_code='US_VA',
+                                validation=ExistenceDataValidationCheck(
+                                    validation_type=ValidationCheckType.EXISTENCE,
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything'),
+                                    num_allowed_rows=2
+                                ))
+        result = ExistenceValidationChecker.run_check(job)
+
+        self.assertEqual(result,
+                         DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))

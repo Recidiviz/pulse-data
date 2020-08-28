@@ -16,19 +16,17 @@
 # =============================================================================
 """A class that collects top-level BigQueryViewBuilder instances in a directory and uses them to build BigQueryViews."""
 import abc
-import importlib
 import os
-import pkgutil
-from types import ModuleType
 from typing import Generic, List, Optional, Type
 
 import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryViewType, BigQueryViewBuilder
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 VIEW_BUILDER_EXPECTED_NAME = 'VIEW_BUILDER'
 
 
-class BigQueryViewCollector(Generic[BigQueryViewType]):
+class BigQueryViewCollector(Generic[BigQueryViewType], ModuleCollectorMixin):
     """A class that collects top-level BigQueryViewBuilder instances in a directory and uses them to build
     BigQueryViews.
 
@@ -38,29 +36,6 @@ class BigQueryViewCollector(Generic[BigQueryViewType]):
     @abc.abstractmethod
     def collect_views(self) -> List[BigQueryViewType]:
         """Returns a list of views of the appropriate type. Should be implemented by subclasses."""
-
-    @staticmethod
-    def _get_relative_module(base_module: ModuleType,
-                             sub_module_parts: List[str]) -> ModuleType:
-        module = base_module
-        for part in sub_module_parts:
-            module = importlib.import_module(f'{module.__name__}.{part}')
-        return module
-
-    @staticmethod
-    def _get_submodule_names(base_module: ModuleType,
-                             submodule_name_prefix_filter: Optional[str]) -> List[str]:
-        base_module_path = os.path.dirname(base_module.__file__)
-        return [name for _, name, _ in pkgutil.iter_modules([base_module_path])
-                if not submodule_name_prefix_filter or name.startswith(submodule_name_prefix_filter)]
-
-    @classmethod
-    def _get_submodules(cls, base_module: ModuleType, submodule_name_prefix_filter: Optional[str]) -> List[ModuleType]:
-        submodules = []
-        for submodule_name in cls._get_submodule_names(base_module, submodule_name_prefix_filter):
-            submodules.append(cls._get_relative_module(base_module, [submodule_name]))
-
-        return submodules
 
     @classmethod
     def collect_and_build_views_in_dir(cls,
@@ -76,8 +51,8 @@ class BigQueryViewCollector(Generic[BigQueryViewType]):
             view_file_prefix_filter: When set, collection filters out any files whose name does not have this prefix.
         """
         sub_module_parts = os.path.normpath(relative_dir_path).split('/')
-        view_dir_module = cls._get_relative_module(recidiviz, sub_module_parts)
-        view_modules = cls._get_submodules(view_dir_module, view_file_prefix_filter)
+        view_dir_module = cls.get_relative_module(recidiviz, sub_module_parts)
+        view_modules = cls.get_submodules(view_dir_module, view_file_prefix_filter)
 
         views = []
         for view_module in view_modules:

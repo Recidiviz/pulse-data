@@ -55,8 +55,7 @@ SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_QUERY_TEMPL
          FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
          JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
             USING (state_code, job_id, year, month, metric_period_months)
-         WHERE metric_period_months = 1
-         AND methodology = 'PERSON'
+         WHERE methodology = 'PERSON'
          AND is_on_supervision_last_day_of_month = TRUE
          AND job.metric_type = 'SUPERVISION_POPULATION')
       USING (state_code, year, month))

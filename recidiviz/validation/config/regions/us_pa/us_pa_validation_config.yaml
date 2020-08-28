@@ -1,0 +1,26 @@
+# Configuration for which validations to run for region US_PA.
+
+region_code: US_PA
+exclusions:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: PA has not provided us with person-level validation data for supervision level
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: PA has not provided us with person-level validation data for supervising officers
+max_allowed_error_overrides:
+  - validation_name: supervision_population_person_level_external_comparison
+    max_allowed_error_override: 0.03
+    override_reason: PA external validation data was generated from snapshots at the time the population for a given
+      month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
+      numbers will get "worse" as time goes on and we get more accurate data about movements.
+  - validation_name: revocation_matrix_comparison_supervision_population
+    max_allowed_error_override: 0.015
+    override_reason: TODO(3951) - Needs investigation. Currently has one row where value is 0.0117.
+num_allowed_rows_overrides:
+  - validation_name: incarceration_admission_after_open_period
+    num_allowed_rows_override: 31
+    override_reason: TODO(3950) - Needs investigation.
+  - validation_name: incarceration_release_prior_to_admission
+    num_allowed_rows_override: 883
+    override_reason: TODO(3950) - Needs investigation.
