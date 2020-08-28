@@ -22,6 +22,8 @@ from unittest import mock
 
 from google.cloud import bigquery
 
+from recidiviz.metrics.export.metric_export_config import ExportMetricBigQueryViewConfig, ExportMetricDatasetConfig
+from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.metrics.export import metric_view_export_manager
 
@@ -30,14 +32,14 @@ class MetricViewExportManagerTest(unittest.TestCase):
     """Tests for metric_view_export_manager.py."""
 
     def setUp(self):
-        project_id = 'fake-recidiviz-project'
-        self.mock_dataset_name = 'base_dataset'
+        self.mock_project_id = 'fake-recidiviz-project'
+        self.mock_dataset_id = 'base_dataset'
         self.mock_dataset = bigquery.dataset.DatasetReference(
-            project_id, self.mock_dataset_name)
+            self.mock_project_id, self.mock_dataset_id)
 
         self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = project_id
+        self.mock_project_id_fn.return_value = self.mock_project_id
 
         self.client_patcher = mock.patch(
             'recidiviz.metrics.export.metric_view_export_manager.BigQueryClientImpl')
@@ -52,24 +54,27 @@ class MetricViewExportManagerTest(unittest.TestCase):
 
         self.views_for_dataset = [self.mock_view_builder]
 
-        self.views_to_export = {
-            "dataset_id": {
-                'US_XX': self.views_for_dataset,
-            },
-        }
-
         self.output_uri_template_for_dataset = {
-            "dataset_id": "gs://{project_id}-dataset-location/subdirectory/{state_code}",
+            "dataset_id": "gs://{project_id}-dataset-location/subdirectory",
         }
 
-        self.views_to_update = {self.mock_dataset_name: self.views_for_dataset}
+        self.views_to_update = {self.mock_dataset_id: self.views_for_dataset}
+
+        self.metric_dataset_export_configs = [
+            ExportMetricDatasetConfig(
+                dataset_id=self.mock_dataset_id,
+                metric_view_builders_to_export=self.views_for_dataset,
+                output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
+                state_code_filter='US_XX'
+            )
+        ]
 
         view_config_values = {
-            'STATES_TO_EXPORT': ['US_CA'],
-            'DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT': self.views_to_export,
-            'OUTPUT_DIRECTORY_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
-            'VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE': self.views_to_update
+            'OUTPUT_DIRECTORY_URI_TEMPLATE_FOR_DATASET_EXPORT': self.output_uri_template_for_dataset,
+            'VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE': self.views_to_update,
+            'METRIC_DATASET_EXPORT_CONFIGS': self.metric_dataset_export_configs
         }
+
         self.view_export_config_patcher = mock.patch(
             'recidiviz.metrics.export.metric_view_export_manager.view_config',
             **view_config_values)
@@ -86,5 +91,58 @@ class MetricViewExportManagerTest(unittest.TestCase):
         """Tests the table is created from the view and then extracted."""
         metric_view_export_manager.export_view_data_to_cloud_storage(mock_view_exporter)
 
+        view = self.mock_view_builder.build()
+
+        view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=view,
+            view_filter_clause=" WHERE state_code = 'US_XX'",
+            intermediate_table_name=f"{view.export_view_name}_table_US_XX",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                    project_id=self.mock_project_id,
+                    state_code='US_XX',
+                )
+            )
+        )]
+
         mock_view_update_manager.assert_called()
-        mock_view_exporter.export.assert_called()
+        mock_view_exporter.export.assert_called_with(view_export_configs)
+
+    @mock.patch('recidiviz.metrics.export.metric_view_export_manager.view_config')
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_state_agnostic(self,
+                                                                   mock_view_exporter,
+                                                                   mock_view_update_manager,
+                                                                   mock_view_config):
+        """Tests the table is created from the view and then extracted, where the export is not state-specific."""
+
+        state_agnostic_dataset_export_configs = [
+            ExportMetricDatasetConfig(
+                dataset_id='dataset_id',
+                metric_view_builders_to_export=[self.mock_view_builder],
+                output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
+                state_code_filter=None
+            ),
+        ]
+
+        mock_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE = self.views_to_update
+        mock_view_config.METRIC_DATASET_EXPORT_CONFIGS = state_agnostic_dataset_export_configs
+
+        metric_view_export_manager.export_view_data_to_cloud_storage(mock_view_exporter)
+
+        view = self.mock_view_builder.build()
+
+        view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=view,
+            view_filter_clause=None,
+            intermediate_table_name=f"{view.export_view_name}_table",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                "gs://{project_id}-bucket-without-state-codes".format(
+                    project_id=self.mock_project_id,
+                )
+            )
+        )]
+
+        mock_view_update_manager.assert_called()
+        mock_view_exporter.export.assert_called_with(view_export_configs)

@@ -17,7 +17,7 @@
 
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
 
-from typing import List, TypeVar, Generic
+from typing import List, TypeVar, Generic, Optional
 
 import attr
 from google.cloud import bigquery
@@ -77,14 +77,14 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # The Big Query view to export from
     view: BigQueryViewType = attr.ib()
 
-    # The filter clause that should be used to filter the view
-    view_filter_clause: str = attr.ib()
-
     # The name of the intermediate table to create/overwrite.
     intermediate_table_name: str = attr.ib()
 
     # The desired path to the output directory.
     output_directory: GcsfsDirectoryPath = attr.ib()
+
+    # The filter clause that should be used to filter the view
+    view_filter_clause: Optional[str] = attr.ib(default=None)
 
     def output_path(self, extension: str) -> GcsfsFilePath:
         file_name = f'{self.view.export_view_name}.{extension}'

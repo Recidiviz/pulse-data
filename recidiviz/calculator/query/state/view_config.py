@@ -19,9 +19,11 @@ cloud storage."""
 from typing import Dict, List, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
+from recidiviz.metrics.export.metric_export_config import ExportMetricDatasetConfig
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET, \
-    COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET, REFERENCE_VIEWS_DATASET
+    COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET, REFERENCE_VIEWS_DATASET, \
+    COVID_DASHBOARD_DATASET
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.po_report.po_report_views import PO_REPORT_VIEW_BUILDERS
@@ -33,30 +35,51 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
     REFERENCE_VIEWS_DATASET: REFERENCE_VIEW_BUILDERS,
+    COVID_DASHBOARD_DATASET: COVID_DASHBOARD_VIEW_BUILDERS,
     COVID_REPORT_DATASET: COVID_REPORT_VIEW_BUILDERS,
     DASHBOARD_VIEWS_DATASET: DASHBOARD_VIEW_BUILDERS,
     PO_REPORT_DATASET: PO_REPORT_VIEW_BUILDERS,
     PUBLIC_DASHBOARD_VIEWS_DATASET: PUBLIC_DASHBOARD_VIEW_BUILDERS
 }
 
-# Dictionary mapping the datasets to the state codes and view builders for the views that should be included in the
-# export of that dataset.
-DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT: Dict[str, Dict[str, List[MetricBigQueryViewBuilder]]] = {
-    DASHBOARD_VIEWS_DATASET: {
-        'US_MO': DASHBOARD_VIEW_BUILDERS,
-        'US_ND': DASHBOARD_VIEW_BUILDERS
-    },
-    PO_REPORT_DATASET: {
-        'US_ID': [PO_MONTHLY_REPORT_DATA_VIEW_BUILDER]
-    },
-    PUBLIC_DASHBOARD_VIEWS_DATASET: {
-        'US_ND': PUBLIC_DASHBOARD_VIEW_BUILDERS
-    }
-}
-
 # The format for the destination of the files in the export
-OUTPUT_DIRECTORY_TEMPLATE_FOR_DATASET_EXPORT: Dict[str, str] = {
-    DASHBOARD_VIEWS_DATASET: "gs://{project_id}-dashboard-data/{state_code}",
-    PO_REPORT_DATASET: "gs://{project_id}-report-data/po_monthly_report/{state_code}",
-    PUBLIC_DASHBOARD_VIEWS_DATASET: "gs://{project_id}-public-dashboard-data/{state_code}"
-}
+COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
+DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
+PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
+PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
+
+
+# The configurations for exporting metric views from various datasets to GCS buckets
+METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = \
+    [
+        # PO Report views for US_ID
+        ExportMetricDatasetConfig(
+            dataset_id=PO_REPORT_DATASET,
+            metric_view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
+            output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
+            state_code_filter='US_ID'
+        ),
+        # Public Dashboard views for US_ND
+        ExportMetricDatasetConfig(
+            dataset_id=PUBLIC_DASHBOARD_VIEWS_DATASET,
+            metric_view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+            state_code_filter='US_ND'
+        ),
+        # COVID Dashboard views (not state-specific)
+        ExportMetricDatasetConfig(
+            dataset_id=COVID_DASHBOARD_DATASET,
+            metric_view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
+            state_code_filter=None
+        ),
+    ] + [
+        # Dashboard views for all relevant states
+        ExportMetricDatasetConfig(
+            dataset_id=DASHBOARD_VIEWS_DATASET,
+            metric_view_builders_to_export=DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+            state_code_filter=state_code
+        )
+        for state_code in ['US_MO', 'US_ND', 'US_PA']
+    ]
