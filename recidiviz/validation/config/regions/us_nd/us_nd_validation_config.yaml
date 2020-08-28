@@ -1,0 +1,6 @@
+# Configuration for which validations to run for region US_ND.
+
+region_code: US_ND
+exclusions: []  # All validations will run for this region
+max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
+num_allowed_rows_overrides: []  # This region will use only the default num_allowed_rows values

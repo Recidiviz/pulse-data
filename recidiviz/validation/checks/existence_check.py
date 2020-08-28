@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import ValidationCheckType, \
     DataValidationCheck, DataValidationJob, DataValidationJobResult
+from recidiviz.validation.validation_config import ValidationRegionConfig
 
 
 @attr.s(frozen=True)
@@ -32,6 +33,15 @@ class ExistenceDataValidationCheck(DataValidationCheck):
     validation query."""
 
     validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.EXISTENCE)
+
+    num_allowed_rows: int = attr.ib(default=0)
+
+    def updated_for_region(self, region_config: ValidationRegionConfig) -> 'ExistenceDataValidationCheck':
+        num_allowed_rows_config = region_config.num_allowed_rows_overrides.get(self.validation_name, None)
+        num_allowed_rows = num_allowed_rows_config.num_allowed_rows_override \
+            if num_allowed_rows_config else self.num_allowed_rows
+
+        return attr.evolve(self, num_allowed_rows=num_allowed_rows)
 
 
 class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]):
@@ -45,8 +55,9 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
 
         # We need to iterate over the collection to initialize the query result set
         for _ in query_job:
-            was_successful = False
             invalid_rows += 1
+            if validation_job.validation.num_allowed_rows < invalid_rows:
+                was_successful = False
 
         description = f'Found {invalid_rows} invalid rows, though 0 were expected' if not was_successful else None
         return DataValidationJobResult(validation_job=validation_job,
