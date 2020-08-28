@@ -53,6 +53,52 @@ class TestSamenessValidationChecker(TestCase):
 
         return return_values
 
+    def test_samneness_check_no_comparison_columns(self):
+        with self.assertRaises(ValueError) as e:
+            _ = SamenessDataValidationCheck(
+                validation_type=ValidationCheckType.SAMENESS,
+                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                view=BigQueryView(dataset_id='my_dataset',
+                                  view_id='test_view',
+                                  view_query_template='select * from literally_anything')
+            )
+        self.assertEqual(str(e.exception), 'Found only [0] comparison columns, expected at least 2.')
+
+    def test_samneness_check_bad_max_error(self):
+        with self.assertRaises(ValueError) as e:
+            _ = SamenessDataValidationCheck(
+                validation_type=ValidationCheckType.SAMENESS,
+                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                comparison_columns=['a', 'b', 'c'],
+                view=BigQueryView(dataset_id='my_dataset',
+                                  view_id='test_view',
+                                  view_query_template='select * from literally_anything'),
+                max_allowed_error=1.5
+            )
+        self.assertEqual(str(e.exception), 'Allowed error value must be between 0.0 and 1.0. Found instead: [1.5]')
+
+    def test_samneness_check_validation_name(self):
+        check = SamenessDataValidationCheck(
+            validation_type=ValidationCheckType.SAMENESS,
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['a', 'b', 'c'],
+            view=BigQueryView(dataset_id='my_dataset',
+                              view_id='test_view',
+                              view_query_template='select * from literally_anything')
+        )
+        self.assertEqual(check.validation_name, 'test_view')
+
+        check_with_name_suffix = SamenessDataValidationCheck(
+            validation_type=ValidationCheckType.SAMENESS,
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            validation_name_suffix='b_c_only',
+            comparison_columns=['b', 'c'],
+            view=BigQueryView(dataset_id='my_dataset',
+                              view_id='test_view',
+                              view_query_template='select * from literally_anything')
+        )
+        self.assertEqual(check_with_name_suffix.validation_name, 'test_view_b_c_only')
+
     def test_sameness_check_same_values_numbers(self):
         self.mock_client.run_query_async.return_value = [{'a': 10, 'b': 10, 'c': 10}]
 
@@ -156,7 +202,7 @@ class TestSamenessValidationChecker(TestCase):
                              was_successful=False,
                              failure_description='2 row(s) had unacceptable margins of error. The acceptable margin '
                                                  'of error is only 0.02, but the validation returned rows with '
-                                                 'errors as high as 0.33.',
+                                                 'errors as high as 0.3333.',
                          ))
 
     def test_string_sameness_check_same_values(self):

@@ -28,7 +28,8 @@ from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GaeEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
-from recidiviz.validation.configured_validations import get_all_validations, get_state_codes_to_validate
+from recidiviz.validation.configured_validations import get_all_validations, get_validation_region_configs, \
+    get_validation_global_config
 from recidiviz.validation.validation_manager import validation_manager_blueprint, _fetch_validation_jobs_to_perform
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
 from recidiviz.calculator.query.county import view_config as county_view_config
@@ -228,8 +229,15 @@ class TestFetchValidations(TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.STAGING.value)
     def test_cross_product_states_and_checks_staging(self, _mock_get_environment):
         all_validations = get_all_validations()
-        all_states = get_state_codes_to_validate()
-        expected_length = len(all_validations) * len(all_states)
+        all_region_configs = get_validation_region_configs()
+        global_config = get_validation_global_config()
+        all_regions = all_region_configs.keys()
+
+        num_exclusions = \
+            sum([len(config.exclusions) for config in all_region_configs.values()]) + \
+            len(global_config.disabled) * len(all_regions)
+
+        expected_length = len(all_validations) * len(all_regions) - num_exclusions
 
         result = _fetch_validation_jobs_to_perform()
         self.assertEqual(expected_length, len(result))
@@ -237,18 +245,66 @@ class TestFetchValidations(TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.PRODUCTION.value)
     def test_cross_product_states_and_checks_production(self, _mock_get_environment):
         all_validations = get_all_validations()
-        state_codes_to_validate = get_state_codes_to_validate()
+        region_configs_to_validate = get_validation_region_configs()
+        global_config = get_validation_global_config()
+        state_codes_to_validate = region_configs_to_validate.keys()
 
         # When you promote a state to production, we will start running validations against that state - add it to this
         # list to confirm you've updated all relevant external data validation tables in production to include
         # validation data for the newly promoted region.
-        self.assertEqual(state_codes_to_validate, [
+        self.assertCountEqual(state_codes_to_validate, [
             'US_ID',
             'US_MO',
             'US_ND'
         ])
 
-        expected_length = len(all_validations) * len(state_codes_to_validate)
+        num_exclusions = \
+            sum([len(config.exclusions) for config in region_configs_to_validate.values()]) + \
+            len(global_config.disabled) * len(state_codes_to_validate)
+
+        expected_length = len(all_validations) * len(state_codes_to_validate) - num_exclusions
 
         result = _fetch_validation_jobs_to_perform()
         self.assertEqual(expected_length, len(result))
+
+    def test_all_validations_no_overlapping_names(self):
+        all_validations = get_all_validations()
+
+        all_names = set()
+        for validation in all_validations:
+            self.assertNotIn(validation.validation_name, all_names)
+            all_names.add(validation.validation_name)
+
+    def test_configs_all_reference_real_validations(self):
+        validation_names = {validation.validation_name for validation in get_all_validations()}
+        region_configs_to_validate = get_validation_region_configs()
+        global_config = get_validation_global_config()
+
+        global_disabled_names = {validation.validation_name for validation in global_config.disabled.values()}
+
+        global_names_not_in_validations_list = global_disabled_names.difference(validation_names)
+        self.assertEqual(set(), global_names_not_in_validations_list,
+                         f'Found views referenced in global config that do not exist in validations list: '
+                         f'{global_names_not_in_validations_list}')
+
+        for region_code, region_config in region_configs_to_validate.items():
+            region_validation_names = {exclusion.validation_name for exclusion in region_config.exclusions.values()}
+            region_validation_names.update(
+                {override.validation_name for override in region_config.max_allowed_error_overrides.values()}
+            )
+            region_validation_names.update(
+                {override.validation_name for override in region_config.num_allowed_rows_overrides.values()}
+            )
+            region_names_not_in_validations_list = region_validation_names.difference(validation_names)
+            self.assertEqual(set(), region_names_not_in_validations_list,
+                             f'Found views referenced in region [{region_code}] config that do not exist in validations'
+                             f' list: {global_names_not_in_validations_list}')
+
+    def test_all_views_referenced_by_validations_are_in_view_config(self):
+        view_in_config = [view_builder.build()
+                          for view_builder_list in validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.values()
+                          for view_builder in view_builder_list]
+        views_in_validations = {v.view for v in get_all_validations()}
+        validation_views_not_in_view_config = views_in_validations.difference(view_in_config)
+
+        self.assertEqual(set(), validation_views_not_in_view_config)

@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_models import ValidationCheckType, \
     DataValidationCheck, DataValidationJob, DataValidationJobResult
+from recidiviz.validation.validation_config import ValidationRegionConfig
 
 EMPTY_STRING_VALUE = 'EMPTY_STRING_VALUE'
 
@@ -44,15 +45,32 @@ class SamenessDataValidationCheck(DataValidationCheck):
     of columns are not the same."""
 
     # The list of columns whose values should be compared
-    comparison_columns: List[str] = attr.ib()
+    comparison_columns: List[str] = attr.ib(factory=list)
+    @comparison_columns.validator
+    def _check_comparison_columns(self, _attribute: attr.Attribute, value: List):
+        if len(value) < 2:
+            raise ValueError(f'Found only [{len(value)}] comparison columns, expected at least 2.')
 
     # The type of sameness check this is
-    sameness_check_type: SamenessDataValidationCheckType = attr.ib()
+    sameness_check_type: SamenessDataValidationCheckType = attr.ib(default=SamenessDataValidationCheckType.NUMBERS)
 
     # The acceptable margin of error across the range of compared values. Defaults to 0.0 (no difference allowed)
     max_allowed_error: float = attr.ib(default=0.0)
+    @max_allowed_error.validator
+    def _check_max_allowed_error(self, _attribute: attr.Attribute, value: float):
+        if not isinstance(value, float):
+            raise ValueError(f'Unexpected type [{type(value)}] for error value [{value}]')
+
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f'Allowed error value must be between 0.0 and 1.0. Found instead: [{value}]')
 
     validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.SAMENESS)
+
+    def updated_for_region(self, region_config: ValidationRegionConfig) -> 'SamenessDataValidationCheck':
+        max_allowed_error_config = region_config.max_allowed_error_overrides.get(self.validation_name, None)
+        max_allowed_error = max_allowed_error_config.max_allowed_error_override \
+            if max_allowed_error_config else self.max_allowed_error
+        return attr.evolve(self, max_allowed_error=max_allowed_error)
 
 
 class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
@@ -100,7 +118,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 was_successful = False
                 failed_rows.append(error)
 
-        highest_error = round(max(failed_rows), 2) if failed_rows else None
+        highest_error = round(max(failed_rows), 4) if failed_rows else None
 
         description = f'{len(failed_rows)} row(s) had unacceptable margins of error. The acceptable ' \
                       f'margin of error is only {max_allowed_error}, but the validation returned rows with errors ' \
