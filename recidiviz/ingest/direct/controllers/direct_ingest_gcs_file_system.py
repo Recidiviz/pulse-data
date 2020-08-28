@@ -543,7 +543,10 @@ class DirectIngestGCSFileSystemImpl(DirectIngestGCSFileSystem):
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
         if not blob:
-            raise ValueError(f'Blob at path [{path.abs_path()}] does not exist')
+            logging.info(
+                "File path [%s] no longer exists - might have already "
+                "been processed or deleted", path.abs_path())
+            return None
 
         temp_file_path = self.generate_random_temp_path()
 
