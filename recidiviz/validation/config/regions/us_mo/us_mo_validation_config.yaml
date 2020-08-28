@@ -1,6 +1,12 @@
 # Configuration for which validations to run for region US_MO.
 
 region_code: US_MO
-exclusions: []  # All validations will run for this region
+exclusions:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: MO has not provided us with person-level validation data for supervision level
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: MO has not provided us with person-level validation data for supervising officers
 max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
 num_allowed_rows_overrides: []  # This region will use only the default num_allowed_rows values
