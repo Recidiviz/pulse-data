@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Models representing data validation."""
-
+import abc
 from enum import Enum
 from typing import Optional, TypeVar, Generic
 
@@ -25,6 +25,7 @@ import attr
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.utils import metadata
+from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.views import dataset_config
 
 
@@ -42,6 +43,18 @@ class DataValidationCheck(BuildableAttr):
 
     # The type of validation to be performed for this type of check
     validation_type: ValidationCheckType = attr.ib()
+
+    # A suffix to add to the end of the view name to generate the validation_name.
+    validation_name_suffix: Optional[str] = attr.ib(default=None)
+
+    @property
+    def validation_name(self):
+        return self.view.view_id + (f'_{self.validation_name_suffix}' if self.validation_name_suffix else '')
+
+    @abc.abstractmethod
+    def updated_for_region(self, region_config: ValidationRegionConfig) -> 'DataValidationCheck':
+        """Returns a copy of this DataValidationCheck that has been modified appropriately based on the region config.
+        """
 
     def query_str_for_region_code(self, region_code: str) -> str:
         return "SELECT * FROM `{project_id}.{dataset}.{table}` " \
@@ -89,6 +102,7 @@ class DataValidationJobResult(BuildableAttr):
                f'\n\tvalidation[' \
                f'\n\t\tregion_code: {self.validation_job.region_code},' \
                f'\n\t\tcheck_type: {self.validation_job.validation.validation_type},' \
+               f'\n\t\tvalidation_name: {self.validation_job.validation.validation_name},' \
                f'\n\t\tview_id: {self.validation_job.validation.view.view_id},' \
                f'\n\t]' \
                f'\n]'

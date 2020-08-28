@@ -33,7 +33,8 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import get_bool_param_value
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
-from recidiviz.validation.configured_validations import get_all_validations, get_state_codes_to_validate
+from recidiviz.validation.configured_validations import get_all_validations, \
+    get_validation_region_configs, get_validation_global_config
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
 
 m_failed_to_run_validations = measure.MeasureInt(
@@ -95,7 +96,7 @@ def execute_validation(should_update_views: bool) -> List[DataValidationJobResul
                 result = future.result()
                 if not result.was_successful:
                     failed_validations.append(result)
-                logging.info('Finished job [%s] for region [%s]', job.validation.view.view_id, job.region_code)
+                logging.info('Finished job [%s] for region [%s]', job.validation.validation_name, job.region_code)
             except Exception as e:
                 logging.error('Failed to execute asynchronous query for validation job [%s] due to error: %s', job, e)
                 failed_to_run_validations.append(job)
@@ -119,11 +120,18 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 
 def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
     validation_checks = get_all_validations()
+    region_configs = get_validation_region_configs()
+    global_config = get_validation_global_config()
 
     validation_jobs: List[DataValidationJob] = []
     for check in validation_checks:
-        for state_code in get_state_codes_to_validate():
-            validation_jobs.append(DataValidationJob(validation=check, region_code=state_code))
+        if check.validation_name in global_config.disabled:
+            continue
+
+        for region_code in region_configs:
+            if check.validation_name not in region_configs[region_code].exclusions:
+                check = check.updated_for_region(region_configs[region_code])
+                validation_jobs.append(DataValidationJob(validation=check, region_code=region_code))
 
     return validation_jobs
 
@@ -134,7 +142,7 @@ def _emit_failures(failed_to_run_validations: List[DataValidationJob],
         return {
             monitoring.TagKey.REGION: job.region_code,
             monitoring.TagKey.VALIDATION_CHECK_TYPE: job.validation.validation_type,
-            monitoring.TagKey.VALIDATION_VIEW_ID: job.validation.view.view_id
+            monitoring.TagKey.VALIDATION_VIEW_ID: job.validation.validation_name
         }
 
     for validation_job in failed_to_run_validations:
@@ -158,7 +166,7 @@ def _readable_response(failed_validations: List[DataValidationJobResult]) -> str
 
 
 if __name__ == '__main__':
-    # This will run validations for all regions against data in the given project, regardless of whether the state is
+    # This will run validations for all regions against data in the given project, regardless of whether the region is
     # officially launched in that environment.
     project_id = GCP_PROJECT_STAGING
     logging.getLogger().setLevel(logging.INFO)
