@@ -31,6 +31,9 @@ REFERENCE_VIEWS_DATASET: str = 'reference_views'
 # Where the base tables for the state schema live
 STATE_BASE_DATASET: str = 'state'
 
+# Where the views for the COVID dashboard live
+COVID_DASHBOARD_DATASET: str = 'covid_public_data'
+
 # Where the views for the COVID report live
 COVID_REPORT_DATASET: str = 'covid_report_views'
 

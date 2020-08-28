@@ -21,7 +21,8 @@ import unittest
 from mock import patch
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 
@@ -40,16 +41,16 @@ class ViewExportConfigTest(unittest.TestCase):
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_VIEWS_TO_EXPORT_types(self):
-        """Make sure that all view_builders in DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT are of type
-        BigQueryViewBuilder, and that running view_builder.build() produces a BigQueryView."""
-        for _, state_exports in view_config.DATASETS_STATES_AND_VIEW_BUILDERS_TO_EXPORT.items():
-            for _, view_builders in state_exports.items():
-                for view_builder in view_builders:
-                    self.assertIsInstance(view_builder, BigQueryViewBuilder)
+    def test_METRIC_DATASET_EXPORT_CONFIGS_types(self):
+        """Make sure that all view_builders in the metric_view_builders_to_export attribute of
+        METRIC_DATASET_EXPORT_CONFIGS are of type MetricBigQueryViewBuilder, and that running view_builder.build()
+        produces a BigQueryView."""
+        for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
+            for view_builder in dataset_export_config.metric_view_builders_to_export:
+                self.assertIsInstance(view_builder, MetricBigQueryViewBuilder)
 
-                    view = view_builder.build()
-                    self.assertIsInstance(view, BigQueryView)
+                view = view_builder.build()
+                self.assertIsInstance(view, BigQueryView)
 
     def test_view_dataset_ids(self):
         for dataset_id, view_builders in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
