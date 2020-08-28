@@ -38,7 +38,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
-    GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
+    GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
     PostgresDirectIngestFileMetadataManager
 from recidiviz.persistence.database.base_schema import OperationsBase
@@ -589,6 +589,73 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
         self.validate_file_metadata(controller)
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
+    def test_process_job_task_run_twice(self):
+        # Cloud Tasks has an at-least once guarantee - make sure rerunning a task in series does not crash
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            self.FIXTURE_PATH_PREFIX,
+            run_async=False)
+        self.assertIsInstance(
+            controller.cloud_task_manager,
+            FakeSynchronousDirectIngestCloudTaskManager,
+            "Expected FakeSynchronousDirectIngestCloudTaskManager")
+        task_manager = controller.cloud_task_manager
+
+        dt = datetime.datetime.now()
+        file_path = \
+            path_for_fixture_file(controller, 'tagA.csv',
+                                  file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                                  should_normalize=True,
+                                  dt=dt)
+
+        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeDirectIngestGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs)}]")
+
+        controller.fs.test_add_path(file_path)
+        parts = filename_parts_from_path(file_path)
+        metadata = controller.file_metadata_manager.register_ingest_file_export_job(GcsfsIngestViewExportArgs(
+            ingest_view_name=parts.file_tag,
+            upper_bound_datetime_prev=None,
+            upper_bound_datetime_to_export=dt
+        ))
+        controller.file_metadata_manager.register_ingest_view_export_file_name(metadata, file_path)
+
+        # At this point we have a series of tasks handling / renaming /
+        # splitting the new files, then scheduling the next job. They run in
+        # quick succession.
+        while task_manager.scheduler_tasks:
+            task_manager.test_run_next_scheduler_task()
+            task_manager.test_pop_finished_scheduler_task()
+
+        # Process job tasks starts as a result of the first schedule.
+        task_manager.test_run_next_process_job_task()
+
+        task = task_manager.test_pop_finished_process_job_task()
+
+        task_manager.create_direct_ingest_process_job_task(*task)
+
+        # Now run the repeated task
+        task_manager.test_run_next_process_job_task()
+        task_manager.test_pop_finished_process_job_task()
+
+        while task_manager.scheduler_tasks:
+            task_manager.test_run_next_scheduler_task()
+            task_manager.test_pop_finished_scheduler_task()
+
+        self.assertEqual(
+            0,
+            task_manager.get_scheduler_queue_info(controller.region).size())
+        self.assertEqual(
+            0,
+            task_manager.get_process_job_queue_info(controller.region).size())
+        self.validate_file_metadata(controller,
+                                    expected_raw_metadata_tags_with_is_processed=[],
+                                    expected_ingest_metadata_tags_with_is_processed=[('tagA', True)])
+
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_schedule_more_than_one_delayed_scheduler_job(self):
