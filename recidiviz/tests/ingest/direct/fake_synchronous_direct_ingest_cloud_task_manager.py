@@ -204,13 +204,14 @@ class FakeSynchronousDirectIngestCloudTaskManager(
                 raise ValueError(f'Unexpected task id [{task_id}]')
         self.num_finished_bq_import_export_tasks += 1
 
-    def test_pop_finished_process_job_task(self) -> None:
+    def test_pop_finished_process_job_task(self) -> Tuple[str, IngestArgs]:
         """Removes most recently run process job task from the queue."""
         if self.num_finished_process_job_tasks == 0:
             raise ValueError("No finished tasks to pop.")
 
-        self.process_job_tasks.pop(0)
+        task = self.process_job_tasks.pop(0)
         self.num_finished_process_job_tasks -= 1
+        return task
 
     def test_pop_finished_scheduler_task(self) -> None:
         """Removes most recently run scheduler task from the queue."""
