@@ -72,8 +72,6 @@ from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison
     REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import \
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
-from recidiviz.validation.views.state.supervision_eom_population_person_level_district_external_comparison import \
-    SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import \
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 # pylint: disable=line-too-long
@@ -165,11 +163,6 @@ def get_all_validations() -> List[DataValidationCheck]:
                                     max_allowed_error=0.03),
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
                                     comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum']),
-        SamenessDataValidationCheck(
-            view=SUPERVISION_EOM_POPULATION_PERSON_LEVEL_DISTRICT_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-            comparison_columns=['external_district', 'internal_district'],
-            max_allowed_error=0.01),
         SamenessDataValidationCheck(
             view=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
             comparison_columns=['dashboard_revocation_count', 'public_dashboard_revocation_count']
