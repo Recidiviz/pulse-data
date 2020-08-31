@@ -50,6 +50,10 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_inter
 # pylint: disable=line-too-long
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import \
+    INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import \
+    INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_reason_no_release_date import \
@@ -152,8 +156,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(view=FTR_REFERRALS_COMPARISON_VIEW_BUILDER.build(),
                                     comparison_columns=['age_bucket_sum', 'risk_level_sum', 'gender_sum', 'race_sum'],
                                     max_allowed_error=0.06),
-        SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
-                                    comparison_columns=['external_population_count', 'internal_population_count']),
         SamenessDataValidationCheck(view=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build(),
                                     comparison_columns=PO_REPORT_COMPARISON_COLUMNS),
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER.build(),
@@ -250,6 +252,21 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
             comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum']
         ),
+
+        # External comparison validations
+        SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+                                    comparison_columns=['external_population_count', 'internal_population_count']),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_person_external_id', 'internal_person_external_id'],
+            max_allowed_error=0.02),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
+            validation_name_suffix='facility',
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_facility', 'internal_facility'],
+            max_allowed_error=0.02),
         SamenessDataValidationCheck(
             view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
