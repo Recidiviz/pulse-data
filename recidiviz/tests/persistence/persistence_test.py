@@ -1001,7 +1001,8 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
         self.isolation_level_patcher = patch(
             'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
-            return_value='SERIALIZABLE')
+            # TODO(#3622): Set to 'SERIALIZABLE'
+            return_value='REPEATABLE READ')
         self.isolation_level_patcher.start()
         fakes.use_on_disk_postgresql_database(StateBase)
 
