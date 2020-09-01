@@ -39,8 +39,6 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         start_date, termination_date, termination_reason,
         EXTRACT(YEAR FROM termination_date) AS year,
         EXTRACT(MONTH FROM termination_date) AS month,
-        COALESCE(SPLIT(supervision_site, '|')[OFFSET(0)],
-                 agent.district_external_id) AS district,
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
       FROM `{project_id}.{state_dataset}.state_supervision_period`
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
@@ -72,26 +70,15 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         AND (p2.termination_reason NOT IN ('DISCHARGE', 'EXPIRATION')
             OR DATE_TRUNC(p2.termination_date, MONTH) != DATE_TRUNC(p1.termination_date, MONTH))
     ),
-    officers_with_supervision AS (
-      -- Get all officers with supervision caseloads each month
-      SELECT DISTINCT
-        state_code, year, month,
-        SPLIT(district, '|')[OFFSET(0)] AS district,
-        officer_external_id
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
-      WHERE district != 'ALL'
-        -- Only the following supervision types should be included in the PO report
-        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
-    ),
     discharges_per_officer AS (
       -- Count the discharges per officer, excluding any non-eligible discharges
       SELECT
-        state_code, year, month,
-        officer_external_id, district,
+        state_code, year, month, district,
+        officer_external_id,
         COUNT(DISTINCT person_id) AS discharge_count
-      FROM officers_with_supervision
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
       LEFT JOIN supervision_discharges
-        USING (state_code, year, month, officer_external_id, district)
+        USING (state_code, year, month, officer_external_id)
       LEFT JOIN overlapping_open_period USING (supervision_period_id)
       -- Do not count any discharges that are overlapping with another open supervision period
       WHERE overlapping_open_period.supervision_period_id IS NULL
@@ -135,6 +122,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuil
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='district'),
+    po_report_dataset=dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':
