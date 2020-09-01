@@ -35,45 +35,33 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     WITH revocations AS (
       SELECT
         state_code, year, month, person_id,
-        SPLIT(supervising_district_external_id, '|')[OFFSET(0)] AS district,
         supervising_officer_external_id AS officer_external_id,
         most_severe_violation_type
       FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
         USING (state_code, job_id, year, month, metric_period_months, metric_type)
-    WHERE methodology = 'PERSON'
-        AND metric_period_months = 1
+      WHERE methodology = 'PERSON'
+       AND metric_period_months = 1
         AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     ),
     revocations_per_officer AS (
       SELECT
         state_code, year, month,
-        officer_external_id, district,
+        officer_external_id,
         COUNT(DISTINCT IF(most_severe_violation_type IN ('FELONY', 'MISDEMEANOR'), person_id, NULL)) AS crime_revocations,
         COUNT(DISTINCT IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_revocations
       FROM revocations
-      GROUP BY state_code, year, month, district, officer_external_id
-    ),
-    officers_with_supervision AS (
-      -- Get all officers with supervision caseloads each month
-      SELECT DISTINCT
-        state_code, year, month,
-        SPLIT(district, '|')[OFFSET(0)] AS district,
-        officer_external_id
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
-      WHERE district != 'ALL'
-        -- Only the following supervision types should be included in the PO report
-        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      GROUP BY state_code, year, month, officer_external_id
     )
     SELECT
       state_code, year, month,
       officer_external_id, district,
       IFNULL(revocations_per_officer.crime_revocations, 0) AS crime_revocations,
       IFNULL(revocations_per_officer.technical_revocations, 0) AS technical_revocations
-    FROM officers_with_supervision
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
     LEFT JOIN revocations_per_officer
-      USING (state_code, year, month, district, officer_external_id)
+      USING (state_code, year, month, officer_external_id)
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
@@ -84,6 +72,7 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REVOCATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    po_report_dataset=dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':
