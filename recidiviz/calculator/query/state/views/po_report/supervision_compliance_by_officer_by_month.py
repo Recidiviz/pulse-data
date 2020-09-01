@@ -31,33 +31,35 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION = """
 SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH frequencies AS ( 
     SELECT
-      *,
-      IEEE_DIVIDE(assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
-      IEEE_DIVIDE(facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
-    FROM
-      (SELECT
         state_code,
         year,
         month,
-        SPLIT(supervising_district_external_id, '|')[OFFSET(0)] AS district,
         supervising_officer_external_id AS officer_external_id,
         SUM(assessment_count) AS assessments,
         COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
         COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
         SUM(face_to_face_count) AS facetoface,
-        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) as facetoface_frequencies_sufficient,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient,
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) 
             AS facetoface_compliance_caseload_count
       FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
+      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
         USING (state_code, job_id, year, month, metric_period_months, metric_type)
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND metric_period_months = 0
         AND date_of_evaluation = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
-      GROUP BY state_code, year, month, district, officer_external_id)
+      GROUP BY state_code, year, month, officer_external_id)
+    SELECT
+      *,
+      IEEE_DIVIDE(assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
+      IEEE_DIVIDE(facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association` 
+      LEFT JOIN frequencies
+        USING (state_code, month, officer_external_id, year)
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
@@ -68,6 +70,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    po_report_dataset=dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':

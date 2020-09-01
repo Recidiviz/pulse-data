@@ -41,8 +41,6 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         EXTRACT(YEAR FROM request_date) AS year,
         EXTRACT(MONTH FROM request_date) AS month,
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
-        COALESCE(SPLIT(supervision_site, '|')[OFFSET(0)],
-                 agent.district_external_id) AS district,
         COUNT(DISTINCT person_id) AS earned_discharges
       FROM `{project_id}.{state_dataset}.state_early_discharge` discharge
       JOIN `{project_id}.{state_dataset}.state_supervision_period` period
@@ -54,18 +52,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         AND discharge.request_date < COALESCE(period.termination_date, '9999-12-31')
         -- Only the following supervision types should be included in the PO report
         AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
-      GROUP BY state_code, year, month, officer_external_id, district
-    ),
-    officers_with_supervision AS (
-      -- Get all officers with supervision caseloads each month
-      SELECT DISTINCT
-        state_code, year, month,
-        officer_external_id,
-        SPLIT(district, '|')[OFFSET(0)] AS district
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
-      WHERE district != 'ALL'
-        -- Only the following supervision types should be included in the PO report
-        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      GROUP BY state_code, year, month, officer_external_id
     ),
     avg_requests_by_district_state AS (
       -- Get the average monthly discharges by district and state
@@ -73,9 +60,9 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         district,
         AVG(IFNULL(earned_discharges, 0)) AS avg_earned_discharges
-      FROM officers_with_supervision
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
       LEFT JOIN requests_per_officer
-        USING (state_code, year, month, officer_external_id, district),
+        USING (state_code, year, month, officer_external_id),
       {district_dimension}
       GROUP BY state_code, year, month, district
     )
@@ -85,9 +72,9 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       IFNULL(requests_per_officer.earned_discharges, 0) AS earned_discharges,
       district_avg.avg_earned_discharges AS earned_discharges_district_average,
       state_avg.avg_earned_discharges AS earned_discharges_state_average
-    FROM officers_with_supervision
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
     LEFT JOIN requests_per_officer
-      USING (state_code, year, month, officer_external_id, district)
+      USING (state_code, year, month, officer_external_id)
     LEFT JOIN (
       SELECT * FROM avg_requests_by_district_state
       WHERE district != 'ALL'
@@ -109,6 +96,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBi
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     district_dimension=bq_utils.unnest_district(district_column='district'),
+    po_report_dataset=dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':
