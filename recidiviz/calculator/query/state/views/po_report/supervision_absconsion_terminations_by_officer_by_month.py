@@ -37,8 +37,6 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code,
         EXTRACT(YEAR FROM termination_date) AS year,
         EXTRACT(MONTH FROM termination_date) AS month,
-        COALESCE(SPLIT(supervision_period.supervision_site, '|')[OFFSET(0)],
-                 agent.district_external_id) AS district,
         agent.agent_external_id AS officer_external_id,
         COUNT(DISTINCT person_id) AS absconsion_count
       FROM `{project_id}.{state_dataset}.state_supervision_period` supervision_period
@@ -49,26 +47,15 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
         -- Only the following supervision types should be included in the PO report
         AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
-      GROUP BY state_code, year, month, district, officer_external_id
-    ),
-    officers_with_supervision AS (
-      -- Get all officers with supervision caseloads per month
-      SELECT DISTINCT
-        state_code, year, month,
-        SPLIT(district, '|')[OFFSET(0)] AS district,
-        officer_external_id
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
-      WHERE district != 'ALL'
-        -- Only the following supervision types should be included in the PO report
-        AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+      GROUP BY state_code, year, month, officer_external_id
     )
     SELECT
       state_code, year, month,
       officer_external_id, district,
       IFNULL(absconsions_per_officer.absconsion_count, 0) AS absconsions
-    FROM officers_with_supervision
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
     LEFT JOIN absconsions_per_officer
-      USING (state_code, year, month, district, officer_external_id)
+      USING (state_code, year, month, officer_external_id)
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
@@ -79,6 +66,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBig
     description=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
+    po_report_dataset=dataset_config.PO_REPORT_DATASET
 )
 
 if __name__ == '__main__':
