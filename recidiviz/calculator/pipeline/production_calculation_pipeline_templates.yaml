@@ -51,3 +51,31 @@
   calculation_end_month: 2019-12
   calculation_month_count: 1
   metric_types: INCARCERATION_POPULATION
+
+# Daily US_ID supervision calculations for the COVID and PO reports
+- pipeline: supervision
+  job_name: us-id-supervision-calculations-24
+  state_code: US_ID
+  calculation_month_count: 24
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_COMPLIANCE
+
+# Daily US_ID incarceration calculations for the COVID report
+- pipeline: incarceration
+  job_name: us-id-incarceration-calculations-24
+  state_code: US_ID
+  calculation_month_count: 24
+
+# Daily US_PA calculations for the dashboard
+- pipeline: supervision
+  job_name: us-pa-supervision-calculations-36
+  state_code: US_PA
+  calculation_month_count: 36
+  metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS SUPERVISION_TERMINATION
+
+# Daily US_PA calculations for automated data validation not covered by daily calculation runs
+- pipeline: incarceration
+  job_name: us-pa-incarceration-validation-calculations
+  state_code: US_PA
+  calculation_end_month: 2020-05
+  calculation_month_count: 6
+  metric_types: INCARCERATION_POPULATION
