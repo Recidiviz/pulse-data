@@ -1,34 +1,33 @@
-source travis/base.sh
+#!/usr/bin/env bash
+source recidiviz/tools/script_base.sh
 
-# Setup git
-git config user.email "helperbot@recidiviz.com" 2>&1 | ind
-git config user.name "Helper Bot" 2>&1 | ind
-echo "https://helperbot-recidiviz:${GH_TOKEN}@github.com" > .git/credentials 2>&1 | ind
+echo "Setting up helperbot@recidiviz.com as git user"
+run_cmd git config user.email "helperbot@recidiviz.com"
+run_cmd git config user.name "Helper Bot"
 
-# Pull the copybara image
-docker pull sharelatex/copybara:2019-08.01 2>&1 | ind
+echo "Saving helperbot git credentials"
+run_cmd echo "https://helperbot-recidiviz:${GH_TOKEN}@github.com" > .git/credentials
 
-# Run copybara
-#
+echo "Pulling the copybara image"
+run_cmd docker pull sharelatex/copybara:2019-08.01
+
+echo "Running copybara"
+
 # Note: Copybara returns exit code 4 if the command was a no-op. This will
 # happen if the change only modified files that are excluded from the public
-# mirror. In this case we still want the script to pass, so we capture the exit
-# code and only exit if it is not 0 or 4.
-set +e
-docker run -e COPYBARA_CONFIG='mirror/copy.bara.sky' \
+# mirror. In this case we still want the script to pass, so we modify the set
+# of exit codes `run_cmd` will allow, so we only exit if it is not 0 or 4.
+ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
+ACCEPTABLE_RETURN_CODES=(0 4)
+run_cmd docker run -e COPYBARA_CONFIG='mirror/copy.bara.sky' \
            -e COPYBARA_WORKFLOW='exportSourceToPublic' \
            -v "$(pwd)/.git/config":/root/.gitconfig \
            -v "$(pwd)/.git/credentials":/root/.git-credentials \
            -v "$(pwd)":/usr/src/app \
-           -it sharelatex/copybara:2019-08.01 copybara 2>&1 | ind
-code=$? 
-if [ "$code" -ne 0 -a "$code" -ne 4 ];
-then
-   exit $code
-fi;
-set -e
+           -it sharelatex/copybara:2019-08.01 copybara
+ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
 
-# Cleanup git
-git config --unset user.email 2>&1 | ind
-git config --unset user.name 2>&1 | ind
-rm .git/credentials 2>&1 | ind
+echo "Cleaning up git state so helperbot is no longer the credentialed user"
+run_cmd git config --unset user.email
+run_cmd git config --unset user.name
+run_cmd rm .git/credentials
