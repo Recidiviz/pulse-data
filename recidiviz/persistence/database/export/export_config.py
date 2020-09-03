@@ -53,7 +53,7 @@ COUNTY_TABLES_TO_EXPORT = tuple(
 
 # Mapping from table name to a list of columns to be excluded for that table.
 COUNTY_COLUMNS_TO_EXCLUDE = {
-    'person': ['full_name', 'birthdate', 'birthdate_inferred_from_age']
+    'person': ['full_name', 'birthdate_inferred_from_age']
 }
 
 ######### STATE EXPORT VALUES #########
