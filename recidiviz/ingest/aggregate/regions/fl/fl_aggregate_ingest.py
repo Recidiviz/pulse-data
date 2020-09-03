@@ -20,6 +20,7 @@ import locale
 from typing import Dict, Optional
 
 import pandas as pd
+import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -27,7 +28,6 @@ from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
 from recidiviz.common import str_field_utils
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
@@ -62,17 +62,15 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     return result
 
 
-def _parse_county_table(location: str, filename: str) -> pd.DataFrame:
+def _parse_county_table(_: str, filename: str) -> pd.DataFrame:
     """Parses the FL County - Table 1 in the PDF."""
-    part1 = read_pdf(
-        location,
+    part1 = tabula.read_pdf(
         filename,
         pages=[3],
         pandas_options={
             'header': [0, 1],
         })
-    part2 = read_pdf(
-        location,
+    part2 = tabula.read_pdf(
         filename,
         pages=[4],
         pandas_options={
@@ -101,7 +99,7 @@ def _parse_county_table(location: str, filename: str) -> pd.DataFrame:
     return result
 
 
-def _parse_facility_table(location: str, filename: str) -> pd.DataFrame:
+def _parse_facility_table(_: str, filename: str) -> pd.DataFrame:
     """Parse the FL County Pretrial Inmate Report - Table 2 in the PDF."""
     # Set column names directly since the pdf format makes them hard to parse
     column_names = [
@@ -111,16 +109,14 @@ def _parse_facility_table(location: str, filename: str) -> pd.DataFrame:
         'Number Misdemeanor Pretrial',
         'Total Percent Pretrial']
 
-    part1 = read_pdf(
-        location,
+    part1 = tabula.read_pdf(
         filename,
         pages=[5],
         pandas_options={
             'skiprows': [0, 1, 2],
             'names': column_names,
         })
-    part2 = read_pdf(
-        location,
+    part2 = tabula.read_pdf(
         filename,
         pages=[6],
         pandas_options={
