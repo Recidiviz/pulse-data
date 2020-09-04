@@ -96,7 +96,7 @@ class MetricViewExportManagerTest(unittest.TestCase):
         view_export_configs = [ExportMetricBigQueryViewConfig(
             view=view,
             view_filter_clause=" WHERE state_code = 'US_XX'",
-            intermediate_table_name=f"{view.export_view_name}_table_US_XX",
+            intermediate_table_name=f"{view.view_id}_table_US_XX",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
                     project_id=self.mock_project_id,
@@ -136,7 +136,7 @@ class MetricViewExportManagerTest(unittest.TestCase):
         view_export_configs = [ExportMetricBigQueryViewConfig(
             view=view,
             view_filter_clause=None,
-            intermediate_table_name=f"{view.export_view_name}_table",
+            intermediate_table_name=f"{view.view_id}_table",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 "gs://{project_id}-bucket-without-state-codes".format(
                     project_id=self.mock_project_id,

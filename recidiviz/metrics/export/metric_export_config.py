@@ -65,7 +65,7 @@ class ExportMetricDatasetConfig:
                 view=view,
                 view_filter_clause=view_filter_clause,
                 intermediate_table_name=intermediate_table_name.format(
-                    export_view_name=view.export_view_name
+                    export_view_name=view.view_id
                 ),
                 output_directory=GcsfsDirectoryPath.from_absolute_path(output_directory),
             )
