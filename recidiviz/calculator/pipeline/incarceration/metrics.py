@@ -119,6 +119,10 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
+    # TODO(3275): Rename to purpose_for_incarceration
+    # Specialized purpose for incarceration
+    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['IncarcerationPopulationMetric']:
