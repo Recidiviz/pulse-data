@@ -122,6 +122,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -257,6 +258,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
@@ -267,6 +269,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -307,6 +310,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 most_serious_offense_statute=_STATUTE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
@@ -315,7 +319,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 admission_reason_raw_text='PAROLE_REVOCATION',
-
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -353,19 +357,22 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2010, 3, 31),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 4, 30),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 5, 31),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -405,19 +412,22 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='CA',
                 event_date=date(2010, 3, 13),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 14),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
                 event_date=date(2010, 3, 15),
                 facility='FACILITY 33',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -457,19 +467,22 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 state_code='US_ND',
                 event_date=date(2019, 11, 30),
                 facility='JRCC',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='US_ND',
                 event_date=date(2019, 11, 30),
                 facility='JRCC',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='US_ND',
                 event_date=date(2019, 11, 30),
                 facility='JRCC',
-                county_of_residence=_COUNTY_OF_RESIDENCE
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -942,7 +955,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
@@ -950,7 +964,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationStayEvent(
                 state_code='CA',
@@ -958,7 +973,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                 facility='FACILITY 33',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
-                most_serious_offense_statute=_STATUTE
+                most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ]
 
@@ -1041,7 +1057,8 @@ class TestCharacteristicsDict(unittest.TestCase):
             event_date=date(2018, 9, 13),
             facility='SAN QUENTIN',
             county_of_residence=_COUNTY_OF_RESIDENCE,
-            judicial_district_code='NORTHEAST'
+            judicial_district_code='NORTHEAST',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         )
 
         characteristic_dict = calculator.characteristics_dict(person,
@@ -1058,6 +1075,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'person_id': 12345,
             'date_of_stay': date(2018, 9, 13),
             'judicial_district_code': 'NORTHEAST',
+            'specialized_purpose_for_incarceration': StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
         }
 
         self.assertEqual(expected_output, characteristic_dict)
@@ -1131,6 +1149,7 @@ class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -1182,6 +1201,7 @@ class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -1215,6 +1235,7 @@ class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ], matching_events)
 
@@ -1234,6 +1255,7 @@ class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             ),
             IncarcerationAdmissionEvent(
                 state_code='CA',
@@ -1267,6 +1289,7 @@ class TestMatchingEventsForPersonBasedCount(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code=_NCIC_CODE,
                 most_serious_offense_statute=_STATUTE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
             )
         ], matching_events)
 
