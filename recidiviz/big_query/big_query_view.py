@@ -81,11 +81,6 @@ class BigQueryView(bigquery.TableReference):
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
         return self.view_id + '_materialized' if self._should_materialize else None
 
-    @property
-    def export_view_name(self):
-        """The table or view id that should be used in exported file representations of this view."""
-        return self.view_id if self.materialized_view_table_id is None else self.materialized_view_table_id
-
     def __repr__(self):
         return f'{self.__class__.__name__}(' \
             f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \

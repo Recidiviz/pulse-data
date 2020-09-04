@@ -87,7 +87,7 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     view_filter_clause: Optional[str] = attr.ib(default=None)
 
     def output_path(self, extension: str) -> GcsfsFilePath:
-        file_name = f'{self.view.export_view_name}.{extension}'
+        file_name = f'{self.view.view_id}.{extension}'
         return GcsfsFilePath.from_directory_and_file_name(self.output_directory, file_name)
 
     @property

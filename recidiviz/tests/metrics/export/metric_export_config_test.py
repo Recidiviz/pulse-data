@@ -67,7 +67,7 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         expected_view_export_configs = [ExportMetricBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=None,
-            intermediate_table_name=f"{expected_view.export_view_name}_table",
+            intermediate_table_name=f"{expected_view.view_id}_table",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 state_agnostic_dataset_export_config.output_directory_uri_template.format(
                     project_id=self.mock_project_id,
@@ -96,7 +96,7 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         expected_view_export_configs = [ExportMetricBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=" WHERE state_code = 'US_XX'",
-            intermediate_table_name=f"{expected_view.export_view_name}_table_US_XX",
+            intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 f"gs://{self.mock_project_id}-bucket/US_XX"
             )
