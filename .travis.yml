@@ -52,9 +52,10 @@ after_success:
   - coveralls
 
 deploy:
+  # TODO(4006): Fix export commits and uncomment.
   # Copy commit to public repo
-  - provider: script
-    script: bash travis/export_commits.sh
+  # - provider: script
+  #   script: bash travis/export_commits.sh
 
   # Deploy full application to staging
   - provider: script
