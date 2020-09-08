@@ -25,36 +25,29 @@ one of its dependencies) have been deleted and causes our program to crash durin
 Instead, we modify SearchEngine to not manage its SQLAlchemy session lifetime and instead manage it ourself using a
 contextmanager.
 """
-
+import os
+import shutil
 from contextlib import contextmanager
 import logging
 from typing import Tuple
 
-import requests
 from sqlalchemy.orm.session import sessionmaker
 from uszipcode import SearchEngine
 import uszipcode.db
 import uszipcode.search
 
-# uszipcode can accidentally skip chunks when downloading files, reimplement it.
+# Do not download the zipcode database file for normal operations - use saved file instead.
+# TODO(XXXX): Build mechanism for refreshing this file
+
 def download_simple_db_file(db_file_dir):
-    logging.info('Download simple zipcode file safely')
-    simple_db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
+    logging.info("Copying saved zipcodes DB file to library database")
 
-    if not uszipcode.db.is_simple_db_file_exists(db_file_dir):
-        logging.info("Start downloading data for simple zipcode database, total size 9MB ...")
-        with requests.get(simple_db_file_download_url, stream=True) as r:
-            r.raise_for_status()
+    with open(os.path.join(os.path.dirname(__file__), 'zip_code_simple_db.sqlite'), 'rb') as f_source:
+        with uszipcode.db.atomic_write(uszipcode.db.get_simple_db_file_path(db_file_dir).abspath,
+                                       mode="wb", overwrite=True) as f_dest:
+            shutil.copyfileobj(f_source, f_dest)
 
-            chunk_size = 1 * 1024 ** 2  # 1 MB
-            downloaded = 0
-            with uszipcode.db.atomic_write(uszipcode.db.get_simple_db_file_path(db_file_dir).abspath,
-                                           mode="wb", overwrite=True) as f:
-                for chunk in r.iter_content(chunk_size):
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    logging.info("%.1f MB finished ...", downloaded / chunk_size)
-        logging.info("Complete!")
+    logging.info("Complete!")
 
 # Override the prior implementation
 uszipcode.search.download_simple_db_file = download_simple_db_file
