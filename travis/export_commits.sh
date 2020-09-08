@@ -8,7 +8,7 @@ run_cmd git config user.email "helperbot@recidiviz.com"
 run_cmd git config user.name "Helper Bot"
 
 echo "Saving helperbot git credentials"
-run_cmd echo "https://helperbot-recidiviz:${GH_TOKEN}@github.com" > .git/credentials
+run_cmd `echo "https://helperbot-recidiviz:${GH_TOKEN}@github.com" > .git/credentials`
 
 echo "Pulling the copybara image"
 run_cmd docker pull sharelatex/copybara:2019-08.01
