@@ -50,3 +50,10 @@ class TestDeployYamls(unittest.TestCase):
             file_contents = yaml.full_load(ymlfile)
 
         self.assertTrue(file_contents)
+
+    def test_travis_yaml_parses(self):
+        cron_file_path = self.path_for_build_file('.travis.yml')
+        with open(cron_file_path, 'r') as ymlfile:
+            file_contents = yaml.full_load(ymlfile)
+
+        self.assertTrue(file_contents)
