@@ -1695,6 +1695,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 successful_completion=True,
                 incarcerated_during_sentence=True,
                 judicial_district_code=judicial_district_code,
@@ -1726,7 +1728,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_reason=supervision_period.termination_reason,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
-            judicial_district_code=judicial_district_code
+            judicial_district_code=judicial_district_code,
+            supervision_level=supervision_period.supervision_level,
+            supervision_level_raw_text=supervision_period.supervision_level_raw_text,
         ))
 
         correct_output = [
@@ -1897,6 +1901,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
@@ -2104,6 +2110,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
@@ -2250,7 +2258,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend([
             SupervisionTerminationBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
@@ -2258,7 +2266,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
+                supervising_district_external_id='10',
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text
             )
         ])
 
@@ -2370,7 +2380,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend([
             SupervisionTerminationBucket(
-                supervision_period.state_code,
+                state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
@@ -2378,7 +2388,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
-                supervising_district_external_id='10'
+                supervising_district_external_id='10',
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text
             )
         ])
 
