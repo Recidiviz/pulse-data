@@ -540,6 +540,8 @@ def find_supervision_termination_bucket(
             month=termination_date.month,
             supervision_type=supervision_type,
             case_type=case_type,
+            supervision_level=supervision_period.supervision_level,
+            supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             assessment_score=end_assessment_score,
             assessment_level=end_assessment_level,
             assessment_type=end_assessment_type,
@@ -970,6 +972,8 @@ def find_revocation_return_buckets(
                     bucket_date=admission_date,
                     supervision_type=pre_revocation_supervision_type,
                     case_type=case_type,
+                    supervision_level=None,
+                    supervision_level_raw_text=None,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
                     assessment_type=assessment_type,
@@ -986,7 +990,8 @@ def find_revocation_return_buckets(
                     # Note: This is incorrect in the case where you are revoked, then released by the end of the
                     #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
                     #  non-existent since we don't count temporary / board hold periods as revocations.
-                    is_on_supervision_last_day_of_month=False
+                    is_on_supervision_last_day_of_month=False,
+                    judicial_district_code=None
                 )
 
                 revocation_return_buckets.append(revocation_month_bucket)
@@ -1095,6 +1100,8 @@ def _get_projected_completion_bucket(
         month=projected_completion_date.month,
         bucket_date=last_day_of_projected_month,
         supervision_type=supervision_type,
+        supervision_level=supervision_period.supervision_level,
+        supervision_level_raw_text=supervision_period.supervision_level_raw_text,
         case_type=case_type,
         successful_completion=supervision_success,
         incarcerated_during_sentence=incarcerated_during_sentence,
