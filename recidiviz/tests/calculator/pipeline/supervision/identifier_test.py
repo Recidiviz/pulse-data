@@ -186,6 +186,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 sentence_days_served=(
                     supervision_sentence.completion_date - supervision_sentence.start_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 successful_completion=True,
                 incarcerated_during_sentence=False,
             ),
@@ -195,6 +197,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason
             )
@@ -852,6 +856,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
@@ -961,6 +967,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
@@ -1074,6 +1081,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="Officer1",
                 supervising_district_external_id="X",
                 supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
@@ -1086,6 +1094,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="Officer1",
                 supervising_district_external_id="X",
                 case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason)]
 
         expected_time_buckets.extend(expected_non_revocation_return_time_buckets(
@@ -1209,6 +1219,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
@@ -1435,6 +1446,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
@@ -1575,6 +1587,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason)]
 
@@ -3113,6 +3126,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervising_district_external_id='DISTRICT_1',
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason
@@ -3512,6 +3527,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 month=supervision_period.termination_date.month,
                 bucket_date=supervision_period.termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+                supervision_level=supervision_period.supervision_level,
                 termination_reason=supervision_period.termination_reason
             ),
         ]

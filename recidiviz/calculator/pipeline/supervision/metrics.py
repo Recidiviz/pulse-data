@@ -79,6 +79,12 @@ class SupervisionMetric(RecidivizMetric):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # Level of supervision
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    # Raw text of the level of supervision
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+
     # TODO(3885): Add a custodial_authority field to this metric, then update BQ views to pass through to dashboard
     # for new custodial authority dropdown feature.
 
@@ -135,12 +141,6 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
     date_of_supervision: date = attr.ib(default=None)
 
     # Optional characteristics
-
-    # Level of supervision
-    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
-
-    # Raw text of the level of supervision
-    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
     # TODO(3600): This field should be removed because the daily output makes this unnecessary
     # For person-level metrics only, indicates whether this person was on supervision at the end of the month
