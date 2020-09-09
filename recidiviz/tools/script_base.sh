@@ -104,7 +104,7 @@ function safe_git_checkout_branch {
 function check_for_tags_at_branch_tip {
     BRANCH=$1
     ALLOW_ALPHA=${2-}  # Optional argument
-    if [[ -z ${ALLOW_ALPHA} ]]; then
+    if [[ ! -z ${ALLOW_ALPHA} ]]; then
         TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at ${BRANCH} | grep -v alpha || echo "") || exit_on_fail
     else
         TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at ${BRANCH}) || exit_on_fail
