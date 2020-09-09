@@ -51,17 +51,11 @@ script:
 after_success:
   - coveralls
 
+# These steps only run if all the steps in `script` pass
 deploy:
   #   Copy commit to public repo
   - provider: script
     script: bash travis/export_commits.sh
-
-  # Deploy full application to staging
-  - provider: script
-    script: bash travis/deploy_staging.sh
-    on:
-      tags: true
-      condition: $TRAVIS_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+
 
 # Reduce the workload on travis by only whitelisting 'push' builds on master (ie. Run a build for every merge into
 # master but not pushes to other branches). Note: If running all pushes on master (ie. PR merges) overloads Travis, we
@@ -69,7 +63,7 @@ deploy:
 branches:
   only:
   - master
-  - /^v[0-9]+\.[0-9]+\.[0-9]+$/
+  - /^releases\/v[0-9]+\.[0-9]+-rc$/
 
 cache:
   directories:
