@@ -7,6 +7,7 @@
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
+source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 echo "Verifying deploy permissions"
 run_cmd verify_deploy_permissions
@@ -26,7 +27,7 @@ script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [$(gi
 tip of branch [master]. Continue?"
 
 echo "Creating local tag ${NEW_VERSION}"
-run_cmd git tag -m "Version $NEW_VERSION release - $(date +'%Y-%m-%d %H:%M:%S')" ${NEW_VERSION}
+run_cmd `git tag -m "Version $NEW_VERSION release - $(date +'%Y-%m-%d %H:%M:%S')" ${NEW_VERSION}`
 
 echo "Pushing tags to remote"
 run_cmd git push origin --tags
