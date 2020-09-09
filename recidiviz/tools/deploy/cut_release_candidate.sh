@@ -29,7 +29,7 @@ HEAD_COMMIT=$(git rev-parse HEAD) || exit_on_fail
 echo "Checking for green build at HEAD commit [$HEAD_COMMIT]"
 run_cmd check_commit_is_green ${HEAD_COMMIT}
 
-echo "Checking for existing release tags at tip of $RELEASE_CANDIDATE_BASE_BRANCH"
+echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRANCH]"
 check_for_tags_at_branch_tip ${RELEASE_CANDIDATE_BASE_BRANCH} ALLOW_ALPHA
 
 LAST_VERSION_TAG_ON_BRANCH=$(last_version_tag_on_branch ${RELEASE_CANDIDATE_BASE_BRANCH})
@@ -38,7 +38,7 @@ LAST_VERSION_PARTS=($(parse_version ${LAST_VERSION_TAG_ON_BRANCH}))
 MAJOR=${LAST_VERSION_PARTS[1]}
 MINOR=${LAST_VERSION_PARTS[2]}
 PATCH=${LAST_VERSION_PARTS[3]}
-ALPHA=${LAST_VERSION_PARTS[4]}
+ALPHA=${LAST_VERSION_PARTS[4]-}  # Optional
 
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} != "master" && ! -z ${ALPHA} ]]; then
     echo_error "Found invalid previous tag on  a releases/* branch [$RELEASE_CANDIDATE_BASE_BRANCH]: $LAST_VERSION_TAG_ON_BRANCH"
@@ -66,8 +66,8 @@ fi
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [$(git rev-parse HEAD)] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 
-echo "Creating local tag ${RELEASE_VERSION_TAG}"
-run_cmd git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d %H:%M:%S')" ${RELEASE_VERSION_TAG}
+echo "Creating local tag [${RELEASE_VERSION_TAG}]"
+run_cmd `git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d %H:%M:%S')" ${RELEASE_VERSION_TAG}`
 
 echo "Pushing tags to remote"
 run_cmd git push origin --tags
@@ -81,7 +81,7 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
     NEW_MAJOR=${NEW_VERSION_PARTS[1]}
     NEW_MINOR=${NEW_VERSION_PARTS[2]}
 
-    NEW_RELEASE_BRANCH="releases/${MAJOR}.${MINOR}-rc"
+    NEW_RELEASE_BRANCH="releases/${NEW_MAJOR}.${NEW_MINOR}-rc"
 
     echo "Checking out new release branch [$NEW_RELEASE_BRANCH]"
     run_cmd git checkout -b ${NEW_RELEASE_BRANCH}
