@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
+BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
+source ${BASH_SOURCE_DIR}/../script_base.sh
+source ${BASH_SOURCE_DIR}/deploy_helpers.sh
+
 if [[ x"$1" == x ]]; then
     echo_error "usage: $0 <base_branch>"
     exit 1
 fi
-
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
-source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 RELEASE_CANDIDATE_BASE_BRANCH=$1
 

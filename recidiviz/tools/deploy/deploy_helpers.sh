@@ -5,18 +5,6 @@ source ${BASH_SOURCE_DIR}/../script_base.sh
 
 VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 
-# Returns the last version tag on the given branch. Fails if that tag does not match the acceptable version regex.
-function last_version_tag_on_branch {
-    BRANCH=$1
-
-    LAST_VERSION_TAG_ON_BRANCH=$(git tag --sort=-v:refname --merged ${BRANCH} | head -n 1) || exit_on_fail
-
-    # Check that the version parses
-    _=$(parse_version ${LAST_VERSION_TAG_ON_BRANCH}) || exit_on_fail
-
-    echo ${LAST_VERSION_TAG_ON_BRANCH}
-}
-
 # Parses a version tag and output a space-separated string of the version regex capture groups.
 # Example usage:
 #    $ VERSION_PARTS=($(parse_version v1.2.0-alpha.0))
@@ -30,6 +18,18 @@ function parse_version {
     fi
 
     echo ${BASH_REMATCH[@]}
+}
+
+# Returns the last version tag on the given branch. Fails if that tag does not match the acceptable version regex.
+function last_version_tag_on_branch {
+    BRANCH=$1
+
+    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged ${BRANCH} | sort_versions | tail -n 1) || exit_on_fail
+
+    # Check that the version parses
+    _=$(parse_version ${LAST_VERSION_TAG_ON_BRANCH}) || exit_on_fail
+
+    echo ${LAST_VERSION_TAG_ON_BRANCH}
 }
 
 function next_alpha_version {
