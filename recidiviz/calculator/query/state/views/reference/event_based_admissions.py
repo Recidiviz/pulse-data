@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       person_id, state_code, year, month,
-      district,
+      district, facility,
       admission_reason, admission_date
     FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
     JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
