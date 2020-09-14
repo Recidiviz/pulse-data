@@ -48,6 +48,7 @@ US_IN_MANIFEST_CONTENTS = """
     timezone: America/Indiana/Indianapolis
     environment: production
     jurisdiction_id: jid_in
+    stripe: '1'
     """
 US_CA_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -56,6 +57,7 @@ US_CA_MANIFEST_CONTENTS = """
     timezone: America/Los_Angeles
     environment: production
     jurisdiction_id: jid_ca
+    stripe: '1'
     """
 BAD_QUEUE_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -172,6 +174,31 @@ class TestRegions(TestCase):
             regions.get_supported_scrape_region_codes,
             timezone=pytz.timezone('America/New_York'))
         assert supported_regions == {'us_ny', 'us_in'}
+
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
+    def test_get_supported_region_codes_stripe(self, _mock_modules):
+        supported_regions = with_manifest(
+            regions.get_supported_scrape_region_codes,
+            stripes="1")
+        assert supported_regions == {'us_in', 'us_ca'}
+
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
+    def test_get_supported_region_codes_timezone_stripe(self, _mock_modules):
+        supported_regions = with_manifest(
+            regions.get_supported_scrape_region_codes,
+            timezone=pytz.timezone('America/New_York'),
+            stripes="1")
+        assert supported_regions == {'us_in'}
+
+    @patch('pkgutil.iter_modules',
+           return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
+    def test_get_supported_region_codes_stripes(self, _mock_modules):
+        supported_regions = with_manifest(
+            regions.get_supported_scrape_region_codes,
+            stripes=["0", "1"])
+        assert supported_regions == {'us_ny', 'us_in', 'us_ca'}
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
