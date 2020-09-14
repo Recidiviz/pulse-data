@@ -47,7 +47,8 @@ def _regions_matching_environment(region_codes: Set[str]) -> Set[str]:
 
 
 def validate_regions(region_codes: List[str],
-                     timezone: tzinfo = None) -> Union[Set[str], bool]:
+                     timezone: tzinfo = None,
+                     stripes: List[str] = None) -> Union[Set[str], bool]:
     """Validates the region arguments.
 
     If any region in |region_codes| is "all", then all supported regions will be
@@ -56,6 +57,7 @@ def validate_regions(region_codes: List[str],
     Args:
         region_codes: List of regions from URL parameters
         timezone: If set, returns only regions in the matching timezone
+        stripes: If set, returns only regions in the matching stripes
 
     Returns:
         False if invalid regions
@@ -64,7 +66,7 @@ def validate_regions(region_codes: List[str],
     region_codes_output = set(region_codes)
 
     supported_regions = regions.get_supported_scrape_region_codes(
-        timezone=timezone)
+        timezone=timezone, stripes=stripes)
     for region in region_codes:
         if region == 'all':
             # We only do this if all is passed to still allow people to manually

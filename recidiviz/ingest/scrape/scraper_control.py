@@ -123,11 +123,12 @@ def scraper_start():
         load_docket_thread.join()
 
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
+    stripe_value = get_str_param_values("stripe", request.args)
     region_value = get_str_param_values("region", request.args)
     # If a timezone wasn't provided start all regions. If it was only start
     # regions that match the timezone.
     scrape_regions = ingest_utils.validate_regions(
-        region_value, timezone=timezone)
+        region_value, timezone=timezone, stripes=stripe_value)
     scrape_types = ingest_utils.validate_scrape_types(
         get_str_param_values("scrape_type", request.args))
 
@@ -203,13 +204,16 @@ def scraper_stop():
         N/A
     """
     timezone = ingest_utils.lookup_timezone(request.args.get("timezone"))
+    stripe = get_str_param_values("stripe", request.args)
     respect_is_stoppable = get_str_param_value("respect_is_stoppable",
                                                request.args)
 
     # If a timezone wasn't provided stop all regions. If it was only stop
-    # regions that match the timezone.
+    # regions that match the timezone. If stripe provided, stop only regions
+    # with matching stripe
     scrape_regions = ingest_utils.validate_regions(
-        get_str_param_values("region", request.args), timezone=timezone)
+        get_str_param_values("region", request.args), timezone=timezone,
+        stripes=stripe)
     scrape_types = ingest_utils.validate_scrape_types(
         get_str_param_values("scrape_type", request.args))
 
