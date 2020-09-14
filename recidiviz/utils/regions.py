@@ -54,6 +54,7 @@ class IngestType(Enum):
 # Cache of the `Region` objects.
 REGIONS: Dict[IngestType, Dict[str, 'Region']] = {}
 
+
 @attr.s(frozen=True)
 class Region:
     """Constructs region entity with attributes and helper functions
@@ -81,6 +82,8 @@ class Region:
         names_file: (string) Optional filename of names file for this region
         is_stoppable: (string) Whether or not this region is stoppable via the
             cron job /scraper/stop.
+        stripe: (string) Stripe to which this region belongs to. This is used
+            further divide up a timezone
     """
 
     region_code: str = attr.ib()
@@ -99,6 +102,7 @@ class Region:
     should_proxy: Optional[bool] = attr.ib(default=False)
     is_stoppable: Optional[bool] = attr.ib(default=False)
     is_direct_ingest: Optional[bool] = attr.ib(default=False)
+    stripe: Optional[str] = attr.ib(default="0")
 
     # TODO(3162): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
     raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
@@ -294,11 +298,13 @@ def get_region_manifest(region_code: str,
         return yaml.full_load(region_manifest)
 
 
-def get_supported_scrape_region_codes(timezone: tzinfo = None) -> Set[str]:
+def get_supported_scrape_region_codes(timezone: tzinfo = None,
+                                      stripes: List[str] = None) -> Set[str]:
     """Retrieve a list of known scraper regions / region codes
 
     Args:
         timezone: (str) If set, return only regions in the right timezone
+        stripes: (List[str]) If set, return only regions in the right stripes
 
     Returns:
         Set of region codes (strings)
@@ -306,7 +312,8 @@ def get_supported_scrape_region_codes(timezone: tzinfo = None) -> Set[str]:
     return _get_supported_region_codes_for_base_region_module(
         scraper_regions_module,
         is_direct_ingest=False,
-        timezone=timezone)
+        timezone=timezone,
+        stripes=stripes)
 
 
 def get_supported_direct_ingest_region_codes() -> Set[str]:
@@ -318,25 +325,36 @@ def get_supported_direct_ingest_region_codes() -> Set[str]:
 def _get_supported_region_codes_for_base_region_module(
         base_region_module: ModuleType,
         is_direct_ingest: bool,
-        timezone: tzinfo = None):
+        timezone: tzinfo = None,
+        stripes: List[str] = None):
 
     base_region_path = os.path.dirname(base_region_module.__file__)
     all_region_codes = {region_module.name for region_module
                         in pkgutil.iter_modules([base_region_path])}
     if timezone:
         dt = datetime.now()
-        return {region_code for region_code in all_region_codes
-                if timezone.utcoffset(dt) == \
-                get_region(
+        filtered_regions = {region_code for region_code in all_region_codes
+                            if timezone.utcoffset(dt) ==
+                            get_region(
+                                region_code,
+                                is_direct_ingest=is_direct_ingest
+                            ).timezone.utcoffset(dt)}
+    else:
+        filtered_regions = all_region_codes
+
+    if stripes and len(stripes) > 0:
+        return {region_code for region_code in filtered_regions
+                if get_region(
                     region_code,
                     is_direct_ingest=is_direct_ingest
-                ).timezone.utcoffset(dt)}
-    return all_region_codes
+                ).stripe in stripes}
+
+    return filtered_regions
 
 
 def get_supported_regions() -> List['Region']:
     return get_supported_scrape_regions() + \
-           get_supported_direct_ingest_regions()
+        get_supported_direct_ingest_regions()
 
 
 def get_supported_scrape_regions() -> List['Region']:

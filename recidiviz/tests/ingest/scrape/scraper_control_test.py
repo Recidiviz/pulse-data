@@ -40,7 +40,8 @@ def create_test_client():
     return app.test_client()
 
 
-def _MockSupported(timezone=None):
+def _MockSupported(timezone=None, stripes=None):
+    del stripes #this is added to match the mocking arguments
     if not timezone:
         regions = ['us_ut', 'us_wy']
     elif timezone == pytz.timezone('America/New_York'):
@@ -99,7 +100,7 @@ class TestScraperStart(unittest.TestCase):
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_ut')
         mock_scraper.start_scrape.assert_called()
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -145,8 +146,8 @@ class TestScraperStart(unittest.TestCase):
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_wy')
         mock_scraper.start_scrape.assert_called()
-        mock_supported.assert_called_with(
-            timezone=pytz.timezone('America/Los_Angeles'))
+        mock_supported.assert_called_with(stripes=[],
+                                          timezone=pytz.timezone('America/Los_Angeles'))
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -182,7 +183,7 @@ class TestScraperStart(unittest.TestCase):
         assert not mock_purge.called
         mock_region.assert_called_with('us_wy')
         mock_scraper.start_scrape.assert_not_called()
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
@@ -221,7 +222,7 @@ class TestScraperStart(unittest.TestCase):
         assert not mock_tracker.called
         assert not mock_docket.called
         assert not mock_region.called
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_scraper.start_scrape.assert_not_called()
 
     @patch("recidiviz.utils.environment.get_gae_environment")
@@ -270,7 +271,7 @@ class TestScraperStart(unittest.TestCase):
                                              scrape_phase.ScrapePhase.SCRAPE)
         mock_region.assert_called_with('us_ut')
         mock_scraper.start_scrape.assert_called()
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_start_unsupported_region(self, mock_supported):
@@ -283,9 +284,9 @@ class TestScraperStart(unittest.TestCase):
                                    headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, or no regions found, see logs."
+            "Missing or invalid parameters, or no regions found, see logs."
 
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
 
 
 class TestScraperStop(unittest.TestCase):
@@ -340,7 +341,7 @@ class TestScraperStop(unittest.TestCase):
             call(constants.ScrapeType.SNAPSHOT, 'false'),
             call().__bool__(),
         ])
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_task_manager.return_value.create_scraper_phase_task.\
             assert_has_calls([
                 call(region_code='us_ca', url='/read_and_persist'),
@@ -377,7 +378,7 @@ class TestScraperStop(unittest.TestCase):
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
         mock_scraper.stop_scrape.assert_not_called()
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_task_manager.return_value.create_scraper_phase_task.\
             assert_not_called()
 
@@ -422,8 +423,8 @@ class TestScraperStop(unittest.TestCase):
         mock_scraper.stop_scrape. \
             assert_called_with(
                 constants.ScrapeType.SNAPSHOT, 'false')
-        mock_supported.assert_called_with(
-            timezone=pytz.timezone('America/New_York'))
+        mock_supported.assert_called_with(stripes=[],
+                                          timezone=pytz.timezone('America/New_York'))
         mock_task_manager.return_value.create_scraper_phase_task.\
             assert_called_with(region_code='us_ut', url='/read_and_persist')
 
@@ -440,9 +441,9 @@ class TestScraperStop(unittest.TestCase):
                                    headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, see service logs."
+            "Missing or invalid parameters, see service logs."
 
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_task_manager.return_value.create_scraper_phase_task.\
             assert_not_called()
 
@@ -492,7 +493,7 @@ class TestScraperStop(unittest.TestCase):
             call().__bool__(),
         ]
 
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_task_manager.return_value.create_scraper_phase_task.\
             assert_has_calls([
                 call(region_code='us_ca', url='/read_and_persist'),
@@ -528,7 +529,7 @@ class TestScraperResume(unittest.TestCase):
              call(ScrapeKey(region, constants.ScrapeType.SNAPSHOT))])
         mock_region.assert_called_with(region)
         mock_scraper.resume_scrape.assert_called()
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=None, timezone=None)
 
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     def test_resume_unsupported_region(self, mock_supported):
@@ -541,6 +542,6 @@ class TestScraperResume(unittest.TestCase):
                                    headers=headers)
         assert response.status_code == 400
         assert response.get_data().decode() == \
-               "Missing or invalid parameters, see service logs."
+            "Missing or invalid parameters, see service logs."
 
-        mock_supported.assert_called_with(timezone=None)
+        mock_supported.assert_called_with(stripes=None, timezone=None)
