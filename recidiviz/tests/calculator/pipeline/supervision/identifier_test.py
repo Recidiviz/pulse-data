@@ -3092,7 +3092,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code='US_ID',
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 1)
@@ -3549,7 +3549,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
-                    assessment_up_to_date=False,
+                    assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=False
                 )

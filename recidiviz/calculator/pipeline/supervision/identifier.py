@@ -90,6 +90,7 @@ REVOCATION_TYPE_SEVERITY_ORDER = [
 ]
 
 CASE_TYPE_SEVERITY_ORDER = [
+    # TODO(3938): rename to SEX_OFFENSE.
     StateSupervisionCaseType.SEX_OFFENDER,
     StateSupervisionCaseType.DOMESTIC_VIOLENCE,
     StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
@@ -305,7 +306,7 @@ def find_time_buckets_for_supervision_period(
             assessment_level = None
             assessment_type = None
 
-            most_recent_assessment = find_most_recent_assessment(bucket_date, assessments)
+            most_recent_assessment = find_most_recent_assessment(bucket_date, assessments, assessment_type)
 
             if most_recent_assessment:
                 assessment_score = most_recent_assessment.assessment_score

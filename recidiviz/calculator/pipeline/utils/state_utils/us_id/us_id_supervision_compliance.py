@@ -25,6 +25,7 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.assessment_utils import find_most_recent_assessment
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactStatus
@@ -32,8 +33,26 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionLevel
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
+
+# TODO(3938): rename to SEX_OFFENSE.
+SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
+SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
+SEX_OFFENDER_LSIR_MINIMUM_SCORE = 16
+MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 90
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 30
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 30
+
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
+
+DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
+DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
+DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
+DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE = sys.maxsize
+
+MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 90
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 
@@ -50,7 +69,57 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     on US_ID compliance standards. Measures compliance values for the following types of supervision events:
         - Assessments
         - Face-to-Face Contacts
-
+    TODO(3938): rename to SEX_OFFENSE here and below
+    We currently measure compliance for `GENERAL` and `SEX_OFFENDER` case types. Below are the expected requirements:
+        - For `GENERAL` cases, there are two level systems:
+            1. Deprecated system mapping (`StateSupervisionLevel`: raw string) and expected frequencies:
+                - Initial compliance standards (same for all levels):
+                    - LSI-R Assessment: within 45 days (if no assessment exists, or if one is past due)
+                    - Face to face: within 3 days of start of supervision
+                - `MINIMUM`:`LEVEL 1`
+                    - Face to face contacts: none necessary
+                    - LSI-R Assessment: none
+                - `MEDIUM`:`LEVEL 2`
+                    - Face to face contacts: 1x every 180 days
+                    - LSI-R Assessment: 1x every 365 days
+                - `MEDIUM`:`LEVEL 2`
+                    - Face to face contacts: 1x every 180 days
+                    - LSI-R Assessment: 1x every 365 days
+                - `HIGH`: `LEVEL 3`
+                    - Face to face contacts: 1x every 30 days
+                    - LSI-R Assessment: 1x every 365 days
+                - `MAXIMUM`: `LEVEL 4`
+                    - Face to face contacts: 2x every 30 days
+                    - LSI-R Assessment: 1x every 365 days
+            2. New system mapping (`StateSupervisionLevel`: raw string) and expected frequencies:
+                - Initial compliance standards (same for all levels):
+                    - LSI-R Assessment: within 45 days (if no assessment exists, or if one is past due)
+                    - Face to face: within 3 days of start of supervision
+                 - `MINIMUM`:`MINIMUM`
+                    - Face to face contacts: 1x every 180 days
+                    - LSI-R Assessment: none
+                - `MEDIUM`:`MODERATE`
+                    - Face to face contacts: 2x every 90 days
+                    - LSI-R Assessment: 1x every 365 days
+                - `HIGH`: `HIGH`
+                    - Face to face contacts: 2x every 30 days
+                    - LSI-R Assessment: 1x every 365 days
+        - For `SEX_OFFENDER` cases, there is one level system with the following mapping and expected frequencies:
+            - Initial compliance standards (same for all levels):
+                - LSI-R Assessment: within 45 days if on probation, or within 90 days if on parole
+                - Face to face: within 3 days of start of supervision
+            - `MINIMUM`:`SO LEVEL 1`
+                - Face to face contacts: 1x every 90 days
+                - LSI-R Assessment: every 365 days if LSI-R > 16
+            - `MEDIUM`:`SO LEVEL 2`
+                - Face to face contacts: 1x every 30 days
+                - LSI-R Assessment: every 365 days if LSI-R > 16
+            - `HIGH`: `SO LEVEL 3`
+                - Face to face contacts: 2x every 30 days
+                - LSI-R Assessment: every 365 days if LSI-R > 16
+            - `MAXIMUM`: `SO LEVEL 4`
+                - Face to face contacts: 2x every 30 days
+                - LSI-R Assessment: every 365 days if LSI-R > 16
     For each event, we calculate two types of metrics when possible.
         - The total number of events that have occurred for this person this month (until the
           |compliance_evaluation_date|).
@@ -76,14 +145,17 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     face_to_face_frequency_sufficient = None
 
     if _guidelines_applicable_for_case(supervision_period, case_type):
-        most_recent_assessment = find_most_recent_assessment(compliance_evaluation_date, assessments)
+        most_recent_assessment = find_most_recent_assessment(compliance_evaluation_date, assessments,
+                                                             StateAssessmentType.LSIR)
 
-        assessment_is_up_to_date = _assessment_is_up_to_date(supervision_period,
+        assessment_is_up_to_date = _assessment_is_up_to_date(case_type,
+                                                             supervision_period,
                                                              start_of_supervision,
                                                              compliance_evaluation_date,
                                                              most_recent_assessment)
 
-        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(supervision_period,
+        face_to_face_frequency_sufficient = _face_to_face_contact_frequency_is_sufficient(case_type,
+                                                                                          supervision_period,
                                                                                           start_of_supervision,
                                                                                           compliance_evaluation_date,
                                                                                           supervision_contacts)
@@ -148,50 +220,48 @@ def _get_applicable_face_to_face_contacts_between_dates(supervision_contacts: Li
 def _guidelines_applicable_for_case(supervision_period: StateSupervisionPeriod,
                                     case_type: StateSupervisionCaseType) -> bool:
     """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
-    guidelines are only applicable for supervision cases of GENERAL case type with a supervision level of
-    MINIMUM, MEDIUM, HIGH, or MAXIMUM and a supervision_type of DUAL, PROBATION, PAROLE, or INTERNAL_UNKNOWN
-    (BW - Bench Warrant)."""
+    guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENDER, each with corresponding
+    expected supervision levels and supervision types."""
     supervision_type = supervision_period.supervision_period_supervision_type
 
-    return (case_type == StateSupervisionCaseType.GENERAL
-            and supervision_period.supervision_level in (
-                StateSupervisionLevel.MINIMUM,
-                StateSupervisionLevel.MEDIUM,
-                StateSupervisionLevel.HIGH,
-                StateSupervisionLevel.MAXIMUM
-            )
-            and (supervision_type in (
-                StateSupervisionPeriodSupervisionType.DUAL,
-                StateSupervisionPeriodSupervisionType.PAROLE,
-                StateSupervisionPeriodSupervisionType.PROBATION,
-            ) or (supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-                  and supervision_period.supervision_type_raw_text == 'BW'))
-            )
+    # Check case type
+    if case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENDER):
+        return False
+
+    # Check supervision level
+    allowed_supervision_levels = [StateSupervisionLevel.MINIMUM, StateSupervisionLevel.MEDIUM,
+                                  StateSupervisionLevel.HIGH]
+    if case_type is StateSupervisionCaseType.GENERAL:
+        allowed_supervision_levels.append(StateSupervisionLevel.MAXIMUM)
+    if supervision_period.supervision_level not in allowed_supervision_levels:
+        return False
+
+    # Check supervision type
+    allowed_supervision_types = [StateSupervisionPeriodSupervisionType.DUAL,
+                                 StateSupervisionPeriodSupervisionType.PROBATION,
+                                 StateSupervisionPeriodSupervisionType.PAROLE]
+    is_bench_warrant = supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN and \
+                       supervision_period.supervision_type_raw_text == 'BW'
+    if supervision_type not in allowed_supervision_types and not is_bench_warrant:
+        return False
+
+    return True
 
 
-def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
+def _assessment_is_up_to_date(case_type: StateSupervisionCaseType,
+                              supervision_period: StateSupervisionPeriod,
                               start_of_supervision: date,
                               compliance_evaluation_date: date,
                               most_recent_assessment: Optional[StateAssessment]) -> bool:
     """Determines whether the supervision case represented by the given supervision_period has an "up-to-date
-    assessment" according to US_ID guidelines.
-
-    For individuals on parole, they must have a new assessment taken within NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
-    number of days after the start of their parole.
-
-    For individuals on probation, they must have a new assessment taken within NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
-    number of days after the start of their probation, unless they have a recent assessment that was taken during a
-    previous time on probation within the REASSESSMENT_DEADLINE_DAYS number of days.
-
-    Once a person has had an assessment done, they need to be re-assessed every REASSESSMENT_DEADLINE_DAYS number of
-    days. However, individuals on a MINIMUM supervision level do not need to be re-assessed once the initial assessment
-    has been completed during the time on supervision."""
+    assessment" according to US_ID guidelines."""
     supervision_type = supervision_period.supervision_period_supervision_type
     most_recent_assessment_date = most_recent_assessment.assessment_date if most_recent_assessment else None
 
     days_since_start = (compliance_evaluation_date - start_of_supervision).days
 
-    if days_since_start <= NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS:
+    initial_assessment_number_of_days = _get_initial_assessment_number_of_days(case_type, supervision_type)
+    if days_since_start <= initial_assessment_number_of_days:
         # This is a recently started supervision period, and the person has not yet hit the number of days from
         # the start of their supervision at which the officer is required to have performed an assessment. This
         # assessment is up to date regardless of when the last assessment was taken.
@@ -200,38 +270,73 @@ def _assessment_is_up_to_date(supervision_period: StateSupervisionPeriod,
         return True
 
     if not most_recent_assessment_date:
-        # They have passed the deadline for a new supervision case having an assessment. Their assessment is not
-        # up to date.
+        # If they have not had an assessment and are expected to, then their assessment is not up to date.
         logging.debug("Supervision period %d started %d days before the compliance date %s, and they have not had an"
                       "assessment taken. Assessment is overdue.", supervision_period.supervision_period_id,
                       days_since_start, compliance_evaluation_date)
         return False
 
-    if (supervision_type in (StateSupervisionPeriodSupervisionType.PAROLE,
-                             StateSupervisionPeriodSupervisionType.DUAL)
-            and most_recent_assessment_date < start_of_supervision):
-        # If they have been on parole for more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS and they have not
-        # had an assessment since the start of their parole, then their assessment is not up to date.
-        logging.debug("Parole supervision period %d started %d days before the compliance date %s, and their most"
-                      "recent assessment was taken before the start of this parole. Assessment is overdue.",
-                      supervision_period.supervision_period_id, days_since_start, compliance_evaluation_date)
+    if not most_recent_assessment:
+        # If they have not had an assessment and are expected to, then their assessment is not up to date.
+        logging.debug("Supervision period %d started %d days before the compliance date %s, and they have not had an"
+                      "assessment taken. Assessment is overdue.", supervision_period.supervision_period_id,
+                      days_since_start, compliance_evaluation_date)
         return False
 
-    if supervision_period.supervision_level == StateSupervisionLevel.MINIMUM:
-        # People on MINIMUM supervision do not need to be re-assessed.
-        logging.debug("Supervision period %d has a MINIMUM supervision level. Does not need to be re-assessed.",
-                      supervision_period.supervision_period_id)
-        return True
+    return _reassessment_requirements_are_met(case_type, supervision_period.supervision_level, most_recent_assessment,
+                                              compliance_evaluation_date)
 
+
+def _get_initial_assessment_number_of_days(case_type: StateSupervisionCaseType,
+                                           supervision_type: Optional[StateSupervisionPeriodSupervisionType]) -> int:
+    """Returns the number of days that an initial assessment should take place, given a `case_type` and
+    `supervision_type`."""
+    if case_type == StateSupervisionCaseType.GENERAL:
+        return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
+    if case_type == StateSupervisionCaseType.SEX_OFFENDER:
+        if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
+            return SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
+        if supervision_type in (StateSupervisionPeriodSupervisionType.PAROLE,
+                                StateSupervisionPeriodSupervisionType.DUAL):
+            return SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
+        raise ValueError(f"Found unexpected supervision_type: [{supervision_type}]")
+
+    raise ValueError(f"Found unexpected case_type: [{case_type}]")
+
+
+def _reassessment_requirements_are_met(case_type: StateSupervisionCaseType,
+                                       supervision_level: Optional[StateSupervisionLevel],
+                                       most_recent_assessment: StateAssessment,
+                                       compliance_evaluation_date: date) -> bool:
+    if case_type == StateSupervisionCaseType.GENERAL:
+        if supervision_level == StateSupervisionLevel.MINIMUM:
+            return True
+        return _compliance_evaluation_date_before_reassessment_deadline(most_recent_assessment.assessment_date,
+                                                                        compliance_evaluation_date)
+    if case_type == StateSupervisionCaseType.SEX_OFFENDER:
+        if not most_recent_assessment.assessment_score:
+            return False
+        if most_recent_assessment.assessment_score > SEX_OFFENDER_LSIR_MINIMUM_SCORE:
+            return _compliance_evaluation_date_before_reassessment_deadline(most_recent_assessment.assessment_date,
+                                                                            compliance_evaluation_date)
+    return True
+
+
+def _compliance_evaluation_date_before_reassessment_deadline(most_recent_assessment_date: Optional[date],
+                                                             compliance_evaluation_date: date) -> bool:
     # Their assessment is up to date if the compliance_evaluation_date is within REASSESSMENT_DEADLINE_DAYS
     # number of days since the last assessment date.
+    if most_recent_assessment_date is None:
+        return False
     reassessment_deadline = most_recent_assessment_date + relativedelta(days=REASSESSMENT_DEADLINE_DAYS)
-    logging.debug("Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
-                  most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
+    logging.debug(
+        "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
+        most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
     return compliance_evaluation_date < reassessment_deadline
 
 
-def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSupervisionPeriod,
+def _face_to_face_contact_frequency_is_sufficient(case_type: StateSupervisionCaseType,
+                                                  supervision_period: StateSupervisionPeriod,
                                                   start_of_supervision: date,
                                                   compliance_evaluation_date: date,
                                                   supervision_contacts: List[StateSupervisionContact]) -> bool:
@@ -261,7 +366,7 @@ def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSuper
         return False
 
     required_contacts, period_days = _get_required_face_to_face_contacts_and_period_days_for_level(
-        supervision_period.supervision_level, supervision_period.supervision_level_raw_text)
+        case_type, supervision_period.supervision_level, supervision_period.supervision_level_raw_text)
 
     days_since_start = (compliance_evaluation_date - start_of_supervision).days
 
@@ -278,7 +383,8 @@ def _face_to_face_contact_frequency_is_sufficient(supervision_period: StateSuper
     return len(contacts_within_period) >= required_contacts
 
 
-def _get_required_face_to_face_contacts_and_period_days_for_level(supervision_level: Optional[StateSupervisionLevel],
+def _get_required_face_to_face_contacts_and_period_days_for_level(case_type: StateSupervisionCaseType,
+                                                                  supervision_level: Optional[StateSupervisionLevel],
                                                                   supervision_level_raw_text: Optional[str]) -> \
         Tuple[int, int]:
     """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision case
@@ -290,22 +396,30 @@ def _get_required_face_to_face_contacts_and_period_days_for_level(supervision_le
     """
     is_new_level_system = _is_new_level_system(supervision_level_raw_text)
 
-    if is_new_level_system:
+    if case_type == StateSupervisionCaseType.GENERAL:
+        if is_new_level_system:
+            if supervision_level == StateSupervisionLevel.MINIMUM:
+                return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.MEDIUM:
+                return 2, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.HIGH:
+                return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+        else:
+            if supervision_level == StateSupervisionLevel.MINIMUM:
+                return 0, DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.MEDIUM:
+                return 1, DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.HIGH:
+                return 1, DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.MAXIMUM:
+                return 2, DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+    elif case_type == StateSupervisionCaseType.SEX_OFFENDER:
         if supervision_level == StateSupervisionLevel.MINIMUM:
-            return 1, 180
+            return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
         if supervision_level == StateSupervisionLevel.MEDIUM:
-            return 2, 90
+            return 1, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
         if supervision_level == StateSupervisionLevel.HIGH:
-            return 2, 30
-    else:
-        if supervision_level == StateSupervisionLevel.MINIMUM:
-            return 0, sys.maxsize
-        if supervision_level == StateSupervisionLevel.MEDIUM:
-            return 1, 180
-        if supervision_level == StateSupervisionLevel.HIGH:
-            return 1, 30
-        if supervision_level == StateSupervisionLevel.MAXIMUM:
-            return 2, 30
+            return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
 
     raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
                      f"of {supervision_level}. Should not be calculating compliance for this supervision case.")
