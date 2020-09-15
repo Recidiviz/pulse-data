@@ -39,6 +39,8 @@ UCLA_FOLDER = 'ucla'
 
 # Recidiviz Google Sheets data, as CSV
 RECIDIVIZ_FILE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTbxP67VHDHQt4xvpNmzbsXyT0pSh_b1Pn7aY5Ac089KKYnPDT6PpskMBMvhOX_PA08Zqkxt4zNn8_y/pub?gid=0&single=true&output=csv' # pylint:disable=line-too-long
+# Mapping file used to determine canonical identifying info for each facility
+FACILITY_INFO_MAPPING_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT95DUfwcHbauuuMScd1Jb9u3vLCdfCcieXrRthNowoSbrmeWF3ibv06LkfcDxl1Vd97S5aujvnHdZX/pub?gid=1112897899&single=true&output=csv' # pylint:disable=line-too-long
 
 OUTPUT_FILE_NAME = 'merged_data_{}.csv'
 OUTPUT_FILE_TIMESTAMP_FORMAT = '%Y_%m_%d_%H_%M_%S'
@@ -59,23 +61,30 @@ def ingest_and_aggregate_latest_data():
     output_bucket = OUTPUT_BUCKET.format(project_id)
     historical_output_bucket = HISTORICAL_OUTPUT_BUCKET.format(project_id)
 
-    prison_file_content = _get_content_of_latest_file_from_folder(
+    prison_files = _get_content_of_all_files_from_directory(
         file_system, os.path.join(sources_bucket, PRISON_FOLDER), 'rt')
-    # UCLA file is an Excel workbook, so the file content should not be read as
-    # text
-    ucla_file_content = _get_content_of_latest_file_from_folder(
+    # UCLA file is an Excel workbook and so should not be read as text
+    ucla_file = _get_content_of_latest_file_from_directory(
         file_system, os.path.join(sources_bucket, UCLA_FOLDER), 'rb')
-    recidiviz_file_content = _fetch_remote_file(RECIDIVIZ_FILE_URL)
+    recidiviz_file = _fetch_remote_file(RECIDIVIZ_FILE_URL)
+    facility_mapping_file = _fetch_remote_file(FACILITY_INFO_MAPPING_URL)
 
     # Convert files into the format the aggregator expects
-    prison_csv_reader = csv.DictReader(
-        prison_file_content.splitlines(), delimiter=',')
-    ucla_workbook = xlrd.open_workbook(file_contents=ucla_file_content)
-    recidiviz_csv_reader = csv.DictReader(
-        recidiviz_file_content.splitlines(), delimiter=',')
+    prison_csv_dicts = [
+        csv.DictReader(prison_file.splitlines(), delimiter=',')
+        for prison_file
+        in prison_files]
+    ucla_workbook = xlrd.open_workbook(file_contents=ucla_file)
+    recidiviz_csv_dict = csv.DictReader(
+        recidiviz_file.splitlines(), delimiter=',')
+    facility_mapping_csv = csv.reader(
+        facility_mapping_file.splitlines(), delimiter=',')
 
     aggregated_csv = covid_aggregator.aggregate(
-        prison_csv_reader, ucla_workbook, recidiviz_csv_reader)
+        prison_csv_dicts,
+        ucla_workbook,
+        recidiviz_csv_dict,
+        facility_mapping_csv)
 
     # Clear out any existing files in the output bucket by moving them to the
     # historical bucket
@@ -92,10 +101,27 @@ def ingest_and_aggregate_latest_data():
         output_file.write(aggregated_csv)
 
 
-def _get_content_of_latest_file_from_folder(file_system, directory, mode):
+def _get_content_of_all_files_from_directory(file_system, directory, mode):
+    """Reads all files in the provided directory and returns their content as
+    a list with one element per file"""
+    file_contents = []
+
+    files = file_system.ls(directory)
+    if not files:
+        raise CovidIngestError('No files in folder {}, aborting ingest'
+                               .format(directory))
+    for file_path in files:
+        with file_system.open(file_path, mode) as file:
+            file_contents.append(file.read())
+
+    logging.info('Read all files from directory %s', directory)
+    return file_contents
+
+
+def _get_content_of_latest_file_from_directory(file_system, directory, mode):
     """Reads the latest file in the provided directory and returns its content
     """
-    file_path = _get_latest_file_path_from_folder(file_system, directory)
+    file_path = _get_latest_file_path_from_directory(file_system, directory)
     file_content = None
     with file_system.open(file_path, mode) as file:
         file_content = file.read()
@@ -110,7 +136,7 @@ def _fetch_remote_file(url):
     return response.content.decode('utf-8')
 
 
-def _get_latest_file_path_from_folder(file_system, directory):
+def _get_latest_file_path_from_directory(file_system, directory):
     """Walks the directory given and returns the most recently uploaded file"""
     files = file_system.ls(directory)
     if not files:
