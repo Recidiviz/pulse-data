@@ -16,8 +16,10 @@
 # =============================================================================
 """Tests the functions in the assessment_utils file."""
 import unittest
+from datetime import date
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.persistence.entity.state.entities import StateAssessment
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 
@@ -65,3 +67,81 @@ class TestIncludeAssessmentInMetric(unittest.TestCase):
         include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
 
         self.assertFalse(include_assessment)
+
+
+class TestFindMostRecentAssessment(unittest.TestCase):
+    """Tests the find_most_recent_assessment function."""
+
+    def test_find_most_recent_assessment_filters_assessment_type_matches_LSIR(self):
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28),
+            assessment_score=17
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
+
+        assessments = [assessment_1, assessment_2]
+
+        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), assessments,
+                                                                              StateAssessmentType.LSIR)
+
+        self.assertEqual(most_recent_assessment, assessment_1)
+
+    def test_find_most_recent_assessment_filters_assessment_type_no_matches_LSIR(self):
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
+
+        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
+                                                                              StateAssessmentType.LSIR)
+
+        self.assertIsNone(most_recent_assessment)
+
+    def test_find_most_recent_assessment_without_assessment_type_filter(self):
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
+
+        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
+                                                                              None)
+
+        self.assertEqual(most_recent_assessment, assessment)
+
+    def test_find_most_recent_assessment_with_assessment_type_filter_no_assessment_score(self):
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=None
+        )
+
+        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
+                                                                              StateAssessmentType.LSIR)
+
+        self.assertIsNone(most_recent_assessment)
+
+    def test_find_most_recent_assessment_without_assessment_type_filter_no_assessment_score(self):
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=None
+        )
+
+        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
+                                                                              None)
+
+        self.assertIsNone(most_recent_assessment)
