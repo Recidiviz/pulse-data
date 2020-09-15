@@ -956,7 +956,6 @@ def find_revocation_return_buckets(
             pre_revocation_supervision_type = get_pre_revocation_supervision_type(
                 incarceration_sentences, supervision_sentences, incarceration_period, None)
 
-            # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
             case_type = StateSupervisionCaseType.GENERAL
 
             # Get details about the violation and response history leading up to the revocation
@@ -1194,7 +1193,6 @@ def _identify_most_severe_case_type(supervision_period: StateSupervisionPeriod) 
     if case_type_entries:
         case_types = [entry.case_type for entry in case_type_entries]
     else:
-        # TODO(2853): Don't default to GENERAL once we figure out how to handle unset fields
         case_types = [StateSupervisionCaseType.GENERAL]
 
     return next((case_type for case_type in CASE_TYPE_SEVERITY_ORDER

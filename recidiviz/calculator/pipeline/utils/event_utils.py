@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for events that are a product of each pipeline's identifier step."""
 import logging
-from typing import Optional
 
 import attr
 
@@ -26,8 +25,11 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 @attr.s
 class AssessmentEventMixin:
     """Attribute that enables an event to be able to calculate the score bucket from assessment information."""
+
+    DEFAULT_ASSESSMENT_SCORE_BUCKET = 'NOT_ASSESSED'
+
     @property
-    def assessment_score_bucket(self) -> Optional[str]:
+    def assessment_score_bucket(self) -> str:
         """Calculates the assessment score bucket that applies to measurement.
 
         NOTE: Only LSIR and ORAS buckets are currently supported
@@ -35,33 +37,26 @@ class AssessmentEventMixin:
 
         Returns:
             A string representation of the assessment score for the person.
-            None if the assessment type is not supported.
+            DEFAULT_ASSESSMENT_SCORE_BUCKET if the assessment type is not supported or if the object is missing
+                assessment information.
         """
-
         assessment_score = getattr(self, 'assessment_score')
         assessment_level = getattr(self, 'assessment_level')
         assessment_type = getattr(self, 'assessment_type')
 
-        if not assessment_score or not assessment_type:
-            # TODO(2853): Figure out more robust solution for not assessed people. Here we don't set assessment_type
-            #  when someone is not assessed. This only works as desired because BQ doesn't rely on assessment_type at
-            #  all.
-            return 'NOT_ASSESSED'
-
         if assessment_type == StateAssessmentType.LSIR:
-            if assessment_score < 24:
-                return '0-23'
-            if assessment_score <= 29:
-                return '24-29'
-            if assessment_score <= 38:
-                return '30-38'
-            return '39+'
-
-        if assessment_type and assessment_type.value.startswith('ORAS'):
+            if assessment_score:
+                if assessment_score < 24:
+                    return '0-23'
+                if assessment_score <= 29:
+                    return '24-29'
+                if assessment_score <= 38:
+                    return '30-38'
+                return '39+'
+        elif assessment_type and assessment_type.value.startswith('ORAS'):
             if assessment_level:
                 return assessment_level.value
-            return None
+        elif assessment_type:
+            logging.warning("Assessment type %s is unsupported.", assessment_type)
 
-        logging.warning("Assessment type %s is unsupported.", assessment_type)
-
-        return None
+        return self.DEFAULT_ASSESSMENT_SCORE_BUCKET
