@@ -20,7 +20,7 @@ from typing import Set
 from lxml import html
 import requests
 
-STATE_AGGREGATE_URL = 'https://www.tcjs.state.tx.us/index.php?linkID=326'
+STATE_AGGREGATE_URL = 'https://www.tcjs.state.tx.us/historical-population-reports/'
 PDF_URL_TEMPLATE = 'https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/{}'
 
 
@@ -36,4 +36,6 @@ def get_urls_to_download() -> Set[str]:
             filename = link.split('/')[-1]
             url = PDF_URL_TEMPLATE.format(filename)
             aggregate_report_urls.add(url)
+        elif 'AbbreRpt' in link:
+            aggregate_report_urls.add(link)
     return aggregate_report_urls
