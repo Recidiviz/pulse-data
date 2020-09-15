@@ -51,7 +51,7 @@ from recidiviz.common.constants.state.state_incarceration import \
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
-    StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import \
     Gender, Race, ResidencyStatus, Ethnicity, StatePerson, \
@@ -596,7 +596,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             admission_date=date(2010, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2010, 11, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             incarceration_sentence_id=123,
@@ -636,7 +637,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 facility=incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code='5699',
-                most_serious_offense_statute='30A123'
+                most_serious_offense_statute='30A123',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
             ),
             IncarcerationAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -646,6 +648,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 admission_reason=incarceration_period.admission_reason,
                 admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
                 supervision_type_at_admission=StateSupervisionPeriodSupervisionType.PROBATION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -654,7 +657,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 admission_reason=incarceration_period.admission_reason,
-                total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
+                total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
             )
         ]
 
