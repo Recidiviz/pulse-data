@@ -29,7 +29,7 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune
+run_cmd git fetch --all --tags --prune --prune-tags
 
 LAST_VERSION_TAG_ON_CURRENT_BRANCH=$(last_version_tag_on_branch HEAD)
 LAST_VERSION_TAG_ON_MASTER=$(last_version_tag_on_branch master)

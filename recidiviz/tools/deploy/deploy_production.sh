@@ -39,7 +39,7 @@ run_cmd git log --oneline tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERS
 script_prompt "Have you completed all Pre-Deploy tasks listed at http://go/deploy-checklist?"
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune
+run_cmd git fetch --all --tags --prune --prune-tags
 
 echo "Checking for clean git status"
 if [[ ! -z "$(git status --porcelain)" ]]; then
