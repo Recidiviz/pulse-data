@@ -243,7 +243,8 @@ def find_incarceration_stays(
                 admission_reason=original_admission_reason,
                 admission_reason_raw_text=original_admission_reason_raw_text,
                 supervision_type_at_admission=supervision_type_at_admission,
-                judicial_district_code=judicial_district_code
+                judicial_district_code=judicial_district_code,
+                specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
             )
         )
 
