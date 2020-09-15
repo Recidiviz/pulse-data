@@ -20,7 +20,7 @@ echo "Verifying deploy permissions"
 run_cmd verify_deploy_permissions
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune
+run_cmd git fetch --all --tags --prune --prune-tags
 
 run_cmd safe_git_checkout_branch ${RELEASE_CANDIDATE_BASE_BRANCH}
 
