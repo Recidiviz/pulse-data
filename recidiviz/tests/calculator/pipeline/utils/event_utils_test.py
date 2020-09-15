@@ -19,6 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.calculator.pipeline.program.program_event import ProgramReferralEvent
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 
 
@@ -44,6 +45,17 @@ class TestAssessmentEventMixin(unittest.TestCase):
 
             self.assertEqual(bucket, event.assessment_score_bucket)
 
+    def test_assessment_scores_to_buckets_LSIR_no_score(self):
+        event = ProgramReferralEvent(
+            state_code='US_XX',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=None,
+            assessment_type=StateAssessmentType.LSIR
+        )
+
+        self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
+
     def test_assessment_score_bucket_ORAS(self):
         event = ProgramReferralEvent(
             state_code='US_XX',
@@ -56,6 +68,18 @@ class TestAssessmentEventMixin(unittest.TestCase):
 
         self.assertEqual(StateAssessmentLevel.MEDIUM.value, event.assessment_score_bucket)
 
+    def test_assessment_score_bucket_ORAS_no_level(self):
+        event = ProgramReferralEvent(
+            state_code='US_XX',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=10,
+            assessment_level=None,
+            assessment_type=StateAssessmentType.ORAS
+        )
+
+        self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
+
     def test_assessment_score_bucket_unsupported(self):
         event = ProgramReferralEvent(
             state_code='US_XX',
@@ -66,4 +90,15 @@ class TestAssessmentEventMixin(unittest.TestCase):
             assessment_type=StateAssessmentType.PSA
         )
 
-        self.assertIsNone(event.assessment_score_bucket)
+        self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
+
+    def test_assessment_score_no_type(self):
+        event = ProgramReferralEvent(
+            state_code='US_XX',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=10,
+            assessment_type=None
+        )
+
+        self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
