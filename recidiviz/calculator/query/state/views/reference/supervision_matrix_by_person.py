@@ -43,7 +43,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             IF(response_count > 8, 8, response_count) as reported_violations,
             person_id, person_external_id,
             gender,
-            assessment_score_bucket,
+            {state_specific_assessment_bucket},
             age_bucket,
             race, ethnicity,
             supervision_type,
@@ -86,8 +86,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         supervision_type, charge_category, district, officer,
         person_id, person_external_id,
         gender, age_bucket,
-        -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
-        IFNULL(CASE WHEN assessment_score_bucket = 'LOW_MEDIUM' THEN 'LOW' ELSE assessment_score_bucket END, 'OVERALL') as risk_level,
+        assessment_score_bucket as risk_level,
         race, ethnicity
     FROM person_based_supervision,
     {district_dimension},
@@ -106,6 +105,7 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
+    state_specific_assessment_bucket=bq_utils.state_specific_assessment_bucket(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

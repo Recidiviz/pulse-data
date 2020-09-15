@@ -18,6 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -42,7 +43,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         person_id,
         person_external_id,
         gender,
-        assessment_score_bucket,
+        {state_specific_assessment_bucket},
         age_bucket,
         race,
         ethnicity,
@@ -66,7 +67,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    state_specific_assessment_bucket=bq_utils.state_specific_assessment_bucket()
 )
 
 if __name__ == '__main__':

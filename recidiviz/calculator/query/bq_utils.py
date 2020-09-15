@@ -101,3 +101,9 @@ def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = '
     return f"""CASE WHEN state_code = 'US_ND' AND {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
+
+
+def state_specific_assessment_bucket() -> str:
+    return """-- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
+        CASE WHEN state_code = 'US_MO' AND assessment_score_bucket = 'LOW_MEDIUM' THEN 'LOW'
+        ELSE assessment_score_bucket END as assessment_score_bucket"""

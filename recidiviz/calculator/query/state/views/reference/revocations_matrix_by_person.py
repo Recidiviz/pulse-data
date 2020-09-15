@@ -45,7 +45,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             person_id,
             person_external_id,
             gender,
-            IFNULL(assessment_score_bucket, 'OVERALL') AS risk_level,
+            assessment_score_bucket AS risk_level,
             age_bucket,
             race,
             ethnicity,
@@ -72,8 +72,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         person_external_id,
         gender,
         age_bucket,
-        -- TODO(3135): remove this aggregation once the dashboard supports LOW_MEDIUM
-        CASE WHEN risk_level = 'LOW_MEDIUM' THEN 'LOW' ELSE risk_level END AS risk_level,
+        risk_level,
         race,
         ethnicity,
     FROM revocations,
