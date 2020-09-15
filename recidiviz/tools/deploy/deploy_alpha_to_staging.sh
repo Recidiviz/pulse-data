@@ -13,7 +13,7 @@ echo "Verifying deploy permissions"
 run_cmd verify_deploy_permissions
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune
+run_cmd git fetch --all --tags --prune --prune-tags
 
 echo "Checking for existing tags at tip of master"
 check_for_tags_at_branch_tip master
