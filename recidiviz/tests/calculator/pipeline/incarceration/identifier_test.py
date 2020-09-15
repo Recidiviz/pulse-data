@@ -71,7 +71,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='INCARCERATION_ADMISSION',
                 release_date=date(2009, 1, 4),
-                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             start_date=date(2008, 10, 11),
@@ -111,6 +112,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text='INCARCERATION_ADMISSION',
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             ),
              IncarcerationReleaseEvent(
                  state_code=incarceration_period.state_code,
@@ -119,7 +121,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                  county_of_residence=_COUNTY_OF_RESIDENCE,
                  release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                  admission_reason=incarceration_period.admission_reason,
-                 total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days
+                 total_days_incarcerated=(incarceration_period.release_date - incarceration_period.admission_date).days,
+                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
              )
             ]
         )
@@ -2443,7 +2446,8 @@ def expected_incarceration_stay_events(incarceration_period: StateIncarcerationP
                 supervision_type_at_admission=supervision_type,
                 most_serious_offense_statute=most_serious_offense_statute,
                 most_serious_offense_ncic_code=most_serious_offense_ncic_code,
-                judicial_district_code=judicial_district_code
+                judicial_district_code=judicial_district_code,
+                specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
             )
 
             expected_incarceration_events.append(event)
