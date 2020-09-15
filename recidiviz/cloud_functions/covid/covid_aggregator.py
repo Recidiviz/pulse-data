@@ -28,9 +28,6 @@ import requests
 import xlrd
 
 
-# Source for facility info mapping
-FACILITY_INFO_MAPPING_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT95DUfwcHbauuuMScd1Jb9u3vLCdfCcieXrRthNowoSbrmeWF3ibv06LkfcDxl1Vd97S5aujvnHdZX/pub?gid=1112897899&single=true&output=csv' # pylint:disable=line-too-long
-
 OUTPUT_DATE_FORMAT = '%Y-%m-%d'
 PRISON_DATE_FORMAT = '%Y-%m-%d'
 UCLA_DATE_FORMAT = '%m/%d/%Y'
@@ -126,25 +123,36 @@ STAFF_POSITIVE_FROM_ACTIVE_AND_RECOVERED_NOTE = \
      f'{STAFF_RECOVERED_CASES_COLUMN}')
 
 
-def aggregate(prison_csv_reader, ucla_workbook, recidiviz_csv_reader):
+def aggregate(prison_csv_dicts,
+              ucla_workbook,
+              recidiviz_csv_dict,
+              facility_mapping_csv):
     """Aggregates all COVID data source files into a single output file
 
     Args:
-        prison_csv_reader: prison file as a CSV DictReader
+        prison_csv_dicts: list of CSV DictReaders, one for each prison file
         ucla_workbook: UCLA file as an XLRD Book
-        recidiviz_csv_reader: Recidiviz file as a CSV DictReader
+        recidiviz_csv_dict: Recidiviz file as a CSV DictReader
+        facility_mapping_csv: facility mapping file as a CSV reader
     """
-    if not (prison_csv_reader and ucla_workbook and recidiviz_csv_reader):
+    if not (prison_csv_dicts
+            and ucla_workbook
+            and recidiviz_csv_dict
+            and facility_mapping_csv):
         raise RuntimeError(
-            ('COVID aggregator source missing: Prison - {}, UCLA - {}, '
-             + 'Recidiviz - {}')
-            .format(prison_csv_reader, ucla_workbook, recidiviz_csv_reader))
+            ('COVID aggregator source missing: prison - {}, UCLA - {}, '
+             + 'Recidiviz - {}, facility mapping - {}')
+            .format(prison_csv_dicts,
+                    ucla_workbook,
+                    recidiviz_csv_dict,
+                    facility_mapping_csv))
 
-    prison_data = _parse_prison_csv(prison_csv_reader)
+    prison_data = _parse_prison_csvs(prison_csv_dicts)
     ucla_data = _parse_ucla_workbook(ucla_workbook)
-    recidiviz_data = _parse_recidiviz_csv(recidiviz_csv_reader)
+    recidiviz_data = _parse_recidiviz_csv(recidiviz_csv_dict)
 
-    facility_info_mapping = _fetch_facility_info_mapping()
+    facility_info_mapping = _parse_facility_mapping_csv(
+        facility_mapping_csv)
 
     mapped_prison_data = _map_by_canonical_facility_info(
         prison_data, facility_info_mapping)
@@ -164,54 +172,75 @@ def aggregate(prison_csv_reader, ucla_workbook, recidiviz_csv_reader):
     return _to_csv_string(formatted_output)
 
 
-def _parse_prison_csv(prison_csv_reader):
-    """Parses the prison data CSV"""
+def _parse_prison_csvs(prison_csv_dicts):
+    """Parses all prison data CSVs"""
     data = []
 
-    for raw_row in prison_csv_reader:
-        row = {k.strip(): v.strip() for (k, v) in raw_row.items()}
+    # Each prison file is a non-overlapping set of data, so we can just iterate
+    # through them all sequentially and treat them like one large file.
+    for prison_csv_dict in prison_csv_dicts:
+        for raw_row in prison_csv_dict:
+            row = {k.strip(): v.strip() for (k, v) in raw_row.items()}
 
-        date = row['scrape_date']
-        # Rows with missing dates should be ignored, since they can't be used
-        if date in MISSING_DATE_VALUES:
-            continue
-        formatted_date = datetime.datetime.strptime(
-            date, PRISON_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
+            date = row['scrape_date']
+            # Rows with missing dates should be ignored, since they can't be
+            # used
+            if date in MISSING_DATE_VALUES:
+                continue
+            # Two different date formats are used, depending on the file
+            formatted_date = None
+            try:
+                formatted_date = datetime.datetime.strptime(
+                    date, PRISON_DATE_FORMAT).strftime(OUTPUT_DATE_FORMAT)
+            except ValueError:
+                try:
+                    # Have to strip trailing Z, because fromisoformat can't
+                    # parse it
+                    formatted_date = datetime.datetime.fromisoformat(
+                        date.strip('Z')).strftime(OUTPUT_DATE_FORMAT)
+                except ValueError:
+                    # Can't use row if date can't be parsed
+                    logging.warning(
+                        'Failed to parse date %s in prison file', date)
+                    continue
 
-        # Two different columns can correspond to deaths. Need to convert them
-        # to ints so they can be summed.
-        deaths = _int_or_none(row['inmates_deaths'])
-        deaths_confirmed = _int_or_none(row['inmates_deaths_confirmed'])
-        pop_deaths = None
-        aggregation_notes = None
-        # Explicit None checks, since 0 is a valid value
-        if deaths is not None and deaths_confirmed is not None:
-            pop_deaths = deaths + deaths_confirmed
-            aggregation_notes = DEATH_SUMMED_NOTE
-        elif deaths_confirmed is not None:
-            pop_deaths = deaths_confirmed
-        elif deaths is not None:
-            pop_deaths = deaths
+            # Two different columns can correspond to deaths. Need to convert
+            # them to ints so they can be summed.
+            deaths = _int_or_none(row['inmates_deaths'])
+            # inmates_deaths_confirmed is not present in some earlier files
+            deaths_confirmed = _int_or_none(
+                row.get('inmates_deaths_confirmed', None))
+            pop_deaths = None
+            aggregation_notes = None
+            # Explicit None checks, since 0 is a valid value
+            if deaths is not None and deaths_confirmed is not None:
+                pop_deaths = deaths + deaths_confirmed
+                aggregation_notes = DEATH_SUMMED_NOTE
+            elif deaths_confirmed is not None:
+                pop_deaths = deaths_confirmed
+            elif deaths is not None:
+                pop_deaths = deaths
 
-        # Extract subset of columns we care about
-        data_row = {
-            DATE_COLUMN: formatted_date,
-            STATE_COLUMN: row['state'],
-            FACILITY_NAME_COLUMN: row['facilities'],
-            POP_TESTED_COLUMN: row['inmates_tested'],
-            POP_TESTED_POSITIVE_COLUMN: row['inmates_positive'],
-            POP_TESTED_NEGATIVE_COLUMN: row['inmates_negative'],
-            POP_PENDING_COLUMN: row['inmates_pending'],
-            POP_DEATHS_COLUMN: pop_deaths,
-            STAFF_TESTED_COLUMN: row['staff_tested'],
-            STAFF_TESTED_POSITIVE_COLUMN: row['staff_positive'],
-            STAFF_TESTED_NEGATIVE_COLUMN: row['staff_negative'],
-            STAFF_PENDING_COLUMN: row['staff_pending'],
-            STAFF_DEATHS_COLUMN: row['staff_deaths'],
-            AGGREGATION_NOTES_COLUMN: aggregation_notes
-        }
+            # Extract subset of columns we care about
+            data_row = {
+                DATE_COLUMN: formatted_date,
+                STATE_COLUMN: row['state'],
+                FACILITY_NAME_COLUMN: row['facilities'],
+                POP_TESTED_COLUMN: row['inmates_tested'],
+                POP_TESTED_POSITIVE_COLUMN: row['inmates_positive'],
+                POP_TESTED_NEGATIVE_COLUMN: row['inmates_negative'],
+                POP_PENDING_COLUMN: row['inmates_pending'],
+                POP_DEATHS_COLUMN: pop_deaths,
+                STAFF_TESTED_COLUMN: row['staff_tested'],
+                STAFF_TESTED_POSITIVE_COLUMN: row['staff_positive'],
+                STAFF_TESTED_NEGATIVE_COLUMN: row['staff_negative'],
+                # Staff pending is not present in some earlier files
+                STAFF_PENDING_COLUMN: row.get('staff_pending', None),
+                STAFF_DEATHS_COLUMN: row['staff_deaths'],
+                AGGREGATION_NOTES_COLUMN: aggregation_notes
+            }
 
-        data.append(data_row)
+            data.append(data_row)
 
     return data
 
@@ -242,18 +271,35 @@ def _parse_ucla_workbook(ucla_workbook):
             'Date': None,
             'State': None,
             'Name': None,
-            'Staff Confirmed': None,
-            'Residents confirmed': None,
-            'Staff Deaths': None,
-            'Resident Deaths': None,
-            'Staff Tested': None,
-            'Residents Tested': None,
+            'Staff.Confirmed': None,
+            'Residents.Confirmed': None,
+            'Staff.Deaths': None,
+            'Resident.Deaths': None,
+            'Staff.Recovered': None,
+            'Residents.Recovered': None,
             'Website': None,
-            'Add\'l Notes': None
+            'Notes': None,
         }
         for index, value in enumerate(header_row):
             if value in column_indices:
                 column_indices[value] = index
+
+        # If none of the numeric columns were found, something has changed with
+        # the column naming
+        numeric_column_found = False
+        for column_name in ['Staff.Confirmed',
+                            'Residents.Confirmed',
+                            'Staff.Deaths',
+                            'Resident.Deaths',
+                            'Staff.Recovered',
+                            'Residents.Recovered']:
+            if column_indices[column_name]:
+                numeric_column_found = True
+                break
+        if not numeric_column_found:
+            raise RuntimeError(
+                'No data columns found in UCLA source file. The column ' \
+                    + 'naming format may have changed')
 
         # Start from 1 to skip header row
         for index in range(1, sheet.nrows):
@@ -278,28 +324,28 @@ def _parse_ucla_workbook(ucla_workbook):
                     'State', column_indices, row),
                 FACILITY_NAME_COLUMN: _get_cell_value_if_present(
                     'Name', column_indices, row),
-                POP_TESTED_COLUMN:
+                POP_RECOVERED_CASES_COLUMN:
                     _get_cell_value_if_present(
-                        'Residents Tested', column_indices, row),
+                        'Residents.Recovered', column_indices, row),
                 POP_TESTED_POSITIVE_COLUMN:
                     _get_cell_value_if_present(
-                        'Residents confirmed', column_indices, row),
+                        'Residents.Confirmed', column_indices, row),
                 POP_DEATHS_COLUMN:
                     _get_cell_value_if_present(
-                        'Resident Deaths', column_indices, row),
-                STAFF_TESTED_COLUMN:
+                        'Resident.Deaths', column_indices, row),
+                STAFF_RECOVERED_CASES_COLUMN:
                     _get_cell_value_if_present(
-                        'Staff Tested', column_indices, row),
+                        'Staff.Recovered', column_indices, row),
                 STAFF_TESTED_POSITIVE_COLUMN:
                     _get_cell_value_if_present(
-                        'Staff Confirmed', column_indices, row),
+                        'Staff.Confirmed', column_indices, row),
                 STAFF_DEATHS_COLUMN:
                     _get_cell_value_if_present(
-                        'Staff Deaths', column_indices, row),
+                        'Staff.Deaths', column_indices, row),
                 SOURCE_COLUMN: _get_cell_value_if_present(
                     'Website', column_indices, row),
                 NOTES_COLUMN: _get_cell_value_if_present(
-                    'Add\'l Notes', column_indices, row),
+                    'Notes', column_indices, row),
             }
 
             data.append(data_row)
@@ -307,11 +353,11 @@ def _parse_ucla_workbook(ucla_workbook):
     return data
 
 
-def _parse_recidiviz_csv(recidiviz_csv_reader):
+def _parse_recidiviz_csv(recidiviz_csv_dict):
     """Parses the Recidiviz data CSV"""
     data = []
 
-    for raw_row in recidiviz_csv_reader:
+    for raw_row in recidiviz_csv_dict:
         row = {k.strip(): v.strip() for (k, v) in raw_row.items()}
 
         date = row['As of...? (Date)']
@@ -344,15 +390,11 @@ def _parse_recidiviz_csv(recidiviz_csv_reader):
     return data
 
 
-def _fetch_facility_info_mapping():
-    """Fetches facility name mappings from remote source"""
-    response = requests.get(FACILITY_INFO_MAPPING_URL)
-    csv_lines = response.content.decode('utf-8').splitlines()
-    csv_reader = csv.reader(csv_lines, delimiter=',')
-
+def _parse_facility_mapping_csv(facility_mapping_csv):
+    """Parses the facility name mappings CSV"""
     mapping = FacilityInfoMapping()
 
-    for raw_row in csv_reader:
+    for raw_row in facility_mapping_csv:
         row = [cell.strip() for cell in raw_row]
         facility_type = row[0]
         state = row[1]
@@ -757,6 +799,8 @@ def _int_or_none(string):
     """Converts a string to an int, or returns None if the string cannot be
     converted
     """
+    if not string:
+        return None
     value = None
     try:
         value = int(string)
@@ -802,6 +846,7 @@ if __name__ == '__main__':
         prison_file_content = prison_file.read()
     prison_csv = csv.DictReader(
         prison_file_content.splitlines(), delimiter=',')
+    prison_csvs = [prison_csv]
 
     ucla_wb = xlrd.open_workbook(ucla_file_path)
 
@@ -811,6 +856,17 @@ if __name__ == '__main__':
     recidiviz_csv = csv.DictReader(
         recidiviz_file_content.splitlines(), delimiter=',')
 
-    aggregated_csv = aggregate(prison_csv, ucla_wb, recidiviz_csv)
+    facility_mapping_url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT95DUfwcHbauuuMScd1Jb9u3vLCdfCcieXrRthNowoSbrmeWF3ibv06LkfcDxl1Vd97S5aujvnHdZX/pub?gid=1112897899&single=true&output=csv' # pylint:disable=line-too-long
+    facility_mapping_response = requests.get(facility_mapping_url)
+    facility_mapping_file_content = \
+        facility_mapping_response.content.decode('utf-8')
+    facility_csv = csv.reader(
+        facility_mapping_file_content.splitlines(), delimiter=',')
+
+    aggregated_csv = aggregate(
+        prison_csvs,
+        ucla_wb,
+        recidiviz_csv,
+        facility_csv)
 
     print(aggregated_csv)
