@@ -3,14 +3,14 @@
 # Script for deploying tagged versions to production. Must be run within the pipenv shell.
 #
 
+BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
+source ${BASH_SOURCE_DIR}/../script_base.sh
+source ${BASH_SOURCE_DIR}/deploy_helpers.sh
+
 if [[ x"$1" == x ]]; then
     echo_error "usage: $0 <version_tag>"
     exit 1
 fi
-
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
-source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 echo "Verifying deploy permissions"
 run_cmd verify_deploy_permissions
@@ -55,7 +55,7 @@ then
 fi
 
 echo "Updating configuration / infrastructure in preparation for deploy"
-run_cmd pre_deploy_configure_infrastructure 'recidiviz-123'
+pre_deploy_configure_infrastructure 'recidiviz-123'
 
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.${GAE_VERSION}:latest || exit_on_fail
