@@ -750,7 +750,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['CONF', 'CRT', 'DETOX', 'FED', 'HOSP', 'HOSPS', 'HOSPU', 'INT', 'JOB', 'MED', 'PROG', 'RB', 'SUPL'],
             StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: ['OOS'],
 
-            StateIncarcerationPeriodReleaseReason.ESCAPE: ['ESC', 'ESCP'],
+            StateIncarcerationPeriodReleaseReason.ESCAPE: ['ESC', 'ESCP', 'ABSC'],
             StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ['ERR'],
             StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ['OTHER'],
             StateIncarcerationPeriodReleaseReason.COMMUTED: ['CMM'],
