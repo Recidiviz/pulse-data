@@ -60,7 +60,7 @@ function run_cmd {
 function script_prompt {
     prompt=$1
 
-    read -p "$prompt (y/n): " -n 1 -r
+    read -p "$prompt (y/n): " -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]
     then

@@ -81,7 +81,7 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
     NEW_MAJOR=${NEW_VERSION_PARTS[1]}
     NEW_MINOR=${NEW_VERSION_PARTS[2]}
 
-    NEW_RELEASE_BRANCH="releases/${NEW_MAJOR}.${NEW_MINOR}-rc"
+    NEW_RELEASE_BRANCH="releases/v${NEW_MAJOR}.${NEW_MINOR}-rc"
 
     echo "Checking out new release branch [$NEW_RELEASE_BRANCH]"
     run_cmd git checkout -b ${NEW_RELEASE_BRANCH}
