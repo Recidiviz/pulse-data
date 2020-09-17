@@ -32,11 +32,12 @@ from recidiviz.tests.ingest import fixtures
 class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
     """Test-only implementation of the DirectIngestGCSFileSystem."""
 
-    def __init__(self):
+    def __init__(self, can_start_ingest=True):
         self.mutex = threading.Lock()
         self.all_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
         self.uploaded_test_path_to_actual: Dict[str, str] = {}
         self.controller: Optional[GcsfsDirectIngestController] = None
+        self.can_start_ingest = can_start_ingest
 
     def test_set_controller(self,
                             controller: GcsfsDirectIngestController) -> None:
@@ -59,7 +60,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                 path.abs_path().startswith(
                         self.controller.ingest_directory_path.abs_path()):
             if isinstance(path, GcsfsFilePath):
-                self.controller.handle_file(path, start_ingest=True)
+                self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         with self.mutex:

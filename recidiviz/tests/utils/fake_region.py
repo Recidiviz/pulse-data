@@ -42,8 +42,11 @@ def fake_region(*,
     region.jurisdiction_id = jurisdiction_id
     region.get_ingestor.return_value = \
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
-    region.is_ingest_launched_in_env.return_value = \
-        Region.is_ingest_launched_in_env(region)
+
+    def fake_is_launched_in_env():
+        return Region.is_ingest_launched_in_env(region)
+
+    region.is_ingest_launched_in_env = fake_is_launched_in_env
     region.is_raw_vs_ingest_file_name_detection_enabled.return_value = is_raw_vs_ingest_file_name_detection_enabled
     region.are_raw_data_bq_imports_enabled_in_env.return_value = are_raw_data_bq_imports_enabled_in_env
     region.are_ingest_view_exports_enabled_in_env.return_value = are_ingest_view_exports_enabled_in_env

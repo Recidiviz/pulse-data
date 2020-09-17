@@ -180,10 +180,11 @@ def build_gcsfs_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
         run_async: bool,
+        fake_fs: Optional[FakeDirectIngestGCSFileSystem] = None,
         **kwargs,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
-    fake_fs = FakeDirectIngestGCSFileSystem()
+    fake_fs = fake_fs if fake_fs else FakeDirectIngestGCSFileSystem()
 
     def mock_build_fs():
         return fake_fs
