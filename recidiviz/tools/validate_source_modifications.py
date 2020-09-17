@@ -29,9 +29,10 @@ $ python -m recidiviz.tools.validate_source_modifications [--commit-range RANGE]
 
 import argparse
 import os
+import re
 import subprocess
 import sys
-from typing import FrozenSet, List, Tuple
+from typing import FrozenSet, List, Set, Tuple
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.persistence.database.schema.aggregate import \
@@ -52,43 +53,57 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 #
 # New sets of file prefixes can be added to this set. This will cause the check
 # to be performed for that new set as well.
-MODIFIED_FILE_ASSERTIONS = frozenset((
+
+INGEST_KEY = "ingest"
+PIPFILE_KEY = "pipfile"
+AGGREGATE_KEY = "aggregate"
+COUNTY_KEY = "county"
+OPERATIONS_KEY = "operations"
+STATE_KEY = "state"
+
+MODIFIED_FILE_ASSERTIONS = {
     # ingest info files
-    frozenset((
-        os.path.relpath(ingest_info.__file__),  # python object
-        os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
-        os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
-        os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
-    )),
+    INGEST_KEY:
+        frozenset((
+            os.path.relpath(ingest_info.__file__),  # python object
+            os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
+            os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
+            os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
+        )),
     # pipfile
-    frozenset((
-        'Pipfile', 'Pipfile.lock'
-    )),
+    PIPFILE_KEY:
+        frozenset((
+            'Pipfile', 'Pipfile.lock'
+        )),
     # aggregate schema
-    frozenset((
-        os.path.relpath(aggregate_schema.__file__),  # aggregate schema
-        os.path.relpath(
-            jails_versions.__file__[:-len('__init__.py')])  # versions
-    )),
+    AGGREGATE_KEY:
+        frozenset((
+            os.path.relpath(aggregate_schema.__file__),  # aggregate schema
+            os.path.relpath(
+                jails_versions.__file__[:-len('__init__.py')])  # versions
+        )),
     # county schema
-    frozenset((
-        os.path.relpath(county_schema.__file__),  # county schema
-        os.path.relpath(
-            jails_versions.__file__[:-len('__init__.py')])  # versions
-    )),
+    COUNTY_KEY:
+        frozenset((
+            os.path.relpath(county_schema.__file__),  # county schema
+            os.path.relpath(
+                jails_versions.__file__[:-len('__init__.py')])  # versions
+        )),
     # operations schema
-    frozenset((
-        os.path.relpath(operations_schema.__file__),  # operations schema
-        os.path.relpath(
-            operations_versions.__file__[:-len('__init__.py')])  # versions
-    )),
+    OPERATIONS_KEY:
+        frozenset((
+            os.path.relpath(operations_schema.__file__),  # operations schema
+            os.path.relpath(
+                operations_versions.__file__[:-len('__init__.py')])  # versions
+        )),
     # state schema
-    frozenset((
-        os.path.relpath(state_schema.__file__),  # state schema
-        os.path.relpath(
-            state_versions.__file__[:-len('__init__.py')])  # versions
-    )),
-))
+    STATE_KEY:
+        frozenset((
+            os.path.relpath(state_schema.__file__),  # state schema
+            os.path.relpath(
+                state_versions.__file__[:-len('__init__.py')])  # versions
+        ))
+}
 
 
 def match_assertions(modified_files: FrozenSet[str],
@@ -98,10 +113,13 @@ def match_assertions(modified_files: FrozenSet[str],
                             for modified_file in modified_files))
 
 
-def check_assertions(modified_files: FrozenSet[str]) \
+def check_assertions(modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str]) \
         -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:
     failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str]]] = []
-    for assertion_prefixes in MODIFIED_FILE_ASSERTIONS:
+    for set_to_validate, assertion_prefixes in MODIFIED_FILE_ASSERTIONS.items():
+        if set_to_validate in sets_to_skip:
+            print(f'Skipping {set_to_validate} check due to skip commits.')
+            continue
         matched_prefixes = match_assertions(modified_files, assertion_prefixes)
         if frozenset() < matched_prefixes < assertion_prefixes:
             failed_assertion_files.append((
@@ -125,26 +143,32 @@ def format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
                 '\n'.join(map(lambda file: '\t\t' + file, failure[1])))
 
 
-SKIP_COMMIT_REGEX = r'\[skip validation\]'
+SKIP_COMMIT_REGEX = r'\[skip validation.*\]'
 
 
-def find_skip_commits(commit_range: str) -> FrozenSet[str]:
+def _should_skip(validation_message: str, validation_key: str) -> bool:
+    return len(validation_message) < 2 or validation_key in validation_message
+
+
+def get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     git = subprocess.Popen(
-        ['git', 'log', '--format=%h', '--grep={}'.format(SKIP_COMMIT_REGEX),
+        ['git', 'log', '--format=%h %B', '--grep={}'.format(SKIP_COMMIT_REGEX),
          commit_range], stdout=subprocess.PIPE)
     skip_commits, _ = git.communicate()
     git.wait()
-    return frozenset(skip_commits.decode().splitlines())
+    sets_to_skip = set()  # type: Set[str]
+    full_validation_message = re.findall(r'\[skip validation(.*?)\]', skip_commits.decode())
+    if full_validation_message:
+        for valid_message in full_validation_message:
+            skip_sets = [key for key in MODIFIED_FILE_ASSERTIONS if _should_skip(valid_message, key)]
+            sets_to_skip = sets_to_skip.union(skip_sets)
+    return frozenset(sets_to_skip)
 
 
 def main(commit_range: str):
-    skip_commits = find_skip_commits(commit_range)
-    if skip_commits:
-        print("Skipping check due to skip commits ({})".format(
-            ', '.join(skip_commits)))
-        sys.exit(0)
+    assertions_to_skip = get_assertions_to_skip(commit_range)
 
-    failures = check_assertions(get_modified_files(commit_range))
+    failures = check_assertions(get_modified_files(commit_range), assertions_to_skip)
     return_code = 0
     if failures:
         return_code = 1
