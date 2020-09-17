@@ -178,6 +178,12 @@ class GcsfsDirectIngestController(
             # this function to be re-triggered.
             return
 
+        if not can_start_ingest:
+            logging.warning("Ingest not configured to start post-file normalization - returning.")
+            return
+
+        check_is_region_launched_in_env(self.region)
+
         unprocessed_raw_paths = []
 
         ingest_file_type_filter = GcsfsDirectIngestFileType.INGEST_VIEW \
@@ -212,7 +218,7 @@ class GcsfsDirectIngestController(
             # that calls this function to be re-triggered.
             return
 
-        if can_start_ingest and unprocessed_paths:
+        if unprocessed_paths:
             self.schedule_next_ingest_job_or_wait_if_necessary(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
