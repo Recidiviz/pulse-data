@@ -9,22 +9,22 @@ source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 if [[ x"$1" == x ]]; then
     echo_error "usage: $0 <version_tag>"
-    exit 1
+    run_cmd exit 1
 fi
 
-echo "Verifying deploy permissions"
-run_cmd verify_deploy_permissions
+echo "Performing pre-deploy verification"
+run_cmd verify_can_deploy recidiviz-123
 
 GIT_VERSION_TAG=$(echo $1 | tr '-' '.') || exit_on_fail
 if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo_error "Invalid release version [$GIT_VERSION_TAG] - must match regex: v[0-9]+\.[0-9]+\.[0-9]+"
-    exit 1
+    run_cmd exit 1
 fi
 
-LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | yq .id | tr -d \" | tr '-' '.') || exit_on_fail
+LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
 if ! version_less_than ${LAST_DEPLOYED_GIT_VERSION_TAG} ${GIT_VERSION_TAG}; then
     echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
-    exit 1
+    run_cmd exit 1
 fi
 
 echo "Beginning deploy of version [$GIT_VERSION_TAG] to production. Last deployed version: [$LAST_DEPLOYED_GIT_VERSION_TAG]."
@@ -44,7 +44,7 @@ run_cmd git fetch --all --tags --prune --prune-tags
 echo "Checking for clean git status"
 if [[ ! -z "$(git status --porcelain)" ]]; then
     echo_error "Git status not clean - please commit or stash changes before retrying."
-    exit 1
+    run_cmd exit 1
 fi
 
 echo "Checking out tag [$GIT_VERSION_TAG]"
@@ -66,3 +66,5 @@ run_cmd gcloud -q container images add-tag ${STAGING_IMAGE_URL} ${PROD_IMAGE_URL
 run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
 
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist?"
+
+echo "Deploy succeeded"
