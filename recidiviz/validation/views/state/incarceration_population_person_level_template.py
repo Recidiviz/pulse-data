@@ -31,7 +31,14 @@ sanitized_internal_metrics AS (
       state_code AS region_code, 
       date_of_stay, 
       person_external_id, 
-      facility,
+      # Idaho provided metrics only have distinct counts for Jefferson and Bonneville jails. All of the rest are grouped
+      # together under "Count Jails". Although internally, we fine grained populations for jails across the state, to
+      # match the Idaho report, group all non Jefferson/Bonneville jails under "County Jails"
+      IF(state_code = 'US_ID' AND
+         (facility LIKE '%SHERIFF%' OR facility LIKE '%JAIL%')
+          AND facility NOT LIKE 'BONNEVILLE%'
+          AND facility NOT LIKE 'JEFFERSON%',
+          'COUNTY JAILS', facility) AS facility, 
    FROM `{{project_id}}.{{metrics_dataset}}.incarceration_population_metrics`
    JOIN `{{project_id}}.{{reference_views_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
       USING (state_code, job_id, year, month, metric_period_months)
@@ -42,8 +49,7 @@ internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and months for which we have external validation data
   (SELECT DISTINCT region_code, date_of_stay FROM external_data)
-  LEFT JOIN
-    sanitized_internal_metrics
+  LEFT JOIN sanitized_internal_metrics
   USING (region_code, date_of_stay)
 )
 SELECT

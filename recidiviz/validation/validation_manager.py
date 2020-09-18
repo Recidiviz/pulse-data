@@ -19,7 +19,7 @@
 from concurrent import futures
 from http import HTTPStatus
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from opencensus.stats import aggregation, measure, view
 
@@ -74,14 +74,15 @@ def handle_validation_request():
     return _readable_response(failed_validations), HTTPStatus.OK
 
 
-def execute_validation(should_update_views: bool) -> List[DataValidationJobResult]:
-    """Executes all validation checks."""
+def execute_validation(
+        should_update_views: bool, region_code_filter: Optional[str] = None) -> List[DataValidationJobResult]:
+    """Executes all validation checks. If |region_code_filter| is supplied, limits validations to just that region."""
     if should_update_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
         view_update_manager.create_dataset_and_update_all_views()
 
     # Fetch collection of validation jobs to perform
-    validation_jobs = _fetch_validation_jobs_to_perform()
+    validation_jobs = _fetch_validation_jobs_to_perform(region_code_filter)
     logging.info('Performing a total of %s validation jobs...', len(validation_jobs))
 
     # Perform all validations and track failures
@@ -118,7 +119,7 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
     return validation_checker.run_check(job)
 
 
-def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
+def _fetch_validation_jobs_to_perform(region_code_filter: Optional[str] = None) -> List[DataValidationJob]:
     validation_checks = get_all_validations()
     region_configs = get_validation_region_configs()
     global_config = get_validation_global_config()
@@ -129,6 +130,8 @@ def _fetch_validation_jobs_to_perform() -> List[DataValidationJob]:
             continue
 
         for region_code in region_configs:
+            if region_code_filter and region_code != region_code_filter:
+                continue
             if check.validation_name not in region_configs[region_code].exclusions:
                 check = check.updated_for_region(region_configs[region_code])
                 validation_jobs.append(DataValidationJob(validation=check, region_code=region_code))
@@ -171,4 +174,4 @@ if __name__ == '__main__':
     project_id = GCP_PROJECT_STAGING
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(project_id):
-        execute_validation(should_update_views=False)
+        execute_validation(should_update_views=False, region_code_filter=None)
