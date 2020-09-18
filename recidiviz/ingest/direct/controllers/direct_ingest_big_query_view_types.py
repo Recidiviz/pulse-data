@@ -83,6 +83,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                  view_id: str,
                  view_query_template: str,
                  raw_file_config: DirectIngestRawFileConfig):
+        if not raw_file_config.primary_key_cols:
+            raise ValueError(f'Empty primary key list in raw file config with tag [{raw_file_config.file_tag}] during '
+                             f'construction of DirectIngestRawDataTableBigQueryView')
         view_dataset_id = f'{region_code.lower()}_raw_data_up_to_date_views'
         raw_table_dataset_id = DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
         except_clause = self._except_clause_for_config(raw_file_config)
@@ -310,11 +313,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             region_raw_table_config: DirectIngestRegionRawFileConfig) -> List[DirectIngestRawFileConfig]:
         """Returns a sorted list of configs for all raw files this query depends on."""
         raw_table_dependencies = cls._parse_raw_table_dependencies(view_query_template)
-
         raw_table_dependency_configs = []
         for raw_table_tag in raw_table_dependencies:
             if raw_table_tag not in region_raw_table_config.raw_file_configs:
                 raise ValueError(f'Found unexpected raw table tag [{raw_table_tag}]')
+            if not region_raw_table_config.raw_file_configs[raw_table_tag].primary_key_cols:
+                raise ValueError(f'Empty primary key list in raw file config with tag [{raw_table_tag}]')
             raw_table_dependency_configs.append(region_raw_table_config.raw_file_configs[raw_table_tag])
         return raw_table_dependency_configs
 
