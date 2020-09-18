@@ -6,18 +6,15 @@ source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 if [[ x"$1" == x ]]; then
     echo_error "usage: $0 <base_branch>"
-    exit 1
+    run_cmd exit 1
 fi
 
 RELEASE_CANDIDATE_BASE_BRANCH=$1
 
 if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" && ! ${RELEASE_CANDIDATE_BASE_BRANCH} =~ ^releases\/v[0-9]+\.[0-9]+-rc$ ]]; then
     echo_error "Invalid base branch for release candidate - must be 'master' or a 'releases/*' branch"
-    exit 1
+    run_cmd exit 1
 fi
-
-echo "Verifying deploy permissions"
-run_cmd verify_deploy_permissions
 
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags
@@ -43,7 +40,7 @@ ALPHA=${LAST_VERSION_PARTS[4]-}  # Optional
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} != "master" && ! -z ${ALPHA} ]]; then
     echo_error "Found invalid previous tag on  a releases/* branch [$RELEASE_CANDIDATE_BASE_BRANCH]: $LAST_VERSION_TAG_ON_BRANCH"
     echo_error "Expected a version tag matching regex ^v[0-9]+.[0-9]+.[0-9]+$"
-    exit 1
+    run_cmd exit 1
 fi
 
 if [[ ! -z ${ALPHA} ]]; then
@@ -66,13 +63,13 @@ fi
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [$(git rev-parse HEAD)] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 
-echo "Creating local tag [${RELEASE_VERSION_TAG}]"
+${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
+
+echo "Deploy succeeded - creating local tag [${RELEASE_VERSION_TAG}]"
 run_cmd `git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d %H:%M:%S')" ${RELEASE_VERSION_TAG}`
 
 echo "Pushing tags to remote"
 run_cmd git push origin --tags
-
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} ${STAGING_PUSH_PROMOTE_FLAG}
 
 # Create and push a new releases branch
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
@@ -89,3 +86,5 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
     echo "Pushing new release branch [$NEW_RELEASE_BRANCH] to remote"
     run_cmd git push --set-upstream origin ${NEW_RELEASE_BRANCH}
 fi
+
+echo "Deploy succeeded"

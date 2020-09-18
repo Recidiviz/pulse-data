@@ -227,7 +227,9 @@ A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Dat
 $ pytest recidiviz --with-emulator
 ```
 
-[A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have default application credentials. This should not be necessary in the future. For now, make sure that you have done both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
+[A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have
+default application credentials. This should not be necessary in the future. For now, make sure that you have done 
+both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
 
 #### Checking code style
 Run Pylint across the main body of code, in particular: `pylint recidiviz`.
@@ -270,6 +272,12 @@ has more information about running locally.
 Install the GCloud SDK using the [interactive installer](https://cloud.google.com/sdk/docs/downloads-interactive).
 
 Note: make sure the installer did not add `google-cloud-sdk/platform/google_appengine` or subdirectories thereof to your `$PYTHONPATH`, e.g. in your bash profile. This could break attempts to run tests within the `pipenv shell` by hijacking certain dependencies.   
+
+Make sure you have docker installed (see instructions above), then configure docker authentication:
+```bash
+$ gcloud auth login
+$ gcloud auth configure-docker
+```
 
 ### Deploying a scraper
 

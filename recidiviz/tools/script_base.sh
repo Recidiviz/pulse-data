@@ -113,6 +113,9 @@ function check_for_tags_at_branch_tip {
     if [[ ! -z ${TAGS_AT_TIP_OF_BRANCH} ]]; then
         echo_error "The tip of branch [$BRANCH] is already tagged - exiting."
         echo_error "Tags: ${TAGS_AT_TIP_OF_BRANCH}"
+        echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
+        echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
+        echo_error "remote, if it exists, and \`git tag -D <tag name>\` to delete it locally."
         exit 1
     fi
 

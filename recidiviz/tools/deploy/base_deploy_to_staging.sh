@@ -21,7 +21,7 @@ function print_usage {
     echo_error "  -p: Indicates that we should promote traffic to the newly deployed version. Can not be used with -n."
     echo_error "  -n: Indicates that we should not promote traffic to the newly deployed version. Can not be used with -p."
     echo_error "  -d: Name to append to the version for a debug local deploy (e.g. anna-test1)."
-    exit 1
+    run_cmd exit 1
 }
 
 while getopts "v:pnd:" flag; do
@@ -31,27 +31,30 @@ while getopts "v:pnd:" flag; do
     n) PROMOTE_FLAGS='--no-promote' NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
     *) print_usage
-       exit 1 ;;
+       run_cmd exit 1 ;;
   esac
 done
 
 if [[ -z ${VERSION_TAG} ]]; then
     echo_error "Missing/empty version tag argument"
     print_usage
-    exit 1
+    run_cmd exit 1
 fi
 
 if [[ (! -z ${PROMOTE} && ! -z ${NO_PROMOTE}) ||  ( -z ${PROMOTE} && -z ${NO_PROMOTE}) ]]; then
     echo_error "Must pass exactly one of either -p (promote) or -n (no-promote) flags"
     print_usage
-    exit 1
+    run_cmd exit 1
 fi
 
 if [[ ! -z ${PROMOTE} && ! -z ${DEBUG_BUILD_NAME} ]]; then
     echo_error "Debug releases must only have  -n (no-promote) option."
     print_usage
-    exit 1
+    run_cmd exit 1
 fi
+
+echo "Performing pre-deploy verification"
+run_cmd verify_can_deploy recidiviz-staging
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
     pre_deploy_configure_infrastructure 'recidiviz-staging'
