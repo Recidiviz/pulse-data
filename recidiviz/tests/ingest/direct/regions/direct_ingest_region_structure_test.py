@@ -125,9 +125,11 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
 
             if region.raw_data_bq_imports_enabled_env is not None:
                 self.assertTrue(raw_file_manager.raw_file_configs)
-
+            config_file_tags = set()
             for config in raw_file_manager.raw_file_configs.values():
-                self.assertTrue(config.primary_key_cols)
+                self.assertTrue(config.file_tag not in config_file_tags,
+                                f"Multiple raw file configs defined with the same file_tag [{config.file_tag}]")
+                config_file_tags.add(config.file_tag)
 
     def test_collect_ingest_views(self):
         with local_project_id_override('project'):
