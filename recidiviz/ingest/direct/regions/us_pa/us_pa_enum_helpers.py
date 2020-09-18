@@ -34,7 +34,6 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'RTN'  # (Not in PA data dictionary, no instances after 1996)
         ],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
-            'AA',  # Administrative
             'AB',  # Bail
             'AC',  # Court Commitment
             'ACT',  # County Transfer (transferred from a county jail, newly in DOC custody)
@@ -57,13 +56,22 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'APV',  # Parole Violator
         ],
         StateIncarcerationPeriodAdmissionReason.TRANSFER: [
-            # TODO(3312): I think that all statuses that start with 'A' might mean that a person is newly added to DOC
-            #  responsiblity - should these be treated as transfers?
+            # This is an 'Add Administrative' which will generally follow a 'Delete Administrative' ('DA') directly
+            # and is used to do some sort of record-keeping change without meaning this person went anywhere.
+            'AA',  # Add - Administrative
 
-            'AIT',  # In Transit
-            'ASH',  # State Hospital
-            'ATT',  # [Unlisted Transfer]
-            'AW',  # WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
+            # Old, similar usage to 'AA'
+            'AIT',  # Add - In Transit
+
+            # TODO(2002): This status represents that this person was returning from a long stay in a state hospital, it
+            # generally follows a 'D' movement code with sentence status code 'SH'. Ideally we'd specify that this was
+            # a transfer from a hospital
+            'ASH',  # Add - State Hospital
+            'ATT',  # Add - [Unlisted Transfer]
+
+            # It was unclear from talking to PA what this means, but since it hasn't shown up in years, we're leaving
+            # it here.
+            'AW',  # Add - WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
 
             'PLC',  # Permanent Location Change
             'RTT',  # Return Temporary Transfer
@@ -231,10 +239,13 @@ def incarceration_period_release_reason_mapper(concatenated_codes: str) -> State
     """
     end_sentence_status_code, end_parole_status_code, end_movement_code = concatenated_codes.split(' ')
 
+    if end_movement_code in ('DA', 'DIT'):  # Delete Administrative, Delete In Transit
+        return StateIncarcerationPeriodReleaseReason.TRANSFER
+
     is_sentence_complete = end_sentence_status_code == 'SC'
     is_serve_previous = end_sentence_status_code == 'SP'
     was_released_to_parole = end_parole_status_code in ('RP', 'SP')  # Re-Parole, State Parole
-    is_generic_release = end_movement_code in ('D', 'DA', 'DIT')  # Discharge, Administrative, In Transit
+    is_generic_release = end_movement_code == 'D'  # Delete
 
     if was_released_to_parole:
         # In case of a release to parole, the ending parole status code is the most informative

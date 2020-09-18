@@ -33,8 +33,13 @@ WITH movements_base AS (
       m.mov_sent_stat_cd AS sentence_status_code,
       m.parole_stat_cd AS parole_status_code,
       m.mov_move_code AS movement_code,
-      -- Sort death statuses after all other entries. No bringing people back to life.
-      IF(m.mov_sent_stat_cd IN ('DA', 'DN', 'DS', 'DX', 'DZ'), 99999, CAST(mov_seq_num AS INT64)) AS sequence_number,
+      -- Sort by date, only using PA sequence numbers when the date is the same. Sort death statuses after all other 
+      -- entries no matter what. No bringing people back to life.
+      ROW_NUMBER() OVER (PARTITION BY control_number 
+                         ORDER BY 
+                            m.mov_move_date, 
+                            IF(m.mov_sent_stat_cd IN ('DA', 'DN', 'DS', 'DX', 'DZ'), 99999, CAST(mov_seq_num AS INT64))
+      ) AS sequence_number,
       CASE 
         WHEN
           -- When the person is on parole, we null out any location that may have ended up in the move_to_loc col - we 
