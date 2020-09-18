@@ -108,3 +108,54 @@ function pre_deploy_configure_infrastructure {
     echo "Initializing task queues"
     run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 }
+
+function check_docker_installed {
+    if [[ -z $(which docker) ]]; then
+        echo_error "Docker not installed. Please follow instructions in repo README to install."
+        echo_error "Also make sure you've configured gcloud docker permissions with:"
+        echo_error "    $ gcloud auth login"
+        echo_error "    $ gcloud auth configure-docker"
+        exit 1
+    fi
+}
+
+function check_jq_installed {
+    if [[ -z $(which jq) ]]; then
+        echo_error "The \`jq\` package is not installed (needed to run the \`yq\` command) To install..."
+        echo_error "... on Mac:"
+        echo_error "    $ brew install jq"
+        echo_error "... on Ubuntu 18.04:"
+        echo_error "    $ apt update -y && apt install -y jq"
+        exit 1
+    fi
+}
+
+function check_for_too_many_serving_versions {
+    PROJECT_ID=$1
+
+    # Query for the serving versions in YAML format, select the IDs, count the number of lines and trim whitespace
+    SERVING_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    MAX_ALLOWED_SERVING_VERSIONS=4
+    if [[ "$SERVING_VERSIONS" -ge "$MAX_ALLOWED_SERVING_VERSIONS" ]]; then
+        echo_error "Found [$SERVING_VERSIONS] already serving versions. You must stop at least one version to proceed"
+        echo_error "in order to avoid maxing out the number of allowed database connections."
+        echo_error "Stop versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
+        exit 1
+    fi
+    echo "Found [$SERVING_VERSIONS] already serving versions - proceeding"
+}
+
+function verify_can_deploy {
+    PROJECT_ID=$1
+    echo "Verifying deploy permissions"
+    verify_deploy_permissions
+
+    echo "Checking Docker is installed"
+    run_cmd check_docker_installed
+
+    echo "Checking jq is installed"
+    run_cmd check_docker_installed
+
+    echo "Checking for too many currently serving versions"
+    run_cmd check_for_too_many_serving_versions ${PROJECT_ID}
+}
