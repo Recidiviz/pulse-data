@@ -72,7 +72,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
         return {
             'tagA': DirectIngestRawFileConfig(
                 file_tag='tagA',
-                primary_key_cols=[],
+                primary_key_cols=['mockKey'],
                 datetime_cols=[],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',
@@ -81,7 +81,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             ),
             'tagB': DirectIngestRawFileConfig(
                 file_tag='tagB',
-                primary_key_cols=[],
+                primary_key_cols=['mockKey'],
                 datetime_cols=[],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',
@@ -90,7 +90,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             ),
             'tagC': DirectIngestRawFileConfig(
                 file_tag='tagC',
-                primary_key_cols=[],
+                primary_key_cols=['mockKey'],
                 datetime_cols=[],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',

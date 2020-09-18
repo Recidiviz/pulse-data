@@ -50,7 +50,9 @@ class DirectIngestRawFileConfig:
     # The file tag / table name that this file will get written to
     file_tag: str = attr.ib(validator=attr.validators.instance_of(str))
 
-    # A list of columns that constitute the primary key for this file
+    # A list of columns that constitute the primary key for this file. If empty, this table cannot be used in an ingest
+    # view query and a '*_latest' view will not be generated for this table. May be left empty for the purposes of
+    # allowing us to quickly upload a new file into BQ and then determine the primary keys by querying BQ.
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
     # A list of columns that contain dates that we should do our best to normalize into the same string format

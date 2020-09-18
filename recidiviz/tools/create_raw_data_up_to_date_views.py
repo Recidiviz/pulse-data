@@ -45,10 +45,19 @@ def create_or_update_views_for_table(
         dry_run: bool):
     """Creates/Updates views corresponding to the provided |raw_table_name|."""
     logging.info('===================== CREATING QUERIES FOR %s  =======================', raw_table_name)
+    raw_table_config = get_raw_table_config(region_code=state_code,
+                                            raw_table_name=raw_table_name)
+    if not raw_table_config.primary_key_cols:
+        if dry_run:
+            logging.info('[DRY RUN] would have skipped table named %s with empty primary key list', raw_table_name)
+        else:
+            logging.warning('Table config with name %s has empty primary key list... Skipping '
+                            'update/creation.', raw_table_name)
+        return
+
     latest_view = DirectIngestRawDataTableLatestView(
         region_code=state_code,
-        raw_file_config=get_raw_table_config(region_code=state_code,
-                                             raw_table_name=raw_table_name))
+        raw_file_config=raw_table_config)
 
     if dry_run:
         logging.info('[DRY RUN] would have created/updated view %s with query:\n %s',
