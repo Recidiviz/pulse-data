@@ -16,10 +16,8 @@
 # =============================================================================
 """Event based revocations to support various revocation matrix views."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -68,7 +66,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_specific_assessment_bucket=bq_utils.state_specific_assessment_bucket()
+    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket()
 )
 
 if __name__ == '__main__':

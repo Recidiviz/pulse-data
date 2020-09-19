@@ -16,9 +16,8 @@
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,21 +34,13 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       state_code,
       person_external_id AS state_id,
       supervising_officer_external_id AS officer,
-      CASE WHEN most_severe_response_decision = 'SHOCK_INCARCERATION' THEN 'CODS'
-           WHEN most_severe_response_decision = 'WARRANT_ISSUED' THEN 'CAPIAS'
-           ELSE most_severe_response_decision
-      END AS officer_recommendation,
+      {state_specific_officer_recommendation},
       violation_history_description AS violation_record,
       supervising_district_external_id AS district,
       supervision_type,
       case_type AS charge_category,
       assessment_score_bucket AS risk_level,
-      CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
-        CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
-             WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
-             ELSE most_severe_violation_type END
-        ELSE most_severe_violation_type
-        END AS violation_type,
+      {most_severe_violation_type_subtype_grouping},
       IF(response_count > 8, 8, response_count) AS reported_violations,
       metric_period_months
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
@@ -73,6 +64,9 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    most_severe_violation_type_subtype_grouping=
+    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
+    state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation()
 )
 
 if __name__ == '__main__':
