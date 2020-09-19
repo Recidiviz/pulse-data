@@ -16,10 +16,9 @@
 # =============================================================================
 """Revocations Matrix Distribution by Violation."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -32,6 +31,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  violation reports filed during that period. 
  """
 
+# TODO(3981): Reconfigure this view to support more than just US_MO violation categories
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -86,7 +86,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
+    most_severe_violation_type_subtype_grouping=
+    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

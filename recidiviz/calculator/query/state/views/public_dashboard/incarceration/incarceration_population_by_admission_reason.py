@@ -16,10 +16,9 @@
 # =============================================================================
 """Most recent daily incarceration population count broken down by reason for admission and demographics."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -66,7 +65,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':

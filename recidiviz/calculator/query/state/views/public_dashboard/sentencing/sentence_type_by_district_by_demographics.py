@@ -17,9 +17,9 @@
 """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
 judicial district, and demographics."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
+from recidiviz.calculator.query.state import state_specific_query_strings
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -110,12 +110,13 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuild
     dimensions=['state_code', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=
-    bq_utils.unnest_district(bq_utils.state_specific_judicial_district_groupings('judicial_district_code')),
+    bq_utils.unnest_district(
+        state_specific_query_strings.state_specific_judicial_district_groupings('judicial_district_code')),
 )
 
 if __name__ == '__main__':
