@@ -16,10 +16,9 @@
 # =============================================================================
 """Supervision Matrix by Person."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -104,8 +103,9 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    most_severe_violation_type_subtype_grouping=bq_utils.most_severe_violation_type_subtype_grouping(),
-    state_specific_assessment_bucket=bq_utils.state_specific_assessment_bucket(),
+    most_severe_violation_type_subtype_grouping=
+    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
+    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),

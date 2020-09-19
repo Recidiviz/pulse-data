@@ -16,10 +16,9 @@
 # =============================================================================
 """Most recent daily supervision population counts broken down by district and demographic categories."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -68,9 +67,9 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=bq_utils.unnest_district(
-        bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code')),
+        state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code')),
     supervision_dimension=bq_utils.unnest_supervision_type(),
-    state_specific_race_or_ethnicity_groupings=bq_utils.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
 )
 
 if __name__ == '__main__':
