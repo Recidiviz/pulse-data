@@ -16,10 +16,9 @@
 # =============================================================================
 """Rates of successful supervision completion by month."""
 # pylint: disable=trailing-whitespace, line-too-long
-
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -80,8 +79,9 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    grouped_districts=bq_utils.supervision_specific_district_groupings('supervising_district_external_id',
-                                                                       'judicial_district_code'),
+    grouped_districts=
+    state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id',
+                                                                               'judicial_district_code'),
     district_dimension=bq_utils.unnest_district()
 )
 
