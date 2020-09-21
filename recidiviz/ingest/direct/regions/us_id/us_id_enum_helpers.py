@@ -98,6 +98,8 @@ def purpose_for_incarceration_mapper(label: str) -> Optional[StateSpecializedPur
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     if 'CH' in statuses:    # Courtesy Hold         TODO(3518): Understand what this is
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+    if 'PB' in statuses:    # Probation -- happens VERY infrequently (occurs as a data error from ID)
+        return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     return None
 
 
