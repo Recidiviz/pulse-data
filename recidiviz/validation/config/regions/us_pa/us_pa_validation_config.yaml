@@ -17,10 +17,4 @@ max_allowed_error_overrides:
   - validation_name: revocation_matrix_comparison_supervision_population
     max_allowed_error_override: 0.015
     override_reason: TODO(3951) - Needs investigation. Currently has one row where value is 0.0117.
-num_allowed_rows_overrides:
-  - validation_name: incarceration_admission_after_open_period
-    num_allowed_rows_override: 31
-    override_reason: TODO(3950) - Needs investigation.
-  - validation_name: incarceration_release_prior_to_admission
-    num_allowed_rows_override: 883
-    override_reason: TODO(3950) - Needs investigation.
+num_allowed_rows_overrides: []
