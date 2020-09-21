@@ -77,7 +77,7 @@ class MoveFilesToDeprecatedController:
         self.dry_run = dry_run
         self.file_filter = file_filter
         self.project_id = project_id
-        self.region_storage_dir_path = GcsfsDirectoryPath.from_absolute_path(
+        self.region_storage_dir_path_for_file_type = GcsfsDirectoryPath.from_absolute_path(
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code, SystemLevel.STATE, self.file_type,
                 project_id=self.project_id))
@@ -123,16 +123,16 @@ class MoveFilesToDeprecatedController:
                 if i.upper() != 'Y':
                     return
 
-        destination_dir_path = os.path.join(self.region_storage_dir_path.abs_path(), "deprecated",
+        destination_dir_path = os.path.join(self.region_storage_dir_path_for_file_type.abs_path(), "deprecated",
                                             f"deprecated_on_{date.today()}", f"{str(self.file_type.value)}/")
 
         if self.dry_run:
             logging.info("[DRY RUN] Moving files from [%s] to [%s]",
-                         self.region_storage_dir_path.abs_path(), destination_dir_path)
+                         self.region_storage_dir_path_for_file_type.abs_path(), destination_dir_path)
 
         else:
 
-            i = input(f"Moving files from [{self.region_storage_dir_path.abs_path()}] to "
+            i = input(f"Moving files from [{self.region_storage_dir_path_for_file_type.abs_path()}] to "
                       f"[{destination_dir_path}] - continue? [y/n]: ")
 
             if i.upper() != 'Y':
@@ -167,7 +167,9 @@ class MoveFilesToDeprecatedController:
     def _get_files_to_move(self) -> List[str]:
         """Function that gets the files to move to deprecated based on the file_filter and end/start dates specified"""
         subdirs = gsutil_get_storage_subdirs_containing_file_types(
-            storage_bucket_path=self.region_storage_dir_path.abs_path(),
+            storage_bucket_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
+                self.region_storage_dir_path_for_file_type.bucket_name,
+                self.region_code).abs_path(),
             file_type=self.file_type,
             lower_bound_date=self.start_date_bound,
             upper_bound_date=self.end_date_bound)
@@ -197,7 +199,7 @@ class MoveFilesToDeprecatedController:
         curr_gcsfs_file_path = GcsfsFilePath.from_absolute_path(from_uri)
         previous_date_format = filename_parts_from_path(curr_gcsfs_file_path).date_str
         new_date_format = date.fromisoformat(previous_date_format).strftime("%Y/%m/%d/")
-        to_uri = os.path.join('gs://', self.region_storage_dir_path.bucket_name,
+        to_uri = os.path.join('gs://', self.region_storage_dir_path_for_file_type.bucket_name,
                               self.region_code,
                               'deprecated',
                               f'deprecated_on_{date.today()}',
