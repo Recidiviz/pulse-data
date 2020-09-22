@@ -689,7 +689,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             start_date='2020-01-01',
                                             termination_date='2020-06-01',
                                             termination_reason='DEPORTED',
-                                            supervision_level='LEVEL 4',
+                                            supervision_level='SO TO GENERAL HIGH',
                                             custodial_authority='US_ID_DOC',
                                             supervising_officer=StateAgent(
                                                 state_agent_id='po2',
@@ -756,10 +756,10 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='I',
                                             termination_date='2009-12-31',
                                             supervision_period_supervision_type='PB,PR',
-                                            supervision_level='SO LEVEL 2',
+                                            supervision_level='SO MODERATE',
                                             state_supervision_case_type_entries=[
                                                 StateSupervisionCaseTypeEntry(
-                                                    case_type='SO LEVEL 2'
+                                                    case_type='SO MODERATE'
                                                 ),
                                             ],
                                             custodial_authority='US_ID_DOC',
@@ -1860,8 +1860,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             termination_date=datetime.date(year=2020, month=6, day=1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='PR',
-            supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='LEVEL 4',
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='SO TO GENERAL HIGH',
             incarceration_sentences=[is_1111_3],
             person=is_1111_3.person,
             supervising_officer=po_2,
@@ -1951,7 +1951,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
             supervision_period_supervision_type_raw_text='PB,PR',
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO LEVEL 2',
+            supervision_level_raw_text='SO MODERATE',
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
             supervising_officer=po_3,
@@ -1959,7 +1959,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         sc_2222_3_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             case_type=StateSupervisionCaseType.SEX_OFFENDER,
-            case_type_raw_text='SO LEVEL 2',
+            case_type_raw_text='SO MODERATE',
             supervision_period=sp_2222_3,
             person=sp_2222_3.person,
         )
