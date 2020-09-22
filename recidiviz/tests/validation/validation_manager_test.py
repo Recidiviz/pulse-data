@@ -255,7 +255,8 @@ class TestFetchValidations(TestCase):
         self.assertCountEqual(state_codes_to_validate, [
             'US_ID',
             'US_MO',
-            'US_ND'
+            'US_ND',
+            'US_PA'
         ])
 
         num_exclusions = \
