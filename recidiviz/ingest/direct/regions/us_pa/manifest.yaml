@@ -2,7 +2,7 @@ agency_name: Pennsylvania Department of Corrections
 agency_type: prison
 base_url: unused
 timezone: America/New_York
-environment: staging
+environment: production
 shared_queue: direct-ingest-state-process-job-queue-v2
 jurisdiction_id: unknown
 raw_vs_ingest_file_name_differentiation_enabled_env: production
