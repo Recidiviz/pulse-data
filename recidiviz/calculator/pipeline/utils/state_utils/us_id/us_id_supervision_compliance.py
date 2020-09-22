@@ -108,16 +108,13 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
             - Initial compliance standards (same for all levels):
                 - LSI-R Assessment: within 45 days if on probation, or within 90 days if on parole
                 - Face to face: within 3 days of start of supervision
-            - `MINIMUM`:`SO LEVEL 1`
+            - `MINIMUM`:`SO LEVEL 1`/`SO LOW`
                 - Face to face contacts: 1x every 90 days
                 - LSI-R Assessment: every 365 days if LSI-R > 16
-            - `MEDIUM`:`SO LEVEL 2`
+            - `MEDIUM`:`SO LEVEL 2`/`SO MODERATE`
                 - Face to face contacts: 1x every 30 days
                 - LSI-R Assessment: every 365 days if LSI-R > 16
-            - `HIGH`: `SO LEVEL 3`
-                - Face to face contacts: 2x every 30 days
-                - LSI-R Assessment: every 365 days if LSI-R > 16
-            - `MAXIMUM`: `SO LEVEL 4`
+            - `HIGH`: `SO LEVEL 3`/`SO HIGH`
                 - Face to face contacts: 2x every 30 days
                 - LSI-R Assessment: every 365 days if LSI-R > 16
     For each event, we calculate two types of metrics when possible.
