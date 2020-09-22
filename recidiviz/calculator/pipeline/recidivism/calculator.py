@@ -108,7 +108,8 @@ def map_recidivism_combinations(person: StatePerson,
 
                 metrics.extend(rate_metrics)
 
-            if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT):
+            if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT) and \
+                    isinstance(event, RecidivismReleaseEvent):
                 characteristic_combo_count = \
                     characteristics_dict(person, event, ReincarcerationRecidivismCountMetric)
 

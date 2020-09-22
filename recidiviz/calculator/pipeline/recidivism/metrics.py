@@ -116,6 +116,9 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     # For person-level metrics only, the days at liberty between release and reincarceration
     days_at_liberty: int = attr.ib(default=None)
 
+    # Date of reincarceration
+    reincarceration_date: date = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
                                     job_id: str) -> Optional['ReincarcerationRecidivismCountMetric']:
