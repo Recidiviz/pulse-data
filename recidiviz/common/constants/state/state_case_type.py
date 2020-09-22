@@ -33,6 +33,7 @@ class StateSupervisionCaseType(EntityEnum, metaclass=EntityEnumMeta):
     GENERAL = state_enum_strings.state_supervision_case_type_general
     MENTAL_HEALTH_COURT = state_enum_strings.state_supervision_case_type_mental_health_court
     SERIOUS_MENTAL_ILLNESS = state_enum_strings.state_supervision_case_type_serious_mental_illness
+    # TODO(3938): rename enum and all references to SEX_OFFENSE.
     SEX_OFFENDER = state_enum_strings.state_supervision_case_type_sex_offender
     VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
 

@@ -1655,7 +1655,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='SO LEVEL 1'
+            supervision_level_raw_text='SO LOW'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1687,7 +1687,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='SO LEVEL 1'
+            supervision_level_raw_text='SO LOW'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1719,7 +1719,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO LEVEL 2'
+            supervision_level_raw_text='SO MODERATE'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1751,7 +1751,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO LEVEL 2'
+            supervision_level_raw_text='SO MODERATE'
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1783,7 +1783,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='SO LEVEL 3'
+            supervision_level_raw_text='SO HIGH'
         )
 
         supervision_contacts = [
@@ -1825,7 +1825,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='SO LEVEL 3'
+            supervision_level_raw_text='SO HIGH'
         )
 
         # One contact within in time period, and one after.
@@ -1971,7 +1971,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO LEVEL 2'
+            supervision_level_raw_text='SO MODERATE'
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENDER
@@ -1995,7 +1995,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='SO LEVEL 4'
+            supervision_level_raw_text='SO MAXIMUM'     # Fake string, not actually possible to have max sex offense.
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENDER
@@ -2019,7 +2019,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='SO LEVEL 4'
+            supervision_level_raw_text='SO MAXIMUM',    # Fake string, not actually possible to have max sex offense.
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENDER
