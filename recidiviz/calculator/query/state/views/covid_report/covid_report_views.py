@@ -18,6 +18,8 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.covid_report.incarceration_population_by_purpose_by_day import \
+    INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.covid_report.us_nd.admissions_to_cpp_by_week import \
     ADMISSIONS_TO_CPP_BY_WEEK_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.covid_report.event_based_revocations_and_admissions import \
@@ -53,4 +55,5 @@ COVID_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ND_COVID_SPECIAL_RELEASES_VIEW_BUILDER,
     US_ND_CPP_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
     US_ND_SUPERVISION_COMMUNITY_PERFORMANCE_VIEW_BUILDER,
+    INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER,
 ]
