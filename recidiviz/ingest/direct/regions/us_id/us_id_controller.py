@@ -73,7 +73,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                  ingest_directory_path: Optional[str] = None,
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
-        super(UsIdController, self).__init__(
+        super().__init__(
             'us_id',
             SystemLevel.STATE,
             ingest_directory_path,
@@ -432,9 +432,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
         # TODO(3692): Validate that we have the correct mappings for new values of LOW, MODERATE, HIGH
         StateSupervisionLevel.MINIMUM: [
             'LOW',
-            'LEVEL 1',      # Historical value for minimum
-            'MINIMUM',      # Historical value for minimum
-            'SO LEVEL 1',   # Sex offense case load, minimum
+            'LEVEL 1',              # Historical value for minimum
+            'MINIMUM',              # Historical value for minimum
+            'SO LOW',               # Sex offense case load, minimum
+            'SO LEVEL 1',           # Historical sex offense case load, minimum
+            'SO TO GENERAL LOW',    # Previously on sex offense case load, now low general caseload
         ],
         StateSupervisionLevel.MEDIUM: [
             'MODERATE',
@@ -443,23 +445,28 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'MODERATE',                 # Historical value for medium
             'MODERATE- OLD',            # Historical value for medium
 
-            'SO LEVEL 2',               # Sex offense case load, medium
-            'SO TO GENERAL LEVEL2',     # Previously sex offender case load, medium
-            'DUI OVERRIDE LEVEL 2',     # Previously DUI, medium
+            'SO MODERATE',              # Sex offense case load, medium
+            'SO LEVEL 2',               # Historical sex offense case load, medium
+            'SO TO GENERAL MOD',        # Previously on sex offense case load, now medium general caseload
+            'SO TO GENERAL LEVEL2',     # Historical value - previously on sex offense case load, now medium general
+                                        # caseload
+            'DUI OVERRIDE LEVEL 2',     # Historical DUI, medium
             'O R MODERATE',             # Historical value
         ],
         StateSupervisionLevel.HIGH: [
             'HIGH',
-            'SO LEVEL 3',               # Sex offense case load, high
-            'SO TO GENERAL LEVEL3',     # Previously sex offender case load, high
-            'LEVEL 3',                  # Historical value for High
+            'SO HIGH',                  # Sex offense case load, high
+            'SO LEVEL 3',               # Historical sex offense case load, high
+            'SO TO GENERAL HIGH',       # Previously on sex offense case load, now high general caseload.
+            'SO TO GENERAL LEVEL3',     # Historical value - previously sex offense caseload, now high general caseload
+            'LEVEL 3',                  # Historical value - High
             'O R HIGH',                 # Historical value
         ],
         StateSupervisionLevel.MAXIMUM: [
             'LEVEL 4',                  # Historical value for maximum
             'MAXIMUM',                  # Historical value for maximum
-            'SO LEVEL 4',               # Sex offense case load, maximum
-            'SO TO GENERAL LEVEL4',     # Previously sex offense caseload, maximum
+            'SO TO GENERAL LEVEL4',     # Historical value - Previously sex offense caseload, now on maximum general
+                                        # caseload
         ],
         # TODO(3692): Ask ID if there are new values to show whether someone is in a diversion court?
         StateSupervisionLevel.DIVERSION: [
@@ -478,10 +485,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
         ],
 
         StateSupervisionCaseType.SEX_OFFENDER: [
-            'SO LEVEL 1',
+            'SO LOW',
+            'SO MODERATE',
+            'SO HIGH',
+            'SO LEVEL 1',           # Historical values as of Sept 2020
             'SO LEVEL 2',
             'SO LEVEL 3',
-            'SO LEVEL 4',
             'SEX OFFENSE',          # Historical value
         ],
         StateSupervisionCaseType.DRUG_COURT: [
@@ -518,7 +527,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Idaho-specific overrides for enum mappings."""
-        base_overrides = super(UsIdController, self).get_enum_overrides()
+        base_overrides = super().get_enum_overrides()
         return update_overrides_from_maps(
             base_overrides, self.ENUM_OVERRIDES, self.ENUM_IGNORES, self.ENUM_MAPPERS, self.ENUM_IGNORE_PREDICATES)
 
