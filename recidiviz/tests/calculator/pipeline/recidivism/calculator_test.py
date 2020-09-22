@@ -1384,10 +1384,10 @@ class TestCharacteristicCombinations(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         release_event = RecidivismReleaseEvent(
-            'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
-            _COUNTY_OF_RESIDENCE,
-            date(2014, 5, 12), 'Upstate',
-            ReincarcerationReturnType.NEW_ADMISSION)
+            state_code='CA', original_admission_date=date(2005, 7, 19), release_date=date(2008, 9, 19),
+            release_facility='Hudson', county_of_residence=_COUNTY_OF_RESIDENCE,
+            reincarceration_date=date(2014, 5, 12), reincarceration_facility='Upstate',
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         characteristic_dict = calculator.characteristics_dict(person,
                                                               release_event,
@@ -1402,7 +1402,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
                            'ethnicity': [Ethnicity.NOT_HISPANIC],
                            'person_id': 12345,
                            'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-                           'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days
+                           'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days,
+                           'reincarceration_date': date(2014, 5, 12)
                            }
 
         self.assertEqual(expected_output, characteristic_dict)
