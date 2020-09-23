@@ -87,3 +87,6 @@ class ProgramParticipationEvent(ProgramEvent):
     @property
     def date_of_participation(self):
         return self.event_date
+
+    # Whether the date_of_participation was the first day the person participated in the program
+    is_first_day_in_program: Optional[bool] = attr.ib(default=None)

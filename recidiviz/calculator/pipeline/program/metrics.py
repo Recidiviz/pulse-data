@@ -146,6 +146,9 @@ class ProgramParticipationMetric(ProgramMetric):
     # Date of active participation
     date_of_participation: date = attr.ib(default=None)
 
+    # Whether the date_of_participation was the first day the person participated in the program
+    is_first_day_in_program: Optional[bool] = attr.ib(default=None)
+
     # Optional characteristics
 
     # Program location ID

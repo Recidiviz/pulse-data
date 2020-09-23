@@ -110,6 +110,7 @@ class TestFindProgramEvents(unittest.TestCase):
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
                 event_date=program_assignment.start_date,
+                is_first_day_in_program=True,
                 program_id=program_assignment.program_id,
                 program_location_id=program_assignment.program_location_id,
                 supervision_type=supervision_period.supervision_type
@@ -117,6 +118,7 @@ class TestFindProgramEvents(unittest.TestCase):
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
                 event_date=program_assignment.start_date + relativedelta(days=1),
+                is_first_day_in_program=False,
                 program_id=program_assignment.program_id,
                 program_location_id=program_assignment.program_location_id,
                 supervision_type=supervision_period.supervision_type
@@ -451,12 +453,14 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.start_date,
+            is_first_day_in_program=True,
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         ), ProgramParticipationEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.start_date + relativedelta(days=1),
+            is_first_day_in_program=False,
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         )]
@@ -492,18 +496,21 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.start_date,
+            is_first_day_in_program=True,
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         ), ProgramParticipationEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.start_date + relativedelta(days=1),
+            is_first_day_in_program=False,
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         ), ProgramParticipationEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.start_date + relativedelta(days=2),
+            is_first_day_in_program=False,
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         )]
