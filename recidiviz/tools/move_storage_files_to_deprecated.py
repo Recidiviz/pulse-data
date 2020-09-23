@@ -92,7 +92,7 @@ class MoveFilesToDeprecatedController:
     def run(self) -> None:
         """Main function that will execute the move to deprecated."""
 
-        # TODO(3666): Update this script to make updates to our Operations db and BigQuery (if necessary).
+        # TODO(#3666): Update this script to make updates to our Operations db and BigQuery (if necessary).
         #  For now we print these messages to check if appropriate data has been deleted from operations db.
         if self.dry_run:
             if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:

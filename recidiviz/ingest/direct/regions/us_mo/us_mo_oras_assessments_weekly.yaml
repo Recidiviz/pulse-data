@@ -18,7 +18,7 @@ keys_to_ignore:
   - E17     # Unused - Gender
   - E24     # Unused - Person who administered the assessment
   - FOCLIST # Assessment Seq No - Handled manually in the controller
-  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
   - E15     # Unused - Agency name
   - E19     # Unused - Override risk level (not uniform in data)
   - E20     # Unused - Override risk reason

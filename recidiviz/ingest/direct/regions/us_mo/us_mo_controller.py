@@ -156,7 +156,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         '99O1025',  # Field Commutation
     }
 
-    # TODO(2604): Figure out if we should do anything special with these
+    # TODO(#2604): Figure out if we should do anything special with these
     SENTENCE_MAGICAL_DATES = [
         '0', '20000000', '66666666', '88888888', '99999999'
     ]
@@ -164,7 +164,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         '0', '99999999'
     ]
 
-    # TODO(2898): Complete transition to TAK026 for IncarcerationPeriod statuses
+    # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
         StateAgentType: supervising_officer_mapper,
         StateSupervisionPeriodAdmissionReason: supervision_period_admission_reason_mapper,
@@ -224,7 +224,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'PROBATION'
         ],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'BP-FF',  # Board Parole
             'BP-FM',
             'BP-FT',
@@ -251,7 +251,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'EM-FT',
         ],
         StateIncarcerationPeriodReleaseReason.COURT_ORDER: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'IB-EI',  # Institutional Administrative
             'IB-ER',
             'IB-IB',
@@ -262,23 +262,23 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'OR-OR',  # Off Records; Suspension
         ],
         StateIncarcerationPeriodReleaseReason.DEATH: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'DE-DE',  # Death
             'DE-XX',
         ],
         StateIncarcerationPeriodReleaseReason.ESCAPE: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'IE-IE',  # Institutional Escape
             'IE-XX',
             'IW-IW',  # Institutional Walkaway
             'IW-XX',
         ],
         StateIncarcerationPeriodReleaseReason.EXECUTION: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'DE-EX',  # Execution
         ],
         StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'XX-XX',  # Unknown (Not Associated)
             '??-??',  # Code Unknown
             '??-XX',
@@ -299,7 +299,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
-            # TODO(2898) - Use TAK026 statuses to populate release reason
+            # TODO(#2898) - Use TAK026 statuses to populate release reason
             'DC-DC',  # Discharge
             'DC-DO',  # Inst. Converted-Inactive
             'DC-XX',  # Discharge - Unknown
@@ -654,7 +654,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         return None
 
-    # TODO(1882): If yaml format supported raw values and multiple children of
+    # TODO(#1882): If yaml format supported raw values and multiple children of
     #  the same type, then this would be no-longer necessary.
     @staticmethod
     def tak001_offender_identification_hydrate_alternate_ids(
@@ -758,7 +758,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     response.deciding_body_type = \
                         StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER.value
 
-    # TODO(2701): Remove posthook in place of general child-id setting solution.
+    # TODO(#2701): Remove posthook in place of general child-id setting solution.
     @classmethod
     def _set_violation_response_id_from_violation(
             cls,
@@ -1023,7 +1023,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         if sentence_completed_flag == 'Y':
             return StateSentenceStatus.COMPLETED.value
 
-        # TODO(2806): This might be a bad way to determine if a sentence is
+        # TODO(#2806): This might be a bad way to determine if a sentence is
         #  suspended since there could be, in theory, statuses that come between
         #  the suspension status and the actual status that means the probation
         #  has been reinstated (like a a random warrant status)
@@ -1297,7 +1297,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
-        # TODO(2728): The SQN is potentially not a stable ID if status
+        # TODO(#2728): The SQN is potentially not a stable ID if status
         #  information gets backdated and the SQN numbers generated in the
         #  roll-up shift.
         subcycle_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN']
@@ -1373,7 +1373,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         violation_seq_num = row[f'{col_prefix}${violation_key_seq}']
         group_id = cls._generate_sentence_group_id(xref_prefix, row)
 
-        # TODO(1883): Remove use of SEO (sentence_seq_id) and FSO (Field Seq No)
+        # TODO(#1883): Remove use of SEO (sentence_seq_id) and FSO (Field Seq No)
         # once extractor supports multiple paths to entities with the same id.
         # Until then, we need to keep all ids for SupervisionViolations unique
         # through the data extractor and proto conversion.

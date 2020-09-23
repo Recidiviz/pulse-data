@@ -109,7 +109,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
         if not metadata:
             raise ValueError(f'Metadata unexpectedly None for path [{path.abs_path()}]')
 
-        # TODO(3020): Design/handle/write tests for case where this is a file we've moved from storage for a
+        # TODO(#3020): Design/handle/write tests for case where this is a file we've moved from storage for a
         #  rerun. How do we accurately detect when this is happening?
         if isinstance(metadata, DirectIngestRawFileMetadata):
             return True

@@ -69,7 +69,7 @@ class CoreEntity:
             return None
         return self.get_field('external_id')
 
-    # TODO(2163): Use get/set_field_from_list when possible to clean up code.
+    # TODO(#2163): Use get/set_field_from_list when possible to clean up code.
     def get_field_as_list(self, child_field_name: str) -> List[Any]:
         field = self.get_field(child_field_name)
         if field is None:

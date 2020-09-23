@@ -131,7 +131,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
             expected_db_people: List[StatePerson],
             debug: bool = False,
             single_person_to_debug: Optional[str] = None,
-            # TODO(2492): Once we properly clean up dangling placeholders,
+            # TODO(#2492): Once we properly clean up dangling placeholders,
             #  delete this.
             ignore_dangling_placeholders: bool = False,
             print_tree_structure_only: bool = False,

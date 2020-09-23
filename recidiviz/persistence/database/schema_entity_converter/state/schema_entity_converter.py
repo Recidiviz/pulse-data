@@ -58,9 +58,9 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    # TODO(2697): Remove these checks once these columns are removed from
+    # TODO(#2697): Remove these checks once these columns are removed from
     # our schema.
-    # TODO(2668): Remove these checks once these columns are removed from
+    # TODO(#2668): Remove these checks once these columns are removed from
     # our schema.
     def _should_skip_field(
             self, entity_cls: Type, field: FieldNameType) -> bool:

@@ -55,7 +55,7 @@ class SupervisionTimeBucket(BuildableAttr, AssessmentEventMixin):
     # Date of the supervision bucket
     bucket_date: date = attr.ib()
 
-    # TODO(2891): Consider moving this out of the base class, and making the supervision type specific to each
+    # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
     supervision_type: StateSupervisionPeriodSupervisionType = attr.ib(default=None)
@@ -69,7 +69,7 @@ class SupervisionTimeBucket(BuildableAttr, AssessmentEventMixin):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
-    # TODO(3885): Add a custodial_authority field to this class, then update metrics / BQ views to pass through to
+    # TODO(#3885): Add a custodial_authority field to this class, then update metrics / BQ views to pass through to
     #  dashboard
 
     # Most recent assessment score
@@ -149,7 +149,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     # were listed on the given violation.
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
 
-    # TODO(3600): This field should be removed because the daily output makes this unnecessary
+    # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
@@ -170,7 +170,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
 class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
 
-    # TODO(3600): This field should be removed because the daily output makes this unnecessary
+    # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 

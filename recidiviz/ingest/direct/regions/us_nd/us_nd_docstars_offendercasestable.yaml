@@ -22,7 +22,7 @@ keys_to_ignore:
   - SENT_TYPE             # Redundant code that maps 1:1 with DESCRIPTION
   - SENT_YY               # Handled manually within us_nd_controller
   - SENT_MM               # Handled manually within us_nd_controller
-  - TD_PUB_AST            # TODO(1866) Do we want to track qualitative attrs?
+  - TD_PUB_AST            # TODO(#1866) Do we want to track qualitative attrs?
   - TE_EMPLOY
   - TF_RESPNSE
   - TG_COMMRES

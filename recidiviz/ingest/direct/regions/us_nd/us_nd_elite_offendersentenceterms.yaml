@@ -5,8 +5,8 @@ primary_key:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
 keys_to_ignore:
-  - START_DATE            # TODO(1759) Should this live on a Sentence?
-  - END_DATE              # TODO(1759) Should this live on a Sentence?
+  - START_DATE            # TODO(#1759) Should this live on a Sentence?
+  - END_DATE              # TODO(#1759) Should this live on a Sentence?
   - SENTENCE_SEQ          # Handled manually within us_nd_scraper
   - TERM_SEQ              # Handled manually within us_nd_scraper
   - SENTENCE_TERM_CODE    # Handled manually within us_nd_scraper

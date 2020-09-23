@@ -82,7 +82,7 @@ class UploadRawDataFilesToBqController:
             processed_time: datetime.datetime,
             file_exists_in_metadata: bool):
         """Marks the provided |normalized_file_name| as processed in the raw_file_metadata table."""
-        # TODO(3020): Fill in lower_bound_inclusive once we're not just receiving historical refreshes.
+        # TODO(#3020): Fill in lower_bound_inclusive once we're not just receiving historical refreshes.
         if not file_exists_in_metadata:
             add_row_to_raw_metadata(
                 client=self.client,
@@ -117,7 +117,7 @@ class UploadRawDataFilesToBqController:
 
         # to_gbq is significantly faster than the BQ client API `insert_rows_from_dataframe` which relies on the
         # streaming service rather than batch loading.
-        # TODO(3020): Instead of uploading in batches via `to_gbq`, try writing the CSV to GCS and then using a load
+        # TODO(#3020): Instead of uploading in batches via `to_gbq`, try writing the CSV to GCS and then using a load
         #  operation. While it does force us to create a temp file, we expect that to have a performance increase.
         df.to_gbq(
             destination_table=f'{dataset}.{table_name}',

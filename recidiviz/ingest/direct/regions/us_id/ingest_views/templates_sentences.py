@@ -121,7 +121,7 @@ USING
 LEFT JOIN
     (SELECT
             judge_cd,
-            # TODO(3345): Keep just judge_nam once we have a full historical dump from an automated feed.
+            # TODO(#3345): Keep just judge_nam once we have a full historical dump from an automated feed.
             COALESCE(judge_name, judge_nam) AS judge_name
     FROM
         {{judge}})
@@ -134,7 +134,7 @@ USING
 LEFT JOIN
     (SELECT
         *
-        # TODO(3345): Remove this exclude once we have a full historical dump from an automated feed OR a reason to
+        # TODO(#3345): Remove this exclude once we have a full historical dump from an automated feed OR a reason to
         #  parse these fields. The format between manual and automatic differs by some 0 padding.
         EXCEPT (off_rank1, off_rank2, off_rank3)
     FROM {{offense}})

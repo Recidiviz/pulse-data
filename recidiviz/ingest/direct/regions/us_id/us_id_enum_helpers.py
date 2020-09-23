@@ -31,7 +31,7 @@ def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervision
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
     if label == 'P':    # Coming from probation/parole within the state
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
-    if label in ('I', 'O'):  # Coming from incarceration. TODO(3506): Clarify when 'O' is used.
+    if label in ('I', 'O'):  # Coming from incarceration. TODO(#3506): Clarify when 'O' is used.
         return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
     if label == 'F':    # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
@@ -45,7 +45,7 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
         return StateSupervisionPeriodTerminationReason.DISCHARGE
     if label == 'P':    # Going to probation/parole within the state
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
-    if label in ('I', 'O'):     # Going to incarceration. TODO(3506): Clarify when 'O' is used.
+    if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
         return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
     if label == 'F':    # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
@@ -60,7 +60,7 @@ def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcera
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
     if label == 'P':    # Coming from probation/parole within the state
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
-    if label in ('I', 'O'):     # Coming from incarceration. TODO(3506): Clarify when 'O' is used.
+    if label in ('I', 'O'):     # Coming from incarceration. TODO(#3506): Clarify when 'O' is used.
         return StateIncarcerationPeriodAdmissionReason.TRANSFER
     if label == 'F':    # Coming from absconsion.
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
@@ -72,7 +72,7 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
         return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
     if label == 'P':    # Going to probation/parole within the state
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
-    if label in ('I', 'O'):     # Going to incarceration. TODO(3506): Clarify when 'O' is used.
+    if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
         return StateIncarcerationPeriodReleaseReason.TRANSFER
     if label == 'F':    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
@@ -88,15 +88,15 @@ def purpose_for_incarceration_mapper(label: str) -> Optional[StateSpecializedPur
         return StateSpecializedPurposeForIncarceration.GENERAL
     if 'RJ' in statuses:    # Rider
         return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
-    if 'NO' in statuses:    # Non Idaho commitment TODO(3518): Consider adding as specialized purpose.
+    if 'NO' in statuses:    # Non Idaho commitment TODO(#3518): Consider adding as specialized purpose.
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     if 'PV' in statuses:    # Parole board hold
         return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
-    if 'IP' in statuses:    # Institutional Probation   TODO(3518): Understand what this is.
+    if 'IP' in statuses:    # Institutional Probation   TODO(#3518): Understand what this is.
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'CV' in statuses:    # Civil commitment      TODO(3518): Consider adding a specialized purpose for this
+    if 'CV' in statuses:    # Civil commitment      TODO(#3518): Consider adding a specialized purpose for this
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
-    if 'CH' in statuses:    # Courtesy Hold         TODO(3518): Understand what this is
+    if 'CH' in statuses:    # Courtesy Hold         TODO(#3518): Understand what this is
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
     if 'PB' in statuses:    # Probation -- happens VERY infrequently (occurs as a data error from ID)
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
@@ -116,9 +116,9 @@ def supervision_period_supervision_type_mapper(label: str) -> Optional[StateSupe
         return StateSupervisionPeriodSupervisionType.PROBATION
     if 'PS' in statuses:    # Pre sentence investigation
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
-    if 'PA' in statuses:    # Pardon applicant      TODO(3506): Get more info from ID. Filter these people out entirely?
+    if 'PA' in statuses:    # Pardon applicant     TODO(#3506): Get more info from ID. Filter these people out entirely?
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    if 'PF' in statuses:    # Firearm applicant     TODO(3506): Get more info from ID. Filter these people out entirely?
+    if 'PF' in statuses:    # Firearm applicant    TODO(#3506): Get more info from ID. Filter these people out entirely?
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if 'CR' in statuses:    # Rider (no longer used).
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN

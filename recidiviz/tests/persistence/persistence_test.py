@@ -283,7 +283,7 @@ class TestPersistence(TestCase):
         assert result[0].full_name == _format_full_name(FULL_NAME_3)
         assert result[1].full_name == _format_full_name(FULL_NAME_2)
 
-    # TODO: test entity matching end to end
+    # TODO(#4135): test entity matching end to end
 
     def test_readSinglePersonByName(self):
         # Arrange
@@ -306,7 +306,7 @@ class TestPersistence(TestCase):
         assert result[0].full_name == _format_full_name(FULL_NAME_1)
         assert result[0].birthdate == BIRTHDATE_1_DATE
 
-    # TODO: Rewrite this test to directly test __eq__ between the two People
+    # TODO(#4135): Rewrite this test to directly test __eq__ between the two People
     def test_readPersonAndAllRelationships(self):
         # Arrange
         metadata = IngestMetadata.new_with_defaults(
@@ -1126,7 +1126,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
         self.isolation_level_patcher = patch(
             'recidiviz.persistence.database.sqlalchemy_engine_manager.SQLAlchemyEngineManager.get_isolation_level',
-            # TODO(3622): Set to 'SERIALIZABLE'
+            # TODO(#3622): Set to 'SERIALIZABLE'
             return_value='REPEATABLE READ')
         self.isolation_level_patcher.start()
         fakes.use_on_disk_postgresql_database(StateBase)

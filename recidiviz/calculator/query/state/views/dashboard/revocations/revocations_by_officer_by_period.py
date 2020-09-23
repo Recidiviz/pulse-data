@@ -33,7 +33,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
  source_supervision_violation_response.
  """
 
-# TODO(2231): Join against state_agent instead of temp_officers once state_agent
+# TODO(#2231): Join against state_agent instead of temp_officers once state_agent
 #  is properly ingested and entity-matched
 REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
     """

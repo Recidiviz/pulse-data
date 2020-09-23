@@ -32,7 +32,7 @@ FTR_REFERRAL_DESCRIPTION = \
     metric period months.
     """
 
-# TODO(2549): Filter by FTR specifically once the metadata exists.
+# TODO(#2549): Filter by FTR specifically once the metadata exists.
 FTR_REFERRAL_QUERY_TEMPLATE = \
     """
     /*{description}*/

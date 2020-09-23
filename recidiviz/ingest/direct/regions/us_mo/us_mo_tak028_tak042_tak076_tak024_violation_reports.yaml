@@ -9,7 +9,7 @@ ancestor_keys:
   BY$DOC: state_person.state_person_id
 
 keys_to_ignore:
-  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
   - VIOLATED_CONDITIONS  #  List of conditions violated - Handled manually in controller
   - BY$CYC  # Offender Cycle Number - Handled manually in the controller
   - BY$VSN  # Violation Sequence Number - Handled manually in the controller
@@ -56,7 +56,7 @@ keys_to_ignore:
   - E6$DOS  # Unused - Duplicate of BY$VSN
   - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
   - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)
-  # TODO(1883): Update to child mappings once data extractor is flexible
+  # TODO(#1883): Update to child mappings once data extractor is flexible
   - BDGNO   # Employee Id - Handled manually in the controller
   - LNAME   # Employee Last Name - Handled manually in the controller
   - FNAME   # Employee First Name - Handled manually in the controller

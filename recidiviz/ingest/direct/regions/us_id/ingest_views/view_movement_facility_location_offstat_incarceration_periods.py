@@ -38,7 +38,7 @@ FROM
   periods_with_previous_and_next_info
 WHERE 
   fac_typ = 'I'                             # Facility type incarceration
-# TODO(3509): Consider tracking escape incarceration periods in the same way we track absconscion.
+# TODO(#3509): Consider tracking escape incarceration periods in the same way we track absconscion.
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

@@ -19,7 +19,7 @@ primary_key:
   ORDER_ID: state_court_case.state_court_case_id
 
 keys_to_ignore:
-  - COURT_INFO_ID         # TODO(2311) Use this to do better entity matching between incarceration and supervision
+  - COURT_INFO_ID         # TODO(#2311) Use this to do better entity matching between incarceration and supervision
   - EFFECTIVE_DATE        # No longer in use by source
   - SENTENCE_START_DATE   # No longer in use by source
   - CREATE_DATETIME       # No apparent use for these at the moment

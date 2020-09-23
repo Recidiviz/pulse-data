@@ -11,7 +11,7 @@ primary_key:
 keys_to_ignore:
   - FINAL_SENT_EXP_DATE   # Provided in Sentences file on a per-Sentence basis
   - CALC_POS_REL_DATE     # Provided in Sentences file on a per-Sentence basis
-  - OVR_POS_REL_DATE      # TODO(1698) Should this live on SentenceGroup?
-  - PAROLE_REVIEW_DATE    # TODO(1698) Should this live on SentenceGroup?
+  - OVR_POS_REL_DATE      # TODO(#1698) Should this live on SentenceGroup?
+  - PAROLE_REVIEW_DATE    # TODO(#1698) Should this live on SentenceGroup?
   - CREATE_DATETIME       # No apparent use for these at the moment
   - MODIFY_DATETIME       # No apparent use for these at the moment

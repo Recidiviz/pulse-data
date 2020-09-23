@@ -100,7 +100,7 @@ DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS = [{
 }]
 
 
-# TODO(2732): Implement more full test coverage of the officer and district
+# TODO(#2732): Implement more full test coverage of the officer and district
 #  functionality and the supervision success classification
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests for the find_supervision_time_buckets function."""
@@ -1317,7 +1317,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         being on PRE-CONFINEMENT supervision. These periods should produce no SupervisionTimeBuckets, and the admission
         to prison should not be counted as a revocation.
 
-        TODO(2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
+        TODO(#2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
         """
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,

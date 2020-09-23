@@ -26,7 +26,7 @@ from recidiviz.persistence.errors import MatchedMultipleDatabaseEntitiesError
 MatchObject = TypeVar('MatchObject', CoreEntity, EntityTree)
 
 
-# TODO(2022): Update all utils methods to accept MatchObject types
+# TODO(#2022): Update all utils methods to accept MatchObject types
 def get_only_match(
         ingested_entity_obj: MatchObject,
         db_entities: Sequence[MatchObject],

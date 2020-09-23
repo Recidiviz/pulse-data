@@ -11,7 +11,7 @@ ancestor_keys:
   JT$DOC: state_person.state_person_id
 
 keys_to_ignore:
-  # TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
   - JT$CYC  # Offender Cycle Number - Handled manually in the controller
   - JT$CSQ  # Citation Sequence Number - Handled manually in the controller
   - CREATE_DT  # Unused - Date Created (JT$* cols)

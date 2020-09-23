@@ -104,6 +104,6 @@ def start_chart_generation(report_context: ReportContext) -> None:
 
     prepared_data = report_context.get_prepared_data()
     payload = json.dumps(prepared_data)  # no error checking here since we already validated the JSON previously
-    # TODO(3260): Generalize this with report context
+    # TODO(#3260): Generalize this with report context
     topic = utils.get_chart_topic()
     publisher.publish(topic, payload.encode("utf-8"))

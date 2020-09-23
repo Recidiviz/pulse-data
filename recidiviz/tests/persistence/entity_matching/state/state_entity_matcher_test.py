@@ -550,7 +550,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.error_count)
         self.assertEqual(0, matched_entities.database_cleanup_error_count)
 
-    # TODO(3194): Uncomment asserts once the bug is fixed.
+    # TODO(#3194): Uncomment asserts once the bug is fixed.
     def test_matchPersons_replaceSingularChildFromMatchedParent(self):
         """Tests that if we have a singular placeholder child (ex StateCharge.court_case) in the DB, we properly update
         that child entity to no longer be a placeholder in the case that we have match an ingested parent with a
@@ -613,7 +613,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         _matched_entities = entity_matching.match(session, _STATE_CODE, ingested_people=[person])
 
         # Assert 1 - Match
-        # TODO(3194): Uncomment once resolved
+        # TODO(#3194): Uncomment once resolved
         # self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
         # self.assertEqual(1, matched_entities.total_root_entities)
         # self.assertEqual(0, matched_entities.error_count)

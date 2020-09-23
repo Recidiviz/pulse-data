@@ -81,7 +81,7 @@ class _EntityWithParentInfo:
         self.linked_parents = linked_parents
 
 
-# TODO(2504): Rename `ingested` and `db` entities to something more generic that
+# TODO(#2504): Rename `ingested` and `db` entities to something more generic that
 # still accurately describes that one is being merged onto the other.
 class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     """Class that handles entity matching for all state data."""
@@ -290,7 +290,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         session.flush()
 
         logging.info("[Entity matching] Database clean up")
-        # TODO(2578): Database cleanup errors should be surfaced properly in
+        # TODO(#2578): Database cleanup errors should be surfaced properly in
         # their own error count.
         matched_entities_builder.database_cleanup_error_count = \
             self._perform_database_cleanup(matched_entities_builder.people)
@@ -350,7 +350,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             self,
             matched_persons: List[schema.StatePerson],
             db_persons: List[schema.StatePerson]) -> None:
-        # TODO(1868): Remove any placeholders in graph without children after
+        # TODO(#1868): Remove any placeholders in graph without children after
         # write
         logging.info("[Entity matching] Merge multi-parent entities")
         self.merge_multiparent_entities(matched_persons)
@@ -358,7 +358,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         self.state_matching_delegate.perform_match_postprocessing(
             matched_persons)
 
-        # TODO(2894): Create long term strategy for dealing with/rolling back partially updated DB entities.
+        # TODO(#2894): Create long term strategy for dealing with/rolling back partially updated DB entities.
         # Make sure person ids are added to all entities in the matched persons and also to all read DB people. We
         # populate back edges on DB people as a precaution in case entity matching failed for any of these people
         # after some updates had already taken place.
@@ -395,7 +395,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         All affected persons are added to matched_persons, if not already
         present.
 
-        #TODO(2578): Currently this method does not handle merging of duplicate
+        #TODO(#2578): Currently this method does not handle merging of duplicate
         entities of multi_parent classes or multi_id classess aside from
         StatePerson. It also always merges the duplicate entity itself, and does
         not perform merging of any parent chains, which could be useful when
@@ -468,7 +468,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         if is_standalone_class(cls):
             return False
 
-        # TODO(2578): Add functionality to merge multi_id and multi_parent
+        # TODO(#2578): Add functionality to merge multi_id and multi_parent
         # classes in this case.
         if cls == schema.StatePersonExternalId:
             return False
@@ -495,7 +495,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         and |b| match. Otherwise returns false.
         """
         entity_cls_name = a.entity.get_entity_name()
-        # TODO(2578): Support merging when entities have multiple ancestor
+        # TODO(#2578): Support merging when entities have multiple ancestor
         # ancestor chains.
         if len(a.ancestor_chain) != len(b.ancestor_chain):
             logging.error(
@@ -989,7 +989,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     child_field_name=child_field_name,
                     child_to_remove=merged_child_tree.entity)
 
-                # TODO(2505): Avoid changing ancestor chains if possible.
+                # TODO(#2505): Avoid changing ancestor chains if possible.
                 # For now we only handle the case where all placeholders with
                 # matched children have the same parent chain. If they do not,
                 # we throw an error.
@@ -1330,7 +1330,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     ingested_entity_trees=[ing_tree],
                     db_entity_trees=[db_tree],
                     root_entity_cls=ing_tree.entity.__class__)
-                # TODO(2760): Report post processing error counts
+                # TODO(#2760): Report post processing error counts
                 if match_results.error_count:
                     logging.error(
                         'Attempting to merge multiparent entities of type '

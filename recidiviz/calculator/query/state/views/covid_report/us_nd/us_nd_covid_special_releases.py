@@ -27,7 +27,7 @@ US_ND_COVID_SPECIAL_RELEASES_VIEW_NAME = 'us_nd_covid_special_releases'
 US_ND_COVID_SPECIAL_RELEASES_DESCRIPTION = \
     """US_ND special releases due to COVID concerns"""
 
-# TODO(3954): pull the ND COVID special release data directly from the us_nd_raw_data in BQ instead
+# TODO(#3954): pull the ND COVID special release data directly from the us_nd_raw_data in BQ instead
 US_ND_COVID_SPECIAL_RELEASES_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -36,7 +36,7 @@ US_ND_COVID_SPECIAL_RELEASES_QUERY_TEMPLATE = \
     SELECT
       state_code,
       person_id
-    -- TODO(3954): pull this data from the US ND raw dataset instead
+    -- TODO(#3954): pull this data from the US ND raw dataset instead
     FROM `{project_id}.{covid_report_dataset}.us_nd_covid_release_person_external_id`
     JOIN `{project_id}.{state_dataset}.state_person_external_id`
       USING (state_code, external_id)

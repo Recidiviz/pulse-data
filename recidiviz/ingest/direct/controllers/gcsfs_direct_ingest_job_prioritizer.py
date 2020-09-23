@@ -43,7 +43,7 @@ class GcsfsDirectIngestJobPrioritizer:
         self.ingest_directory_path = ingest_directory_path
         self.ranks_by_file_tag: Dict[str, str] = self._build_ranks_by_file_tag(file_tag_rank_list)
 
-        # TODO(3162): Remove once this is INGEST_VIEW for all regions, always filter by INGEST_VIEW files internally
+        # TODO(#3162): Remove once this is INGEST_VIEW for all regions, always filter by INGEST_VIEW files internally
         self.file_type_filter = file_type_filter
 
     def get_next_job_args(

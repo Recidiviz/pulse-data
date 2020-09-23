@@ -85,7 +85,7 @@ def state_aggregate():
     fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
     logging.info("The path to download from is %s", path)
 
-    # TODO(3292): Uncomment once gcsfs.ls is more stable
+    # TODO(#3292): Uncomment once gcsfs.ls is more stable
     # bucket_path = os.path.join(bucket, state)
     # logging.info("The files in the directory are:")
     # logging.info(fs.ls(bucket_path))

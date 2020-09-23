@@ -28,7 +28,7 @@ from recidiviz.common.constants.person_characteristics import ETHNICITY_MAP, \
     Ethnicity, Race
 
 
-# TODO(2056): Move this logic into the converters themselves.
+# TODO(#2056): Move this logic into the converters themselves.
 def get_standard_enum_overrides() -> EnumOverrides:
     """
     Returns a dict that contains all string to enum mappings that are region specific. These overrides have a higher

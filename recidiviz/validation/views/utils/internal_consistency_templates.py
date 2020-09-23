@@ -20,7 +20,7 @@ metric total rows.
 from typing import List, Optional
 
 
-# TODO(3839): Simplify this via metric_big_query_view.dimensions
+# TODO(#3839): Simplify this via metric_big_query_view.dimensions
 def _metric_totals_table_query(partition_columns: List[str],
                                mutually_exclusive_breakdown_columns: List[str],
                                calculated_columns_to_validate: List[str]) -> str:

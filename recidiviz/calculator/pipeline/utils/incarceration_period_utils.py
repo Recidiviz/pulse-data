@@ -67,7 +67,7 @@ def collapse_incarceration_period_transfers(
     new_incarceration_periods: List[StateIncarcerationPeriod] = []
     open_transfer = False
 
-    # TODO(1782): Check to see if back to back incarceration periods are related
+    # TODO(#1782): Check to see if back to back incarceration periods are related
     #  to the same StateIncarcerationSentence or SentenceGroup to be sure we
     #  aren't counting stacked sentences or related periods as recidivism.
     for incarceration_period in sorted_incarceration_periods:
@@ -98,12 +98,12 @@ def collapse_incarceration_period_transfers(
             else:
                 # They weren't transferred here. Add this as a new
                 # incarceration period.
-                # TODO(1790): Analyze how often a transfer out is followed by an
+                # TODO(#1790): Analyze how often a transfer out is followed by an
                 #  admission type that isn't a transfer to ensure we aren't
                 #  making bad assumptions with this transfer logic.
                 new_incarceration_periods.append(incarceration_period)
         else:
-            # TODO(1790): Analyze how often an incarceration period that starts
+            # TODO(#1790): Analyze how often an incarceration period that starts
             #  with a transfer in is not preceded by a transfer out of a
             #  different facility.
             new_incarceration_periods.append(incarceration_period)
@@ -358,7 +358,7 @@ def _infer_missing_dates_and_statuses(
                     ip.release_date = ip.admission_date
                     ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
                 elif ip.release_reason or ip.release_reason_raw_text:
-                    # TODO(2981): Update MO ingest to pull in status date of last TAK026 status to use when the release
+                    # TODO(#2981): Update MO ingest to pull in status date of last TAK026 status to use when the release
                     #  date is 99999999. This should eliminate the 600ish instances of this we're seeing.
                     # There is no release date on this period, but the set release_reason indicates that the person
                     # is no longer in custody. Set the release date to the admission date.
@@ -416,7 +416,7 @@ def drop_periods_not_under_state_custodial_authority(
     """Returns a filtered subset of the provided |incarceration_periods| where all periods that are not under state
     custodial authority are filtered out.
     """
-    # TODO(2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
+    # TODO(#2912): Use `custodial_authority` to determine this instead, when that field exists on incarceration periods.
     filtered_incarceration_periods = incarceration_periods
     if not temporary_custody_periods_under_state_authority(state_code):
         filtered_incarceration_periods = drop_temporary_custody_periods(filtered_incarceration_periods)

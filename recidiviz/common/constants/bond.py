@@ -187,7 +187,7 @@ BOND_TYPE_MAP = {
     'PAY OR STAY': BondType.CASH,
     'PAY STAY': BondType.CASH,
     'PAYMENT OF FINES': BondType.CASH,
-    # TODO(990): remap 'PENDING' values to BondStatus.PENDING
+    # TODO(#990): remap 'PENDING' values to BondStatus.PENDING
     'PENDING': None,
     'PENDING PRE TRIAL': None,
     'PER COMMITMENT': None,
@@ -231,18 +231,18 @@ BOND_TYPE_MAP = {
     'SEE COMM': None,
     'SEE COMMENTS': None,
     'SEE MEMO': None,
-    # TODO(990): remap 'SERVING' values to ChargeStatus.SENTENCED
+    # TODO(#990): remap 'SERVING' values to ChargeStatus.SENTENCED
     'SERVING FELONY TIME': None,
     'SERVING MISDEMEANOR TIME': None,
     'SERVE 10': BondType.CASH,
     'SERVE TIME': None,
-    # TODO(990): remap 'SET BY COURT' to BondStatus.SET
+    # TODO(#990): remap 'SET BY COURT' to BondStatus.SET
     'SET BY COURT': None,
     'SIGNATURE BOND': BondType.NOT_REQUIRED,
     'SIGNATURE BOND W COSIGNER': BondType.NOT_REQUIRED,
     'SPLIT BONDS': BondType.CASH,
     'SPLIT SENTENCE': BondType.CASH,
-    # TODO(990): remap 'STATE INMATE' to ChargeStatus.SENTENCED
+    # TODO(#990): remap 'STATE INMATE' to ChargeStatus.SENTENCED
     'STATE INMATE': None,
     'SURETY': BondType.SECURED,
     'SURETY BOND': BondType.SECURED,

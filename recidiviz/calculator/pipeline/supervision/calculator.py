@@ -426,7 +426,7 @@ def combination_supervision_monthly_metrics(
         # If the event_combo_value is not set, then exclude this bucket from all metrics
         return metrics
 
-    # TODO(2913): Exclude combos with a supervision_type of DUAL from event-based counts
+    # TODO(#2913): Exclude combos with a supervision_type of DUAL from event-based counts
     metrics.append((event_based_same_bucket_combo, event_combo_value))
 
     # Create the person-based combo for the base metric period of the month of the bucket
