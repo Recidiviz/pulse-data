@@ -20,6 +20,7 @@
 from datetime import date
 
 import unittest
+from unittest import mock
 
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
@@ -50,10 +51,20 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
 class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""
 
+    def setUp(self) -> None:
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.program.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
+
     @freeze_time('2020-01-02')
     def test_find_program_events(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2020, 1, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -62,7 +73,7 @@ class TestFindProgramEvents(unittest.TestCase):
         )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2019, 7, 10)
@@ -71,7 +82,7 @@ class TestFindProgramEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2019, 3, 5),
             supervision_type=StateSupervisionType.PAROLE
         )
@@ -125,16 +136,26 @@ class TestFindProgramEvents(unittest.TestCase):
 class TestFindProgramReferrals(unittest.TestCase):
     """Tests the find_program_referrals function."""
 
+    def setUp(self) -> None:
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.program.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
+
     def test_find_program_referrals(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -143,7 +164,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -170,7 +191,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
     def test_find_program_referrals_no_referral(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
         )
 
@@ -186,21 +207,21 @@ class TestFindProgramReferrals(unittest.TestCase):
 
     def test_find_program_referrals_multiple_assessments(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
         assessment_1 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 3, 10)
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=29,
             assessment_date=date(2009, 9, 14)
@@ -210,7 +231,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -237,21 +258,21 @@ class TestFindProgramReferrals(unittest.TestCase):
 
     def test_find_program_referrals_assessment_after_referral(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
         assessment_1 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 3, 10)
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=29,
             assessment_date=date(2009, 10, 4)
@@ -276,14 +297,14 @@ class TestFindProgramReferrals(unittest.TestCase):
 
     def test_find_program_referrals_multiple_supervisions(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.PENDING,
         )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -293,7 +314,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -304,7 +325,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2006, 12, 1),
                 termination_date=date(2013, 1, 4),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -344,14 +365,14 @@ class TestFindProgramReferrals(unittest.TestCase):
 
     def test_find_program_referrals_officer_info(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -361,7 +382,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -404,7 +425,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     @freeze_time('2000-01-01')
     def test_find_program_participation_events(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(1999, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -415,7 +436,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionType.PAROLE
         )
@@ -444,7 +465,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_not_actively_participating(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -456,7 +477,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionType.PAROLE
         )
@@ -491,7 +512,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_no_start_date(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(1999, 10, 3),
             # This program assignment is in progress, but it's missing a required start_date
@@ -509,7 +530,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     def test_find_program_participation_events_no_discharge_date(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(1999, 10, 3),
             # This program assignment has a DISCHARGED status, but it's missing a required discharge_date
@@ -536,7 +557,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -559,7 +580,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2002, 11, 5),
             supervision_type=StateSupervisionType.PAROLE
         )
@@ -580,7 +601,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -605,7 +626,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -613,7 +634,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             )
 
         program_referrals = identifier.referrals_for_supervision_periods(
-            state_code='UT',
+            state_code='US_XX',
             program_id='XXX',
             referral_date=date(2009, 3, 12),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -625,7 +646,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         self.assertListEqual([
             ProgramReferralEvent(
-                state_code='UT',
+                state_code='US_XX',
                 program_id='XXX',
                 event_date=date(2009, 3, 12),
                 participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -639,7 +660,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -649,7 +670,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='UT',
+            state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -659,7 +680,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         program_referrals = identifier.referrals_for_supervision_periods(
-            state_code='UT',
+            state_code='US_XX',
             program_id='XXX',
             referral_date=date(2009, 3, 19),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -671,7 +692,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         self.assertListEqual([
             ProgramReferralEvent(
-                state_code='UT',
+                state_code='US_XX',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
                 participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -680,7 +701,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 supervision_type=StateSupervisionType.PROBATION
             ),
             ProgramReferralEvent(
-                state_code='UT',
+                state_code='US_XX',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
                 participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -694,7 +715,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -705,7 +726,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -715,7 +736,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         program_referrals = identifier.referrals_for_supervision_periods(
-            state_code='UT',
+            state_code='US_XX',
             program_id='XXX',
             referral_date=date(2009, 3, 19),
             participation_status=StateProgramAssignmentParticipationStatus.DENIED,
@@ -727,7 +748,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         self.assertListEqual([
             ProgramReferralEvent(
-                state_code='UT',
+                state_code='US_XX',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
                 participation_status=StateProgramAssignmentParticipationStatus.DENIED,
@@ -736,7 +757,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
                 supervision_type=supervision_period_1.supervision_type
             ),
             ProgramReferralEvent(
-                state_code='UT',
+                state_code='US_XX',
                 program_id='XXX',
                 event_date=date(2009, 3, 19),
                 participation_status=StateProgramAssignmentParticipationStatus.DENIED,
