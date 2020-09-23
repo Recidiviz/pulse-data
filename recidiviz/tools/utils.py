@@ -68,7 +68,7 @@ def _get_table(*, project_id: str, client, dataset: str, table_name: str) -> Opt
     return client.get_table(table)
 
 
-# TODO(3020): Move metadata methods into IngestMetadataManager class
+# TODO(#3020): Move metadata methods into IngestMetadataManager class
 
 class MetadataType(Enum):
     INGEST = auto()
@@ -268,7 +268,7 @@ def get_file_id_and_processed_status_for_file(
             f'Expected there to only be one row per combination of {region_code} and {normalized_file_name}')
 
     if not rows.total_rows:
-        # TODO(3020): Once metadata tables are in postgres (and we don't have any limits on UPDATE queries), insert
+        # TODO(#3020): Once metadata tables are in postgres (and we don't have any limits on UPDATE queries), insert
         #  a row here that will have the processed_time filled in later.
         logging.info(
             '\nNo found row for %s and %s in %s.', normalized_file_name, region_code, table_id)

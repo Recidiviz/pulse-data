@@ -59,7 +59,7 @@ def parse_int(int_string: str) -> int:
         raise ValueError("Cannot parse int value: %s" % int_string)
 
 
-# TODO(2365): All usages of this function should pass in a datetime, otherwise
+# TODO(#2365): All usages of this function should pass in a datetime, otherwise
 #  the value returned for strings like '9M 10D' depend on the date the code is
 #  being executed, leading to flaky tests.
 def parse_days(

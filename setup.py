@@ -33,9 +33,9 @@ REQUIRED_PACKAGES = [
     'cattrs',
     'dateparser',
     'Flask',
-    # TODO(3337): Remove this line once the google-api-core release is stable
+    # TODO(#3337): Remove this line once the google-api-core release is stable
     'google-api-core==1.17.0',
-    # TODO(2973): Resolve dependency conflict to remove this version constraint
+    # TODO(#2973): Resolve dependency conflict to remove this version constraint
     'google-api-python-client<=1.7.11',
     'google-cloud-monitoring',
     'more-itertools',
@@ -50,7 +50,7 @@ REQUIRED_PACKAGES = [
 
 setuptools.setup(
     name='recidiviz-calculation-pipelines',
-    # TODO(2031): Dynamically set the package version
+    # TODO(#2031): Dynamically set the package version
     version='1.0.76',
     install_requires=REQUIRED_PACKAGES,
     packages=setuptools.find_packages()

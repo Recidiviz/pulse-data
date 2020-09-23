@@ -16,14 +16,14 @@ child_key_mappings:
 # There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
-  - LAST_NAME                                       # TODO(1883): Handle once we can add non-id info to ancestor objects
-  - FIRST_NAME                                      # TODO(1883): Handle once we can add non-id info to ancestor objects
+  - LAST_NAME                                       # TODO(#1883): Handle once we can add non-id info to ancestor objects
+  - FIRST_NAME                                      # TODO(#1883): Handle once we can add non-id info to ancestor objects
   - OIC_INCIDENT_ID                                 # Used in primary key override
   - AGENCY_INCIDENT_ID                              # Used in primary key override
   - INCIDENT_TYPE_DESC                              # Unused, maps 1:1 to INCIDENT_TYPE
   - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION   # Referenced manually in scraper to infer location_within_facility
   - REPORT_DATE                                     # Unused for now
-  - OIC_HEARING_ID                                  # Unused for now - schema doesn't encode info about hearings TODO(2330): Include these if/when we add hearing information
+  - OIC_HEARING_ID                                  # Unused for now - schema doesn't encode info about hearings TODO(#2330): Include these if/when we add hearing information
   - OIC_HEARING_TYPE                                # Unused for now - schema doesn't encode info about hearings
   - OIC_HEARING_TYPE_DESC                           # Unused for now - schema doesn't encode info about hearings
   - HEARING_DATE                                    # Unused for now - schema doesn't encode info about hearings

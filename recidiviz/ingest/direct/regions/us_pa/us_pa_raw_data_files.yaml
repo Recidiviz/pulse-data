@@ -23,135 +23,135 @@
 default_encoding: UTF-8
 default_separator: ','
 raw_files:
-  # TODO(3312): Confirm primary keys are indeed unique within historical dump
+  # TODO(#3312): Confirm primary keys are indeed unique within historical dump
   - file_tag: dbo_Arrest_Crim
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_Arrest_Header
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_Arrest_Tech
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_BdActionProcessed
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - BdActionID
   - file_tag: dbo_BdActionType
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - BdActionID
       - BdActionTypeID
   - file_tag: dbo_BoardAction
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - BdActionID
   - file_tag: dbo_ConditionCode
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - BdActionID
       - ConditionCodeID
   - file_tag: dbo_ConditionCodeDescription
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - BdActionID
       - ConditionCodeID
       - CndDescriptionID
   - file_tag: dbo_DOB
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - DOBID
   - file_tag: dbo_Docket
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - DocketID
   - file_tag: dbo_HIST_ICMA_InmSumm_CloseCase
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - DocketID
   - file_tag: dbo_HIST_tblHIPHrngSchd
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - HrngID
       - SchdID
   - file_tag: dbo_Hist_Arrest_Crim
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_Hist_Arrest_Header
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_Hist_Arrest_Tech
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ArrestReportNO
   - file_tag: dbo_Hist_Docket
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
   - file_tag: dbo_Hist_Guideline_CloseCase
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - GuidelineID
       - DocketID
   - file_tag: dbo_Hist_Investigation
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - InvUPAR
   - file_tag: dbo_Hist_OffenderDetails
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - HOffenderDetailsID
   - file_tag: dbo_Hist_ParoleeAddress
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - EffDate
   - file_tag: dbo_Hist_Release
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_Hist_SanctionTracking
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - SetID
       - SequenceID
   - file_tag: dbo_Hist_tblHIPHrngRqs
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - HrngID
       - PrlNum
       - ParoleCountID
   - file_tag: dbo_ICMA_CasesSeen_NotSeen
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - InstitutionNumber
   - file_tag: dbo_ICMA_InmateSummarization
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - InstitutionNumber
       - ParoleCountId
       - ParoleNumber
       - SequenceNumber
   - file_tag: dbo_ICMA_ReleaseParolee
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - InstitutionNumber
       - ParoleNumber
       - ParoleCountId
   - file_tag: dbo_ICMA_Static99
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - InstitutionNumber
       - ParoleCountId
       - DocketID
   - file_tag: dbo_IcsCriminalHist
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Doc_Id
       - CrmlHistSeq_Id
   - file_tag: dbo_IcsDoc
@@ -159,16 +159,16 @@ raw_files:
       - Cont_Num
       - Doc_Id
   - file_tag: dbo_InstantOffense
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - PrimaryKey
   - file_tag: dbo_Interview
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - InstitutionNumber
       - ParoleNumber
       - DocketID
       - InterviewID
   - file_tag: dbo_InvestigationRequest
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - PBPP30ID
   - file_tag: dbo_LSIR
@@ -177,7 +177,7 @@ raw_files:
       - ParoleCountID
       - LsirID
   - file_tag: dbo_LU_BoardActionClass
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ActionClassCode
   - file_tag: dbo_LU_BoardActionKeyword_New
     primary_key_cols:
@@ -196,15 +196,15 @@ raw_files:
     primary_key_cols:
       - TreatTrackCloseCasesCode
   - file_tag: dbo_LU_TreatTrackingProgramNew
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - TreatTrackProgCode
   - file_tag: dbo_Misasa
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - status_ind
       - control_number
       - misconduct_number
   - file_tag: dbo_Mischg
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - inmate_cnt_num1
       - inmate_cnt_num2
       - miscndct_number
@@ -213,7 +213,7 @@ raw_files:
       - control_number
       - misconduct_number
   - file_tag: dbo_Mishea
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Inmate_Cnt_Num
       - Miscndct_Number
       - Sequence_Number
@@ -222,7 +222,7 @@ raw_files:
       - mov_cnt_num
       - mov_seq_num
   - file_tag: dbo_NEWParoleDecisionGuideline
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - GuidelineID
@@ -231,14 +231,14 @@ raw_files:
     primary_key_cols:
       - ParoleNumber
   - file_tag: dbo_OffenderDetails
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
   - file_tag: dbo_ParoleeAddress
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - EffDate
   - file_tag: dbo_Perrec
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - control_number
   - file_tag: dbo_RelAgentHistory
     primary_key_cols:
@@ -248,23 +248,23 @@ raw_files:
     datetime_cols:
       - LastModifiedDateTime
   - file_tag: dbo_RelEmployment
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_RelStatus
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_Release
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_ReleaseInfo
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_SanctionTracking
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - SetID
@@ -285,54 +285,54 @@ raw_files:
       - ParoleCountID
       - Sent16DGroupNumber
   - file_tag: dbo_Treatment
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - ParoleCountID
       - TreatmentID
   - file_tag: dbo_hist_Static99_CloseCase
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - ParoleNumber
       - InstitutionNumber
       - ParoleCountId
       - DocketID
   - file_tag: dbo_pb_INMATE_SUMMARY
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - sid
       - inmate_number
       - control_number
   - file_tag: dbo_pb_SENTENCE
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - sid
       - inmate_number
   - file_tag: dbo_tblEval
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
   - file_tag: dbo_tblEvalHist
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
   - file_tag: dbo_tblInmTestScore
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
       - Inmate_number
       - Test_Id
       - AsmtVer_Num
   - file_tag: dbo_tblInmTestScoreHist
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
       - Inmate_number
       - Test_Id
       - AsmtVer_Num
     supplemental_order_by_clause: "PARSE_DATETIME('%m/%d/%Y %H:%M:%S', Hist_dt) DESC"
   - file_tag: dbo_tblRecmdPrgm
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
       - Prgm_Cd
   - file_tag: dbo_tblRecmdPrgmHist
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - Control_Number
       - Prgm_Cd
   - file_tag: dbo_tblSearchInmateInfo
-    primary_key_cols:  # TODO(3312): Verify pks unique once raw data is loaded
+    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
       - inmate_number
       - control_number
       - state_id_num

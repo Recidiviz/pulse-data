@@ -72,7 +72,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = 250000
 
-        # TODO(3289): Fix hanging state table queries so we can use an on-disk postgres DB for the State/Jails schemas
+        # TODO(#3289): Fix hanging state table queries so we can use an on-disk postgres DB for the State/Jails schemas
         # as well. Currently, using postgres for StateBase causes a hang when we go t drop the tables in
         # stop_and_clear_on_disk_postgresql_database()
         fakes.use_in_memory_sqlite_database(self.schema_base())

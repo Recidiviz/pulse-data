@@ -240,7 +240,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(sorted(expected_ingest_metadata_tags_with_is_processed),
                          sorted(actual_ingest_metadata_tags_with_is_processed))
 
-        # TODO(3020): Update this to better test that metadata for split files gets properly registered
+        # TODO(#3020): Update this to better test that metadata for split files gets properly registered
 
     def run_async_file_order_test_for_controller_cls(self, controller_cls) -> GcsfsDirectIngestController:
         """Writes all expected files to the mock fs, then kicks the controller

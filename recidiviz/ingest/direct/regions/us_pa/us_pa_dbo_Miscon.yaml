@@ -37,7 +37,7 @@ keys_to_ignore:
   - confinement             # Whether confinement is a result - handled manually in controller
   - confinement_date        # Date confinement began - handled manually in controller
   - confinement_time        # Time confinement began - unused (we don't need this precision)
-  - hearings_held           # What kind of hearing was held - TODO(3312): Figure out what these codes mean
+  - hearings_held           # What kind of hearing was held - TODO(#3312): Figure out what these codes mean
   - witnesses               # Whether or not there were witnesses - unused
   - inmate_version          # Inmate version (unclear) - unused
   - recording_staff         # Id of agent who recorded incident - unused
@@ -48,9 +48,9 @@ keys_to_ignore:
   - inmate_notice_date      # "Inmate" notice date - unused
   - inmate_notice_time      # "Inmate" notice time - unused
   - hearing_after_time      # Hearing time - unused
-  - status_141              # 141 Status - TODO(3312): Learn more about this
+  - status_141              # 141 Status - TODO(#3312): Learn more about this
   - stat_hvl_dsc_141        # 141 Status description - unused (duplicative of status_141)
-  - reason_802              # Reason for 802 administrative custody - TODO(3312): Learn more about this
+  - reason_802              # Reason for 802 administrative custody - TODO(#3312): Learn more about this
   - rsn_hvl_desc_802        # Reason for 802 administrative custody description - unused (duplicative of reason_802)
   - comment                 # Whether or not there's a comment (unclear) - unused
   - drug_related            # Whether it's drug related - handled manually in controller

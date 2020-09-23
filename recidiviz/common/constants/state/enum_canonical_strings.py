@@ -47,7 +47,7 @@ state_assessment_type_asi = 'ASI'
 state_assessment_type_cssm = 'CSSM'
 state_assessment_type_hiq = 'HIQ'
 state_assessment_type_lsir = 'LSIR'
-# TODO(2668): Deprecated - Delete this enum value from our schema.
+# TODO(#2668): Deprecated - Delete this enum value from our schema.
 state_assessment_type_oras = 'ORAS'
 state_assessment_type_oras_community_supervision = 'ORAS_COMMUNITY_SUPERVISION'
 state_assessment_type_oras_community_supervision_screening = 'ORAS_COMMUNITY_SUPERVISION_SCREENING'
@@ -83,7 +83,7 @@ state_charge_classification_type_misdemeanor = 'MISDEMEANOR'
 state_charge_classification_type_other = 'OTHER'
 
 # state_court_case.py
-# TODO(1697): Add enum strings here
+# TODO(#1697): Add enum strings here
 
 # state_fine.py
 state_fine_status_paid = 'PAID'

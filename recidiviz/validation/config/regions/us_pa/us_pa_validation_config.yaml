@@ -16,5 +16,5 @@ max_allowed_error_overrides:
       numbers will get "worse" as time goes on and we get more accurate data about movements.
   - validation_name: revocation_matrix_comparison_supervision_population
     max_allowed_error_override: 0.015
-    override_reason: TODO(3951) - Needs investigation. Currently has one row where value is 0.0117.
+    override_reason: TODO(#3951) - Needs investigation. Currently has one row where value is 0.0117.
 num_allowed_rows_overrides: []

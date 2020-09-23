@@ -59,7 +59,7 @@ ALL_METRICS_INCLUSIONS_DICT = {
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
 
-# TODO(2732): Implement more full test coverage of the officer, district, the supervision success functionality
+# TODO(#2732): Implement more full test coverage of the officer, district, the supervision success functionality
 class TestMapSupervisionCombinations(unittest.TestCase):
     """Tests the map_supervision_combinations function."""
 

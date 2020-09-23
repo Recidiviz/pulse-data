@@ -1609,7 +1609,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_INCARCERATION_PERIODS
         #################################################################
-        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
+        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         is_1111_1_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -1755,7 +1755,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # MOVEMENT_FACILITY_OFFSTAT_SUPERVISION_PERIODS
         #################################################################
-        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
+        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         po_1 = entities.StateAgent.new_with_defaults(
             external_id='PO1',
@@ -2028,7 +2028,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports
         #################################################################
-        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
+        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
         sg_1111_placeholder = entities.StateSentenceGroup.new_with_defaults(
@@ -2211,8 +2211,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # ofndr_tst_tst_qstn_rspns_violation_reports_old
         #################################################################
-        # TODO(3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
-        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
+        # TODO(#3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
+        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
 
         # Arrange
         sg_2222_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
@@ -2287,8 +2287,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         #################################################################
         # sprvsn_cntc
         #################################################################
-        # TODO(3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
-        # TODO(2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
+        # TODO(#3057): Remove this placeholder tree once we have code to combine placeholder trees within a person tree.
+        # TODO(#2492): Remove dangling placeholders from expected graph once functionality is in entity matching.
         # Arrange
         sg_1111_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2401,6 +2401,6 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         # Rerun for sanity
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
-        # TODO(2492): Until we implement proper cleanup of dangling placeholders, reruns of certain files will create
+        # TODO(#2492): Until we implement proper cleanup of dangling placeholders, reruns of certain files will create
         #  new dangling placeholders with each rerun.
         self.assert_expected_db_people(expected_people, ignore_dangling_placeholders=True)

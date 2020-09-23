@@ -44,10 +44,10 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'AE',  # Escape
         ],
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
-            # TODO(3312): Ask what the difference between these two is - APV is much more common
+            # TODO(#3312): Ask what the difference between these two is - APV is much more common
             'APD',  # Parole Detainee
 
-            # TODO(3312): What to do when the parole status code is TPV (i.e. they're already convicted)? I don't think
+            # TODO(#3312): What to do when the parole status code is TPV (i.e. they're already convicted)? I don't think
             #  this always corresponds to a revocation! For example CN=300233, who it looks like was transferred to a
             #  county jail (sentence status TC), then transferred back as an APV months later. However, CN=314993 seems
             #  to have just entered as a violation. TL;DR - going to need to change this logic to a mapper.
@@ -63,9 +63,9 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             # Old, similar usage to 'AA'
             'AIT',  # Add - In Transit
 
-            # TODO(2002): This status represents that this person was returning from a long stay in a state hospital, it
-            # generally follows a 'D' movement code with sentence status code 'SH'. Ideally we'd specify that this was
-            # a transfer from a hospital
+            # TODO(#2002): This status represents that this person was returning from a long stay in a state hospital,
+            # it generally follows a 'D' movement code with sentence status code 'SH'. Ideally we'd specify that this
+            # was a transfer from a hospital
             'ASH',  # Add - State Hospital
             'ATT',  # Add - [Unlisted Transfer]
 
@@ -85,7 +85,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'SC',  # Status Change
         ],
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: [
-            # TODO(3312): I think this is a person from another state who PA is holding for some short-ish
+            # TODO(#3312): I think this is a person from another state who PA is holding for some short-ish
             #  period of time until they are sent back to that state - need to confirm. They are not being tried by the
             #  PA Parole Board and will have a 'NA' (Not Applicable) parole_stat_cd (parole status code). (ASK PA)
             'AOPV',  # Out Of State Probation/Parole Violator
@@ -290,7 +290,7 @@ def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecial
     """
     start_parole_status_code, sentence_type = concatenated_codes.split(' ')
 
-    # TODO(3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
+    # TODO(#3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
     #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
     #  Program? Is this just an error?
     is_parole_violation_pending = start_parole_status_code == 'PVP'

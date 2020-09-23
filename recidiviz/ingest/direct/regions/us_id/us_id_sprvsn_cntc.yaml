@@ -29,7 +29,7 @@ keys_to_ignore:
   - cntc_typ_subtyp_cd  # Unused - subtype code. Only relevant for administrative tasks
   - cntc_tm             # Unused - HH:MM that the supervision contact took palce
   - drug_arrest_flg     # Unused - whether the person was arrested for drugs possession.
-                        # TODO(3506): Is this ever set without a result of 'ARREST'?
+                        # TODO(#3506): Is this ever set without a result of 'ARREST'?
   - udc_agnt2_id        # Unused - secondary agent in contact (rarely set)
   - next_appt_dt        # Unused - next appointment date
   - next_appt_tm        # Unused - next appointment time
@@ -40,9 +40,9 @@ keys_to_ignore:
   - firearm_seized      # Unused - boolean to say if a firearm was seized
   - updt_usr_id         # Unused - id of the person updating the db row.
   - cntc_success_flg    # Unused - whether or not the contact was successful. Duplicate of cntc_rslt_cd
-  - cntc_cat_cd         # Unused - TODO(3506): What is this?
+  - cntc_cat_cd         # Unused - TODO(#3506): What is this?
   - st_id_num           # Unused - agent state id number
   - agcy_id             # Unused - agent agency
-  - lan_id              # Unused - TODO(3506): Understand what this is
+  - lan_id              # Unused - TODO(#3506): Understand what this is
   - body_loc_cd         # Unused - agent location
   - updt_dt             # Unused - update date for the row

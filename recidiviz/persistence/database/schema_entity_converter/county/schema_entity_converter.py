@@ -49,7 +49,7 @@ class _CountySchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType,
 
     def _should_skip_field(
             self, entity_cls: Type, field: FieldNameType) -> bool:
-        # TODO(1145): Correctly convert related_sentences once schema
+        # TODO(#1145): Correctly convert related_sentences once schema
         # for this field is finalized.
         return entity_cls == entities.Sentence and field == 'related_sentences'
 

@@ -15,7 +15,7 @@ key_mappings:
   charge.case_pk: charge.case_number
   charge.offense_code: charge.statute
   charge.offense_description: charge.name
-  charge.decorations: charge.charge_notes # TODO(1821): add to charge.category
+  charge.decorations: charge.charge_notes # TODO(#1821): add to charge.category
   charge.offense_date: charge.offense_date
 
   charge.comments: charge.number_of_counts

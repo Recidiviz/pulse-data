@@ -8,7 +8,7 @@ key_mappings:
 child_key_mappings:
   BS$NCI: state_charge.ncic_code
   # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
-  # TODO(2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
+  # TODO(#2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
   BS$ASO: state_charge.statute
   BS$CLT: state_charge.classification_type
   BS$CLA: state_charge.classification_subtype
@@ -27,20 +27,20 @@ keys_to_ignore:
 - BS$DOC  # Offender DOC Number - Handled manually in the controller
 - BS$CYC  # Offender Cycle Number - Handled manually in the controller
 - BS$SEO  # Sentence Key Sequence Number - Handled manually in the controller
-- BS$OCN  # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(2604): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
+- BS$OCN  # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(#2604): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
 - BS$LEO  # Unused - Sentence Sequence Number
 - BS$SCF  # Sentence Completed Flag - Handled manually in the controller
-- BS$CRT  # TODO(2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
+- BS$CRT  # TODO(#2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
 - BS$NRN  # Unused - Offender Name Reference Number
 - BS$CNT  # Sentence Offense County - Handled manually in the controller
-- BS$POF  # TODO(2604) - What is this? - not in TAK table index
-- BS$ACL  # TODO(2604) - What is this? - not in TAK table index
-- BS$CCI  # TODO(1698) - Sentence Concurrent/Consecutive Ind - Add info about sentence relationships to schema
-- BS$CRQ  # TODO(1698) - Sentence Concurrent/Consecutive Xref - Add info about sentence relationships to schema
-- BS$CRC  # TODO(2305) - Court Circuit
-- BS$CRD  # TODO(2305) - Court Division
-- BS$PLE  # TODO(2607) - Sentence Plea - Add a plea_type enum on the state_charge
-- BS$AR   # TODO(2331) - Sentence Arrest Date
+- BS$POF  # TODO(#2604) - What is this? - not in TAK table index
+- BS$ACL  # TODO(#2604) - What is this? - not in TAK table index
+- BS$CCI  # TODO(#1698) - Sentence Concurrent/Consecutive Ind - Add info about sentence relationships to schema
+- BS$CRQ  # TODO(#1698) - Sentence Concurrent/Consecutive Xref - Add info about sentence relationships to schema
+- BS$CRC  # TODO(#2305) - Court Circuit
+- BS$CRD  # TODO(#2305) - Court Division
+- BS$PLE  # TODO(#2607) - Sentence Plea - Add a plea_type enum on the state_charge
+- BS$AR   # TODO(#2331) - Sentence Arrest Date
 - BS$UID  # Unused - User ID
 - BS$DCR  # Unused - Date Created (BS$* cols)
 - BS$TCR  # Unused - Time Created (BS$* cols)
@@ -50,7 +50,7 @@ keys_to_ignore:
 - BU$DOC  # Unused - Duplicate of BS$DOC
 - BU$CYC  # Unused - Duplicate of BS$CYC
 - BU$SEO  # Unused - Duplicate of BS$SEO
-- BU$FSO  # TODO(2604) - Field Sentence Key Sequence Number
+- BU$FSO  # TODO(#2604) - Field Sentence Key Sequence Number
 - BU$SBY  # Years - Handled manually in the controller
 - BU$SBM  # Months - Handled manually in the controller
 - BU$SBD  # Days - Handled manually in the controller

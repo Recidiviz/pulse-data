@@ -32,7 +32,7 @@ sanitized_internal_metrics AS (
       date_of_supervision, 
       person_external_id, 
       CASE  
-        # TODO(3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
+        # TODO(#3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
         #  this case.
         # US_ID - All low supervision unit POs had inconsistent data before July 2020.
         WHEN state_code = 'US_ID' 
@@ -55,7 +55,7 @@ sanitized_internal_metrics AS (
        #       and otherwise punished as if they were actively on supervision. 
        #    - `INTERNAL_UNKNOWN` - vast majority of these people are folks with active bench warrants
        (supervision_type IN ('PROBATION', 'PAROLE', 'DUAL') 
-       # TODO(3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter. 
+       # TODO(#3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter. 
        AND supervising_district_external_id IS NOT NULL))
 ),
 internal_metrics_for_valid_regions_and_dates AS (

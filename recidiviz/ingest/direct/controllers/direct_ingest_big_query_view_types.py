@@ -115,7 +115,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
 
     @staticmethod
     def _except_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
-        # TODO(3020): Update the raw data yaml format to allow for us to specify other columns that should always be
+        # TODO(#3020): Update the raw data yaml format to allow for us to specify other columns that should always be
         #  excluded for the purposes of diffing (e.g. update date cols that change with every new import).
         except_cols = raw_file_config.datetime_cols + [_FILE_ID_COL_NAME, _UPDATE_DATETIME_COL_NAME]
         except_cols_str = ', '.join(except_cols)

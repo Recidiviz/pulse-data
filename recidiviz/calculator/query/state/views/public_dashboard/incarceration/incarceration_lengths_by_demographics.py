@@ -35,7 +35,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     from an incarceration for a new charge, and notably excludes time spent incarcerated following a parole revocation.     
     """
 
-# TODO(3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
+# TODO(#3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
 INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/

@@ -21,7 +21,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(2399): Update this query to query from raw data table once we can ingest
+# TODO(#2399): Update this query to query from raw data table once we can ingest
 #  elite_offense_in_custody_and_pos_report_data.csv
 VIEW_QUERY_TEMPLATE = """
 SELECT 

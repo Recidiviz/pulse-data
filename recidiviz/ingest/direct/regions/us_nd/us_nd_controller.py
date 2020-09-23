@@ -185,7 +185,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_externalmovements',
         ]
 
-        # TODO(2399): Once we are capable of handling historical and nightly ingest of
+        # TODO(#2399): Once we are capable of handling historical and nightly ingest of
         #  'elite_offense_in_custody_and_pos_report_data', remove this check.
         if not environment.in_gae_production() and not environment.in_gae_staging():
             tags.append('elite_offense_in_custody_and_pos_report_data')
@@ -197,7 +197,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'docstars_offensestable',
             'docstars_ftr_episode',
             'docstars_lsi_chronology',
-            # TODO(1918): Integrate bed assignment / location history
+            # TODO(#1918): Integrate bed assignment / location history
         ]
 
         return tags
@@ -354,7 +354,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
         from_facility = row['FROM_AGY_LOC_ID']
         active_flag = row['ACTIVE_FLAG']
 
-        # TODO(2002): If this edge is a transfer in or out of a hospital or other non-prison facility, create extra
+        # TODO(#2002): If this edge is a transfer in or out of a hospital or other non-prison facility, create extra
         #  proper edges in and out of those facilities.
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateIncarcerationPeriod):
@@ -473,7 +473,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             if isinstance(extracted_object, StateSupervisionPeriod):
                 create_if_not_exists(agent_to_create, extracted_object, 'supervising_officer')
 
-    # TODO(1882): Specify this mapping in the YAML once a single csv column can
+    # TODO(#1882): Specify this mapping in the YAML once a single csv column can
     # can be mapped to multiple fields.
     @staticmethod
     def _hydrate_supervision_period_sentence_shared_date_fields(
@@ -563,7 +563,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateIncarcerationIncident):
                 if extracted_object.incident_type == 'MISC':
-                    # TODO(1948): Infer incident type from offense code cols when marked as MISC
+                    # TODO(#1948): Infer incident type from offense code cols when marked as MISC
                     extracted_object.incident_type = None
 
     @staticmethod
@@ -765,7 +765,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
             StateSupervisionType.HALFWAY_HOUSE: ['COMMUNITY PLACEMENT PGRM'],
             StateSupervisionType.PAROLE: ['SSOP'],
-            # TODO(2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION
+            # TODO(#2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION
             # on the supervision period that this gets copied down to in the hook for Docstars Offender Cases
             StateSupervisionType.PRE_CONFINEMENT: ['PRE-TRIAL'],
 
@@ -816,7 +816,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 ['1', '2', '5', '8', '12', '15', '16', '17'],
             StateSupervisionPeriodTerminationReason.EXPIRATION: ['4', '7', '19', '20'],
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
-            # TODO(2891): Ensure that all of these codes are migrated to to new admission and release reasons
+            # TODO(#2891): Ensure that all of these codes are migrated to to new admission and release reasons
             # when we migrate these periods to a supervision_period_supervision_type of INVESTIGATION
             StateSupervisionPeriodTerminationReason.INVESTIGATION: ['21', '22', '23', '24', '25', '26', '27', '28'],
             StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10', '18'],
@@ -829,7 +829,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
-            # TODO(2305): What are the appropriate court case statuses?
+            # TODO(#2305): What are the appropriate court case statuses?
             StateCourtCaseStatus: ['A', 'STEP'],
             StateIncarcerationPeriodAdmissionReason: ['COM', 'CONT', 'CONV', 'NTAD'],
             StateIncarcerationPeriodReleaseReason: ['ADMN', 'CONT', 'CONV', 'REC', '4139'],
@@ -1054,7 +1054,7 @@ def _record_revocation_on_violation(violation: StateSupervisionViolation, row: D
     elif revocation_for_technical:
         violation_type = StateSupervisionViolationType.TECHNICAL.value
         violation_types.append(violation_type)
-    # TODO(2668): Once BQ dashboard for ND is using new pipeline calcs that reference
+    # TODO(#2668): Once BQ dashboard for ND is using new pipeline calcs that reference
     #  state_supervision_violation_types (2750), delete the flat violation_type field on
     #  StateSupervisionViolation entirely.
     violation.violation_type = violation_type

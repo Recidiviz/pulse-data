@@ -60,6 +60,6 @@ class SessionFactory:
         # query. See https://www.postgresql.org/docs/12/transaction-iso.html and
         # https://stackoverflow.com/questions/42288808/why-does-postgresql-serializable-transaction-think-this-as-conflict.
         #
-        # TODO(3928): Once defined in code, set this on the SQL instance itself instead of per session.
+        # TODO(#3928): Once defined in code, set this on the SQL instance itself instead of per session.
         if session.bind.dialect.name == 'postgresql':
             session.execute('SET random_page_cost=1;')

@@ -54,7 +54,7 @@ function next_alpha_version {
 }
 
 function verify_deploy_permissions {
-    # TODO(3996): Actually check Github for Owner-level repo permissions
+    # TODO(#3996): Actually check Github for Owner-level repo permissions
 
     GIT_USER_EMAIL="$(git config user.email)"
     EMAIL_PATTERN=".*\@recidiviz\.org$"

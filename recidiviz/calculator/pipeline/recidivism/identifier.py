@@ -146,7 +146,7 @@ def prepare_incarceration_periods_for_recidivism_calculations(
         collapse_transfers_with_different_pfi=True,
         overwrite_facility_information_in_transfers=True)
 
-    # TODO(2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states
+    # TODO(#2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states
     #  that may have temporary custody periods at this point (currently just US_MO).
     incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
 

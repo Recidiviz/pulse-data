@@ -135,7 +135,7 @@ class BuildableAttr:
         for field, attribute in attr.fields_dict(cls).items():
             if field in build_dict:
                 if is_forward_ref(attribute):
-                    # TODO(1886): Implement detection of non-ForwardRefs
+                    # TODO(#1886): Implement detection of non-ForwardRefs
                     # ForwardRef fields are expected to be references to other
                     # BuildableAttrs
                     raise ValueError("build_dict should be a dictionary of "

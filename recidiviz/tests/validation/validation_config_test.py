@@ -65,7 +65,7 @@ class ValidationConfigTest(unittest.TestCase):
             'existence_view': ValidationNumAllowedRowsOverride(
                 region_code='US_XX', validation_name='existence_view',
                 num_allowed_rows_override=10,
-                override_reason='These should not exist. TODO(0001) - fix it.')
+                override_reason='These should not exist. TODO(#0001) - fix it.')
         }
         expected_config = ValidationRegionConfig(
             region_code='US_XX',

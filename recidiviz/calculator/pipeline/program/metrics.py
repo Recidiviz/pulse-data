@@ -97,7 +97,7 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric):
     # Optional characteristics
 
     # Supervision Type
-    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Program participation status
@@ -155,7 +155,7 @@ class ProgramParticipationMetric(ProgramMetric):
     program_location_id: Optional[str] = attr.ib(default=None)
 
     # Supervision Type
-    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     @staticmethod

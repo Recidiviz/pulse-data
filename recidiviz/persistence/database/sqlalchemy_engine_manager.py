@@ -95,7 +95,7 @@ class SQLAlchemyEngineManager:
         # We opt for this over explicit locking to simplify our application logic. If this causes performance issues
         # we may reconsider. See https://www.postgresql.org/docs/9.1/applevel-consistency.html.
         #
-        # TODO(3734): Consider doing this for all databases.
+        # TODO(#3734): Consider doing this for all databases.
         if schema_base is StateBase:
             return 'SERIALIZABLE'
         return None

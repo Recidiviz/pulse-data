@@ -13,7 +13,7 @@ keys_to_ignore:
   - LSI_CHARGE      # No apparent use for this
   - INACTIVEDATE    # No apparent use for this
   - RecDate         # No apparent use for this
-  - CREATED_BY      # TODO(1892): Is this the person who administered the assessment?
+  - CREATED_BY      # TODO(#1892): Is this the person who administered the assessment?
   - VERSION_ID      # No apparent use for this
   - COMPLETE        # No apparent use for this
   - SUPERLEVEL      # We get a more recent value in Docstars Offenders

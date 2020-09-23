@@ -484,7 +484,7 @@ def _set_backedges_and_return_unique_periods(
 
     unique_periods = []
     for sentence, period in sentences_and_periods:
-        # TODO(2888): Remove this once these bi-directional relationships are hydrated properly
+        # TODO(#2888): Remove this once these bi-directional relationships are hydrated properly
         # Setting this manually because this direction of hydration doesn't happen in the hydration steps
         if isinstance(sentence, StateSupervisionSentence):
             period.supervision_sentences.append(sentence)

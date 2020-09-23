@@ -703,7 +703,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             self):
         state_incarceration_incident_353844 = StateIncarcerationIncident(
             state_incarceration_incident_id='347484-353844',
-            incident_type=None,  # TODO(1948): Make MISC types more specific
+            incident_type=None,  # TODO(#1948): Make MISC types more specific
             incident_date='1/27/2019',
             facility='NDSP',
             location_within_facility='TRAF',
@@ -775,7 +775,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         state_incarceration_incident_381647 = StateIncarcerationIncident(
             state_incarceration_incident_id='372645-381647',
-            incident_type=None,  # TODO(1948): Make MISC types more specific
+            incident_type=None,  # TODO(#1948): Make MISC types more specific
             incident_date='4/17/2018',
             facility='MRCC',
             location_within_facility='HRT1',
@@ -1396,7 +1396,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         ])
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
-    # TODO(2157): Move into integration specific file
+    # TODO(#2157): Move into integration specific file
     def test_run_full_ingest_all_files_specific_order(self):
         ######################################
         # ELITE OFFENDER IDENTIFIERS
@@ -1487,7 +1487,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # ELITE ALIASES
         ######################################
         # Arrange
-        # TODO(2158): Why do we fill out full_name and keep the distinct
+        # TODO(#2158): Why do we fill out full_name and keep the distinct
         # parts (in comparison to Person).
         person_1_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
             state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text='HISPANIC', person=person_1)
@@ -1547,7 +1547,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # ELITE SENTENCE AGGS
         ######################################
         # Arrange
-        # TODO(2155): Should these have an external_id?
+        # TODO(#2155): Should these have an external_id?
         incarceration_sentence_1 = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -1969,8 +1969,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # ELITE ORDERS
         ######################################
         # Arrange
-        # TODO(2158): Parse full_name in the same way we do for person
-        # TODO(2111): Remove duplicates once we have external_ids.
+        # TODO(#2158): Parse full_name in the same way we do for person
+        # TODO(#2111): Remove duplicates once we have external_ids.
         agent_judy = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.JUDGE,
             agent_type_raw_text='JUDGE',
@@ -2265,7 +2265,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         incident_378515.incarceration_incident_outcomes.append(outcome_378515_57)
         incarceration_period_105640_1.incarceration_incidents.append(incident_378515)
 
-        # TODO(2131): Remove placeholders automatically
+        # TODO(#2131): Remove placeholders automatically
         incarceration_sentence_113377_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2399,7 +2399,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # DOCSTARS OFFENDERS
         ######################################
         # Arrange
-        # TODO(2156): custom matching logic for assessments?
+        # TODO(#2156): custom matching logic for assessments?
         agent_40 = entities.StateAgent.new_with_defaults(
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             agent_type_raw_text='SUPERVISION_OFFICER',
@@ -2413,7 +2413,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             assessment_type_raw_text='SORAC',
             state_code=_STATE_CODE,
             person=person_1)
-        # TODO(2134): Currently overwriting race entity when the Enum value
+        # TODO(#2134): Currently overwriting race entity when the Enum value
         # is unchanged.
         person_1_race_2 = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='1',

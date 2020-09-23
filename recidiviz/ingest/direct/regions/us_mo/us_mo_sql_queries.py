@@ -778,7 +778,7 @@ STATUSES_BY_DATE_FRAGMENT = \
     )
     """
 
-# TODO(2798): Update this query/mappings to remove explicit linking to
+# TODO(#2798): Update this query/mappings to remove explicit linking to
 #  sentences - entity matching should handle date-based matching just like it
 #  does for supervision periods.
 TAK158_TAK023_TAK026_INCARCERATION_PERIOD_FROM_INCARCERATION_SENTENCE = \
@@ -1027,7 +1027,7 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
     )
     """
 
-# TODO(3736): Incremental updates from this query will be supported automatically when we transition MO to SQL
+# TODO(#3736): Incremental updates from this query will be supported automatically when we transition MO to SQL
 #  pre-processing.
 TAK034_TAK026_TAK039_APFX90_APFX91_SUPERVISION_ENHANCEMENTS_SUPERVISION_PERIODS = \
     f"""
@@ -1515,7 +1515,7 @@ FINALLY_FORMED_CITATIONS_E6 = \
 FINALLY_FORMED_VIOLATIONS_E6 = \
     TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT.format(document_type_code='XIF')
 
-# TODO(2805): Update to do a date-based join on OFFICER_ROLE_SPANS_FRAGMENT
+# TODO(#2805): Update to do a date-based join on OFFICER_ROLE_SPANS_FRAGMENT
 TAK028_TAK042_TAK076_TAK024_VIOLATION_REPORTS = \
     f"""
     -- tak028_tak042_tak076_tak024_violation_reports
@@ -1715,7 +1715,7 @@ ORAS_ASSESSMENTS_WEEKLY = \
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
         # ~~~ START REFERENCE TABLE QUERIES ~~~ #
-        # TODO(3736): When we transition MO to SQL pre-processing, these tables should be imported as normal raw data
+        # TODO(#3736): When we transition MO to SQL pre-processing, these tables should be imported as normal raw data
         #  imports and the calculation pipelines should pull the necessary data from
         #  `us_mo_raw_data_up_to_date_views.<table_name>_latest`.
         ('us_mo_tak025_sentence_status_xref', US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY),

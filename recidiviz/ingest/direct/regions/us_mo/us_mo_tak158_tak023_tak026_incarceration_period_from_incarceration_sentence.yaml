@@ -40,8 +40,8 @@ keys_to_ignore:
   - SQN     # Unused - Duplicate of BT$SQN
   - START_STATUS_CODE     # Unused - Copied when relevant from F1$ORC - Handled manually in the controller
   - START_STATUS_SUBTYPE  # Unused - Copied when relevant from F1$OPT
-  - END_STATUS_CODE       # Copied when relevant from F1$CPT - Handled manually in the controller  TODO(2898) - Use TAK026 statuses to populate release reason
-  - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller  TODO(2898) - Use TAK026 statuses to populate release reason
+  - END_STATUS_CODE       # Copied when relevant from F1$CPT - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
+  - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
   - START_STATUS_SEQ_NUM  # Populated when valid from BW$SSO - Handled manually in the controller
   - END_STATUS_SEQ_NUM    # Populated when valid from BW$SSO - Handled manually in the controller
-  - END_SCD_CODES         # Unused - Status codes for the period end date TODO(2898) - Use TAK026 statuses to populate release reason
+  - END_SCD_CODES         # Unused - Status codes for the period end date TODO(#2898) - Use TAK026 statuses to populate release reason

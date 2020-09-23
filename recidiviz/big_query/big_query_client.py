@@ -113,7 +113,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_or_update_view(self,
-                              # TODO(3020): BigQueryView now encodes dataset information, remove this parameter.
+                              # TODO(#3020): BigQueryView now encodes dataset information, remove this parameter.
                               dataset_ref: bigquery.DatasetReference,
                               view: BigQueryView) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.

@@ -435,7 +435,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
         related_entities = []
         for relationship_name in entity.get_relationship_property_names():
-            # TODO(1145): For County schema, fix direction checker to gracefully
+            # TODO(#1145): For County schema, fix direction checker to gracefully
             # handle the fact that SentenceRelationship exists in the schema
             # but not in the entity layer.
             if self.get_system_level() == SystemLevel.STATE:

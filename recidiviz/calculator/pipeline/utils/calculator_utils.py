@@ -449,7 +449,7 @@ def characteristics_dict_builder(
         # RevocationReturnSupervisionTimeBuckets
         'violation_count_type',
 
-        # TODO(3873): Remove deprecated aggregate fields from metrics
+        # TODO(#3873): Remove deprecated aggregate fields from metrics
         # These are deprecated aggregated values from before when all metric outputs were aggregates. These are
         # currently being set in the `Produce...Metrics` step of each pipeline.
         'count',

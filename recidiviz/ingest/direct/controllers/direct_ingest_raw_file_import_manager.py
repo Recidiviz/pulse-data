@@ -359,8 +359,8 @@ class DirectIngestRawFileImportManager:
                                path: GcsfsFilePath,
                                file_config: DirectIngestRawFileConfig) -> List[str]:
         """Returns a list of normalized column names for the raw data file at the given path."""
-        # TODO(3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should instead
-        # define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
+        # TODO(#3020): We should not derive the columns from what we get in the uploaded raw data CSV - we should
+        # instead define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
         # this function to make sure that the columns in the CSV is a strict subset of expected columns. This will allow
         # to gracefully any raw data re-imports where a new column gets introduced in a later file.
 

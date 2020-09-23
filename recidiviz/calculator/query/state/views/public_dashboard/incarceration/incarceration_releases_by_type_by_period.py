@@ -27,7 +27,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME = 'incarceration_releases_by_
 INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_DESCRIPTION = \
     """Incarceration releases by period broken down by release type and demographics."""
 
-# TODO(3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
+# TODO(#3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
 INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/

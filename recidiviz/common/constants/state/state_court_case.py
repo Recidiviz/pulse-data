@@ -27,7 +27,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
-    # TODO(1697): Add values here
+    # TODO(#1697): Add values here
 
     @staticmethod
     def _get_default_map():
@@ -39,7 +39,7 @@ class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
 
-    # TODO(1697): Add values here
+    # TODO(#1697): Add values here
 
     @staticmethod
     def _get_default_map():
@@ -47,12 +47,12 @@ class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 _STATE_COURT_TYPE_MAP: Dict[str, StateCourtType] = {
-    # TODO(1697): Add values here
+    # TODO(#1697): Add values here
     'PRESENT WITHOUT INFO': StateCourtType.PRESENT_WITHOUT_INFO,
 }
 
 _STATE_COURT_CASE_STATUS_MAP: Dict[str, StateCourtCaseStatus] = {
-    # TODO(1697): Add values here
+    # TODO(#1697): Add values here
     'EXTERNAL UNKNOWN': StateCourtCaseStatus.EXTERNAL_UNKNOWN,
     'PRESENT WITHOUT INFO': StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
 }

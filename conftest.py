@@ -62,7 +62,7 @@ def pytest_runtest_teardown(item):
     if hasattr(item, 'google_auth_patcher') and item.google_auth_patcher is not None:
         item.google_auth_patcher.stop()
 
-# TODO(263): return the datastore client from this fixture
+# TODO(#263): return the datastore client from this fixture
 @pytest.fixture(scope='session')
 def emulator(request):
     datastore_emulator, pubsub_emulator = _start_emulators()

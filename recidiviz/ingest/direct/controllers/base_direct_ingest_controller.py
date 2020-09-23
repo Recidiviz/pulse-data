@@ -99,8 +99,8 @@ class BaseDirectIngestController(Ingestor,
                 self._job_tag(next_job_args))
             return
 
-        # TODO(3020): Add similar logic between the raw data BQ import and ingest view export tasks
-        # TODO(3162): Delete this wait logic from here once all regions have been transitioned to a SQL
+        # TODO(#3020): Add similar logic between the raw data BQ import and ingest view export tasks
+        # TODO(#3162): Delete this wait logic from here once all regions have been transitioned to a SQL
         #  preprocessing model.
         wait_time_sec = self._wait_time_sec_for_next_args(next_job_args)
         logging.info("Found next ingest job to run [%s] with wait time [%s].",
@@ -142,7 +142,7 @@ class BaseDirectIngestController(Ingestor,
         if self._schedule_raw_data_import_tasks():
             logging.info("Found pre-ingest raw data import tasks to schedule.")
             return True
-        # TODO(3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
+        # TODO(#3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
         #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
         #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
         #  to do view exports.
