@@ -45,7 +45,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
         `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
       USING (state_code, job_id, year, month, metric_period_months, metric_type)
       LEFT JOIN
-        `{project_id}.{base_dataset}.state_incarceration_facility_capacity`
+        `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
       WHERE metric_period_months = 0
       AND methodology = 'PERSON'
