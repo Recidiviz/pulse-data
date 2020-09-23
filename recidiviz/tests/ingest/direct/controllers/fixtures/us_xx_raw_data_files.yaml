@@ -35,9 +35,16 @@ raw_files:
   - file_tag: tagC
     primary_key_cols:
       - COL1
+  - file_tag: tagInvalidCharacters
+    primary_key_cols:
+      - COL_1
+  - file_tag: tagNormalizationConflict
+    primary_key_cols:
+      - COL_1
   - file_tag: tagPipeSeparatedNonUTF8
     primary_key_cols:
       - PRIMARY_COL1
     separator: '|'
     encoding: ISO-8859-1
     ignore_quotes: True
+
