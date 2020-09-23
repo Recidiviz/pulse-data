@@ -497,6 +497,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             program_id=program_assignment.program_id,
             program_location_id=program_assignment.program_location_id,
             event_date=date.today(),
+            is_first_day_in_program=True,
             supervision_type=supervision_period.supervision_type
         )]
 
