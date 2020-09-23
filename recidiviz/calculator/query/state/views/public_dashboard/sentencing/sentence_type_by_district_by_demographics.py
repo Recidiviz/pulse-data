@@ -30,7 +30,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     """Current incarcerated and supervised population, broken down by sentence type (probation/incarceration),
         judicial district, and demographics."""
 
-# TODO(3720): Improve the sentence type classification and make it less ND specific
+# TODO(#3720): Improve the sentence type classification and make it less ND specific
 SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -38,7 +38,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       SELECT
         state_code,
         person_id,
-        -- TODO(3720): Improve the sentence type classification and make it less ND specific --
+        -- TODO(#3720): Improve the sentence type classification and make it less ND specific --
         IF(admission_reason = 'PROBATION_REVOCATION', 'PROBATION', 'INCARCERATION') as sentence_type,
         prioritized_race_or_ethnicity,
         gender,
@@ -51,7 +51,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       SELECT
         state_code,
         person_id,
-        -- TODO(3720): Improve the sentence type classification and make it less ND specific --
+        -- TODO(#3720): Improve the sentence type classification and make it less ND specific --
         IF(supervision_type = 'PROBATION', 'PROBATION', 'INCARCERATION') as sentence_type,
         prioritized_race_or_ethnicity,
         gender,

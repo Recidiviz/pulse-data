@@ -19,7 +19,7 @@ from typing import Optional, Dict, Type, Callable, List
 
 import attr
 
-# TODO(1885): Enforce all ForwardRef attributes on an Entity are optional
+# TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.persistence.entity.core_entity import CoreEntity
 
 

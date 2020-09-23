@@ -57,7 +57,7 @@ def find_program_events(
     Returns:
         A list of ProgramEvents for the person.
     """
-    # TODO(2855): Bring in supervision and incarceration sentences to infer the supervision type on supervision
+    # TODO(#2855): Bring in supervision and incarceration sentences to infer the supervision type on supervision
     #  periods that don't have a set supervision type
     program_events: List[ProgramEvent] = []
 
@@ -200,7 +200,7 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
                         is_first_day_in_program=is_first_day_in_program,
                         program_id=program_id,
                         program_location_id=program_location_id,
-                        # TODO(2891): Use supervision_period_supervision_type
+                        # TODO(#2891): Use supervision_period_supervision_type
                         supervision_type=supervision_period.supervision_type
                     ))
         else:
@@ -250,7 +250,7 @@ def referrals_for_supervision_periods(
                     participation_status=participation_status,
                     assessment_score=assessment_score,
                     assessment_type=assessment_type,
-                    # TODO(2891): Use supervision_period_supervision_type
+                    # TODO(#2891): Use supervision_period_supervision_type
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id=supervising_officer_external_id,
                     supervising_district_external_id=supervising_district_external_id

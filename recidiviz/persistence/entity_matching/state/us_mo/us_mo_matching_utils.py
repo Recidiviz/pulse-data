@@ -23,7 +23,7 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.state.state_matching_utils import get_all_entities_of_cls
 
 
-# TODO(1883): Remove this once our proto converter and data extractor can handle the presence of multiple paths to
+# TODO(#1883): Remove this once our proto converter and data extractor can handle the presence of multiple paths to
 #  entities with the same id
 def remove_suffix_from_violation_ids(
         ingested_persons: List[schema.StatePerson]):

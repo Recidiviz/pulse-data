@@ -337,7 +337,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                              state_code=state_code
                              ))
 
-        # TODO(2769): Don't bring this in as a root entity
+        # TODO(#2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = \
             (p
@@ -398,7 +398,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         person_id_to_county_query = select_all_by_person_query(
             reference_dataset,
             PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-            # TODO(3602): Once we put state_code on StatePerson objects, we can update the
+            # TODO(#3602): Once we put state_code on StatePerson objects, we can update the
             # persons_to_recent_county_of_residence query to have a state_code field, allowing us to also filter the
             # output by state_code.
             state_code_filter=None,

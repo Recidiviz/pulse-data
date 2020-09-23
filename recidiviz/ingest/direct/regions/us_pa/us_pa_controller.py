@@ -215,7 +215,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateAssessmentType.PA_RST: ['RST'],
         StateAssessmentType.STATIC_99: ['ST99'],
 
-        # TODO(3020): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as final.
+        # TODO(#3020): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
+        # final.
         StateSentenceStatus.COMPLETED: [
             'B',   # Bailed
             'CS',  # Change other Sentence
@@ -251,9 +252,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'EI',  # Escape Institution
             'F',   # Furloughed
 
-            # TODO(3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no longer
-            # the responsibility of the PA DOC? Should they also stop being counted towards population counts? What does
-            # it mean when this code is used with a county code?
+            # TODO(#3312): What does it mean when someone else is in custody elsewhere? Does this mean they are no
+            # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
+            # What does it mean when this code is used with a county code?
             'IC',  # In Custody Elsewhere
             'MH',  # Mental Health
             'SH',  # State Hospital
@@ -392,7 +393,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'H09',  # Absconding
         ],
         StateSupervisionViolationType.FELONY: [
-            # TODO(3312): Join the supervision_violation view against dbo_LU_TreatTrackClosingCodes
+            # TODO(#3312): Join the supervision_violation view against dbo_LU_TreatTrackClosingCodes
             # to determine FELONY vs MISDEMEANOR
             'H04',  # Pending criminal charges (UCV) Detained/Not detained
         ],
@@ -547,7 +548,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation_response',
         ]
 
-        # TODO(3024): Move these tags to the list above as each one is ready to run in stage
+        # TODO(#3024): Move these tags to the list above as each one is ready to run in stage
         unlaunched_file_tags: List[str] = [
             # Empty for now
         ]
@@ -584,7 +585,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Generates a row post-hook that will hydrate alternate external ids than the "main" external id in a row, for
         rows which have multiple external ids to be hydrated.
 
-        TODO(1882): If yaml format supported raw values and multiple children of the same type,
+        TODO(#1882): If yaml format supported raw values and multiple children of the same type,
         then this would be no-longer necessary.
         """
 
@@ -804,7 +805,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 obj.is_life = str(is_life)
                 obj.is_capital_punishment = str(is_capital_punishment)
 
-    # TODO(3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
+    # TODO(#3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
     @staticmethod
     def _strip_id_whitespace(_file_tag: str,
                              _row: Dict[str, str],
@@ -856,7 +857,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                # TODO(3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on IC
+                # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on IC
                 #  sentence status + location codes? Ask PA about this!
                 obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
 

@@ -81,7 +81,7 @@ def _is_match(*,
             != db_entity.get_field('state_code'):
         return False
 
-    # TODO(2671): Update all person attributes below to use complete entity
+    # TODO(#2671): Update all person attributes below to use complete entity
     # equality instead of just comparing individual fields.
     if isinstance(ingested_entity, schema.StatePersonExternalId):
         db_entity = cast(schema.StatePersonExternalId, db_entity)
@@ -275,7 +275,7 @@ def add_child_to_entity(
         entity.set_field(child_field_name, child_field)
 
 
-# TODO(2244): Create general approach for required fields/default values
+# TODO(#2244): Create general approach for required fields/default values
 def convert_to_placeholder(entity: DatabaseEntity):
     for field_name in get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD):
         if field_name == entity.get_class_id_name():
@@ -297,7 +297,7 @@ def convert_to_placeholder(entity: DatabaseEntity):
         entity.clear_field(field_name)
 
 
-# TODO(2244): Create general approach for required fields/default values
+# TODO(#2244): Create general approach for required fields/default values
 def default_merge_flat_fields(
         *, new_entity: DatabaseEntity, old_entity: DatabaseEntity) -> DatabaseEntity:
     """Merges all set non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly merged
@@ -473,7 +473,7 @@ def read_persons(
     """
     check_all_objs_have_type(ingested_people, schema.StatePerson)
 
-    # TODO(1868): more specific query
+    # TODO(#1868): more specific query
     db_people = dao.read_people(session)
     logging.info("Read [%d] people from DB in region [%s]",
                  len(db_people), region)

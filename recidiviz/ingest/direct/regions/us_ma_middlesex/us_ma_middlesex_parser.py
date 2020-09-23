@@ -58,7 +58,7 @@ class UsMaMiddlesexParser:
             ii = extractor.extract_and_populate_data(person_dict)
             person = scraper_utils.one('person', ii)
             person.place_of_residence = self.get_address(person_dict)
-            # TODO(1802): parse ethnicity in enum overrides
+            # TODO(#1802): parse ethnicity in enum overrides
             if person.race == 'HISPANIC' or person.ethnicity == 'Y':
                 person.race, person.ethnicity = None, 'HISPANIC'
             else:

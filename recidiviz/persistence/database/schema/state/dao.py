@@ -87,7 +87,7 @@ def read_placeholder_persons(session: Session, state_code: str) -> List[schema.S
     return _normalize_record_trees(schema_persons)
 
 
-# TODO(1907): Rename to read_persons.
+# TODO(#1907): Rename to read_persons.
 def read_people(
         session: Session, full_name=None, birthdate=None
 ) -> List[schema.StatePerson]:

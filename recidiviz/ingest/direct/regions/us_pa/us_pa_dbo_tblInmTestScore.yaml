@@ -13,7 +13,7 @@ primary_key:
 keys_to_ignore:
   - Test_Id           # Test id - handled manually in the controller
   - Inmate_number     # Inmate number - handled manually in the controller
-  - Fac_Cd            # Facility code - TODO(3031): Add state_assessment.location
+  - Fac_Cd            # Facility code - TODO(#3031): Add state_assessment.location
   - ModBy_EmpNum      # "Modified by" employee number - unused
   - LstMod_Dt         # Last modified date - unused
   - AsmtVer_Num       # Assessment version number (index number for a particular instance of a particular assessment for a particular person) - handled manually in the controller

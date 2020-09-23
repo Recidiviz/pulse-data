@@ -175,12 +175,12 @@ state_incarceration_type = Enum(
 state_court_case_status = Enum(
     enum_strings.external_unknown,
     enum_strings.present_without_info,
-    # TODO(1697): Add values here
+    # TODO(#1697): Add values here
     name='state_court_case_status')
 
 state_court_type = Enum(
     enum_strings.present_without_info,
-    # TODO(1697): Add values here,
+    # TODO(#1697): Add values here,
     name='state_court_type')
 
 state_agent_type = Enum(
@@ -1618,9 +1618,9 @@ class StateSupervisionPeriod(StateBase,
 
     person = relationship('StatePerson', uselist=False)
     supervising_officer = relationship('StateAgent', uselist=False, lazy='selectin')
-    # TODO(2668): Deprecated - Delete this column from our schema.
+    # TODO(#2668): Deprecated - Delete this column from our schema.
     supervision_violations = relationship('StateSupervisionViolation', backref='supervision_period', lazy='selectin')
-    # TODO(2697): Rename `supervision_violation_entries` to
+    # TODO(#2697): Rename `supervision_violation_entries` to
     # `supervision_violations` once the 1:many relationship
     # `supervision_violations` above has been removed from our db/schema object.
     supervision_violation_entries = relationship(
@@ -1698,7 +1698,7 @@ class StateSupervisionCaseTypeEntry(
     external_id = Column(String(255), index=True)
 
 
-# TODO: Update historical column names here -- or downgrade and upgrade?
+# TODO(#4136): Update historical column names here -- or downgrade and upgrade?
 class StateSupervisionCaseTypeEntryHistory(
         StateBase, _StateSupervisionCaseTypeEntrySharedColumns,
         HistoryTableSharedColumns):
@@ -2068,7 +2068,7 @@ class _StateSupervisionViolationSharedColumns(
     is_sex_offense = Column(Boolean)
     violated_conditions = Column(String(255))
 
-    # TODO(2668): Deprecated - remove this column from our schema.
+    # TODO(#2668): Deprecated - remove this column from our schema.
     @declared_attr
     def supervision_period_id(self):
         return Column(
@@ -2206,7 +2206,7 @@ class _StateSupervisionViolationResponseSharedColumns(
     response_subtype = Column(String(255))
     response_date = Column(Date)
     state_code = Column(String(255), nullable=False, index=True)
-    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     decision = Column(state_supervision_violation_response_decision)
     decision_raw_text = Column(String(255))
     revocation_type = \
@@ -2324,7 +2324,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
 
     external_id = Column(String(255), index=True)
     state_code = Column(String(255), nullable=False, index=True)
-    # TODO(2450): Switch program_id/location_id for a program foreign key once
+    # TODO(#2450): Switch program_id/location_id for a program foreign key once
     # we've ingested program information into our schema.
     program_id = Column(String(255))
     program_location_id = Column(String(255))

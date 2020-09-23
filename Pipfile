@@ -24,7 +24,7 @@ numpy = "*"
 tabula-py = "==1.3.1"
 us = "*"
 dateparser = "*"
-# TODO(2394): The gcsfs library is unsupported by Google - replace all usages with google-cloud-storage
+# TODO(#2394): The gcsfs library is unsupported by Google - replace all usages with google-cloud-storage
 gcsfs = "*"
 pandas = "*"
 more-itertools = "*"

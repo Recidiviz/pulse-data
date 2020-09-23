@@ -220,8 +220,8 @@ MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
     '20I1060',  # Court Comm-MH 120 Day-Addl Chg
 
     #  All Probation returns for shock/treatment (40I70*)
-    # TODO(2666): These are not technically revocation, revist once we think more broadly about how to handle returns vs
-    #   revocations
+    # TODO(#2666): These are not technically revocation, revist once we think more broadly about how to handle returns
+    #   vs revocations
     #  Note: These seem to be treated like a New Admission (NA) in TAK158, though they always follow a 15I1000 (New
     #  Court Probation) or other new admission reason.
     '40I7000',  # Field Supv to DAI-Oth Sentence
@@ -442,7 +442,7 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeri
     ],
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [],
     StateSupervisionPeriodTerminationReason.REVOCATION: [
-        # TODO(2666): Consider reclassifying some of these as a status that
+        # TODO(#2666): Consider reclassifying some of these as a status that
         #  indicates that it's a return but not a revocation
         '45O0ZZZ',  # Board Holdover     'MUST VERIFY'
         '45O0010',  # Emergency Board RF Housing
@@ -633,7 +633,7 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[StateSupervisionPeriod
         # person is only actually committed to a MO facility when we see a 40I6000 status. When this shows up on the
         # admission date of a supervision period, it's likely because the person has been assigned to a PO for
         # accounting purposes.
-        # TODO(2905): Write a query to figure out the spans of time someone is under CC Fed/State incarceration and
+        # TODO(#2905): Write a query to figure out the spans of time someone is under CC Fed/State incarceration and
         #  generate incarceration periods for that time so we don't count these people erroneously as under supervision.
         '10L6000',  # New CC Fed/State (Papers Only)
         '20L6000',  # CC Fed/State (Papers Only)-AC
@@ -682,7 +682,7 @@ def supervision_period_admission_reason_mapper(label: str) -> Optional[StateSupe
     if label == 'TRANSFER WITHIN STATE':
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
 
-    # TODO(2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
     statuses = sorted_list_from_str(label, ' ')
 
     def status_rank(status: str) -> int:
@@ -724,7 +724,7 @@ def supervision_period_termination_reason_mapper(label: str) -> Optional[StateSu
     if label == 'TRANSFER WITHIN STATE':
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
 
-    # TODO(2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
     statuses = sorted_list_from_str(label, ' ')
 
     def status_rank(status: str):
@@ -891,7 +891,7 @@ def supervising_officer_mapper(label: str) -> Optional[StateAgentType]:
     """Maps |label|, a MO specific job title, to its corresponding StateAgentType."""
     if not label:
         return None
-    # TODO(2865): Update enum normalization so that we separate by commas instead of spaces
+    # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
     if ('PROBATION' in label and 'PAROLE' in label) or 'P P' in label:
         return StateAgentType.SUPERVISION_OFFICER
     return StateAgentType.INTERNAL_UNKNOWN

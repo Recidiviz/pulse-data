@@ -429,7 +429,7 @@ class Sentence(IngestObject):
         return relationship
 
 
-# TODO(1145): add logic to convert to SentenceRelationship proto (and also add normalization logic to remove duplicates
+# TODO(#1145): add logic to convert to SentenceRelationship proto (and also add normalization logic to remove duplicates
 #  where A->B and B->A relationship are both provided)
 class SentenceRelationship(IngestObject):
     """Class for information about the relationship between two sentences. Referenced from Sentence."""
@@ -664,7 +664,7 @@ class StateSentenceGroup(IngestObject):
         self.county_code: Optional[str] = county_code
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
-        # TODO(2668): Delete this from SentenceGroup
+        # TODO(#2668): Delete this from SentenceGroup
         self.is_life: Optional[str] = is_life
 
         self.state_supervision_sentences: List[StateSupervisionSentence] = state_supervision_sentences or []
@@ -1401,14 +1401,14 @@ class StateSupervisionViolation(IngestObject):
                  state_supervision_violated_conditions=None, state_supervision_violation_responses=None):
         self.state_supervision_violation_id: Optional[str] = state_supervision_violation_id
 
-        # TODO(2668): DEPRECATED - Delete this when we delete the column
+        # TODO(#2668): DEPRECATED - Delete this when we delete the column
         self.violation_type: Optional[str] = violation_type
         self.violation_date: Optional[str] = violation_date
         self.state_code: Optional[str] = state_code
         self.is_violent: Optional[str] = is_violent
         self.is_sex_offense: Optional[str] = is_sex_offense
 
-        # TODO(2668): DEPRECATED - Delete this when we delete the column
+        # TODO(#2668): DEPRECATED - Delete this when we delete the column
         self.violated_conditions: Optional[str] = violated_conditions
         self.state_supervision_violation_types: List[StateSupervisionViolationTypeEntry] = \
             state_supervision_violation_types or []

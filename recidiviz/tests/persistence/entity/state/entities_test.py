@@ -132,5 +132,5 @@ class TestStateEntities(TestCase):
         self.assertEqual([person1a, person2a],
                          [person1b, person2b])
 
-    # TODO(1894): Add more detailed unit tests for entity_graph_eq (first
+    # TODO(#1894): Add more detailed unit tests for entity_graph_eq (first
     #  defined in #1812)

@@ -10,7 +10,7 @@ primary_key:
 
 keys_to_ignore:
   - assess_tst_id       # Unused - Always 2 for LSIR assessments
-  - body_loc_cd         # Unused - Location of person at time of assessment  TODO(3031): Add state_assessment.location
+  - body_loc_cd         # Unused - Location of person at time of assessment  TODO(#3031): Add state_assessment.location
   - score_by_name       # Unused - Person who scored the assessment
   - tst_dt              # Unused - Date the test was administered. Usually the same as the date the test was certified
                         #         (cert_dt)

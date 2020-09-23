@@ -12,7 +12,7 @@ keys_to_ignore:
   - BOOKING_NO          # This particular id appears unused elsewhere
   - LIVING_UNIT_ID      # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
   - ACTIVE_FLAG         # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
-  - IN_OUT_STATUS       # TODO(1698) Should this live on SentenceGroup?
+  - IN_OUT_STATUS       # TODO(#1698) Should this live on SentenceGroup?
   - BOOKING_BEGIN_DATE  # Self-reported as unreliable. Covered elsewhere anyway
   - BOOKING_END_DATE    # Self-reported as unreliable. Covered elsewhere anyway
   - BOOKING_TYPE        # Always institution commitment (INST), which is implied

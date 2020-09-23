@@ -204,7 +204,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSentenceStatus.COMMUTED: [
             'M',  # Commuted
         ],
-        # TODO(3517): Consider breaking out these sentence status enums in our schema (
+        # TODO(#3517): Consider breaking out these sentence status enums in our schema (
         #  vacated, sealed, early discharge, expired, etc)
         StateSentenceStatus.COMPLETED: [
             'C',  # Completed
@@ -227,9 +227,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'I',  # Imposed
             'J',  # RJ To Court - Used for probation after treatment
             'N',  # Interstate Parole
-            'O',  # Correctional Compact - TODO(3506): Get more info from ID.
+            'O',  # Correctional Compact - TODO(#3506): Get more info from ID.
             'P',  # Bond Appeal - unused, but present in ID status table.
-            'R',  # Court Retains Jurisdiction - used when a person on a rider. TODO(3506): Whats the difference
+            'R',  # Court Retains Jurisdiction - used when a person on a rider. TODO(#3506): Whats the difference
             # between this and 'W'?
             'T',  # Interstate probation - unused, but present in ID status table.
             'U',  # Unsupervised - probation
@@ -255,10 +255,11 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'Technical',                        # From violation report 204
         ],
 
-        # TODO(3510): Go through values with ID to ensure we have the correct mappings
+        # TODO(#3510): Go through values with ID to ensure we have the correct mappings
         StateSupervisionViolationResponseDecision.CONTINUANCE: [
             'Reinstatement',    # Parole/probation recommendation from violation report 210
-            # TODO(3510): Is there a better enum for this (recommendation that max release date is used instead of min)?
+            # TODO(#3510): Is there a better enum for this (recommendation that max release date is used instead of
+            # min)?
             'Recommended Full Term Release Date',  # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SPECIALIZED_COURT: [
@@ -267,7 +268,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'Referral to Problem Solving Court',    # Probation recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            # TODO(3510): Are these 'Diversion' recs shock incarceration or treatment in prison?
+            # TODO(#3510): Are these 'Diversion' recs shock incarceration or treatment in prison?
             'Diversion - Jail',     # Parole recommendation from violation report 210
             'Diversion - CRC',      # Parole recommendation from violation report 210
             'Diversion - Prison',   # Parole recommendation from violation report 210
@@ -276,7 +277,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: [
             'Rider',                            # Probation recommendation from violation report 210
             'Rider Recommendation',             # Probation recommendation from violation report 204
-            # TODO(3510): is this shock incarceration or treatment in prison?
+            # TODO(#3510): is this shock incarceration or treatment in prison?
             'PVC - Parole Violator Program',    # Parole recommendation from violation report 204
         ],
         StateSupervisionViolationResponseDecision.REVOCATION: [
@@ -345,9 +346,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'EMPLOYER',
         ],
         StateSupervisionContactLocation.INTERNAL_UNKNOWN: [
-            'LAW ENFORCEMENT AGENCY',   # TODO(3511): Consider adding as enum
-            'COMPACT STATE',            # TODO(3511): Consider adding as enum
-            'PAROLE COMMISSION',        # TODO(3511): Consider adding as enum
+            'LAW ENFORCEMENT AGENCY',   # TODO(#3511): Consider adding as enum
+            'COMPACT STATE',            # TODO(#3511): Consider adding as enum
+            'PAROLE COMMISSION',        # TODO(#3511): Consider adding as enum
             'WBOR',                     # Data entry error - WBOR is an online form filled out that isn't a location.
 
             # No longer used
@@ -391,7 +392,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'SUCCESSFUL',
             'PROGRESS REVIEW',
             'FACE TO FACE',
-            'ARREST',  # TODO(3506): Is there another place to ingest arrest entities or should we take it from
+            'ARREST',  # TODO(#3506): Is there another place to ingest arrest entities or should we take it from
                        #  sprvsn_cntc?
         ],
         StateSupervisionContactStatus.ATTEMPTED: [
@@ -414,8 +415,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ICE DETAINER',
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
-            'DOSAGE',                   # TODO(3692): Figure out what this means
-            'DOSAGE ELIGIBLE',          # TODO(3692): Figure out what this means
+            'DOSAGE',                   # TODO(#3692): Figure out what this means
+            'DOSAGE ELIGIBLE',          # TODO(#3692): Figure out what this means
             'ADMINISTRATIVE',           # Used for a non-standardized set of situations.
             'GOLD SEAL PENDING',        # Pending supervision termination (after parole board has approved termination)
             # No longer under IDOC authority
@@ -429,7 +430,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'SEX OFFENSE',
             'TRANSITION',
         ],
-        # TODO(3692): Validate that we have the correct mappings for new values of LOW, MODERATE, HIGH
+        # TODO(#3692): Validate that we have the correct mappings for new values of LOW, MODERATE, HIGH
         StateSupervisionLevel.MINIMUM: [
             'LOW',
             'LEVEL 1',              # Historical value for minimum
@@ -468,7 +469,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'SO TO GENERAL LEVEL4',     # Historical value - Previously sex offense caseload, now on maximum general
                                         # caseload
         ],
-        # TODO(3692): Ask ID if there are new values to show whether someone is in a diversion court?
+        # TODO(#3692): Ask ID if there are new values to show whether someone is in a diversion court?
         StateSupervisionLevel.DIVERSION: [
             # All are historical values below
             'DRUG COURT',
@@ -693,7 +694,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 if supervision_type_override:
                     obj.supervision_period_supervision_type = supervision_type_override
 
-    # TODO(2912): Add custodial authority to incarceration periods
+    # TODO(#2912): Add custodial authority to incarceration periods
     @staticmethod
     def _set_supervision_site(
             _file_tag: str,
@@ -723,7 +724,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         elif living_unit_cd == LIMITED_SUPERVISION_LIVING_UNIT:
             supervision_site = create_supervision_site(
                 supervising_district_id=DISTRICT_0, supervision_specific_location=LIMITED_SUPERVISION_UNIT_NAME)
-        # TODO(3309): Consider adding warrant spans to schema.
+        # TODO(#3309): Consider adding warrant spans to schema.
         # Folks with an existing bench warrant are not actively supervised and have no office info.
         elif living_unit_cd == BENCH_WARRANT_LIVING_UNIT:
             supervision_site = create_supervision_site(supervising_district_id=facility_name,
@@ -892,7 +893,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                         obj.termination_reason = INTERSTATE_FACILITY_CODE
 
                 # If the person has been deported set admission/release reason accordingly.
-                # TODO(3800): Consider adding specific enum for Deported
+                # TODO(#3800): Consider adding specific enum for Deported
                 if cur_loc_name == DEPORTED_LOCATION_NAME:
                     obj.admission_reason = DEPORTED_LOCATION_NAME
                     if obj.termination_date:

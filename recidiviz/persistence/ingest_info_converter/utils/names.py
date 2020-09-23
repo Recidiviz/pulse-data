@@ -16,7 +16,7 @@
 # ============================================================================
 """Utilities for working with names in the ingest info converter.
 
-TODO(1861): Add unit tests instead of relying on implicit testing elsewhere
+TODO(#1861): Add unit tests instead of relying on implicit testing elsewhere
 """
 
 import json

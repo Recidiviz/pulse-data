@@ -105,7 +105,7 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum,
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
-# TODO(3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
+# TODO(#3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
 @unique
 class StateSpecializedPurposeForIncarceration(EntityEnum,
                                               metaclass=EntityEnumMeta):

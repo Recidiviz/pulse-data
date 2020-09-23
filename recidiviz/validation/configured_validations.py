@@ -139,7 +139,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER.build()),
 
-        # TODO(2981): This should stop failing for MO once we fix the 600ish periods with end dates of 99999999
+        # TODO(#2981): This should stop failing for MO once we fix the 600ish periods with end dates of 99999999
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER.build()),
 
         ExistenceDataValidationCheck(view=PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER.build()),
@@ -243,7 +243,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=['metric_total', 'age_bucket_breakdown_sum',
                                 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']
         ),
-        # TODO(3743): This validation will fail until we fix the view to handle people who age into new buckets
+        # TODO(#3743): This validation will fail until we fix the view to handle people who age into new buckets
         SamenessDataValidationCheck(
             view=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER.build(),
             comparison_columns=['metric_total', 'race_or_ethnicity_breakdown_sum', 'gender_breakdown_sum']

@@ -77,7 +77,7 @@ def _save_record_trees(session: Session,
     record trees. Returns the list of persisted (SchemaPersonType) objects.
     """
 
-    # TODO(2382): Once County entity matching is updated to use
+    # TODO(#2382): Once County entity matching is updated to use
     #  DatabaseEntity objects directly, we shouldn't need to add dummy ids / do
     #  a session merge/flush for the county code.
     if metadata.system_level == SystemLevel.COUNTY:

@@ -24,7 +24,7 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-# TODO(2891): Update supervision period objects in schema to use this type
+# TODO(#2891): Update supervision period objects in schema to use this type
 @unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
     """Enum that denotes what type of supervision someone is serving at a moment in time."""
@@ -56,7 +56,7 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
     COURT_SENTENCE = state_enum_strings.state_supervision_period_admission_reason_court_sentence
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    # TODO(3276): Remove this enum once we've completely transitioned to using
+    # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
     INVESTIGATION = state_enum_strings.state_supervision_period_admission_reason_investigation
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_admission_reason_transfer_out_of_state
@@ -114,7 +114,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
     EXPIRATION = state_enum_strings.state_supervision_period_termination_reason_expiration
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    # TODO(3276): Remove this enum once we've completely transitioned to using
+    # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
     INVESTIGATION = state_enum_strings.state_supervision_period_termination_reason_investigation
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state

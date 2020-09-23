@@ -22,7 +22,7 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
 def incarceration_period_status_mapper(label: str) -> StateIncarcerationPeriodStatus:
     """Parses the custody status from a string containing the external movement edge direction and active flag."""
 
-    # TODO(2865): Update enum normalization so that we separate by a dash instead of spaces
+    # TODO(#2865): Update enum normalization so that we separate by a dash instead of spaces
     direction_code, active_flag = label.split(' ')
 
     if direction_code == 'OUT':

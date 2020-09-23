@@ -1,4 +1,4 @@
-# TODO(1883): Combine this and us_id_early_discharge_incarceration_sentence.yaml into one file once we can dynamically
+# TODO(#1883): Combine this and us_id_early_discharge_incarceration_sentence.yaml into one file once we can dynamically
 #  choose ancestry types from YAML.
 key_mappings:
   ofndr_num: state_person.state_person_id
@@ -8,7 +8,7 @@ child_key_mappings:
 
   incrno: state_sentence_group.state_sentence_group_id
 
-  # TODO(1883): We overwrite state_supervision_sentence_id in the controller, but this is here because otherwise
+  # TODO(#1883): We overwrite state_supervision_sentence_id in the controller, but this is here because otherwise
   #  the supervision_sentence isn't added to our extracted objects cache.
   sent_no: state_supervision_sentence.state_supervision_sentence_id
 
@@ -31,13 +31,13 @@ keys_to_ignore:
   - sent_no                   # Sentence number - Handled manually in the controller.
 
   - caseno_seq                        # Unused - Case sequence number within a single docket for related sentence
-  - case_planning_respond             # Unused - TODO(3506): Get more details from ID
+  - case_planning_respond             # Unused - TODO(#3506): Get more details from ID
   - compliance                        # Unused - whether the person has been compliant to their supervision conditions
   - created_by_dt                     # Unused - date that the row was created
   - created_by_id                     # Unused - id of the person who created the request (usually a person's PO)
   - current_lsir_id                   # Unused - test id of the persons current LSIR assessment
   - decision_date                     # Unused - date a decision was made. We use official_decision_dt instead.
-                                      #          TODO(3506): Understand why these can differ
+                                      #          TODO(#3506): Understand why these can differ
   - decision_state                    # Unused - integer indicating at what stage in the process the request is in
                                       #          (ranges 2-5)
   - decision_updt_date                # Unused - time that the row was updated with decision information
@@ -48,13 +48,13 @@ keys_to_ignore:
   - fine_last_pymnt_dt                # Unused - last date a fine payment was made
   - initial_lsir_id                   # Unused - test id of the person's initial LSIR assessment
   - juris_auth_sbmt_dt                # Unused - date that the request was sent to the jurisdiction authority
-                                      #          TODO(3506): Validate that this is correct
+                                      #          TODO(#3506): Validate that this is correct
   - juris_auth_sbmt_id                # Unused - id of the person who entered the juris_auth_sbmt_dt
   - jurisdiction_decision_code_id     # Unused - int code that is synonymous with jurisdiction_decision_code_desc
   - juris_decision_comment            # Unused - comments surrounding early discharge decision
   - meets_criteria                    # Unused - bool indicating if the person meets the early discharge critera.
   - mitt_srl                          # Unused - id of the mittimus associated with the sentences
-  - narrative                         # Unused - TODO(3506): Get more details from ID
+  - narrative                         # Unused - TODO(#3506): Get more details from ID
   - ncic_chk                          # Unused - bool indicating if an NCIC check was run (see if there are new charges)
   - ncic_chk_date                     # Unused - date of the NCIC check
   - restitution_curr_bal              # Unused - current restitution balance
@@ -64,4 +64,4 @@ keys_to_ignore:
   - subst_tst_start_dt                # Unused - date since which the person has had no negative substance tests
   - sup_aprv_sbmt_dt                  # Unused - date that the supervisor reviewed the request
   - sup_aprv_sbmt_id                  # Unused - id of the person submitting the request to the supervisor
-                                      #          TODO(3506): Or is it the supervisor id?
+                                      #          TODO(#3506): Or is it the supervisor id?

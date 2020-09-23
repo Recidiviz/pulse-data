@@ -248,7 +248,7 @@ class GcsfsDirectIngestController(
                                                                   file_metadata)
 
         if not self.region.are_ingest_view_exports_enabled_in_env():
-            # TODO(3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
+            # TODO(#3162) This is a stopgap measure for regions that have only partially launched. Delete once SQL
             #  pre-processing is enabled for all direct ingest regions.
             parts = filename_parts_from_path(data_import_args.raw_data_file_path)
             ingest_file_tags = self.get_file_tag_rank_list()
@@ -294,7 +294,7 @@ class GcsfsDirectIngestController(
         if self._schedule_raw_data_import_tasks():
             logging.info("Found pre-ingest raw data import tasks to schedule.")
             return True
-        # TODO(3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
+        # TODO(#3020): We have logic to ensure that we wait 10 min for all files to upload properly before moving on to
         #  ingest. We probably actually need this to happen between raw data import and ingest view export steps - if we
         #  haven't seen all files yet and most recent raw data file came in sometime in the last 10 min, we should wait
         #  to do view exports.

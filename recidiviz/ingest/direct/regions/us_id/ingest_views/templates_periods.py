@@ -171,7 +171,7 @@ FACILITY_PERIOD_FRAGMENT = """
 # This fragment takes their casemgr table, which is combination of movements, case assignment dates, and employee codes
 # and transforms it into spans of time for which a person is under supervision and has a valid agent assigned to them.
 PO_PERIODS_FRAGMENT = """
-    # TODO(3554): Update all queries to use employee table rather than applc_usr as it has job roles. 
+    # TODO(#3554): Update all queries to use employee table rather than applc_usr as it has job roles. 
     casemgr_movements AS (
       SELECT 
         docno,

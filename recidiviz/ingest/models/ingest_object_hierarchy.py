@@ -76,7 +76,7 @@ _HIERARCHY_MAP: Dict[
                     key='state_sentence',
                     ancestor_choices={'state_incarceration_sentence',
                                       'state_supervision_sentence'})),
-            # TODO(1883): It's a hack that we assume the parent of a
+            # TODO(#1883): It's a hack that we assume the parent of a
             #  state_incarceration_period is an state_incarceration_sentence
             #  here. In theory parent could be state_supervision_sentence that
             #  has a revocation edge into a state_incarceration_period.
@@ -135,7 +135,7 @@ _HIERARCHY_MAP: Dict[
                 'state_supervision_period',
                 'state_supervision_violation',
                 'state_supervision_violation_response'),
-            # TODO(1883): The entry here for |state_agent| is a hack. StateAgent
+            # TODO(#1883): The entry here for |state_agent| is a hack. StateAgent
             #  can have multiple ancestor paths depending on what type of agent
             #  it is. We need to update the extractor code to just generate
             #  buckets of objects of a given type, with some encoding about

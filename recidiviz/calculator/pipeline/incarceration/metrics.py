@@ -119,7 +119,7 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
     # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
-    # TODO(3275): Rename to purpose_for_incarceration
+    # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 
@@ -160,7 +160,7 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
     # Admission reason raw text
     admission_reason_raw_text: Optional[str] = attr.ib(default=None)
 
-    # TODO(3275): Rename to purpose_for_incarceration
+    # TODO(#3275): Rename to purpose_for_incarceration
     # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(default=None)
 

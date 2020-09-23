@@ -126,7 +126,7 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
 
     #   - What
-    # TODO(1905): Not optional in schema
+    # TODO(#1905): Not optional in schema
     id_type: Optional[str] = attr.ib()
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
@@ -144,7 +144,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib()  # non-nullable
     alias_type: Optional[StatePersonAliasType] = attr.ib()
     alias_type_raw_text: Optional[str] = attr.ib()
-    # TODO(1905): Remove defaults for string fields
+    # TODO(#1905): Remove defaults for string fields
     full_name: Optional[str] = attr.ib(default=None)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
@@ -396,7 +396,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a group of related sentences, which may be served consecutively or concurrently."""
     # Status
-    # TODO(1698): Look at Measures for Justice doc for methodology on how to calculate an aggregate sentence status
+    # TODO(#1698): Look at Measures for Justice doc for methodology on how to calculate an aggregate sentence status
     #  from multiple sentence statuses.
     # This will be a composite of all the linked individual statuses
     status: StateSentenceStatus = attr.ib()  # non-nullable
@@ -408,7 +408,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Attributes
     #   - When
     date_imposed: Optional[datetime.date] = attr.ib()
-    # TODO(1698): Consider including rollup projected completion dates?
+    # TODO(#1698): Consider including rollup projected completion dates?
 
     #   - Where
     state_code: str = attr.ib()  # non-nullable
@@ -424,7 +424,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     min_length_days: Optional[int] = attr.ib()
     max_length_days: Optional[int] = attr.ib()
 
-    # TODO(2668): Remove this column - can be derived from incarceration
+    # TODO(#2668): Remove this column - can be derived from incarceration
     #  sentences.
     is_life: Optional[bool] = attr.ib()
 
@@ -440,7 +440,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
     incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
     fines: List['StateFine'] = attr.ib(factory=list)
-    # TODO(1698): Add information about the time relationship between individual
+    # TODO(#1698): Add information about the time relationship between individual
     #  sentences (i.e. consecutive vs concurrent).
 
 
@@ -452,7 +452,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
-    # TODO(2891): Make this of type StateSupervisionSentenceType (new type)
+    # TODO(#2891): Make this of type StateSupervisionSentenceType (new type)
     supervision_type: Optional[StateSupervisionType] = attr.ib()
     supervision_type_raw_text: Optional[str] = attr.ib()
 
@@ -669,7 +669,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     status_raw_text: Optional[str] = attr.ib()
 
     # Type
-    # TODO(2891): DEPRECATED - use supervision_period_supervision_type instead. Delete this field once all existing
+    # TODO(#2891): DEPRECATED - use supervision_period_supervision_type instead. Delete this field once all existing
     #  users have migrated to the new field.
     supervision_type: Optional[StateSupervisionType] = attr.ib()
     supervision_type_raw_text: Optional[str] = attr.ib()
@@ -892,7 +892,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     # N/A
 
     # Type
-    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     violation_type: Optional[StateSupervisionViolationType] = attr.ib()
     violation_type_raw_text: Optional[str] = attr.ib()
 
@@ -909,7 +909,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     is_violent: Optional[bool] = attr.ib()
     is_sex_offense: Optional[bool] = attr.ib()
 
-    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     violated_conditions: Optional[str] = attr.ib(default=None)
 
     #   - Who
@@ -968,12 +968,12 @@ class StateSupervisionViolationResponse(ExternalIdEntity, BuildableAttr, Default
     state_code: str = attr.ib()  # non-nullable
 
     #   - What
-    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
 
     # Only nonnull if one of the decisions is REVOCATION
-    # TODO(2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
     revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
     revocation_type_raw_text: Optional[str] = attr.ib()
     is_draft: Optional[bool] = attr.ib()
