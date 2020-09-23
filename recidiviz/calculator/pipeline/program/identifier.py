@@ -23,13 +23,12 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
-from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    most_recent_assessment_attributes
+from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     only_state_custodial_authority_in_supervision_population
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.common.constants.state.state_assessment import \
-    StateAssessmentType
+    StateAssessmentType, StateAssessmentClass
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.persistence.entity.entity_utils import is_placeholder, get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
@@ -117,7 +116,11 @@ def find_program_referrals(
         program_id = EXTERNAL_UNKNOWN_VALUE
 
     if referral_date and program_id:
-        assessment_score, _, assessment_type = most_recent_assessment_attributes(referral_date, assessments)
+        assessment_score, _, assessment_type = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
+            referral_date,
+            assessments,
+            assessment_class=StateAssessmentClass.RISK,
+            state_code=program_assignment.state_code)
 
         relevant_supervision_periods = find_supervision_periods_overlapping_with_date(
             referral_date, supervision_periods)

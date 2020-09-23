@@ -37,8 +37,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violatio
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_violation_type_and_subtype, \
     identify_most_severe_response_decision, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
-from recidiviz.calculator.pipeline.utils.assessment_utils import \
-    find_most_recent_assessment, most_recent_assessment_attributes
+from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_distinct_for_state, \
@@ -57,7 +56,8 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
-from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel, StateAssessmentType
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel, StateAssessmentType, \
+    StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import StateSpecializedPurposeForIncarceration, \
@@ -306,7 +306,12 @@ def find_time_buckets_for_supervision_period(
             assessment_level = None
             assessment_type = None
 
-            most_recent_assessment = find_most_recent_assessment(bucket_date, assessments, assessment_type)
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                bucket_date,
+                assessments,
+                assessment_class=StateAssessmentClass.RISK,
+                state_code=supervision_period.state_code
+            )
 
             if most_recent_assessment:
                 assessment_score = most_recent_assessment.assessment_score
@@ -892,8 +897,13 @@ def find_revocation_return_buckets(
         admission_year = admission_date.year
         admission_month = admission_date.month
 
-        assessment_score, assessment_level, assessment_type = most_recent_assessment_attributes(
-            admission_date, assessments)
+        assessment_score, assessment_level, assessment_type = \
+            assessment_utils.most_recent_applicable_assessment_attributes_for_class(
+                admission_date,
+                assessments,
+                assessment_class=StateAssessmentClass.RISK,
+                state_code=incarceration_period.state_code
+            )
 
         if revoked_supervision_periods:
             # Add a RevocationReturnSupervisionTimeBucket for each supervision period that was revoked
